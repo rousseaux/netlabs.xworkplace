@@ -583,7 +583,7 @@
     #ifdef __DEBUG__
         // enable memory debugging; comment out this line
         // if you don't want it
-        // #define __XWPMEMDEBUG__
+        #define __XWPMEMDEBUG__
 
         #include "helpers\memdebug.h"
 

@@ -1862,6 +1862,7 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
 
     // _PmpfF(("pcszEnv is %s", (pcszEnv) ? pcszEnv : "NULL"));
 
+#if 0
     if (pcszEnv)
         // environment specified:
         arc = appParseEnvironment(pcszEnv,
@@ -1870,6 +1871,14 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
         // no environment specified:
         // get the one from the WPS process
         arc = appGetEnvironment(&Env);
+#else // V0.9.21 (2002-09-02) [umoeller]
+    // get the one from the WPS process and use it as base.
+    arc = appGetEnvironment(&Env);
+
+    if (pcszEnv && arc == NO_ERROR)
+        // Apply the environment _variables_ specified:
+        arc = appSetEnvironmentVars(&Env, pcszEnv);
+#endif
 
     if (arc == NO_ERROR)
     {

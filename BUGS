@@ -88,16 +88,11 @@ CURRENT PROBLEMS
 
 --  xcenter: doesn't remember tray from last startup
 
---  Batch rename window opens twice when selected from folder context
-    menu
-
 --  File type exports:
     Although the header is
     <?xml version="1.0" encoding="ISO-8859-1"?>
     I can see the extended accented characters in E when my system is using
     CP 850.
-
---  If speech is installed, notebook pages lack the "Speech" tab.
 
 --  There's already a hotkey option for 'Pickup' and 'Cancel pickup', so why
     not just add the same option for the drop actions as well. This would

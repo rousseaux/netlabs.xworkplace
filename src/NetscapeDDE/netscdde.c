@@ -49,6 +49,7 @@
 #include <string.h>
 
 #define DONT_REPLACE_FOR_DBCS       // do not replace strchr with DBCS version
+#define DONT_REPLACE_MALLOC
 #include "setup.h"
 
 #include "xwpapi.h"
