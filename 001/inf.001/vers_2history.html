@@ -17,32 +17,63 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.7 (November 25, 2000)</B>
+<P><B>XWorkplace 0.9.7 (December 30, 2000)</B>
 <H6>New features:
 <UL><LI>Added the XCenter, a WarpCenter replacement.
+<P><LI>Added more items to the context menus on the "File types" page in
+"Workplace Shell".
 <P><LI>Added "No submenu" setting for "Lock in place" context menu item
 ("Workplace Shell", "Context menus" page 3).
+<P><LI>Added "Logoff network now" to desktop's removeable menu items; shutdown
+menu items can also be configured more (desktop settings
+notebook, "Menu items" page).
 <P><LI>Added "Ignore XCenter" to sliding focus settings ("Mouse", "Movement").
+<P><LI>Martin Lafaix contributed the "Resources" page to XFldProgramFile.
 <P><LI>Added "Close WarpCenter before Desktop" setting to XShutdown page
 in Desktop's settings notebook. This now allows you to tell XWorkplace to
 leave the WarpCenter alone, if this lead to scroll bars on the desktop. Hope this helps.
+
+</UL>Miscellaneous changes:
+<UL><LI>Moved NLS-independent resources to a separate DLL (XWPRES.DLL).
 
 </UL>Bugfixes:
 <UL><LI>Reworked mutex semaphore protection all over the place. Maybe the WPS
 is now less prone to hanging when PMSHELL.EXE is killed.
 <P><LI>Reworked NLS initialization. This hung the system when language DLLs failed
 to load.
-<P><LI>Fixed a potentially dangerous situation with mutexes and the shared
-notebook functions. This could have lead to system hangs, and maybe it did somewhere.
+<P><LI>Fixed crashes when archiving displayed a msgbox after an archive was restored.
+<P><LI>Fixed two potentially dangerous situations with mutexes and 1) the shared
+notebook functions and 2) the worker thread/awake objects registry.
+This could have lead to system hangs, and maybe it did somewhere.
 <P><LI>Reworked internal timer functions. These stopped working when the date changed.
 <P><LI>Fixed crashes in Worker thread when kernel globals were locked.
 <P><LI>Added more error checking to internal EA functions.
-<P><LI>Fixed a couple of memory leaks on the "File types" page in "Workplace Shell".
+<P><LI>Changed a USHORT to a ULONG in my internal EXE structures. This _might_ fix
+problems with very strange and rare EXE files on the "Modules" page. Thanks, Martin
+Lafaix, for pointing this out.
+<P><LI>Extended folder sorting was pretty broken. Dunno when these bugs were introduced,
+but open folders did _not_ react when global sort settings were changed. This was
+a collection of at least three bugs, which are fixed now. Unfortunately, to fix this,
+I had to break the folder sort settings in each folder's extended attributes, so you
+will lose all your folder sort settings with this release. Sorry.
 <P><LI>Extended associations didn't work when a data file had spaces in its full
 path. Fixed.
 <P><LI>Extended associations ignored program object settings for
 "no auto-close after exit" and "minimized". Fixed.
+<P><LI>Extended associations did not setup up the program's environment properly
+(WP_OBJHANDLE, WORKPLACE__PROCESS), which broke DragText. Thanks, Rich Walsh, for
+pointing this out to me.
+<P><LI>"File types" page crashed when a file type was dropped on one of its descendant
+file types. Fixed, this is prevented now. Thanks, Martin Lafaix.
+<P><LI>On "File types" page, pickup and drop would not work with the context menu. Fixed.
+<P><LI>Fixed memory leaks with "File types" page. Thanks, Martin Lafaix.
+<P><LI>Trash can would sometimes display wrong empty/non-empty icon after WPS startup.
+Should be fixed now.
 <P><LI>Fixed a memory leak with every time an application was opened via object hotkeys.
+<P><LI>XWPString would never save the "Confirm" setting. Fixed.
+<P><LI>Extended system sounds broke completely with V0.9.6. Fixed. Duh.
+<P><LI>Pages in "Multimedia" hung the system if the object was closed while the
+data was still being inserted by the background threads. Fixed.
 
 </UL></H6><B>XWorkplace 0.9.6 (November 25, 2000)</B>
 

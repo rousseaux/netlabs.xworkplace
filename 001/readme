@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.6 README
+XWorkplace 0.9.7 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated November 25, 2000
+Last updated December 30, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,7 +20,7 @@ Last updated November 25, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.6.
+    Welcome to XWorkplace V0.9.7.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -37,10 +37,9 @@ Last updated November 25, 2000
     About this release
     ------------------
 
-    This version is mainly another bugfix release compared
-    to previous versions. Most importantly, extended file
-    associations should work now, and the shutdown problems
-    have been fixed.
+    This version fixes a number of bugs reported for V0.9.6.
+    In addition, you get the prototype for the XCenter, a
+    WarpCenter replacement.
 
     For details, refer to the "XWorkplace User Guide". To
     extract the documentation only, see "2. INSTALLATION"
