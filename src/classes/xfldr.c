@@ -151,7 +151,7 @@
 
 #include <wprootf.h>                    // WPRootFolder
 #include <wpshadow.h>                   // WPShadow
-#include <wpdesk.h>                     // WPDesktop
+// #include <wpdesk.h>                     // WPDesktop
 #include "xfobj.h"                      // XFldObject
 #include "xfdisk.h"                     // XFldDisk
 
@@ -954,7 +954,7 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
 
     XFolderMethodDebug("XFolder","xf_xwpQueryDefaultDocument");
 
-    if (!_somIsA(somSelf, _WPDesktop))
+    if (!cmnIsADesktop(somSelf))
     {
         WPSHLOCKSTRUCT Lock;
         if (wpshLockObject(&Lock, somSelf))
@@ -1754,7 +1754,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         _lAlwaysSort = ul;
     else
         // setting not found:
-        if (_somIsA(somSelf, _WPDesktop))
+        if (cmnIsADesktop(somSelf))
             // otherwise we might automatically sort the desktop...
             // not really what we want!
             _lAlwaysSort = FALSE;
@@ -2370,7 +2370,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_wpQueryDefaultView");
 
     if (    (_wpIsObjectInitialized(somSelf))    // wpPopulate hangs otherwise
-         && (!_somIsA(somSelf, _WPDesktop))
+         && (!cmnIsADesktop(somSelf))
        )
     {
         if (    (pGlobalSettings->fFdrDefaultDoc)
@@ -2547,7 +2547,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     {
         if (    (pGlobalSettings->fFdrDefaultDoc)
              && (pGlobalSettings->fFdrDefaultDocView)
-             && (!_somIsA(somSelf, _WPDesktop))
+             && (!cmnIsADesktop(somSelf))
            )
         {
             fOpenDefaultDoc = TRUE;

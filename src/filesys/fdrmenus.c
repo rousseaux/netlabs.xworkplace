@@ -157,7 +157,7 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wppgm.h>                      // WPProgram
 #include <wpshadow.h>                   // WPShadow
-#include <wpdesk.h>                     // WPDesktop
+// #include <wpdesk.h>                     // WPDesktop
 #include <wpdataf.h>                    // WPDataFile
 #include <wprootf.h>                    // WPRootFolder
 #include <wpdrives.h>                   // WPDrives (Drives folder)
@@ -338,7 +338,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         // is enabled in XWPSetup
         if (pGlobalSettings->fEnableStatusBars)
         {
-            if (_somIsA(somSelf, _WPDesktop))
+            if (cmnIsADesktop(somSelf))
                 // always disable for Desktop
                 ulAttr = MIA_DISABLED;
             else if (_somIsA(somSelf, _WPRootFolder))

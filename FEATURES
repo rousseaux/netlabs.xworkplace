@@ -14,6 +14,7 @@ is, that the name of the key is language dependent.
     user32\oslibres.cpp, OSLibWinCreatePointer
 
 XCenter:
+    -- XCenter run command: history log
     --  more options for winlist... button size, minimize behavior.
     --  winlist: edit filter entries (instead of remove and add).
     --  freely positionable

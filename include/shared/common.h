@@ -1221,6 +1221,8 @@
     BOOL XWPENTRY cmnPlaySystemSound(USHORT usIndex);
 
     #ifdef SOM_WPObject_h
+        BOOL cmnIsADesktop(WPObject *somSelf);
+
         WPObject* XWPENTRY cmnQueryActiveDesktop(VOID);
 
         HWND XWPENTRY cmnQueryActiveDesktopHWND(VOID);

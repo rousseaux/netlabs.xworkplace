@@ -1584,7 +1584,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             )
                        )
                     {
-                        if (fdrProcessFldrHotkey(hwndFrame,
+                        if (fdrProcessFldrHotkey(psfv->somSelf,
+                                                 hwndFrame,
                                                  usFlags,
                                                  usch,
                                                  usvk))

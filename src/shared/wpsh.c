@@ -99,8 +99,10 @@
 #include <wpdisk.h>
 #include <wpshadow.h>
 
-#include "shared\common.h"
-#include "shared\wpsh.h"
+#include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
+
+#include "filesys\folder.h"             // XFolder implementation
 
 /* ******************************************************************
  *
@@ -1652,6 +1654,7 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
  *@@changed V0.9.2 (2000-02-26) [umoeller]: removed mutex semaphores
  *@@changed V0.9.2 (2000-02-26) [umoeller]: removed CM_QUERYRECORDINFO
  *@@changed V0.9.9 (2001-03-27) [umoeller]: now using wpCopyObject instead of wpCreateFromTemplate; this should fix the system hangs
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed invisible new obj in tree views (workaround for WPS bug)
  */
 
 WPObject* wpshCreateFromTemplate(HAB hab,
@@ -1760,6 +1763,9 @@ WPObject* wpshCreateFromTemplate(HAB hab,
                     // icon positions simply don't work (I think this
                     // broke with Warp 3)
 
+                    WPFolder *pParentFolder;
+                    PMINIRECORDCORE precParent;
+
                     if (fChangeIconPos)       // valid-data flag set above
                     {
                         // the WPS shares records among views, so we need
@@ -1788,6 +1794,40 @@ WPObject* wpshCreateFromTemplate(HAB hab,
                                    (MPARAM)&pmrc,
                                    MPFROM2SHORT(1,     // one record only
                                        CMA_REPOSITION | CMA_ERASE));
+                    }
+                    else if (    (hwndCnr)
+                              && (CnrInfo.flWindowAttr & CV_TREE)
+                              && (pParentFolder = _wpQueryFolder(pNewObject))
+                              && (precParent = _wpQueryCoreRecord(pParentFolder))
+                            )
+                    {
+                        // we're in tree view:
+                        // in most cases (unless the tree view has
+                        // "show all in tree view" set), the object
+                        // was not automatically inserted because it
+                        // was a template. The bug in the WPS is that
+                        // even though we unset the template flag
+                        // above, the object still doesn't show up...
+                        // so just insert it now, if this fails, no
+                        // problem...
+                        // V0.9.14 (2001-07-28) [umoeller]
+                        POINTL ptlIcon = {0, 0};
+
+                        // populate the folder (synchronously)
+                        wpshCheckIfPopulated(pParentFolder,
+                                             // folders only:
+                                             FALSE);
+                                             // !fdrHasShowAllInTreeView(pParentFolder));
+
+                        _wpCnrInsertObject(pNewObject,
+                                           hwndCnr,
+                                           &ptlIcon,
+                                           precParent,
+                                           NULL);       // next avail position
+                        WinSendMsg(hwndCnr,
+                                   CM_EXPANDTREE,
+                                   (MPARAM)precParent,
+                                   0);
                     }
 
                     // scroll cnr work area to make the new object visible

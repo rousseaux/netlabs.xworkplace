@@ -17,6 +17,12 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
+trash can:
+    --  When deleting a folder wich has an other folder inside wich has the
+        attribut "read only", destroying of this folder in trashcan will fail,
+        some beeps are played and a message appears
+        "object xxx cant be deleted - either it is use or write protected"
+
 archiving:
    --  I have archiving enabled when ini files have changed 5%. Just now I rebooted and a
        dialog came up saying "ini files changed 0.000000%, limit 5.000000%" upon which it
@@ -24,7 +30,7 @@ archiving:
 
 documentation:
     -- some subsections in the TOC of the user guide are currently
-       sorted wrong. This will be fixed in the next release, didn't
+       sorted wrong. This will be fixed in a future release, didn't
        have time now.
 
 file assocs:
@@ -52,13 +58,9 @@ XCenter:
     --  if widget class is broken "wanna remove" msg displays garbage
         and doesn't work if yes is pressed.
 
-    --  adding pulse traps (traytrap.log
-
     --  trays: no settings dialogs from member widget menus
 
     --  trays: cycle when clicking on whitespace
-
-    --  if XCenter on top, menus show up wrong way
 
     --  tray widgets drag'n'drop doesn't work yet
 
@@ -127,8 +129,6 @@ folders:
             (probably a WPS bug)
 
     -- shadows missing if "always sort" and "folders first" are enabled (?!?)
-
-    -- create folder from template doesn't show up in tree view
 
 
 file exists dlg:

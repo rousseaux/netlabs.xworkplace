@@ -304,9 +304,11 @@ BOOL fdrFindHotkey(USHORT usCommand,
  *@@changed V0.9.0 [umoeller]: moved this here from common.c
  *@@changed V0.9.1 (2000-01-31) [umoeller]: changed prototype; this was using MPARAMS previously
  *@@changed V0.9.9 (2001-02-28) [pr]: allow multiple actions on same hotkey
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: now disabling sort and arrange hotkeys for desktop, if those menu items are disabled
  */
 
-BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
+BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
+                          HWND hwndFrame,   // in: folder frame
                           USHORT usFlags,
                           USHORT usch,
                           USHORT usvk)
@@ -354,31 +356,77 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
             if (      (G_FolderHotkeys[us].usFlags == usFlags)
                    && (G_FolderHotkeys[us].usKeyCode == usKeyCode)
                )
-            {   // OK: this is a hotkey; find the corresponding
+            {
+                // OK: this is a hotkey...
+
+                BOOL                fPost = TRUE;
+                PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+
+                // find the corresponding
                 // "command" (= menu ID) and post it to the frame
                 // window, which will execute it
                 usCommand = G_FolderHotkeys[us].usCommand;
 
-                if (    (usCommand >= WPMENUID_USER)
-                     && (usCommand < WPMENUID_USER+FIRST_VARIABLE)
-                   )
+                // now, if sort or arrange are disabled for
+                // the desktop and this is a sort or arrange
+                // hotkey, swallow it
+                // V0.9.14 (2001-07-28) [umoeller]
+                if (cmnIsADesktop(somSelf))
                 {
-                    // it's one of the "variable" menu items:
-                    // add the global variable menu offset
-                    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-                    usCommand += pGlobalSettings->VarMenuOffset;
+                    switch (usCommand)
+                    {
+                        case ID_WPMI_SORTBYNAME:
+                        case ID_WPMI_SORTBYSIZE:
+                        case ID_WPMI_SORTBYTYPE:
+                        case ID_WPMI_SORTBYREALNAME:
+                        case ID_WPMI_SORTBYWRITEDATE:
+                        case ID_WPMI_SORTBYACCESSDATE:
+                        case ID_WPMI_SORTBYCREATIONDATE:
+                        case ID_XFMI_OFS_SORTBYEXT:
+                        case ID_XFMI_OFS_SORTFOLDERSFIRST:
+                        case ID_XFMI_OFS_SORTBYCLASS:
+                            if (!pGlobalSettings->fDTMSort)
+                                fPost = FALSE;
+                        break;
+
+                        case WPMENUID_ARRANGE:
+                        case ID_WPMI_ARRANGEFROMTOP:
+                        case ID_WPMI_ARRANGEFROMLEFT:
+                        case ID_WPMI_ARRANGEFROMRIGHT:
+                        case ID_WPMI_ARRANGEFROMBOTTOM:
+                        case ID_WPMI_ARRANGEPERIMETER:
+                        case ID_WPMI_ARRANGEHORIZONTALLY:
+                        case ID_WPMI_ARRANGEVERTICALLY:
+                            if (!pGlobalSettings->fDTMArrange)
+                                fPost = FALSE;
+                    }
                 }
 
-                WinPostMsg(hwndFrame,
-                           WM_COMMAND,
-                           (MPARAM)usCommand,
-                           MPFROM2SHORT(CMDSRC_MENU,
-                                   FALSE) );     // results from keyboard operation
+                if (fPost)
+                {
+                    if (    (usCommand >= WPMENUID_USER)
+                         && (usCommand < WPMENUID_USER + FIRST_VARIABLE)
+                       )
+                    {
+                        // it's one of the "variable" menu items:
+                        // add the global variable menu offset
+                        usCommand += pGlobalSettings->VarMenuOffset;
+                    }
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  Posting command 0x%lX", usCommand));
-                #endif
+                    WinPostMsg(hwndFrame,
+                               WM_COMMAND,
+                               (MPARAM)usCommand,
+                               MPFROM2SHORT(CMDSRC_MENU,
+                                            FALSE) );     // results from keyboard operation
 
+                    #ifdef DEBUG_KEYS
+                        _Pmpf(("  Posting command 0x%lX", usCommand));
+                    #endif
+                }
+
+                // return TRUE even if we did NOT post;
+                // otherwise the WM_CHAR will be processed
+                // by parent winproc
                 brc = TRUE;
             }
             us++;

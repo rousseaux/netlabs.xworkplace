@@ -90,6 +90,8 @@
      *
      ********************************************************************/
 
+    BOOL fdrHasShowAllInTreeView(WPFolder *somSelf);
+
     BOOL fdrSetup(WPFolder *somSelf,
                   const char *pszSetupString);
 
@@ -479,7 +481,8 @@
                        PUSHORT pusFlags,
                        PUSHORT pusKeyCode);
 
-    BOOL fdrProcessFldrHotkey(HWND hwndFrame,
+    BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
+                              HWND hwndFrame,
                               USHORT usFlags,
                               USHORT usch,
                               USHORT usvk);

@@ -182,16 +182,6 @@ BOOL fhdlUnlockHandles(VOID)
                 == NO_ERROR);
 }
 
-/*
- *@@ fhdlOnKill:
- *
- */
-
-VOID _System fhdlOnKill(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
-{
-    fhdlUnlockHandles();
-}
-
 /* ******************************************************************
  *                                                                  *
  *  File-system handles interface                                   *

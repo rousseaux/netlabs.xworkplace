@@ -788,8 +788,8 @@ BOOL objIsOnList(WPObject *somSelf,
  *
  *      If (pObject == NULL), the first object on the list
  *      is returned, otherwise the object which comes
- *      after pObject in the list. If no (more) objects
- *      are found, NULL is returned.
+ *      after pObject in the list. If no (next) object
+ *      is found, NULL is returned.
  *
  *      The list is protected by a global mutex semaphore,
  *      so this is thread-safe.

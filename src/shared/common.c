@@ -3273,6 +3273,19 @@ BOOL cmnPlaySystemSound(USHORT usIndex)
 }
 
 /*
+ *@@ cmnIsADesktop:
+ *      returns TRUE if somSelf is a WPDesktop
+ *      instance.
+ *
+ *@@added V0.9.14 (2001-07-28) [umoeller]
+ */
+
+BOOL cmnIsADesktop(WPObject *somSelf)
+{
+    return (_somIsA(somSelf, _WPDesktop));
+}
+
+/*
  *@@ cmnQueryActiveDesktop:
  *      wrapper for wpclsQueryActiveDesktop. This
  *      has been implemented so that this method

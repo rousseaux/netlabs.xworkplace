@@ -80,6 +80,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
+#include "xfldr.ih"
 #include "xfpgmf.ih"
 
 // XWorkplace implementation headers
@@ -92,7 +93,7 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpdesk.h>             // this includes wpfolder.h
+// #include <wpdesk.h>             // this includes wpfolder.h
 
 /* ******************************************************************
  *
@@ -422,7 +423,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 // hide "Work area" item
                 winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA, FALSE);
             }
-            else if (_somIsA(pcnbp->somSelf, _WPDesktop))
+            else if (cmnIsADesktop(pcnbp->somSelf))
                 // for the Desktop, disable work area;
                 // this must not be changed
                 winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,

@@ -1439,6 +1439,7 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
  *@@changed V0.9.13 (2001-06-14) [umoeller]: removed archive marker file destruction, no longer needed
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: added exception handling
  */
 
 void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
@@ -1452,142 +1453,146 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
     // V0.9.4 (2000-08-02) [umoeller]
     DosSleep(pGlobalSettings->ulStartupInitialDelay);
 
-    // notify daemon of WPS desktop window handle
-    // V0.9.9 (2001-03-27) [umoeller]: moved this up,
-    // we don't have to wait here
-    // V0.9.9 (2001-04-08) [umoeller]: wrong, we do
-    // need to wait.. apparently, on some systems,
-    // this doesn't work otherwise
-    krnPostDaemonMsg(XDM_DESKTOPREADY,
-                     (MPARAM)cmnQueryActiveDesktopHWND(),
-                     (MPARAM)0);
-
-    /*
-     *  startup folders
-     *
-     */
-
-    // check if startup folder is to be skipped
-    if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
-            // V0.9.3 (2000-04-25) [umoeller]
+    TRY_LOUD(excpt1)
     {
-        // OK, process startup folder
-        WPFolder    *pFolder;
+        // notify daemon of WPS desktop window handle
+        // V0.9.9 (2001-03-27) [umoeller]: moved this up,
+        // we don't have to wait here
+        // V0.9.9 (2001-04-08) [umoeller]: wrong, we do
+        // need to wait.. apparently, on some systems,
+        // this doesn't work otherwise
+        krnPostDaemonMsg(XDM_DESKTOPREADY,
+                         (MPARAM)cmnQueryActiveDesktopHWND(),
+                         (MPARAM)0);
 
-        // load XFldStartup class if not already loaded
-        if (!_XFldStartup)
+        /*
+         *  startup folders
+         *
+         */
+
+        // check if startup folder is to be skipped
+        if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+                // V0.9.3 (2000-04-25) [umoeller]
         {
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("Loading XFldStartup class"));
-            #endif
-            XFldStartupNewClass(XFldStartup_MajorVersion,
-                                XFldStartup_MinorVersion);
-            _wpclsIncUsage(_XFldStartup);
-        }
+            // OK, process startup folder
+            WPFolder    *pFolder;
 
-        // find startup folder(s)
-        for (pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, NULL);
-             pFolder;
-             pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, pFolder))
-        {
-            // pFolder now has the startup folder to be processed
-
-            _Pmpf((__FUNCTION__ ": found startup folder %s",
-                        _wpQueryTitle(pFolder)));
-
-            // skip folders which should only be started on bootup
-            // except if we have specified that we want to start
-            // them again when restarting the WPS
-            if (    (_xwpQueryXStartupType(pFolder) != XSTARTUP_REBOOTSONLY)
-                 || (krnNeed2ProcessStartupFolder())
-               )
+            // load XFldStartup class if not already loaded
+            if (!_XFldStartup)
             {
-                ULONG ulTiming = 0;
-                if (_somIsA(pFolder, _XFldStartup))
-                    ulTiming = _xwpQueryXStartupObjectDelay(pFolder);
+                #ifdef DEBUG_STARTUP
+                    _Pmpf(("Loading XFldStartup class"));
+                #endif
+                XFldStartupNewClass(XFldStartup_MajorVersion,
+                                    XFldStartup_MinorVersion);
+                _wpclsIncUsage(_XFldStartup);
+            }
+
+            // find startup folder(s)
+            for (pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, NULL);
+                 pFolder;
+                 pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, pFolder))
+            {
+                // pFolder now has the startup folder to be processed
+
+                _Pmpf((__FUNCTION__ ": found startup folder %s",
+                            _wpQueryTitle(pFolder)));
+
+                // skip folders which should only be started on bootup
+                // except if we have specified that we want to start
+                // them again when restarting the WPS
+                if (    (_xwpQueryXStartupType(pFolder) != XSTARTUP_REBOOTSONLY)
+                     || (krnNeed2ProcessStartupFolder())
+                   )
+                {
+                    ULONG ulTiming = 0;
+                    if (_somIsA(pFolder, _XFldStartup))
+                        ulTiming = _xwpQueryXStartupObjectDelay(pFolder);
+                    else
+                        ulTiming  = pGlobalSettings->ulStartupObjectDelay;
+
+                    // start the folder contents synchronously;
+                    // this func now displays the progress dialog
+                    // and does not return until the folder was
+                    // fully processed (this calls another thrRunSync
+                    // internally, so the SIQ is not blocked)
+                    _xwpStartFolderContents(pFolder,
+                                            ulTiming);
+                }
                 else
-                    ulTiming  = pGlobalSettings->ulStartupObjectDelay;
-
-                // start the folder contents synchronously;
-                // this func now displays the progress dialog
-                // and does not return until the folder was
-                // fully processed (this calls another thrRunSync
-                // internally, so the SIQ is not blocked)
-                _xwpStartFolderContents(pFolder,
-                                        ulTiming);
+                    _Pmpf(("  skipping this one"));
             }
-            else
-                _Pmpf(("  skipping this one"));
-        }
 
-        _Pmpf((__FUNCTION__ ": done with startup folders"));
+            _Pmpf((__FUNCTION__ ": done with startup folders"));
 
-        // done with startup folders:
-        krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
-    } // if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+            // done with startup folders:
+            krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
+        } // if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
 
-    /*
-     *  quick-open folders
-     *
-     */
+        /*
+         *  quick-open folders
+         *
+         */
 
-    // "quick open" disabled because Shift key pressed?
-    if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
-    {
-        // no:
-        // get the quick-open folders
-        XFolder *pQuick = NULL;
-        QUICKOPENDATA qod;
-        memset(&qod, 0, sizeof(qod));
-        lstInit(&qod.llQuicks, FALSE);
-
-        for (pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
-             pQuick;
-             pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick))
+        // "quick open" disabled because Shift key pressed?
+        if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
         {
-            lstAppendItem(&qod.llQuicks, pQuick);
-        }
+            // no:
+            // get the quick-open folders
+            XFolder *pQuick = NULL;
+            QUICKOPENDATA qod;
+            memset(&qod, 0, sizeof(qod));
+            lstInit(&qod.llQuicks, FALSE);
 
-        // if we have any quick-open folders: go
-        if (qod.cQuicks = lstCountItems(&qod.llQuicks))
-        {
-            if (pGlobalSettings->ShowStartupProgress)
+            for (pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
+                 pQuick;
+                 pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick))
             {
-                qod.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
-                                            fnwpQuickOpenDlg,
-                                            cmnQueryNLSModuleHandle(FALSE),
-                                            ID_XFD_STARTUPSTATUS,
-                                            &qod);      // param
-                WinSetWindowText(qod.hwndStatus,
-                                 cmnGetString(ID_XFSI_QUICKSTATUS)) ; // pszQuickStatus
-
-                winhRestoreWindowPos(qod.hwndStatus,
-                                     HINI_USER,
-                                     INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
-                                     SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-                WinSendDlgItemMsg(qod.hwndStatus, ID_SDDI_PROGRESSBAR,
-                                  WM_UPDATEPROGRESSBAR,
-                                  (MPARAM)0,
-                                  (MPARAM)qod.cQuicks);
+                lstAppendItem(&qod.llQuicks, pQuick);
             }
 
-            // run the Quick Open thread synchronously
-            // which updates the status window
-            thrRunSync(ptiMyself->hab,
-                       fntQuickOpenFolders,
-                       "QuickOpen",
-                       (ULONG)&qod);
-
-            if (pGlobalSettings->ShowStartupProgress)
+            // if we have any quick-open folders: go
+            if (qod.cQuicks = lstCountItems(&qod.llQuicks))
             {
-                winhSaveWindowPos(qod.hwndStatus,
-                                  HINI_USER,
-                                  INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
-                WinDestroyWindow(qod.hwndStatus);
-            }
+                if (pGlobalSettings->ShowStartupProgress)
+                {
+                    qod.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                                                fnwpQuickOpenDlg,
+                                                cmnQueryNLSModuleHandle(FALSE),
+                                                ID_XFD_STARTUPSTATUS,
+                                                &qod);      // param
+                    WinSetWindowText(qod.hwndStatus,
+                                     cmnGetString(ID_XFSI_QUICKSTATUS)) ; // pszQuickStatus
 
-        }
-    } // end if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+                    winhRestoreWindowPos(qod.hwndStatus,
+                                         HINI_USER,
+                                         INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
+                                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                    WinSendDlgItemMsg(qod.hwndStatus, ID_SDDI_PROGRESSBAR,
+                                      WM_UPDATEPROGRESSBAR,
+                                      (MPARAM)0,
+                                      (MPARAM)qod.cQuicks);
+                }
+
+                // run the Quick Open thread synchronously
+                // which updates the status window
+                thrRunSync(ptiMyself->hab,
+                           fntQuickOpenFolders,
+                           "QuickOpen",
+                           (ULONG)&qod);
+
+                if (pGlobalSettings->ShowStartupProgress)
+                {
+                    winhSaveWindowPos(qod.hwndStatus,
+                                      HINI_USER,
+                                      INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
+                    WinDestroyWindow(qod.hwndStatus);
+                }
+
+            }
+        } // end if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+    }
+    CATCH(excpt1) {} END_CATCH();
 
     /*
      *  other stuff
@@ -1597,30 +1602,14 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
     // destroy boot logo, if present
     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
 
-    // destroy archive marker file, if it exists
-    // removed V0.9.13 (2001-06-14) [umoeller],
-    // no longer needed
-    /* if (_wpQueryFilename(cmnQueryActiveDesktop(),
-                         szDesktopDir,
-                         TRUE))     // fully q'fied
-    {
-        WPFileSystem *pMarkerFile;
-        strcat(szDesktopDir, "\\");
-        strcat(szDesktopDir, XWORKPLACE_ARCHIVE_MARKER);
-        pMarkerFile
-            = _wpclsQueryObjectFromPath(_WPFileSystem, szDesktopDir);
-        if (pMarkerFile)
-            // exists:
-            _wpFree(pMarkerFile);
-    } */
-
     // if XFolder was just installed, check for
     // existence of config folders and
     // display welcome msg
     if (PrfQueryProfileInt(HINI_USER,
                            (PSZ)INIAPP_XWORKPLACE,
                            (PSZ)INIKEY_JUSTINSTALLED,
-                           0x123) != 0x123)
+                           0x123)
+            != 0x123)
     {
         // XWorkplace was just installed:
         // delete "just installed" INI key
@@ -1868,12 +1857,14 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             // create the startup thread which now does the
             // processing for us V0.9.12 (2001-04-29) [umoeller]
-            thrCreate(NULL,
-                      fntStartupThread,
-                      NULL,
-                      "StartupThread",
-                      THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                      (ULONG)mp2);      // desktop window
+            if (!thrCreate(NULL,
+                           fntStartupThread,
+                           NULL,
+                           "StartupThread",
+                           THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                           (ULONG)mp2))      // desktop window
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot create startup thread.");
 
             // moved all the rest to fntStartupThread
         break; }
@@ -2100,30 +2091,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
     G_CurFileThreadMsg = 0;
 
     return (mrc);
-}
-
-/*
- *@@ xthrOnKillFileThread:
- *      thread "exit list" func registered with
- *      the TRY_xxx macros (helpers\except.c).
- *      In case the File thread gets killed,
- *      this function gets called. As opposed to
- *      real exit list functions, which always get
- *      called on thread 1, this gets called on
- *      the thread which registered the exception
- *      handler.
- *
- *      We release mutex semaphores here, which we
- *      must do, because otherwise the system might
- *      hang if another thread is waiting on the
- *      same semaphore.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-VOID APIENTRY xthrOnKillFileThread(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
-{
-    krnUnlockGlobals(); // just to make sure
 }
 
 /*
@@ -2513,30 +2480,6 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
     }
 
     return (mrc);
-}
-
-/*
- *@@ xthrOnKillSpeedyThread:
- *      thread "exit list" func registered with
- *      the TRY_xxx macros (helpers\except.c).
- *      In case the Speedy thread gets killed,
- *      this function gets called. As opposed to
- *      real exit list functions, which always get
- *      called on thread 1, this gets called on
- *      the thread which registered the exception
- *      handler.
- *
- *      We release mutex semaphores here, which we
- *      must do, because otherwise the system might
- *      hang if another thread is waiting on the
- *      same semaphore.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-VOID APIENTRY xthrOnKillSpeedyThread(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
-{
-    krnUnlockGlobals(); // just to make sure
 }
 
 /*

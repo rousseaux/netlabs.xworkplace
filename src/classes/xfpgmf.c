@@ -104,7 +104,7 @@
  *
  ********************************************************************/
 
-static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
+static const char *G_pcszInstanceFilter = "OS2KRNL,*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
 
 /* ******************************************************************
  *

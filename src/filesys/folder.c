@@ -126,6 +126,24 @@
  ********************************************************************/
 
 /*
+ *@@ fdrHasShowAllInTreeView:
+ *      returns TRUE if the folder has the
+ *      SHOWALLINTREEVIEW setting set. On
+ *      Warp 3, always returns FALSE.
+ *
+ *@@added V0.9.14 (2001-07-28) [umoeller]
+ */
+
+BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    return (    (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
+             && (*_pulFolderShowAllInTreeView)
+           );
+}
+
+
+/*
  *@@ fdrSetup:
  *      implementation for XFolder::wpSetup.
  *
@@ -719,10 +737,10 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             }
 
         // SHOWALLINTREEVIEW
-        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
-                if (*_pulFolderShowAllInTreeView)
-                    xstrcat(&strTemp, "SHOWALLINTREEVIEW=YES;", 0);
+        if (    (fInitialized)
+             && (fdrHasShowAllInTreeView(somSelf))
+           )
+            xstrcat(&strTemp, "SHOWALLINTREEVIEW=YES;", 0);
 
         /*
          * Details view

@@ -493,8 +493,6 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
             xthrPostFileMsg(FIM_DESKTOPPOPULATED,
                             (MPARAM)somSelf,
                             0);
-            // the worker thread will now loop until the Desktop
-            // is populated also
         }
 
     #ifdef DEBUG_STARTUP

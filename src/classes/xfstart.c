@@ -527,10 +527,11 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
                               pFolder,
                               INIKEY_XSAVEDSTARTUPFOLDERS,
                               0);
-    }
-    while (pFolder && !wpshResidesBelow(pFolder, pDesktop));
+    } while (    (pFolder)
+              && (!wpshResidesBelow(pFolder, pDesktop))
+            );
 
-    return(pFolder);
+    return (pFolder);
 }
 
 /*
