@@ -480,5 +480,13 @@ If you are using backreferences (e.g. "\1") in the "replace" string, make sure y
 
 <--XFL0244-->: Are you sure you want to remove the entire "%1" widget? This operation cannot be undone.
 
+;
+; the following items are new with V0.9.21
+;
+
+<--XFL0245-->: An error occured while &xwp; was trying to start your system's default browser (%1):
+
+<--XFL0246-->: Check your default browser settings in any URL object.
+
 
 

@@ -72,9 +72,10 @@ THREADINFO  G_tiWatchdog,
 #define OP_IDLE                     0
 #define OP_BEGINENUMWINDOWS         1
 #define OP_GETNEXTWINDOW            2
-#define OP_QUERYWINDOWPROCESS       3
-#define OP_SENDMSG                  4
-#define OP_ENDENUMWINDOWS           5
+#define OP_ISWINDOWVISIBLE          3
+#define OP_QUERYWINDOWPROCESS       4
+#define OP_SENDMSG                  5
+#define OP_ENDENUMWINDOWS           6
 
 HMTX        G_hmtxWatchdog = NULLHANDLE;
 
@@ -201,33 +202,47 @@ void _Optlink fntTeaser(PTHREADINFO ptiMyself)
                         // stop
                         break;
 
-                    SetOperation(OP_QUERYWINDOWPROCESS, &fLocked);
-                    if (!WinQueryWindowProcess(hwnd, &pid, &tid))
-                        // window has died?
-                        // start over
-                        break;
+                    // check for message blocks only if the window
+                    // is visible; many apps block their input
+                    // queue before showing up (mozilla, pmmail),
+                    // and we shouldn't report them
 
-                    if (fLocked = LockWatchdog())
+                    // WinIsWindowVisible returns TRUE
+                    // only if the window has WS_VISIBLE set and
+                    // all of its parents do also...
+
+                    SetOperation(OP_ISWINDOWVISIBLE, &fLocked);
+                    if (WinIsWindowVisible(hwnd))
                     {
-                        G_pidBeingSent = pid;
-                        G_tidBeingSent = tid;
+                        // get the window process
+                        SetOperation(OP_QUERYWINDOWPROCESS, &fLocked);
+                        if (!WinQueryWindowProcess(hwnd, &pid, &tid))
+                            // window has died?
+                            // start over
+                            break;
 
-                        DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                        &G_ulOperationTime,
-                                        sizeof(G_ulOperationTime));
-                        G_ulOperation = OP_SENDMSG;
+                        if (fLocked = LockWatchdog())
+                        {
+                            G_pidBeingSent = pid;
+                            G_tidBeingSent = tid;
 
-                        UnlockWatchdog();
-                        fLocked = FALSE;
+                            DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                            &G_ulOperationTime,
+                                            sizeof(G_ulOperationTime));
+                            G_ulOperation = OP_SENDMSG;
 
-                        // call WinSendMsg to see if the target
-                        // desktop window responds; we use
-                        // WM_QUERYCTLTYPE just because it's
-                        // inexpensive processing in any window proc
-                        WinSendMsg(hwnd,
-                                   WM_QUERYCTLTYPE,
-                                   0,
-                                   0);
+                            UnlockWatchdog();
+                            fLocked = FALSE;
+
+                            // call WinSendMsg to see if the target
+                            // desktop window responds; we use
+                            // WM_QUERYCTLTYPE just because it's
+                            // inexpensive processing in any window proc
+                            WinSendMsg(hwnd,
+                                       WM_QUERYCTLTYPE,
+                                       0,
+                                       0);
+                        }
                     }
                 } // while (TRUE)
             }
@@ -327,6 +342,7 @@ PCSZ GetOpName(ULONG opHung)
         SETCASE(OP_IDLE);
         SETCASE(OP_BEGINENUMWINDOWS);
         SETCASE(OP_GETNEXTWINDOW);
+        SETCASE(OP_ISWINDOWVISIBLE);
         SETCASE(OP_QUERYWINDOWPROCESS);
         SETCASE(OP_SENDMSG);
         SETCASE(OP_ENDENUMWINDOWS);

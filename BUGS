@@ -25,22 +25,8 @@ CURRENT PROBLEMS
 --  Batch rename window opens twice when selected from folder context
     menu
 
---  I recerved the following error message when importing the XML generated
-    by the extended associations.
-
-    An error occured importing file types from the file
-    "F:\Util\WPS\XWorkpla\TiposFiltros-20020710.xml":
-    Parsing error: Not well-formed (invalid token) (line 691, column 14)
-
-    In the file:
-    <TYPE
-       NAME="AT&T Group 4">
-    <FILTER
-       VALUE="*.G4"/>
-
-         The error is caused by the unescaped ampersand.
-
-         Besides, although the header is
+--  File type exports:
+    Although the header is
     <?xml version="1.0" encoding="ISO-8859-1"?>
     I can see the extended accented characters in E when my system is using
     CP 850.
@@ -55,8 +41,6 @@ CURRENT PROBLEMS
 
 --  Command line windows lose frame icons all the time.
 
---  use items crash
-
 --  rework trash can mappings to reuse directories after empty
 
 --  b5) Starting Programs: Since upgrading to 0.9.19, the RCJ CD Writer
@@ -64,13 +48,13 @@ CURRENT PROBLEMS
     with 0.9.14, but with that it happened only once every 20 boots or so.
     Now however this behaviour turns-up 100% of the time.
 
-- Regular Expressions
+--  Regular Expressions
     At least in the select by name dialog the expression "5[67]."
     matches the files 567, 576, but also 562blabla, which it should not
     ("Regular expressions" is  switched on). The same happens with
     "5[67]", while "5[68]" only selects 567 and 562blabla.
 
-- New file dialog
+--  New file dialog
     +   When called from the XButton settings Browse button, the dialog is
         always starting at F:\ -- the programs disk with XWP on it, so that
         could be logical. But it always starts there no matter what

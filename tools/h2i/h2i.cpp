@@ -2017,29 +2017,49 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
     {
         // root file:
         xstrCatf(pxstrIPF,
-                   ":title.%s\n",
-                   pFile2Process->strTitle.psz);
+                 ":title.%s\n",
+                 pFile2Process->strTitle.psz);
     }
 
     xstrCatf(pxstrIPF,
-               "\n.* Source file: \"%s\"\n",
-               (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
+             "\n.* Source file: \"%s\"\n",
+             (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
 
     xstrcpy(pstrExtras, NULL, 0);
     if (pFile2Process->lGroup)
         xstrCatf(pstrExtras,
-                   " group=%d",
-                   pFile2Process->lGroup);
+                 " group=%d",
+                 pFile2Process->lGroup);
+
+    BOOL fFull = TRUE;
     if (pFile2Process->pszXPos)
+    {
         xstrCatf(pstrExtras,
-                   " x=%s",
-                   pFile2Process->pszXPos);
+                 " x=%s",
+                 pFile2Process->pszXPos);
+        fFull = FALSE;
+    }
     if (pFile2Process->pszWidth)
+    {
         xstrCatf(pstrExtras,
-                   " width=%s",
-                   pFile2Process->pszWidth);
+                 " width=%s",
+                 pFile2Process->pszWidth);
+        fFull = FALSE;
+    }
+
+    // If neither x nor width are given, make this full size
+    // so that help panels will resize properly with the
+    // main helpmgr frame. Thanks to Alex Taylor for the hint.
+    // V0.9.21 (2002-08-21) [umoeller]
+    if (fFull)
+    {
+        xstrcat(pstrExtras,
+                " x=left y=bottom width=100% height=100%",
+                0);
+    }
+
     if (pFile2Process->fHidden)
-        xstrcpy(pstrExtras, " hide", 0);
+        xstrcat(pstrExtras, " hide", 0);
 
     ULONG ulHeaderLevel = pFile2Process->ulHeaderLevel;
     // if this is not at root level already,
@@ -2049,13 +2069,13 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
             ulHeaderLevel--;
 
     xstrCatf(pxstrIPF,
-               ":h%d res=%d%s.%s\n",
-               ulHeaderLevel,
-               pFile2Process->ulResID,
-               (pstrExtras->ulLength)
-                    ? pstrExtras->psz
-                    : "",
-               pFile2Process->strTitle.psz);
+             ":h%d res=%d%s.%s\n",
+             ulHeaderLevel,
+             pFile2Process->ulResID,
+             (pstrExtras->ulLength)
+                  ? pstrExtras->psz
+                  : "",
+             pFile2Process->strTitle.psz);
     xstrcat(pxstrIPF,
             ":p.\n",
             0);

@@ -680,7 +680,6 @@ VOID IwgtSaveSetupAndSend(HWND hwnd,
 /*
  *@@ SubclassAndSetColor:
  *
- *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
 static VOID SubclassAndSetColor(HWND hwndDlg,
@@ -711,7 +710,6 @@ static VOID SubclassAndSetColor(HWND hwndDlg,
 /*
  *@@ GetColor:
  *
- *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
 static LONG GetColor(HWND hwndDlg,

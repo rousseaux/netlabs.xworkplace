@@ -26,6 +26,19 @@ of nested subtables in dialog descriptions.
 <UL><LI>Common: Executable header parser was completely broken for files without extensions
 (e.g. OS2KRNL). Fixed; "Module" page now displays correctly.
 
+<P><LI>Common: &xwp; kept the default OS/2 shutdown from finishing, at least with IBM MCP2.
+Fixed.
+
+<P><LI>Folder painting: "shadow icons" produced strange display for shadowed folders
+in Tree view. Fixed.
+
+<P><LI>Extended associations: "Export" facility did not escape attribute values like &amp;
+properly. Fixed.
+
+<P><LI>&xcenter;: Mostly rewrote pulse widget graph painting to fix the vertical lines
+on the left if a high load was displayed. Optimized the code at the same time to save
+a few hundered Gpi* calls.
+
 <P><LI>WPS class list: crashed when selecting an orphaned WPS class. Bug was inttroduced
 with 0.9.20, fixed.
 

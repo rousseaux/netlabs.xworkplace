@@ -62,6 +62,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
+#define INCL_DOSNLS
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -2099,51 +2100,47 @@ static APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
                             PDOMNODE *ppNewNode)           // out: new element
 {
     PDOMNODE pNodeReturn;
-    APIRET arc = xmlCreateElementNode(pParentNode,
-                                      // parent record; this might be pRootElement
-                                      "TYPE",
-                                      &pNodeReturn);
-    if (!arc)
+    APIRET arc;
+    if (!(arc = xmlCreateElementNode(pParentNode,
+                                     // parent record; this might be pRootElement
+                                     "TYPE",
+                                     &pNodeReturn)))
     {
         PDOMNODE pAttribute;
         pliAssoc->precc = (PFILETYPERECORD)pNodeReturn;
         pliAssoc->fProcessed = TRUE;
 
         // create NAME attribute
-        arc = xmlCreateAttributeNode(pNodeReturn,
-                                     "NAME",
-                                     pliAssoc->pszFileType,
-                                     &pAttribute);
-
-        if (!arc)
+        if (!(arc = xmlCreateAttributeNode(pNodeReturn,
+                                           "NAME",
+                                           pliAssoc->pszFileType,
+                                           &pAttribute)))
         {
-            // create child ELEMENTs for each filter
+            // create child ELEMENTs for each
+            // XWorkplace-defined filter for this file type
 
-            // get the XWorkplace-defined filters for this file type
             ULONG cbFiltersData;
-            PSZ pszFiltersData = prfhQueryProfileData(HINI_USER,
+            PSZ pszFiltersData;
+            if (pszFiltersData = prfhQueryProfileData(HINI_USER,
                                                       INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
                                                       pliAssoc->pszFileType,
-                                                      &cbFiltersData);
-            if (pszFiltersData)
+                                                      &cbFiltersData))
             {
                 // pszFiltersData now has a string array of
                 // defined filters, each null-terminated
-                PSZ     pFilter = pszFiltersData;
+                PSZ     pFilter;
 
-                if (pFilter)
+                if (pFilter = pszFiltersData)
                 {
                     // now parse the filters string
                     while ((*pFilter) && (!arc))
                     {
                         // add the filter to the "Filters" container
                         PDOMNODE pFilterNode;
-                        arc = xmlCreateElementNode(pNodeReturn,
-                                                   // parent record; this might be pRootElement
-                                                   "FILTER",
-                                                   &pFilterNode);
-
-                        if (!arc)
+                        if (!(arc = xmlCreateElementNode(pNodeReturn,
+                                                         // parent record; this might be pRootElement
+                                                         "FILTER",
+                                                         &pFilterNode)))
                             arc = xmlCreateAttributeNode(pFilterNode,
                                                          "VALUE",
                                                          pFilter,
@@ -2196,21 +2193,21 @@ static APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
     PLISTNODE           pAssocNode;
 
     // query the parent for pszKey
-    PSZ pszParentForKey = prfhQueryProfileData(HINI_USER,
+    PSZ pszParentForKey;
+
+    if (pszParentForKey = prfhQueryProfileData(HINI_USER,
                                                INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
                                                pszKey,
-                                               NULL);
-
-    if (pszParentForKey)
+                                               NULL))
     {
         // key has a parent: recurse first! we need the
         // parent records before we insert the actual file
         // type as a child of this
         arc = ExportAddFileTypeAndAllParents(pRootElement,
-                                          pllFileTypes,
-                                          // recurse with parent
-                                          pszParentForKey,
-                                          &pParentNode);
+                                             pllFileTypes,
+                                             // recurse with parent
+                                             pszParentForKey,
+                                             &pParentNode);
         free(pszParentForKey);
     }
 
@@ -2227,8 +2224,7 @@ static APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
         {
             PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)pAssocNode->pItemData;
 
-            if (strcmp(pliAssoc->pszFileType,
-                       pszKey) == 0)
+            if (!strcmp(pliAssoc->pszFileType, pszKey))
             {
                 if (!pliAssoc->fProcessed)
                 {
@@ -2431,9 +2427,21 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
             {
                 // create a text XML document from all this
                 XSTRING strDocument;
+                CHAR    szEncoding[30];
+                ULONG   acp[8];
+                ULONG   cb = 0;
+
                 xstrInit(&strDocument, 1000);
+
+                DosQueryCp(sizeof(acp),
+                           acp,
+                           &cb);
+                sprintf(szEncoding,
+                        "CP%d",
+                        acp[0]);
+
                 if (!(arc = xmlWriteDocument(pDocument,
-                                             "ISO-8859-1",
+                                             szEncoding, // "ISO-8859-1",
                                              G_pcszDoctype,
                                              &strDocument)))
                 {

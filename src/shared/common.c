@@ -4793,9 +4793,35 @@ static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                 }
                 else if (!strnicmp(mp2, "http://", 7))
                 {
-                    appOpenURL((PCSZ)mp2,
-                               NULL,
-                               0);
+                    CHAR    szBrowser[CCHMAXPATH];
+                    APIRET  arc;
+                    if (arc = appOpenURL((PCSZ)mp2,
+                                         szBrowser,
+                                         sizeof(szBrowser)))
+                    {
+                        XSTRING str2, str3;
+                        PCSZ    apcsz = szBrowser;
+                        xstrInit(&str2, 0);
+                        xstrInit(&str3, 0);
+                        cmnGetMessage(&apcsz,
+                                      1,
+                                      &str2,
+                                      245); // An error occured while &xwp; was trying to start your system's default browser (%1):
+                        cmnGetMessage(NULL,
+                                      0,
+                                      &str3,
+                                      246); // Check your default browser settings in any URL object.
+                        cmnDosErrorMsgBox(hwnd,
+                                          NULL, // in: string for %1 message or NULL
+                                          cmnGetString(ID_XSDI_INFO_TITLE),
+                                          str2.psz,
+                                          arc,
+                                          str3.psz,
+                                          MB_OK,
+                                          FALSE);       // short format
+                        xstrClear(&str2);
+                        xstrClear(&str3);
+                    }
                 }
             }
         break;

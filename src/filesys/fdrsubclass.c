@@ -1476,6 +1476,7 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
  *      passed in and other special cases.
  *
  *@@added V0.9.20 (2002-08-04) [umoeller]
+ *@@changed V0.9.21 (2002-08-21) [umoeller]: fixed painting problems for folder shadows
  */
 
 static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
@@ -1485,7 +1486,7 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
     PMINIRECORDCORE     pmrc;
     WPObject            *pobjDraw;
 
-        // get the object from the record that is to be drawn
+    // get the object from the record that is to be drawn
     if (    (pmrc = (PMINIRECORDCORE)((PCNRDRAWITEMINFO)poi->hItem)->pRecord)
          && (pobjDraw = OBJECT_FROM_PREC(pmrc))
        )
@@ -1507,6 +1508,8 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                                 // to dotted "cursored" rectangle; negative moves inwards
                                 // (for Details view)
 
+        ULONG               flObject = objQueryFlags(pobjDraw);
+
         // check if we have an icon already or if this
         // is the first call for this object... in that
         // case hptrIcon might be NULLHANDLE still
@@ -1519,7 +1522,7 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             // this object does not have an icon yet:
             // lazy icons enabled?
             if (    (flOwnerDraw & OWDRFL_LAZYICONS)
-                 && (objQueryFlags(pobjDraw) & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
+                 && (flObject & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
                )
             {
                 // lazy icon drawing:
@@ -1528,6 +1531,7 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 icomQueueLazyIcon(pobjDraw);
                 hptrPaint = _wpclsQueryIcon(_somGetClass(pobjDraw));
 
+                // we have tested for datafile and program, so
                 // this object can't be a shadow, so skip the
                 // check below
                 flOwnerDraw &= ~OWDRFL_SHADOWOVERLAY;
@@ -1539,6 +1543,25 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 hptrPaint = _wpQueryIcon(pobjDraw);
                         // this should set MINIRECORDCORE.hptrIcon
             }
+        }
+        else
+        {
+            // pmrc->hptrIcon was set: still check if this is
+            // a folder (cannot happen presently because they
+            // are not owner-drawn) or a shadow to a folder;
+            // in that case, we need to draw an animation icon
+            // if the folder has an open view... pmrc->hptrIcon
+            // ALWAYS has the closed icon for folders!
+            WPObject *pobjTest = pobjDraw;
+            if (   (    (flObject & OBJFL_WPFOLDER)
+                     || (    (pobjTest = objResolveIfShadow(pobjDraw))
+                          && (objIsAFolder(pobjTest))
+                        )
+                   )
+                && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
+               )
+                hptrPaint = _wpQueryIconN(pobjTest, 1);
+            // else: leave hptrPaint with pmrc->hptrIcon
         }
 
         // determine whether to draw mini icon and set
@@ -1627,7 +1650,8 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
 
             if (poi->fsAttribute & CRA_INUSE)
             {
-                LONG    lcolHiliteFgnd;
+                LONG    lcolHiliteFgnd,
+                        lOldPattern;
 
                 if (poi->fsAttribute & CRA_SELECTED)
                     // if we're in-use AND selected,
@@ -1648,6 +1672,7 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
 
                 GpiSetColor(poi->hps,
                             lcolHiliteFgnd);
+                lOldPattern = GpiQueryPattern(poi->hps);
                 GpiSetPattern(poi->hps, PATSYM_DIAG1);
 
                 ptl.x = rclBack.xLeft;
@@ -1662,11 +1687,13 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 ptl.y  = rclBack.yTop;
                 GpiBox(poi->hps, DRO_FILL, &ptl, 0L, 0L);
 
-                GpiSetPattern(poi->hps, PATSYM_DEFAULT);
+                GpiSetPattern(poi->hps, lOldPattern); // PATSYM_DEFAULT);
             }
 
             if (poi->fsAttribute & CRA_CURSORED)
             {
+                LONG    lOldLineType = GpiQueryLineType(poi->hps);
+
                 GpiSetColor(poi->hps, lcolHiliteBgnd);
                 GpiSetLineType(poi->hps, LINETYPE_ALTERNATE);
 
@@ -1676,6 +1703,9 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 ptl.x = rclBack.xRight + lCursorOffset - 1;     // inclusive!
                 ptl.y = rclBack.yTop + lCursorOffset - 1;       // inclusive!
                 GpiBox(poi->hps, DRO_OUTLINE, &ptl, 0, 0);
+
+                GpiSetLineType(poi->hps, lOldLineType);
+                            // was missing V0.9.21 (2002-08-21) [umoeller]
             }
         }
 
@@ -1716,7 +1746,7 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
 
         // overpaint with shadow overlay icon, if allowed
         if (    (flOwnerDraw & OWDRFL_SHADOWOVERLAY)
-             && (objIsAShadow(pobjDraw))
+             && (flObject & OBJFL_WPSHADOW)
              && (!cmnGetStandardIcon(STDICON_SHADOWOVERLAY,
                                      &hptrPaint,
                                      NULL,
