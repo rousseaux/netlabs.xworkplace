@@ -106,7 +106,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
     ULONG   cSwpNewUsed = 0;
 
     ULONG   cMovePUsed = 0;
-    HWND*   paMoveP;
+    HWND*   paMoveP = NULL;
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, FALSE);
@@ -121,8 +121,8 @@ BOOL pgmmMoveIt(LONG lXDelta,
         // ULONG       ulMoveListCtr = 0;
         // ULONG       usIdx = 0;
 
-        LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
-        LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
+        // LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
+        // LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
 
         PLISTNODE   pNode;
 
@@ -131,13 +131,15 @@ BOOL pgmmMoveIt(LONG lXDelta,
         // on the wininfo list, but we'll probably not use them
         // all. cSwpNewUsed will be incremented for each item that's
         // actually used
-        ULONG       cbSwpNew = lstCountItems(&G_llWinInfos) * sizeof(SWP);
+        ULONG       cWinInfos = lstCountItems(&G_llWinInfos);
+
+        ULONG       cbSwpNew = cWinInfos * sizeof(SWP);
 
         if (    (cbSwpNew)
              && (paswpNew = (PSWP)malloc(cbSwpNew))
            )
         {
-            ULONG       cbMoveP  = lstCountItems(&G_llWinInfos) * sizeof(HWND);
+            ULONG       cbMoveP  = cWinInfos * sizeof(HWND);
             paMoveP  = (HWND*)malloc(cbMoveP);
 
             if (paMoveP)
@@ -167,8 +169,10 @@ BOOL pgmmMoveIt(LONG lXDelta,
                         // update window pos in winlist's SWP
                         PSWP pswpThis = &pEntryThis->swp;
 
-                        if (!(WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
-                              & FS_NOMOVEWITHOWNER)
+                        if (     (strcmp(pEntryThis->szClassName, "#1")
+                              && (0 == WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
+                                       & FS_NOMOVEWITHOWNER)
+                                 )
                            )
                         {
                             paMoveP[cMovePUsed++] = pEntryThis->hwnd;
