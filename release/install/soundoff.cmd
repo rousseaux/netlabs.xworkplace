@@ -24,6 +24,7 @@ if (key = "Y") then do
     rc = SysINI(MMINI, "MMPM2_AlarmSounds", "558", "DELETE:");
     rc = SysINI(MMINI, "MMPM2_AlarmSounds", "559", "DELETE:");
     rc = SysINI(MMINI, "MMPM2_AlarmSounds", "560", "DELETE:");
+    rc = SysINI(MMINI, "MMPM2_AlarmSounds", "561", "DELETE:");
 end;
 
 exit;
