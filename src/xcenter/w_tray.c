@@ -179,8 +179,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
-
-#include "shared\center.h"              // public XCenter interfaces
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
@@ -193,9 +192,60 @@
  *
  ********************************************************************/
 
-// As opposed to other widgets, the tray-internal structures
-// are defined in centerp.h because the engine also needs
-// access to them.
+/*
+ *@@ TRAYSETUP:
+ *      instance data to which setup strings correspond.
+ *      This is also a member of TRAYWIDGETPRIVATE.
+ */
+
+typedef struct _TRAYSETUP
+{
+    ULONG       cx;     // widget width
+
+    ULONG       ulCurrentTray;
+                        // current tray index (from 0)
+                        // or -1 if none
+
+} TRAYSETUP, *PTRAYSETUP;
+
+/*
+ *@@ TRAYWIDGETPRIVATE:
+ *      more window data for the "pulse" widget.
+ *
+ *      An instance of this is created on WM_CREATE in
+ *      fnwpPulseWidget and stored in XCENTERWIDGET.pUser.
+ */
+
+typedef struct _TRAYWIDGETPRIVATE
+{
+    PXCENTERWIDGET  pWidget;
+            // reverse ptr to general widget data ptr; we need
+            // that all the time and don't want to pass it on
+            // the stack with each function call
+
+    TRAYSETUP       Setup;
+            // widget settings that correspond to a setup string
+
+    HPOINTER        hptrTray,       // tray icon
+                    hptrHand;       // hand pointer
+
+    BOOL            fMouseButton1Down,
+                    fButtonSunk,
+                    fMouseCaptured;
+
+    HWND            hwndTraysMenu;
+
+    SIZEL           szlCurrent;
+            // our own current width height, which is the same as the
+            // height of the tallest member widget
+
+    BOOL            fContextMenuHacked;
+            // TRUE after widget context menu has been modified
+            // for the first time. This is necessary because
+            // the context menu in XCENTERWIDGET is only valid
+            // after WM_CREATE.
+
+} TRAYWIDGETPRIVATE, *PTRAYWIDGETPRIVATE;
 
 /* ******************************************************************
  *
@@ -215,13 +265,16 @@
 VOID DestroySubwidgetWindow(PTRAYWIDGETPRIVATE pPrivate,
                             PLISTNODE pNode)    // in: WIDGETVIEWSTATE node from pPrivate->llWidgetViews
 {
-    PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pNode->pItemData;
-    WinDestroyWindow(pView->Widget.hwndWidget);
+    // destroy the subwidget
+    WinDestroyWindow(((PWIDGETVIEWSTATE)pNode->pItemData)->Widget.hwndWidget);
             // ctrDefWidgetProc also frees the WIDGETVIEWSTATE;
             // however, since this is a tray widget, it does
             // not remove the node from the list, so we must
             // do this manually
-    lstRemoveNode(&pPrivate->llSubwidgetViews, pNode);
+    // remove the subwidget's WIDGETVIEWSTATE node from the
+    // tray widget's list of open widgets
+    lstRemoveNode(((PWIDGETVIEWSTATE)pPrivate->pWidget)->pllSubwidgetViews,
+                  pNode);
 }
 
 /*
@@ -238,6 +291,7 @@ VOID ReformatTray(PXCENTERWINDATA pXCenterData,
     // for the entire XCenter client
     ULONG cyMax;
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+    PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pPrivate->pWidget;
 
     // leftmost position of subwidgets:
     LONG xStart = pGlobals->cxMiniIcon + 3;
@@ -246,7 +300,7 @@ VOID ReformatTray(PXCENTERWINDATA pXCenterData,
         xStart += 4;     // 2*2 for button borders
 
     // get widget sizes
-    ctrpGetWidgetSizes(&pPrivate->llSubwidgetViews);
+    ctrpGetWidgetSizes(pTrayWidgetView->pllSubwidgetViews);
 
     // get tallest widget
     cyMax = ctrpQueryMaxWidgetCY(&pXCenterData->llWidgets);
@@ -258,7 +312,7 @@ VOID ReformatTray(PXCENTERWINDATA pXCenterData,
     }
     else
         ctrpPositionWidgets(pGlobals,
-                            &pPrivate->llSubwidgetViews,
+                            pTrayWidgetView->pllSubwidgetViews,
                             xStart,
                             0,  // y
                             30, // cxPerGreedy
@@ -280,6 +334,22 @@ PTRAYSETTING FindCurrentTray(PTRAYWIDGETPRIVATE pPrivate)
 
     return (lstItemFromIndex(ppws->pllTraySettings,
                              pPrivate->Setup.ulCurrentTray));
+}
+
+/*
+ *@@ InvalidateMenu:
+ *
+ */
+
+VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
+{
+    // if we had built a tray menu before,
+    // invalidate that
+    if (pPrivate->hwndTraysMenu)
+    {
+        WinDestroyWindow(pPrivate->hwndTraysMenu);
+        pPrivate->hwndTraysMenu = NULLHANDLE;
+    }
 }
 
 /*
@@ -320,10 +390,11 @@ BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
                 PTRAYSETTING pCurrentTray;
                 PLISTNODE pNode,
                           pNext;
+                PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pPrivate->pWidget;
                 if (pCurrentTray = FindCurrentTray(pPrivate))
                 {
                     // destroy all widget windows in the current tray
-                    pNode = lstQueryFirstNode(&pPrivate->llSubwidgetViews);
+                    pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
                     while (pNode)
                     {
                         pNext = pNode->pNext;
@@ -349,7 +420,7 @@ BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
                         if (!ctrpCreateWidgetWindow(pXCenterData,
                                                     (PWIDGETVIEWSTATE)pWidget,
                                                          // parent: tray widget
-                                                    &pPrivate->llSubwidgetViews,
+                                                    pTrayWidgetView->pllSubwidgetViews,
                                                     &pSubwidget->Setting,
                                                     -1))             // add rightmost
                             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -363,213 +434,10 @@ BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
 
                 // if we had built a tray menu before,
                 // invalidate that
-                if (pPrivate->hwndTraysMenu)
-                {
-                    WinDestroyWindow(pPrivate->hwndTraysMenu);
-                    pPrivate->hwndTraysMenu = NULLHANDLE;
-                }
+                InvalidateMenu(pPrivate);
 
                 return (TRUE);
             }
-        }
-    }
-
-    return (FALSE);
-}
-
-/* ******************************************************************
- *
- *   Trays management
- *
- ********************************************************************/
-
-/*
- *@@ InvalidateMenu:
- *
- */
-
-VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
-{
-    // if we had built a tray menu before,
-    // invalidate that
-    if (pPrivate->hwndTraysMenu)
-    {
-        WinDestroyWindow(pPrivate->hwndTraysMenu);
-        pPrivate->hwndTraysMenu = NULLHANDLE;
-    }
-}
-
-/*
- *@@ CreateTray:
- *      creates a new (empty) tray with the specified
- *      name. Does not switch to the tray yet.
- *
- *      This does not save the tray widget settings.
- */
-
-PTRAYSETTING CreateTray(PTRAYWIDGETPRIVATE pPrivate,
-                        const char *pcszTrayName,   // in: tray name
-                        PULONG pulIndex)            // out: index of new tray
-{
-    PTRAYSETTING pNewTray;
-    PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-
-    if (pNewTray = NEW(TRAYSETTING))
-    {
-        pNewTray->pszTrayName = strhdup(pcszTrayName);
-
-        lstInit(&pNewTray->llSubwidgets, FALSE);
-
-        // append to widget setup
-        lstAppendItem(ppws->pllTraySettings, pNewTray);
-
-        InvalidateMenu(pPrivate);
-
-        if (pulIndex)
-            *pulIndex = lstCountItems(ppws->pllTraySettings) - 1;
-    }
-
-    return (pNewTray);
-}
-
-/*
- *@@ CreateSubwidget:
- *      creates a new subwidget setting in the specified
- *      tray. Does not create a subwidget window though.
- *
- *      This is used when the tray widget's setup string
- *      is parsed to create all the trays and subwidgets
- *      and also when new subwidgets are manually added
- *      by the user.
- *
- *      This does not save the tray widget settings.
- */
-
-PTRAYSUBWIDGET CreateSubwidget(PXCENTERWINDATA pXCenterData,
-                               PXCENTERWIDGET pTrayWidget,
-                               PTRAYSETTING pTray,              // in: tray to create subwidget in
-                               const char *pcszWidgetClass,     // in: new subwidget's class
-                               const char *pcszSetupString,     // in: new subwidget's setup string
-                               ULONG ulIndex)           // in: index (-1 for rightmost)
-{
-    PTRAYSUBWIDGET pNew;
-    if (pNew = NEW(TRAYSUBWIDGET))
-    {
-        PTRAYWIDGETPRIVATE pPrivate = (PTRAYWIDGETPRIVATE)pTrayWidget->pUser;
-
-        ZERO(pNew);
-
-        pNew->pOwningTray = pTray;
-
-        pNew->Setting.Public.pszWidgetClass = strhdup(pcszWidgetClass);
-        pNew->Setting.Public.pszSetupString = strhdup(pcszSetupString);
-
-        if (    (ulIndex == -1)
-             || (ulIndex >= lstCountItems(&pTray->llSubwidgets))
-           )
-            lstAppendItem(&pTray->llSubwidgets,
-                          pNew);
-        else
-            lstInsertItemBefore(&pTray->llSubwidgets,
-                                pNew,
-                                ulIndex);
-    }
-
-    return (pNew);
-}
-
-/*
- *@@ DeleteSubwidget:
- *      deletes the specified subwidgets from its
- *      owning tray.
- *
- *      This does not save the tray widget settings.
- *
- *      Preconditions:
- *
- *      -- The subwidget's window must have been destroyed first.
- */
-
-BOOL DeleteSubwidget(PTRAYSUBWIDGET pSubwidget)     // in: subwidget to delete
-{
-    if (    (pSubwidget)
-         && (pSubwidget->pOwningTray)
-            // remove subwidget from owning tray's list
-         && (lstRemoveItem(&pSubwidget->pOwningTray->llSubwidgets,
-                           pSubwidget))
-       )
-    {
-        // now clean up
-        if (pSubwidget->Setting.Public.pszWidgetClass)
-            free(pSubwidget->Setting.Public.pszWidgetClass);
-        if (pSubwidget->Setting.Public.pszSetupString)
-            free(pSubwidget->Setting.Public.pszSetupString);
-
-        free(pSubwidget);
-
-        return (TRUE);
-    }
-
-    return (FALSE);
-}
-
-/*
- *@@ DeleteTray:
- *      deletes the specified tray completely, including
- *      all its subwidgets.
- *
- *      If the tray is the current tray, this also
- *      destroys all widget views. It does not switch
- *      to another tray, so after this pSetup->pCurrentTray
- *      might be NULL.
- *
- *      This does not save the tray widget settings.
- */
-
-BOOL DeleteTray(PTRAYWIDGETPRIVATE pPrivate,
-                ULONG ulIndex)             // in: tray to delete
-{
-    if (pPrivate)
-    {
-        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-
-        PLISTNODE pTrayNode,
-                  pSubwidgetNode;
-        if (pTrayNode = lstNodeFromIndex(ppws->pllTraySettings,
-                                         ulIndex))
-        {
-            PTRAYSETTING pTray = (PTRAYSETTING)pTrayNode->pItemData;
-
-            // is this the current tray?
-            if (ulIndex == pPrivate->Setup.ulCurrentTray)
-                // yes:  switch first
-                // (this destroys the subwidget windows)
-                SwitchToTray(pPrivate,
-                             -1);         // new tray: none
-
-            // delete all subwidgets in the tray
-            pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgets);
-            while (pSubwidgetNode)
-            {
-                PLISTNODE pNext = pSubwidgetNode->pNext;
-
-                DeleteSubwidget((PTRAYSUBWIDGET)pSubwidgetNode->pItemData);
-
-                pSubwidgetNode = pNext;
-            }
-
-            lstRemoveNode(ppws->pllTraySettings, pTrayNode);
-
-            if (pTray->pszTrayName)
-                free(pTray->pszTrayName);
-
-            free(pTray);
-
-            // if we had built a tray menu before,
-            // invalidate that
-            InvalidateMenu(pPrivate);
-
-            return (TRUE);
         }
     }
 
@@ -595,9 +463,10 @@ BOOL SetSubwidgetSize(HWND hwnd,            // tray widget
          && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
        )
     {
+        PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pWidget;
         PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(pWidget->pGlobals->hwndFrame,
                                                          QWL_USER);
-        PLISTNODE pNode = lstQueryFirstNode(&pPrivate->llSubwidgetViews);
+        PLISTNODE pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
         while (pNode)
         {
             PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pNode->pItemData;
@@ -739,31 +608,31 @@ VOID YwgtSaveSetupAndSend(PTRAYWIDGETPRIVATE pPrivate)
  *      called from the XCenter engine during d'n'd.
  */
 
-PTRAYSUBWIDGET YwgtCreateSubwidget(PXCENTERWINDATA pXCenterData,
-                                   PTRAYWIDGETPRIVATE pPrivate,
+PTRAYSUBWIDGET YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
                                    const char *pcszWidgetClass,
                                    const char *pcszSetupString,
                                    ULONG ulIndex)       // in: index or -1
 {
     PTRAYSUBWIDGET pSubwidget = NULL;
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
+    PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pWidget;
+    PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(pWidget->pGlobals->hwndFrame,
+                                                     QWL_USER);
 
     PTRAYSETTING    pCurrentTray;
 
     if (pCurrentTray = FindCurrentTray(pPrivate))
     {
-        if (pSubwidget = CreateSubwidget(pXCenterData,
-                                         pWidget,
-                                         pCurrentTray,
-                                         pcszWidgetClass,
-                                         pcszSetupString,
-                                         ulIndex))
+        if (pSubwidget = ctrpCreateWidgetSetting(pCurrentTray,
+                                                 pcszWidgetClass,
+                                                 pcszSetupString,
+                                                 ulIndex))
         {
             // create widget window
             if (!ctrpCreateWidgetWindow(pXCenterData,
                                         (PWIDGETVIEWSTATE)pWidget,
                                              // parent: tray widget
-                                        &pPrivate->llSubwidgetViews,
+                                        pTrayWidgetView->pllSubwidgetViews,
                                         &pSubwidget->Setting,
                                         ulIndex))
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -845,6 +714,7 @@ MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
     ULONG ulSwitchTo;
 
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
+    PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pWidget;
     PTRAYWIDGETPRIVATE pPrivate = malloc(sizeof(TRAYWIDGETPRIVATE));
     memset(pPrivate, 0, sizeof(TRAYWIDGETPRIVATE));
     // link the two together
@@ -859,8 +729,9 @@ MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
     // tray widget
     pPrivateSetting = (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting;
 
-    // list of current widget views
-    lstInit(&pPrivate->llSubwidgetViews, FALSE);
+    // create the list of current widget views in the
+    // tray widget's WIDGETVIEWSTATE...
+    pTrayWidgetView->pllSubwidgetViews = lstCreate(FALSE);
 
     YwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
@@ -881,9 +752,9 @@ MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
         sprintf(sz,
                 cmnGetString(ID_CRSI_TRAY),     // tray %d
                 1);
-        pTray = CreateTray(pPrivate,
-                           sz,
-                           NULL);
+        pTray = ctrpCreateTray(pPrivateSetting,
+                               sz,
+                               NULL);
         // switch to tray 0 after all this
         ulSwitchTo = 0;
     }
@@ -925,6 +796,8 @@ BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
          && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
        )
     {
+        PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pWidget;
+
         USHORT  usID = SHORT1FROMMP(mp1),
                 usNotifyCode = SHORT2FROMMP(mp1);
 
@@ -965,17 +838,19 @@ BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                      pPrivate);
 
                         // and re-broadcast this to our subwidgets
-                        for (pNode = lstQueryFirstNode(&pPrivate->llSubwidgetViews);
-                             pNode;
-                             pNode = pNode->pNext)
-                        {
-                            PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pNode->pItemData;
-                            WinSendMsg(pView->Widget.hwndWidget,
-                                       WM_CONTROL,
-                                       mp1,
-                                       mp2);
-                        }
+                        ctrpBroadcastWidgetNotify(pTrayWidgetView->pllSubwidgetViews,
+                                                  usNotifyCode,
+                                                  mp2);
                     }
+                    break;
+
+                    case XN_BEGINANIMATE:
+                    case XN_ENDANIMATE:
+                        // re-broadcast this to our subwidgets
+                        // V0.9.13 (2001-06-23) [umoeller]
+                        ctrpBroadcastWidgetNotify(pTrayWidgetView->pllSubwidgetViews,
+                                                  usNotifyCode,
+                                                  mp2);
                     break;
                 }
             break;
@@ -1409,9 +1284,10 @@ MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     // create a tray with that name
                     ULONG ulIndex = 0;
-                    PTRAYSETTING pTray = CreateTray(pPrivate,
-                                                    pszNewTrayName,
-                                                    &ulIndex);
+                    PTRAYSETTING pTray = ctrpCreateTray((PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
+                                                        pszNewTrayName,
+                                                        &ulIndex);
+                    InvalidateMenu(pPrivate);
                     SwitchToTray(pPrivate,
                                  ulIndex);
                     free(pszNewTrayName);
@@ -1462,11 +1338,19 @@ MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     {
                         // alright, nuke it
                         PLISTNODE pNode;
-                        DeleteTray(pPrivate,
-                                   pPrivate->Setup.ulCurrentTray);
+                        ULONG ulIndex = pPrivate->Setup.ulCurrentTray;
+                        // switch to "no tray" first
+                        // (this destroys the subwidget windows)
+                        SwitchToTray(pPrivate,
+                                     -1);         // new tray: none
+                        ctrpDeleteTray((PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
+                                       ulIndex);
                         // try to switch to first tray on list
                         SwitchToTray(pPrivate,
                                      0);
+
+                        // recompose setup string with new trays
+                        YwgtSaveSetupAndSend(pPrivate);
                     }
                 }
             break;
@@ -1489,11 +1373,7 @@ MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 // is it one of the items in the "add widget" submenu?
                 else if (pClass = ctrpFindClassFromMenuCommand(usCommand))
                 {
-                    PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(pWidget->pGlobals->hwndFrame,
-                                                                     QWL_USER);
-
-                    YwgtCreateSubwidget(pXCenterData,
-                                        pPrivate,
+                    YwgtCreateSubwidget(pPrivate,
                                         pClass->Public.pcszWidgetClass,
                                         NULL,       // setup string
                                         -1);        // add rightmost
@@ -1587,12 +1467,14 @@ BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
          && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
        )
     {
+        PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pWidget;
+
         // 1) find the subwidget in the subwidgets list
         PLISTNODE pNode;
         ULONG ulSubwidgetIndex = 0;
         PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
 
-        for (pNode = lstQueryFirstNode(&pPrivate->llSubwidgetViews);
+        for (pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
              pNode;
              pNode = pNode->pNext, ulSubwidgetIndex++)
         {
@@ -1657,8 +1539,10 @@ MRESULT YwgtRemoveSubwidget(HWND hwnd,
          && (pPrivate->Setup.ulCurrentTray != -1)
        )
     {
+        PWIDGETVIEWSTATE pTrayWidgetView = (PWIDGETVIEWSTATE)pWidget;
+
         // step 1: destroy the widget view
-        PLISTNODE pNode = lstQueryFirstNode(&pPrivate->llSubwidgetViews);
+        PLISTNODE pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
         ULONG ulIndex = 0;
         BOOL fFound = FALSE;
         while (pNode)
@@ -1689,7 +1573,7 @@ MRESULT YwgtRemoveSubwidget(HWND hwnd,
                  && (pllSubwidgets = &pCurrentTray->llSubwidgets)
                  && (pThis = lstItemFromIndex(pllSubwidgets,
                                               ulIndex))
-                 && (DeleteSubwidget(pThis))
+                 && (ctrpDeleteWidgetSetting(pThis))
                )
             {
                 // found it:
@@ -1732,6 +1616,8 @@ VOID YwgtSwitchToTray(HWND hwnd,
     {
         SwitchToTray(pPrivate,
                      ulSwitchTo);
+        // recompose setup string with new trays
+        YwgtSaveSetupAndSend(pPrivate);
     }
 }
 
@@ -1998,6 +1884,22 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             YwgtSwitchToTray(hwnd, (ULONG)mp1);
         break;
 
+        case XCM_CREATEOBJECTBUTTON:
+        {
+            PXCENTERWIDGET pWidget;
+            PTRAYWIDGETPRIVATE pPrivate;
+
+            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
+               )
+            {
+                YwgtCreateSubwidget(pPrivate,
+                                    "ObjButton",  // widget class
+                                    (const char *)mp1,
+                                    (ULONG)mp2);
+            }
+        }
+        break;
         /*
          * WM_DESTROY:
          *

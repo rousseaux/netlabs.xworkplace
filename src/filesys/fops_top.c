@@ -87,6 +87,7 @@
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helpers
 #include "helpers\winh.h"               // PM helper routines

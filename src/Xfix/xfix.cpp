@@ -54,6 +54,7 @@
 #include "helpers\xstring.h"
 
 #include "shared\common.h"
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "bldlevel.h"
 

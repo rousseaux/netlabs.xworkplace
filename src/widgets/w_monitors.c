@@ -111,6 +111,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "startshut\apm.h"            // APM power-off for XShutdown
 
@@ -423,6 +424,8 @@ typedef struct _MONITORPRIVATE
 
     HPOINTER        hptrAC,         // "AC" icon
                     hptrBattery;    // "battery" icon
+
+    CHAR            szDateTime[200];
 
 } MONITORPRIVATE, *PMONITORPRIVATE;
 
@@ -768,17 +771,19 @@ MRESULT MwgtCreate(HWND hwnd,
 BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERWIDGET pWidget;
+    PMONITORPRIVATE pPrivate;
 
-    if (pWidget)
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
     {
-        PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            USHORT  usID = SHORT1FROMMP(mp1),
-                    usNotifyCode = SHORT2FROMMP(mp1);
+        USHORT  usID = SHORT1FROMMP(mp1),
+                usNotifyCode = SHORT2FROMMP(mp1);
 
-            if (usID == ID_XCENTER_CLIENT)
+        switch (usID)
+        {
+            case ID_XCENTER_CLIENT:
             {
                 switch (usNotifyCode)
                 {
@@ -793,22 +798,35 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cx = pPrivate->cxCurrent;
                         pszl->cy = pPrivate->cyCurrent;
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
                 }
             }
-            else if (usID == ID_XCENTER_TOOLTIP)
-            {
+            break;
+
+            case ID_XCENTER_TOOLTIP:
                 if (usNotifyCode == TTN_NEEDTEXT)
                 {
                     PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
                     switch (pPrivate->ulType)
                     {
                         case MWGT_DATE:
-                            pttt->pszText = "Date";
-                        break;
-
                         case MWGT_TIME:
-                            pttt->pszText = "Time";
+                        {
+                             PCOUNTRYSETTINGS pCountrySettings
+                                 = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+                             DATETIME dt;
+                             DosGetDateTime(&dt);
+                             pstrhDateTime(pPrivate->szDateTime,
+                                           NULL,
+                                           &dt,
+                                           pCountrySettings->ulDateFormat,
+                                           pCountrySettings->cDateSep,
+                                           pCountrySettings->ulTimeFormat,
+                                           pCountrySettings->cTimeSep);
+
+                            pttt->pszText = pPrivate->szDateTime;
+                        }
                         break;
 
                         case MWGT_SWAPPER:
@@ -826,9 +844,9 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     pttt->ulFormat = TTFMT_PSZ;
                 }
-            }
-        } // end if (pPrivate)
-    } // end if (pWidget)
+            break;
+        } // end switch (usID)
+    } // end if (pPrivate)
 
     return (brc);
 }

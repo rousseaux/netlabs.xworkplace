@@ -112,6 +112,7 @@
 #include "xwpapi.h"                     // public XWorkplace definitions
 
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -743,6 +744,7 @@ VOID krn_T1M_DaemonReady(VOID)
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed desktop menu position
  *@@changed V0.9.4 (2000-06-15) [umoeller]: fixed VIO windows in background
  *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
+ *@@changed V0.9.13 (2001-06-23) [umoeller]: now using winhQuerySwitchList
  */
 
 VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
@@ -809,15 +811,14 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
 
                         // So now we go thru the switch list and find the
                         // session which has this lo-byte. V0.9.4 (2000-06-15) [umoeller]
-                        ULONG   cbItems = WinQuerySwitchList(NULLHANDLE, NULL, 0),
-                                ul;
-                        ULONG   ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
-                        PSWBLOCK pSwBlock = (PSWBLOCK)malloc(ulBufSize);
-                        if (pSwBlock)
-                        {
-                            cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize);
 
+                        PSWBLOCK pSwBlock;
+                                // now using winhQuerySwitchList V0.9.13 (2001-06-23) [umoeller]
+
+                        if (pSwBlock = winhQuerySwitchList(G_habThread1))
+                        {
                             // loop through all the tasklist entries
+                            ULONG ul;
                             for (ul = 0; ul < (pSwBlock->cswentry); ul++)
                             {
                                 #ifdef DEBUG_KEYS
@@ -2182,8 +2183,8 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
  *         boot logo, if allowed.
  *
  *      f) Start the XWorkplace daemon (XWPDAEMN.EXE, xwpdaemn.c),
- *         which register the XWorkplace hook (XWPHOOK.DLL, xwphook.c,
- *         all new with V0.9.0). See xwpdaemon.c for details.
+ *         which will register the XWorkplace hook (XWPHOOK.DLL,
+ *         xwphook.c, all new with V0.9.0). See xwpdaemon.c for details.
  *
  *      g) Finally, we call arcCheckIfBackupNeeded (archives.c)
  *         to enable WPS archiving, if necessary. The WPS will

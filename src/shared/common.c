@@ -112,6 +112,7 @@
 #include "bldlevel.h"                   // XWorkplace build level definitions
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\xsetup.h"              // XWPSetup implementation
 
@@ -723,12 +724,12 @@ typedef struct _STRINGTREENODE
  *         used. The NLSSTRINGS array had become terribly big,
  *         and lots of strings were loaded that were never used.
  *
+ *      -- WPS bootup should be a bit faster because we don't have
+ *         to load a thousand strings at startup.
+ *
  *      -- The memory buffer holding the string is probably close
  *         to the rest of the heap data that the caller allocated,
  *         so this might lead to less memory page fragmentation.
- *
- *      -- WPS bootup should be a bit faster because we don't have
- *         to load a thousand strings at startup.
  *
  *      -- To add a new NLS string, before this mechanism existed,
  *         three files had to be changed (and kept in sync): common.h
@@ -3428,15 +3429,18 @@ MRESULT EXPENTRY cmn_fnwpProductInfo(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
  *
  *@@added V0.9.1 (2000-02-13) [umoeller]
  *@@changed V0.9.5 (2000-10-07) [umoeller]: now using cmn_fnwpProductInfo
+ *@@changed V0.9.13 (2001-06-23) [umoeller]: added hwndOwner
  */
 
-VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
+VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
+                        ULONG ulSound)      // in: sound intex to play
 {
     // advertise for myself
     CHAR    szGPLInfo[2000];
     PSZ     pszGPLInfo;
     LONG    lBackClr = CLR_WHITE;
-    HWND hwndInfo = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+    HWND hwndInfo = WinLoadDlg(HWND_DESKTOP,
+                               hwndOwner,
                                cmn_fnwpProductInfo,
                                cmnQueryNLSModuleHandle(FALSE),
                                ID_XFD_PRODINFO,
@@ -3769,445 +3773,13 @@ VOID cmnSetControlsFont(HWND hwnd,
                         (PSZ)cmnQueryDefaultFont());
 }
 
-PFNWP pfnwpOrigStatic = NULL;
-
-/*
- *@@ fnwpAutoSizeStatic:
- *      dlg proc for the subclassed static text control in msg box;
- *      automatically resizes the msg box window when text changes.
- *
- *@@changed V0.9.0 [umoeller]: the default font is now queried using cmnQueryDefaultFont
- */
-
-MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = NULL;
-    switch (msg)
-    {
-
-        /*
-         * XM_SETLONGTEXT:
-         *      this arrives here when the window text changes,
-         *      especially when fnwpMessageBox sets the window
-         *      text; we will now reposition all the controls.
-         *      mp1 is a PSZ to the new text.
-         */
-
-        case XM_SETLONGTEXT:
-        {
-            CHAR szFont[300];
-            PSZ p = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
-            if (p)
-                free(p);
-            p = strdup((PSZ)mp1);
-            WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)p);
-            PrfQueryProfileString(HINI_USER,
-                                  (PSZ)INIAPP_XWORKPLACE,
-                                  (PSZ)INIKEY_DLGFONT,
-                                  (PSZ)cmnQueryDefaultFont(),
-                                  szFont, sizeof(szFont)-1);
-            WinSetPresParam(hwndStatic, PP_FONTNAMESIZE,
-                            (ULONG)strlen(szFont) + 1,
-                            (PVOID)szFont);
-            // this will also update the display
-        break; }
-
-        /*
-         * WM_PRESPARAMCHANGED:
-         *      if a font has been dropped on the window, store
-         *      the information and enforce control repositioning
-         *      also
-         */
-
-        case WM_PRESPARAMCHANGED:
-        {
-            // _Pmpf(( "PRESPARAMCHANGED" ));
-            switch ((ULONG)mp1)
-            {
-                case PP_FONTNAMESIZE:
-                {
-                    ULONG attrFound; //, abValue[32];
-                    CHAR  szFont[100];
-                    HWND  hwndDlg = WinQueryWindow(hwndStatic, QW_PARENT);
-                    WinQueryPresParam(hwndStatic,
-                                PP_FONTNAMESIZE,
-                                0,
-                                &attrFound,
-                                (ULONG)sizeof(szFont),
-                                (PVOID)&szFont,
-                                0);
-                    PrfWriteProfileString(HINI_USER,
-                                          (PSZ)INIAPP_XWORKPLACE,
-                                          (PSZ)INIKEY_DLGFONT,
-                                          szFont);
-
-                    // now also change the buttons
-                    WinSetPresParam(WinWindowFromID(hwndDlg, 1),
-                                    PP_FONTNAMESIZE,
-                                    (ULONG)strlen(szFont) + 1, (PVOID)szFont);
-                    WinSetPresParam(WinWindowFromID(hwndDlg, 2),
-                                    PP_FONTNAMESIZE,
-                                    (ULONG)strlen(szFont) + 1, (PVOID)szFont);
-                    WinSetPresParam(WinWindowFromID(hwndDlg, 3),
-                                    PP_FONTNAMESIZE,
-                                    (ULONG)strlen(szFont) + 1, (PVOID)szFont);
-
-                    WinPostMsg(hwndStatic, XM_UPDATE, MPNULL, MPNULL);
-                break; }
-            }
-        break; }
-
-        /*
-         * XM_UPDATE:
-         *      this actually does all the calculations to reposition
-         *      all the msg box controls
-         */
-
-        case XM_UPDATE:
-        {
-            RECTL   rcl, rcl2;
-            SWP     swp;
-            HWND    hwndIcon, hwndDlg;
-            PSZ     pszText;
-
-            HPS hps = WinGetPS(hwndStatic);
-
-            // _Pmpf(( "XM_UPDATE" ));
-
-            pszText = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
-            if (pszText)
-            {
-                WinQueryWindowRect(hwndStatic, &rcl);         // get window dimensions
-                // rcl.yTop = 1000;
-             winhDrawFormattedText(hps,
-                                      &rcl,
-                                      pszText,
-                                      DT_LEFT | DT_TOP | DT_QUERYEXTENT);
-                WinEndPaint(hps);
-
-                if ((rcl.yTop - rcl.yBottom) < 40)
-                    rcl.yBottom -= 40 - (rcl.yTop - rcl.yBottom);
-
-                // printfRtl("  Original rect:", &rcl2);
-                // printfRtl("  New rect:     ", &rcl);
-
-                // reposition the text
-                WinQueryWindowPos(hwndStatic, &swp);
-                swp.cy -= rcl.yBottom;
-                WinSetWindowPos(hwndStatic, 0,
-                                swp.x, swp.y, swp.cx, swp.cy,
-                                SWP_SIZE);
-
-                // reposition the icon
-                hwndIcon = WinWindowFromID(WinQueryWindow(hwndStatic, QW_PARENT),
-                                           ID_XFDI_GENERICDLGICON);
-                WinQueryWindowPos(hwndIcon, &swp);
-                swp.y -= rcl.yBottom;
-                WinSetWindowPos(hwndIcon, 0,
-                                swp.x, swp.y, swp.cx, swp.cy,
-                                SWP_MOVE);
-
-                // resize the dlg frame window
-                hwndDlg = WinQueryWindow(hwndStatic, QW_PARENT);
-                WinQueryWindowPos(hwndDlg, &swp);
-                swp.cy -= rcl.yBottom;
-                swp.y  += (rcl.yBottom / 2);
-                WinInvalidateRect(hwndDlg, NULL, FALSE);
-                WinSetWindowPos(hwndDlg, 0,
-                                swp.x, swp.y, swp.cx, swp.cy,
-                                SWP_SIZE | SWP_MOVE);
-            }
-        break; }
-
-        /*
-         * WM_PAINT:
-         *      draw the formatted text
-         */
-
-        case WM_PAINT:
-        {
-            RECTL   rcl;
-            PSZ pszText = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
-            HPS hps = WinBeginPaint(hwndStatic, NULLHANDLE, &rcl);
-            if (pszText)
-            {
-                WinQueryWindowRect(hwndStatic, &rcl);         // get window dimensions
-                // switch to RGB mode
-                GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
-                // set "static text" color
-                GpiSetColor(hps,
-                            WinQuerySysColor(HWND_DESKTOP,
-                                             SYSCLR_WINDOWSTATICTEXT,
-                                             0));
-                winhDrawFormattedText(hps, &rcl, pszText, DT_LEFT | DT_TOP);
-            }
-            WinEndPaint(hps);
-        break; }
-
-        case WM_DESTROY:
-        {
-            PSZ pszText = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
-            free(pszText);
-            WinSubclassWindow(hwndStatic, pfnwpOrigStatic);
-            mrc = (*pfnwpOrigStatic)(hwndStatic, msg, mp1, mp2);
-        break; }
-
-        default:
-            mrc = (*pfnwpOrigStatic)(hwndStatic, msg, mp1, mp2);
-    }
-
-    return (mrc);
-}
-
-/*
- *@@ cmnLoadMessageBoxDlg:
- *      wrapper to load the common message box dialog
- *      (WinLoadDlg) and set up all controls according
- *      to the given flags.
- *
- *      This only sets up the windows. This does not
- *      yet call WinProcessDlg.
- *
- *      The complete call sequence should be:
- +
- +          ULONG ulAlarmFlag,
- +                ulrc
- +          HWND hwndDlg = cmnLoadMessageBoxDlg(hwndOwner,
- +                                              pszTitle,
- +                                              pszMessage,
- +                                              flStyle,
- +                                              &ulAlarmFlag);
- +
- +          ulrc = cmnProcessMessageBox(hwndDlg,
- +                                      ulAlarmFlag,
- +                                      flStyle);
- +          WinDestroyWindow(hwndDlg);
- *
- *      Use this function if cmnMessageBox does too
- *      much for you, especially if you wish to add
- *      additional controls to the message box window.
- *      You can also subclass the dialog window. QWL_USER
- *      is not used.
- *
- *      The dialog has the following controls:
- *
- *      -- ICON ID_XFDI_GENERICDLGICON
- *
- *      -- LTEXT ID_XFDI_GENERICDLGTEXT (subclassed with fnwpAutoSizeStatic)
- *
- *      -- PUSHBUTTON DID_OK (always visible, NLS text is set by this function
- *                    according to flStyle)
- *
- *      -- PUSHBUTTON DID_CANCEL (might be invisible, NLS text is set by this
- *                    function according to flStyle)
- *
- *      -- PUSHBUTTON 3 (might be invisible, NLS text is set by this function
- *                    according to flStyle)
- *
- *@@added V0.9.3 (2000-05-05) [umoeller]
- *@@changed V0.9.3 (2000-05-05) [umoeller]: removed fnwpMessageBox
- *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all"
- *@@changed V0.9.13 (2001-06-19) [umoeller]: now using cmnGetString (faster)
- */
-
-HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
-                          PSZ pszTitle,
-                          PSZ pszMessage,
-                          ULONG flStyle,
-                          PULONG pulAlarmFlag)  // out: alarm sound to be played
-{
-    HAB     hab = WinQueryAnchorBlock(hwndOwner);
-    HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
-    ULONG flButtons = flStyle & 0xF;        // low nibble contains MB_YESNO etc.
-    ULONG ulDefaultButtonID = 1;
-
-    HWND hwndDlg = WinLoadDlg(HWND_DESKTOP, hwndOwner,
-                              WinDefDlgProc,
-                              hmod,
-                              ID_XFD_GENERICDLG,
-                              NULL);
-
-    HWND hwndStatic = WinWindowFromID(hwndDlg, ID_XFDI_GENERICDLGTEXT);
-    // set string to 0
-    WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)NULL);
-    // subclass static control
-    pfnwpOrigStatic = WinSubclassWindow(hwndStatic,
-                                        fnwpAutoSizeStatic);
-
-    *pulAlarmFlag = WA_NOTE; // default sound for WinAlarm
-
-    // now work on the three buttons of the dlg template:
-    // give them proper titles or hide them
-    if (flButtons == MB_OK)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_OK));
-        winhShowDlgItem(hwndDlg, 2, FALSE);
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-    }
-    else if (flButtons == MB_OKCANCEL)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_OK));
-        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_CANCEL));
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-    }
-    else if (flButtons == MB_RETRYCANCEL)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_RETRY));
-        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_CANCEL));
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-    }
-    else if (flButtons == MB_ABORTRETRYIGNORE)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_ABORT));
-        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_RETRY));
-        WinSetDlgItemText(hwndDlg, 3, cmnGetString(ID_XSSI_DLG_IGNORE));
-    }
-    else if (flButtons == MB_YESNO)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_YES));
-        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_NO));
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-    }
-    else if (flButtons == MB_YESNOCANCEL)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_YES));
-        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_NO));
-        WinSetDlgItemText(hwndDlg, 3, cmnGetString(ID_XSSI_DLG_CANCEL));
-    }
-    else if (flButtons == MB_CANCEL)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_CANCEL));
-        winhShowDlgItem(hwndDlg, 2, FALSE);
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-    }
-    // else if (flButtons == MB_ENTER)
-    // else if (flButtons == MB_ENTERCANCEL)
-    else if (flButtons == MB_YES_YES2ALL_NO)
-    {
-        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_YES));
-        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_YES2ALL));
-        WinSetDlgItemText(hwndDlg, 3, cmnGetString(ID_XSSI_DLG_NO));
-    }
-
-    // unset predefined default button
-    WinSetWindowBits(WinWindowFromID(hwndDlg, 1), QWL_STYLE,
-                     0,
-                     BS_DEFAULT);
-
-    // query default button IDs
-    if (flStyle & MB_DEFBUTTON2)
-        ulDefaultButtonID = 2;
-    else if (flStyle & MB_DEFBUTTON3)
-        ulDefaultButtonID = 3;
-
-    // set new default button
-    {
-        HWND    hwndDefaultButton = WinWindowFromID(hwndDlg, ulDefaultButtonID);
-        WinSetWindowBits(hwndDefaultButton, QWL_STYLE,
-                         BS_DEFAULT,
-                         BS_DEFAULT);
-        WinSetFocus(HWND_DESKTOP, hwndDefaultButton);
-    }
-
-    if (flStyle & (MB_ICONHAND | MB_ERROR))
-        *pulAlarmFlag = WA_ERROR;
-    else if (flStyle & (MB_ICONEXCLAMATION | MB_WARNING))
-        *pulAlarmFlag = WA_WARNING;
-
-    WinSetWindowText(hwndDlg, pszTitle);
-    WinSendMsg(hwndStatic, XM_SETLONGTEXT, pszMessage, MPNULL);
-
-    return (hwndDlg);
-}
-
-/*
- *@@ cmnProcessMessageBox:
- *      this invokes WinProcessDlg on the dialog
- *      and converts the return value into those
- *      MB_* values. See cmnLoadMessageBoxDlg for
- *      the call sequence.
- *
- *      This does _not_ call WinDestroyWindow.
- *
- *@@added V0.9.3 (2000-05-05) [umoeller]
- *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all"
- */
-
-ULONG cmnProcessMessageBox(HWND hwndDlg,        // in: message box dialog
-                           ULONG ulAlarmFlag,
-                           ULONG flStyle)
-{
-    ULONG   ulrc = MB_CANCEL,
-            ulrcDlg = 0;
-    ULONG   flButtons = flStyle & 0xF;        // low nibble contains MB_YESNO etc.
-
-    winhCenterWindow(hwndDlg);
-    if (flStyle & MB_SYSTEMMODAL)
-        WinSetSysModalWindow(HWND_DESKTOP, hwndDlg);
-    WinAlarm(HWND_DESKTOP, ulAlarmFlag);
-
-    // go!!!
-    ulrcDlg = WinProcessDlg(hwndDlg);
-
-    if (flButtons == MB_OK)
-        ulrc = MBID_OK;
-    else if (flButtons == MB_OKCANCEL)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_OK; break;
-            default:    ulrc = MBID_CANCEL;  break;
-        }
-    else if (flButtons == MB_RETRYCANCEL)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_RETRY; break;
-            default:    ulrc = MBID_CANCEL;  break;
-        }
-    else if (flButtons == MB_ABORTRETRYIGNORE)
-        switch (ulrcDlg)
-        {
-            case 2:     ulrc = MBID_RETRY;  break;
-            case 3:     ulrc = MBID_IGNORE; break;
-            default:    ulrc = MBID_ABORT; break;
-        }
-    else if (flButtons == MB_YESNO)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_YES; break;
-            default:    ulrc = MBID_NO;  break;
-        }
-    else if (flButtons == MB_YESNOCANCEL)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_YES; break;
-            case 2:     ulrc = MBID_NO; break;
-            default:    ulrc = MBID_CANCEL;  break;
-        }
-    else if (flButtons == MB_CANCEL)
-        ulrc = MBID_CANCEL;
-    // else if (flButtons == MB_ENTER)
-    // else if (flButtons == MB_ENTERCANCEL)
-    else if (flButtons == MB_YES_YES2ALL_NO)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_YES; break;
-            case 2:     ulrc = MBID_YES2ALL; break;
-            default:    ulrc = MBID_NO; break;
-        }
-
-    return (ulrc);
-}
-
 /*
  *@@ cmnMessageBox:
  *      this is the generic function for displaying XFolder
  *      message boxes. This is very similar to WinMessageBox,
- *      but a few new features are introduced:
- *
- *      -- an XFolder icon is displayed;
- *
- *      -- fonts can be dropped on the window, upon which the
- *         window will resize itself and store the font in OS2.INI.
+ *      but looks a lot better, especially since IBM chose
+ *      to make message boxes so small with FP13. In
+ *      addition, an XFolder icon is displayed.
  *
  *      Currently the following flStyle's are supported:
  *
@@ -4237,11 +3809,12 @@ ULONG cmnProcessMessageBox(HWND hwndDlg,        // in: message box dialog
  *@@changed V0.9.0 [umoeller]: fixed default button bugs
  *@@changed V0.9.0 [umoeller]: added WinAlarm sound support
  *@@changed V0.9.3 (2000-05-05) [umoeller]: extracted cmnLoadMessageBoxDlg
+ *@@changed V0.9.13 (2001-06-23) [umoeller]: completely rewritten, now using dlghMessageBox
  */
 
 ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
-                    PSZ pszTitle,       // in: msgbox title
-                    PSZ pszMessage,     // in: msgbox text
+                    const char *pcszTitle,       // in: msgbox title
+                    const char *pcszMessage,     // in: msgbox text
                     ULONG flStyle)      // in: MB_* flags
 {
     ULONG   ulrc = DID_CANCEL;
@@ -4249,17 +3822,37 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
     // set our extended exception handler
     TRY_LOUD(excpt1)
     {
-        ULONG ulAlarmFlag = 0;
-        HWND hwndDlg = cmnLoadMessageBoxDlg(hwndOwner,
-                                            pszTitle,
-                                            pszMessage,
-                                            flStyle,
-                                            &ulAlarmFlag);
+        static hptrIcon = NULLHANDLE;
+        static MSGBOXSTRINGS Strings;
 
-        ulrc = cmnProcessMessageBox(hwndDlg,
-                                    ulAlarmFlag,
-                                    flStyle);
-        WinDestroyWindow(hwndDlg);
+        if (!hptrIcon)
+        {
+            // first call:
+            hptrIcon = WinLoadPointer(HWND_DESKTOP,
+                                      cmnQueryMainResModuleHandle(),
+                                      ID_ICONDLG);
+            // load all the strings too
+            Strings.pcszYes = cmnGetString(ID_XSSI_DLG_YES);
+            Strings.pcszNo = cmnGetString(ID_XSSI_DLG_NO);
+            Strings.pcszOK = cmnGetString(ID_XSSI_DLG_OK);
+            Strings.pcszCancel = cmnGetString(ID_XSSI_DLG_CANCEL);
+            Strings.pcszAbort = cmnGetString(ID_XSSI_DLG_ABORT);
+            Strings.pcszRetry = cmnGetString(ID_XSSI_DLG_RETRY);
+            Strings.pcszIgnore = cmnGetString(ID_XSSI_DLG_IGNORE);
+            Strings.pcszEnter = "Enter"; // never used anyway
+            Strings.pcszYesToAll = cmnGetString(ID_XSSI_DLG_YES2ALL);
+        }
+
+        // now using new dynamic dialog routines
+        // V0.9.13 (2001-06-23) [umoeller]
+        ulrc = dlghMessageBox(hwndOwner,
+                              hptrIcon,
+                              pcszTitle,
+                              pcszMessage,
+                              flStyle,
+                              cmnQueryDefaultFont(),
+                              &Strings);
+
     }
     CATCH(excpt1) { } END_CATCH();
 

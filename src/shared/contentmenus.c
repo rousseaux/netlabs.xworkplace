@@ -18,7 +18,7 @@
  *      implement nor trivial to use because they require
  *      menu owner draw (for displaying icons in a menu)
  *      and subclassing popup menu controls (for intercepting
- *      mouse button 2). Besides, while these menus are
+ *      mouse button 2). Even worse, while these menus are
  *      open, we need to maintain a list of objects that
  *      were inserted together with the respective menu item
  *      ID that was used. This is done with the help of a

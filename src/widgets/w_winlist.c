@@ -106,6 +106,7 @@ ew */
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 

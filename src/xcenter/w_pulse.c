@@ -90,6 +90,7 @@
 
 // XWorkplace implementation headers
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "shared\center.h"              // public XCenter interfaces
 
@@ -644,7 +645,7 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
     thrCreate(&pPrivate->tiCollect,
               fntCollect,
               NULL,
-              "PulseWidgetCollectThread",
+              "PulseWidgetCollect",
               THRF_WAIT,
               (ULONG)pPrivate);        // thread data
 

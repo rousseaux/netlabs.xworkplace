@@ -1258,17 +1258,66 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 typedef struct _WIDGETRECORD
 {
     RECORDCORE      recc;
+            // pszIcon contains the widget's class name
 
-    ULONG           ulIndex;
+    ULONG           ulRootIndex;
+            // index of widget if it's a root widget;
+            // otherwise (subwidget in some tray), this is -1
 
-    // const char      *pcszClass;
-            // widget's class name; points into instance data, do not free!
-            // we use pszIcon for that
+    PSZ             pszIndex;           // points to szIndex
+    CHAR            szIndex[40];
 
     const char      *pcszSetupString;
             // widget's setup string; points into instance data, do not free!
 
 } WIDGETRECORD, *PWIDGETRECORD;
+
+/*
+ *@@ InsertWidgetSetting:
+ *
+ *@@added V0.9.13 (2001-06-23) [umoeller]
+ */
+
+PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
+                                  PPRIVATEWIDGETSETTING pSetting,
+                                  ULONG ulRootIndex,
+                                  ULONG ulParentIndex,
+                                  ULONG ulTrayIndex,
+                                  ULONG ulSubwidgetIndex)
+{
+    PWIDGETRECORD preccThis = (PWIDGETRECORD)cnrhAllocRecords(hwndCnr,
+                                                              sizeof(WIDGETRECORD),
+                                                              1);
+    preccThis->ulRootIndex = ulRootIndex;
+    if (ulRootIndex == -1)
+    {
+        // subwidget:
+        sprintf(preccThis->szIndex,
+                "  %d.%d.%d",
+                ulParentIndex,
+                ulTrayIndex,
+                ulSubwidgetIndex);
+    }
+    else
+    {
+        sprintf(preccThis->szIndex,
+                "%d",
+                ulRootIndex);
+    }
+    preccThis->pszIndex = preccThis->szIndex;
+    preccThis->recc.pszIcon = pSetting->Public.pszWidgetClass;
+    preccThis->pcszSetupString = pSetting->Public.pszSetupString;
+
+    cnrhInsertRecords(hwndCnr,
+                      NULL,         // parent
+                      (PRECORDCORE)preccThis,
+                      TRUE,         // invalidate
+                      NULL,
+                      CRA_RECORDREADONLY,
+                      1);
+
+    return (preccThis);
+}
 
 /*
  *@@ ctrpWidgetsInitPage:
@@ -1302,9 +1351,9 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           cmnGetString(ID_XSSI_WIDGETSPAGE)) ; // pszWidgetsPage
 
         // set up cnr details view
-        xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, ulIndex);
+        xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, pszIndex);
         xfi[i].pszColumnTitle = "";
-        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
@@ -1339,40 +1388,52 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         PLINKLIST   pllWidgets = ctrpQuerySettingsList(pcnbp->somSelf);
         PLISTNODE   pNode = lstQueryFirstNode(pllWidgets);
-        ULONG       cWidgets = lstCountItems(pllWidgets),
-                    ulIndex = 0;
-        PWIDGETRECORD preccFirst;
+        ULONG       ulIndex = 0;
 
         cnrhRemoveAll(hwndCnr);
 
-        preccFirst = (PWIDGETRECORD)cnrhAllocRecords(hwndCnr,
-                                                     sizeof(WIDGETRECORD),
-                                                     cWidgets);
-
-        if (preccFirst)
+        while (pNode)
         {
-            PWIDGETRECORD preccThis = preccFirst;
+            PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+            InsertWidgetSetting(hwndCnr,
+                                pSetting,
+                                ulIndex,
+                                0,
+                                0,
+                                0);
 
-            while (pNode)
+            if (pSetting->pllTraySettings)
             {
-                PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
+                PLISTNODE pTrayNode = lstQueryFirstNode(pSetting->pllTraySettings);
+                ULONG ulTray = 0;
+                while (pTrayNode)
+                {
+                    PTRAYSETTING pTray = (PTRAYSETTING)pTrayNode->pItemData;
+                    ULONG ulSubwidget = 0;
+                    PLISTNODE pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgets);
+                    while (pSubwidgetNode)
+                    {
+                        PTRAYSUBWIDGET pSubwidget = (PTRAYSUBWIDGET)pSubwidgetNode->pItemData;
 
-                preccThis->ulIndex = ulIndex++;
-                preccThis->recc.pszIcon = pSetting->pszWidgetClass;
-                preccThis->pcszSetupString = pSetting->pszSetupString;
+                        InsertWidgetSetting(hwndCnr,
+                                            &pSubwidget->Setting,
+                                            -1,     // non-root
+                                            ulIndex,
+                                            ulTray,
+                                            ulSubwidget);
 
-                preccThis = (PWIDGETRECORD)preccThis->recc.preccNextRecord;
-                pNode = pNode->pNext;
+                        ulSubwidget++;
+                        pSubwidgetNode = pSubwidgetNode->pNext;
+                    }
+
+                    pTrayNode = pTrayNode->pNext;
+                    ulTray++;
+                }
             }
-        }
 
-        cnrhInsertRecords(hwndCnr,
-                          NULL,         // parent
-                          (PRECORDCORE)preccFirst,
-                          TRUE,         // invalidate
-                          NULL,
-                          CRA_RECORDREADONLY,
-                          cWidgets);
+            pNode = pNode->pNext;
+            ulIndex++;
+        }
     }
 
     if (flFlags & CBI_ENABLE)
@@ -1440,11 +1501,14 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // filter out whitespace
                         if (pcdi->pRecord)
                         {
-                            cnrhInitDrag(pcdi->hwndCnr,
-                                         pcdi->pRecord,
-                                         usNotifyCode,
-                                         WIDGET_PRIVATE_RMF,
-                                         DO_MOVEABLE);
+                            // for now, allow only dragging of root widgets
+                            // @@todo
+                            if (((PWIDGETRECORD)pcdi->pRecord)->ulRootIndex != -1)
+                                cnrhInitDrag(pcdi->hwndCnr,
+                                             pcdi->pRecord,
+                                             usNotifyCode,
+                                             WIDGET_PRIVATE_RMF,
+                                             DO_MOVEABLE);
                         }
                 break; }
 
@@ -1588,12 +1652,12 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 // (CN_DRAGAFTER), but xwpMoveWidget wants
                                 // the index of the widget _before_ which the
                                 // widget should be inserted:
-                                ulIndex = G_precAfter->ulIndex + 1;
+                                ulIndex = G_precAfter->ulRootIndex + 1;
                             }
                             if (ulIndex != -2)
                                 // OK... move the widgets around:
                                 _xwpMoveWidget(pcnbp->somSelf,
-                                               G_precDragged->ulIndex,  // from
+                                               G_precDragged->ulRootIndex,  // from
                                                ulIndex);                // to
                                     // this saves the instance data
                                     // and updates the view
@@ -1683,9 +1747,10 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                )
             {
                 PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
-                ctrpShowSettingsDlg(pcnbp->somSelf,
-                                    pcnbp->hwndDlgPage, // owner
-                                    prec->ulIndex);
+                if (prec->ulRootIndex != -1)
+                    ctrpShowSettingsDlg(pcnbp->somSelf,
+                                        pcnbp->hwndDlgPage, // owner
+                                        prec->ulRootIndex);
             }
         break; }
 
@@ -1697,8 +1762,9 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_CRMI_REMOVEWGT:
         {
             PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
-            _xwpRemoveWidget(pcnbp->somSelf,
-                             prec->ulIndex);
+            if (prec->ulRootIndex != -1)        // @@todo
+                _xwpRemoveWidget(pcnbp->somSelf,
+                                 prec->ulRootIndex);
                       // this saves the instance data
                       // and updates the view
                       // and also calls the init callback

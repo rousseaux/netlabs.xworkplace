@@ -641,7 +641,7 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
  *      turn starts a timer to destroy the window later.
  *
  *@@changed V0.9.4 (2000-07-22) [umoeller]: archiving wasn't always disabled if turned off completely; fixed
- *@@changed V0.9.13 (2001-06-14) [umoeller]: no longer using archive marker file, thanks Stefan Mielcke
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: no longer using archive marker file, thanks Stefan Milcke
  */
 
 BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify

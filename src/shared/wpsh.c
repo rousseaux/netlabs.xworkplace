@@ -1,27 +1,29 @@
 
 /*
  *@@sourcefile wpsh.c:
- *      this file contains many WPS helper functions.
+ *      this file contains SOM and WPS helper functions.
  *
  *      Usage: All WPS classes.
  *
- *      These are "pseudo SOM methods" in that most of
- *      these take some WPS object(s) as parameters without
- *      having been declared as SOM methods in the .IDL
- *      files. This is done for the following reasons:
+ *      The functions in this file fall into several
+ *      categories:
  *
- *      a)  SOM method resolution takes at least three
- *          times as long as calling a regular C function;
+ *      --  Helper functions for messing with SOM method
+ *          resolution. See wpshResolveFor and others.
  *
- *      b)  if we declare these functions as SOM methods,
- *          this requires the owning XWorkplace WPS replacement
- *          class to be installed, which can lead to
- *          crashes if it is not.
+ *      --  Miscellaneous WPS object helpers. See
+ *          wpshCheckObject, wpshQueryObjectFromID, and
+ *          others.
  *
- *      These functions could even be used from WPS classes
- *      which are not part of XWorkplace.
+ *      --  Miscellaneous object view helpers. See
+ *          wpshCloseAllViews, wpshQuerySourceObject, and
+ *          others.
  *
- *      This file was new with V0.84, called "xwps.c". Most of
+ *      --  Wrappers to call some important WPS methods
+ *          that were not made public by IBM. See
+ *          wpshRequestFolderMutexSem and others.
+ *
+ *      This file started out with V0.84 as "xwps.c". Most of
  *      these functions used to have the cmn* prefix and were
  *      spread across all over the .C source files, which
  *      was not very lucid. As a result, I have put these
@@ -37,7 +39,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -2342,9 +2344,9 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
 /*
  *@@ wpshRequestFolderMutexSem:
  *      calls WPFolder::wpRequestFolderMutexSem, which,
- *      unfortunately, is not published. This is a pity
- *      because we'll always hang the WPS if we don't
- *      request this properly.
+ *      unfortunately, is not published. This is a real
+ *      pity because we'll always hang the WPS if we
+ *      don't request this properly.
  *
  *      In addition to the regular object mutex, each folder
  *      has associated with it a second mutex to protect the
@@ -2356,6 +2358,7 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
  *
  *      This semaphore is mentioned in the Warp 4 toolkit docs
  *      for wpRequestObjectMutexSem, but never prototyped.
+ *      Wonder who got drunk there.
  *
  *      WARNINGS:
  *

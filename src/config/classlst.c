@@ -101,6 +101,7 @@
 #include "shared\classes.h"             // WPS class list helper functions
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "config\classlst.h"            // SOM logic for "WPS Classes" page

@@ -663,9 +663,11 @@ VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
 /*
  *@@ DwgtContextMenu:
  *      implementation for WM_CONTEXTMENU in ctrDefWidgetProc.
+ *
+ *@@changed V0.9.13 (2001-06-23) [umoeller]: added WGTF_TRANSPARENT support
  */
 
-VOID DwgtContextMenu(HWND hwnd)
+VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
@@ -673,20 +675,44 @@ VOID DwgtContextMenu(HWND hwnd)
         PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
         if (pClass)
         {
-            // enable "properties" if class has show-settings proc
-            WinEnableMenuItem(pWidget->hwndContextMenu,
-                              ID_CRMI_PROPERTIES,
-                              (pClass->pShowSettingsDlg != 0));
+            // if transparent, use the parent context menu instead
+            if (    ((pClass->ulClassFlags & WGTF_TRANSPARENT) == WGTF_TRANSPARENT)
+                 && (WinSendMsg(pWidget->hwndWidget,
+                                WM_CONTROL,
+                                MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                             XN_HITTEST),
+                                mp1) == FALSE)
+               )
+            {
+                // we must adjust the mouse coordinate so that the
+                // popup menu is well positioned for the parent window
+                SWP swp;
 
-            // enable "help" if widget has specified help
-            WinEnableMenuItem(pWidget->hwndContextMenu,
-                              ID_CRMI_HELP,
-                              (    (pWidget->pcszHelpLibrary != NULL)
-                                && (pWidget->ulHelpPanelID != 0)
-                              ));
+                WinQueryWindowPos(hwnd, (PSWP)&swp);
 
-            ctrShowContextMenu(pWidget,
-                               pWidget->hwndContextMenu);
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
+                           WM_CONTEXTMENU,
+                           MPFROM2SHORT(SHORT1FROMMP(mp1) + swp.x,
+                                        SHORT2FROMMP(mp1) + swp.y),
+                           mp2);
+            }
+            else
+            {
+                // enable "properties" if class has show-settings proc
+                WinEnableMenuItem(pWidget->hwndContextMenu,
+                                  ID_CRMI_PROPERTIES,
+                                  (pClass->pShowSettingsDlg != 0));
+
+                // enable "help" if widget has specified help
+                WinEnableMenuItem(pWidget->hwndContextMenu,
+                                  ID_CRMI_HELP,
+                                  (    (pWidget->pcszHelpLibrary != NULL)
+                                    && (pWidget->ulHelpPanelID != 0)
+                                  ));
+
+                ctrShowContextMenu(pWidget,
+                                   pWidget->hwndContextMenu);
+            }
         }
     }
 }
@@ -920,7 +946,7 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_CONTEXTMENU:
-            DwgtContextMenu(hwnd);
+            DwgtContextMenu(hwnd, mp1, mp2);
         break;
 
         /*

@@ -139,6 +139,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\contentmenus.h"        // shared menu logic
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -1771,7 +1772,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 case ID_XFMI_OFS_PRODINFO:
-                    cmnShowProductInfo(MMSOUND_SYSTEMSTARTUP);
+                    cmnShowProductInfo(NULLHANDLE,      // owner
+                                       MMSOUND_SYSTEMSTARTUP);
                     brc = TRUE;
                 break;
 

@@ -90,6 +90,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\contentmenus.h"        // shared menu logic
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "shared\center.h"              // public XCenter interfaces
