@@ -153,6 +153,7 @@ typedef struct _WIDGETPRIVATE
                                     // CPU loads
     PLONG           palIntrs;       // ptr to an array of LONGs containing previous
                                     // CPU interrupt loads
+                                    // added V0.9.9 (2001-03-14) [umoeller]
 
     APIRET          arc;            // if != NO_ERROR, an error occured, and
                                     // the error code is displayed instead.
@@ -206,6 +207,7 @@ VOID PwgtClearSetup(PPULSESETUP pSetup)
  *      out. We do not clean up previous data here.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  */
 
 VOID PwgtScanSetup(const char *pcszSetupString,
@@ -468,6 +470,8 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      Preconditions:
  *      --  pPrivate->hbmGraph must be selected into
  *          pPrivate->hpsMem.
+ *
+ *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  */
 
 VOID PwgtUpdateGraph(HWND hwnd,
@@ -562,6 +566,8 @@ VOID PwgtUpdateGraph(HWND hwnd,
  *
  *      If DosPerfSysCall succeeds, this diplays the pulse.
  *      Otherwise an error msg is displayed.
+ *
+ *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  */
 
 VOID PwgtPaint2(HWND hwnd,
@@ -630,7 +636,7 @@ VOID PwgtPaint2(HWND hwnd,
                           DBM_NORMAL);
 
             // in the string, display the total load
-            // (busy plus interrupt)
+            // (busy plus interrupt) V0.9.9 (2001-03-14) [umoeller]
             if (pPrivate->palLoads)
                 lLoad1000 = pPrivate->pPerfData->palLoads[0];
             if (pPrivate->palIntrs)
@@ -699,6 +705,8 @@ VOID PwgtPaint(HWND hwnd)
  *@@ PwgtGetNewLoad:
  *      updates the CPU loads array, updates the graph bitmap
  *      and invalidates the window.
+ *
+ *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  */
 
 VOID PwgtGetNewLoad(HWND hwnd)
@@ -794,6 +802,7 @@ VOID PwgtGetNewLoad(HWND hwnd)
  *      implementation for WM_WINDOWPOSCHANGED.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
+ *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  */
 
 VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
