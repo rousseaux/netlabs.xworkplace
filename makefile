@@ -281,7 +281,7 @@ really_all:     idl helpers helpers_exe_mt compile_really_all link nls
 dep:
     @echo $(MAKEDIR)\makefile: Going for subdir src (dep)
     @cd src
-    $(MAKE) -nologo dep "SUBTARGET=dep" "REALLYALL=1"
+    $(MAKE) -nologo dep "SUBTARGET=dep" "RUNDEPONLY=1" "REALLYALL=1"
     @cd $(CURRENT_DIR)
 
 # "COMPILE" PSEUDOTARGETS

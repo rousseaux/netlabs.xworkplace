@@ -109,4 +109,8 @@ $(XWPRUNNING)\bin\xwpshell.exe: $(MODULESDIR)\$(@B).exe
 # created by "nmake dep" into the .depend include file.
 # V0.9.12 (2001-05-22) [umoeller]
 
+!ifndef NOINCLUDEDEPEND
 !include .depend
+!endif
+
+

@@ -25,16 +25,6 @@
 # (the parent dir of "xworkplace" and "xwphelpers")
 CVS_WORK_ROOT = K:\projects\cvs
 
-# DDKBASE: your DDK "base" directory.
-# Not used by the regular makefiles, unless you
-# want to build XWorkplace Security.
-# DDKBASE = K:\libs\DDK\base
-
-# SESBASE: your SES "base" directory.
-# Not used by the regular makefiles, unless you
-# want to build XWorkplace Security.
-# SESBASE = K:\libs\security
-
 # TKBASE: the main Toolkit directory.
 # This must be the parent of the "h" and "lib"
 # directories with the include files and libraries.
@@ -46,6 +36,16 @@ TKBASE = K:\libs\Toolkit45
 # This must be the parent of the "include" and "lib"
 # directories with the include files and libraries.
 VACBASE = K:\libs\IBMVAC
+
+# DDKBASE: your DDK "base" directory.
+# Not used by the regular makefiles, unless you
+# want to build XWorkplace Security.
+# DDKBASE = K:\libs\DDK\base
+
+# SESBASE: your SES "base" directory.
+# Not used by the regular makefiles, unless you
+# want to build XWorkplace Security.
+# SESBASE = K:\libs\security
 
 # XWPRUNNING: directory where your XWorkplace
 # binaries are installed... all the produced

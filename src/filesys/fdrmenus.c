@@ -2581,7 +2581,6 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *      Global Settings.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.12 (2001-05-22) [umoeller]: added "extend close"
  */
 
 VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2650,7 +2649,6 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.12 (2001-05-22) [umoeller]: added "extend close"
  */
 
 MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,

@@ -417,6 +417,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *
  *@@added V0.9.5 (2000-08-10) [umoeller]
  *@@changed V0.9.12 (2001-05-03) [umoeller]: fixed strtok, thanks Lars Erdmann
+ *@@changed V0.9.12 (2001-05-24) [umoeller]: fixed missing INI default
  */
 
 MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -433,9 +434,14 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             ULONG       cParams = 0;
             HWND        hwndCnr = WinWindowFromID(hwndDlg, ID_OSDI_HPFS386INI_CNR);
 
+            CHAR        szIniFilename[CCHMAXPATH] = "";
+            WPFileSystem *pIniFile = 0;
+
             // store DRIVERDLGDATA in window words
             pddd = (PDRIVERDLGDATA)mp2;
             WinSetWindowPtr(hwndDlg, QWL_USER, pddd);
+            pddd->pvUser = 0;
+
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
             // set up cnr
@@ -451,42 +457,11 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 pszToken = strtok(pszParamsCopy, " ");
                 while (pszToken)    // V0.9.12 (2001-05-03) [umoeller]
                 {
-                    if (cParams == 0)
-                    {
-                        WPFileSystem *pIniFile = 0;
-                        // first parameter must be HPFS386.INI location;
-                        // set group title
-                        WinSetDlgItemText(hwndDlg, ID_OSDI_HPFS386INI_GROUP, pszToken);
-
-                        pddd->pvUser = 0;
-
-                        pIniFile = _wpclsQueryObjectFromPath(_WPFileSystem, pszToken);
-                        if (pIniFile)
-                        {
-                            POINTL ptlIcon = {0, 0};
-                            // now insert that file into the container
-                            if (_wpCnrInsertObject(pIniFile,
-                                                   hwndCnr,
-                                                   &ptlIcon,
-                                                   NULL,    // parent
-                                                   NULL))    // next available position
-                                    // returns a PMINIRECORDCORE
-                            {
-                                // success: store object ptr in dlg data
-                                pddd->pvUser = pIniFile;
-                                // set object flags...
-                                _wpModifyStyle(pIniFile,
-                                               OBJSTYLE_NODELETE
-                                                | OBJSTYLE_NORENAME
-                                                | OBJSTYLE_NOMOVE,
-                                               OBJSTYLE_NODELETE
-                                                | OBJSTYLE_NORENAME
-                                                | OBJSTYLE_NOMOVE);
-                            }
-                        }
-                    }
-                    else if (memicmp(pszToken, "/AUTOCHECK:", 11) == 0)
+                    if (memicmp(pszToken, "/AUTOCHECK:", 11) == 0)
                         WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
+                    else if (cParams == 0)
+                        // probably HPFS386.INI location then
+                        strcpy(szIniFilename, pszToken);
 
                     cParams++;
 
@@ -496,6 +471,39 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 free(pszParamsCopy);
             }
 
+            // if we didn't have an INI filename given,
+            // use default V0.9.12 (2001-05-24) [umoeller]
+            if (szIniFilename[0] == '\0' )
+                sprintf(szIniFilename,
+                        "%c:\\IBM386FS\\HPFS386.INI",
+                        doshQueryBootDrive());
+
+            // set group title
+            WinSetDlgItemText(hwndDlg, ID_OSDI_HPFS386INI_GROUP, szIniFilename);
+
+            if (pIniFile = _wpclsQueryObjectFromPath(_WPFileSystem, szIniFilename))
+            {
+                POINTL ptlIcon = {0, 0};
+                // now insert that file into the container
+                if (_wpCnrInsertObject(pIniFile,
+                                       hwndCnr,
+                                       &ptlIcon,
+                                       NULL,    // parent
+                                       NULL))    // next available position
+                        // returns a PMINIRECORDCORE
+                {
+                    // success: store object ptr in dlg data
+                    pddd->pvUser = pIniFile;
+                    // set object flags...
+                    _wpModifyStyle(pIniFile,
+                                   OBJSTYLE_NODELETE
+                                    | OBJSTYLE_NORENAME
+                                    | OBJSTYLE_NOMOVE,
+                                   OBJSTYLE_NODELETE
+                                    | OBJSTYLE_NORENAME
+                                    | OBJSTYLE_NOMOVE);
+                }
+            }
         break; }
 
         case WM_COMMAND:
