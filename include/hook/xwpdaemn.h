@@ -125,8 +125,8 @@
                                             // ignore (sticky)
             #define WINDOW_WPSDESKTOP   5   // WPS desktop, always sticky
             #define WINDOW_STICKY       6   // window is on sticky list
-            #define WINDOW_NIL          7   // "not in list" == not in switch list,
-                                            // or hidden maybe --> sticky
+            #define WINDOW_NIL          7   // "not in list" == not in switch list
+            #define WINDOW_HIDDEN       8
 
         CHAR        szClassName[30];
         ULONG       tid;

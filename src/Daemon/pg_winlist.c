@@ -264,14 +264,15 @@ static VOID FillRec(PPAGERWININFO pWinInfo)
 
     switch (pWinInfo->bWindowType)
     {
-        #define PRINTTYPE(t) case t: pWinInfo->prec->pszWindowType = # t; break
-        PRINTTYPE(WINDOW_NORMAL);
-        PRINTTYPE(WINDOW_MAXIMIZE);
-        PRINTTYPE(WINDOW_MINIMIZE);
-        PRINTTYPE(WINDOW_XWPDAEMON);
-        PRINTTYPE(WINDOW_WPSDESKTOP);
-        PRINTTYPE(WINDOW_STICKY);
-        PRINTTYPE(WINDOW_NIL);
+        #define PRINTTYPE(t) case WINDOW_ ## t: pWinInfo->prec->pszWindowType = # t; break
+        PRINTTYPE(NORMAL);
+        PRINTTYPE(MAXIMIZE);
+        PRINTTYPE(MINIMIZE);
+        PRINTTYPE(XWPDAEMON);
+        PRINTTYPE(WPSDESKTOP);
+        PRINTTYPE(STICKY);
+        PRINTTYPE(NIL);
+        PRINTTYPE(HIDDEN);
     }
 
     WinQueryWindowProcess(pWinInfo->swctl.hwnd, &pid, &tid);
@@ -701,8 +702,17 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
                     case WINDOW_WPSDESKTOP:
                     {
                         ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
-                        if (    (!(pWinInfo->hsw = WinQuerySwitchHandle(hwnd, 0)))
-                                // V0.9.15 (2001-09-14) [umoeller]:
+                        if (!(pWinInfo->hsw = WinQuerySwitchHandle(hwnd, 0)))
+                        {
+                            if (!pWinInfo->bWindowType)
+                                pWinInfo->bWindowType = WINDOW_NIL;
+                        }
+                        else if (pgrIsSticky(hwnd, pWinInfo->swctl.szSwtitle))
+                        {
+                            if (!pWinInfo->bWindowType)
+                                pWinInfo->bWindowType = WINDOW_STICKY;
+                        }
+                        if (    // V0.9.15 (2001-09-14) [umoeller]:
                                 // _always_ check for visibility, and
                                 // if the window isn't visible, don't
                                 // mark it as normal
@@ -710,13 +720,13 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
                                 // solidly lock XPager with their hidden
                                 // frame in the background, upon which
                                 // WinSetMultWindowPos fails)
-                             || (!(ulStyle & WS_VISIBLE))
+                                (!(ulStyle & WS_VISIBLE))
                              || (pWinInfo->swp.fl & SWP_HIDE)
                              || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
                            )
                         {
                             if (!pWinInfo->bWindowType)
-                                pWinInfo->bWindowType = WINDOW_NIL;
+                                pWinInfo->bWindowType = WINDOW_HIDDEN;
                         }
                         else
                         {
@@ -728,8 +738,6 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
                                 // V0.9.18 (2002-02-21) [lafaix]
                                 if (pWinInfo->swp.fl & SWP_MINIMIZE)
                                     pWinInfo->bWindowType = WINDOW_MINIMIZE;
-                                else if (pgrIsSticky(hwnd, pWinInfo->swctl.szSwtitle))
-                                    pWinInfo->bWindowType = WINDOW_STICKY;
                                 else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
                                     pWinInfo->bWindowType = WINDOW_MAXIMIZE;
                                 else
