@@ -774,10 +774,10 @@ WPObject* fdrFastFindFSFromName(WPFolder *pFolder,
         // upper-case the short name
         PSZ pszUpperRealName = _alloca(ulLength + 1);
         memcpy(pszUpperRealName, pcszShortName, ulLength + 1);
-        nlsUpper(pszUpperRealName, ulLength);
+        nlsUpper(pszUpperRealName);
 
-        return (FastFindFSFromUpperName(pFolder,
-                                        pszUpperRealName));
+        return FastFindFSFromUpperName(pFolder,
+                                       pszUpperRealName);
     }
 
     return NULL;
@@ -1048,7 +1048,7 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
         PFDRCONTENTITEM pNode;
 
         _wpQueryFilename(pFSObject, szNewUpperRealName, FALSE);
-        nlsUpper(szNewUpperRealName, 0);
+        nlsUpper(szNewUpperRealName);
 
         #ifdef DEBUG_TURBOFOLDERS
         _PmpfF(("old %s, new %s", pszOldRealName, szNewUpperRealName));
@@ -1680,7 +1680,7 @@ static WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
                         _wpQueryFilename(pCurrentFolder,
                                          G_szLastQueryAwakeFolderPath,
                                          TRUE);
-                        nlsUpper(G_szLastQueryAwakeFolderPath, 0);
+                        nlsUpper(G_szLastQueryAwakeFolderPath);
 
                         // set the flag in the instance data
                         // so the cache ptr is invalidated
@@ -1748,7 +1748,7 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
            )
         {
             memcpy(pszUpperFQPath, pcszFQPath, ulFQPathLen + 1);
-            nlsUpper(pszUpperFQPath, ulFQPathLen);
+            nlsUpper(pszUpperFQPath);
 
             // if the string terminates with '\',
             // remove that (the below code cannot handle that)

@@ -233,6 +233,7 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
 #ifndef __NEVEREXTASSOCS__
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_LAZYICONS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             // ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
@@ -2037,6 +2038,8 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #ifndef __NEVEREXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 cmnQuerySetting(sfExtAssocs));
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_LAZYICONS,
+                cmnQuerySetting(sfLazyIcons));
 #endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
            //      cmnQuerySetting(sCleanupINIs));
@@ -2142,6 +2145,9 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #ifndef __NEVEREXTASSOCS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 (fXFldDataFile));
+        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_LAZYICONS,
+                (fXFldDataFile) && (cmnQuerySetting(sfExtAssocs))
+                );
 #endif
         /* ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 !(cmnQuerySetting(sNoWorkerThread))); */
@@ -2393,6 +2399,10 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
 
                 if (precc->usCheckState)
                     ulNotifyMsg = 208;
+            break;
+
+            case ID_XCSI_LAZYICONS:
+                cmnSetSetting(sfLazyIcons, precc->usCheckState);
             break;
 #endif
 

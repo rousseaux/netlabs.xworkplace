@@ -165,6 +165,7 @@
     #define OBJFL_INITIALIZED               0x00001000
 
     #define OBJFL_GLOBALICON                0x00002000  // V0.9.20 (2002-07-25) [umoeller]
+    #define OBJFL_NOLAZYICON                0x00004000  // V0.9.20 (2002-07-25) [umoeller]
 
     #define OBJLIST_RUNNINGSTORED           0x00010000
     #define OBJLIST_CONFIGFOLDER            0x00020000

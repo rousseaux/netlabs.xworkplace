@@ -536,7 +536,8 @@ SOM_Scope HPOINTER  SOMLINK xtro_wpQueryIcon(XWPTrashObject *somSelf)
         // on the first call, copy icon from related object
         if (!pmrc->hptrIcon)
             _wpSetIcon(somSelf,
-                       _wpQueryIcon(_pRelatedObject));
+                       _xwpQueryIconNow(_pRelatedObject));
+                            // adjusted V0.9.20 (2002-07-25) [umoeller]
         return pmrc->hptrIcon;
     }
 

@@ -151,7 +151,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
         xsdQueryShutdownSettings(&xsd);
 
         // convert params to upper case
-        nlsUpper(szValue, 0);
+        nlsUpper(szValue);
 
         pszToken = strtok(szValue, ", ");
         if (pszToken)

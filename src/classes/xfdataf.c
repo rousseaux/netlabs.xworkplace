@@ -113,6 +113,7 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // other SOM headers
@@ -1128,28 +1129,16 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
                 _PmpfF(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
 
                 // get the assoc icon
-#if 1
                 // V0.9.20 (2002-07-25) [umoeller]
                 // now using the new icon sharing mechanism!
                 hptr = icomShareIcon(pobjAssoc,
                                      somSelf,
                                      TRUE);         // make global
 
-#else
-                if (hptr = _wpQueryIcon(pobjAssoc))
-                    // and make it global so that other processes
-                    // can use it (otherwise PMMail won't display
-                    // icons for attachments) V0.9.18 (2002-02-06) [umoeller]
-                    WinSetPointerOwner(hptr,
-                                       (PID)0,
-                                       // magic flag used by the WPS,
-                                       // whatever this is for
-                                       0x77482837);
-#endif
                 // we have locked the object twice now (once in
                 // ftypQueryAssociatedProgram, once in icomShareIcon),
                 // so unlock once now
-                // _wpUnlockObject(pobjAssoc);
+                _wpUnlockObject(pobjAssoc);
             }
         }
         CATCH(excpt1)
@@ -1263,6 +1252,11 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *          exists, from wpclsQueryIcon of the file's class.
  *          Then return that new icon.
  *
+ *          With V0.9.20, lazy icon loading was introduced.
+ *          If enabled, in this case, we pass the object to
+ *          the "lazy icons" thread to defer icon loading and
+ *          only set a temporary default icon here.
+ *
  *      Unfortunately the WPS always sets OBJSTYLE_NOTDEFAULTICON
  *      in here, which is not a good idea with our replacement
  *      associations.
@@ -1274,7 +1268,9 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *          wpSetAssociatedFileIcon to call wpSetProgIcon.
  *
  *      --  We thus "only" have to override XWPProgramFile::wpSetProgIcon
- *          to replace the executable icons.
+ *          to replace the executable icons. However, with V0.9.20
+ *          we override XWPProgramFile::wpQueryIcon also to
+ *          support lazy icons there too.
  *
  *      --  Since WPCommandFile is derived from WPProgramFile,
  *          this affects command files as well.
@@ -1282,6 +1278,7 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *      What a mess.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added lazy icons
  */
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
@@ -1301,6 +1298,10 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 
         TRY_LOUD(excpt1)
         {
+            // do we have an icon yet?
+            // this is set if either
+            // -- the icon was already set from an .ICON EA in wpRestoreState or
+            // -- this is not the first call to wpQueryIcon
             if (!(hptrReturn = prec->hptrIcon))
             {
                 ULONG flNewStyle = 0;
@@ -1321,18 +1322,31 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
                         flNewStyle = OBJSTYLE_NOTDEFAULTICON;
                 }
 
-                // no need to do special checks for WPProgramFile,
-                // because they override wpQueryAssociatedFileIcon
+                // no need to do special checks for WPProgramFile
+                // because it overrides wpQueryIcon to call wpSetProgIcon
+                // instead
 
-                // 2) try if we find an association
                 if (!hptrReturn)
-                    hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
+                {
+                    // support lazy icons if the global setting is
+                    // enabled and we do not have a forced icon query
+                    // V0.9.20 (2002-07-25) [umoeller]
+                    if (    (cmnQuerySetting(sfLazyIcons))
+                         && (!(objQueryFlags(somSelf) & OBJFL_NOLAZYICON))
+                       )
+                    {
+                        icomAddLazyIcon(somSelf);
+                    }
+                    else
+                        // lazy icons not allowed:
+                        hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
                             // this makes the icon global,
                             // but does not set the icon or the
                             // NOTDEFAULTICON flag
+                }
 
                 if (!hptrReturn)
-                    // 3) use class icon then
+                    // lazy icons, or no association found:
                     hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
 
                 _wpSetIcon(somSelf, hptrReturn);

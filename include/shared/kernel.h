@@ -97,6 +97,11 @@
         extern WPObject     *G_pAwakeWarpCenter;
         extern ULONG        G_cAwakeObjects;
 
+        // moved these two out of the KERNELGLOBALS
+        // V0.9.20 (2002-07-25) [umoeller]
+        extern PID          G_pidWPS;
+        extern TID          G_tidWorkplaceThread;
+
         /*
          *@@ KERNELGLOBALS:
          *      this structure is stored in a static global
@@ -125,11 +130,6 @@
 
         typedef struct _KERNELGLOBALS
         {
-            // WPS process ID V0.9.9 (2001-01-31) [umoeller]
-            PID                 pidWPS;
-            // Workplace thread ID (PMSHELL.EXE); should be 1
-            TID                 tidWorkplaceThread;
-
             // Desktop startup date and time (initMain)
             DATETIME            StartupDateTime;
 

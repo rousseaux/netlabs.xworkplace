@@ -2909,6 +2909,11 @@ static const SETTINGINFO G_aSettingInfos[] =
         sfExtAssocs, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtAssocs), 4,
             SP_SETUP_FEATURES, 0,
             "fExtAssocs",
+
+        // added lazy icons V0.9.20 (2002-07-25) [umoeller]
+        sfLazyIcons, -1, 0,
+            SP_SETUP_FEATURES, 0,
+            "fLazyIcons",
 #endif
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         sfReplaceDriveNotReady, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplDriveNotReady), 1,
@@ -5148,7 +5153,7 @@ static APIRET GetExeFromControl(HWND hwnd,
                                            usExeLength,
                                            G_apcszExtensions,
                                            ARRAYITEMCOUNT(G_apcszExtensions))))
-                nlsUpper(pszExecutable, 0);
+                nlsUpper(pszExecutable);
 
             // _PmpfF(("doshFindExecutable returned %d", arc));
 
@@ -5678,7 +5683,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                             {
                                 pd.progt.fbVisible = SHE_VISIBLE;
                                 pd.pszExecutable = szExecutable;
-                                nlsUpper(szExecutable, 0);
+                                nlsUpper(szExecutable);
                                 pd.pszParameters = (PSZ)pParams;
                                 pd.pszStartupDir = pszStartup;
 

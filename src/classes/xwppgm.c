@@ -627,8 +627,8 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
              || (_fNeedsSetProgIcon)
            )
         {
-            _wpSetProgIcon(somSelf, NULL);
             _fNeedsSetProgIcon = FALSE;
+            _wpSetProgIcon(somSelf, NULL);
         }
 
         return (pmrc->hptrIcon);

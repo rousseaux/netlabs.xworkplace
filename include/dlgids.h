@@ -1699,17 +1699,17 @@
 #define ID_SDSI_DEFAULT                 5610
 
 // settings page titles (for notebook tabs)
-#define ID_XSSI_1GENERIC                5620
-#define ID_XSSI_2REMOVEITEMS            5621
-#define ID_XSSI_25ADDITEMS              5622
+// #define ID_XSSI_1GENERIC                5620         removed V0.9.20 (2002-07-25) [umoeller]
+// #define ID_XSSI_2REMOVEITEMS            5621         removed V0.9.20 (2002-07-25) [umoeller]
+// #define ID_XSSI_25ADDITEMS              5622         removed V0.9.20 (2002-07-25) [umoeller]
 #define ID_XSSI_26CONFIGITEMS           5623
 #define ID_XSSI_27STATUSBAR             5624
 #define ID_XSSI_3SNAPTOGRID             5625
 #define ID_XSSI_4ACCELERATORS           5626
-#define ID_XSSI_5INTERNALS              5627
-#define ID_XSSI_FILEOPS                 5628
+// #define ID_XSSI_5INTERNALS              5627         removed V0.9.20 (2002-07-25) [umoeller]
+// #define ID_XSSI_FILEOPS                 5628         removed V0.9.20 (2002-07-25) [umoeller]
 #define ID_XSSI_SORT                    5629
-#define ID_XSSI_INTERNALS               5630
+// #define ID_XSSI_INTERNALS               5630         removed V0.9.20 (2002-07-25) [umoeller]
 #define ID_XSSI_WPSCLASSES              5631
 #define ID_XSSI_XWPSTATUS               5632
 #define ID_XSSI_FEATURES                5633
@@ -2031,6 +2031,7 @@
 #define ID_XCSI_FILEOPERATIONS          6040
 #ifndef __NEVEREXTASSOCS__
 #define ID_XCSI_EXTASSOCS               6041
+#define ID_XCSI_LAZYICONS               6042        // added V0.9.20 (2002-07-25) [umoeller]
 #endif
 // #define ID_XCSI_CLEANUPINIS             6042
             // disabled for now

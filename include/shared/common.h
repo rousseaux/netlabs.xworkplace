@@ -814,6 +814,7 @@
 #endif
 #ifndef __NEVEREXTASSOCS__
         sfExtAssocs,
+        sfLazyIcons,            // V0.9.20 (2002-07-25) [umoeller]
 #endif
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         sfReplaceDriveNotReady,

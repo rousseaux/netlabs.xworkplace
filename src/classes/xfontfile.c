@@ -118,7 +118,7 @@ SOM_Scope BOOL  SOMLINK fonf_xwpIsInstalled(XWPFontFile *somSelf)
                          FALSE))        // not qualified... we need the key in "PM_Fonts"
     {
         ULONG cb = 0;
-        nlsUpper(szFilename, 0);
+        nlsUpper(szFilename);
         if (    (PrfQueryProfileSize(HINI_USER,
                                      (PSZ)PMINIAPP_FONTS, // "PM_Fonts",
                                      szFilename,

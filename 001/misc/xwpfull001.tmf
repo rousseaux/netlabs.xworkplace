@@ -374,8 +374,13 @@ Also, you can define hierarchical file types, such that all files of type "C Cod
 If this is enabled, you'll get a new settings page for file types in &xwp;'s "Workplace Shell" object.
 This was added with &xwp; 0.9.0.
 See the &xwp; User Guide for details.
-<--FEATURES_6042-->: "Clean up INI files" will automatically remove some entries from the system profile (OS2.INI) which the WPS frequently forgets to delete.
-I guess this was new with XFolder 0.80.
+
+;
+; FEATURES_6042 was modified with V0.9.20
+;
+<--FEATURES_6042-->: "Lazy icons" will delay icon loading when a folder is first opened. This makes folder display a lot faster because the icons will actually be collected in a background thread.
+The setting requires that "Extended file associations" is also enabled and will be disabled otherwise.
+This was added with &xwp; 0.9.20.
 <--FEATURES_6043-->: This replaces the "File exists" dialog which appears if you move or copy files to a folder where another object already has the same title.
 This replacement dialog is a bit more useful and shows much more information than &os2;'s default one.
 This was new with XFolder 0.80.

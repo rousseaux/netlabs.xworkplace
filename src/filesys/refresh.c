@@ -1401,6 +1401,7 @@ static VOID PostXWPNotify(PCNINFO pCNInfo)
  *@@changed V0.9.12 (2001-05-18) [umoeller]: sped up allocation, added filter
  *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed stupid pointer error which caused a trap D on DosResetChangeNotify
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: raised priority
  */
 
 VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
@@ -1411,9 +1412,10 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
     // give ourselves higher priority... we must get
     // the notifications off the queue quickly
     DosSetPriority(PRTYS_THREAD,
-                   PRTYC_REGULAR,
-                   PRTYD_MAXIMUM,
+                   PRTYC_FOREGROUNDSERVER,  // PRTYC_REGULAR,
+                   0,                       // PRTYD_MAXIMUM,
                    0);      // current thread
+            // raised V0.9.20 (2002-07-25) [umoeller]
 
     lstInit(&G_llAllNotifications,
             TRUE);          // auto-free

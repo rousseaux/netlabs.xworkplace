@@ -439,16 +439,16 @@ BEGIN
     ID_SDSI_DEFAULT                 "Standard"
 
     /* titles for XWorkplace notebook pages */
-    ID_XSSI_1GENERIC                "~XFolder"
-    ID_XSSI_25ADDITEMS              "Ko~ntextmenÅs"
+/*    ID_XSSI_1GENERIC                "~XFolder"            removed V0.9.20 (2002-07-25) [umoeller] */
+/*    ID_XSSI_25ADDITEMS              "Ko~ntextmenÅs"       removed V0.9.20 (2002-07-25) [umoeller] */
     ID_XSSI_26CONFIGITEMS           "Konfigurationsordner-EintrÑge"
-    ID_XSSI_2REMOVEITEMS            "StandardmenÅeintrÑge"
+/*    ID_XSSI_2REMOVEITEMS            "StandardmenÅeintrÑge"    removed V0.9.20 (2002-07-25) [umoeller] */
     ID_XSSI_27STATUSBAR             "Status~zeilen" /* V0.9.9 */
     ID_XSSI_3SNAPTOGRID             "Gitter"
     ID_XSSI_4ACCELERATORS           "~OrdnertastenkÅrzel" /* V0.9.9 */
-    ID_XSSI_5INTERNALS              "XFolder-Interna"
-    ID_XSSI_FILEOPS                 "Datei~operationen"
-    ID_XSSI_INTERNALS               "~Objekt" /* changed V0.9.0 */
+/*    ID_XSSI_5INTERNALS              "XFolder-Interna"     removed V0.9.20 (2002-07-25) [umoeller] */
+/*    ID_XSSI_FILEOPS                 "Datei~operationen"   removed V0.9.20 (2002-07-25) [umoeller] */
+/*    ID_XSSI_INTERNALS               "~Objekt"             removed V0.9.20 (2002-07-25) [umoeller] */
     ID_XSSI_SORT                    "~Sortieren"
     /* the following are new with V0.9.0 */
     ID_XSSI_XWPSTATUS               "~&xwp;-Status"

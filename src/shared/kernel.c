@@ -160,6 +160,9 @@ static TREE             *G_ClassNamesTree;
 // this is exported thru kernel.h and never changed again
 extern HAB              G_habThread1 = NULLHANDLE;
 
+extern PID              G_pidWPS = 0;
+extern TID              G_tidWorkplaceThread = 0;
+
 // hiwords for abstract and file-system object handles;
 // initialized in initMain, exported thru kernel.h
 extern USHORT           G_usHiwordAbstract = 0;
@@ -519,7 +522,6 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     TID         tid;
     ULONG       ulCount;
     APIRET      arc;
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     ULONG       cThreadInfos = 0;
     PTHREADINFO paThreadInfos = NULL;
@@ -542,7 +544,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
             if (thrFindThread(&ti, tid))
                 fprintf(file, " (%s)", ti.pcszThreadName);
             else
-                if (tid == pKernelGlobals->tidWorkplaceThread)  // V0.9.16 (2001-11-02) [pr]: Added thread 1 identification
+                if (tid == G_tidWorkplaceThread)  // V0.9.16 (2001-11-02) [pr]: Added thread 1 identification
                     fprintf(file, " (Workplace thread)");
                 else
                     fprintf(file, " (unknown thread)");
@@ -561,7 +563,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     // running XFolder threads
     fprintf(file, "\nThe following threads could be identified:\n");
 
-    fprintf(file,  "    PMSHELL Workplace thread ID: 0x%lX\n", pKernelGlobals->tidWorkplaceThread);
+    fprintf(file,  "    PMSHELL Workplace thread ID: 0x%lX\n", G_tidWorkplaceThread);
 
     // V0.9.9 (2001-03-07) [umoeller]
     paThreadInfos = thrListThreads(&cThreadInfos);

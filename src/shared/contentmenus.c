@@ -148,6 +148,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
+#include "xfobj.ih"
 #include "xfdisk.ih"                    // XFldDisk
 
 // XWorkplace implementation headers
@@ -1418,7 +1419,8 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
             // get the item's (object's) icon;
             // this call can take a while if the folder
             // was just queried
-            hptrIcon = _wpQueryIcon(pItem->pObject);
+            hptrIcon = _xwpQueryIconNow(pItem->pObject);
+                        // adjusted V0.9.20 (2002-07-25) [umoeller]
 
             // switch to RGB mode
             GpiCreateLogColorTable(poi->hps, 0, LCOLF_RGB, 0, 0, NULL);

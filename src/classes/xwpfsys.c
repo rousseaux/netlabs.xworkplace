@@ -159,7 +159,7 @@ SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
         {
             ULONG ulLength;
             wpshStore(somSelf, &_pWszUpperRealName, sz, &ulLength);
-            nlsUpper(_pWszUpperRealName, ulLength);
+            nlsUpper(_pWszUpperRealName);
         }
     }
 

@@ -48,6 +48,7 @@
 
 #define INCL_WINPOINTERS
 #define INCL_WINSYS
+#define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
 
 #define INCL_GPIPRIMITIVES
 #define INCL_GPIBITMAPS
@@ -65,10 +66,13 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\exeh.h"               // executable helpers
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\threads.h"            // thread helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
+#include "xwppgmf.ih"
 #include "xfobj.ih"
 
 // XWorkplace implementation headers
@@ -94,7 +98,12 @@
  *
  ********************************************************************/
 
-HMTX    G_hmtxIconShares = NULLHANDLE;
+static HMTX         G_hmtxIconShares = NULLHANDLE;
+
+static HMTX         G_hmtxLazyIcons = NULLHANDLE;
+static LINKLIST     G_llLazyIcons;
+static HEV          G_hevLazyIcons = NULLHANDLE;
+static THREADINFO   G_tiLazyIcons = {0};
 
 /* ******************************************************************
  *
@@ -298,15 +307,26 @@ HPOINTER icomShareIcon(WPObject *somSelf,       // in: server object
         } END_CATCH();
 
         if (fLocked)
+        {
             icomUnlockIconShares();
-    }
+            fLocked = FALSE;
+        }
 
-    if (fMakeGlobal)
-        WinSetPointerOwner(hptrIcon,
-                           (PID)0,
-                           // magic flag used by the WPS,
-                           // whatever this is for
-                           0x77482837);
+        if (    (fMakeGlobal)
+             && (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                // it is sufficient to do this once
+             && (!(_flObject & OBJFL_GLOBALICON))
+           )
+        {
+            WinSetPointerOwner(hptrIcon,
+                               (PID)0,
+                               FALSE);      // do not allow people to destroy this
+            _flObject |= OBJFL_GLOBALICON;
+        }
+
+        if (fLocked)
+            _wpReleaseObjectMutexSem(somSelf);
+    }
 
     return hptrIcon;
 }
@@ -368,6 +388,173 @@ VOID icomUnShareIcon(WPObject *pobjServer,      // in: icon server object
     // unlock the server once,
     // it was locked by us previously
     _wpUnlockObject(pobjServer);
+}
+
+/* ******************************************************************
+ *
+ *   Lazy icons
+ *
+ ********************************************************************/
+
+static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself);
+
+/*
+ *@@ LockLazyIcons:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static BOOL LockLazyIcons(VOID)
+{
+    if (G_hmtxLazyIcons)
+        return !DosRequestMutexSem(G_hmtxLazyIcons, SEM_INDEFINITE_WAIT);
+
+    if (    (!DosCreateMutexSem(NULL,
+                                &G_hmtxLazyIcons,
+                                0,
+                                TRUE))
+         && (!DosCreateEventSem(NULL,
+                                &G_hevLazyIcons,
+                                0,
+                                FALSE))     // "reset" (not posted)
+       )
+    {
+        lstInit(&G_llLazyIcons, FALSE);
+        thrCreate(&G_tiLazyIcons,
+                  fntLazyIcons,
+                  NULL,
+                  "LazyIcons",
+                  THRF_PMMSGQUEUE | THRF_WAIT,
+                  0);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ UnlockLazyIcons:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static VOID UnlockLazyIcons(VOID)
+{
+    DosReleaseMutexSem(G_hmtxLazyIcons);
+}
+
+/*
+ *@@ fntLazyIcons:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
+{
+    BOOL    fLocked = FALSE;
+    BOOL    fDummy = 1;
+
+    TRY_LOUD(excpt1)
+    {
+        while (fDummy)      // always true, avoid compiler warning
+        {
+            PLISTNODE   pNode;
+
+            DosWaitEventSem(G_hevLazyIcons, SEM_INDEFINITE_WAIT);
+
+            if (fLocked = LockLazyIcons())
+            {
+                ULONG       ulPosted;
+                DosResetEventSem(G_hevLazyIcons, &ulPosted);
+
+                while (fLocked)
+                {
+                    WPObject    *pDataFile = NULL;
+
+                    // take one object off the list; make this
+                    // list FIFO by taking the object off
+                    // the tail of the list
+                    if (pNode = lstQueryLastNode(&G_llLazyIcons))
+                    {
+                        pDataFile = (WPObject*)pNode->pItemData;
+                        lstRemoveNode(&G_llLazyIcons,
+                                      pNode);
+                    }
+
+                    UnlockLazyIcons();
+                    fLocked = FALSE;
+
+                    if (!pDataFile)
+                        break;
+                    else
+                    {
+                        // for program files, call wpSetProgIcon
+                        // for other data files, call wpQueryAssociatedFileIcon
+                        if (_somIsA(pDataFile, _WPProgramFile))
+                            _wpSetProgIcon(pDataFile, NULL);
+                        else
+                        {
+                            // not program file:
+                            HPOINTER hptr;
+                            if (!(hptr = _wpQueryAssociatedFileIcon(pDataFile)))
+                            {
+                                // can't find icon:
+                                // use class default
+                                hptr = _wpclsQueryIcon(_somGetClass(pDataFile));
+                            }
+
+                            if (hptr)
+                                _wpSetIcon(pDataFile, hptr);
+                        }
+                    }
+
+                    // grab the next item on the list; only if
+                    // there's nothing left, sleep on the event
+                    // semaphore again
+
+                    fLocked = LockLazyIcons();
+                } // while (fLocked)
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockLazyIcons();
+}
+
+/*
+ *@@ icomAddLazyIcon:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+BOOL icomAddLazyIcon(WPDataFile *somSelf)
+{
+    BOOL fLocked = FALSE,
+         brc = FALSE;
+
+    _PmpfF(("[%s]", _wpQueryTitle(somSelf)));
+
+    if (fLocked = LockLazyIcons())
+    {
+        if (lstAppendItem(&G_llLazyIcons,
+                          somSelf))
+        {
+            DosPostEventSem(G_hevLazyIcons);
+            brc = TRUE;
+        }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "lstAppendItem failed for %s",
+                   _wpQueryTitle(somSelf));
+
+        UnlockLazyIcons();
+    }
+
+    return brc;
 }
 
 /* ******************************************************************

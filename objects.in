@@ -97,6 +97,7 @@ $(OUTPUTDIR)\filedlg.obj \
 $(OUTPUTDIR)\fileops.obj \
 $(OUTPUTDIR)\filesys.obj \
 $(OUTPUTDIR)\filetype.obj \
+$(OUTPUTDIR)\filetype_page.obj \
 $(OUTPUTDIR)\folder.obj \
 $(OUTPUTDIR)\fops_bottom.obj \
 $(OUTPUTDIR)\fops_top.obj \

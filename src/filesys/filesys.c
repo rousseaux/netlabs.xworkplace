@@ -1404,6 +1404,7 @@ typedef struct _SYNCHPOPULATETHREADS
  *      This thread does _not_ have a message queue.
  *
  *@@added V0.9.16 (2001-10-28) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: lowered priority
  */
 
 static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
@@ -1449,7 +1450,7 @@ static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
             // that the CPU is used most optimally
             DosSetPriority(PRTYS_THREAD,
                            PRTYC_TIMECRITICAL,
-                           2,
+                           +31,
                            0);      // current thread
 
             // post thread semaphore so that thrCreate returns

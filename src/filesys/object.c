@@ -307,12 +307,14 @@ typedef struct _OBJTREENODE
  ********************************************************************/
 
 // mutex semaphores for object lists (favorite folders, quick-open)
-static HMTX        G_hmtxObjectsLists = NULLHANDLE;
+static HMTX         G_hmtxObjectsLists = NULLHANDLE;
 
 // object handles cache
-static TREE        *G_HandlesCache;
-static HMTX        G_hmtxHandlesCache = NULLHANDLE;
-static LONG        G_lHandlesCacheItemsCount = 0;
+static TREE         *G_HandlesCacheRoot;
+static HOBJECT      G_hobjLast = NULLHANDLE;        // V0.9.20 (2002-07-25) [umoeller]
+static WPObject     *G_pobjLast = NULL;
+static HMTX         G_hmtxHandlesCache = NULLHANDLE;
+static LONG         G_lHandlesCacheItemsCount = 0;
 
 // dirty objects list
 static TREE        *G_DirtyList;
@@ -2817,7 +2819,7 @@ static BOOL LockHandlesCache(VOID)
                            TRUE))
     {
         // initialize tree
-        treeInit(&G_HandlesCache,
+        treeInit(&G_HandlesCacheRoot,
                  &G_lHandlesCacheItemsCount);
 
         return TRUE;
@@ -2852,6 +2854,7 @@ static VOID UnlockHandlesCache(VOID)
  *      --  Caller must have locked the cache.
  *
  *@@added V0.9.9 (2001-04-02) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: this deleted the wrong object, fixed
  */
 
 static ULONG CheckShrinkCache(VOID)
@@ -2863,7 +2866,7 @@ static ULONG CheckShrinkCache(VOID)
     {
         while (lObjectsToDelete--)
         {
-            POBJTREENODE    pOldest = (POBJTREENODE)treeFirst(G_HandlesCache),
+            POBJTREENODE    pOldest = (POBJTREENODE)treeFirst(G_HandlesCacheRoot),
                             pNode = pOldest;
             while (pNode)
             {
@@ -2878,14 +2881,21 @@ static ULONG CheckShrinkCache(VOID)
             // delete it
             if (pOldest)
             {
-                treeDelete(&G_HandlesCache,
+                if (pOldest->pObject == G_pobjLast)
+                {
+                    // V0.9.20 (2002-07-25) [umoeller]
+                    G_pobjLast = NULL;
+                    G_hobjLast = NULLHANDLE;
+                }
+
+                treeDelete(&G_HandlesCacheRoot,
                            &G_lHandlesCacheItemsCount,
-                           (TREE*)pNode);
+                           (TREE*)pOldest); // fixed pNode); V0.9.20 (2002-07-25) [umoeller]
                 // unset list notify flag
-                _xwpModifyListNotify(pNode->pObject,
+                _xwpModifyListNotify(pOldest->pObject,      // V0.9.20 (2002-07-25) [umoeller]
                                      OBJLIST_HANDLESCACHE,
                                      0);
-                free(pNode);
+                free(pOldest);
             }
         }
     }
@@ -2924,20 +2934,30 @@ static ULONG CheckShrinkCache(VOID)
 
 WPObject* objFindObjFromHandle(HOBJECT hobj)
 {
-    WPObject *pobjReturn = NULL;
-
-    _PmpfF(("    getting pobj for hobj 0x%lX", hobj));
+    WPObject    *pobjReturn = NULL;
+    BOOL        fLocked = FALSE;
 
     // lock the cache
-    if (LockHandlesCache())
+    if (fLocked = LockHandlesCache())
     {
         POBJTREENODE pNode;
-        if (pNode = (POBJTREENODE)treeFind(G_HandlesCache,
-                                           hobj,
-                                           treeCompareKeys))
+
+        // we frequently get here for the same object many times,
+        // so this is faster than going through the tree
+        // V0.9.20 (2002-07-25) [umoeller]
+        if (    (G_hobjLast)
+             && (G_hobjLast == hobj)
+           )
+        {
+            pobjReturn = G_pobjLast;
+        }
+        else if (pNode = (POBJTREENODE)treeFind(G_HandlesCacheRoot,
+                                                hobj,
+                                                treeCompareKeys))
         {
             // was in cache:
-            pobjReturn = pNode->pObject;
+            G_hobjLast = hobj;
+            G_pobjLast = pobjReturn = pNode->pObject;
             // store system uptime as last reference
             pNode->ulReferenced = doshQuerySysUptime();
         }
@@ -2955,11 +2975,10 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
             // operation and might cause deadlocks
             // V0.9.20 (2002-07-25) [umoeller]
             UnlockHandlesCache();
-
-            _Pmpf(("   object is not in cache, calling _wpclsQueryObject"));
+            fLocked = FALSE;
 
             if (    (pobjReturn = _wpclsQueryObject(pObjectClass, hobj))
-                 && (LockHandlesCache())
+                 && (fLocked = LockHandlesCache())
                )
             {
                 // valid handle:
@@ -2975,7 +2994,7 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
                     // store system uptime as last reference
                     pNode->ulReferenced = doshQuerySysUptime();
 
-                    treeInsert(&G_HandlesCache,
+                    treeInsert(&G_HandlesCacheRoot,
                                &G_lHandlesCacheItemsCount,
                                (TREE*)pNode,
                                treeCompareKeys);
@@ -2987,15 +3006,15 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
                                          OBJLIST_HANDLESCACHE,
                                          OBJLIST_HANDLESCACHE);
                 }
+
+                G_hobjLast = hobj;
+                G_pobjLast = pobjReturn;
             }
         }
 
-        UnlockHandlesCache();
+        if (fLocked)
+            UnlockHandlesCache();
     }
-
-    #ifdef DEBUG_ASSOCS
-        _PmpfF(("    got [%s]{%s}", _wpQueryTitle(pobjAssoc), _somGetClassName(pobjAssoc)));
-    #endif
 
     return (pobjReturn);
 }
@@ -3016,12 +3035,19 @@ VOID objRemoveFromHandlesCache(WPObject *somSelf)
     {
         // this is terminally slow, but what the heck...
         // this rarely gets called
-        POBJTREENODE pNode = (POBJTREENODE)treeFirst(G_HandlesCache);
+        POBJTREENODE pNode = (POBJTREENODE)treeFirst(G_HandlesCacheRoot);
         while (pNode)
         {
             if (pNode->pObject == somSelf)
             {
-                treeDelete(&G_HandlesCache,
+                if (pNode->pObject == G_pobjLast)
+                {
+                    // V0.9.20 (2002-07-25) [umoeller]
+                    G_hobjLast = NULLHANDLE;
+                    G_pobjLast = NULL;
+                }
+
+                treeDelete(&G_HandlesCacheRoot,
                            &G_lHandlesCacheItemsCount,
                            (TREE*)pNode);
                 free(pNode);

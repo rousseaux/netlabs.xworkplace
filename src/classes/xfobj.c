@@ -68,6 +68,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINPOINTERS
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINSTDCNR
@@ -194,6 +195,24 @@ static VOID UnlockAwakeObjectsList(VOID)
  *   here come the XFldObject instance methods
  *
  ********************************************************************/
+
+/*
+ *@@ xwpQueryIconNow:
+ *      returns the icon of the given object while making sure
+ *      that icon loading is not deferred (lazy icon loading).
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xo_xwpQueryIconNow(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryIconNow");
+
+    _flObject |= OBJFL_NOLAZYICON;
+
+    return _wpQueryIcon(somSelf);
+}
 
 /*
  *@@ xwpDestroyStorage:
@@ -1194,28 +1213,6 @@ SOM_Scope WPObject*  SOMLINK xo_xwpQueryNextObj(XFldObject *somSelf)
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-/*
- * icon server/client stuff (see icomShareIcon):
- * V0.9.20 (2002-07-25) [umoeller]
- * We implement a linked list here, using object instance data. This
- * looks like the best solution to me since the LARGE majority of awake
- * WPS objects will be data files and thus icon clients.
- * 1) If we are an icon server, pFirstIconClient and pLastIconClient
- *    implement a linked list of icon clients, pointing to the first
- *    and the last WPObject* client.
- * 2) In each icon client object, pNextClient and pPreviousClient
- *    implement the linked list.
- */
-
-/*
- *
- *     * SOM attributes:
- *
- * doubly-linked list of awake objects
- * (the root of the list is a global variable in xfobj.c)
- * V0.9.20 (2002-07-25) [umoeller]
- */
-
 SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
                                                    ULONG hab,
                                                    ULONG ulCorner)
@@ -1811,25 +1808,38 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
         // V0.9.16 (2001-12-31) [umoeller]
         if (    (pmrc = _wpQueryCoreRecord(somSelf))
              && (pmrc->hptrIcon)
-             && (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
            )
         {
-            #ifdef DEBUG_ICONREPLACEMENTS
-                _PmpfF(("checking hptr 0x%lX", pmrc->hptrIcon));
-            #endif
+            // Now, we might have made the object's icon global in
+            // icomShareIcon... if so, make it private again so we
+            // can kill it without leaking memory.
+            if (_flObject & OBJFL_GLOBALICON)
+            {
+                WinSetPointerOwner(pmrc->hptrIcon,
+                                   G_pidWPS,
+                                   TRUE);
+                _flObject &= ~OBJFL_GLOBALICON;
+            }
 
-            if (cmnIsStandardIcon(pmrc->hptrIcon))
+            if (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
             {
                 #ifdef DEBUG_ICONREPLACEMENTS
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "WPS was about to nuke standard icon for object \"%s\"",
-                           pmrc->pszIcon);
+                    _PmpfF(("checking hptr 0x%lX", pmrc->hptrIcon));
                 #endif
 
-                // alright, the WPS is about to nuke this icon:
-                // set the HPOINTER in the record to NULLHANDLE
-                // to prevent the WPS from freeing it
-                pmrc->hptrIcon = NULLHANDLE;
+                if (cmnIsStandardIcon(pmrc->hptrIcon))
+                {
+                    #ifdef DEBUG_ICONREPLACEMENTS
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "WPS was about to nuke standard icon for object \"%s\"",
+                               pmrc->pszIcon);
+                    #endif
+
+                    // alright, the WPS is about to nuke this icon:
+                    // set the HPOINTER in the record to NULLHANDLE
+                    // to prevent the WPS from freeing it
+                    pmrc->hptrIcon = NULLHANDLE;
+                }
             }
         }
 
@@ -2006,19 +2016,11 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
 
                 // (moved the lock up here V0.9.20 (2002-07-25) [umoeller])
 
-                _PmpfF(("[%s]{%s} fIsInitialized = %d",
-                       pszNewTitle,
-                       _somGetClassName(somSelf),
-                       fIsInitialized));
-
                 if (    (!fIsInitialized)
                      || (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                    )
                 {
                     PSZ p;
-
-                    _PmpfF(("    now: fLocked = %d",
-                           fLocked));
 
                     memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
 
@@ -2057,10 +2059,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                         if (    (fIsInitialized)
                              && (_flObject & OBJFL_WPABSTRACT)
                            )
-                        {
-                            _Pmpf(("obj is abstract, saving"));
                             _wpSaveDeferred(somSelf);
-                        }
 
                         // now go refresh all the views if the object
                         // is already initialized;
@@ -2099,8 +2098,6 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
 
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
-
-    _PmpfF(("done"));
 
     return brc;
 }

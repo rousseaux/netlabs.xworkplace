@@ -2447,7 +2447,7 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
          && (_wpQueryFilename(pFolder, szFolderPath, TRUE))
        )
     {
-        nlsUpper(szFolderPath, 0);
+        nlsUpper(szFolderPath);
 
         frc = FOPSERR_TRASHDRIVENOTSUPPORTED;   // for drive A: and B: also
 

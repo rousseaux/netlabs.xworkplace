@@ -297,8 +297,11 @@ static VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                                      sizeof(RECORDCORE),
                                                      1);
                 precc->pszName = _wpQueryTitle(pobj);
-                precc->hptrIcon = _wpQueryIcon(pobj);
-                precc->hptrMiniIcon = _wpQueryIcon(pobj);
+                precc->hptrIcon
+                    = precc->hptrMiniIcon
+                    = _xwpQueryIconNow(pobj);
+                            // adjusted V0.9.20 (2002-07-25) [umoeller]
+
                 cnrhInsertRecords(hwndCnr,
                                   NULL,         // parent
                                   precc,

@@ -789,7 +789,8 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                     WPFolder *pFolder;
 
                     preccThis->recc.pszIcon = _wpQueryTitle(preccThis->pObject);
-                    preccThis->recc.hptrMiniIcon = _wpQueryIcon(preccThis->pObject);
+                    preccThis->recc.hptrMiniIcon = _xwpQueryIconNow(preccThis->pObject);
+                                            // adjusted V0.9.20 (2002-07-25) [umoeller]
                     if (    (pFolder = _wpQueryFolder(preccThis->pObject))
                          && (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
                        )

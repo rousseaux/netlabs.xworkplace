@@ -61,13 +61,26 @@
                                            BOOL fDeleteExisting);
     #endif
 
-    #ifdef NOTEBOOK_HEADER_INCLUDED
+    /* ******************************************************************
+     *
+     *   Import/Export facility
+     *
+     ********************************************************************/
 
-        /* ******************************************************************
-         *
-         *   Notebook callbacks (notebook.c) for XFldWPS "File types" page
-         *
-         ********************************************************************/
+    #ifdef XSTRING_HEADER_INCLUDED
+    APIRET ftypImportTypes(PCSZ pcszFilename,
+                           PXSTRING pstrError);
+    #endif
+
+    APIRET ftypExportTypes(PCSZ pcszFileName);
+
+    /* ******************************************************************
+     *
+     *   Notebook callbacks (notebook.c) for XFldWPS "File types" page
+     *
+     ********************************************************************/
+
+    #ifdef NOTEBOOK_HEADER_INCLUDED
 
         extern MPARAM *G_pampFileTypesPage;
         extern ULONG G_cFileTypesPage;
@@ -119,16 +132,76 @@
 
     /* ******************************************************************
      *
-     *   Import/Export facility
+     *   Implementation definitions
      *
      ********************************************************************/
 
-    #ifdef XSTRING_HEADER_INCLUDED
-    APIRET ftypImportTypes(PCSZ pcszFilename,
-                           PXSTRING pstrError);
-    #endif
+    #ifdef FILETYPE_PRIVATE
 
-    APIRET ftypExportTypes(PCSZ pcszFileName);
+        #define MAX_ASSOCS_PER_OBJECT       20
+
+        BOOL ftypAppendSingleTypeUnique(PLINKLIST pll,
+                                        PCSZ pcszNewType,
+                                        ULONG ulNewTypeLen);
+
+        ULONG ftypAppendTypesFromString(PCSZ pcszTypes,
+                                        CHAR cSeparator,
+                                        PLINKLIST pllTypes);
+
+        /*
+         *@@ FNFOREACHAUTOMATICTYPE:
+         *      callback for ftypForEachAutoType.
+         *
+         *      If this returns FALSE, processing is
+         *      aborted.
+         *
+         *@@added V0.9.20 (2002-07-25) [umoeller]
+         */
+
+        typedef BOOL _Optlink FNFOREACHAUTOMATICTYPE(PCSZ pcszType,
+                                                     ULONG ulTypeLen,
+                                                     PVOID pvUser);
+        typedef FNFOREACHAUTOMATICTYPE *PFNFOREACHAUTOMATICTYPE;
+
+        ULONG ftypForEachAutoType(PCSZ pcszObjectTitle,
+                                  PFNFOREACHAUTOMATICTYPE pfnftypForEachAutoType,
+                                  PVOID pvUser);
+
+        VOID ftypClearTypesList(HWND hwndCnr,
+                                PLINKLIST pllFileTypes);
+
+        // forward decl here
+        typedef struct _FILETYPELISTITEM *PFILETYPELISTITEM;
+
+        /*
+         * FILETYPERECORD:
+         *      extended record core structure for
+         *      "File types" container (Tree view).
+         *
+         *@@changed V0.9.9 (2001-03-27) [umoeller]: now using CHECKBOXRECORDCORE
+         */
+
+        typedef struct _FILETYPERECORD
+        {
+            CHECKBOXRECORDCORE  recc;               // extended record core for checkboxes;
+                                                    // see comctl.c
+            PFILETYPELISTITEM   pliFileType;        // added V0.9.9 (2001-02-06) [umoeller]
+        } FILETYPERECORD, *PFILETYPERECORD;
+
+        /*
+         * FILETYPELISTITEM:
+         *      list item structure for building an internal
+         *      linked list of all file types (linklist.c).
+         */
+
+        typedef struct _FILETYPELISTITEM
+        {
+            PFILETYPERECORD     precc;
+            PSZ                 pszFileType;        // copy of file type in INI (malloc)
+            BOOL                fProcessed;
+            BOOL                fCircular;          // security; prevent circular references
+        } FILETYPELISTITEM;
+    #endif
 
 #endif
 

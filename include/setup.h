@@ -46,13 +46,15 @@
     #pragma alloc_text(FREQ_CODE1, doshSetExceptionHandler)
     #pragma alloc_text(FREQ_CODE1, doshUnsetExceptionHandler)
     #pragma alloc_text(FREQ_CODE1, PerformMatch)
-    #pragma alloc_text(FREQ_CODE1, doshMatch)
-    #pragma alloc_text(FREQ_CODE1, doshMatchCase)
+    #pragma alloc_text(FREQ_CODE1, doshMatchCaseNoPath)
     #pragma alloc_text(FREQ_CODE1, doshQuerySysUptime)
 
     #pragma alloc_text(FREQ_CODE1, nlsDBCS)
     #pragma alloc_text(FREQ_CODE1, nlschr)
     #pragma alloc_text(FREQ_CODE1, nlsrchr)
+    #pragma alloc_text(FREQ_CODE1, nlsUpper)
+
+    #pragma alloc_text(FREQ_CODE1, strhdup)
 
     // winh.c
     #pragma alloc_text(FREQ_CODE1, winhRequestMutexSem)
@@ -101,21 +103,11 @@
     #pragma alloc_text(FREQ_CODE1, prfhQueryProfileData)
 
     #pragma alloc_text(FREQ_CODE1, ListAssocsForType)
-
-    #pragma alloc_text(FREQ_CODE1, ftypLockCaches)
-    #pragma alloc_text(FREQ_CODE1, ftypUnlockCaches)
+    #pragma alloc_text(FREQ_CODE1, ftypForEachAutoType)
+    #pragma alloc_text(FREQ_CODE1, fncbBuildAssocsList)
+    #pragma alloc_text(FREQ_CODE1, BuildAssocsList)
+    #pragma alloc_text(FREQ_CODE1, FreeAssocsList)
     #pragma alloc_text(FREQ_CODE1, ftypQueryAssociatedProgram)
-    #pragma alloc_text(FREQ_CODE1, ftypBuildAssocsList)
-
-    #pragma alloc_text(FREQ_CODE1, ftypFreeAssocsList)
-
-    #pragma alloc_text(FREQ_CODE1, FindWPSTypeAssoc)
-    #pragma alloc_text(FREQ_CODE1, strhSubstr)
-
-    #pragma alloc_text(FREQ_CODE1, AppendSingleTypeUnique)
-    #pragma alloc_text(FREQ_CODE1, AppendTypesFromString)
-    #pragma alloc_text(FREQ_CODE1, AppendTypesForFile)
-    #pragma alloc_text(FREQ_CODE1, GetCachedTypesWithFilters)
 
     /*
      *  functions used with exe icons

@@ -777,7 +777,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
         PACLDBENTRYNODE pACLEntry = NULL;       // default: not found
 
         PSZ pszDir2 = strdup(pcszResource);
-        nlsUpper(pszDir2, 0);
+        nlsUpper(pszDir2);
 
         _Pmpf(("Authorizing %s", pszDir2));
 

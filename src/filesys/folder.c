@@ -506,7 +506,8 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                 {
                     CHAR cBootDrive = doshQueryBootDrive();
 
-                    nlsUpper(pszBitmapFile, 0);
+                    nlsUpper(pszBitmapFile);
+
                     if (*pszBitmapFile == cBootDrive)
                         // file on boot drive:
                         // replace with '?' to make it portable
@@ -1240,7 +1241,8 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
             )
         {
             // get the icon
-            _wpQueryIcon(pObject);
+            _xwpQueryIconNow(pObject);
+                    // adjusted V0.9.20 (2002-07-25) [umoeller]
 
             if (pfnCallback)
             {
@@ -2072,7 +2074,7 @@ ERE* CompileRegexp(HWND hwndDlg,    // in: dlg with entry field
         if (WinQueryWindowText(hwndEF, cb, psz))
         {
             if (!fCaseSense)
-                nlsUpper(psz, 0);
+                nlsUpper(psz);
 
             if (!(pEre = rxpCompile(psz,
                                     0,
@@ -2184,8 +2186,9 @@ ULONG ConfirmRename(HWND hwndOwner,
         // set controls
         Icon1.pcszText = (PCSZ)cmnQueryDlgIcon();
         RenameTxt.pcszText = pstrMsg->psz;
-        IconObject.pcszText = (PCSZ)_wpQueryIcon(pobj);
-        IconTitle.pcszText = apcsz[0];      // _wpQueryTitle(pobj)
+        IconObject.pcszText = (PCSZ)_xwpQueryIconNow(pobj);
+                            // adjusted V0.9.20 (2002-07-25) [umoeller]
+        IconTitle.pcszText = apcsz[0];
 
         if (!cmnLoadDialogStrings(dlgConfirm,
                                   ARRAYITEMCOUNT(dlgConfirm),
@@ -2310,7 +2313,7 @@ VOID DoRename(HWND hwndDlg)
                 if (!fCaseSense)
                 {
                     strcpy(szThis, pcszTitleOrig);
-                    nlsUpper(szThis, 0);
+                    nlsUpper(szThis);
                     pcszTitleMatch = szThis;
                 }
                 else

@@ -837,7 +837,7 @@ static VOID ReplaceWheelWatcher(VOID)
                 // find WPS entry in process info
                 PQPROCESS16 pProcess;
                 if (pProcess = prc16FindProcessFromPID(pInfo,
-                                                       G_KernelGlobals.pidWPS))
+                                                       G_pidWPS))
                 {
                     // we now have the process info for the second PMSHELL.EXE...
                     ULONG       ul;
@@ -862,7 +862,7 @@ static VOID ReplaceWheelWatcher(VOID)
                             PID pid;
                             TID tid;
                             if (    (WinQueryWindowProcess(hwndThis, &pid, &tid))
-                                 && (pid == G_KernelGlobals.pidWPS)
+                                 && (pid == G_pidWPS)
                                  && (tid == pThread->usTID)
                                )
                             {
@@ -1127,8 +1127,8 @@ VOID initMain(VOID)
     // zero KERNELGLOBALS
     memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
 
-    G_KernelGlobals.pidWPS = doshMyPID();
-    G_KernelGlobals.tidWorkplaceThread = doshMyTID();
+    G_pidWPS = doshMyPID();
+    G_tidWorkplaceThread = doshMyTID();
 
     // moved the following up V0.9.16 (2001-12-08) [umoeller]
     #ifdef __XWPMEMDEBUG__
@@ -1167,8 +1167,8 @@ VOID initMain(VOID)
                       "------------------------------------------------------\n\n");
 
             initLog(__FUNCTION__ ": PID 0x%lX, TID 0x%lX",
-                              G_KernelGlobals.pidWPS,
-                              G_KernelGlobals.tidWorkplaceThread);
+                              G_pidWPS,
+                              G_tidWorkplaceThread);
         }
     }
 

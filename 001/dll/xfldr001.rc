@@ -445,16 +445,16 @@ BEGIN
     ID_SDSI_DEFAULT                 "Default"
 
     /* titles for XWorkplace notebook pages */
-    ID_XSSI_1GENERIC                "~XFolder"
-    ID_XSSI_25ADDITEMS              "Co~ntext menus"
-    ID_XSSI_26CONFIGITEMS           "Config folder items"
-    ID_XSSI_2REMOVEITEMS            "Standard menu items"
-    ID_XSSI_27STATUSBAR             "Status ~bars" /* V0.9.9 */
+/*    ID_XSSI_1GENERIC                "~XFolder"            removed V0.9.20 (2002-07-25) [umoeller] */
+/*    ID_XSSI_25ADDITEMS              "Co~ntext menus"      removed V0.9.20 (2002-07-25) [umoeller] */
+    ID_XSSI_26CONFIGITEMS           "Config Folder Items"
+/*    ID_XSSI_2REMOVEITEMS            "Standard menu items" removed V0.9.20 (2002-07-25) [umoeller] */
+    ID_XSSI_27STATUSBAR             "Status ~Bars" /* V0.9.9 */
     ID_XSSI_3SNAPTOGRID             "Grid"
-    ID_XSSI_4ACCELERATORS           "~Folder hotkeys" /* V0.9.9 */
-    ID_XSSI_5INTERNALS              "XFolder Internals"
-    ID_XSSI_FILEOPS                 "File ~operations"
-    ID_XSSI_INTERNALS               "~Object" /* changed V0.9.0 */
+    ID_XSSI_4ACCELERATORS           "~Folder Hotkeys" /* V0.9.9 */
+/*    ID_XSSI_5INTERNALS              "XFolder Internals"   removed V0.9.20 (2002-07-25) [umoeller] */
+/*    ID_XSSI_FILEOPS                 "File ~operations"    removed V0.9.20 (2002-07-25) [umoeller] */
+/*    ID_XSSI_INTERNALS               "~Object"             removed V0.9.20 (2002-07-25) [umoeller] */
     ID_XSSI_SORT                    "~Sort"
     /* the following are new with V0.9.0 */
     ID_XSSI_XWPSTATUS               "~&xwp; Status"
@@ -467,14 +467,14 @@ BEGIN
     ID_XSSI_STARTUPPAGE             "~Startup"
     ID_XSSI_DTPMENUPAGE             "~Menu"
             /* ID_XSSI_DTPMENUPAGE changed V0.9.19 (2002-04-17) [umoeller] */
-    ID_XSSI_FILETYPESPAGE           "~File types"
+    ID_XSSI_FILETYPESPAGE           "~File Types"
     ID_XSSI_SOUNDSPAGE              "~Sounds"
     ID_XSSI_VIEWPAGE                "~View"
     ID_XSSI_ARCHIVESPAGE            "~Archives"
     ID_XSSI_PGMFILE_MODULE          "~Module"
     ID_XSSI_OBJECTHOTKEYSPAGE       "~Hotkeys"
     /* ID_XSSI_FUNCTIONKEYSPAGE added with V0.9.3 (2000-04-18) [umoeller] */
-    ID_XSSI_FUNCTIONKEYSPAGE        "~Function keys"
+    ID_XSSI_FUNCTIONKEYSPAGE        "~Function Keys"
     ID_XSSI_MOUSEHOOKPAGE           "~Movement"
     ID_XSSI_MAPPINGSPAGE            "~Mappings"
 
@@ -765,6 +765,10 @@ BEGIN
 
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
+
+/* ID_XCSI_LAZYICONS added with V0.9.20 (2002-07-25) [umoeller] */
+    ID_XCSI_LAZYICONS                   "Lazy icons"
+
 /*     this item removed with V0.9.16
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries" */
 /* the following item added with V0.9.5 (2000-08-14) [umoeller] */
@@ -870,7 +874,7 @@ BEGIN
     ID_XSSI_MB3_PUSHTOBOTTOM            "Push to bottom"
 
     /* new screen borders page title V0.9.9 (2001-04-04) [lafaix] */
-    ID_XSSI_SCREENBORDERSPAGE           "Screen borders"
+    ID_XSSI_SCREENBORDERSPAGE           "Screen Borders"
 
     /* XWPAdmin "Users" page V0.9.11 (2001-04-22) [umoeller]*/
     /* removed V0.9.19 (2002-04-14) [umoeller] */
@@ -941,7 +945,7 @@ BEGIN
             /* warning: the above two are strings for sprintf, so you _must_
                get the % flags exactly correct, or the pulse will crash */
 
-    ID_XSSI_WPSFDRVIEWPAGE              "Folder ~views"
+    ID_XSSI_WPSFDRVIEWPAGE              "Folder ~Views"
 
     ID_XFSI_FDLG_DRIVES                 "~Drives:"
     ID_XFSI_FDLG_FILESLIST              "Files ~list:"
@@ -1452,8 +1456,8 @@ BEGIN
     ID_CRDI_VIEW_AUTOSCREENBORDER       "Automatically add to ~screen border"
 
     /* strings for XFldWPS menu pages  (all new with V0.9.19) */
-    ID_XSDI_MENU_SETTINGS               "Common menu settings"
-    ID_XSDI_MENU_ITEMS                  "Menu items"
+    ID_XSDI_MENU_SETTINGS               "Common Menu Settings"
+    ID_XSDI_MENU_ITEMS                  "Menu Items"
 
     ID_XSDI_MENU_STYLE_GROUP            "Menu style"
     ID_XSDI_MENUS_BARS                  "Displa~y folder menu bars"

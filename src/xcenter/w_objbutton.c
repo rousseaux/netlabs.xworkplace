@@ -1019,7 +1019,8 @@ static VOID OwgtPaintButton(HWND hwnd)
                 {
                     PMINIRECORDCORE pmrc;
 
-                    xbd.hptr = _wpQueryIcon(pPrivate->pobjButton);
+                    xbd.hptr = _xwpQueryIconNow(pPrivate->pobjButton);
+                                // adjusted V0.9.20 (2002-07-25) [umoeller]
 
                     if (    (!(pGlobals->flDisplayStyle & XCS_NOHATCHINUSE))
                          && (pmrc = _wpQueryCoreRecord(pPrivate->pobjButton))

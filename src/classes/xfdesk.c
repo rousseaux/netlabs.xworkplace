@@ -586,7 +586,8 @@ SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
                  pobj;
                  pobj = *objGetNextObjPointer(pobj))
             {
-                _wpQueryIcon(pobj);
+                _xwpQueryIconNow(pobj);
+                        // adjusted V0.9.20 (2002-07-25) [umoeller]
             }
 
             WinSetPointer(HWND_DESKTOP, hptrOld);

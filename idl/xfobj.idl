@@ -99,6 +99,8 @@ interface XFldObject : WPObject
      *
      */
 
+    HPOINTER xwpQueryIconNow();
+
     BOOL xwpDestroyStorage();
 
     ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
@@ -154,7 +156,8 @@ interface XFldObject : WPObject
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,
                   xwpHotkeyOrBorderAction,
-                  xwpAddReplacementIconPage;
+                  xwpAddReplacementIconPage,
+                  xwpQueryIconNow;
 
     /*
      * Class Modifiers:
@@ -174,10 +177,6 @@ interface XFldObject : WPObject
      * Internal instance variables for XFldObject:
      *
      */
-
-    // the following have been added with V0.9.0
-    // BOOL        fDeleted;       // if TRUE, the following two fields are valid
-                    // removed V0.9.16 (2001-12-06) [umoeller]
 
     // trash can deletion; this is only != NULL if the object
     // currently resides in the trash can. We use this extra
@@ -204,7 +203,7 @@ interface XFldObject : WPObject
     //# PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
 
     ULONG       flObject;           // OBJFL_* and OBJLIST_* flags
-                                    // V0.9.20 (2002-07-25) [umoeller]
+                                    // combined V0.9.20 (2002-07-25) [umoeller]
 
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
 
