@@ -5113,6 +5113,7 @@ APIRET ftypImportTypes(const char *pcszFilename)        // in: XML file name
         if (!(arc = xmlCreateDOM(0,             // no validation
                                  NULL,
                                  NULL,
+                                 NULL,
                                  &pDom)))
         {
             if (!(arc = xmlParse(pDom,
