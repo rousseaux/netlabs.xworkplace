@@ -623,7 +623,7 @@ SOM_Scope ULONG  SOMLINK fono_wpQueryDefaultView(XWPFontObject *somSelf)
     // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpQueryDefaultView");
 
-    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
+    return *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW;
 }
 
 /*
@@ -654,7 +654,7 @@ SOM_Scope HWND  SOMLINK fono_wpOpen(XWPFontObject *somSelf, HWND hwndCnr,
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpOpen");
 
     // we only support the "Sample" view; suppress all others
-    if (ulView == cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW)
+    if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
         return (fonCreateFontSampleView(somSelf,
                                         WinQueryAnchorBlock(hwndCnr),
                                         ulView));

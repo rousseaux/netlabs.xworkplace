@@ -964,8 +964,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // for each open folder view, call the callback
             // which updates the status bars
             // (stb_UpdateCallback in folder.c)
-            fdrForEachOpenGlobalView((ULONG)mp1,
-                                     (PFNWP)stb_UpdateCallback);
+            fdrForEachOpenGlobalView(stb_UpdateCallback,
+                                     (ULONG)mp1);
         }
         break;
 

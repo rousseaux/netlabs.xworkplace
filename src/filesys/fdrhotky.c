@@ -436,7 +436,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                     {
                         // it's one of the "variable" menu items:
                         // add the global variable menu offset
-                        usCommand += cmnQuerySetting(sulVarMenuOffset);
+                        usCommand += cmnQuerySetting(sulVarMenuOfs);
                     }
 
                     // post only if this is a "key down" message
@@ -671,7 +671,7 @@ static PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
 static VOID AddHotkeyToMenuItem(HWND hwndMenu,
                                 USHORT usPostCommand2Find,
                                 USHORT usMenuCommand,
-                                ULONG ulVarMenuOffset) // cmnQuerySetting(sulVarMenuOffset)
+                                ULONG ulVarMenuOffset) // cmnQuerySetting(sulVarMenuOfs)
 {
     USHORT  usFlags, usKeyCode;
     CHAR    szDescription[100];
@@ -719,7 +719,7 @@ VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
             (cmnQuerySetting(sfShowHotkeysInMenus))
         )
     {
-        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
 
         ULONG ul;
         for (ul = 0;
@@ -766,7 +766,7 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
 
         USHORT  idMenu = WinQueryWindowUShort(hwndMenu, QWS_ID);
 
-        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
 
         #ifdef DEBUG_KEYS
             _PmpfF(("hwndMenu 0x%lX, id 0x%lX",

@@ -2780,6 +2780,9 @@ typedef struct _OLDGLOBALSETTINGS
 
 #pragma pack()
 
+extern ULONG    *G_pulVarMenuOfs = NULL;
+            // V0.9.21 (2002-08-28) [umoeller]
+
 /*
  *@@ SETTINGINFO:
  *      gives detailed information about an
@@ -3046,7 +3049,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fTurboFolders",
 #endif
 
-        sulVarMenuOffset, FIELDOFFSET(OLDGLOBALSETTINGS, VarMenuOffset), 4,
+        sulVarMenuOfs, FIELDOFFSET(OLDGLOBALSETTINGS, VarMenuOffset), 4,
             SP_SETUP_PARANOIA, 700,
             "ulVarMenuOffset",
 
@@ -3387,6 +3390,10 @@ VOID cmnLoadGlobalSettings(VOID)
             }
         }
     }
+
+    // set global variable to var menu offset
+    // V0.9.21 (2002-08-28) [umoeller]
+    G_pulVarMenuOfs = &G_aulSettings[sulVarMenuOfs];
 }
 
 /*
@@ -4619,10 +4626,10 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
         // which we add items to now
         winhInsertMenuSeparator(mi.hwndSubMenu,
                                 MIT_END,
-                                (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
+                                *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
         winhInsertMenuItem(mi.hwndSubMenu,
                            MIT_END,
-                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_PRODINFO),
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_PRODINFO,
                            cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                            MIS_TEXT, 0);
         brc = TRUE;
@@ -5146,7 +5153,7 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
     // add "Close" menu item
     winhInsertMenuSeparator(hwndMenu,
                             MIT_END,
-                            cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR);
+                            *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
     winhInsertMenuItem(hwndMenu,
                        MIT_END,
                        WPMENUID_CLOSE,

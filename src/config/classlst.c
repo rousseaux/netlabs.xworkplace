@@ -3053,7 +3053,7 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                           TRUE,
                           &mi))
     {
-        ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+        ULONG ulOfs = *G_pulVarMenuOfs;
 
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
@@ -3101,7 +3101,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
 {
     BOOL brc = FALSE;
 
-    if (ulMenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (ulMenuId == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
     {
         // "Open" --> "Class list":
         // wpViewObject will call wpOpen if a new view is necessary

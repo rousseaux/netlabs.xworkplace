@@ -813,7 +813,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     XFolderData *somThis = XFolderGetData(somSelf);
 
     // we have a valid open view:
-    ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG       ulOfs = cmnQuerySetting(sulVarMenuOfs);
     ULONG       ulAttr = 0;
     USHORT      usIconsAttr;
 
@@ -1105,7 +1105,7 @@ static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
 static LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
                                   HWND       hMenuThis,      // in: menu to add items to (var.)
                                   HWND       hwndCnr,        // in: needed for wpInsertPopupMenuItems (const)
-                                  ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOffset)
+                                  ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOfs)
 {
     LONG       lDefaultItem = 0;
     LONG       rc = 0,
@@ -1408,7 +1408,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
     BOOL            rc = TRUE;
     MENUITEM        mi;
 
-    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
 
     ULONG           flWPS = cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)),
                     flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
@@ -1899,7 +1899,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 {
     BOOL brc = FALSE;
 
-    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
 
     HWND hNewMenu;
 
@@ -1990,7 +1990,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
                                 HWND hwndCnr,
                                 ULONG iPosition)
 {
-    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
 
     /* if (cmnQuerySetting(sfExtAssocs))
     {

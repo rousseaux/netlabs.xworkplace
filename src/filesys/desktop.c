@@ -433,7 +433,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     BOOL fShutdownRunning = xsdQueryShutdownState() != XSD_IDLE;
     ULONG ulShutdownAttr = 0;
 
-    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG ulOfs = cmnQuerySetting(sulVarMenuOfs);
 
     if (fShutdownRunning)
         // disable all those menu items if XShutdown is currently running
@@ -635,7 +635,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
 {
     if (xsdQueryShutdownState() == XSD_IDLE)
     {
-        ULONG ulMenuId2 = (*pulMenuId - (cmnQuerySetting(sulVarMenuOffset)));
+        ULONG ulMenuId2 = (*pulMenuId - (cmnQuerySetting(sulVarMenuOfs)));
 
         if (ulMenuId2 == ID_XFMI_OFS_RESTARTWPS)
         {

@@ -958,7 +958,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         CHAR        szEmptyItem[200];
         ULONG       ulAttr = 0;
-        ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
+        ULONG       ulOfs = *G_pulVarMenuOfs;
 
         if (_xwpTrashCanBusy(somSelf, 0))
             // currently populating:
@@ -999,8 +999,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
                                                 HWND hwndFrame,
                                                 ULONG ulMenuId)
 {
-    BOOL                brc = TRUE;
-    ULONG               ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
+    BOOL    brc = TRUE;
+    ULONG   ulMenuId2 = ulMenuId - *G_pulVarMenuOfs;
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemSelected");
@@ -1046,7 +1046,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemHelpSelected");
 
-    if (MenuId - cmnQuerySetting(sulVarMenuOffset) == ID_XFMI_OFS_TRASHEMPTY)
+    if (MenuId - *G_pulVarMenuOfs == ID_XFMI_OFS_TRASHEMPTY)
     {
         // now open the help panel we've set above
         cmnDisplayHelp(somSelf,

@@ -1033,6 +1033,212 @@ static ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wp
 }
 
 /*
+ *@@ CheckOneClassOrder:
+ *
+ *      Returns TRUE if the class list was changed.
+ *
+ *@@added V0.9.21 (2002-08-26) [umoeller]
+ */
+
+BOOL CheckOneClassOrder(PCSZ pcszOriginal,
+                        PCSZ pcszXwp,
+                        BOOL fShouldBeFirst)
+{
+    BOOL    brc = FALSE;
+    PSZ     pszList;
+    ULONG   cbList;
+
+    _PmpfF(("%s", pcszOriginal));
+
+    if (pszList = prfhQueryProfileData(HINI_USER,
+                                       WPINIAPP_REPLACEMENTS, // "PM_Workplace:ReplaceList",
+                                       pcszOriginal,
+                                       &cbList))
+    {
+        // build a linked list of classes from the string
+        PSZ         pReplThis = pszList;
+        LINKLIST    llReplacements;
+        ULONG       cReplacements = 0,
+                    cIndexXwp = 0,
+                    cbTotal = 0;        // re-run in case the list is broken
+        XSTRING     strOrderOld,
+                    strOrderNew;
+        PLISTNODE   pNode,
+                    pNodeXwp;
+        PCSZ        apcsz[4];
+
+        BOOL        fRewrite = FALSE;
+
+        xstrInit(&strOrderOld, 0);
+        xstrInit(&strOrderNew, 0);
+
+        lstInit(&llReplacements,
+                FALSE);         // no auto-free, we're storing const strings
+
+        while (*pReplThis)
+        {
+            ULONG   ulLengthThis;
+            BOOL    fBroken = FALSE;
+            // the list _should_ be terminated with two nulls,
+            // but better be safe than sorry
+            if (pReplThis >= pszList + cbList)
+                fBroken = TRUE;
+
+            ulLengthThis = strlen(pReplThis);
+
+            if (pReplThis + ulLengthThis > pszList + cbList)
+                fBroken = TRUE;
+
+            if (fBroken)
+            {
+                _Pmpf(("    format for %s is broken", pcszOriginal));
+                // rewrite with two nulls
+                if (cReplacements)
+                {
+                    apcsz[0] = pcszOriginal;
+                    if (MBID_YES == cmnMessageBoxExt(NULLHANDLE,
+                                                     247, // &xwp; Class Replacements
+                                                     apcsz,
+                                                     1,
+                                                     250,
+                                                     MB_YESNO))
+                        fRewrite = TRUE;
+                }
+
+                break;
+            }
+
+            _Pmpf(("  found replacement class \"%s\"", pReplThis));
+
+            pNode = lstAppendItem(&llReplacements, pReplThis);
+
+            if (!strcmp(pReplThis, pcszXwp))
+                pNodeXwp = pNode;
+
+            xstrcat(&strOrderOld, pReplThis, ulLengthThis);
+            xstrcatc(&strOrderOld, ' ');
+
+            ++cReplacements;
+            pReplThis += ulLengthThis + 1;
+            cbTotal += ulLengthThis + 1;
+        }
+
+        if (pNodeXwp)
+        {
+            if (    (    (fShouldBeFirst)
+                      && (pNodeXwp != lstQueryFirstNode(&llReplacements))
+                    )
+                 || (    (!fShouldBeFirst)
+                      && (pNodeXwp != lstQueryLastNode(&llReplacements))
+                    )
+               )
+            {
+                // order is wrong: reorder
+                lstRemoveNode(&llReplacements,
+                              pNodeXwp);
+                if (fShouldBeFirst)
+                    lstInsertItemBefore(&llReplacements,
+                                        (PVOID)pcszXwp,
+                                        0);
+                else
+                    lstAppendItem(&llReplacements,
+                                  (PVOID)pcszXwp);
+
+                FOR_ALL_NODES(&llReplacements, pNode)
+                {
+                    xstrcat(&strOrderNew, (PCSZ)pNode->pItemData, 0);
+                    xstrcatc(&strOrderNew, ' ');
+                }
+
+                apcsz[0] = pcszOriginal;
+                apcsz[1] = pcszXwp;
+                apcsz[2] = strOrderOld.psz;
+                apcsz[3] = strOrderNew.psz;
+
+                if (MBID_YES == cmnMessageBoxExt(NULLHANDLE,
+                                                 247, // &xwp; Class Replacements
+                                                 apcsz,
+                                                 4,
+                                                 248,
+                                                 MB_YESNO))
+                {
+                    fRewrite = TRUE;
+                }
+            }
+        }
+
+        if (fRewrite)
+        {
+            PSZ     pszNew = malloc(cbTotal + 1),
+                    pThis = pszNew;
+            FOR_ALL_NODES(&llReplacements, pNode)
+            {
+                ULONG   cbThis = strlen((PCSZ)pNode->pItemData) + 1;
+                memcpy(pThis, (PCSZ)pNode->pItemData, cbThis);
+                pThis += cbThis;
+            }
+
+            *pThis = '\0';
+
+            PrfWriteProfileData(HINI_USER,
+                                (PSZ)WPINIAPP_REPLACEMENTS, // "PM_Workplace:ReplaceList",
+                                (PSZ)pcszOriginal,
+                                pszNew,
+                                cbTotal + 1);
+            brc = TRUE;
+        }
+
+        xstrClear(&strOrderOld);
+        xstrClear(&strOrderNew);
+        lstClear(&llReplacements);
+
+        free(pszList);
+    }
+
+    return brc;
+}
+
+/*
+ *@@ CheckClassOrder:
+ *      runs through the class replacements list in
+ *      OS2.INI and checks if the XWP classes are
+ *      in the correct order.
+ *
+ *@@added V0.9.21 (2002-08-26) [umoeller]
+ */
+
+VOID CheckClassOrder(VOID)
+{
+    ULONG   cChanged = 0;
+
+    cChanged += CheckOneClassOrder(G_pcszWPObject,
+                                   G_pcszXFldObject,
+                                   TRUE);           // should be first
+#if 0
+    cChanged += CheckOneClassOrder(G_pcszWPDisk,
+                                   G_pcszXFldDisk,
+                                   TRUE);           // should be first
+    cChanged += CheckOneClassOrder(G_pcszWPFileSystem,
+                                   G_pcszXWPFileSystem,
+                                   TRUE);           // should be first
+    cChanged += CheckOneClassOrder(G_pcszWPFolder,
+                                   G_pcszXFolder,
+                                   TRUE);           // should be first
+#endif
+
+    if (cChanged)
+    {
+        if (MBID_YES == cmnMessageBoxExt(NULLHANDLE,
+                                         247, // &xwp; Class Replacements
+                                         NULL,
+                                         0,
+                                         249,
+                                         MB_YESNO))
+            DosExit(EXIT_PROCESS, 0);
+    }
+}
+
+/*
  *@@ initMain:
  *      this gets called from M_XFldObject::wpclsInitData
  *      when the WPS is initializing. See remarks there.
@@ -1106,6 +1312,7 @@ static ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wp
  *@@changed V0.9.17 (2002-02-05) [umoeller]: added option to stop checking for broken desktops
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed wrong pager settings after logoff
  *@@changed V0.9.19 (2002-05-01) [umoeller]: changed name of startup log file
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: added checks for proper class replacements ordering
  */
 
 VOID initMain(VOID)
@@ -1238,6 +1445,14 @@ VOID initMain(VOID)
 
     if (cmnQuerySetting(sfNumLockStartup))
         winhSetNumLock(TRUE);
+
+    /*
+     * CheckClassOrder:
+     *
+     *
+     */
+
+    CheckClassOrder();
 
     TRY_LOUD(excpt1)
     {

@@ -313,7 +313,7 @@
 static VOID CheckDefaultSortItem(HWND hwndSortMenu,
                                  LONG lSort)
 {
-    ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
 
     // first run thru the existing menu as composed
     // by the WPS and uncheck the default item.
@@ -409,7 +409,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
-        ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+        ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
         MENUITEM mi;
 
         if (winhQueryMenuItem(hwndMenuWithSortSubmenu,
@@ -534,7 +534,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
-        LONG            lMenuId2 = (LONG)ulMenuId - (LONG)cmnQuerySetting(sulVarMenuOffset);
+        LONG            lMenuId2 = (LONG)ulMenuId - (LONG)cmnQuerySetting(sulVarMenuOfs);
         LONG            lAlwaysSort,
                         lFoldersFirst,
                         lDefaultSort;
@@ -1224,27 +1224,26 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
  *      the parameters to this func.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted to new callback prototype
  */
 
-MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwnd
-                                 ULONG ulSort,     // sort flag
-                                 MPARAM mpView,    // OPEN_xxx flag
-                                 MPARAM mpFolder)  // XFolder*
+BOOL _Optlink fdrSortAllViews(WPFolder *somSelf,
+                              HWND hwndView,
+                              ULONG ulView,
+                              ULONG ulSort)      // sort flag
 {
-    XFolder     *somSelf = (XFolder*)mpFolder;
-    MRESULT     mrc = (MPARAM)FALSE;
-
-    if (    ((ULONG)mpView == OPEN_CONTENTS)
-         || ((ULONG)mpView == OPEN_TREE)
-         || ((ULONG)mpView == OPEN_DETAILS)
+    if (    (ulView == OPEN_CONTENTS)
+         || (ulView == OPEN_TREE)
+         || (ulView == OPEN_DETAILS)
        )
     {
         _xwpSortViewOnce(somSelf,
                          hwndView,
                          ulSort);
-        mrc = (MPARAM)TRUE;
+        return TRUE;
     }
-    return mrc;
+
+    return FALSE;
 }
 
 /*
@@ -1501,23 +1500,21 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed wrong window handle
+ *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted to new callback prototype
  */
 
-MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
-                                      ULONG fForce,
-                                      MPARAM mpView,   // OPEN_xxx flag for this view
-                                      MPARAM mpFolder) // somSelf
+BOOL _Optlink fdrUpdateFolderSorts(WPFolder *somSelf,
+                                   HWND hwndView,
+                                   ULONG ulView,
+                                   ULONG fForce)
 {
-    XFolder     *somSelf = (XFolder*)mpFolder;
-    MRESULT     mrc = (MPARAM)FALSE;
-
     #ifdef DEBUG_SORT
         _PmpfF(("%s", _wpQueryTitle(somSelf) ));
     #endif
 
-    if (   ((ULONG)mpView == OPEN_CONTENTS)
-        || ((ULONG)mpView == OPEN_TREE)
-        || ((ULONG)mpView == OPEN_DETAILS)
+    if (    (ulView == OPEN_CONTENTS)
+         || (ulView == OPEN_TREE)
+         || (ulView == OPEN_DETAILS)
        )
     {
         HWND hwndCnr = WinWindowFromID(hwndView, FID_CLIENT);
@@ -1529,9 +1526,11 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
         fdrSetFldrCnrSort(somSelf,
                           hwndCnr, // hwndView, // wrong!! V0.9.7 (2000-12-18) [umoeller]
                           fForce);
-        mrc = (MPARAM)TRUE;
+
+        return TRUE;
     }
-    return mrc;
+
+    return FALSE;
 }
 
 /* ******************************************************************
@@ -1889,8 +1888,8 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                                  SP_FLDRSORT_FLDR);
 
             // update all open folders
-            fdrForEachOpenGlobalView(TRUE,  // force
-                                     fdrUpdateFolderSorts);
+            fdrForEachOpenGlobalView(fdrUpdateFolderSorts,
+                                     TRUE);  // force
             WinSetPointer(HWND_DESKTOP, hptrOld);
         }
     }

@@ -326,7 +326,7 @@
             // #define DEBUG_CNRBITMAPS
 
         // this debugs the split view populate thread
-            // #define DEBUG_POPULATESPLITVIEW
+            #define DEBUG_POPULATESPLITVIEW
 
 /* file ops debugging */
 

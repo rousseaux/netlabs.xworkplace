@@ -3562,7 +3562,7 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
 
 static const XWPSETTING G_ParanoiaBackup[] =
     {
-        sulVarMenuOffset,
+        sulVarMenuOfs,
         // sfNoFreakyMenus,     removed V0.9.21 (2002-08-26) [umoeller]
 #ifndef __ALWAYSSUBCLASS__
         sfNoSubclassing,
@@ -3694,7 +3694,7 @@ VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // variable menu ID offset spin button
         winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XCDI_VARMENUOFFSET,
                                                 100, 2000,
-                                                cmnQuerySetting(sulVarMenuOffset));
+                                                cmnQuerySetting(sulVarMenuOfs));
         // winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
         //                                        cmnQuerySetting(sfNoFreakyMenus));
         // removed V0.9.21 (2002-08-26) [umoeller]
@@ -3752,7 +3752,7 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
     switch (ulItemID)
     {
         case ID_XCDI_VARMENUOFFSET:
-            cmnSetSetting(sulVarMenuOffset, ulExtra);
+            cmnSetSetting(sulVarMenuOfs, ulExtra);
         break;
 
         // case ID_XCDI_NOFREAKYMENUS:

@@ -143,6 +143,7 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrcommand.h"         // folder menu command reactions
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\refresh.h"            // folder auto-refresh
@@ -311,8 +312,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 #endif
         {
             fdrForEachOpenInstanceView(somSelf,
-                                       TRUE,            // force
-                                       fdrUpdateFolderSorts);
+                                       fdrUpdateFolderSorts,
+                                       TRUE);   // force
             // update folder "Sort" notebook page, if open
             ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
         }
@@ -2168,7 +2169,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // we have a default document for this folder:
                 // change default view to menu item ID of "open default document"
                 // (same as in mnuModifyDataFilePopupMenu)
-                ulDefaultView = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_FDRDEFAULTDOC;
+                ulDefaultView = *G_pulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC;
         }
 #endif
 
@@ -2363,23 +2364,25 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
                                                  HWND hwndCnr,
                                                  BOOL fMultiSelect)
 {
-    ULONG ulMenuFilter = 0;
-    // XFolderData *somThis = XFolderGetData(somSelf);
+    ULONG       flMenuFilter = 0;
+    XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
 
-    ulMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
+    // store the filter in the instance data so we can
+    // respect it in wpModifyPopupMenu V0.9.21 (2002-08-26) [umoeller]
+    flMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
                                                              ulFlags,
                                                              hwndCnr,
                                                              fMultiSelect);
     #ifdef DEBUG_MENUS
         _Pmpf(("XFolder::wpFilterPopupMenu parent flags:"));
-        _Pmpf(("  CTXT_CRANOTHER %d", ulMenuFilter & CTXT_CRANOTHER));
+        _Pmpf(("  CTXT_CRANOTHER %d", flMenuFilter & CTXT_CRANOTHER));
     #endif
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete
     if (_xwpQueryDeletion(somSelf, NULL, NULL))
-        ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
+        flMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
     // now suppress default menu items according to
     // Global Settings;
@@ -2387,9 +2390,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     // ready-made for this function; the "Workplace Shell"
     // notebook page for removing menu items sets this field with
     // the proper CTXT_xxx flags
-    return ((ulMenuFilter)
-            & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)))
-        );
+    return (flMenuFilter & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf))));
 }
 
 /*
@@ -2409,9 +2410,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
                                              HWND  hwndCnr,
                                              ULONG iPosition)
 {
-    BOOL                rc = TRUE;
-    HWND                hwndCnr2 = hwndCnr;
-
+    BOOL        rc = TRUE;
     XFolderData *somThis = XFolderGetData(somSelf);
 
     /* _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
@@ -2424,19 +2423,17 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
 
     // _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
 
-    if (hwndCnr == NULLHANDLE)
-    {
+    if (!hwndCnr)
         // bug in Warp 3: if the popup menu is requested
         // on container whitespace, hwndCnr is passed as
         // NULLHANDLE; we therefore use this ugly
         // workaround
-        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclWPFolderWindow
-    }
+        hwndCnr = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclWPFolderWindow
 
     // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
     if (rc = mnuModifyFolderPopupMenu(somSelf,
                                       hwndMenu,
-                                      hwndCnr2,
+                                      hwndCnr,
                                       iPosition))
         fdrAddHotkeysToMenu(somSelf,
                             hwndCnr,
@@ -2534,7 +2531,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
 {
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
-    ULONG       ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG       ulVarMenuOfs = *G_pulVarMenuOfs;
     // XFolderMethodDebug("XFolder","xf_wpOpen");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
@@ -2715,10 +2712,12 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf,
     rc = XFolder_parent_WPFolder_wpRefresh(somSelf, ulView, pReserved);
 
     fdrForEachOpenInstanceView(somSelf,
-                               (ULONG)2,           // update
-                               (PFNWP)stb_UpdateCallback);
+                               stb_UpdateCallback,
+                               2);           // update
 
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, (MPARAM)FDRUPDATE_TITLE);
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS,
+                      (MPARAM)somSelf,
+                      (MPARAM)FDRUPDATE_TITLE);
 
     return rc;
 }
@@ -3065,7 +3064,8 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
 
     BOOL    brc = TRUE,
             fCallParent = TRUE,
-            fFolderLocked = FALSE;
+            fFdrWriteLocked = FALSE,
+            fFdrObjLocked = FALSE;
 
     #ifdef DEBUG_SOMMETHODS
          _Pmpf(("wpAddToContent, folder: %s, object: %s",
@@ -3082,8 +3082,40 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
     {
         TRY_LOUD(excpt1)
         {
-            if (fFolderLocked = !fdrRequestFolderWriteMutexSem(somSelf))
-                brc = fdrAddToContent(somSelf, Object, &fCallParent);
+            if (    (fFdrWriteLocked = !fdrRequestFolderWriteMutexSem(somSelf))
+                 && (brc = fdrAddToContent(somSelf, Object, &fCallParent))
+                    // check if the folder is currently showing on the right
+                    // side of a folder split view (yes, we only support this
+                    // right now if turbo folders are enabled)
+                    // V0.9.21 (2002-08-28) [umoeller]
+                 && (fFdrObjLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+               )
+            {
+                PUSEITEM pui;
+
+                for (pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                     pui;
+                     pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pui))
+                {
+                    PVIEWITEM   pvi = (PVIEWITEM)(pui + 1);
+                    HWND        hwndCnr;
+                    if (    (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING)
+                         // we set the following flag in the split view while we're
+                         // populating
+                         && (!(pvi->ulViewState & VIEWSTATE_OPENING))
+                         && (hwndCnr = WinWindowFromID(pvi->handle, FID_CLIENT))
+                       )
+                    {
+                        // alright, add it
+                        POINTL ptl = {0, 0};
+                        _wpCnrInsertObject(Object,
+                                           hwndCnr,
+                                           &ptl,
+                                           NULL,
+                                           NULL);
+                    }
+                }
+            }
         }
         CATCH(excpt1)
         {
@@ -3091,18 +3123,23 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
         } END_CATCH();
     }
 
+    // release folder's _object_ mutex before calling parent
+    // V0.9.21 (2002-08-28) [umoeller]
+    if (fFdrObjLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
     // keep the folder locked while calling the parent!
     // V0.9.16 (2002-01-26) [umoeller]
     if (fCallParent)
         brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
 
-    if (fFolderLocked)
+    if (fFdrWriteLocked)
         fdrReleaseFolderWriteMutexSem(somSelf);
 
     if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
-                                   STBM_UPDATESTATUSBAR,
-                                   stb_PostCallback);
+                                   stb_PostCallback,
+                                   STBM_UPDATESTATUSBAR);
 
     return brc;
 }
@@ -3155,8 +3192,8 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
 
     if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
-                                   STBM_UPDATESTATUSBAR,
-                                   stb_PostCallback);
+                                   stb_PostCallback,
+                                   STBM_UPDATESTATUSBAR);
 
     return brc;
 }

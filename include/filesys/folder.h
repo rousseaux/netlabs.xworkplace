@@ -313,12 +313,18 @@
      *
      ********************************************************************/
 
-    BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
-                                    ULONG ulMsg,
-                                    PFNWP pfnwpCallback);
+    typedef BOOL _Optlink FNFOREACHVIEWCALLBACK(WPFolder *somSelf,
+                                                HWND hwndView,
+                                                ULONG ulView,
+                                                ULONG ulUser);
+    typedef FNFOREACHVIEWCALLBACK *PFNFOREACHVIEWCALLBACK;
 
-    BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
-                                  PFNWP pfnwpCallback);
+    BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
+                                    PFNFOREACHVIEWCALLBACK pfnCallback,
+                                    ULONG ulUser);
+
+    BOOL fdrForEachOpenGlobalView(PFNFOREACHVIEWCALLBACK pfnCallback,
+                                  ULONG ulUser);
 
     VOID stbUpdate(WPFolder *pFolder);
 
@@ -392,10 +398,10 @@
 
     BOOL fdrHasAlwaysSort(WPFolder *somSelf);
 
-    MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,
-                                     ULONG ulSort,
-                                     MPARAM mpView,
-                                     MPARAM mpFolder);
+    BOOL _Optlink fdrSortAllViews(WPFolder *somSelf,
+                                  HWND hwndView,
+                                  ULONG ulView,
+                                  ULONG ulSort);
 
     BOOL fdrSortViewOnce(WPFolder *somSelf,
                          HWND hwndFrame,
@@ -405,10 +411,10 @@
                            HWND hwndCnr,
                            BOOL fForce);
 
-    MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,
-                                          ULONG ulDummy,
-                                          MPARAM mpView,
-                                          MPARAM mpFolder);
+    BOOL _Optlink fdrUpdateFolderSorts(WPFolder *somSelf,
+                                       HWND hwndView,
+                                       ULONG ulView,
+                                       ULONG fForce);
 
     /********************************************************************
      *
@@ -549,147 +555,6 @@
         VOID fdrShowPasteDlg(WPFolder *pFolder,
                              HWND hwndFrame);
     #endif
-
-    /* ******************************************************************
-     *
-     *   Folder split views (fdrsplit.c)
-     *
-     ********************************************************************/
-
-    WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
-                                     BOOL fFoldersOnly);
-
-    BOOL fdrIsInsertable(WPObject *pObject,
-                         BOOL ulFoldersOnly,
-                         PCSZ pcszFileMask);
-
-    BOOL fdrIsObjectInCnr(WPObject *pObject,
-                          HWND hwndCnr);
-
-    #ifdef LINKLIST_HEADER_INCLUDED
-    #ifdef THREADS_HEADER_INCLUDED
-
-        #define INSERT_ALL              0
-        #define INSERT_FILESYSTEMS      1
-        #define INSERT_FOLDERSONLY      2
-        #define INSERT_FOLDERSANDDISKS  3
-
-        VOID fdrInsertContents(WPFolder *pFolder,
-                               HWND hwndCnr,
-                               PMINIRECORDCORE precParent,
-                               ULONG ulFoldersOnly,
-                               HWND hwndAddFirstChild,
-                               PCSZ pcszFileMask,
-                               PLINKLIST pllObjects);
-
-        ULONG fdrClearContainer(HWND hwndCnr,
-                                PLINKLIST pllObjects);
-
-        #define ID_TREEFRAME            1001
-        #define ID_FILESFRAME           1002
-
-        #define FM_FILLFOLDER           (WM_USER + 1)
-            #define FFL_FOLDERSONLY         0x0001
-            #define FFL_SCROLLTO            0x0002
-            #define FFL_EXPAND              0x0004
-            #define FFL_SETBACKGROUND       0x0008
-
-        #define FM_POPULATED_FILLTREE   (WM_USER + 2)
-        #define FM_POPULATED_SCROLLTO   (WM_USER + 3)
-        #define FM_POPULATED_FILLFILES  (WM_USER + 4)
-        #define FM_UPDATEPOINTER        (WM_USER + 5)
-
-        #define FM2_POPULATE            (WM_USER + 6)
-        #define FM2_ADDFIRSTCHILD_BEGIN (WM_USER + 7)
-        #define FM2_ADDFIRSTCHILD_NEXT  (WM_USER + 8)
-        #define FM2_ADDFIRSTCHILD_DONE  (WM_USER + 9)
-
-        /*
-         *@@ FDRSPLITVIEW:
-         *
-         */
-
-        typedef struct _FDRSPLITVIEW
-        {
-            LONG            lSplitBarPos;       // initial split bar position in percent
-
-            // window hierarchy
-            HWND            hwndMainFrame,
-                            hwndMainControl;    // child of hwndMainFrame
-
-            HWND            hwndSplitWindow,    // child of hwndMainControl
-                            hwndTreeFrame,      // child of hwndSplitWindow
-                            hwndTreeCnr,        // child of hwndTreeFrame
-                            hwndFilesFrame,     // child of hwndSplitWindow
-                            hwndFilesCnr;       // child of hwndFilesFrame
-
-            HWND            hwndStatusBar;      // if present, or NULLHANDLE
-
-            // data for drives view (left)
-            PSUBCLFOLDERVIEW psfvTree;          // XFolder subclassed view data (needed
-                                                // for cnr owner subclassing with XFolder's
-                                                // cooperation);
-                                                // created in fdlgFileDlg only once
-
-            WPFolder        *pRootFolder;       // root folder to populate, whose contents
-                                                // appear in left tree (constant)
-
-            PMINIRECORDCORE precFolderContentsShowing;
-                                                // record that is currently selected
-                                                // in the tree on the left
-            PMINIRECORDCORE precContextMenu;    // record for which context menu is
-                                                // showing; we need this for figuring
-                                                // out whether we need to process WM_COMMAND
-                                                // ourselves
-
-            // data for files view (right)
-            PSUBCLFOLDERVIEW psfvFiles;         // XFolder subclassed view data (see above)
-            BOOL            fFilesFrameSubclassed;  // TRUE after first insert
-
-            BOOL            fFileDlgReady;
-                    // while this is FALSE (during the initial setup),
-                    // the dialog doesn't react to any changes in the containers
-
-            ULONG           cThreadsRunning;
-                    // if > 0, STPR_WAIT is used for the pointer
-
-            // populate thread
-            THREADINFO      tiSplitPopulate;
-            volatile TID    tidSplitPopulate;
-            HWND            hwndSplitPopulate;
-
-            LINKLIST        llTreeObjectsInserted; // linked list of plain WPObject* pointers
-                                                // inserted, no auto-free; needed for cleanup
-            LINKLIST        llFileObjectsInserted;
-
-        } FDRSPLITVIEW, *PFDRSPLITVIEW;
-
-        HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv);
-
-        VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
-                              PMINIRECORDCORE prec,
-                              ULONG fl);
-
-        VOID fdrPostFillFolder(PFDRSPLITVIEW psv,
-                               PMINIRECORDCORE prec,
-                               ULONG fl);
-
-        HWND fdrCreateFrameWithCnr(ULONG ulFrameID,
-                                   HWND hwndParentOwner,
-                                   ULONG flCnrStyle,
-                                   HWND *phwndClient);
-
-        MPARAM fdrSetupSplitView(HWND hwnd,
-                                 BOOL fMultipleSel,
-                                 PFDRSPLITVIEW psv);
-
-        VOID fdrCleanupSplitView(PFDRSPLITVIEW psv);
-
-    #endif
-    #endif
-
-    HWND fdrCreateSplitView(WPFolder *somSelf,
-                            ULONG ulView);
 
     /* ******************************************************************
      *

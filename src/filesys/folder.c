@@ -186,7 +186,7 @@ BOOL fdrSetup(WPFolder *somSelf,
         if (!stricmp(szValue, "SPLITVIEW"))
             krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                     (MPARAM)somSelf,
-                                    (MPARAM)(   cmnQuerySetting(sulVarMenuOffset)
+                                    (MPARAM)(   cmnQuerySetting(sulVarMenuOfs)
                                               + ID_XFMI_OFS_SPLITVIEW
                                             )
                                    );
@@ -381,8 +381,8 @@ BOOL fdrSetup(WPFolder *somSelf,
                 usSort = SET_DEFAULT;
 
             fdrForEachOpenInstanceView(somSelf,
-                                       usSort,
-                                       fdrSortAllViews);
+                                       fdrSortAllViews,
+                                       usSort);
         }
 
 #ifdef __DEBUG__
@@ -442,10 +442,8 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         CHAR        szTemp[1000] = "";
         BOOL        fDefaultMenuBar = FALSE;
-
-        // some settings better have this extra check,
-        // not sure if it's really needed
-        BOOL        fInitialized = objIsObjectInitialized(somSelf);
+        PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+        PBYTE       pbColor;
 
         // xstrInit(pstrSetup, 400);
         xstrInit(&strView, 200);
@@ -514,17 +512,26 @@ BOOL fdrQuerySetup(WPObject *somSelf,
          *
          */
 
-        // BACKGROUND
-/*
-        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-            if ((_pWszFolderBkgndImageFile) && (_pFolderBackground))
+        // BACKGROUND, rewritten V0.9.21 (2002-08-28) [umoeller]
+        if (pData)
+        {
+            // the folder has instance background data
+            // if the pCurrentBackground member points
+            // to the instance data
+            _PmpfF(("[%s] pCurrentBackground 0x%lX, &Background 0x%lX",
+                    _wpQueryTitle(somSelf),
+                    pData->pCurrentBackground,
+                    &pData->Background));
+
+            if (pData->pCurrentBackground == &pData->Background)
             {
-                CHAR cType = 'S';
+                CHAR    cType = 'S';
 
-                PBYTE pbRGB = ( (PBYTE)(&(_pFolderBackground->rgbColor)) );
+                PSZ     pszBitmapFile;
+                PCSZ    pcszUseFile = "(none)";
+                CHAR    cImageMode;
 
-                PSZ pszBitmapFile;
-                if (pszBitmapFile = strdup(_pWszFolderBkgndImageFile))
+                if (pszBitmapFile = strdup(pData->Background.BkgndStore.pszBitmapFile))
                 {
                     CHAR cBootDrive = doshQueryBootDrive();
 
@@ -535,27 +542,42 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                         // replace with '?' to make it portable
                         *pszBitmapFile = '?';
 
-                    switch (_pFolderBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
-                    {
-                        case 2: cType = 'N'; break;
-                        case 3: cType = 'T'; break;
-                        default: cType = 'S'; break;        // 4
-                    }
-
-                    sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
-                            pszBitmapFile,  // image name
-                            cType,                    // N = normal, T = tiled, S = scaled
-                            _pFolderBackground->bScaleFactor,  // scaling factor
-                            (_pFolderBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
-                                ? 'I'
-                                : 'C', // I = image, C = color only
-                            *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
-                    xstrcat(pstrSetup, szTemp, 0);
-
-                    free(pszBitmapFile);
+                    pcszUseFile = pszBitmapFile;
                 }
+
+                switch (pData->Background.BkgndStore.usTiledOrScaled)
+                {
+                    case BKGND_TILED:
+                        cImageMode = 'T';
+                    break;
+
+                    case BKGND_SCALED:
+                        cImageMode = 'S';
+                    break;
+
+                    default: // case BKGND_NORMAL:
+                        cImageMode = 'N';
+                    break;
+                }
+
+                sprintf(szTemp,
+                        "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
+                        pcszUseFile,     // image name; set to "(none)" if there's none
+                        cImageMode,
+                        pData->Background.BkgndStore.usScaleFactor,
+                        (pData->Background.BkgndStore.usColorOrBitmap == BKGND_BITMAP)
+                            ? 'I'
+                            : 'C', // I = image, C = color only
+                        GET_RED(pData->Background.BkgndStore.lcolBackground),
+                        GET_GREEN(pData->Background.BkgndStore.lcolBackground),
+                        GET_BLUE(pData->Background.BkgndStore.lcolBackground));
+                xstrcat(pstrSetup, szTemp, 0);
+
+                if (pszBitmapFile)
+                    free(pszBitmapFile);
             }
-*/
+        }
+
         // DEFAULTVIEW: already handled by XFldObject
 
         /*
@@ -627,64 +649,40 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         // ICONTEXTBACKGROUNDCOLOR
 
         // ICONTEXTCOLOR
-        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-#if 1
-            {
-                PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                PBYTE pbArrayField;
+        if (pData)
+        {
+            if (!fIconViewColumns)
+                pbColor = (PBYTE)&pData->LongArray.rgbIconViewTextColAsPlaced;
+            else
+                pbColor = (PBYTE)&pData->LongArray.rgbIconViewTextColColumns;
 
-                if (!fIconViewColumns)
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbIconViewTextColAsPlaced;
-                else
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbIconViewTextColColumns;
-#else
-            if (_pFolderLongArray)
+            if (!pbColor[3])       // use default?
             {
-                BYTE bUseDefault = FALSE;
-                PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewTextColAsPlaced)) );
-                if (fIconViewColumns)
-                    // FLOWED or NONFLOWED: use different field then
-                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewTextColColumns)) );
-#endif
+                sprintf(szTemp,
+                        "ICONTEXTCOLOR=%d %d %d;",
+                        pbColor[2],
+                        pbColor[1],
+                        pbColor[0]);
+                xstrcat(pstrSetup, szTemp, 0);
+            }
+        }
 
-                if (!(*(pbArrayField + 3)))       // use default?
+        // ICONSHADOWCOLOR
+        if (pData)
+            if (G_fIsWarp4)
+            {
+                pbColor = (PBYTE)&pData->LongArray.rgbIconViewShadowCol;
+
+                if (!pbColor[3])       // use default?
                 {
-                    BYTE bRed   = *(pbArrayField + 2);
-                    BYTE bGreen = *(pbArrayField + 1);
-                    BYTE bBlue  = *(pbArrayField );
-
-                    sprintf(szTemp, "ICONTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                    sprintf(szTemp,
+                            "ICONSHADOWCOLOR=%d %d %d;",
+                            pbColor[2],
+                            pbColor[1],
+                            pbColor[0]);
                     xstrcat(pstrSetup, szTemp, 0);
                 }
             }
-
-        // ICONSHADOWCOLOR
-        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-#if 1
-                if (G_fIsWarp4)
-                {
-                    PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                    PBYTE pbArrayField;
-
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbIconViewShadowCol;
-#else
-            if (_pFolderLongArray)
-                // only Warp 4 has these fields, so check size of array
-                if (_cbFolderLongArray >= 84)
-                {
-                    PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewShadowCol)) );
-#endif
-
-                    if (!(*(pbArrayField + 3)))       // use default?
-                    {
-                        BYTE bRed   = *(pbArrayField + 2);
-                        BYTE bGreen = *(pbArrayField + 1);
-                        BYTE bBlue  = *(pbArrayField );
-
-                        sprintf(szTemp, "ICONSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(pstrSetup, szTemp, 0);
-                    }
-                }
 
         /*
          * Tree view
@@ -703,6 +701,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                 sprintf(szTemp, "TREEFONT=%s;", pszValue);
                 xstrcat(pstrSetup, szTemp, 0);
             }
+
             free(pszDefaultValue);
         }
 
@@ -766,62 +765,43 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         xstrClear(&strView);
 
-        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-#if 1
+        if (pData)
+        {
+            if (fTreeIconsInvisible)
+                pbColor = (PBYTE)&pData->LongArray.rgbTreeViewTextColTextOnly;
+            else
+                pbColor = (PBYTE)&pData->LongArray.rgbTreeViewTextColIcons;
+
+            if (!pbColor[3])       // use default?
             {
-                PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                PBYTE pbArrayField;
-
-                if (fTreeIconsInvisible)
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbTreeViewTextColTextOnly;
-                else
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbTreeViewTextColIcons;
-#else
-            if (_pFolderLongArray)
-            {
-                // TREETEXTCOLOR
-                PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewTextColIcons)) );
-                if (fTreeIconsInvisible)
-                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewTextColTextOnly)) );
-#endif
-
-                if (!(*(pbArrayField + 3)))       // use default?
-                {
-                    BYTE bRed   = *(pbArrayField + 2);
-                    BYTE bGreen = *(pbArrayField + 1);
-                    BYTE bBlue  = *(pbArrayField );
-
-                    sprintf(szTemp, "TREETEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(pstrSetup, szTemp, 0);
-                }
-
-                // TREESHADOWCOLOR
-                // only Warp 4 has these fields, so check size of array
-#if 1
-                if (G_fIsWarp4)
-                {
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbTreeViewShadowCol;
-#else
-                if (_cbFolderLongArray >= 84)
-                {
-                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewShadowCol)) );
-#endif
-                    if (!(*(pbArrayField + 3)))       // use default?
-                    {
-                        BYTE bRed   = *(pbArrayField + 2);
-                        BYTE bGreen = *(pbArrayField + 1);
-                        BYTE bBlue  = *(pbArrayField );
-
-                        sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(pstrSetup, szTemp, 0);
-                    }
-                }
+                sprintf(szTemp,
+                        "TREETEXTCOLOR=%d %d %d;",
+                        pbColor[2],
+                        pbColor[1],
+                        pbColor[0]);
+                xstrcat(pstrSetup, szTemp, 0);
             }
 
+            // TREESHADOWCOLOR
+            // only Warp 4 has these fields, so check size of array
+            if (G_fIsWarp4)
+            {
+                pbColor = (PBYTE)&pData->LongArray.rgbTreeViewShadowCol;
+
+                if (!pbColor[3])       // use default?
+                {
+                    sprintf(szTemp,
+                            "TREESHADOWCOLOR=%d %d %d;",
+                            pbColor[2],
+                            pbColor[1],
+                            pbColor[0]);
+                    xstrcat(pstrSetup, szTemp, 0);
+                }
+            }
+        }
+
         // SHOWALLINTREEVIEW
-        if (    (fInitialized)
-             && (fdrHasShowAllInTreeView(somSelf))
-           )
+        if (fdrHasShowAllInTreeView(somSelf))
             xstrcat(pstrSetup, "SHOWALLINTREEVIEW=YES;", 0);
 
         /*
@@ -849,6 +829,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                 sprintf(szTemp, "DETAILSFONT=%s;", pszValue);
                 xstrcat(pstrSetup, szTemp, 0);
             }
+
             free(pszDefaultValue);
         }
 
@@ -857,54 +838,37 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         // DETAILSVIEW
 
         // DETAILSTEXTCOLOR
-        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-#if 1
+        if (pData)
+        {
+            pbColor = (PBYTE)&pData->LongArray.rgbDetlViewTextCol;
+
+            if (!pbColor[3])       // use default?
             {
-                PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                PBYTE pbArrayField;
+                sprintf(szTemp,
+                        "DETAILSTEXTCOLOR=%d %d %d;",
+                        pbColor[2],
+                        pbColor[1],
+                        pbColor[0]);
+                xstrcat(pstrSetup, szTemp, 0);
+            }
 
-                pbArrayField = (PBYTE)&pData->LongArray.rgbDetlViewTextCol;
-
-#else
-            if (_pFolderLongArray)
+            // DETAILSSHADOWCOLOR
+            // only Warp 4 has these fields, so check size of array
+            if (G_fIsWarp4)
             {
-                PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbDetlViewTextCol)) );
+                pbColor = (PBYTE)&pData->LongArray.rgbDetlViewShadowCol;
 
-#endif
-
-                if (!(*(pbArrayField + 3)))       // use default?
+                if (!pbColor[3])       // use default?
                 {
-                    BYTE bRed   = *(pbArrayField + 2);
-                    BYTE bGreen = *(pbArrayField + 1);
-                    BYTE bBlue  = *(pbArrayField );
-
-                    sprintf(szTemp, "DETAILSTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                    sprintf(szTemp,
+                            "DETAILSSHADOWCOLOR=%d %d %d;",
+                            pbColor[2],
+                            pbColor[1],
+                            pbColor[0]);
                     xstrcat(pstrSetup, szTemp, 0);
                 }
-
-                // DETAILSSHADOWCOLOR
-                // only Warp 4 has these fields, so check size of array
-#if 1
-                if (G_fIsWarp4)
-                {
-                    pbArrayField = (PBYTE)&pData->LongArray.rgbDetlViewShadowCol;
-#else
-                if (_cbFolderLongArray >= 84)
-                {
-                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbDetlViewShadowCol)) );
-#endif
-
-                    if (!(*(pbArrayField + 3)))       // use default?
-                    {
-                        BYTE bRed   = *(pbArrayField + 2);
-                        BYTE bGreen = *(pbArrayField + 1);
-                        BYTE bBlue  = *(pbArrayField );
-
-                        sprintf(szTemp, "DETAILSSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(pstrSetup, szTemp, 0);
-                    }
-                }
             }
+        }
 
         /*
          * additional XFolder setup strings
@@ -1025,8 +989,8 @@ BOOL fdrQuerySetup(WPObject *somSelf,
  */
 
 BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
-                                ULONG ulMsg,
-                                PFNWP pfnwpCallback)
+                                PFNFOREACHVIEWCALLBACK pfnCallback,
+                                ULONG ulMsg)
 {
     BOOL brc = FALSE;
     WPObject *somSelf2;
@@ -1060,15 +1024,14 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
                  pViewItem;
                  pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem))
             {
-                if (pfnwpCallback(pViewItem->handle,
-                                  ulMsg,
-                                  (MPARAM)pViewItem->view,
-                                  // but even if we have found a disk object
-                                  // above, we need to pass it the root folder
-                                  // pointer, because otherwise the callback
-                                  // might get into trouble
-                                  (MPARAM)somSelf)
-                            == (MPARAM)TRUE)
+                // even if we have found a disk object
+                // above, we need to pass it the root folder
+                // pointer, because otherwise the callback
+                // might get into trouble
+                if (pfnCallback(somSelf,
+                                pViewItem->handle,
+                                pViewItem->view,
+                                ulMsg))
                     brc = TRUE;
             } // end for
         } // end if
@@ -1096,8 +1059,8 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be M_XFolder::xwpclsForEachOpenView
  */
 
-BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
-                              PFNWP pfnwpCallback)
+BOOL fdrForEachOpenGlobalView(PFNFOREACHVIEWCALLBACK pfnCallback,
+                              ULONG ulMsg)
 {
     M_WPFolder  *pWPFolderClass = _WPFolder;
     XFolder     *pFolder;
@@ -1109,7 +1072,7 @@ BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
          pFolder = _wpclsQueryOpenFolders(pWPFolderClass, pFolder, QC_NEXT, FALSE))
     {
         if (_somIsA(pFolder, pWPFolderClass))
-            fdrForEachOpenInstanceView(pFolder, ulMsg, pfnwpCallback);
+            fdrForEachOpenInstanceView(pFolder, pfnCallback, ulMsg);
     }
     return TRUE;
 }

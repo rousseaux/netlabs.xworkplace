@@ -1274,7 +1274,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultView");
 
-    return cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW;
+    return *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW;
 }
 
 /*
@@ -1309,7 +1309,7 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
     XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpOpen");
 
-    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
     {
         if (!_tidRunning)       // V0.9.12 (2001-05-20) [umoeller]
         {
@@ -1389,7 +1389,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
     XCenterMethodDebug("XCenter","xctr_wpSwitchTo");
 
     // check if we should switch to the existing XCenter view
-    if (View == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (View == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
     {
         // yes:
         PUSEITEM    pUseItem = NULL;

@@ -412,7 +412,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
     hwndWidgetsSubmenu =  winhInsertSubmenu(hwndMenu,
                                             sPosition,
-                                            (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
+                                            *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
                                                     // fixed ID for sliding menus
                                                     // V0.9.13 (2001-06-14) [umoeller]
                                             (pcszMenuName)
@@ -469,7 +469,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
             if (pClass2Insert = NEW(CLASSTOINSERT))
             {
-                pClass2Insert->ulMenuID =    cmnQuerySetting(sulVarMenuOffset)
+                pClass2Insert->ulMenuID =    *G_pulVarMenuOfs
                                            + ID_XFMI_OFS_VARIABLE
                                            + ulIndex;
                 pClass2Insert->pClass = pClass;
@@ -526,7 +526,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
 PXCENTERWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
 {
-    ULONG ulOfsVariable =  cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
+    ULONG ulOfsVariable =  *G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE;
     PLINKLIST pllWidgetClasses = plgQueryClasses(&G_plgXCenterCategory);
 
     if (    (usCmd >=  ulOfsVariable)

@@ -2624,11 +2624,17 @@
 // "Run" menu item in XFolder/XFldDisk V0.9.14 (2001-08-07) [pr]
 #define ID_XFMI_OFS_RUN                 (WPMENUID_USER+54)
 
-// folder split view V0.9.19 (2002-05-07) [umoeller]
+// folder split view V0.9.21 (2002-08-28) [umoeller]
 #define ID_XFMI_OFS_SPLITVIEW           (WPMENUID_USER+55)
+                // ID_XFMI_OFS_SPLITVIEW is used for the root folder whose
+                // tree is displayed on the left
+#define ID_XFMI_OFS_SPLITVIEW_SHOWING   (WPMENUID_USER+56)
+                // ID_XFMI_OFS_SPLITVIEW_SHOWING is used for the folder
+                // that is currently showing on the right; initially
+                // this is the same as the root folder
 
 // batch rename V0.9.19 (2002-06-18) [umoeller]
-#define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+56)
+#define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+57)
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by

@@ -488,5 +488,33 @@ If you are using backreferences (e.g. "\1") in the "replace" string, make sure y
 
 <--XFL0246-->: Check your default browser settings in any URL object.
 
+<--XFL0247-->: &xwp; Class Replacements
+
+<--XFL0248-->: &xwp; has detected a problem with the order of Workplace Shell class replacements on your system.
+
+In the list of replacement classes for %1, the &xwp; replacement class %2 should be first in the list.
+
+&xwp; can now rearrange the class replacements list. The present order is:
+
+%3
+
+This would need to be changed to
+
+%4
+
+Do you wish to have this change performed now?
+
+<--XFL0249-->: &xwp; has fixed the problems in your Workplace Shell class replacements list.
+
+Do you want to restart the Workplace Shell now for the changes to take effect?
+
+<--XFL0250-->: &xwp; has detected a problem with your Workplace Shell class replacements list.
+
+The format of the replacements list for the %1 class is invalid.
+
+Do you wish to have &xwp; fix this problem now?
+
+
+
 
 

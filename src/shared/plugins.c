@@ -624,13 +624,16 @@ VOID plgFreeClasses(PPLUGINCATEGORY pplgCategory)
                         if (!DosQueryModuleName(hmod,
                                                 sizeof(szModuleName),
                                                 szModuleName))
-                            if (arc = FreeModule(hmod,
-                                                 TRUE))       // call uninit
+                            arc = FreeModule(hmod,
+                                             TRUE);       // call uninit
+#ifdef __DEBUG__        // only in debug mode now V0.9.21 (2002-08-26) [umoeller]
+                            if (arc)
                                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                        "FreeModule returned %d for %s (hmod %lX)",
                                        arc,
                                        szModuleName,
                                        hmod);
+#endif
 
                         pNode = pNode->pNext;
                     }

@@ -1255,7 +1255,7 @@ static VOID OwgtButton1Down(HWND hwnd,
                         // can measure its size
                         winhInsertMenuItem(pPrivate->hwndMenuMain,
                                            0,
-                                           cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY,
+                                           *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY,
                                            "test",
                                            MIS_TEXT,
                                            0);
@@ -1396,7 +1396,7 @@ static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
             // remove dummy item
             winhDeleteMenuItem(pPrivate->hwndMenuMain,
-                               cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY);
+                               *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY);
 
             if (!pPrivate->pobjButton)
                 // object not queried yet:
@@ -1439,7 +1439,7 @@ static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                   MM_ITEMIDFROMPOSITION,
                                   (MPARAM)0,        // menu item index
                                   MPNULL)
-                       == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY))
+                       == *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY)
             {
                // okay, let's go
 #ifndef __NOFOLDERCONTENTS__
@@ -1599,7 +1599,7 @@ static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
             // -- for object buttons; fProcessed is still FALSE
             // -- for the x-button if none of the standard items
             //    was selected; this can be a subitem of "desktop" folder contents too
-            ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
+            ULONG ulFirstVarMenuId = *G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE;
             if (     (ulMenuId >= ulFirstVarMenuId)
                   && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
                   && (ulMenuId <  0x7f00)       // standard widget menu IDs

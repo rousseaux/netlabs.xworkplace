@@ -203,7 +203,6 @@ static BOOL             G_fPositionBelow = FALSE;
 // global data for owner draw; we cache this for speed
 static BOOL             G_bInitNeeded;          // if TRUE, data is refreshed
 
-static ULONG            G_ulVarMenuOfs;     // V0.9.16 (2002-01-09) [umoeller]
 static ULONG            G_ulMiniIconSize = 0,
                         G_cxScreen = 0,     // V0.9.19 (2002-06-18) [umoeller]
                         G_cyScreen = 0;     // V0.9.19 (2002-06-18) [umoeller]
@@ -451,7 +450,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
 
 VOID cmnuInitItemCache(VOID)
 {
-    G_sNextMenuId = (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE);
+    G_sNextMenuId = *G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE;
     G_ulVarItemCount = 0;         // reset the number of variable items to 0
 
     if (G_llContentMenuItems.ulMagic != LINKLISTMAGIC)
@@ -664,7 +663,7 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
                                         (fOwnerDraw
                                             ? MIS_OWNERDRAW
                                             : 0),
-                                        (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
+                                        *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY,
                                         cmnGetString(ID_XSSI_FLDREMPTY),
                                             // (cmnQueryNLSStrings())->pszFldrEmpty,
                                         MIS_TEXT,
@@ -790,7 +789,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
 
         // remove "empty" item (if it exists)
         winhDeleteMenuItem(hwndMenu,
-                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY));
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY);
 
         // start collecting stuff; lock the folder contents,
         // do this in a protected block (exception handler,
@@ -906,7 +905,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
          && (pllNonFolders->ulCount)
        )
        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                               (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
+                               *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
     // insert non-folder objects into menu
     pNode = lstQueryFirstNode(pllNonFolders);
@@ -945,21 +944,21 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         CHAR    szMsgItem[300];
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
+                                *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
         sprintf(szMsgItem,
                 cmnGetString(ID_XSSI_DROPPED1),  // "... %d objects dropped,"
                 ulObjectsLeftOut);
 
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
-                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY,
                            szMsgItem,
                            MIS_TEXT,
                            MIA_DISABLED);
         /*
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
-                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY,
                            cmnGetString(ID_XSSI_DROPPED2),  // "open folder to see them", // pszDropped2
                            MIS_TEXT,
                            MIA_DISABLED);
@@ -1084,7 +1083,7 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
     if ((ULONG)WinSendMsg(hwndMenu,
                           MM_ITEMIDFROMPOSITION,
                           0, 0)
-                == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY)
+                == *G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY
        )
     {
         // _Pmpf(("    first item is DUMMY"));
@@ -1276,8 +1275,6 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
         GpiQueryFontMetrics(poi->hps, sizeof(FONTMETRICS), &fm);
         G_lMaxDescender = fm.lMaxDescender;
 
-        G_ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
-
         G_bInitNeeded = FALSE;
     }
 
@@ -1285,7 +1282,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
     // which corresponds to the menu item whose size is being queried
     if (pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                                    (   poi->idItem
-                                                     - (  G_ulVarMenuOfs
+                                                     - (  *G_pulVarMenuOfs
                                                         + ID_XFMI_OFS_VARIABLE))))
     {
         // find out the space required for drawing this item with
@@ -1391,7 +1388,7 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
 
     if (pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                                    (poi->idItem
-                                                      - (   G_ulVarMenuOfs
+                                                      - (   *G_pulVarMenuOfs
                                                           + ID_XFMI_OFS_VARIABLE))))
     {
         if (    (poi->fsAttribute != poi->fsAttributeOld)

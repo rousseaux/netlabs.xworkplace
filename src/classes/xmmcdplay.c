@@ -762,7 +762,7 @@ SOM_Scope ULONG  SOMLINK cdp_wpQueryDefaultView(XMMCDPlayer *somSelf)
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpQueryDefaultView");
 
-    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
+    return *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW;
 }
 
 /*
@@ -789,7 +789,7 @@ SOM_Scope HWND  SOMLINK cdp_wpOpen(XMMCDPlayer *somSelf, HWND hwndCnr,
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpOpen");
 
-    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
         hwndNewView = xmmCreateCDPlayerView(somSelf, hwndCnr, ulView);
                                 // src/media/mmcdplay.c
     else

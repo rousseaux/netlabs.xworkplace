@@ -3502,7 +3502,7 @@ int main(int argc, char *argv[])
 
                     // create watchdog threads
                     // V0.9.21 (2002-08-12) [umoeller]
-                    dmnStartWatchdog();
+                    // dmnStartWatchdog();
 
                     // post msg to XFLDR.DLL thread-1 object window
                     // that we're ready, which will in turn send

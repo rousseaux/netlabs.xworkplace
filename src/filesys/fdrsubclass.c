@@ -867,7 +867,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
 {
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
-    ULONG           ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG           ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
 
     #ifdef DEBUG_MENUS
         _Pmpf(( "WM_INITMENU: sMenuIDMsg = %lX, hwndMenuMsg = %lX",
@@ -1227,7 +1227,7 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                     // shift is down: then check whether this is an "open view"
                     // item and allow changing the object's default view this
                     // way V0.9.21 (2002-08-21) [umoeller]
-                    ULONG   ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
+                    ULONG   ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOfs);
 
                     if (    (usItem == OPEN_CONTENTS)
                          || (usItem == OPEN_TREE)
@@ -2203,7 +2203,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_MEASUREITEM:
                 if (   (SHORT)mp1
-                     > cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE
+                     > cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE
                    )
                 {
                     // call the measure-item func in fdrmenus.c
@@ -2258,7 +2258,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                         fCallDefault = TRUE;
                 }
                 else if (   (SHORT)mp1
-                          > cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE
+                          > cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE
                         )
                 {
                     // variable menu item: this must be a folder-content

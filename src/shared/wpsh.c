@@ -100,12 +100,11 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrviews.h"           // common code for folder views
 #include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-// #include <wpdisk.h>
-// #include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -1465,7 +1464,7 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
 
                 if (fInsert)
                 {
-                    if (!fdrIsObjectInCnr(pNewObject,
+                    if (!fdrvIsObjectInCnr(pNewObject,
                                            hwndCnr))
                         // object still not in there: insert it then
                         _wpCnrInsertObject(pNewObject,

@@ -355,24 +355,25 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
                                                  ULONG iPosition)
 {
     BOOL rc;
-    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG ulOfs = *G_pulVarMenuOfs;
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpModifyPopupMenu");
 
     rc = XFldStartup_parent_XFolder_wpModifyPopupMenu(somSelf,
-                                                         hwndMenu,
-                                                         hwndCnr,
-                                                         iPosition);
+                                                      hwndMenu,
+                                                      hwndCnr,
+                                                      iPosition);
 
-    winhInsertMenuSeparator(hwndMenu, MIT_END,
-            (ulOfs + ID_XFMI_OFS_SEPARATOR));
+    winhInsertMenuSeparator(hwndMenu,
+                            MIT_END,
+                            ulOfs + ID_XFMI_OFS_SEPARATOR);
 
     winhInsertMenuItem(hwndMenu,
-            MIT_END,
-            (ulOfs + ID_XFMI_OFS_PROCESSCONTENT),
-            cmnGetString(ID_XSSI_PROCESSCONTENT),  // pszProcessContent
-            MIS_TEXT, 0);
+                       MIT_END,
+                       ulOfs + ID_XFMI_OFS_PROCESSCONTENT,
+                       cmnGetString(ID_XSSI_PROCESSCONTENT),
+                       MIS_TEXT, 0);
 
     return (rc);
 }
@@ -400,7 +401,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpMenuItemSelected");
 
-    if ( (ulMenuId - cmnQuerySetting(sulVarMenuOffset)) == ID_XFMI_OFS_PROCESSCONTENT )
+    if ( (ulMenuId - *G_pulVarMenuOfs) == ID_XFMI_OFS_PROCESSCONTENT )
     {
         if (cmnMessageBoxExt((hwndFrame)
                                 ? hwndFrame

@@ -676,7 +676,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
              && (_somIsA(pTrashCan, _XWPTrashCan))
            )
         {
-            ULONG   ulOfs = cmnQuerySetting(sulVarMenuOffset);
+            ULONG   ulOfs = *G_pulVarMenuOfs;
             CHAR    szDestroyItem[300];
             if (_xwpTrashCanBusy(pTrashCan,
                                  0))     // query busy
@@ -733,8 +733,8 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
                                                 HWND hwndFrame,
                                                 ULONG ulMenuId)
 {
-    BOOL brc = FALSE;
-    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    BOOL    brc = FALSE;
+    ULONG   ulOfs = *G_pulVarMenuOfs;
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemSelected");
 
@@ -776,7 +776,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
                                                     ULONG MenuId)
 {
-    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG   ulOfs = *G_pulVarMenuOfs;
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemHelpSelected");
 

@@ -862,9 +862,9 @@ BOOL fonProcessViewCommand(WPFolder *somSelf,
                            WPObject* pFirstObject,
                            ULONG ulSelectionFlags)
 {
-    BOOL brc = TRUE;        // default: processed
+    BOOL    brc = TRUE;        // default: processed
 
-    LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOffset);
+    LONG    lMenuID2 = usCommand - *G_pulVarMenuOfs;
 
     switch (lMenuID2)
     {
@@ -987,8 +987,8 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
                             HWND hwndMenu)
 {
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
-    MENUITEM mi;
-    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    MENUITEM    mi;
+    ULONG       ulOfs = *G_pulVarMenuOfs;
 
     // get handle to the "Open" submenu in the
     // the popup menu
@@ -1053,7 +1053,7 @@ BOOL fonMenuItemSelected(XWPFontObject *somSelf,
 {
     BOOL brc = FALSE;
 
-    if (ulMenuId == cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW)
+    if (ulMenuId == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
     {
         _wpViewObject(somSelf,
                       NULLHANDLE,

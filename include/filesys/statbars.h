@@ -112,15 +112,15 @@
         VOID stbDestroy(PSUBCLFOLDERVIEW psli2);
     #endif
 
-    MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,
-                                        ULONG ulActivate,
-                                        MPARAM mpView,
-                                        MPARAM mpFolder);
+    BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
+                                     HWND hwndView,
+                                     ULONG ulView,
+                                     ULONG ulActivate);
 
-    MRESULT EXPENTRY stb_PostCallback(HWND hwndView,
-                                      ULONG msg,
-                                      MPARAM mpView,
-                                      MPARAM mpFolder);
+    BOOL _Optlink stb_PostCallback(WPFolder *somSelf,
+                                   HWND hwndView,
+                                   ULONG ulView,
+                                   ULONG msg);
 
     VOID stbUpdate(WPFolder *pFolder);
 

@@ -5578,7 +5578,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                 // which we add items to now
                 // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
                                    ENTITY_XCENTER,
                                    MIS_TEXT, 0);
             }
@@ -5589,7 +5589,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
 
                 winhInsertMenuSeparator(hwndMenu,
                                         MIT_END,
-                                        (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
+                                        *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
                 // add the "Add widget" submenu with all the available widget classes
                 ctrpAddWidgetsMenu(somSelf,

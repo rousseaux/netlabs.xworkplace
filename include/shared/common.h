@@ -683,6 +683,8 @@
     extern ULONG    G_cxIconSys;            // V0.9.20 (2002-08-04) [umoeller]
     extern ULONG    G_cyIconSys;            // V0.9.20 (2002-08-04) [umoeller]
 
+    extern ULONG    *G_pulVarMenuOfs;       // V0.9.21 (2002-08-28) [umoeller]
+
     /********************************************************************
      *
      *   Global structures
@@ -887,7 +889,7 @@
 #endif
 
         // menu settings
-        sulVarMenuOffset,
+        sulVarMenuOfs,
             // variable menu offset, "Paranoia" page
 
         sfMenuCascadeMode,

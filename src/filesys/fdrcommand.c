@@ -227,7 +227,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
                                   // out: if TRUE is returned (ie. the menu item was handled
                                   // here), this determines whether the menu should be dismissed
 {
-    ULONG           ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
+    ULONG           ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOfs);
     BOOL            fHandled = TRUE;
     WPObject        *pObject = somSelf;
     WPFileSystem    *pFileSystem = objResolveIfShadow(pObject);
@@ -371,7 +371,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
                               ULONG ulSelection,
                               BOOL *pfDismiss)
 {
-    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
     ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
     BOOL        fHandled;
     HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
@@ -674,7 +674,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
         default:
         {
             // check our own items
-            ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+            ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
             ULONG       ulMenuId2 = usCommand - ulVarMenuOffset;
 
             switch (ulMenuId2)
@@ -963,7 +963,7 @@ static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
     PVARMENULISTITEM    pItem;
     WPObject            *pObject = NULL;
 
-    ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
+    ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE;
 
     if (     (ulMenuId >= ulFirstVarMenuId)
           && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
@@ -1069,7 +1069,7 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
     TRY_LOUD(excpt1)
     {
-        ULONG   ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
+        ULONG   ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOfs);
 
         BOOL        fDummy;
         WPFolder    *pFolder = NULL;
@@ -1354,7 +1354,7 @@ BOOL fcmdMenuItemHelpSelected(WPObject *somSelf,
 {
     ULONG   ulFirstVarMenuId;
     ULONG   ulPanel = 0;
-    ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
     ULONG   ulMenuId2 = MenuId - ulVarMenuOffset;
 
     // first check for variable menu item IDs

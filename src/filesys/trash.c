@@ -2215,7 +2215,7 @@ BOOL trshProcessViewCommand(WPFolder *somSelf,
 {
     BOOL brc = TRUE;        // default: processed
 
-    LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOffset);
+    LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOfs);
 
     switch (lMenuID2)
     {

@@ -1141,7 +1141,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
                 // mi.hwndSubMenu now contains "Open" submenu handle,
                 // which we add items to now
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
                                    cmnGetString(ID_XSSI_XWPSTRING_OPENMENU),  // pszXWPStringOpenMenu
                                    MIS_TEXT, 0);
             }
@@ -1173,7 +1173,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemSelected(XWPString *somSelf,
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemSelected");
 
-    if (ulMenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (ulMenuId == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
     {
         // "invoke setup string":
         brc = _wpOpen(somSelf,
@@ -1202,7 +1202,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemHelpSelected");
 
-    if (MenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (MenuId == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
         brc = cmnDisplayHelp(somSelf,
                              ID_XSH_SETTINGS_XWPSTRING_MAIN);
     else
@@ -1242,7 +1242,7 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpOpen");
 
-    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
     {
         // invoke setup string
         if (!_xwpInvokeString(somSelf,
@@ -1281,9 +1281,9 @@ SOM_Scope ULONG  SOMLINK xwstr_wpQueryDefaultView(XWPString *somSelf)
     XWPStringMethodDebug("XWPString","xwstr_wpQueryDefaultView");
 
     if (_hobjStatic)
-        return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
-    else
-        return (OPEN_SETTINGS);     // settings view is default
+        return *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW;
+
+    return OPEN_SETTINGS;     // settings view is default
 }
 
 /*

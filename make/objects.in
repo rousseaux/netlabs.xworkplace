@@ -94,6 +94,7 @@ $(OUTPUTDIR)\fdrsort.obj \
 $(OUTPUTDIR)\fdrsplit.obj \
 $(OUTPUTDIR)\fdrsubclass.obj \
 $(OUTPUTDIR)\fdrmenus.obj \
+$(OUTPUTDIR)\fdrviews.obj \
 #$(OUTPUTDIR)\fhandles.obj \
 $(OUTPUTDIR)\filedlg.obj \
 $(OUTPUTDIR)\fileops.obj \

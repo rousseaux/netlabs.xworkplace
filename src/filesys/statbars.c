@@ -610,17 +610,16 @@ VOID stbDestroy(PSUBCLFOLDERVIEW psli2)
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
-                                    ULONG ulActivate,
-                                            // 1: show/hide status bars according to
-                                            //    folder/Global settings
-                                            // 2: reformat status bars (e.g. because
-                                            //    fonts have changed)
-                                    MPARAM mpView,                      // OPEN_xxx flag
-                                    MPARAM mpFolder)                    // folder object
+BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
+                                 HWND hwndView,
+                                 ULONG ulView,
+                                 ULONG ulActivate)
+                             // 1: show/hide status bars according to
+                             //    folder/Global settings
+                             // 2: reformat status bars (e.g. because
+                             //    fonts have changed)
 {
-    MRESULT                 mrc = (MPARAM)FALSE;
-    PSUBCLFOLDERVIEW        psfv;
+    PSUBCLFOLDERVIEW    psfv;
 
     #ifdef DEBUG_STATUSBARS
         _Pmpf(("stb_UpdateCallback ulActivate = %d", ulActivate));
@@ -640,8 +639,8 @@ MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
             // check if the folder should have a status bar
             // depending on the new settings
             // V0.9.19 (2002-04-17) [umoeller]
-            BOOL fNewVisible = stbViewHasStatusBars((WPFolder*)mpFolder,
-                                                    (ULONG)mpView);
+            BOOL fNewVisible = stbViewHasStatusBars(somSelf,
+                                                    ulView);
 
 /*
             XFolderData *somThis = XFolderGetData(mpFolder);
@@ -688,12 +687,13 @@ MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
                            SOM_ACTIVATESTATUSBAR,
                            (MPARAM)fNewVisible,     // show/hide flag
                            (MPARAM)hwndView);
-                mrc = (MPARAM)TRUE;
+
+                return TRUE;
             }
         }
     }
 
-    return mrc;
+    return FALSE;
 }
 
 /*
@@ -709,16 +709,16 @@ MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
  *@@added V0.9.6 (2000-10-26) [pr]
  */
 
-MRESULT EXPENTRY stb_PostCallback(HWND hwndView,        // folder frame
-                                   ULONG msg,            // message
-                                   MPARAM mpView,        // OPEN_xxx flag
-                                   MPARAM mpFolder)      // folder object
+BOOL _Optlink stb_PostCallback(WPFolder *somSelf,
+                               HWND hwndView,
+                               ULONG ulView,
+                               ULONG msg)            // message
 {
     PSUBCLFOLDERVIEW psfv;
 
-    if (    ((ULONG)mpView == OPEN_CONTENTS)
-         || ((ULONG)mpView == OPEN_DETAILS)
-         || ((ULONG)mpView == OPEN_TREE)
+    if (    (ulView == OPEN_CONTENTS)
+         || (ulView == OPEN_DETAILS)
+         || (ulView == OPEN_TREE)
        )
     {
         if (    (psfv = fdrQuerySFV(hwndView, NULL))
@@ -730,7 +730,7 @@ MRESULT EXPENTRY stb_PostCallback(HWND hwndView,        // folder frame
                        MPNULL);
     }
 
-    return ((MPARAM) TRUE);
+    return TRUE;
 }
 
 /*
