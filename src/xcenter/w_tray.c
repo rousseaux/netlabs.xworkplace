@@ -283,8 +283,8 @@ typedef struct _TRAYWIDGETPRIVATE
 
 BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
 {
-    PXCENTERWIDGETCLASS   pClass;
-    BOOL                  brc = TRUE;
+    PCXCENTERWIDGETCLASS    pClass;
+    BOOL                    brc = TRUE;
 
     if (ctrpLockClasses())
     {
@@ -608,7 +608,7 @@ VOID YwgtClearSetup(PTRAYSETUP pSetup)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed a bad default setting
  */
 
-VOID YwgtScanSetup(const char *pcszSetupString,
+VOID YwgtScanSetup(PCSZ pcszSetupString,
                    PTRAYSETUP pSetup)
 {
     PSZ p;
@@ -690,8 +690,8 @@ VOID YwgtSaveSetupAndSend(PTRAYWIDGETPRIVATE pPrivate)
  */
 
 PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
-                                          const char *pcszWidgetClass,
-                                          const char *pcszSetupString,
+                                          PCSZ pcszWidgetClass,
+                                          PCSZ pcszSetupString,
                                           ULONG ulIndex)       // in: index or -1
 {
     PPRIVATEWIDGETSETTING pSubwidget = NULL;
@@ -1566,7 +1566,7 @@ VOID YwgtDrop(HWND hwnd,
 
 BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
                             HWND hwndSubwidget,
-                            const char *pcszSetupString)     // can be NULL
+                            PCSZ pcszSetupString)     // can be NULL
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -2013,7 +2013,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 YwgtCreateSubwidget(pPrivate,
                                     "ObjButton",  // widget class
-                                    (const char *)mp1,
+                                    (PCSZ)mp1,
                                     (ULONG)mp2);
             }
         }

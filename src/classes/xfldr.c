@@ -166,10 +166,10 @@ extern WPFolder     *G_pConfigFolder = NULL;
 // roots of linked lists for favorite/quick-open folders
 // these hold plain WPObject pointers, no auto-free
 #ifndef __NOFOLDERCONTENTS__
-OBJECTLIST          G_llFavoriteFolders = {0};
+extern OBJECTLIST          G_llFavoriteFolders = {0};
 #endif
 #ifndef __NOQUICKOPEN__
-OBJECTLIST          G_llQuickOpenFolders = {0};
+extern OBJECTLIST          G_llQuickOpenFolders = {0};
 #endif
                             // these two are exported in folder.h
 
@@ -180,13 +180,13 @@ OBJECTLIST          G_llQuickOpenFolders = {0};
  ********************************************************************/
 
 /*
- *@@ xwpNukePhysical:
- *      override of XFldObject::xwpNukePhysical, which must
+ *@@ xwpDestroyStorage:
+ *      override of XFldObject::xwpDestroyStorage, which must
  *      remove the physical representation of an object
  *      when it gets physically deleted.
  *
- *      xwpNukePhysical gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      xwpDestroyStorage gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
  *      calls WPObject::wpDestroyObject, which we must override
  *      for this class in order to suppress the stupid error
  *      message boxes if the file no longer exists.
@@ -194,19 +194,19 @@ OBJECTLIST          G_llQuickOpenFolders = {0};
  *      This actually deletes the folder using DosDeleteDir.
  *
  *      As opposed to the WPS, we are smart enough NOT to
- *      display a message box here if deletion failed. In
- *      addition, if the object is already gone, we return
+ *      display a message box here if the folder no longer
+ *      exists in the first place. In that case, we return
  *      TRUE, since the folder was obviously already deleted.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xf_xwpNukePhysical(XFolder *somSelf)
+SOM_Scope BOOL  SOMLINK xf_xwpDestroyStorage(XFolder *somSelf)
 {
     BOOL    brc = FALSE;
     CHAR    szFilename[CCHMAXPATH];
     // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpNukePhysical");
+    XFolderMethodDebug("XFolder","xf_xwpDestroyStorage");
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
@@ -1778,6 +1778,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         _Pmpf(("XFolder::wpRestoreState for %s", _wpQueryTitle(somSelf) ));
     #endif
 
+#ifndef __NOTURBOFOLDERS__
     // new icon handling code follows
     // V0.9.16 (2002-01-04) [umoeller]
     if (cmnQuerySetting(sfTurboFolders))
@@ -1802,6 +1803,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
                            OBJSTYLE_NOTDEFAULTICON);
         }
     }
+#endif
 
     // we will now restore all the different XFolder settings
     // into the instance data; note that if _wpRestoreLong
@@ -2735,6 +2737,7 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
         _Pmpf(("XFolder::wpPopulate for %s", _wpQueryTitle(somSelf) ));
     #endif
 
+#ifndef __NOTURBOFOLDERS__
     if (    // turbo folders enabled?
             (cmnQuerySetting(sfTurboFolders))
             // but don't dare turbo populate on desktop yet
@@ -2752,6 +2755,7 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
                           &fExit);
     }
     else
+#endif
         brc = XFolder_parent_WPFolder_wpPopulate(somSelf,
                                                  ulReserved,
                                                  pszPath,
@@ -3149,8 +3153,10 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
         brc = fdrAddToContent(somSelf, Object, &fCallParent);
+#endif
 
     if (fCallParent)
         brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
@@ -3187,8 +3193,10 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
         fdrDeleteFromContent(somSelf, Object);
+#endif
 
     brc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
 
@@ -3915,8 +3923,7 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
 SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
                                                 PICONINFO pIconInfo)
 {
-    ULONG       ulrc;
-    HMODULE     hmodIconsDLL = NULLHANDLE;
+    ULONG       ulrc = 0;
 
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconData");
@@ -3924,18 +3931,34 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
 #ifndef __NOICONREPLACEMENTS__
     if (cmnQuerySetting(sfIconReplacements))
     {
-        hmodIconsDLL = cmnQueryIconsDLL();
+        /* hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
         if ((pIconInfo) && (hmodIconsDLL))
         {
             pIconInfo->fFormat = ICON_RESOURCE;
             pIconInfo->hmod = hmodIconsDLL;
             pIconInfo->resid = 100;
-        }
-        ulrc = sizeof(ICONINFO);
+        }*/
+
+        // now using cmnGetStandardIcon
+        // V0.9.16 (2002-01-13) [umoeller]
+        if (pIconInfo)
+            if (!cmnGetStandardIcon(STDICON_FOLDER_CLOSED,
+                                    NULL,            // no hpointer
+                                    pIconInfo))      // fill icon info
+            {
+                _Pmpf((__FUNCTION__ ", class %s, format %s",
+                        _somGetName(somSelf),
+                        (pIconInfo)
+                            ? ((pIconInfo->fFormat == ICON_FILE) ? "FILE"
+                                : (pIconInfo->fFormat == ICON_RESOURCE) ? "RESOURCE"
+                                : "UNKNOWN"  )
+                            : "NULL"));
+                ulrc = sizeof(ICONINFO);
+            }
     }
 
-    if (hmodIconsDLL == NULLHANDLE)
+    if (!ulrc)
 #endif
         // icon replacements not allowed: call default
         ulrc = M_XFolder_parent_M_WPFolder_wpclsQueryIconData(somSelf,
@@ -3954,8 +3977,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
                                                  ICONINFO* pIconInfo,
                                                  ULONG ulIconIndex)
 {
-    ULONG       ulrc;
-    HMODULE     hmodIconsDLL = NULLHANDLE;
+    ULONG       ulrc = 0;
 
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconDataN");
@@ -3963,7 +3985,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
 #ifndef __NOICONREPLACEMENTS__
     if (cmnQuerySetting(sfIconReplacements))
     {
-        hmodIconsDLL = cmnQueryIconsDLL();
+        /* hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
         if ((pIconInfo) && (hmodIconsDLL))
         {
@@ -3971,10 +3993,18 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
             pIconInfo->hmod = hmodIconsDLL;
             pIconInfo->resid = 101;
         }
-        ulrc = sizeof(ICONINFO);
+        ulrc = sizeof(ICONINFO); */
+
+        // now using cmnGetStandardIcon
+        // V0.9.16 (2002-01-13) [umoeller]
+        if (pIconInfo)
+            if (!cmnGetStandardIcon(STDICON_FOLDER_OPEN,
+                                    NULL,            // no hpointer
+                                    pIconInfo))      // fill icon info
+                ulrc = sizeof(ICONINFO);
     }
 
-    if (hmodIconsDLL == NULLHANDLE)
+    if (!ulrc)
 #endif
         // icon replacements not allowed: call default
         ulrc = M_XFolder_parent_M_WPFolder_wpclsQueryIconDataN(somSelf,

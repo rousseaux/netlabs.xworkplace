@@ -122,7 +122,7 @@
  */
 
 SOM_Scope ULONG  SOMLINK xpg_xwpAddAssociationsPage(XWPProgram *somSelf,
-                                                     HWND hwndNotebook)
+                                                    HWND hwndNotebook)
 {
     ULONG ulrc = 0;
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
@@ -149,7 +149,7 @@ SOM_Scope ULONG  SOMLINK xpg_xwpAddAssociationsPage(XWPProgram *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xpg_xwpQuerySetup2(XWPProgram *somSelf,
-                                            PVOID pstrSetup)
+                                           PVOID pstrSetup)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_xwpQuerySetup2");
@@ -167,13 +167,13 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQuerySetup2(XWPProgram *somSelf,
 }
 
 /*
- *@@ xwpNukePhysical:
- *      override of XFldObject::xwpNukePhysical, which must
+ *@@ xwpDestroyStorage:
+ *      override of XFldObject::xwpDestroyStorage, which must
  *      remove the physical representation of an object
  *      when it gets physically deleted.
  *
- *      xwpNukePhysical gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      xwpDestroyStorage gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
  *      calls WPObject::wpDestroyObject.
  *
  *      We override this in order to prevent the original
@@ -186,13 +186,13 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQuerySetup2(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpg_xwpNukePhysical(XWPProgram *somSelf)
+SOM_Scope BOOL  SOMLINK xpg_xwpDestroyStorage(XWPProgram *somSelf)
 {
     static xfTD_wpDestroyObject pWPAbstract_wpDestroyObject = NULL;
 
     BOOL brc = FALSE;
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpg_xwpNukePhysical");
+    XWPProgramMethodDebug("XWPProgram","xpg_xwpDestroyStorage");
 
     if (!pWPAbstract_wpDestroyObject)
     {
@@ -293,24 +293,15 @@ SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
 
     _fNeedsSetProgIcon = FALSE;
 
-    _pszEnvironment = NULL;
-    memset(&_swpInitial, 0, sizeof(SWP));
+    memset(&_ProgType, 0, sizeof(PROGTYPE));
+
     _usExecutableHandle = 0;
     _pszExecutable = NULL;
     _pszParameters = NULL;
     _usStartupDirHandle = 0;
 
-    memset(&_ProgType, 0, sizeof(PROGTYPE));
-
-    /*
-    _pvpszEnvironment = NULL;
-    _pSWPInitial = NULL;
-    _pulExecutableHandle = NULL;
-    _pulStartupDirHandle = NULL;
-    _pProgType = NULL;
-    _pszExecutable = NULL;
-    _pszParameters = NULL;
-    */
+    _pszEnvironment = NULL;
+    memset(&_swpInitial, 0, sizeof(SWP));
 }
 
 /*
@@ -367,7 +358,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpRestoreState(XWPProgram *somSelf,
-                                            ULONG ulReserved)
+                                           ULONG ulReserved)
 {
     BOOL brc;
     // XWPProgramData *somThis = XWPProgramGetData(somSelf);
@@ -400,10 +391,10 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreState(XWPProgram *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
-                                           PSZ pszClass,
-                                           ULONG ulKey,
-                                           PBYTE pValue,
-                                           PULONG pcbValue)
+                                          PSZ pszClass,
+                                          ULONG ulKey,
+                                          PBYTE pValue,
+                                          PULONG pcbValue)
 {
     BOOL brc,
          fMakeCopy = FALSE;
@@ -417,91 +408,103 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                                                     pValue,
                                                     pcbValue);
 
-    // now copy the data that was restored to our
-    // own buffers
-    if (!strcmp(pszClass, "WPProgramRef"))
+    TRY_LOUD(excpt1)
     {
-        switch (ulKey)
+        // now copy the data that was restored to our
+        // own buffers
+        if (!strcmp(pszClass, "WPProgramRef"))
         {
-            case 6:             // internal WPProgram key for environment
-                                // string array
-                // note, this comes in twice, first call has
-                // pValue == NULL to query the size of the data
-                if (pValue)
-                {
-                    // make copy of this
-                    ULONG cb;
-                    if (    (cb = appQueryEnvironmentLen(pValue))
-                         && (_pszEnvironment = malloc(cb))
-                       )
+            switch (ulKey)
+            {
+                case 6:             // internal WPProgram key for environment
+                                    // string array
+                    // note, this comes in twice, first call has
+                    // pValue == NULL to query the size of the data
+                    if (pValue)
                     {
-                        memcpy(_pszEnvironment,
-                               pValue,
-                               cb);
+                        // make copy of this
+                        ULONG cb;
+                        if (    (cb = appQueryEnvironmentLen(pValue))
+                             && (_pszEnvironment = malloc(cb))
+                           )
+                        {
+                            memcpy(_pszEnvironment,
+                                   pValue,
+                                   cb);
+                        }
+                    }
+                break;
+
+                case 7:             // internal WPProgram key for SWP
+                    if (pValue)
+                        memcpy(&_swpInitial, pValue, sizeof(SWP));
+                break;
+
+                case 10:        // internal WPProgram key for array of strings
+                {
+                    // this is tricky, because in this case we won't have
+                    // a pointer to WPProgram data... seems like a temporary
+                    // stack pointer. Call the parent first to get the data
+                    // and then parse the buffer below.
+                    PSZ pThis;
+
+                    if (pThis = (PSZ)pValue)
+                    {
+                        // each string array entry has a USHORT index
+                        // first; if that is 0xFFFF, this was the last
+                        // entry
+                        while (TRUE)
+                        {
+                            USHORT usIndex = *(PUSHORT)pThis;
+                            if (usIndex == 0xFFFF)
+                                break;
+
+                            // string data comes after the USHORT
+                            pThis += sizeof(USHORT);
+                            switch (usIndex)
+                            {
+                                case 0:
+                                    strhStore(&_pszExecutable,
+                                              pThis,
+                                              NULL);
+                                break;
+
+                                case 1:
+                                    strhStore(&_pszParameters,
+                                              pThis,
+                                              NULL);
+                                break;
+                            }
+
+                            pThis += strlen(pThis) + 1;
+                        }
                     }
                 }
-            break;
+                break;
 
-            case 7:             // internal WPProgram key for SWP
-                memcpy(&_swpInitial, pValue, sizeof(SWP));
-            break;
-
-            case 10:        // internal WPProgram key for array of strings
-            {
-                // this is tricky, because in this case we won't have
-                // a pointer to WPProgram data... seems like a temporary
-                // stack pointer. Call the parent first to get the data
-                // and then parse the buffer below.
-                PSZ pThis = (PSZ)pValue;
-                // each string array entry has a USHORT index
-                // first; if that is 0xFFFF, this was the last
-                // entry
-                while (TRUE)
-                {
-                    USHORT usIndex = *(PUSHORT)pThis;
-                    if (usIndex == 0xFFFF)
-                        break;
-
-                    // string data comes after the USHORT
-                    pThis += sizeof(USHORT);
-                    switch (usIndex)
+                case 11:        // internal WPProgram key for array of LONG values
+                    // apparently, this points to several LONG values then:
+                    // 0) executable fsh; even though this is 16-bit, it's a ULONG
+                    // 1) startup dir fsh; even though this is 16-bit, it's a ULONG
+                    // 2) next one is unknown to me
+                    // 3) PROGTYPE structure, which has two ULONGS
+                    // the following are unknown to me
+                    if (pValue)
                     {
-                        case 0:
-                            strhStore(&_pszExecutable,
-                                      pThis,
-                                      NULL);
-                        break;
-
-                        case 1:
-                            strhStore(&_pszParameters,
-                                      pThis,
-                                      NULL);
-                        break;
+                        PULONG pul= (PULONG)pValue;
+                        _usExecutableHandle = pul[0];
+                        _usStartupDirHandle = pul[1];
+                        // third item unknown
+                        memcpy(&_ProgType, &pul[3], sizeof(PROGTYPE));
+                                        // two ULONGs!
                     }
-
-                    pThis += strlen(pThis) + 1;
-                }
-            }
-            break;
-
-            case 11:        // internal WPProgram key for array of LONG values
-            {
-                // apparently, this points to several LONG values then:
-                // 0) executable fsh; even though this is 16-bit, it's a ULONG
-                // 1) startup dir fsh; even though this is 16-bit, it's a ULONG
-                // 2) next one is unknown to me
-                // 3) PROGTYPE structure, which has two ULONGS
-                // the following are unknown to me
-                PULONG pul= (PULONG)pValue;
-                _usExecutableHandle = pul[0];
-                _usStartupDirHandle = pul[1];
-                // third item unknown
-                memcpy(&_ProgType, &pul[3], sizeof(PROGTYPE));
-                                // two ULONGs!
-            }
-            break;
-       }
+                break;
+           }
+        }
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 
     return (brc);
 }
@@ -526,26 +529,44 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
  */
 
 SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
-                                          ULONG ulCode, WPObject* refObject)
+                                          ULONG ulCode,
+                                          WPObject* refObject)
 {
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    BOOL        fRunReplacement = FALSE;
+
     XWPProgramMethodDebug("XWPProgram","xpg_wpObjectReady");
 
     XWPProgram_parent_WPProgram_wpObjectReady(somSelf, ulCode,
                                               refObject);
 
-    // now refresh the flag for wpQueryIcon so that it knows
-    // if it needs to set a new icon for the program object
-    // when it's first needed:
-    if (    (ulCode == OR_NEW)
-         || (    (_fNeedsSetProgIcon)
-                 // did wpRestoreState restore an icon from os2.ini?
-              && (!(_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON))
-            )
-       )
-        _fNeedsSetProgIcon = TRUE;
-    else
-        _fNeedsSetProgIcon = FALSE;
+    // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
+#endif
+
+#ifndef __NOICONREPLACEMENTS__
+    if (!fRunReplacement)
+        if (cmnQuerySetting(sfIconReplacements))
+            fRunReplacement = TRUE;
+#endif
+
+    if (fRunReplacement)
+    {
+        XWPProgramData *somThis = XWPProgramGetData(somSelf);
+
+        // now refresh the flag for wpQueryIcon so that it knows
+        // if it needs to set a new icon for the program object
+        // when it's first needed:
+        if (    (ulCode == OR_NEW)
+             || (    (_fNeedsSetProgIcon)
+                     // did wpRestoreState restore an icon from os2.ini?
+                  && (!(_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON))
+                )
+           )
+            _fNeedsSetProgIcon = TRUE;
+        else
+            _fNeedsSetProgIcon = FALSE;
+    }
 }
 
 /*
@@ -568,8 +589,10 @@ SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
  *@@changed V0.9.16 (2002-01-04) [umoeller]: if ext assocs are enabled, xwp now handles program open too
  */
 
-SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
-                                    ULONG ulView, ULONG param)
+SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf,
+                                   HWND hwndCnr,
+                                   ULONG ulView,
+                                   ULONG param)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
@@ -630,25 +653,38 @@ SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
 
 SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
 {
-    HPOINTER hptr = NULLHANDLE;
-    PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    BOOL        fRunReplacement = FALSE;
+
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIcon");
 
-    if (    (!pmrc->hptrIcon)
-         || (_fNeedsSetProgIcon)
-       )
+    // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
+#endif
+
+#ifndef __NOICONREPLACEMENTS__
+    if (!fRunReplacement)
+        if (cmnQuerySetting(sfIconReplacements))
+            fRunReplacement = TRUE;
+#endif
+
+    if (fRunReplacement)
     {
-        _wpSetProgIcon(somSelf, NULL);
-        _fNeedsSetProgIcon = FALSE;
+        XWPProgramData *somThis = XWPProgramGetData(somSelf);
+        PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
+
+        if (    (!pmrc->hptrIcon)
+             || (_fNeedsSetProgIcon)
+           )
+        {
+            _wpSetProgIcon(somSelf, NULL);
+            _fNeedsSetProgIcon = FALSE;
+        }
+
+        return (pmrc->hptrIcon);
     }
 
-    return (pmrc->hptrIcon);
-
-    // return (XWPProgram_parent_WPProgram_wpQueryIcon(somSelf));
-
-    // if (!(_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON))
-
+    return (XWPProgram_parent_WPProgram_wpQueryIcon(somSelf));
 }
 
 /*
@@ -720,20 +756,16 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
-                                           PFEA2LIST pfeal)
+                                          PFEA2LIST pfeal)
 {
-    BOOL            brc = FALSE;
-    CHAR            szExecutable[CCHMAXPATH];
-    HPOINTER        hptr = NULLHANDLE;
-    BOOL        fNotDefaultIcon = FALSE;
-    APIRET      arc;
-    BOOL        fRunReplacement;
+    BOOL        fRunReplacement = FALSE;
 
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgIcon");
 
     // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
     fRunReplacement = cmnQuerySetting(sfTurboFolders);
+#endif
 
 #ifndef __NOICONREPLACEMENTS__
     if (!fRunReplacement)
@@ -743,6 +775,12 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
 
     if (fRunReplacement)
     {
+        XWPProgramData *somThis = XWPProgramGetData(somSelf);
+        CHAR            szExecutable[CCHMAXPATH];
+        HPOINTER        hptr = NULLHANDLE;
+        BOOL            fNotDefaultIcon = FALSE;
+        APIRET          arc;
+
         // here's the important check that prevents our
         // standard icon from being nuked:
         if (!_wpIsObjectInitialized(somSelf))
@@ -851,7 +889,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
  */
 
 SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
-                                              PICONINFO pIconInfo)
+                                             PICONINFO pIconInfo)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIconData");
@@ -867,7 +905,7 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
-                                           PICONINFO pIconInfo)
+                                          PICONINFO pIconInfo)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetIconData");
@@ -888,7 +926,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSetAssociationType(XWPProgram *somSelf,
-                                                  PSZ pszType)
+                                                 PSZ pszType)
 {
     BOOL brc = FALSE;
 
@@ -912,7 +950,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetAssociationType(XWPProgram *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpMoveObject(XWPProgram *somSelf,
-                                          WPFolder* Folder)
+                                         WPFolder* Folder)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpMoveObject");
@@ -928,8 +966,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpMoveObject(XWPProgram *somSelf,
  */
 
 SOM_Scope WPObject*  SOMLINK xpg_wpCopyObject(XWPProgram *somSelf,
-                                               WPFolder* Folder,
-                                               BOOL fLock)
+                                              WPFolder* Folder,
+                                              BOOL fLock)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpCopyObject");
@@ -962,46 +1000,63 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                                                PPROGDETAILS pProgDetails,
                                                PULONG pulSize)
 {
-    CHAR        szExecutable[CCHMAXPATH];
-    PSZ         pszTitle;
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    BOOL        fRunReplacement = FALSE;
+
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryProgDetails");
 
-    if (    (_xwpQueryExecutable(somSelf, szExecutable))
-         && (pszTitle = _wpQueryTitle(somSelf))
-       )
-    {
-#ifdef _PMPRINTF_
-        _Pmpf((__FUNCTION__ " for \"%s\": progc is %s",
-                pszTitle,
-                appDescribeAppType(_ProgType.progc)));
-        _Pmpf(("   pcszExecutable: \"%s\"", szExecutable));
-        _Pmpf(("   startupdir %lX", _usStartupDirHandle));
-        _Pmpf(("   params \"%s\"", (_pszParameters) ? _pszParameters : "NULL"));
-
-        _Pmpf(("   _pszEnvironment is 0x%lX",
-                            _pszEnvironment));
-        if (_pszEnvironment)
-        {
-            PSZ pszThis = _pszEnvironment;
-            while (*pszThis != 0)
-            {
-                _Pmpf(("  \"%s\"", pszThis));
-                pszThis += strlen(pszThis) + 1;
-            }
-        }
+    // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
 #endif
 
-        return (progFillProgDetails(pProgDetails,     // can be NULL
-                                    _ProgType.progc,
-                                    _ProgType.fbVisible,
-                                    &_swpInitial,
-                                    pszTitle,
-                                    szExecutable,
-                                    _usStartupDirHandle,
-                                    _pszParameters,
-                                    _pszEnvironment,
-                                    pulSize));
+#ifndef __NOICONREPLACEMENTS__
+    if (!fRunReplacement)
+        if (cmnQuerySetting(sfIconReplacements))
+            fRunReplacement = TRUE;
+#endif
+
+    if (fRunReplacement)
+    {
+        CHAR        szExecutable[CCHMAXPATH];
+        PSZ         pszTitle;
+        XWPProgramData *somThis = XWPProgramGetData(somSelf);
+
+        if (    (_xwpQueryExecutable(somSelf, szExecutable))
+             && (pszTitle = _wpQueryTitle(somSelf))
+           )
+        {
+    #ifdef _PMPRINTF_
+            _Pmpf((__FUNCTION__ " for \"%s\": progc is %s",
+                    pszTitle,
+                    appDescribeAppType(_ProgType.progc)));
+            _Pmpf(("   pcszExecutable: \"%s\"", szExecutable));
+            _Pmpf(("   startupdir %lX", _usStartupDirHandle));
+            _Pmpf(("   params \"%s\"", (_pszParameters) ? _pszParameters : "NULL"));
+
+            _Pmpf(("   _pszEnvironment is 0x%lX",
+                                _pszEnvironment));
+            if (_pszEnvironment)
+            {
+                PSZ pszThis = _pszEnvironment;
+                while (*pszThis != 0)
+                {
+                    _Pmpf(("  \"%s\"", pszThis));
+                    pszThis += strlen(pszThis) + 1;
+                }
+            }
+    #endif
+
+            return (progFillProgDetails(pProgDetails,     // can be NULL
+                                        _ProgType.progc,
+                                        _ProgType.fbVisible,
+                                        &_swpInitial,
+                                        pszTitle,
+                                        szExecutable,
+                                        _usStartupDirHandle,
+                                        _pszParameters,
+                                        _pszEnvironment,
+                                        pulSize));
+        }
     }
 
     return (XWPProgram_parent_WPProgram_wpQueryProgDetails(somSelf,
@@ -1047,123 +1102,139 @@ USHORT GetFSHandle(PCSZ pcszFile)
 SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                                              PPROGDETAILS pProgDetails)
 {
-    BOOL brc = FALSE;
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    BOOL        fRunReplacement = FALSE;
+    BOOL        brc = FALSE;
+
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgDetails");
 
-    TRY_LOUD(excpt1)
+    // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
+#endif
+
+#ifndef __NOICONREPLACEMENTS__
+    if (!fRunReplacement)
+        if (cmnQuerySetting(sfIconReplacements))
+            fRunReplacement = TRUE;
+#endif
+
+    if (fRunReplacement)
     {
-        PSZ     pszMyTitle = _wpQueryTitle(somSelf);
-        BOOL    fSetProgIcon = FALSE;
-
-        // progtype
-        _ProgType.progc = pProgDetails->progt.progc;
-        _ProgType.fbVisible = pProgDetails->progt.fbVisible;
-
-        // title
-        if (    (pProgDetails->pszTitle)
-             && (strhcmp(pszMyTitle, pProgDetails->pszTitle))
-           )
-            _wpSetTitle(somSelf, pProgDetails->pszTitle);
-
-        // executable
-        if (pProgDetails->pszExecutable)
+        TRY_LOUD(excpt1)
         {
-            // executable specified:
-            ULONG hfs;
+            XWPProgramData *somThis = XWPProgramGetData(somSelf);
+            PSZ     pszMyTitle = _wpQueryTitle(somSelf);
+            BOOL    fSetProgIcon = FALSE;
 
-            // "*" means command prompt
-            if (pProgDetails->pszExecutable[0] == '*')
+            // progtype
+            _ProgType.progc = pProgDetails->progt.progc;
+            _ProgType.fbVisible = pProgDetails->progt.fbVisible;
+
+            // title
+            if (    (pProgDetails->pszTitle)
+                 && (strhcmp(pszMyTitle, pProgDetails->pszTitle))
+               )
+                _wpSetTitle(somSelf, pProgDetails->pszTitle);
+
+            // executable
+            if (pProgDetails->pszExecutable)
             {
-                FREE(_pszExecutable);
-                if (_usExecutableHandle != 0xFFFF)
+                // executable specified:
+                ULONG hfs;
+
+                // "*" means command prompt
+                if (pProgDetails->pszExecutable[0] == '*')
                 {
-                    // handle changed:
-                    _usExecutableHandle = 0xFFFF;
-                    fSetProgIcon = TRUE;
+                    FREE(_pszExecutable);
+                    if (_usExecutableHandle != 0xFFFF)
+                    {
+                        // handle changed:
+                        _usExecutableHandle = 0xFFFF;
+                        fSetProgIcon = TRUE;
+                    }
                 }
-            }
-            // try to find it
-            else if (    (pProgDetails->pszExecutable[1] == ':')
-                      && (strchr(pProgDetails->pszExecutable, '\\'))
-                      && (hfs = GetFSHandle(pProgDetails->pszExecutable))
-                    )
-            {
-                // got executable file handle:
-                FREE(_pszExecutable);
-                if (_usExecutableHandle != hfs)
+                // try to find it
+                else if (    (pProgDetails->pszExecutable[1] == ':')
+                          && (strchr(pProgDetails->pszExecutable, '\\'))
+                          && (hfs = GetFSHandle(pProgDetails->pszExecutable))
+                        )
                 {
-                    // handle changed:
-                    _usExecutableHandle = hfs;
-                    fSetProgIcon = TRUE;
+                    // got executable file handle:
+                    FREE(_pszExecutable);
+                    if (_usExecutableHandle != hfs)
+                    {
+                        // handle changed:
+                        _usExecutableHandle = hfs;
+                        fSetProgIcon = TRUE;
+                    }
+                }
+                else
+                {
+                    // file doesn't exist (or is not fully qualified):
+                    if (    (!_pszExecutable)
+                         || (stricmp(_pszExecutable,
+                                     pProgDetails->pszExecutable))
+                       )
+                    {
+                        // file changed:
+                        strhStore(&_pszExecutable,
+                                  pProgDetails->pszExecutable,
+                                  NULL);
+                        fSetProgIcon = TRUE;
+                    }
                 }
             }
             else
             {
-                // file doesn't exist (or is not fully qualified):
-                if (    (!_pszExecutable)
-                     || (stricmp(_pszExecutable,
-                                 pProgDetails->pszExecutable))
+                // executable not specified: nuke it then
+                FREE(_pszExecutable);
+                _usExecutableHandle = NULLHANDLE;
+                fSetProgIcon = TRUE;
+            }
+
+            // startup dir
+            _usStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);
+
+            // parameters
+            strhStore(&_pszParameters,
+                      pProgDetails->pszParameters,
+                      NULL);
+
+            // environment
+            FREE(_pszEnvironment);
+            if (pProgDetails->pszEnvironment)
+            {
+                ULONG cb;
+                if (    (cb = appQueryEnvironmentLen(pProgDetails->pszEnvironment))
+                     && (_pszEnvironment = malloc(cb))
                    )
                 {
-                    // file changed:
-                    strhStore(&_pszExecutable,
-                              pProgDetails->pszExecutable,
-                              NULL);
-                    fSetProgIcon = TRUE;
+                    memcpy(_pszEnvironment,
+                           pProgDetails->pszEnvironment,
+                           cb);
                 }
             }
+
+            // pszIcon: ignored
+
+            // swpInitial
+            memcpy(&_swpInitial,
+                   &pProgDetails->swpInitial,
+                   sizeof(SWP));
+
+            if (fSetProgIcon)
+                // refresh icon
+                _wpSetProgIcon(somSelf, NULL);
+
+            // save ourselves
+            _wpSaveDeferred(somSelf);
+
+            brc = TRUE;
         }
-        else
+        CATCH(excpt1)
         {
-            // executable not specified: nuke it then
-            FREE(_pszExecutable);
-            _usExecutableHandle = NULLHANDLE;
-            fSetProgIcon = TRUE;
-        }
-
-        // startup dir
-        _usStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);
-
-        // parameters
-        strhStore(&_pszParameters,
-                  pProgDetails->pszParameters,
-                  NULL);
-
-        // environment
-        FREE(_pszEnvironment);
-        if (pProgDetails->pszEnvironment)
-        {
-            ULONG cb;
-            if (    (cb = appQueryEnvironmentLen(pProgDetails->pszEnvironment))
-                 && (_pszEnvironment = malloc(cb))
-               )
-            {
-                memcpy(_pszEnvironment,
-                       pProgDetails->pszEnvironment,
-                       cb);
-            }
-        }
-
-        // pszIcon: ignored
-
-        // swpInitial
-        memcpy(&_swpInitial,
-               &pProgDetails->swpInitial,
-               sizeof(SWP));
-
-        if (fSetProgIcon)
-            // refresh icon
-            _wpSetProgIcon(somSelf, NULL);
-
-        // save ourselves
-        _wpSaveDeferred(somSelf);
-
-        brc = TRUE;
+        } END_CATCH();
     }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
 
     if (!brc)
         brc = XWPProgram_parent_WPProgram_wpSetProgDetails(somSelf,
@@ -1179,7 +1250,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
  */
 
 SOM_Scope ULONG  SOMLINK xpg_wpAddProgramPage(XWPProgram *somSelf,
-                                               HWND hwndNotebook)
+                                              HWND hwndNotebook)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpAddProgramPage");
@@ -1195,7 +1266,7 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramPage(XWPProgram *somSelf,
  */
 
 SOM_Scope ULONG  SOMLINK xpg_wpAddProgramSessionPage(XWPProgram *somSelf,
-                                                      HWND hwndNotebook)
+                                                     HWND hwndNotebook)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpAddProgramSessionPage");
@@ -1215,7 +1286,7 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramSessionPage(XWPProgram *somSelf,
  */
 
 SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
-                                                          HWND hwndNotebook)
+                                                         HWND hwndNotebook)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
@@ -1225,10 +1296,10 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
         return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
-    else
 #endif
-        return (XWPProgram_parent_WPProgram_wpAddProgramAssociationPage(somSelf,
-                                                                        hwndNotebook));
+
+    return (XWPProgram_parent_WPProgram_wpAddProgramAssociationPage(somSelf,
+                                                                    hwndNotebook));
 }
 
 /* ******************************************************************

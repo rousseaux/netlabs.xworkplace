@@ -100,7 +100,7 @@
  */
 
 // XFolder folder hotkeys static array
-XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
+static XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
 
 /* ******************************************************************
  *                                                                  *
@@ -672,8 +672,6 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                          HWND hwndCnr,
                          HWND hwndMenu) // in: menu created by wpDisplayMenu
 {
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-
     if (
 #ifndef __ALWAYSFDRHOTKEYS__
             (cmnQuerySetting(sfFolderHotkeys)) // V0.9.4 (2000-06-11) [umoeller]
@@ -892,7 +890,7 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
     return (mrc);
 }
 
-static XWPSETTING G_HotkeysBackup[] =
+static const XWPSETTING G_HotkeysBackup[] =
     {
         sfFolderHotkeysDefault,
         sfShowHotkeysInMenus
@@ -1025,12 +1023,10 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         case ID_XSDI_ACCELERATORS:
             cmnSetSetting(sfFolderHotkeysDefault, ulExtra);
-            // cmnStoreGlobalSettings();
         break;
 
         case ID_XSDI_SHOWINMENUS:
             cmnSetSetting(sfShowHotkeysInMenus, ulExtra);
-            // cmnStoreGlobalSettings();
         break;
 
         case ID_XSDI_LISTBOX:
@@ -1159,15 +1155,9 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_UNDO:
         {
-            // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
-
-            // and restore the settings for this page
+            // "Undo" button: restore the settings for this page
             cmnRestoreSettings(pcnbp->pUser,
                                ARRAYITEMCOUNT(G_HotkeysBackup));
-
-            // cmnSetSetting(sfFolderHotkeysDefault, pGSBackup->fFolderHotkeysDefault);
-
 
             // here, also restore the backed-up FolderHotkeys array
             // second pointer

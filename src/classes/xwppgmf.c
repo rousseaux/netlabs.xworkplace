@@ -409,13 +409,13 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
 }
 
 /*
- *@@ xwpNukePhysical:
- *      override of XFldObject::xwpNukePhysical, which must
+ *@@ xwpDestroyStorage:
+ *      override of XFldObject::xwpDestroyStorage, which must
  *      remove the physical representation of an object
  *      when it gets physically deleted.
  *
- *      xwpNukePhysical gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      xwpDestroyStorage gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
  *      calls WPObject::wpDestroyObject.
  *
  *      We override this in order to prevent the original
@@ -428,25 +428,25 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgf_xwpNukePhysical(XWPProgramFile *somSelf)
+SOM_Scope BOOL  SOMLINK xpgf_xwpDestroyStorage(XWPProgramFile *somSelf)
 {
-    static somTD_XFldDataFile_xwpNukePhysical pXFldDataFile_xwpNukePhysical = NULL;
+    static somTD_XFldDataFile_xwpDestroyStorage pXFldDataFile_xwpDestroyStorage = NULL;
 
     BOOL brc = FALSE;
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_xwpNukePhysical");
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_xwpDestroyStorage");
 
-    if (!pXFldDataFile_xwpNukePhysical)
+    if (!pXFldDataFile_xwpDestroyStorage)
     {
         // first call:
-        // resolve XFldDataFile::xwpNukePhysical
-        pXFldDataFile_xwpNukePhysical
-            = (somTD_XFldDataFile_xwpNukePhysical)wpshResolveFor(somSelf,
+        // resolve XFldDataFile::xwpDestroyStorage
+        pXFldDataFile_xwpDestroyStorage
+            = (somTD_XFldDataFile_xwpDestroyStorage)wpshResolveFor(somSelf,
                                                     _XFldDataFile,
-                                                    "xwpNukePhysical");
+                                                    "xwpDestroyStorage");
     }
 
-    if (pXFldDataFile_xwpNukePhysical)
+    if (pXFldDataFile_xwpDestroyStorage)
     {
         // clean up program resources in INI file;
         // there's no way to avoid running through
@@ -458,7 +458,7 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpNukePhysical(XWPProgramFile *somSelf)
 
         // call WPAbstract::wpDestroyObject explicitly,
         // skipping WPProgram
-        brc = pXFldDataFile_xwpNukePhysical(somSelf);
+        brc = pXFldDataFile_xwpDestroyStorage(somSelf);
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -672,13 +672,15 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
     HPOINTER    hptr = NULLHANDLE;
     BOOL        fNotDefaultIcon = FALSE;
     APIRET      arc;
-    BOOL        fRunReplacement;
+    BOOL        fRunReplacement = FALSE;
 
     XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetProgIcon");
 
     // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
     fRunReplacement = cmnQuerySetting(sfTurboFolders);
+#endif
 
 #ifndef __NOICONREPLACEMENTS__
     if (!fRunReplacement)
@@ -867,6 +869,100 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryDefaultView(XWPProgramFile *somSelf)
                                     // for the first association view
 
     return (ulView);
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We replace the default help panel for program files
+ *      because the WPS even displays the standard data
+ *      file help for them: "This data file is associated
+ *      with the system editor per default." Yeah, right.
+ *
+ *      We try to be just a bit smarter and display help
+ *      based on the program type.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
+                                                PULONG pHelpPanelId,
+                                                PSZ HelpLibrary)
+{
+    XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultHelp");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        strcpy(HelpLibrary, cmnQueryHelpLibrary());
+
+        switch (_xwpQueryProgType(somSelf, NULL, NULL))
+        {
+            // DLLs, drivers
+            case PROG_DLL:                  // (PROGCATEGORY)6
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_DLL;
+            break;
+
+            case PROG_PDD:                  // (PROGCATEGORY)8
+            case PROG_VDD:                  // (PROGCATEGORY)9
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_DRIVER;
+            break;
+
+            /*
+            // OS/2 text mode
+            case PROG_FULLSCREEN:           // (PROGCATEGORY)1
+            case PROG_WINDOWABLEVIO:        // (PROGCATEGORY)2
+
+            // PM
+            case PROG_PM:                   // (PROGCATEGORY)3
+
+            // DOS
+            case PROG_VDM:                  // (PROGCATEGORY)4
+            // case PROG_REAL:                // (PROGCATEGORY)4
+            case PROG_WINDOWEDVDM:          // (PROGCATEGORY)7
+
+            // windoze
+            case PROG_WINDOW_REAL:          // (PROGCATEGORY)10
+            case PROG_WINDOW_PROT:          // (PROGCATEGORY)11
+            // case PROG_30_STD:               // (PROGCATEGORY)11
+            case PROG_WINDOW_AUTO:          // (PROGCATEGORY)12
+            case PROG_SEAMLESSVDM:          // (PROGCATEGORY)13
+            // case PROG_30_STDSEAMLESSVDM:    // (PROGCATEGORY)13
+            case PROG_SEAMLESSCOMMON:       // (PROGCATEGORY)14
+            // case PROG_30_STDSEAMLESSCOMMON:  // (PROGCATEGORY)14
+            case PROG_31_STDSEAMLESSVDM:    // (PROGCATEGORY)15
+            case PROG_31_STDSEAMLESSCOMMON:  // (PROGCATEGORY)16
+            case PROG_31_ENHSEAMLESSVDM:    // (PROGCATEGORY)17
+            case PROG_31_ENHSEAMLESSCOMMON:  // (PROGCATEGORY)18
+            case PROG_31_ENH:               // (PROGCATEGORY)19
+            case PROG_31_STD:               // (PROGCATEGORY)20
+
+            case PROG_DOS_GAME:             // (PROGCATEGORY)21
+            case PROG_WIN_GAME:             // (PROGCATEGORY)22
+            case PROG_DOS_MODE:             // (PROGCATEGORY)23
+            case PROG_RESERVED:             // (PROGCATEGORY)255
+            case PROG_DEFAULT:             // (PROGCATEGORY)0
+            case PROG_GROUP:               // (PROGCATEGORY)5
+            */
+            default:
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_MAIN;
+            break;
+
+        }
+
+        return (TRUE);
+    }
+#endif
+
+    return (XWPProgramFile_parent_WPProgramFile_wpQueryDefaultHelp(somSelf,
+                                                                   pHelpPanelId,
+                                                                   HelpLibrary));
 }
 
 /*

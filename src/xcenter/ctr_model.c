@@ -106,7 +106,7 @@
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added tray widget
  */
 
-static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
+static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
     = {
         // object button widget
         {
@@ -404,7 +404,7 @@ VOID ctrpLoadClasses(VOID)
 
                             if (fSufficientVersion)
                             {
-                                PXCENTERWIDGETCLASS paClasses = NULL;
+                                PCXCENTERWIDGETCLASS paClasses = NULL;
                                 ULONG   cClassesThis = 0;
 
                                 // now check which INIT we can call
@@ -658,9 +658,9 @@ VOID ctrpFreeClasses(VOID)
  *@@changed V0.9.12 (2001-05-12) [umoeller]: added extra non-null check
  */
 
-PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass)
+PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass)
 {
-    PXCENTERWIDGETCLASS pReturn = NULL;
+    PCXCENTERWIDGETCLASS pReturn = NULL;
 
     PLISTNODE pNode = lstQueryFirstNode(&G_llWidgetClasses);
     while (pNode)
@@ -875,8 +875,8 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
 
 XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
                               PTRAYSETTING pTray,   // in: tray to create subwidget in or NULL
-                              const char *pcszWidgetClass, // in: new widget's class (required)
-                              const char *pcszSetupString, // in: new widget's setup string (can be NULL)
+                              PCSZ pcszWidgetClass, // in: new widget's class (required)
+                              PCSZ pcszSetupString, // in: new widget's setup string (can be NULL)
                               ULONG ulBeforeIndex,   // in: index (-1 for rightmost)
                               PPRIVATEWIDGETSETTING *ppNewSetting,  // out: newly created widget setting
                               PULONG pulNewItemCount,   // out: new settings count (ptr can be NULL)
@@ -1189,7 +1189,7 @@ BOOL ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget)     // in: subwid
  */
 
 PTRAYSETTING ctrpCreateTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
-                            const char *pcszTrayName,   // in: tray name
+                            PCSZ pcszTrayName,   // in: tray name
                             PULONG pulIndex)            // out: index of new tray
 {
     PTRAYSETTING pNewTray;

@@ -108,7 +108,7 @@
  *          displays a message box if deleting the object fails.
  *          This is really annoying when calling wpFree in a loop
  *          on a bunch of objects. That's why we have
- *          XFldObject::xwpNukePhysical now.
+ *          XFldObject::xwpDestroyStorage now.
  *
  *      --  WPAbstract: this probably removes the INI entries
  *          associated with the abstract object.
@@ -122,7 +122,7 @@
  *      If folder auto-refresh is replaced by XWP, we must override
  *      wpFree in order to suppress calling this method. The message
  *      box bug is not acceptable for file-system objects, so we have
- *      introduced XFldObject::xwpNukePhysical instead.
+ *      introduced XFldObject::xwpDestroyStorage instead.
  *
  *      The destruction call sequence thus is:
  *
@@ -302,114 +302,6 @@ static LONG        G_lDirtyListItemsCount = 0;
  ********************************************************************/
 
 /*
- *@@ objFree:
- *      implementation for XFldObject::wpFree.
- *
- *      If folder auto-refresh has been replaced by XWP, we override
- *      the entire WPObject::wpFree method without calling the parent.
- *      This is necessary for a number of reasons:
- *
- *      --  wpFree in turn calls the undocumented wpDestroyObject
- *          method, which has a number of bugs but cannot be overridden
- *          (because it's not exported in the IDL file).
- *
- *          So in order to fix those bugs, wpFree had to be rewritten,
- *          which now calls the new XFldObject::xwpNukePhysical method
- *          (which is our reimplementation of wpDestroyObject).
- *
- *      --  wpFree is not very good at cleaning up object data in the
- *          INI files. This needs to be fixed finally.
- *
- *      In other words, when wpFree is now invoked on an object,
- *      the following happens:
- *
- *      1) XFldObject::wpFree calls this implementation (objFree).
- *
- *      2) objFree cleans up some object data and then calls
- *         the xwpNukePhysical method, using SOM name-lookup
- *         resolution. This allows subclasses (such as XFolder
- *         and XFldDataFile) to override the method, even though
- *         SOM doesn't know that XFldObject is actually a parent
- *         class of those subclasses (since the IDL files do not
- *         reflect that WPObject has been replaced with XFldObject).
- *
- *      3) XFldObject::xwpNukePhysical is the standard implementation,
- *         which invokes the standard undocumented wpDestroyObject
- *         method.
- *
- *      In summary, for classes which have not overridden xwpNukeObject,
- *      the behavior is EXACTLY as with the standard WPObject::wpFree.
- *
- *      HOWEVER, this way we can override xwpNukeObject in
- *      XFldDataFile and XFolder to fix the annoying message box
- *      bugs.
- *
- *@@added V0.9.9 (2001-02-04) [umoeller]
- */
-
-BOOL objFree(WPObject *somSelf)
-{
-    BOOL    brc = FALSE;
-
-    ULONG   ulStyle = _wpQueryStyle(somSelf);
-    PSZ     pszID = _wpQueryObjectID(somSelf);
-    somTD_XFldObject_xwpNukePhysical pxwpNukePhysical = NULL;
-    xfTD_wpDeleteWindowPosKeys _wpDeleteWindowPosKeys = NULL;
-    xfTD_wpMakeDormant _wpMakeDormant = NULL;
-
-    // if the object has an object ID assigned, remove this...
-    // this should clean the INI entry
-    if (pszID && strlen(pszID))
-        _wpSetObjectID(somSelf, NULL);
-
-    // if the object is a template, unset that bit...
-    // this should clean the INI entry as well
-    if (ulStyle & OBJSTYLE_TEMPLATE)
-        _wpModifyStyle(somSelf, OBJSTYLE_TEMPLATE, 0);
-
-    // OK, here comes the fun stuff.
-    // The WPS normally calls the "wpDestroyObject" method,
-    // which is responsible for killing the physical representation
-    // of the object. Unfortunately, we cannot override that method
-    // because IBM wasn't kind enough to make it public. Our way
-    // around this (without breaking compatibility) is to introduce
-    // a new method in XFldObject, which calls wpDestroyObject per
-    // default.
-
-    // We resolve the method by name because it is overridden
-    // in some XWorkplace classes. If it is not overridden,
-    // XFldObject::xwpNukePhysical calls wpDestroyObject.
-    if (pxwpNukePhysical = (somTD_XFldObject_xwpNukePhysical)somResolveByName(
-                              somSelf,
-                              "xwpNukePhysical"))
-        pxwpNukePhysical(somSelf);
-
-    // the WPS then calls wpSaveImmediate just in case the object
-    // has called wpSaveDeferred. I'm not sure this is a good idea...
-    // this will add another entry to the INI file. This should be
-    // moved up.
-    _wpSaveImmediate(somSelf);
-
-    // then there's another undocumented method call... i'm unsure
-    // what this does, but what the heck. We need to resolve this
-    // manually.
-    if (_wpDeleteWindowPosKeys = (xfTD_wpDeleteWindowPosKeys)wpshResolveFor(
-                                            somSelf,
-                                            NULL,
-                                            "wpDeleteWindowPosKeys"))
-        _wpDeleteWindowPosKeys(somSelf);
-
-    // finally, this calls wpMakeDormant, which destroys the SOM object
-    if (_wpMakeDormant = (xfTD_wpMakeDormant)wpshResolveFor(
-                                            somSelf,
-                                            NULL,
-                                            "wpMakeDormant"))
-        brc = _wpMakeDormant(somSelf, 0);
-
-    return (brc);
-}
-
-/*
  *@@ objRefreshUseItems:
  *      refresh all views of the object with a new
  *      title. Part of the implementation for
@@ -557,7 +449,7 @@ VOID UnlockObjectsList(VOID)
  */
 
 BOOL WriteObjectsList(POBJECTLIST pll,
-                      const char *pcszIniKey)
+                      PCSZ pcszIniKey)
 {
     BOOL brc = FALSE;
 
@@ -621,7 +513,7 @@ BOOL WriteObjectsList(POBJECTLIST pll,
 
 BOOL LoadObjectsList(POBJECTLIST pll,
                      ULONG ulListFlag,          // in: list flag for xwpModifyListNotify
-                     const char *pcszIniKey)
+                     PCSZ pcszIniKey)
 {
     BOOL        brc = FALSE;
     // ULONG       ulSize;
@@ -772,7 +664,7 @@ BOOL LoadObjectsList(POBJECTLIST pll,
 BOOL objAddToList(WPObject *somSelf,
                   POBJECTLIST pll,        // in: linked list of WPObject* pointers
                   BOOL fInsert,
-                  const char *pcszIniKey,
+                  PCSZ pcszIniKey,
                   ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
 {
     BOOL    brc = FALSE,
@@ -958,7 +850,7 @@ BOOL objIsOnList(WPObject *somSelf,
 
 WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* pointers
                       WPObject *pObjectFind,
-                      const char *pcszIniKey,
+                      PCSZ pcszIniKey,
                       ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
 {
     WPObject    *pObjectFound = NULL;
@@ -2043,13 +1935,6 @@ BOOL objQuerySetup(WPObject *somSelf,
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-    /* if (_somIsA(somSelf, _WPProgram))
-    {
-        fsysQueryProgramSetup(somSelf,
-                              pstrSetup);
-    } */        // removed this V0.9.9 (2001-04-02) [umoeller]
-                // because we have now a proper method in XWPProgram
-
     // CCVIEW
     ulValue = _wpQueryConcurrentView(somSelf);
     switch (ulValue)
@@ -2411,7 +2296,7 @@ ULONG WriteOutObjectSetup(FILE *RexxFile,
  */
 
 APIRET objCreateObjectScript(WPObject *pObject,          // in: object to start with
-                             const char *pcszRexxFile,   // in: file name of output REXX file
+                             PCSZ pcszRexxFile,   // in: file name of output REXX file
                              WPFolder *pFolderForFiles,  // in: if != NULL, icons etc. are put here
                              ULONG flCreate)             // in: flags
 {
@@ -2468,7 +2353,7 @@ typedef struct _OBJECTUSAGERECORD
 
 POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Object" page
                                       POBJECTUSAGERECORD preccParent, // in: parent record or NULL for root
-                                      const char *pcszTitle,     // in: text to appear in cnr
+                                      PCSZ pcszTitle,     // in: text to appear in cnr
                                       ULONG flAttrs)    // in: CRA_* flags for record
 {
     POBJECTUSAGERECORD preccNew
@@ -3333,7 +3218,7 @@ MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
     return (mrc);
 }
 
-CONTROLDEF
+static CONTROLDEF
     DetailsGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_DETAILS_GROUP),
@@ -3367,7 +3252,7 @@ CONTROLDEF
                             100,
                             30);
 
-DLGHITEM dlgObjDetails[] =
+static const DLGHITEM dlgObjDetails[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required

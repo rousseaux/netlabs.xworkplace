@@ -86,10 +86,10 @@ typedef struct _DISKWATCHITEM
  *
  ********************************************************************/
 
-LINKLIST    G_llDrives;         // linked list of DISKWATCHITEM structs,
+static LINKLIST    G_llDrives;         // linked list of DISKWATCHITEM structs,
                                 // auto-free
 
-HMTX        G_hmtxDrivesList = NULLHANDLE;
+static HMTX        G_hmtxDrivesList = NULLHANDLE;
                                 // mutex protecting that list
 
 /* ******************************************************************

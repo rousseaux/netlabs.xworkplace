@@ -1171,7 +1171,7 @@ typedef struct _S506ALL
 PSZ     apszDMAChannels[DMACHANNELS_COUNT];
 
 // array of tools to be subclassed for tooltips
-USHORT usS506ToolIDs[] =
+static USHORT usS506ToolIDs[] =
     {
         ID_OSDI_S506_INITQUIET,
         ID_OSDI_S506_INITVERBOSE,
@@ -2016,7 +2016,7 @@ VOID S506Settings2Dlg(HWND hwndDlg,
  *      driver.
  */
 
-USHORT ausNotSupportedByIBM[] =
+static USHORT ausNotSupportedByIBM[] =
             {
                 ID_OSDI_DANIS506_CLOCK_CHECK,
                 ID_OSDI_DANIS506_CLOCK_SLIDER,
@@ -2043,7 +2043,7 @@ USHORT ausNotSupportedByIBM[] =
  *      drivers with versions < 10.xxx.
  */
 
-USHORT ausNotSupportedByOldIBM[] =
+static USHORT ausNotSupportedByOldIBM[] =
             {
                 ID_OSDI_S506_INITWAIT,
                 ID_OSDI_S506_U_BUSMASTER

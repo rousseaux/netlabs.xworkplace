@@ -888,7 +888,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                             // system or read-only file:
                             // prompt!!
 
-                            // 1) awake object
+                            // 1) make object awake
                             WPFileSystem *pFSObj = _wpclsQueryObjectFromPath(_WPFileSystem,
                                                                              szFullPath);
                             // _Pmpf(("        is readonly"));

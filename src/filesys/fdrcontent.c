@@ -1121,11 +1121,12 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
 /*
  *@@ fdrIsObjectFiltered:
  *      returns TRUE if pObject is currently filtered
- *      in pFolder and should therefore not be visible.
+ *      out of pFolder and should therefore not be visible.
  *
  *      An object is "filtered" if it does not match
  *      the include criteria from the "Include" page
- *      of the folder.
+ *      of the folder or if it has the OBJSTYLE_NOTVISIBLE
+ *      style flag set.
  *
  *      This involves dealing with the undocumented
  *      "WPFilter" class, which is derived from WPTransient.
@@ -1162,8 +1163,12 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
                     _wpQueryTitle(pObject),
                     _wpQueryTitle(pFolder) ));
 
+    if (_wpQueryStyle(pObject) & OBJSTYLE_NOTVISIBLE)
+        return TRUE;
+
     if (!pwpQueryFldrFilter)
-        // first call:
+        // first call: this method is never overridden,
+        // so we only resolve once for the system
         pwpQueryFldrFilter = (xfTD_wpQueryFldrFilter)wpshResolveFor(
                                              pFolder,
                                              NULL, // use somSelf's class
@@ -1180,7 +1185,8 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
         // now that we have the WPFilter object, we can try
         // to resolve the wpMatchesFilter method
         if (!pwpMatchesFilter)
-            // first call:
+            // first call: this method is never overridden,
+            // so we only resolve once for the system
             pwpMatchesFilter = (xfTD_wpMatchesFilter)wpshResolveFor(
                                                  pFilter,
                                                  NULL, // use somSelf's class
@@ -1855,6 +1861,8 @@ VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
 
 #endif
 
+#ifndef __NOTURBOFOLDERS__
+
 /* ******************************************************************
  *
  *   Folder populate with abstract objects
@@ -2187,6 +2195,8 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     return (fSuccess);
 }
+
+#endif
 
 /*
  *@@ fdrCheckIfPopulated:

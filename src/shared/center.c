@@ -335,8 +335,8 @@
  *      keywords only.
  */
 
-PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
-                       const char *pcszKeyword)     // in: keyword to look for (e.g. "FONT")
+PSZ ctrScanSetupString(PCSZ pcszSetupString, // in: entire setup string
+                       PCSZ pcszKeyword)     // in: keyword to look for (e.g. "FONT")
 {
     PSZ pszValue = 0;
     if ((pcszSetupString) && (pcszKeyword))
@@ -351,7 +351,7 @@ PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
             {
                 // keyword found:
                 // get value
-                const char *pEOValue = strchr(pEquals, ';');
+                PCSZ pEOValue = strchr(pEquals, ';');
                 if (pEOValue)
                     // value is before another separator:
                     pszValue = strhSubstr(pEquals + 1, pEOValue);
@@ -395,7 +395,7 @@ PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
  *      hex string in the "RRGGBB" format.
  */
 
-LONG ctrParseColorString(const char *p)
+LONG ctrParseColorString(PCSZ p)
 {
     LONG lrc = 0;
     if (p)
@@ -446,7 +446,7 @@ VOID ctrFreeSetupValue(PSZ p)
  */
 
 BOOL ctrSetSetupString(LHANDLE hSetting,
-                       const char *pcszNewSetupString)
+                       PCSZ pcszNewSetupString)
 {
     BOOL brc = FALSE;
     // get pointer to structure on stack in ShowSettingsDlg;
@@ -496,16 +496,16 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
  *@@added V0.9.7 (2000-12-07) [umoeller]
  */
 
-BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
-                    const char *pcszHelpFile,       // in: help file (can be q'fied)
+BOOL ctrDisplayHelp(PCXCENTERGLOBALS pGlobals,
+                    PCSZ pcszHelpFile,       // in: help file (can be q'fied)
                     ULONG ulHelpPanelID)
 {
     BOOL brc = FALSE;
     if (pGlobals)
     {
-        PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(pGlobals->hwndClient,
-                                                                          QWL_USER);
-        if (pXCenterData)
+        PXCENTERWINDATA pXCenterData;
+        if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(pGlobals->hwndClient,
+                                                              QWL_USER))
         {
             brc = _wpDisplayHelp(pXCenterData->somSelf,
                                  ulHelpPanelID,
@@ -764,7 +764,7 @@ VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
         else
         {
-            PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
+            PCXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
 
             if (pClass)
             {

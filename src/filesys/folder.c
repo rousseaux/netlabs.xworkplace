@@ -167,6 +167,8 @@ BOOL fdrSetup(WPFolder *somSelf,
 
     CHAR        szValue[CCHMAXPATH + 1];
     ULONG       cbValue = sizeof(szValue);
+
+#ifndef __NOSNAPTOGRID__
     if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
                            "SNAPTOGRID", szValue, &cbValue))
     {
@@ -189,6 +191,7 @@ BOOL fdrSetup(WPFolder *somSelf,
             rc = FALSE;
         }
     }
+#endif
 
     cbValue = sizeof(szValue);
     if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
@@ -1260,6 +1263,8 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     return (brc);
 }
 
+#ifndef __NOSNAPTOGRID__
+
 /* ******************************************************************
  *
  *   Snap To Grid
@@ -1389,6 +1394,8 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
 
     return (brc);
 }
+
+#endif
 
 /* ******************************************************************
  *

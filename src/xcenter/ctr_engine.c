@@ -1448,7 +1448,7 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
                        pPosition->ulWidgetIndex);
             else
             {
-                PXCENTERWIDGETCLASS pClass;
+                PCXCENTERWIDGETCLASS pClass;
 
                 if (    (pClass = ctrpFindClass(pSetting->Public.pszWidgetClass))
                      && (pClass->pShowSettingsDlg)
@@ -1838,7 +1838,7 @@ HWND ctrpDragWidget(HWND hwnd,
  */
 
 BOOL ctrpVerifyType(PDRAGITEM pdrgItem,
-                    const char *pszType)
+                    PCSZ pszType)
 {
     BOOL  brc = FALSE;
 
@@ -2719,7 +2719,7 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                 // get ptr to XCENTERWIDGET struct
                 PXCENTERWIDGET pWidget = &pNewView->Widget;
                 // find the widget class for this
-                PXCENTERWIDGETCLASS pWidgetClass
+                PCXCENTERWIDGETCLASS pWidgetClass
                     = ctrpFindClass(pSetting->Public.pszWidgetClass);
 
                 ZERO(pNewView);
@@ -4394,7 +4394,7 @@ MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 BOOL ClientSaveSetup(HWND hwndClient,
                      HWND hwndWidget,
-                     const char *pcszSetupString)    // can be NULL
+                     PCSZ pcszSetupString)    // can be NULL
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
     BOOL brc = FALSE;
@@ -4869,8 +4869,8 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
 
 BOOL ctrpInsertWidget(XCenter *somSelf,
                       ULONG ulBeforeIndex,
-                      const char *pcszWidgetClass,
-                      const char *pcszSetupString)
+                      PCSZ pcszWidgetClass,
+                      PCSZ pcszSetupString)
 {
     BOOL brc = FALSE;
 

@@ -148,7 +148,7 @@
 
 #define WNDCLASS_WIDGET_SAMPLE "XWPCenterSampleWidget"
 
-static XCENTERWIDGETCLASS G_WidgetClasses[]
+static const XCENTERWIDGETCLASS G_WidgetClasses[]
     = {
         WNDCLASS_WIDGET_SAMPLE,     // PM window class name
         0,                          // additional flag, not used here
@@ -210,7 +210,7 @@ PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
 
@@ -328,7 +328,7 @@ VOID WgtClearSetup(PSAMPLESETUP pSetup)
  *      out. We do not clean up previous data here.
  */
 
-VOID WgtScanSetup(const char *pcszSetupString,
+VOID WgtScanSetup(PCSZ pcszSetupString,
                   PSAMPLESETUP pSetup)
 {
     PSZ p;
@@ -526,7 +526,7 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     case XN_SETUPCHANGED:
                     {
-                        const char *pcszNewSetupString = (const char*)mp2;
+                        PCSZ pcszNewSetupString = (const char*)mp2;
 
                         // reinitialize the setup data
                         WgtClearSetup(&pPrivate->Setup);
@@ -857,7 +857,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 ULONG EXPENTRY WgtInitModule(HAB hab,         // XCenter's anchor block
                              HMODULE hmodPlugin, // module handle of the widget DLL
                              HMODULE hmodXFLDR,    // XFLDR.DLL module handle
-                             PXCENTERWIDGETCLASS *ppaClasses,
+                             PCXCENTERWIDGETCLASS *ppaClasses,
                              PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
 {
     ULONG   ulrc = 0,

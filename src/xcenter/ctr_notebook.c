@@ -1302,7 +1302,7 @@ SLDCDATA
 #define STYLE_SLIDERS_HEIGHT        30
 #define STYLE_SLIDERTEXT_WIDTH      30
 
-CONTROLDEF
+static CONTROLDEF
     BorderWidthGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_CRDI_VIEW2_3DBORDER_GROUP),
@@ -1410,7 +1410,7 @@ CONTROLDEF
                             -1,
                             -1);
 
-DLGHITEM dlgXCenterStyle[] =
+static const DLGHITEM dlgXCenterStyle[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -1786,7 +1786,7 @@ MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
 
     /* ??? This part does not work.  DM_DISCARDOBJECT is only received
        ??? ONCE per session.  I have absolutely no idea why.  Will check
-       ??? anther day. // @@todo
+       ??? another day. // @@todo
        ??? V0.9.14 (2001-07-30) [lafaix]
     */
 
@@ -2384,7 +2384,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
                     if (pcnbp->preccSource)
                     {
-                        PXCENTERWIDGETCLASS pClass;
+                        PCXCENTERWIDGETCLASS pClass;
 
                         // popup menu on container recc (not whitespace):
 
@@ -2438,7 +2438,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRMI_PROPERTIES:
         {
-            PXCENTERWIDGETCLASS pClass;
+            PCXCENTERWIDGETCLASS pClass;
             if (    (pcnbp->preccSource)
                  && (pClass = ctrpFindClass(pcnbp->preccSource->pszIcon))  // class name
                  && (pClass->pShowSettingsDlg != 0)
@@ -2625,7 +2625,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                         precThis->pszVersion = precThis->szVersion;
                     }
                     else
-                        precThis->pszDLL = "Built-in"; // @@todo localize
+                        precThis->pszDLL = cmnGetString(ID_CRSI_BUILTINCLASS);
 
                     precThis->pszClass = (PSZ)pClass->Public.pcszWidgetClass;
 

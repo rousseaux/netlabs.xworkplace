@@ -135,11 +135,11 @@
 
 #define WNDCLASS_PAGEMAGECLIENT         "XWPPageMageClient"
 
-PFNWP       G_pfnOldFrameWndProc = 0;
+static PFNWP       G_pfnOldFrameWndProc = 0;
 // BOOL        G_ClientBitmapNeedsUpdate = FALSE;
         // put this into PAGEMAGECLIENTDATA V0.9.7 (2001-01-18) [umoeller]
 
-ULONG       G_hUpdateTimer = NULLHANDLE;
+static ULONG       G_hUpdateTimer = NULLHANDLE;
 
 HMTX        G_hmtxDisableSwitching = NULLHANDLE;    // V0.9.14 (2001-08-25) [umoeller]
 

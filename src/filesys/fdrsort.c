@@ -1396,9 +1396,9 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                         _Pmpf(( "  Resetting pSortRecord to %lX", pfnSort ));
                     #endif
 
-                    CnrInfo.pSortRecord = NULL;;
+                    CnrInfo.pSortRecord = NULL;
                     WinSendMsg(hwndCnr,
-                               CM_SETCNRINFO,       // @@todo, is this necessary?
+                               CM_SETCNRINFO,
                                (MPARAM)&CnrInfo,
                                (MPARAM)CMA_PSORTRECORD);
 

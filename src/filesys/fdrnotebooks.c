@@ -103,7 +103,7 @@
  *
  ********************************************************************/
 
-CONTROLDEF
+static CONTROLDEF
     FolderViewGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // ""Folder view settings"
                             ID_XSD_FOLDERVIEWGROUP),
@@ -177,7 +177,7 @@ CONTROLDEF
                             -1,
                             -1);
 
-DLGHITEM dlgView[] =
+static const DLGHITEM dlgView[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required
@@ -223,7 +223,7 @@ DLGHITEM dlgView[] =
         END_TABLE
     };
 
-XWPSETTING G_ViewBackup[] =
+static const XWPSETTING G_ViewBackup[] =
     {
         sfFullPath,
         sfKeepTitle,
@@ -482,7 +482,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __NOSNAPTOGRID__
 
-static XWPSETTING G_GridBackup[] =
+static const XWPSETTING G_GridBackup[] =
     {
         sfAddSnapToGridDefault,
         sulGridX,
@@ -630,7 +630,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  ********************************************************************/
 
-CONTROLDEF
+static CONTROLDEF
 #ifndef __NOFOLDERCONTENTS__
     FavoriteFolderCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
@@ -675,7 +675,7 @@ CONTROLDEF
                             -1);
 
 
-DLGHITEM dlgXFolder[] =
+static const DLGHITEM dlgXFolder[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOFOLDERCONTENTS__
@@ -939,7 +939,7 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  ********************************************************************/
 
-static XWPSETTING G_StartupFolderBackup[] =
+static const XWPSETTING G_StartupFolderBackup[] =
     {
         sulStartupInitialDelay,
         sfShowStartupProgress

@@ -128,6 +128,7 @@
 #include <wppgm.h>              // WPProgram
 #include <wppgmf.h>             // WPProgramFile
 #include <wpshadow.h>           // WPShadow
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 /* ******************************************************************
  *
@@ -760,8 +761,8 @@ PLINKLIST GetCachedTypesWithFilters(VOID)
 
 int TREEENTRY CompareTypeStrings(ULONG ul1, ULONG ul2)
 {
-    return (strcmp((const char *)ul1,
-                   (const char *)ul2));
+    return (strcmp((PCSZ)ul1,
+                   (PCSZ)ul2));
 }
 
 /*
@@ -846,7 +847,7 @@ VOID BuildWPSTypesCache(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(const char *pcszType)
+PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
 {
     if (!G_fWPSTypesValid)
         // create a copy of the data from OS2.INI... this
@@ -940,7 +941,7 @@ BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; list get
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG AppendTypesFromString(const char *pcszTypes, // in: types string (e.g. "C Code\nPlain text")
+ULONG AppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C Code\nPlain text")
                             CHAR cSeparator, // in: separator (\n for data files, ',' for programs)
                             PLINKLIST pllTypes) // in/out: list of newly allocated PSZ's
                                                 // with file types (e.g. "C Code", "Plain text")
@@ -1016,7 +1017,7 @@ ULONG AppendTypesFromString(const char *pcszTypes, // in: types string (e.g. "C 
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG AppendTypesForFile(const char *pcszObjectTitle,
+ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
                          PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
                                                // with file types (e.g. "C Code", "Plain text")
 {
@@ -1214,8 +1215,8 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *@@changed V0.9.12 (2001-05-31) [umoeller]: mutex was missing, fixed
  */
 
-APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
-                          const char *pcszNew)      // in: new name for pcszOld
+APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
+                          PCSZ pcszNew)      // in: new name for pcszOld
 {
     APIRET arc = FALSE;
 
@@ -1322,8 +1323,8 @@ APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-ULONG RemoveAssocReferences(const char *pcszHandle,     // in: decimal object handle
-                            const char *pcszIniApp)     // in: OS2.INI app to search
+ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
+                            PCSZ pcszIniApp)     // in: OS2.INI app to search
 {
     APIRET arc;
     ULONG ulrc = 0;
@@ -1334,7 +1335,7 @@ ULONG RemoveAssocReferences(const char *pcszHandle,     // in: decimal object ha
                                     pcszIniApp,
                                     &pszKeys)))
     {
-        const char *pKey = pszKeys;
+        PCSZ pKey = pszKeys;
         while (*pKey != 0)
         {
             // loop 2: go thru all assocs for this type/filter
@@ -1422,7 +1423,7 @@ ULONG RemoveAssocReferences(const char *pcszHandle,     // in: decimal object ha
  *      removes somSelf from all associations, if
  *      present.
  *
- *      Gets called from XWPProgram::xwpNukePhysical,
+ *      Gets called from XWPProgram::xwpDestroyStorage,
  *      i.e. when a WPProgram is physically destroyed.
  *
  *      Returns the no. of associations removed.
@@ -2900,7 +2901,7 @@ BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
 
-MPARAM G_ampFileTypesPage[] =
+static MPARAM G_ampFileTypesPage[] =
     {
         MPFROM2SHORT(ID_XSDI_FT_GROUP, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XSDI_FT_CONTAINER, XAC_SIZEX | XAC_SIZEY),
@@ -4785,7 +4786,7 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-MPARAM G_ampDatafileTypesPage[] =
+static MPARAM G_ampDatafileTypesPage[] =
     {
         MPFROM2SHORT(ID_XSDI_DATAF_AVAILABLE_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XSDI_DATAF_GROUP, XAC_SIZEX | XAC_SIZEY)
@@ -4859,7 +4860,7 @@ VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
-                               const char *pcszCheck,
+                               PCSZ pcszCheck,
                                CHAR cSeparator,
                                PLINKLIST pllDisable)
 {
@@ -4925,7 +4926,7 @@ VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
 
 VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
                          PXSTRING pstrTypes,
-                         const char *pcszSeparator)
+                         PCSZ pcszSeparator)
 {
     PFILETYPERECORD precc = (PFILETYPERECORD)ulExtra;
 
@@ -5343,7 +5344,7 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 APIRET ImportFilters(PDOMNODE pTypeElementThis,
-                     const char *pcszTypeNameThis)
+                     PCSZ pcszTypeNameThis)
 {
     APIRET arc = NO_ERROR;
 
@@ -5502,7 +5503,7 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
  */
 
 APIRET ImportTypes(PDOMNODE pParentElement,
-                   const char *pcszParentType)  // in: parent type name or NULL
+                   PCSZ pcszParentType)  // in: parent type name or NULL
 {
     APIRET arc = NO_ERROR;
     PLINKLIST pllTypes = xmlGetElementsByTagName(pParentElement,
@@ -5604,7 +5605,7 @@ APIRET ImportTypes(PDOMNODE pParentElement,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ftypImportTypes(const char *pcszFilename,        // in: XML file name
+APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
                        PSZ pszErrorBuf,
                        ULONG cbErrorBuf)
 {
@@ -6028,7 +6029,7 @@ APIRET ExportAddTypesTree(PDOMNODE pRootElement)
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-const char *G_pcszDoctype =
+static PCSZ G_pcszDoctype =
 "<!DOCTYPE XWPFILETYPES [\n"
 "\n"
 "<!ELEMENT XWPFILETYPES (TYPE*)>\n"
@@ -6053,7 +6054,7 @@ const char *G_pcszDoctype =
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ftypExportTypes(const char *pcszFilename)        // in: XML file name
+APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
 {
     APIRET arc = NO_ERROR;
     BOOL fLocked = FALSE;

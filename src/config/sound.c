@@ -106,13 +106,15 @@
  *                                                                  *
  ********************************************************************/
 
+#ifndef __NOXSYSTEMSOUNDS__
+
 /*
  * aulAddtlSystemSounds:
  *      array of all the additional XWorkplace system sounds.
  *      Those constants are decl'd in common.h.
  */
 
-ULONG aulAddtlSystemSounds[] =
+static ULONG aulAddtlSystemSounds[] =
         {
             MMSOUND_XFLD_SHUTDOWN,
             MMSOUND_XFLD_RESTARTWPS,
@@ -121,6 +123,7 @@ ULONG aulAddtlSystemSounds[] =
             MMSOUND_XFLD_CTXTSELECT,
             MMSOUND_XFLD_CNRDBLCLK
         };
+#endif
 
 typedef struct _SOUNDPAGEDATA
 {
@@ -175,6 +178,8 @@ typedef struct _SOUNDPAGEDATA
  *   Additional system sounds                                       *
  *                                                                  *
  ********************************************************************/
+
+#ifndef __NOXSYSTEMSOUNDS__
 
 /*
  *@@ sndAddtlSoundsInstalled:
@@ -275,6 +280,8 @@ BOOL sndInstallAddtlSounds(HAB hab,
 
     return (brc);
 }
+
+#endif
 
 /* ******************************************************************
  *                                                                  *

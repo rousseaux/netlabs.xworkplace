@@ -1548,7 +1548,6 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
         // dereference shadows (V0.9.0)
         if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
-                // @@todo xwplite
             if (_somIsA(pobjSelected, pclsWPShadow))
                 pobjSelected = _wpQueryShadowedObject(pobjSelected, TRUE);
 
@@ -1944,7 +1943,7 @@ MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
 #endif
 
-static XWPSETTING G_StatusBar1Backup[] =
+static const XWPSETTING G_StatusBar1Backup[] =
     {
         sfDefaultStatusBarVisibility,
         sflSBForViews,
@@ -2198,7 +2197,7 @@ VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
     }
 }
 
-static XWPSETTING G_StatusBar2Backup[] =
+static const XWPSETTING G_StatusBar2Backup[] =
     {
         sflDereferenceShadows
     };
@@ -2360,7 +2359,7 @@ typedef struct _KEYARRAYITEM
     ULONG       ulDescription;          // string ID for description
 } KEYARRAYITEM, *PKEYARRAYITEM;
 
-KEYARRAYITEM G_aFormatSubKeys[] =
+static KEYARRAYITEM G_aFormatSubKeys[] =
     {
         1, "b", ID_XSSI_SBMNC_1,       // "in bytes"
         2, "k", ID_XSSI_SBMNC_2,       // "in kBytes"
@@ -2776,7 +2775,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // alright, now we got the menu item text...
                     // find the tab character, after which is the
                     // key we need to insert
-                    const char *p;
+                    PCSZ p;
                     if (p = strchr(psz, '\t'))
                     {
                         // p points to the key to insert now...

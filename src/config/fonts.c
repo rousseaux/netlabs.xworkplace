@@ -181,7 +181,7 @@ static BOOL         G_fInitialized = FALSE;
  */
 
 APIRET fonGetFontDescription(HAB hab,
-                             const char *pcszFilename,  // in: font file (fully q'fied)
+                             PCSZ pcszFilename,  // in: font file (fully q'fied)
                              PSZ pszFamily,             // out: font's family
                              PSZ pszFace)               // out: font's face name
 {
@@ -279,10 +279,10 @@ APIRET fonGetFontDescription(HAB hab,
  */
 
 XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
-                                   const char *pcszFamily,   // in: family name
-                                   const char *pcszFace,     // in: face name
-                                   const char *pcszFilename, // in: fully q'fied file
-                                   const char *pcszSetup,    // in: extra setup string or NULL
+                                   PCSZ pcszFamily,   // in: family name
+                                   PCSZ pcszFace,     // in: face name
+                                   PCSZ pcszFilename, // in: fully q'fied file
+                                   PCSZ pcszSetup,    // in: extra setup string or NULL
                                    BOOL fInsert)    // in: if != NULL, where to insert object
 {
     XWPFontObject *pNew = NULL;
@@ -1215,7 +1215,7 @@ VOID FontSamplePaint(HWND hwnd,
     {
         // we got something to paint:
         RECTL       rclClient;
-        ULONG       aulSizes[] =
+        static ULONG aulSizes[] =
                 {
                     // paint small sizes first V0.9.16 (2001-09-29) [umoeller]
                     6,
@@ -1229,18 +1229,6 @@ VOID FontSamplePaint(HWND hwnd,
                     48,
                     72,
                     144
-
-                    /* 144,
-                    72,
-                    48,
-                    36,
-                    30,
-                    24,
-                    16,
-                    12,
-                    10,
-                    8,
-                    6 */
                 };
         POINTL      ptlCurrent;
         ULONG       ul = 0;

@@ -539,8 +539,8 @@ BOOL wpshCheckObject(WPObject *pObject)
  *@@added V0.9.0 [umoeller]
  */
 
-WPObject* wpshQueryObjectFromID(const char *pcszObjectID,
-                                PULONG pulErrorCode)
+WPObject* wpshQueryObjectFromID(const char *pcszObjectID,   // in: object ID (e.g. "<WP_DESKTOP>")
+                                PULONG pulErrorCode)        // out: error (ptr can be NULL)
 {
     ULONG       ulHandle,
                 cbHandle;

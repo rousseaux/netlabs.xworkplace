@@ -293,7 +293,7 @@ PSZ pszClassInfo = NULL;
  *      (fnwpClassTreeCnrDlg).
  */
 
-MPARAM ampClassCnrCtls[] =
+static MPARAM ampClassCnrCtls[] =
     {
         MPFROM2SHORT(ID_XLDI_CNR, XAC_SIZEX | XAC_SIZEY)
     };
@@ -305,7 +305,7 @@ MPARAM ampClassCnrCtls[] =
  *      (fnwpClassInfoDlg).
  */
 
-MPARAM ampClassInfoCtls[] =
+static MPARAM ampClassInfoCtls[] =
     {
         MPFROM2SHORT(ID_XLDI_CLASSNAMETXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XLDI_CLASSNAME, XAC_MOVEY | XAC_SIZEX),
@@ -327,7 +327,7 @@ MPARAM ampClassInfoCtls[] =
  *      (fnwpMethodInfoDlg).
  */
 
-MPARAM ampMethodInfoCtls[] =
+static MPARAM ampMethodInfoCtls[] =
     {
         MPFROM2SHORT(ID_XLDI_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XLDI_RADIO_INSTANCEMETHODS, XAC_MOVEY),
@@ -722,8 +722,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         if (pwps->pClassObject)
             if (fIsWPSClass)
                 hClassIcon = _wpclsQueryIcon(pwps->pClassObject);
-                        // uh-oh, resource leak here
-                        // @@todo V0.9.16 (2001-10-19) [umoeller]
+
         WinSendDlgItemMsg(pClientData->hwndClassInfoDlg, ID_XLDI_ICON,
                           SM_SETHANDLE,
                           (MPARAM)hClassIcon,  // NULLHANDLE if error -> hide

@@ -238,14 +238,14 @@ PSZ fsysQueryEAKeyphrases(WPFileSystem *somSelf)
  *@@added V0.9.7 (2000-11-30) [umoeller]
  */
 
-BOOL fsysSetEASubject(WPFileSystem *somSelf, const char *psz)
+BOOL fsysSetEASubject(WPFileSystem *somSelf, PCSZ psz)
 {
     BOOL brc = FALSE;
     CHAR    szFilename[CCHMAXPATH];
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        const char *pcszEA = ".SUBJECT";
+        PCSZ pcszEA = ".SUBJECT";
         if (psz)
         {
             PEABINDING  peab = NULL;
@@ -278,14 +278,14 @@ BOOL fsysSetEASubject(WPFileSystem *somSelf, const char *psz)
  *@@added V0.9.7 (2000-11-30) [umoeller]
  */
 
-BOOL fsysSetEAComments(WPFileSystem *somSelf, const char *psz)
+BOOL fsysSetEAComments(WPFileSystem *somSelf, PCSZ psz)
 {
     BOOL brc = FALSE;
     CHAR    szFilename[CCHMAXPATH];
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        const char *pcszEA = ".COMMENTS";
+        PCSZ pcszEA = ".COMMENTS";
         if (psz)
         {
             PEABINDING  peab = NULL;
@@ -321,14 +321,14 @@ BOOL fsysSetEAComments(WPFileSystem *somSelf, const char *psz)
  *@@added V0.9.7 (2000-11-30) [umoeller]
  */
 
-BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, const char *psz)
+BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, PCSZ psz)
 {
     BOOL brc = FALSE;
     CHAR    szFilename[CCHMAXPATH];
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        const char *pcszEA = ".KEYPHRASES";
+        PCSZ pcszEA = ".KEYPHRASES";
         if (psz)
         {
             PEABINDING  peab;
@@ -487,7 +487,7 @@ VOID fsysCreateStandardGEAList(VOID)
     {
         // first call:
 
-        PCSZ apcszEANames[] =
+        static PCSZ apcszEANames[] =
             {
                 ".CLASSINFO",
                 ".LONGNAME",

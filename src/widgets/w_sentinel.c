@@ -167,7 +167,7 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 #define WNDCLASS_WIDGET_SENTINEL    "XWPCenterSentinelWidget"
 
-static XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
             {
                 {
                     WNDCLASS_WIDGET_SENTINEL,
@@ -205,6 +205,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
 // resolved function pointers from XFLDR.DLL
 PCSYSQUERYSWAPPERSIZE pcsysQuerySwapperSize = NULL;
 
+PCMNGETSTRING pcmnGetString = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 
@@ -237,10 +238,11 @@ PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "csysQuerySwapperSize", (PFN*)&pcsysQuerySwapperSize,
 
+        "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
@@ -403,7 +405,7 @@ VOID TwgtFreeSetup(PMONITORSETUP pSetup)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed potential memory leak
  */
 
-VOID TwgtScanSetup(const char *pcszSetupString,
+VOID TwgtScanSetup(PCSZ pcszSetupString,
                    PMONITORSETUP pSetup)
 {
     PSZ p;
@@ -884,13 +886,10 @@ VOID TwgtUpdateGraph(HWND hwnd,
             // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
             p = pPrivate->szTooltipText;
             p += pdrv_sprintf(p,
-                         "Physical memory usage"                  // @@todo localize
-                         "\nFree RAM: %s KB"
-                         "\nUsed RAM: %s KB"
-                         "\nSwapper size: %s KB",
-                         pnlsThousandsULong(sz1, pLatest->ulPhysFreeKB, cThousands),
-                         pnlsThousandsULong(sz2, pLatest->ulPhysInUseKB, cThousands),
-                         pnlsThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
+                              pcmnGetString(ID_CRSI_SENTINELTOOLTIP),
+                              pnlsThousandsULong(sz1, pLatest->ulPhysFreeKB, cThousands),
+                              pnlsThousandsULong(sz2, pLatest->ulPhysInUseKB, cThousands),
+                              pnlsThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
 
             if (pPrivate->arcWin32K == NO_ERROR)
                 pdrv_sprintf(p,
@@ -1359,7 +1358,7 @@ VOID TwgtButton1DblClick(HWND hwnd,
     PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
     if (pPrivate)
     {
-        const char *pcszID = "<XWP_KERNEL>";
+        PCSZ pcszID = "<XWP_KERNEL>";
         HOBJECT hobj = WinQueryObject((PSZ)pcszID);
 
         if (hobj)
@@ -1563,7 +1562,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
                               HMODULE hmodPlugin, // module handle of the widget DLL
                               HMODULE hmodXFLDR,    // XFLDR.DLL module handle
-                              PXCENTERWIDGETCLASS *ppaClasses,
+                              PCXCENTERWIDGETCLASS *ppaClasses,
                               PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
 {
     ULONG   ulrc = 0,

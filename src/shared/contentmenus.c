@@ -181,8 +181,8 @@
  ********************************************************************/
 
 // counts for providing unique menu id's (exported)
-ULONG                   G_ulVarItemCount = 0;    // number of inserted menu items
-SHORT                   G_sNextMenuId = 0;      // next menu item ID to use
+extern ULONG            G_ulVarItemCount = 0;    // number of inserted menu items
+extern SHORT            G_sNextMenuId = 0;      // next menu item ID to use
 
 // llContentMenuItems contains ONLY folder content menus
 static LINKLIST         G_llContentMenuItems; // changed V0.9.0
@@ -394,7 +394,9 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                            MPFROM2SHORT(0, FALSE));
                 sSelected = winhQueryItemUnderMouse(hwndMenu, &ptlMouse, &rtlItem);
 
+#ifndef __NOXSYSTEMSOUNDS__
                 cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
+#endif
 
                 WinPostMsg(WinQueryWindow(hwndMenu, QW_OWNER),
                            WM_COMMAND,

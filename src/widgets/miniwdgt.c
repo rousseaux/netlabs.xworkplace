@@ -155,7 +155,7 @@
 
 #define WNDCLASS_WIDGET_SAMPLE "XWPCenterMinimalWidget"
 
-static XCENTERWIDGETCLASS G_WidgetClasses[]
+static const XCENTERWIDGETCLASS G_WidgetClasses[]
     = {
         WNDCLASS_WIDGET_SAMPLE,     // PM window class name
         0,                          // additional flag, not used here
@@ -479,7 +479,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 ULONG EXPENTRY WgtInitModule(HAB hab,               // XCenter's anchor block
                              HMODULE hmodPlugin, // module handle of the widget DLL
                              HMODULE hmodXFLDR,     // XFLDR.DLL module handle
-                             PXCENTERWIDGETCLASS *ppaClasses,
+                             PCXCENTERWIDGETCLASS *ppaClasses,
                              PSZ pszErrorMsg)       // if 0 is returned, 500 bytes of error msg
 {
     ULONG   ulrc = 0;

@@ -1476,10 +1476,6 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage2(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage2");
 
-    /* if (cmnQuerySetting(sAddObjectPage))
-        _xwpAddObjectInternalsPage(somSelf, hwndNotebook); */
-            // @@todo
-
     return (SETTINGS_PAGE_REMOVED);
 }
 

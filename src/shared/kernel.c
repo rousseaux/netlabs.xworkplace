@@ -152,16 +152,16 @@ KERNELGLOBALS           G_KernelGlobals = {0};
 
 // classes tree V0.9.16 (2001-09-29) [umoeller]
 // see krnClassInitialized
-TREE                    *G_ClassNamesTree;
+static TREE             *G_ClassNamesTree;
 
 // anchor block of WPS thread 1 (queried in initMain);
 // this is exported thru kernel.h and never changed again
-HAB                     G_habThread1 = NULLHANDLE;
+extern HAB              G_habThread1 = NULLHANDLE;
 
 // hiwords for abstract and file-system object handles;
 // initialized in initMain, exported thru kernel.h
-USHORT                  G_usHiwordAbstract = 0;
-USHORT                  G_usHiwordFileSystem = 0;
+extern USHORT           G_usHiwordAbstract = 0;
+extern USHORT           G_usHiwordFileSystem = 0;
 
 // V0.9.11 (2001-04-25) [umoeller]
 static HWND             G_hwndPageMageContextMenu = NULLHANDLE;
@@ -189,9 +189,9 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MP
  *
  ********************************************************************/
 
-const char  *G_pcszReqSourceFile = NULL;
-ULONG       G_ulReqLine = 0;
-const char  *G_pcszReqFunction = NULL;
+static const char  *G_pcszReqSourceFile = NULL;
+static ULONG       G_ulReqLine = 0;
+static const char  *G_pcszReqFunction = NULL;
 
 /*
  *@@ krnLock:
@@ -241,9 +241,9 @@ const char  *G_pcszReqFunction = NULL;
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added classes tree init
  */
 
-BOOL krnLock(const char *pcszSourceFile,        // in: __FILE__
+BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
              ULONG ulLine,                      // in: __LINE__
-             const char *pcszFunction)          // in: __FUNCTION__
+             PCSZ pcszFunction)          // in: __FUNCTION__
 {
     if (!G_hmtxCommonLock)
     {
@@ -350,9 +350,9 @@ PCKERNELGLOBALS krnQueryGlobals(VOID)
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype to trace locks
  */
 
-PKERNELGLOBALS krnLockGlobals(const char *pcszSourceFile,
+PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
                               ULONG ulLine,
-                              const char *pcszFunction)
+                              PCSZ pcszFunction)
 {
     if (krnLock(pcszSourceFile, ulLine, pcszFunction))
         return (&G_KernelGlobals);
@@ -609,9 +609,9 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
  *@@added V0.9.2 (2000-03-10) [umoeller]
  */
 
-VOID APIENTRY krnExceptError(const char *pcszFile,
+VOID APIENTRY krnExceptError(PCSZ pcszFile,
                              ULONG ulLine,
-                             const char *pcszFunction,
+                             PCSZ pcszFunction,
                              APIRET arc)     // in: DosSetExceptionHandler error code
 {
     cmnLog(pcszFile, ulLine, pcszFunction,
@@ -630,7 +630,7 @@ VOID APIENTRY krnExceptError(const char *pcszFile,
  *@@added V0.9.3 (2000-04-11) [umoeller]
  */
 
-VOID krnMemoryError(const char *pcszMsg)
+VOID krnMemoryError(PCSZ pcszMsg)
 {
     cmnLog(__FILE__, __LINE__, __FUNCTION__,
            "Memory error:\n    %s",
@@ -682,7 +682,7 @@ VOID krnEnableReplaceRefresh(BOOL fEnable)
 
 BOOL krnReplaceRefreshEnabled(VOID)
 {
-    BOOL        fReplaceFolderRefresh = FALSE;
+    BOOL        fReplaceFolderRefresh = TRUE;
     ULONG       cb = sizeof(fReplaceFolderRefresh);
 
     PrfQueryProfileData(HINI_USER,
@@ -690,6 +690,10 @@ BOOL krnReplaceRefreshEnabled(VOID)
                         (PSZ)INIAPP_REPLACEFOLDERREFRESH,
                         &fReplaceFolderRefresh,
                         &cb);
+
+    // added this environment variable
+    if (getenv("XWP_NO_REPLACE_REFRESH"))
+        fReplaceFolderRefresh = FALSE;
 
     return (fReplaceFolderRefresh);
 }
@@ -947,10 +951,12 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
             {
                 HWND hwnd;
 
+#ifndef __NOXSYSTEMSOUNDS__
                 if ((ULONG)mp2 == 0)
                     // object hotkey, not screen corner:
                     cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
                                 // V0.9.3 (2000-04-20) [umoeller]
+#endif
 
                 // open the object, or resurface if already open
                 hwnd = _wpViewObject(pobjStart,
@@ -1511,6 +1517,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
             break; }
 #endif
 
+#ifndef __XWPLITE__
             /*
              *@@ T1M_WELCOME:
              *      posted if XWorkplace has just been installed.
@@ -1545,6 +1552,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                                     0);
                 }
             break;
+#endif
 
             /*
              *@@ T1M_PAGEMAGECTXTMENU:
@@ -1670,7 +1678,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
 
             case T1M_OPENRUNDIALOG:
                 cmnRunCommandLine((HWND)mp1,
-                                  (const char *)mp2);
+                                  (PCSZ)mp2);
             break;
 
             /*

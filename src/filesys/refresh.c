@@ -112,6 +112,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\threads.h"            // thread helpers
 
 // SOM headers which don't crash with prec. header files
@@ -176,6 +177,7 @@ static BOOL            G_fExitAllRefreshThreads = FALSE;
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
+ *@@changed V0.9.16 (2002-01-09) [umoeller]: fixed missing event sem post
  */
 
 VOID refrAddNotification(PXWPNOTIFY pNotify)
@@ -183,8 +185,16 @@ VOID refrAddNotification(PXWPNOTIFY pNotify)
     XFolderData *somThis = XFolderGetData(pNotify->pFolder);
     (_cNotificationsPending)++;
 
+    // store current system time in pNotify
+    pNotify->ulMS = doshQuerySysUptime();
+
     // append to the global list (auto-free)
     lstAppendItem(&G_llAllNotifications, pNotify);
+
+    // post the event sem for the pump thread
+    // V0.9.16 (2002-01-09) [umoeller]: moved this here,
+    // this was missing for full refresh
+    DosPostEventSem(G_hevNotificationPump);
 }
 
 /*
@@ -363,6 +373,7 @@ VOID Refresh(WPObject *pobj)
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
  *@@changed V0.9.12 (2001-05-31) [umoeller]: added REMOVE_* return value for caller
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
+ *@@changed V0.9.16 (2002-01-09) [umoeller]: folder refresh wasn't always working, fixed
  */
 
 ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
@@ -471,6 +482,7 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // get the folder pointer first because
             // we're deleting the node
             WPFolder *pFolder = pNotify->pFolder;
+            ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
 
             // kick out all pending notifications
             // for this folder
@@ -479,29 +491,37 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // tell caller that we nuked the list
             ulrc = REMOVE_FOLDER;
 
-            // we need a full refresh on the folder...
-            // set the folder flag which causes the folder
-            // contents to be refreshed on open
-            _wpModifyFldrFlags(pFolder,
-                               FOI_ASYNCREFRESHONOPEN,
-                               FOI_ASYNCREFRESHONOPEN);
-
-            // if the folder is currently open, do a
-            // full refresh NOW
-            if (_wpFindViewItem(pFolder,
-                                VIEW_ANY,
-                                NULL))
+            // refresh the folder if it's not currently refreshing
+            if (0 == (flFolder & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
             {
-                // alright, refresh NOW.... However, we can't
-                // do this on this thread while we're holding
-                // the WPS notify mutex... so start a transient
-                // thread just for refreshing.
-                thrCreate(NULL,
-                          fntOverflowRefresh,
-                          NULL,
-                          "OverflowRefresh",
-                          THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                          (ULONG)pFolder);
+                // we need a full refresh on the folder...
+                // set FOI_ASYNCREFRESHONOPEN, clear
+                // FOI_POPULATEDWITHFOLDERS | FOI_POPULATEDWITHALL,
+                // which will cause the folder contents to be refreshed
+                // on open
+                // fixed flags V0.9.16 (2002-01-09) [umoeller]
+                _wpModifyFldrFlags(pFolder,
+                                   FOI_ASYNCREFRESHONOPEN | FOI_POPULATEDWITHFOLDERS | FOI_POPULATEDWITHALL,
+                                   FOI_ASYNCREFRESHONOPEN);
+
+                // if the folder is currently open, do a
+                // full refresh NOW
+                if (_wpFindViewItem(pFolder,
+                                    VIEW_ANY,
+                                    NULL))
+                {
+                    // alright, refresh NOW.... however, we can't
+                    // do this on this thread while we're holding
+                    // the WPS notify mutex, so start a transient
+                    // thread just for refreshing
+                    thrCreate(NULL,
+                              fntOverflowRefresh,
+                              NULL,
+                              "OverflowRefresh",
+                              THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                              // thread param: folder pointer
+                              (ULONG)pFolder);
+                }
             }
         }
         break;
@@ -540,9 +560,7 @@ BOOL PumpNotifications(VOID)
     // go thru ALL notifications on the list
     // and check if they have aged enough to
     // be processed
-    pGlobalNodeThis = lstQueryFirstNode(&G_llAllNotifications);
-
-    if (pGlobalNodeThis)
+    if (pGlobalNodeThis = lstQueryFirstNode(&G_llAllNotifications))
     {
         // get current milliseconds
         ULONG       ulMSNow = doshQuerySysUptime();
@@ -648,8 +666,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
 
         TRY_LOUD(excpt1)
         {
-            fSemOwned = fdrGetNotifySem(SEM_INDEFINITE_WAIT);
-            if (fSemOwned)
+            if (fSemOwned = fdrGetNotifySem(SEM_INDEFINITE_WAIT))
             {
                 // only if we got the mutex, reset the event
                 DosResetEventSem(G_hevNotificationPump, &ulPostCount);
@@ -811,12 +828,7 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
          */
 
         if (fAddThis)
-        {
             refrAddNotification(pNotify);
-
-            // post the event sem for the pump thread
-            DosPostEventSem(G_hevNotificationPump);
-        }
     } // end if (pNotify)
 
     return (fAddThis);
@@ -844,6 +856,7 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added "rename" support
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
+ *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
  */
 
 VOID FindFolderForNotification(PXWPNOTIFY pNotify,
@@ -851,117 +864,111 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
 {
     static M_WPFileSystem *pclsWPFileSystem = NULL;
 
-    BOOL fStored = FALSE;
+    BOOL    fStored = FALSE;
+    BOOL    fSemOwned = FALSE;
 
-    // get current milliseconds for this notification
-    ULONG   ulMSNow = doshQuerySysUptime();
-
-    if (!pclsWPFileSystem)
-        pclsWPFileSystem = _WPFileSystem;
-
-    // reset parent's last valid folder; this is
-    // only set to something if we find a valid
-    // folder below
-    *ppLastValidFolder = NULL;
-
-    /*
-     *  check the action code
-     *
-     *  NOTE: the sentinel already filters out codes
-     *  that don't apply here. If you add "case" checks
-     *  here, add them to the sentinel too.
-     */
-
-    switch (pNotify->CNInfo.bAction)
+    TRY_LOUD(excpt2)
     {
-        /*
-         * RCNF_MOVED_IN:
-         * RCNF_MOVED_OUT:
-         *      never seen this.
-         */
+        if (!pclsWPFileSystem)
+            pclsWPFileSystem = _WPFileSystem;
 
-        /* case RCNF_MOVED_IN:             Ä¿
-        case RCNF_MOVED_OUT:                ³
-        case RCNF_DEVICE_ATTACHED:          ³  filtered out in sentinel already
-        case RCNF_DEVICE_DETACHED:          ³
-        break;                             ÄÙ
-            */
+        // reset parent's last valid folder; this is
+        // only set to something if we find a valid
+        // folder below
+        *ppLastValidFolder = NULL;
 
         /*
-         * RCNF_FILE_ADDED:
-         * RCNF_FILE_DELETED:
-         *      file added to or removed from directory.
+         *  check the action code
          *
-         *      NOTE: a move from one dir to another results
-         *      in FILE_ADDED first, then FILE_DELETED, so
-         *      there's nothing special to handle here.
-         *
-         *  RCNF_DIR_ADDED:
-         *  RCNF_DIR_DELETED:
-         *      directory added or removed.
-         *
-         * RCNF_CHANGED:
-         *      comes in if a file has changed, i.e.
-         *      it already existed and was worked on
-         *      (e.g. its size changed).
-         *
-         * RCNF_OLDNAME:
-         * RCNF_NEWNAME:
-         *      these two come in for a "rename" sequence.
-         *
-         *      When a file gets "moved" (in the DosMove sense,
-         *      i.e. can be a simple rename too), these two
-         *      notifications come in with the full old name
-         *      and then the full new name. This needs some
-         *      special care... for now, we'll just convert this
-         *      to "file deleted" and "file added".
+         *  NOTE: the sentinel already filters out codes
+         *  that don't apply here. If you add "case" checks
+         *  here, add them to the sentinel too.
          */
 
-        case RCNF_FILE_ADDED:
-        case RCNF_FILE_DELETED:
-        case RCNF_DIR_ADDED:
-        case RCNF_DIR_DELETED:
-        case RCNF_CHANGED:              // added V0.9.16 (2001-10-28) [umoeller]
-        case RCNF_OLDNAME:
-        case RCNF_NEWNAME:
+        switch (pNotify->CNInfo.bAction)
         {
-            // for all these, find the folder first
-            PSZ pLastBackslash;
-            if (pLastBackslash = strrchr(pNotify->CNInfo.szName, '\\'))
+            /*
+             * RCNF_MOVED_IN:
+             * RCNF_MOVED_OUT:
+             *      never seen this.
+             */
+
+            /* case RCNF_MOVED_IN:             Ä¿
+            case RCNF_MOVED_OUT:                ³  filtered out in sentinel already
+            break;                             ÄÙ
+                */
+
+            /*
+             * RCNF_FILE_ADDED:
+             * RCNF_FILE_DELETED:
+             *      file added to or removed from directory.
+             *
+             *      NOTE: a move from one dir to another results
+             *      in FILE_ADDED first, then FILE_DELETED, so
+             *      there's nothing special to handle here.
+             *
+             *  RCNF_DIR_ADDED:
+             *  RCNF_DIR_DELETED:
+             *      directory added or removed.
+             *
+             * RCNF_CHANGED:
+             *      comes in if a file has changed, i.e.
+             *      it already existed and was worked on
+             *      (e.g. its size changed).
+             *
+             * RCNF_OLDNAME:
+             * RCNF_NEWNAME:
+             *      these two come in for a "rename" sequence.
+             *
+             *      When a file gets "moved" (in the DosMove sense,
+             *      i.e. can be a simple rename too), these two
+             *      notifications come in with the full old name
+             *      and then the full new name. This needs some
+             *      special care... for now, we'll just convert this
+             *      to "file deleted" and "file added".
+             */
+
+            case RCNF_FILE_ADDED:
+            case RCNF_FILE_DELETED:
+            case RCNF_DIR_ADDED:
+            case RCNF_DIR_DELETED:
+            case RCNF_CHANGED:              // added V0.9.16 (2001-10-28) [umoeller]
+            case RCNF_OLDNAME:
+            case RCNF_NEWNAME:
             {
-                BOOL    fSemOwned = FALSE;
-
-                /* _Pmpf((__FUNCTION__ ": %s \"%s\"",
-                        (pNotify->CNInfo.bAction == RCNF_FILE_ADDED) ? "RCNF_FILE_ADDED"
-                            : (pNotify->CNInfo.bAction == RCNF_FILE_DELETED) ? "RCNF_FILE_DELETED"
-                            : (pNotify->CNInfo.bAction == RCNF_DIR_ADDED) ? "RCNF_DIR_ADDED"
-                            : (pNotify->CNInfo.bAction == RCNF_DIR_DELETED) ? "RCNF_DIR_DELETED"
-                            : (pNotify->CNInfo.bAction == RCNF_CHANGED) ? "RCNF_CHANGED"
-                            : (pNotify->CNInfo.bAction == RCNF_OLDNAME) ? "RCNF_OLDNAME"
-                            : (pNotify->CNInfo.bAction == RCNF_NEWNAME) ? "RCNF_NEWNAME"
-                            : "unknown code",
-                        pNotify->CNInfo.szName));
-                   */
-
-                // first of all, special handling for the rename sequence...
-                // we could use wpSetTitle on the object, but this would
-                // require extra synchronization, so we'll just dump the
-                // old object and re-awake it with the new name. This will
-                // also get the .LONGNAME stuff right then.
-                if (pNotify->CNInfo.bAction == RCNF_OLDNAME)
-                    pNotify->CNInfo.bAction = RCNF_FILE_DELETED;
-                else if (pNotify->CNInfo.bAction == RCNF_NEWNAME)
-                    pNotify->CNInfo.bAction = RCNF_FILE_ADDED;
-
-                // store ptr to short name
-                pNotify->pShortName = pLastBackslash + 1;
-
-                // terminate path name so we get the folder path
-                *pLastBackslash = '\0';
-
-                TRY_LOUD(excpt2)
+                // for all these, find the folder first
+                PSZ pLastBackslash;
+                if (pLastBackslash = strrchr(pNotify->CNInfo.szName, '\\'))
                 {
                     BOOL    fRefreshFolderOnOpen = FALSE;
+
+                    /* _Pmpf((__FUNCTION__ ": %s \"%s\"",
+                            (pNotify->CNInfo.bAction == RCNF_FILE_ADDED) ? "RCNF_FILE_ADDED"
+                                : (pNotify->CNInfo.bAction == RCNF_FILE_DELETED) ? "RCNF_FILE_DELETED"
+                                : (pNotify->CNInfo.bAction == RCNF_DIR_ADDED) ? "RCNF_DIR_ADDED"
+                                : (pNotify->CNInfo.bAction == RCNF_DIR_DELETED) ? "RCNF_DIR_DELETED"
+                                : (pNotify->CNInfo.bAction == RCNF_CHANGED) ? "RCNF_CHANGED"
+                                : (pNotify->CNInfo.bAction == RCNF_OLDNAME) ? "RCNF_OLDNAME"
+                                : (pNotify->CNInfo.bAction == RCNF_NEWNAME) ? "RCNF_NEWNAME"
+                                : "unknown code",
+                            pNotify->CNInfo.szName));
+                       */
+
+                    // first of all, special handling for the rename sequence...
+                    // we could use wpSetTitle on the object, but this would
+                    // require extra synchronization, so we'll just dump the
+                    // old object and re-awake it with the new name. This will
+                    // also get the .LONGNAME stuff right then.
+                    if (pNotify->CNInfo.bAction == RCNF_OLDNAME)
+                        pNotify->CNInfo.bAction = RCNF_FILE_DELETED;
+                    else if (pNotify->CNInfo.bAction == RCNF_NEWNAME)
+                        pNotify->CNInfo.bAction = RCNF_FILE_ADDED;
+
+                    // store ptr to short name
+                    pNotify->pShortName = pLastBackslash + 1;
+
+                    // terminate path name so we get the folder path
+                    *pLastBackslash = '\0';
 
                     // ignore all notifications for folders which
                     // aren't even awake... so first ask the WPS
@@ -1006,9 +1013,6 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                                 {
                                     // OK, this is worth storing:
 
-                                    // fill the fields that are missing
-                                    pNotify->ulMS = ulMSNow;
-
                                     // restore the path name that we truncated
                                     // above
                                     *pLastBackslash = '\\';
@@ -1037,27 +1041,67 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                         } // end if delete or refresh in progress
 
                         if (fRefreshFolderOnOpen)
+                            // fixed flags V0.9.16 (2002-01-09) [umoeller]
                             _wpModifyFldrFlags(pNotify->pFolder,
-                                               FOI_ASYNCREFRESHONOPEN,
+                                               FOI_ASYNCREFRESHONOPEN | FOI_POPULATEDWITHFOLDERS | FOI_POPULATEDWITHALL,
                                                FOI_ASYNCREFRESHONOPEN);
                     }
                     // else: folder isn't even awake... then it can't be visible
                     // in a tree view either, so don't bother
-                }
-                CATCH(excpt2)
-                {
-                    // if we crashed, stop all refresh threads. This
-                    // can become very annoying otherwise.
-                    G_fExitAllRefreshThreads = TRUE;
-                    WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
-                } END_CATCH();
+                } // if (pLastBackslash)
+            }
+            break;
 
-                if (fSemOwned)
-                    fdrReleaseNotifySem();
-            } // if (pLastBackslash)
+            /*
+             * RCNF_DEVICE_ATTACHED:
+             * RCNF_DEVICE_DETACHED:
+             *      these two come in if drive letters change,
+             *      e.g. after a net use command or something;
+             *      we just refresh the drives folder, I won't
+             *      bother with the details of creating drive
+             *      objects here.
+             *
+             *      Support was added with V0.9.16 (2002-01-09) [umoeller].
+             */
+
+            case RCNF_DEVICE_ATTACHED:
+            case RCNF_DEVICE_DETACHED:
+            {
+                WPFolder *pDrivesFolder;
+
+                if (pDrivesFolder = _wpclsQueryFolder(_WPFolder,
+                                                      (PSZ)WPOBJID_DRIVES,
+                                                      TRUE))
+                {
+                    if (fSemOwned = fdrGetNotifySem(10 * 1000))
+                    {
+                        // change this notification into a
+                        // full refresh of the drives folder,
+                        // as if it had overflowed; this will
+                        // be properly handled by the pump thread
+                        // pNotify->ulMS = ulMSNow;
+                        pNotify->pFolder = pDrivesFolder;
+                        pNotify->CNInfo.bAction = RCNF_XWP_FULLREFRESH;
+                        refrAddNotification(pNotify);
+                                // this works
+                        fStored = TRUE;
+                    }
+                }
+            }
+            break;
+
         }
-        break;
     }
+    CATCH(excpt2)
+    {
+        // if we crashed, stop all refresh threads. This
+        // can become very annoying otherwise.
+        G_fExitAllRefreshThreads = TRUE;
+        WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
+    } END_CATCH();
+
+    if (fSemOwned)
+        fdrReleaseNotifySem();
 
     if (!fStored)
         // we have not handled the notification:
@@ -1119,8 +1163,6 @@ MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         memset(pNew, 0, sizeof(XWPNOTIFY));
                         pNew->pFolder = pLastValidFolder;
                         pNew->CNInfo.bAction = RCNF_XWP_FULLREFRESH;
-
-                        pNew->ulMS = doshQuerySysUptime();
 
                         // clear all notifications for this folder
                         refrClearFolderNotifications(pLastValidFolder);
@@ -1279,6 +1321,7 @@ VOID PostXWPNotify(PCNINFO pCNInfo)
  *@@changed V0.9.12 (2001-05-18) [umoeller]: multiple notifications in the same buffer were missing, fixed
  *@@changed V0.9.12 (2001-05-18) [umoeller]: sped up allocation, added filter
  *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed stupid pointer error which caused a trap D on DosResetChangeNotify
+ *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
  */
 
 VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
@@ -1399,9 +1442,16 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                                         case RCNF_CHANGED:      // V0.9.16 (2001-10-28) [umoeller]
                                         case RCNF_OLDNAME:
                                         case RCNF_NEWNAME:
-                                        // RCNF_DEVICE_ATTACHED
-                                        // RCNF_DEVICE_DETACHED
+
+                                        // RCNF_DEVICE_ATTACHED and RCNF_DEVICE_DETACHED
+                                        // come in for net use command, i.e. a new
+                                        // network drive was added
+                                        // V0.9.16 (2002-01-09) [umoeller]
+                                        case RCNF_DEVICE_ATTACHED:
+                                        case RCNF_DEVICE_DETACHED:
                                             PostXWPNotify(pcniThis);
+                                        break;
+
                                     }
 
                                 // go for next entry in the buffer

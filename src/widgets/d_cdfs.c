@@ -107,7 +107,7 @@ PWINHSETDLGITEMSPINDATA pwinhSetDlgItemSpinData = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 PWINHSETSLIDERTICKS pwinhSetSliderTicks = NULL;
 
-RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
@@ -449,6 +449,253 @@ MRESULT EXPENTRY fnwpConfigJFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
     return (mrc);
 }
 
+SLDCDATA    SliderCData = {
+                        sizeof(SLDCDATA),
+        // usScale1Increments:
+                        33,          // scale 1 increments
+                        0,         // scale 1 spacing
+                        1,          // scale 2 increments
+                        0           // scale 2 spacing
+                };
+
+static CONTROLDEF
+            Spacer = {
+                        WC_STATIC,
+                        "",
+                        0,          // invisible
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 30, 20 },     // size
+                        5               // spacing
+                     },
+            SecondsTxt = {
+                        WC_STATIC,
+                        "s",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { -1, 20 },     // size
+                        5               // spacing
+                     },
+
+    // cache size
+            CachesizeTxt = {
+                        WC_STATIC,
+                        "Cach~e size:",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 120, 30 },     // size
+                        5               // spacing
+                     },
+            CachesizeSlider = {
+                        WC_SLIDER,
+                        "",
+                        WS_VISIBLE | WS_TABSTOP
+                            | SLS_HORIZONTAL
+                            | SLS_PRIMARYSCALE1
+                            | SLS_BUTTONSRIGHT
+                            | SLS_SNAPTOINCREMENT,
+                        ID_OSDI_CDFS_CACHESLIDER,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 300, 30 },     // size
+                        5,               // spacing
+                        &SliderCData
+                     },
+            CachesizeTxt2 = {
+                        WC_STATIC,
+                        "x KB",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_RIGHT | DT_VCENTER,
+                        ID_OSDI_CDFS_CACHETXT,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 80, 30 },     // size
+                        5               // spacing
+                     },
+    // autocheck
+            AutocheckTxt = {
+                        WC_STATIC,
+                        "~Autocheck:",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 120, 20 },     // size
+                        5               // spacing
+                     },
+            AutocheckEntry = {
+                        WC_ENTRYFIELD,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MARGIN | ES_AUTOSCROLL,
+                        ID_OSDI_AUTOCHECK,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 300, 20 },     // size
+                        5               // spacing
+                     },
+    // lazywrite
+            LazywriteCheckbox = {
+                        WC_BUTTON,
+                        "~Lazy write",
+                        WS_VISIBLE | WS_TABSTOP
+                            | BS_AUTOCHECKBOX,
+                        ID_OSDI_CACHE_LAZYWRITE,
+                        CTL_COMMON_FONT,
+                        0,
+                        { -1, 20 },
+                        5
+                     },
+            LWSyncText = {
+                        WC_STATIC,
+                        "S~ynch time:",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 80, 20 },     // size
+                        5               // spacing
+                     },
+            LWSyncSpin = {
+                        WC_SPINBUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP
+                            | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
+                        ID_OSDI_CACHE_SYNCHTIME,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 20 },     // size
+                        5               // spacing
+                     },
+            LWMaxageText = {
+                        WC_STATIC,
+                        "Ma~x age:",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 80, 20 },     // size
+                        5               // spacing
+                     },
+            LWMaxageSpin = {
+                        WC_SPINBUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP
+                            | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
+                        ID_OSDI_CACHE_MAXAGE,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 20 },     // size
+                        5               // spacing
+                     },
+            LWBufferidleText = {
+                        WC_STATIC,
+                        "~Buffer idle:",
+                        WS_VISIBLE
+                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
+                        -1,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 80, 20 },     // size
+                        5               // spacing
+                     },
+            LWBufferidleSpin = {
+                        WC_SPINBUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP
+                            | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
+                        ID_OSDI_CACHE_BUFFERIDLE,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 20 },     // size
+                        5               // spacing
+                     },
+    // buttons
+            OKButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
+                        DID_OK,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     },
+            CancelButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                        DID_CANCEL,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     },
+            DefaultButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                        DID_DEFAULT,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     },
+            HelpButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
+                        DID_HELP,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     };
+
+static const DLGHITEM dlgCDFS[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&CachesizeTxt),
+                CONTROL_DEF(&CachesizeSlider),
+                CONTROL_DEF(&CachesizeTxt2),
+            START_ROW(0),
+                CONTROL_DEF(&AutocheckTxt),
+                CONTROL_DEF(&AutocheckEntry),
+            START_ROW(0),
+                CONTROL_DEF(&LazywriteCheckbox),
+            START_ROW(0),
+                CONTROL_DEF(&Spacer),
+                CONTROL_DEF(&LWSyncText),
+                CONTROL_DEF(&LWSyncSpin),
+                CONTROL_DEF(&SecondsTxt),
+            START_ROW(0),
+                CONTROL_DEF(&Spacer),
+                CONTROL_DEF(&LWMaxageText),
+                CONTROL_DEF(&LWMaxageSpin),
+                CONTROL_DEF(&SecondsTxt),
+            START_ROW(0),
+                CONTROL_DEF(&Spacer),
+                CONTROL_DEF(&LWBufferidleText),
+                CONTROL_DEF(&LWBufferidleSpin),
+                CONTROL_DEF(&SecondsTxt),
+            START_ROW(0),
+                CONTROL_DEF(&OKButton),
+                CONTROL_DEF(&CancelButton),
+                CONTROL_DEF(&DefaultButton),
+                CONTROL_DEF(&HelpButton),
+        END_TABLE
+    };
+
 /*
  *@@ ShowJFSDlg:
  *      callback specified in DRIVERSPEC to show
@@ -461,252 +708,6 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                          PDRIVERDLGDATA pDlgData)
 {
     BOOL brc = FALSE;
-
-    SLDCDATA    SliderCData = {
-                            sizeof(SLDCDATA),
-            // usScale1Increments:
-                            33,          // scale 1 increments
-                            0,         // scale 1 spacing
-                            1,          // scale 2 increments
-                            0           // scale 2 spacing
-                    };
-
-    CONTROLDEF
-                Spacer = {
-                            WC_STATIC,
-                            "",
-                            0,          // invisible
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 30, 20 },     // size
-                            5               // spacing
-                         },
-                SecondsTxt = {
-                            WC_STATIC,
-                            "s",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { -1, 20 },     // size
-                            5               // spacing
-                         },
-
-        // cache size
-                CachesizeTxt = {
-                            WC_STATIC,
-                            "Cach~e size:",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 120, 30 },     // size
-                            5               // spacing
-                         },
-                CachesizeSlider = {
-                            WC_SLIDER,
-                            "",
-                            WS_VISIBLE | WS_TABSTOP
-                                | SLS_HORIZONTAL
-                                | SLS_PRIMARYSCALE1
-                                | SLS_BUTTONSRIGHT
-                                | SLS_SNAPTOINCREMENT,
-                            ID_OSDI_CDFS_CACHESLIDER,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 300, 30 },     // size
-                            5,               // spacing
-                            &SliderCData
-                         },
-                CachesizeTxt2 = {
-                            WC_STATIC,
-                            "x KB",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_RIGHT | DT_VCENTER,
-                            ID_OSDI_CDFS_CACHETXT,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 80, 30 },     // size
-                            5               // spacing
-                         },
-        // autocheck
-                AutocheckTxt = {
-                            WC_STATIC,
-                            "~Autocheck:",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 120, 20 },     // size
-                            5               // spacing
-                         },
-                AutocheckEntry = {
-                            WC_ENTRYFIELD,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MARGIN | ES_AUTOSCROLL,
-                            ID_OSDI_AUTOCHECK,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 300, 20 },     // size
-                            5               // spacing
-                         },
-        // lazywrite
-                LazywriteCheckbox = {
-                            WC_BUTTON,
-                            "~Lazy write",
-                            WS_VISIBLE | WS_TABSTOP
-                                | BS_AUTOCHECKBOX,
-                            ID_OSDI_CACHE_LAZYWRITE,
-                            CTL_COMMON_FONT,
-                            0,
-                            { -1, 20 },
-                            5
-                         },
-                LWSyncText = {
-                            WC_STATIC,
-                            "S~ynch time:",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 80, 20 },     // size
-                            5               // spacing
-                         },
-                LWSyncSpin = {
-                            WC_SPINBUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP
-                                | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
-                            ID_OSDI_CACHE_SYNCHTIME,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 20 },     // size
-                            5               // spacing
-                         },
-                LWMaxageText = {
-                            WC_STATIC,
-                            "Ma~x age:",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 80, 20 },     // size
-                            5               // spacing
-                         },
-                LWMaxageSpin = {
-                            WC_SPINBUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP
-                                | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
-                            ID_OSDI_CACHE_MAXAGE,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 20 },     // size
-                            5               // spacing
-                         },
-                LWBufferidleText = {
-                            WC_STATIC,
-                            "~Buffer idle:",
-                            WS_VISIBLE
-                                | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
-                            -1,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 80, 20 },     // size
-                            5               // spacing
-                         },
-                LWBufferidleSpin = {
-                            WC_SPINBUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP
-                                | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
-                            ID_OSDI_CACHE_BUFFERIDLE,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 20 },     // size
-                            5               // spacing
-                         },
-        // buttons
-                OKButton = {
-                            WC_BUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
-                            DID_OK,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 30 },    // size
-                            5               // spacing
-                         },
-                CancelButton = {
-                            WC_BUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                            DID_CANCEL,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 30 },    // size
-                            5               // spacing
-                         },
-                DefaultButton = {
-                            WC_BUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                            DID_DEFAULT,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 30 },    // size
-                            5               // spacing
-                         },
-                HelpButton = {
-                            WC_BUTTON,
-                            NULL,
-                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
-                            DID_HELP,
-                            CTL_COMMON_FONT,
-                            0,
-                            { 100, 30 },    // size
-                            5               // spacing
-                         };
-    DLGHITEM dlgTemplate[] =
-        {
-            START_TABLE,
-                START_ROW(0),
-                    CONTROL_DEF(&CachesizeTxt),
-                    CONTROL_DEF(&CachesizeSlider),
-                    CONTROL_DEF(&CachesizeTxt2),
-                START_ROW(0),
-                    CONTROL_DEF(&AutocheckTxt),
-                    CONTROL_DEF(&AutocheckEntry),
-                START_ROW(0),
-                    CONTROL_DEF(&LazywriteCheckbox),
-                START_ROW(0),
-                    CONTROL_DEF(&Spacer),
-                    CONTROL_DEF(&LWSyncText),
-                    CONTROL_DEF(&LWSyncSpin),
-                    CONTROL_DEF(&SecondsTxt),
-                START_ROW(0),
-                    CONTROL_DEF(&Spacer),
-                    CONTROL_DEF(&LWMaxageText),
-                    CONTROL_DEF(&LWMaxageSpin),
-                    CONTROL_DEF(&SecondsTxt),
-                START_ROW(0),
-                    CONTROL_DEF(&Spacer),
-                    CONTROL_DEF(&LWBufferidleText),
-                    CONTROL_DEF(&LWBufferidleSpin),
-                    CONTROL_DEF(&SecondsTxt),
-                START_ROW(0),
-                    CONTROL_DEF(&OKButton),
-                    CONTROL_DEF(&CancelButton),
-                    CONTROL_DEF(&DefaultButton),
-                    CONTROL_DEF(&HelpButton),
-            END_TABLE
-        };
 
     HWND    hwndDlg = NULLHANDLE;
     ULONG   ulTotPhysMem = 0;
@@ -734,8 +735,8 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                                    FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                    fnwpConfigJFS,
                                    szTitle,
-                                   dlgTemplate,      // DLGHITEM array
-                                   ARRAYITEMCOUNT(dlgTemplate),
+                                   dlgCDFS,      // DLGHITEM array
+                                   ARRAYITEMCOUNT(dlgCDFS),
                                    pDlgData,
                                    pcmnQueryDefaultFont()))
     {

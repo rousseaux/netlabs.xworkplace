@@ -125,7 +125,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2);
 
 #define WNDCLASS_WIDGET_XWHEALTH    "XWPHealthMonitorWidget"
 
-static XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
 {
     {
         WNDCLASS_WIDGET_XWHEALTH,
@@ -193,7 +193,7 @@ PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
 {
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
@@ -229,7 +229,7 @@ double (*_System sthTemp) (int, BOOL) = NULL;
 double (*_System sthVoltage) (int, BOOL) = NULL;
 int (*_System sthFilterEvents) (PULONG, ULONG, PULONG, ULONG, PVOID) = NULL;
 
-RESOLVEFUNCTION G_StHealthImports[] =
+static const RESOLVEFUNCTION G_StHealthImports[] =
 {
     "StHealthRegisterDaemon", (PFN*)&sthRegisterDaemon,
     "StHealthUnregisterDaemon", (PFN*)&sthUnregisterDaemon,
@@ -357,7 +357,7 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
  *@@changed V0.9.9 (2001-02-06) [smilcke]: Added setup strings for health monitoring
  */
 
-VOID MwgtScanSetup(const char *pcszSetupString,
+VOID MwgtScanSetup(PCSZ pcszSetupString,
                    PMONITORSETUP pSetup)
 {
     PSZ p;
@@ -775,7 +775,7 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     }
                     case XN_SETUPCHANGED:
                     {
-                     const char *pcszNewSetupString=(const char*)mp2;
+                     PCSZ pcszNewSetupString=(const char*)mp2;
                      // reinitialize the setup data
                      MwgtFreeSetup(&pPrivate->Setup);
                      MwgtScanSetup(pcszNewSetupString,&pPrivate->Setup);
@@ -1248,7 +1248,7 @@ ULONG unloadStHealth(void)
 ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
                               HMODULE hmodPlugin, // module handle of the widget DLL
                               HMODULE hmodXFLDR,   // XFLDR.DLL module handle
-                              PXCENTERWIDGETCLASS *ppaClasses,
+                              PCXCENTERWIDGETCLASS *ppaClasses,
                               PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
 {
     ULONG ulrc = 0;

@@ -130,7 +130,7 @@
  *                                                                  *
  ********************************************************************/
 
-HMTX    G_hmtxHandles = NULLHANDLE;
+static HMTX    G_hmtxHandles = NULLHANDLE;
 
 // CHAR    G_szActiveHandles[100];
 // PBYTE   G_pHandlesBuffer = NULL;

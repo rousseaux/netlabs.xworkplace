@@ -1620,6 +1620,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
 #endif
 
+#ifndef __XWPLITE__
     // if XWorkplace was just installed, check for
     // existence of config folders and
     // display welcome msg
@@ -1639,6 +1640,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
         // say hello on thread 1
         krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
     }
+#endif
 }
 
 /* ******************************************************************

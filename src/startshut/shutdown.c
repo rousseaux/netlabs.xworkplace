@@ -513,11 +513,13 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
         if (ulReturn == DID_OK)
         {
+#ifndef __NOXSHUTDOWN__
             ULONG flShutdown = cmnQuerySetting(sflXShutdown);
 
             // check "show this msg again"
             if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
-                flShutdown &= ~XSD_CONFIRM;
+                flShutdown |= XSD_NOCONFIRM;
+#endif
 
             // check empty trash
             psdParms->optEmptyTrashCan
@@ -546,7 +548,9 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                 p += (strlen(p)+1);
                 strcpy(psdParms->szRebootCommand, p);
 
+#ifndef __NOXSHUTDOWN__
                 flShutdown |= XSD_REBOOT;
+#endif
                 cmnSetSetting(susLastRebootExt, usSelected);
             }
             else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
@@ -554,14 +558,20 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                 psdParms->optReboot = TRUE;
                 // szRebootCommand is a zero-byte only, which will lead to
                 // the standard reboot in the Shutdown thread
+#ifndef __NOXSHUTDOWN__
                 flShutdown |= XSD_REBOOT;
+#endif
                 cmnSetSetting(susLastRebootExt, 0xFFFF);
             }
+#ifndef __NOXSHUTDOWN__
             else
                 // standard shutdown:
                 flShutdown &= ~XSD_REBOOT;
+#endif
 
+#ifndef __NOXSHUTDOWN__
             cmnSetSetting(sflXShutdown, flShutdown);
+#endif
         }
 
         if (pINI)
@@ -648,7 +658,9 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
     if (ulReturn == DID_OK)
     {
+#ifndef __NOXSHUTDOWN__
         ULONG fl = cmnQuerySetting(sflXShutdown);
+#endif
 
         psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                             ID_SDDI_WPS_CLOSEWINDOWS);
@@ -656,18 +668,22 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
         {
             // regular restart Desktop:
             // save close windows/startup folder settings
+#ifndef __NOXSHUTDOWN__
             if (psdParms->optWPSCloseWindows)
                 fl |= XSD_WPS_CLOSEWINDOWS;
             else
                 fl &= ~XSD_WPS_CLOSEWINDOWS;
+#endif
             psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
                                                                       ID_SDDI_WPS_STARTUPFOLDER);
         }
+#ifndef __NOXSHUTDOWN__
         if (!(winhIsDlgItemChecked(hwndConfirm,
                                    ID_SDDI_MESSAGEAGAIN)))
-            fl &= ~XSD_CONFIRM;
+            fl |= XSD_NOCONFIRM;
 
         cmnSetSetting(sflXShutdown, fl);
+#endif
     }
 
     WinDestroyWindow(hwndConfirm);
@@ -1773,11 +1789,14 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
 VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
 {
-    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+    ULONG flShutdown = 0;
+#ifndef __NOXSHUTDOWN__
+    flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
     memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
     psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
-    psdp->optConfirm = ((flShutdown & XSD_CONFIRM) != 0);
+    psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
     psdp->optDebug = FALSE;
 
     psdp->ulRestartWPS = 0;         // no, do shutdown
@@ -1840,8 +1859,8 @@ ULONG xsdIsShutdownRunning(VOID)
  */
 
 VOID StartShutdownThread(BOOL fStartShutdown,
-                         PSHUTDOWNPARAMS psdp,
-                         ULONG ulSoundIndex)
+                         BOOL fPlayRestartDesktopSound,     // in: else: play shutdown sound
+                         PSHUTDOWNPARAMS psdp)
 {
     if (psdp)
     {
@@ -1855,7 +1874,11 @@ VOID StartShutdownThread(BOOL fStartShutdown,
                       "Shutdown",
                       THRF_PMMSGQUEUE,    // changed V0.9.12 (2001-05-29) [umoeller]
                       (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
-            cmnPlaySystemSound(ulSoundIndex);
+#ifndef __NOXSYSTEMSOUNDS__
+            cmnPlaySystemSound(fPlayRestartDesktopSound
+                                    ? MMSOUND_XFLD_RESTARTWPS
+                                    : MMSOUND_XFLD_SHUTDOWN);
+#endif
         }
         else
             free(psdp);     // fixed V0.9.1 (99-12-12)
@@ -1909,14 +1932,17 @@ BOOL xsdInitiateShutdown(VOID)
 
     if (fStartShutdown)
     {
-        ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+        ULONG flShutdown = 0;
+#ifndef __NOXSHUTDOWN__
+        flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
         psdp->ulRestartWPS = 0;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
-        psdp->optConfirm = ((flShutdown & XSD_CONFIRM) != 0);
+        psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
         psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
         psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
         psdp->optLog = ((flShutdown & XSD_LOG) != 0);
@@ -1977,8 +2003,8 @@ BOOL xsdInitiateShutdown(VOID)
     }
 
     StartShutdownThread(fStartShutdown,
-                        psdp,
-                        MMSOUND_XFLD_SHUTDOWN);
+                        FALSE,  // fPlayRestartDesktopSound
+                        psdp);
 
     return (fStartShutdown);
 }
@@ -2013,14 +2039,17 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
 
     if (fStartShutdown)
     {
-        ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+        ULONG flShutdown = 0;
+#ifndef __NOXSHUTDOWN__
+        flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot =  FALSE;
         psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
         psdp->optWPSCloseWindows = ((flShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
-        psdp->optConfirm = ((flShutdown & XSD_CONFIRM) != 0);
+        psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
         psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
         psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
         psdp->optLog =  ((flShutdown & XSD_LOG) != 0);
@@ -2039,8 +2068,8 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
     }
 
     StartShutdownThread(fStartShutdown,
-                        psdp,
-                        MMSOUND_XFLD_RESTARTWPS);
+                        TRUE,  // fPlayRestartDesktopSound
+                        psdp);
 
     return (fStartShutdown);
 }
@@ -2101,8 +2130,8 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
             }
 
             StartShutdownThread(fStartShutdown,
-                                psdpNew,
-                                MMSOUND_XFLD_SHUTDOWN);
+                                FALSE,  // fPlayRestartDesktopSound
+                                psdpNew);
         }
     }
 
@@ -2117,7 +2146,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 
 #ifndef __NOXSHUTDOWN__
 
-CONTROLDEF
+static CONTROLDEF
     ShutdownGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
                             ID_SDDI_SHUTDOWNGROUP),
@@ -2233,7 +2262,7 @@ CONTROLDEF
                             300,
                             30);
 
-DLGHITEM dlgShutdown[] =
+static const DLGHITEM dlgShutdown[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // shared settings group
@@ -2293,7 +2322,7 @@ DLGHITEM dlgShutdown[] =
         END_TABLE
     };
 
-static XWPSETTING G_ShutdownBackup[] =
+static const XWPSETTING G_ShutdownBackup[] =
     {
         sflXShutdown,
 #ifndef __EASYSHUTDOWN__
@@ -2419,7 +2448,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                               (fl & XSD_EMPTY_TRASH) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM,
-                              (fl & XSD_CONFIRM) != 0);
+                              ((fl & XSD_NOCONFIRM) == 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
                               (fl & XSD_AUTOCLOSEVIO) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
@@ -2551,7 +2580,9 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_SDDI_CONFIRM:
-            ulFlag = XSD_CONFIRM;
+            ulFlag = XSD_NOCONFIRM;
+            ulExtra = 1 - ulExtra;          // this one is reverse now
+                                            // V0.9.16 (2002-01-13) [umoeller]
         break;
 
         case ID_SDDI_AUTOCLOSEVIO:
@@ -3630,7 +3661,7 @@ void xsdUpdateListBox(PSHUTDOWNDATA pShutdownData,
  */
 
 VOID xsdUpdateClosingStatus(HWND hwndShutdownStatus,
-                            const char *pcszProgTitle)   // in: window title from SHUTLISTITEM
+                            PCSZ pcszProgTitle)   // in: window title from SHUTLISTITEM
 {
     CHAR szTitle[300];
     strcpy(szTitle,
@@ -5519,9 +5550,12 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
 
 VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 {
-    // ULONG       ulShutdownFunc2 = 0;
     APIRET      arc = NO_ERROR;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG       ulSaveINIs = 0;
+
+#ifndef __NOXSHUTDOWN__
+    ulSaveINIs = cmnQuerySetting(sulSaveINIS);
+#endif
 
     // change the mouse pointer to wait state
     winhSetWaitPointer();
@@ -5530,8 +5564,8 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
                       cmnGetString(ID_SDSI_SAVINGPROFILES)) ; // pszSDSavingProfiles
 
-#ifndef __EASYSHUTDOWN__
-    switch (cmnQuerySetting(sulSaveINIS))
+#ifndef __NOXSHUTDOWN__
+    switch (ulSaveINIs)
     {
         case 2:         // do nothing:
             doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Saving INIs has been disabled, skipping.");
@@ -5561,7 +5595,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
                                xsd_fnSaveINIsProgress,
                                pShutdownData->hwndProgressBar);
             doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Done with xprfSaveINIs.");
-#ifndef __EASYSHUTDOWN__
+#ifndef __NOXSHUTDOWN__
         break;
     }
 #endif
@@ -5666,7 +5700,8 @@ VOID PowerOffAnim(HPS hpsScreen)
 
 VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 {
-    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+    ULONG flShutdown = 0;
+
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // setup Ctrl+Alt+Del message window; this needs to be done
@@ -5678,6 +5713,10 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
                                      ID_SDD_CAD,
                                      NULL);
     winhCenterWindow(hwndCADMessage);  // wnd is still invisible
+
+#ifndef __NOXSHUTDOWN__
+    flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
     if (pShutdownData->ShutdownLogFile)
     {
@@ -5733,7 +5772,7 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 
 VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
 {
-    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+    ULONG       flShutdown = 0;
     HFILE       hIOCTL;
     ULONG       ulAction;
     BOOL        fShowRebooting = TRUE;
@@ -5741,6 +5780,10 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
     // V0.9.16 (2002-01-05) [umoeller]
     PSZ         pszRebooting = cmnGetString(ID_SDSI_REBOOTING);
     HPS         hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+
+#ifndef __NOXSHUTDOWN__
+    flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
     // if (optReboot), open DOS.SYS; this
     // needs to be done before DosShutdown() also
@@ -5810,11 +5853,15 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
     // user reboot item: in this case, we don't call
     // DosShutdown(), which is supposed to be done by
     // the user reboot command
-    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+    ULONG   flShutdown = 0;
     CHAR    szTemp[CCHMAXPATH];
     PID     pid;
     ULONG   sid;
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+
+#ifndef __NOXSHUTDOWN__
+    flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
     if (flShutdown & XSD_ANIMATE_REBOOT)        // V0.9.3 (2000-05-22) [umoeller]
         // cute power-off animation
@@ -5876,8 +5923,12 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 {
     CHAR        szAPMError[500];
     ULONG       ulrcAPM = 0;
-    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
-    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+    ULONG       flShutdown = 0;
+    HPS         hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+
+#ifndef __NOXSHUTDOWN__
+    flShutdown = cmnQuerySetting(sflXShutdown);
+#endif
 
     // prepare APM power off
     ulrcAPM = apmPreparePowerOff(szAPMError);

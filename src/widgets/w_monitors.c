@@ -157,7 +157,7 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 #define WNDCLASS_WIDGET_MONITORS    "XWPCenterMonitorWidget"
 
-static XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
             {
                 {
                     WNDCLASS_WIDGET_MONITORS,
@@ -272,7 +272,7 @@ PXSTRCATC pxstrcatc = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "apmhOpen", (PFN*)&papmhOpen,
         "apmhReadStatus", (PFN*)&papmhReadStatus,
@@ -509,7 +509,7 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
  *      out. We do not clean up previous data here.
  */
 
-VOID MwgtScanSetup(const char *pcszSetupString,
+VOID MwgtScanSetup(PCSZ pcszSetupString,
                    PMONITORSETUP pSetup,
                    BOOL fIsDiskfree)
 {
@@ -1431,7 +1431,7 @@ VOID MwgtPaint(HWND hwnd,
             else
             {
                 // APM is OK:
-                const char *pcsz = NULL;
+                PCSZ pcsz = NULL;
                 switch (pPrivate->pApm->ulBatteryStatus)
                 {
                     case 0x00: pcsz = "High"; break;
@@ -1815,7 +1815,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
     PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
     if (pPrivate)
     {
-        const char *pcszID = NULL;
+        PCSZ pcszID = NULL;
         HOBJECT hobj = NULLHANDLE;
         ULONG ulView = 2; // OPEN_SETTINGS,
 
@@ -2340,7 +2340,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 ULONG EXPENTRY MwgtInitModule(HAB hab,         // XCenter's anchor block
                               HMODULE hmodPlugin, // module handle of the widget DLL
                               HMODULE hmodXFLDR,    // XFLDR.DLL module handle
-                              PXCENTERWIDGETCLASS *ppaClasses,
+                              PCXCENTERWIDGETCLASS *ppaClasses,
                               PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
 {
     ULONG   ulrc = 0,

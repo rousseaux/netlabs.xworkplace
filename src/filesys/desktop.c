@@ -124,7 +124,7 @@
  */
 
 BOOL dtpSetup(WPDesktop *somSelf,
-              const char *pcszSetupString)
+              PCSZ pcszSetupString)
 {
     BOOL brc = TRUE;
 
@@ -428,7 +428,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
             strcpy(szShutdown, cmnGetString(ID_XSSI_XSHUTDOWN));
-            if (cmnQuerySetting(sflXShutdown) & XSD_CONFIRM)
+            if (!(cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))
                 strcat(szShutdown, "...");
 
             // create "Shutdown" submenu and use this for
@@ -486,13 +486,12 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
 
-        if ((cmnQuerySetting(sflXShutdown) & XSD_CONFIRM) == 0)
+        if ((cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Restart Desktop" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
                                   ulOfs + ID_XFMI_OFS_RESTARTWPS);
     }
-#endif
 
     if (pKernelGlobals->pXWPShellShared)
     {
@@ -506,12 +505,13 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
 
-        if ((cmnQuerySetting(sflXShutdown) & ID_XFMI_OFS_LOGOFF) == 0)
+        if ((cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Logoff" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
-                                  ulOfs + ID_XFMI_OFS_RESTARTWPS);
+                                  ulOfs + ID_XFMI_OFS_LOGOFF);
     }
+#endif
 
     // remove other default menu items?
     #ifndef WPMENUID_LOGOFF
@@ -703,15 +703,116 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
  *
  ********************************************************************/
 
-XWPSETTING G_DtpMenuItemsBackup[] =
+static const XWPSETTING G_DtpMenuItemsBackup[] =
     {
         sfDTMSort,
         sfDTMArrange,
         sfDTMSystemSetup,
         sfDTMLockup,
         sfDTMLogoffNetwork,
+#ifndef __NOXSHUTDOWN__
         sfDTMShutdown,
         sfDTMShutdownMenu
+#endif
+    };
+
+/*
+DLGTEMPLATE ID_XSD_DTP_MENUITEMS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_DTP_MENUITEMS, 0, 0, 295, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Visible standard menu items", -1, 6, 54, 188, 52
+        AUTOCHECKBOX    "S~ort", ID_XSDI_DTP_SORT, 10, 90, 38, 8
+        AUTOCHECKBOX    "~Arrange", ID_XSDI_DTP_ARRANGE, 10, 82, 50, 8
+        AUTOCHECKBOX    "System ~setup", ID_XSDI_DTP_SYSTEMSETUP, 10, 74, 72,
+                        8
+        AUTOCHECKBOX    "~Lockup", ID_XSDI_DTP_LOCKUP, 10, 66, 46, 8
+        AUTOCHECKBOX    "Lo~goff network now", ID_XSDI_DTP_LOGOFFNETWORKNOW,
+                        10, 58, 176, 8
+        GROUPBOX        "Shutdown menu items", -1, 6, 22, 188, 28
+        AUTOCHECKBOX    "Add su~bmenu", ID_XSDI_DTP_SHUTDOWNMENU, 10, 34, 76,
+                        8
+        AUTOCHECKBOX    "Show ""Shu~tdown"" menu item", ID_XSDI_DTP_SHUTDOWN,
+                        10, 26, 136, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 6, 6, 60, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 70, 6, 60, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 134, 6, 60, 12, BS_HELP |
+                        WS_GROUP
+    END
+END
+*/
+
+static CONTROLDEF
+    MenuItemsGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_MENUITEMSGROUP),
+    SortCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_SORT,
+                            200,
+                            -1),
+    ArrangeCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_ARRANGE,
+                            -1,
+                            -1),
+    LockupCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_LOCKUP,
+                            -1,
+                            -1),
+    LogoffCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_LOGOFFNETWORKNOW,
+                            -1,
+                            -1),
+#ifndef __NOXSHUTDOWN__
+    ShutdownCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_SHUTDOWN,
+                            -1,
+                            -1),
+    ShutdownMenuCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_SHUTDOWNMENU,
+                            -1,
+                            -1),
+#endif
+    SystemSetupCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_DTP_SYSTEMSETUP,
+                            -1,
+                            -1);
+
+static const DLGHITEM dlgDesktopMenus[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&MenuItemsGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&SortCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&ArrangeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&LockupCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&LogoffCB),
+#ifndef __NOXSHUTDOWN__
+                    START_ROW(0),
+                        CONTROL_DEF(&ShutdownCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),        // notebook.c
+                        CONTROL_DEF(&ShutdownMenuCB),
+#endif
+                    START_ROW(0),
+                        CONTROL_DEF(&SystemSetupCB),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
     };
 
 /*
@@ -730,8 +831,6 @@ XWPSETTING G_DtpMenuItemsBackup[] =
 VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         if (pcnbp->pUser == NULL)
@@ -742,8 +841,13 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = cmnBackupSettings(G_DtpMenuItemsBackup,
                                              ARRAYITEMCOUNT(G_DtpMenuItemsBackup));
-                                             /* malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS)); */
+
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-09-29) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgDesktopMenus,
+                          ARRAYITEMCOUNT(dlgDesktopMenus));
         }
     }
 
@@ -760,10 +864,12 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOFFNETWORKNOW,
                               cmnQuerySetting(sfDTMLogoffNetwork)); // V0.9.7 (2000-12-13) [umoeller]
 
+#ifndef __NOXSHUTDOWN__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWN,
                               cmnQuerySetting(sfDTMShutdown));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
                               cmnQuerySetting(sfDTMShutdownMenu));
+#endif
     }
 
     if (flFlags & CBI_ENABLE)
@@ -824,6 +930,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetSetting(sfDTMLogoffNetwork, ulExtra);
         break;
 
+#ifndef __NOXSHUTDOWN__
         case ID_XSDI_DTP_SHUTDOWN:
             cmnSetSetting(sfDTMShutdown, ulExtra);
             // dtpMenuItemsInitPage(pcnbp, CBI_ENABLE);
@@ -832,6 +939,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_DTP_SHUTDOWNMENU:
             cmnSetSetting(sfDTMShutdownMenu, ulExtra);
         break;
+#endif
 
         case DID_UNDO:
         {
@@ -877,7 +985,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return ((MPARAM)0);
 }
 
-CONTROLDEF
+static CONTROLDEF
 #ifndef __NOBOOTLOGO__
     BootLogoGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Workplace Shell boot logo",
@@ -958,7 +1066,7 @@ CONTROLDEF
                             -1,
                             -1);
 
-DLGHITEM dlgDesktopStartup[] =
+static const DLGHITEM dlgDesktopStartup[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__
@@ -1007,7 +1115,7 @@ DLGHITEM dlgDesktopStartup[] =
         END_TABLE
     };
 
-static XWPSETTING G_DtpStartupBackup[] =
+static const XWPSETTING G_DtpStartupBackup[] =
     {
         sfWriteXWPStartupLog,
 #ifndef __NOBOOTUPSTATUS__
@@ -1048,10 +1156,6 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-               */
-
             pcnbp->pUser = cmnBackupSettings(G_DtpStartupBackup,
                                              ARRAYITEMCOUNT(G_DtpStartupBackup));
 
@@ -1182,7 +1286,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
-                     const char *pcszNewBootLogoFile,
+                     PCSZ pcszNewBootLogoFile,
                      BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
 {
     winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
@@ -1284,7 +1388,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __NOBOOTLOGO__
                 SetBootLogoFile(pcnbp,
-                                (const char *)pcnbp->pUser2,
+                                (PCSZ)pcnbp->pUser2,
                                 TRUE);      // write
 #endif
 

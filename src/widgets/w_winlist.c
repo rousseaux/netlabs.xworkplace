@@ -127,7 +127,7 @@ ew */
 
 // string used for separating filters in setup strings;
 // this better not appear in window titles
-static const char *G_pcszFilterSeparator = "#~^ø@";
+static PCSZ G_pcszFilterSeparator = "#~^ø@";
 
 VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
@@ -145,7 +145,7 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #define WNDCLASS_WIDGET_WINLIST "XWPCenterWinlistWidget"
 
-static XCENTERWIDGETCLASS G_WidgetClasses[]
+static const XCENTERWIDGETCLASS G_WidgetClasses[]
         = {
             WNDCLASS_WIDGET_WINLIST,
             0,
@@ -227,7 +227,7 @@ PXSTRCPY pxstrcpy = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
@@ -427,7 +427,7 @@ VOID WwgtClearSetup(PWINLISTSETUP pSetup)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-VOID WwgtScanSetup(const char *pcszSetupString,
+VOID WwgtScanSetup(PCSZ pcszSetupString,
                    PWINLISTSETUP pSetup)
 {
     PSZ p;
@@ -1823,7 +1823,7 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     case XN_SETUPCHANGED:
                     {
-                        const char *pcszNewSetupString = (const char*)mp2;
+                        PCSZ pcszNewSetupString = (const char*)mp2;
 
                         // reinitialize the setup data
                         WwgtClearSetup(&pPrivate->Setup);
@@ -2784,7 +2784,7 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 ULONG EXPENTRY WwgtInitModule(HAB hab,         // XCenter's anchor block
                               HMODULE hmodPlugin, // module handle of the widget DLL
                               HMODULE hmodXFLDR,    // XFLDR.DLL module handle
-                              PXCENTERWIDGETCLASS *ppaClasses,
+                              PCXCENTERWIDGETCLASS *ppaClasses,
                               PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
 {
     ULONG   ulrc = 0,

@@ -789,10 +789,12 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
     _hwndCnrSaved = psfv->hwndCnr;
 
     // play system sound
+#ifndef __NOXSYSTEMSOUNDS__
     if (    (sMenuIDMsg < 0x8000) // avoid system menu
          || (sMenuIDMsg == 0x8020) // but include context menu
        )
         cmnPlaySystemSound(MMSOUND_XFLD_CTXTOPEN);
+#endif
 
     // find out whether the menu of which we are notified
     // is a folder content menu; if so (and it is not filled
@@ -995,11 +997,13 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
     {
         HWND hwndCnr = wpshQueryCnrFromFrame(psfv->hwndFrame);
 
+#ifndef __NOXSYSTEMSOUNDS__
         // play system sound
         cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
+#endif
 
-        // Now check if we have a menu item which we don't
-        // want to see dismissed.
+        // now check if we have a menu item which we don't
+        // want to see dismissed
 
         if (hwndCnr)
         {
@@ -1492,16 +1496,13 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              *      this msg is sent for each item every time it
              *      needs to be redrawn. This gets sent to us for
              *      items in folder content menus (if icons are on).
-             *
-             *      @@todo Warning: Apparently we also get this for
-             *      the WPS's container owner draw. We should add
-             *      another check... V0.9.3 (2000-04-26) [umoeller]
              */
 
             case WM_DRAWITEM:
             {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                if ( (SHORT)mp1 > (cmnQuerySetting(sulVarMenuOffset)+ID_XFMI_OFS_VARIABLE) )
+                if (    ((SHORT)mp1 > cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)
+                     && ((ULONG)mp1 != FID_CLIENT)      // rule out container V0.9.16 (2002-01-13) [umoeller]
+                   )
                 {
                     // variable menu item: this must be a folder-content
                     // menu item, because for others no WM_DRAWITEM is sent
@@ -1566,6 +1567,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             }
             break;
 
+#ifndef __NOXSHUTDOWN__
             /*
              * WM_SYSCOMMAND:
              *      intercept "close" for the desktop so we can
@@ -1580,7 +1582,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                      && (hwndFrame == cmnQueryActiveDesktopHWND())
                    )
                 {
-                    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                     if (cmnQuerySetting(sflXShutdown) & XSD_CANDESKTOPALTF4)
                     {
                         WinPostMsg(hwndFrame,
@@ -1592,6 +1593,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     }
                 }
             break;
+#endif
 
             /*
              * WM_CHAR:
@@ -1753,6 +1755,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                         }
                         break;  */
 
+#ifndef __NOXSYSTEMSOUNDS__
                         /*
                          * CN_ENTER:
                          *      double-click or enter key:
@@ -1763,6 +1766,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             cmnPlaySystemSound(MMSOUND_XFLD_CNRDBLCLK);
                             mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                         break;
+#endif
 
                         /*
                          * CN_EMPHASIS:

@@ -42,9 +42,11 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
-#define INCL_DOSERRORS
 #define INCL_DOSMISC
+#define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
@@ -67,6 +69,8 @@
 
 // C library headers
 #include <stdio.h>              // needed for except.h
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
 #include <ctype.h>
 #include <direct.h>
 
@@ -77,6 +81,7 @@
 #include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\exeh.h"               // executable helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
@@ -583,85 +588,92 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
  *      This thread is created with a PM message queue.
  *
  *@@added V0.9.1 (2000-02-11) [umoeller]
+ *@@changed V0.9.16 (2002-01-09) [umoeller]: added excpt handling, this took down the wps
  */
 
 void _Optlink fntDriversThread(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbpDrivers = (PCREATENOTEBOOKPAGE)pti->ulData;
-    PDRIVERPAGEDATA pPageData = pcnbpDrivers->pUser;
-
-    HWND            hwndDriversCnr = WinWindowFromID(pcnbpDrivers->hwndDlgPage,
-                                                     ID_OSDI_DRIVR_CNR);
-    PSZ             pszConfigSys = NULL;
-    PDRIVERRECORD   preccRoot = 0;
-                    // precc = 0;
-    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-    // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
-    // set wait pointer; this is handled by notebook.c
-    pcnbpDrivers->fShowWaitPointer = TRUE;
-
-    // clear container
-    WinSendMsg(hwndDriversCnr,
-               CM_REMOVERECORD,
-               (MPARAM)0,
-               MPFROM2SHORT(0, // all records
-                            CMA_FREE | CMA_INVALIDATE));
-
-    // create root record; freed automatically
-    preccRoot = (PDRIVERRECORD)cnrhAllocRecords(hwndDriversCnr,
-                                                sizeof(DRIVERRECORD),
-                                                1);
-    cnrhInsertRecords(hwndDriversCnr,
-                      NULL,  // parent
-                      (PRECORDCORE)preccRoot,
-                      TRUE, // invalidate
-                      cmnGetString(ID_XSSI_DRIVERCATEGORIES),  // pszDriverCategories
-                      CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
-                      1);
-
-    // load CONFIG.SYS text; freed below
-    if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
-        winhDebugBox(HWND_DESKTOP,
-                 "XWorkplace",
-                 "XWorkplace was unable to open the CONFIG.SYS file.");
-    else
+    TRY_LOUD(excpt1)
     {
-        // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
-        CHAR    szDriverSpecsFilename[CCHMAXPATH];
-        PSZ     pszDriverSpecsFile = NULL;
+        PCREATENOTEBOOKPAGE pcnbpDrivers = (PCREATENOTEBOOKPAGE)pti->ulData;
+        PDRIVERPAGEDATA pPageData = pcnbpDrivers->pUser;
 
-        cmnQueryXWPBasePath(szDriverSpecsFilename);
-        sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
-                "\\help\\drvrs%s.txt",
-                cmnQueryLanguageCode());
+        HWND            hwndDriversCnr = WinWindowFromID(pcnbpDrivers->hwndDlgPage,
+                                                         ID_OSDI_DRIVR_CNR);
+        PSZ             pszConfigSys = NULL;
+        PDRIVERRECORD   preccRoot = 0;
+                        // precc = 0;
+        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-        // load drivers.txt file; freed below
-        if (doshLoadTextFile(szDriverSpecsFilename,
-                             &pszDriverSpecsFile,
-                             NULL)
-                != NO_ERROR)
+        // set wait pointer; this is handled by notebook.c
+        pcnbpDrivers->fShowWaitPointer = TRUE;
+
+        // clear container
+        WinSendMsg(hwndDriversCnr,
+                   CM_REMOVERECORD,
+                   (MPARAM)0,
+                   MPFROM2SHORT(0, // all records
+                                CMA_FREE | CMA_INVALIDATE));
+
+        // create root record; freed automatically
+        preccRoot = (PDRIVERRECORD)cnrhAllocRecords(hwndDriversCnr,
+                                                    sizeof(DRIVERRECORD),
+                                                    1);
+        cnrhInsertRecords(hwndDriversCnr,
+                          NULL,  // parent
+                          (PRECORDCORE)preccRoot,
+                          TRUE, // invalidate
+                          cmnGetString(ID_XSSI_DRIVERCATEGORIES),  // pszDriverCategories
+                          CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
+                          1);
+
+        // load CONFIG.SYS text; freed below
+        if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
             winhDebugBox(HWND_DESKTOP,
-                     szDriverSpecsFilename,
-                     "XWorkplace was unable to open the driver specs file.");
+                     "XWorkplace",
+                     "XWorkplace was unable to open the CONFIG.SYS file.");
         else
         {
-            // drivers file successfully loaded:
-            // parse file
-            pPageData->pllLists = InsertDriverCategories(hwndDriversCnr,
-                                                         preccRoot,
-                                                         pszConfigSys,
-                                                         pszDriverSpecsFile);
-                // this returns a PLINKLIST containing LINKLIST's
-                // containing DRIVERSPEC's...
+            // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
+            CHAR    szDriverSpecsFilename[CCHMAXPATH];
+            PSZ     pszDriverSpecsFile = NULL;
 
-            free(pszDriverSpecsFile);
+            cmnQueryXWPBasePath(szDriverSpecsFilename);
+            sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
+                    "\\help\\drvrs%s.txt",
+                    cmnQueryLanguageCode());
+
+            // load drivers.txt file; freed below
+            if (doshLoadTextFile(szDriverSpecsFilename,
+                                 &pszDriverSpecsFile,
+                                 NULL)
+                    != NO_ERROR)
+                winhDebugBox(HWND_DESKTOP,
+                         szDriverSpecsFilename,
+                         "XWorkplace was unable to open the driver specs file.");
+            else
+            {
+                // drivers file successfully loaded:
+                // parse file
+                pPageData->pllLists = InsertDriverCategories(hwndDriversCnr,
+                                                             preccRoot,
+                                                             pszConfigSys,
+                                                             pszDriverSpecsFile);
+                    // this returns a PLINKLIST containing LINKLIST's
+                    // containing DRIVERSPEC's...
+
+                free(pszDriverSpecsFile);
+            }
+
+            free(pszConfigSys);
         }
 
-        free(pszConfigSys);
+        pcnbpDrivers->fShowWaitPointer = FALSE;
     }
-
-    pcnbpDrivers->fShowWaitPointer = FALSE;
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 }
 
 /*
@@ -673,7 +685,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
 
-MPARAM G_ampDriversPage[] =
+static MPARAM G_ampDriversPage[] =
     {
         MPFROM2SHORT(ID_OSDI_DRIVR_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_OSDI_DRIVR_GROUP1, XAC_SIZEX | XAC_SIZEY),
@@ -1177,11 +1189,15 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                pszConfigSys,
                                                szBackup)
                                 == NO_ERROR)
+                        {
                             // "file written" msg
-                            cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
-                                             100,
-                                             136,   // @@todo
-                                             MB_OK);
+                            PSZ apsz = szBackup;
+                            cmnMessageBoxMsgExt(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                                                100,
+                                                &apsz, 1,
+                                                136,
+                                                MB_OK);
+                        }
                         else
                             winhDebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
 

@@ -101,14 +101,7 @@
  *                                                                  *
  ********************************************************************/
 
-static BOOL    G_fReplaceHandles = FALSE;
-
-extern BOOL             G_fTurboSettingsEnabled;
-                                // common.c;
-                                // this is copied from the global settings
-                                // by M_XWPFileSystem::wpclsInitData and
-                                // remains FALSE if that class is not
-                                // installed
+static BOOL     G_fReplaceHandles = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -317,6 +310,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
 
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
 
+#ifndef __NOTURBOFOLDERS__
     if (    (cmnQuerySetting(sfTurboFolders))
             // we only need to handle the case where the object's name
             // is being changed, so skip if we aren't even initialized yet
@@ -352,6 +346,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
 
         return (brc);
     } // end if (cmnQuerySetting(sfTurboFolders))
+#endif
 
     return (XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
                                                                       pszNewTitle,
@@ -397,6 +392,7 @@ SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryIcon");
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
     {
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
@@ -417,6 +413,7 @@ SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
     }
 
     if (!hptrReturn)
+#endif
         hptrReturn = XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf);
 
     return (hptrReturn);
@@ -442,10 +439,12 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpRefresh");
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
     {
         return !fsysRefresh(somSelf, pReserved);
     }
+#endif
 
     return (XWPFileSystem_parent_WPFileSystem_wpRefresh(somSelf,
                                                         ulView,
@@ -509,12 +508,14 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 
     if (krnClassInitialized(G_pcszXWPFileSystem))
     {
+#ifndef __NOTURBOFOLDERS__
         // now enable the real turbo folders setting,
         // which _requires_ this class; after this
         // call cmnQuerySetting(sfTurboFolders) may
         // return TRUE if the user also enabled the
         // setting
         cmnEnableTurboFolders();
+#endif
     }
 
 #ifdef __REPLHANDLES__
@@ -573,12 +574,14 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsQueryAwakeObject");
 
+#ifndef __NOTURBOFOLDERS__
     if (    (cmnQuerySetting(sfTurboFolders))
             // we can't handle UNC yet
          && (pszInputPath[0] != '\\')
          && (pszInputPath[1] != '\\')
        )
         return (fdrQueryAwakeFSObject(pszInputPath));
+#endif
 
     return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsQueryAwakeObject(somSelf,
                                                                         pszInputPath));
@@ -607,6 +610,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsFileSysExists");
 
+#ifndef __NOTURBOFOLDERS__
     if (    (cmnQuerySetting(sfTurboFolders))
             // we can't handle UNC yet
          && (_wpQueryFilename(Folder, szFolder, TRUE))
@@ -630,6 +634,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
         }
     }
     else
+#endif
         pAwake = M_XWPFileSystem_parent_M_WPFileSystem_wpclsFileSysExists(somSelf,
                                                                           Folder,
                                                                           pszFilename,

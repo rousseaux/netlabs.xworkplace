@@ -1695,7 +1695,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
  */
 
 APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
-                     PDLGHITEM paDlgItems,      // in: definition array
+                     PCDLGHITEM paDlgItems,     // in: definition array
                      ULONG cDlgItems)           // in: array item count (NOT array size)
 {
     APIRET arc;
@@ -1911,7 +1911,7 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
                          ULONG ulPanelIfNotFound)   // in: subsidiary help panel ID
 {
     BOOL brc = TRUE;
-    const char *pszHelpLibrary = cmnQueryHelpLibrary();
+    PCSZ pszHelpLibrary = cmnQueryHelpLibrary();
 
     HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
     if ((hwndFocus) && (somSelf))

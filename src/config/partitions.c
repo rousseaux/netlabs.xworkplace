@@ -153,8 +153,8 @@ VOID UpdateChartControlData(HWND hwndClient,        // in: partition client wind
     {
         // array of colors which we'll use
         // in round-robin fashion
-        LONG    alRGBColors[]
-                = {
+        static LONG alRGBColors[] =
+            {
                     RGBCOL_RED,
                     RGBCOL_PINK,
                     RGBCOL_BLUE,
@@ -169,7 +169,7 @@ VOID UpdateChartControlData(HWND hwndClient,        // in: partition client wind
                     RGBCOL_DARKGREEN,
                     RGBCOL_DARKYELLOW,
                     RGBCOL_DARKGRAY
-                  };
+            };
         ULONG   cRGBColors = sizeof(alRGBColors) / sizeof(LONG),
                 ulCurrentColor = 0;
 

@@ -126,10 +126,12 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
 MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 #ifdef __XWPMEMDEBUG__
-VOID krnMemoryError(const char *pcszMsg);
+VOID krnMemoryError(PCSZ pcszMsg);
 #endif
 
 VOID cmnLoadGlobalSettings(VOID);
+
+BOOL cmnTurboFoldersEnabled(VOID);
 
 /* ******************************************************************
  *
@@ -164,7 +166,7 @@ static CHAR             G_szDesktopPath[CCHMAXPATH];
  *      from XFolder to XWorkplace.
  */
 
-const char **G_appszXFolderKeys[]
+static const char **G_appszXFolderKeys[]
         = {
                 &INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
                 &INIKEY_ACCELERATORS    , // "Accelerators"
@@ -207,7 +209,7 @@ const char **G_appszXFolderKeys[]
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-ULONG WaitForApp(const char *pcszTitle,
+ULONG WaitForApp(PCSZ pcszTitle,
                  HAPP happ)
 {
     ULONG   ulrc = -1;
@@ -272,7 +274,7 @@ ULONG WaitForApp(const char *pcszTitle,
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
 */
 
-CONTROLDEF
+static CONTROLDEF
 #ifndef __NOBOOTLOGO__
     SkipBootLogoCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Skip ~boot logo once",
@@ -302,11 +304,13 @@ CONTROLDEF
                             ID_XFDI_PANIC_DISABLEREPLREFRESH,
                             -1,
                             -1),
+#ifndef __NOTURBOFOLDERS__
     DisableTurboFoldersCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XFDI_PANIC_DISABLETURBOFOLDERS,
                             -1,
                             -1),
+#endif
     DisableFeaturesCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Permanently ~disable all features",
                             ID_XFDI_PANIC_DISABLEFEATURES,
@@ -324,11 +328,13 @@ CONTROLDEF
                             ID_XFDI_PANIC_REMOVEHOTKEYS,
                             -1,
                             -1),
+#ifndef __NOPAGEMAGE__
     DisablePageMageCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Disable ~PageMage",
                             ID_XFDI_PANIC_DISABLEPAGEMAGE,
                             -1,
                             -1),
+#endif
     DisableMultimediaCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Disable ~multimedia",
                             ID_XFDI_PANIC_DISABLEMULTIMEDIA,
@@ -375,7 +381,7 @@ CONTROLDEF
                             -1,
                             -1);
 
-DLGHITEM dlgPanic[] =
+static const DLGHITEM dlgPanic[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__
@@ -392,8 +398,10 @@ DLGHITEM dlgPanic[] =
                 CONTROL_DEF(&SkipArchivingCB),
             START_ROW(0),
                 CONTROL_DEF(&DisableReplRefreshCB),
+#ifndef __NOTURBOFOLDERS__
             START_ROW(0),
                 CONTROL_DEF(&DisableTurboFoldersCB),
+#endif
             START_ROW(0),
                 CONTROL_DEF(&DisableFeaturesCB ),
 #ifndef __NOICONREPLACEMENTS__
@@ -402,8 +410,10 @@ DLGHITEM dlgPanic[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&RemoveHotkeysCB),
+#ifndef __NOPAGEMAGE__
             START_ROW(0),
                 CONTROL_DEF(&DisablePageMageCB),
+#endif
             START_ROW(0),
                 CONTROL_DEF(&DisableMultimediaCB),
             START_ROW(ROW_VALIGN_CENTER),
@@ -528,14 +538,18 @@ VOID ShowPanicDlg(VOID)
 #endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                               krnReplaceRefreshEnabled());
+#ifndef __NOTURBOFOLDERS__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
-                              cmnQuerySetting(sfTurboFolders));
+                              cmnTurboFoldersEnabled());
+#endif
 #ifndef __NOICONREPLACEMENTS__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                               cmnQuerySetting(sfIconReplacements));
 #endif
+#ifndef __NOPAGEMAGE__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
                               cmnQuerySetting(sfEnablePageMage));
+#endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                               (xmmQueryStatus() == MMSTAT_WORKING));
 
@@ -564,15 +578,19 @@ VOID ShowPanicDlg(VOID)
 
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
                         krnEnableReplaceRefresh(FALSE);
+#ifndef __NOTURBOFOLDERS__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS))
                         cmnSetSetting(sfTurboFolders, FALSE);
+#endif
 
 #ifndef __NOICONREPLACEMENTS__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
                         cmnSetSetting(sfIconReplacements, FALSE);
 #endif
+#ifndef __NOPAGEMAGE__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
                         cmnSetSetting(sfEnablePageMage, FALSE);  // @@todo
+#endif
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
                     {
                         xmmDisable();
@@ -648,6 +666,7 @@ VOID ShowStartupDlgs(VOID)
     ULONG   cbData = 0;
 
     // check if XWorkplace was just installed
+#ifndef __XWPLITE__
     if (PrfQueryProfileInt(HINI_USER,
                            (PSZ)INIAPP_XWORKPLACE,
                            (PSZ)INIKEY_JUSTINSTALLED,
@@ -659,6 +678,7 @@ VOID ShowStartupDlgs(VOID)
                          159,       // "press shift for panic"
                          MB_OK);
     }
+#endif
 
     /*
      * convert XFolder settings

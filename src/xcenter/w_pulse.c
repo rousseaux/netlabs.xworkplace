@@ -309,7 +309,7 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         ctrFreeSetupValue(p);
     }
     else
-        pSetup->cx = 200;
+        pSetup->cx = 130;           // changed from 200 V0.9.16 (2002-01-13) [umoeller]
 
     // background color
     if (p = ctrScanSetupString(pcszSetupString,
@@ -639,6 +639,66 @@ LONG GetColor(HWND hwndDlg,
                                SYSCLR_DIALOGBACKGROUND));
 }
 
+static CONTROLDEF
+    OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
+    CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
+
+    ProcessorsGroup = CONTROLDEF_GROUP(NULL, -1),
+
+    IRQLoadColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_IRQLOAD,
+                                  100,
+                                  40),
+
+    ProcessorColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000,
+                                  100,
+                                  40),
+
+    OthersGroup = CONTROLDEF_GROUP(NULL, -1),
+
+    BackgroundColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_BACKGROUND,
+                                  100,
+                                  40),
+    TextColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_TEXT,
+                                  100,
+                                  40);
+
+static const DLGHITEM
+    dlgPulseFront[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&ProcessorsGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&IRQLoadColor)
+    },
+    dlgPulsePerProcessor[] =
+    {
+                    START_ROW(0),
+                        CONTROL_DEF(&ProcessorColor),
+    },
+    dlgPulseTail[] =
+    {
+                END_TABLE,
+                START_GROUP_TABLE(&OthersGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&BackgroundColor),
+                    START_ROW(0),
+                        CONTROL_DEF(&TextColor),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&OKButton),
+                CONTROL_DEF(&CancelButton),
+        END_TABLE
+    };
+
 /*
  *@@ PwgtShowSettingsDlg:
  *      shows the pulse widget settings dialog for
@@ -652,66 +712,6 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
     HWND hwndDlg = NULLHANDLE;
     APIRET arc;
 
-    CONTROLDEF
-        OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
-        CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
-
-        ProcessorsGroup = CONTROLDEF_GROUP(NULL, -1),
-
-        IRQLoadColor
-                    = CONTROLDEF_TEXT(NULL,
-                                      1000 + INDEX_IRQLOAD,
-                                      100,
-                                      40),
-
-        ProcessorColor
-                    = CONTROLDEF_TEXT(NULL,
-                                      1000,
-                                      100,
-                                      40),
-
-        OthersGroup = CONTROLDEF_GROUP(NULL, -1),
-
-        BackgroundColor
-                    = CONTROLDEF_TEXT(NULL,
-                                      1000 + INDEX_BACKGROUND,
-                                      100,
-                                      40),
-        TextColor
-                    = CONTROLDEF_TEXT(NULL,
-                                      1000 + INDEX_TEXT,
-                                      100,
-                                      40);
-
-    DLGHITEM
-        dlgFront[] =
-        {
-            START_TABLE,
-                START_ROW(0),
-                    START_GROUP_TABLE(&ProcessorsGroup),
-                        START_ROW(0),
-                            CONTROL_DEF(&IRQLoadColor)
-        },
-        dlgPerProcessor[] =
-        {
-                        START_ROW(0),
-                            CONTROL_DEF(&ProcessorColor),
-        },
-        dlgTail[] =
-        {
-                    END_TABLE,
-                    START_GROUP_TABLE(&OthersGroup),
-                        START_ROW(0),
-                            CONTROL_DEF(&BackgroundColor),
-                        START_ROW(0),
-                            CONTROL_DEF(&TextColor),
-                    END_TABLE,
-                START_ROW(0),
-                    CONTROL_DEF(&OKButton),
-                    CONTROL_DEF(&CancelButton),
-            END_TABLE
-        };
-
     ULONG       cProcessors = 0;
     ULONG       ul;
 
@@ -719,29 +719,29 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
     {
         PDLGARRAY pArray = NULL;
 
-        ProcessorsGroup.pcszText = "CPU graph colors"; // @@todo localize
-        OthersGroup.pcszText = "Other colors"; // @@todo localize
+        ProcessorsGroup.pcszText = cmnGetString(ID_CRSI_PWGT_CPUGRAPHCOLORS);
+        OthersGroup.pcszText = cmnGetString(ID_CRSI_PWGT_OTHERCOLORS);
 
         OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
         CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
 
-        if (!(arc = dlghCreateArray(   ARRAYITEMCOUNT(dlgFront)
+        if (!(arc = dlghCreateArray(   ARRAYITEMCOUNT(dlgPulseFront)
                                      +    cProcessors
-                                        * ARRAYITEMCOUNT(dlgPerProcessor)
-                                     + ARRAYITEMCOUNT(dlgTail),
+                                        * ARRAYITEMCOUNT(dlgPulsePerProcessor)
+                                     + ARRAYITEMCOUNT(dlgPulseTail),
                                     &pArray)))
         {
             if (!(arc = dlghAppendToArray(pArray,
-                                          dlgFront,
-                                          ARRAYITEMCOUNT(dlgFront))))
+                                          dlgPulseFront,
+                                          ARRAYITEMCOUNT(dlgPulseFront))))
             {
                 for (ul = 0;
                      ul < cProcessors;
                      ul++)
                 {
                     if (arc = dlghAppendToArray(pArray,
-                                                dlgPerProcessor,
-                                                ARRAYITEMCOUNT(dlgPerProcessor)))
+                                                dlgPulsePerProcessor,
+                                                ARRAYITEMCOUNT(dlgPulsePerProcessor)))
                         break;
                 }
             }
@@ -749,30 +749,32 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
         if (    (!arc)
              && (!(arc = dlghAppendToArray(pArray,
-                                           dlgTail,
-                                           ARRAYITEMCOUNT(dlgTail))))
+                                           dlgPulseTail,
+                                           ARRAYITEMCOUNT(dlgPulseTail))))
              && (!(arc = dlghCreateDlg(&hwndDlg,
                                        pData->hwndOwner,
                                        FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                        WinDefDlgProc,
-                                       "Pulse",          // @@todo localize
+                                       cmnGetString(ID_CRSI_PWGT_TITLE),
                                        pArray->paDlgItems,
                                        pArray->cDlgItemsNow,
                                        NULL,
                                        cmnQueryDefaultFont())))
            )
         {
+            PCSZ pcszCPUXUserColor = cmnGetString(ID_CRSI_PWGT_CPUXUSERCOLOR);
+
             // go scan the setup string
             PULSESETUP  Setup;
             PwgtScanSetup(pData->pcszSetupString,
                           &Setup,
-                          cProcessors);       // @@todo
+                          cProcessors);
 
             // for each color control, set the background color
             // according to the settings
             SubclassAndSetColor(hwndDlg,
                                 1000 + INDEX_IRQLOAD,
-                                "IRQ load",     // @@todo localize
+                                cmnGetString(ID_CRSI_PWGT_IRQLOADCOLOR), // "IRQ load",
                                 Setup.lcolGraphIntr,
                                 Setup.lcolBackground);
 
@@ -781,7 +783,9 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                  ul++)
             {
                 CHAR sz[100];
-                sprintf(sz, "CPU %d user load", ul); // @@todo localize
+                sprintf(sz,
+                        pcszCPUXUserColor,
+                        ul);
                 SubclassAndSetColor(hwndDlg,
                                     1000 + ul,
                                     sz,
@@ -791,12 +795,12 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
             SubclassAndSetColor(hwndDlg,
                                 1000 + INDEX_BACKGROUND,
-                                "Background",     // @@todo localize
+                                cmnGetString(ID_CRSI_PWGT_BACKGROUNDCOLOR), // "Background",
                                 Setup.lcolBackground,
                                 Setup.lcolBackground);
             SubclassAndSetColor(hwndDlg,
                                 1000 + INDEX_TEXT,
-                                "Text",     // @@todo localize
+                                cmnGetString(ID_CRSI_PWGT_TEXTCOLOR), // "Text",
                                 Setup.lcolText,
                                 Setup.lcolBackground);
 
@@ -962,7 +966,7 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                             pPrivate->palIntrs[pPrivate->cLoads - 1]
                                 = pPrivate->pPerfData->palIntrs[0];
 
-                            //get load for every CPU in the system [bvl]
+                            // get load for every CPU in the system [bvl]
                             for (cCurCPU=0;
                                  cCurCPU < pPrivate->cProcessors;
                                  cCurCPU++)
@@ -974,7 +978,7 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                                        sizeof(LONG) * (pPrivate->cLoads - 1));
 
                                 // and update the last entry with the current value
-                                pPrivate->palLoads[(pPrivate->cLoads +(pPrivate->cLoads * cCurCPU))-1]
+                                pPrivate->palLoads[(pPrivate->cLoads + (pPrivate->cLoads * cCurCPU)) - 1]
                                     = pPrivate->pPerfData->palLoads[cCurCPU];
                             } // for cCurCPU
                         }
@@ -1324,8 +1328,9 @@ VOID PwgtUpdateGraph(HWND hwnd,
 
             pszTooltipLoc = pPrivate->szTooltipText;
             pszTooltipLoc += sprintf(pPrivate->szTooltipText,
-                                     "CPU count: %d"            // bvl: show CPU count
-                                     "\nCPU 0 IRQ: %lu%c%lu%c",
+                                     cmnGetString(ID_CRSI_PWGT_TOOLTIP1),
+                                     // "CPU count: %d"            // bvl: show CPU count
+                                     // "\nCPU 0 IRQ: %lu%c%lu%c",
                                      pPrivate->cProcessors,
                                      lIRQ1000 / 10,          // only CPU [0] does IRQ management
                                      pCountrySettings->cDecimal,
@@ -1337,7 +1342,8 @@ VOID PwgtUpdateGraph(HWND hwnd,
                  cCurCPU++)
             {
                 pszTooltipLoc += sprintf(pszTooltipLoc, // @@todo localize
-                                         "\nCPU %d User: %lu%c%lu%c",
+                                         cmnGetString(ID_CRSI_PWGT_TOOLTIP2),
+                                         // "\nCPU %d User: %lu%c%lu%c",
                                          cCurCPU,
                                          palLoad1000[cCurCPU] / 10,
                                          pCountrySettings->cDecimal,

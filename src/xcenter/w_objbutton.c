@@ -325,6 +325,62 @@ typedef struct _XBTNMENUITEMDEF
                 ulItemID;
 } XBTNMENUITEMDEF, *PXBTNMENUITEMDEF;
 
+
+static CONTROLDEF
+            OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
+            CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
+
+            ChecksGroup = CONTROLDEF_GROUP(NULL, -1),
+
+            CheckShutdown
+                        = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                  1000 + MENUFL_NOSHUTDOWN,
+                                                  -1, 20),
+            CheckRestartWPS
+                        = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                  1000 + MENUFL_NORESTARTWPS,
+                                                  -1, 20),
+            CheckLogoff
+                        = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                  1000 + MENUFL_NOLOGOFF,
+                                                  -1, 20),
+            CheckSuspend
+                        = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                  1000 + MENUFL_NOSUSPEND,
+                                                  -1, 20),
+            CheckLockup
+                        = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                  1000 + MENUFL_NOLOCKUP,
+                                                  -1, 20),
+            CheckRunDlg
+                        = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                  1000 + MENUFL_NORUNDLG,
+                                                  -1, 20);
+
+static const DLGHITEM dlgXButtonSettings[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&ChecksGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckRunDlg),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckLockup),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckSuspend),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckLogoff),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckRestartWPS),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckShutdown),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&OKButton),
+                CONTROL_DEF(&CancelButton),
+        END_TABLE
+    };
+
 /*
  *@@ OwgtShowXButtonSettingsDlg:
  *
@@ -335,61 +391,6 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 {
     HWND hwndDlg = NULLHANDLE;
     APIRET arc;
-
-    CONTROLDEF
-                OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
-                CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
-
-                ChecksGroup = CONTROLDEF_GROUP(NULL, -1),
-
-                CheckShutdown
-                            = CONTROLDEF_AUTOCHECKBOX(NULL,
-                                                      1000 + MENUFL_NOSHUTDOWN,
-                                                      -1, 20),
-                CheckRestartWPS
-                            = CONTROLDEF_AUTOCHECKBOX(NULL,
-                                                      1000 + MENUFL_NORESTARTWPS,
-                                                      -1, 20),
-                CheckLogoff
-                            = CONTROLDEF_AUTOCHECKBOX(NULL,
-                                                      1000 + MENUFL_NOLOGOFF,
-                                                      -1, 20),
-                CheckSuspend
-                            = CONTROLDEF_AUTOCHECKBOX(NULL,
-                                                      1000 + MENUFL_NOSUSPEND,
-                                                      -1, 20),
-                CheckLockup
-                            = CONTROLDEF_AUTOCHECKBOX(NULL,
-                                                      1000 + MENUFL_NOLOCKUP,
-                                                      -1, 20),
-                CheckRunDlg
-                            = CONTROLDEF_AUTOCHECKBOX(NULL,
-                                                      1000 + MENUFL_NORUNDLG,
-                                                      -1, 20);
-
-    DLGHITEM    DlgTemplate[] =
-        {
-            START_TABLE,
-                START_ROW(0),
-                    START_GROUP_TABLE(&ChecksGroup),
-                        START_ROW(0),
-                            CONTROL_DEF(&CheckRunDlg),
-                        START_ROW(0),
-                            CONTROL_DEF(&CheckLockup),
-                        START_ROW(0),
-                            CONTROL_DEF(&CheckSuspend),
-                        START_ROW(0),
-                            CONTROL_DEF(&CheckLogoff),
-                        START_ROW(0),
-                            CONTROL_DEF(&CheckRestartWPS),
-                        START_ROW(0),
-                            CONTROL_DEF(&CheckShutdown),
-                    END_TABLE,
-                START_ROW(0),
-                    CONTROL_DEF(&OKButton),
-                    CONTROL_DEF(&CancelButton),
-            END_TABLE
-        };
 
     XBTNMENUITEMDEF   aItems[] =
         {
@@ -422,8 +423,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 strcpy(p, p+3);
         }
 
-        ChecksGroup.pcszText = "Visible menu items"; // @@todo localize
-
+        ChecksGroup.pcszText = cmnGetString(ID_CRSI_OWGT_MENUITEMS);
         OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
         CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
 
@@ -432,8 +432,8 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                   WinDefDlgProc,
                                   G_pcszXButton,
-                                  DlgTemplate,
-                                  ARRAYITEMCOUNT(DlgTemplate),
+                                  dlgXButtonSettings,
+                                  ARRAYITEMCOUNT(dlgXButtonSettings),
                                   NULL,
                                   cmnQueryDefaultFont())))
         {
@@ -827,7 +827,7 @@ VOID BuildXButtonMenu(HWND hwnd,
 
 #ifndef __NOXSHUTDOWN__
     if (cmnQuerySetting(sfXShutdown))
-        if ((cmnQuerySetting(sflXShutdown) & XSD_CONFIRM) == 0)
+        if (cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM)
         {
             // if XShutdown confirmations have been disabled,
             // remove "..." from the shutdown menu entries
@@ -862,11 +862,14 @@ VOID BuildXButtonMenu(HWND hwnd,
     }
     else
     {
-        if ((cmnQuerySetting(sflXShutdown) & XSD_CONFIRM) == 0)
+#ifndef __NOXSHUTDOWN__
+        if (cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM)
             // if XShutdown confirmations have been disabled,
             // remove "..." from menu entry
             winhMenuRemoveEllipse(hMenu,
                                   ID_CRMI_LOGOFF);
+#endif
+
         WinEnableMenuItem(hMenu,
                           ID_CRMI_LOGOFF,
                           !fShutdownRunning);

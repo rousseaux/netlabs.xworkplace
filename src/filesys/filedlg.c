@@ -2781,7 +2781,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
             // find the folder whose contents to
             // display in the left tree
             WinData.pDrivesFolder = _wpclsQueryFolder(_WPFolder,
-                                                      "<WP_DRIVES>",
+                                                      (PSZ)WPOBJID_DRIVES,
                                                       TRUE);
             if (    (!WinData.pDrivesFolder)
                  || (!_somIsA(WinData.pDrivesFolder, _WPFolder))

@@ -27,45 +27,72 @@
  *          a lot of magic things depending on the object's
  *          class (see below).
  *
- *      2)  Whether the icon handle is set or created during object
- *          instantion, usually during wpRestoreState, depends
- *          on the object's class.
+ *      2)  The _general_ rule of the WPS is that any object
+ *          uses the object of its class, unless it has a
+ *          non-default icon (indicated by the OBJSTYLE_NOTDEFAULTICON
+ *          object style).
  *
- *          --  For file-system objects, the HPOINTER is only
- *              created during wpRestoreState if the object
- *              has an .ICON EA. The reason for this is speed;
- *              wpPopulate already retrieves the .ICON EA data
- *              during DosFindFirst/Next, and this is passed
- *              to wpclsMakeAwake and then wpRestoreState in
- *              the "ulReserved" parameter that is not documented
- *              in WPSREF. Really, this is a pointer to the
- *              FILEFINDBUF3 and the FEA2LIST that was filled
- *              by wpPopulate.
+ *          For most classes, the object will use the class icon.
+ *          In that case, hptrIcon is set to what wpclsQueryIcon
+ *          returns for the object's class. Apparently the class
+ *          icon is loaded only once per class and then shared for
+ *          objects that use the class icon.
  *
- *              Since the data is already present, in that case,
- *              the WPS builds that data already during object
- *              instantiation.
+ *          The class icon is _not_ used however if the object
+ *          has a custom icon, usually set by the user on the
+ *          "Icon" page. In that case, the custom icon data is
+ *          stored with the object (either in OS2.INI or in the
+ *          .ICON EA), and the OBJSTYLE_NOTDEFAULTICON flag is
+ *          set for the object during wpRestoreState somewhere.
  *
- *          --  In all other cases (non-file-system objects or
- *              or no .ICON EA present), I believe the hptrIcon
- *              field is still NULLHANDLE after wpRestoreState.
- *              Haven't checked abstracts yet.
+ *          Quite simple, and quite logical, and mostly documented.
  *
- *      3)  Now, as indicated above, the entry point into the icon mess
- *          is WPObject::wpQueryIcon. This gets called by the WPS's
- *          container owner-draw routines. As a result, the method
- *          only gets called if the icon is actually visible; for
- *          example, in a crowded folder where many objects are
- *          initially outside the visible viewport rectangle,
- *          wpQueryIcon doesn't get called until the container is
- *          scrolled. (This is why you get a noticeable delay when
- *          first scrolling through a folder with many file-system
- *          objects.)
+ *          The problem is of course that all subclasses of
+ *          WPFileSystem (including WPFolder, WPDataFile and
+ *          again WPProgramFile) plus the abstract WPProgram
+ *          modify this standard behavior. And since 99% of all
+ *          WPS objects are of those classes, things are different
+ *          in 99% of all cases. This is where the problems
+ *          start in practice when replacing the WPS standard
+ *          icons.
+ *
+ *      3)  For data file objects, the WPS appears to defer icon
+ *          loading until the first call to wpQueryIcon, which
+ *          is usually the case when the object first becomes
+ *          visible in a container window. This saves the WPS
+ *          from loading all icons of a folder if only a small
+ *          subset of the icons actually ever becomes visible.
+ *          You can notice this when scrolling thru a folder
+ *          with many data file objects.
+ *
+ *          So, as opposed to the standard model explained
+ *          under (2), for data file objects the HPOINTER is only
+ *          created during wpRestoreState if the object _does_
+ *          have an .ICON EA. It is not created if the object
+ *          does not have a custom icon and will later receive
+ *          the icon of its associated program.
+ *
+ *          The reason for this is speed; wpPopulate already
+ *          retrieves all the EA info from disk, including the
+ *          .ICON data, during DosFindFirst/Next, and this is
+ *          passed to wpclsMakeAwake and then wpRestoreState in
+ *          the "ulReserved" parameter that is not documented
+ *          in WPSREF. Really, this is a pointer to the
+ *          FILEFINDBUF3 and the FEA2LIST that was filled
+ *          by wpPopulate.
+ *
+ *          Since the data is already present, in that case,
+ *          the WPS can quickly build that data already during
+ *          object instantiation.
+ *
+ *      4)  Now, as indicated above, the entry point into the icon mess
+ *          is WPObject::wpQueryIcon. I believe this gets called by the
+ *          WPS's container owner-draw routines. As a result, the method
+ *          only gets called if the icon is actually visible.
  *
  *          wpQueryIcon returns the hptrIcon from the MINIRECORDCORE,
- *          if it was set. If the field is still NULLHANDLE (because
- *          the data wasn't built during wpRestoreState, see above),
- *          the WPS _then_ builds a proper icon.
+ *          if it was set already during wpRestoreState. If the field
+ *          is still NULLHANDLE, the WPS _then_ builds a proper icon.
  *
  *          What happens then again depends on the object's class:
  *
@@ -80,11 +107,12 @@
  *
  *          --  For WPProgramFile, WPProgramFile::wpSetProgIcon
  *              attempts to load an icon from the executable file.
+ *              If that fails, a standard executable icon is used.
  *
  *          If all of this fails, or for other classes, the WPS
  *          gets the class's default icon from wpclsQueryIcon.
  *
- *      4)  WPObject::wpSetIcon sets the MINIRECORDCORE.hptrIcon
+ *      5)  WPObject::wpSetIcon sets the MINIRECORDCORE.hptrIcon
  *          field. This can be called at any time and will also
  *          update the object's display in all containers where
  *          it is currently inserted.
@@ -92,9 +120,12 @@
  *          wpSetIcon does _not_ store the icon persistently.
  *          It only changes the current icon and gets called
  *          from the various wpQueryIcon implementations when
- *          the icon is first built for an object. (I guess this
- *          makes it clear that the method naming is quite silly
- *          here -- a "query" method always calls a "set" method?!?)
+ *          the icon is first built for an object.
+ *
+ *          I guess this makes it sufficiently clear that the
+ *          method naming is quite silly here -- a "query" method
+ *          always calls a "set" method?!? This makes it nearly
+ *          impossible to override wpSetIcon, too.
  *
  *          Note that if the object had an icon previously (i.e.
  *          hptrIcon was != NULLHANDLE), the old icon is freed if
@@ -106,24 +137,26 @@
  *          on whether the icon should be freed if the object
  *          goes dormant (or will be changed again later).
  *
- *      5)  WPObject::wpQueryIconData does not return an icon,
+ *      6)  WPObject::wpQueryIconData does not return an icon,
  *          nor does it always return icon data. (Another misnamed
- *          method). It only returns _information_ about where
+ *          method.) It only returns _information_ about where
  *          to find the icon; only if the object has a non-default
  *          icon, the actual icon data is returned.
  *
  *          I believe this method only gets called in some very
  *          special situations, such as on the "Icon" page and
- *          during drag'n'drop. Also I haven't exactly figured
- *          out how the memory management is supposed to work
- *          here.
+ *          during drag'n'drop to build icon copies. Also I
+ *          haven't exactly figured out how the memory management
+ *          is supposed to work here.
  *
- *      6)  WPObject::wpSetIconData is supposed to change the icon
+ *      7)  WPObject::wpSetIconData is supposed to change the icon
  *          permanently. Depending on the object's class, this
  *          will store the icon data in the .ICON EA or in OS2.INI.
+ *          This will also call wpSetIcon in turn to change the
+ *          current icon of the object.
  *
- *      Now for the replacements. There are several problems with
- *      the WPS implementation:
+ *      Wheew. Now for the replacements. There are several problems
+ *      with the WPS implementation:
  *
  *      1)  We want to replace the default icons. Unfortunately
  *          this requires us to replace the icon management
@@ -1285,13 +1318,10 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                                     }
                                 }
 
-                                if (fPtrFound)
+                                if (fPtrFound || arc)
                                     break;
 
                             } // end for
-
-                            if (arc)
-                                break;
                         }
 
                         if (paNameInfos)
@@ -2469,7 +2499,7 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
  *
  ********************************************************************/
 
-CONTROLDEF
+static CONTROLDEF
     TitleText = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_ICON_TITLE_TEXT,
@@ -2552,19 +2582,19 @@ CONTROLDEF
                             -1,
                             30);
 
-DLGHITEM dlgObjIconFront[] =
+static const DLGHITEM dlgObjIconFront[] =
     {
         START_TABLE,            // root table, required
     };
 
-DLGHITEM dlgObjIconTitle[] =
+static const DLGHITEM dlgObjIconTitle[] =
     {
             START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
                 CONTROL_DEF(&TitleText),
                 CONTROL_DEF(&TitleEF)
     };
 
-DLGHITEM dlgObjIconIcon[] =
+static const DLGHITEM dlgObjIconIcon[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE(&IconGroup),
@@ -2581,14 +2611,14 @@ DLGHITEM dlgObjIconIcon[] =
                 END_TABLE,
     };
 
-DLGHITEM dlgObjIconExtrasFront[] =
+static const DLGHITEM dlgObjIconExtrasFront[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE(&ExtrasGroup),
                     START_ROW(0)
     };
 
-DLGHITEM dlgObjIconHotkey[] =
+static const DLGHITEM dlgObjIconHotkey[] =
     {
                         START_ROW(ROW_VALIGN_CENTER),
                             CONTROL_DEF(&HotkeyText),
@@ -2598,27 +2628,27 @@ DLGHITEM dlgObjIconHotkey[] =
                         START_ROW(ROW_VALIGN_CENTER)
     };
 
-DLGHITEM dlgObjIconTemplate[] =
+static const DLGHITEM dlgObjIconTemplate[] =
     {
                             CONTROL_DEF(&TemplateCB)
     };
 
-DLGHITEM dlgObjIconLockedInPlace[] =
+static const DLGHITEM dlgObjIconLockedInPlace[] =
     {
                             CONTROL_DEF(&LockPositionCB)
     };
 
-DLGHITEM dlgObjIconExtrasTail[] =
+static const DLGHITEM dlgObjIconExtrasTail[] =
     {
                 END_TABLE
     };
 
-DLGHITEM dlgObjIconDetails[] =
+static const DLGHITEM dlgObjIconDetails[] =
     {
                 CONTROL_DEF(&DetailsButton)
     };
 
-DLGHITEM dlgObjIconTail[] =
+static const DLGHITEM dlgObjIconTail[] =
     {
             START_ROW(0),
                 CONTROL_DEF(&G_UndoButton),         // notebook.c
@@ -2899,7 +2929,7 @@ VOID EditIcon(POBJICONPAGEDATA pData)
                 ULONG cb = pIconInfo->cbIconData;
                 pcszContext = "Context: opening temp file for writing";
                 if (!cb)
-                    arc = ERROR_NO_DATA;     // @@todo this shouldn't happen!!
+                    arc = ERROR_NO_DATA;
                 else if (!(arc = doshOpen(szTempFile,
                                           XOPEN_READWRITE_NEW | XOPEN_BINARY,
                                           &cb,

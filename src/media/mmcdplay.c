@@ -149,9 +149,9 @@ typedef struct _CDPLAYWINDATA
  *
  ********************************************************************/
 
-BOOL        G_fCDPlayerClientRegistered = FALSE;
+static BOOL     G_fCDPlayerClientRegistered = FALSE;
 
-const ULONG G_aulButtonIDs[] =
+static const ULONG G_aulButtonIDs[] =
     {
         ID_ICON_CDPREV,
         ID_ICON_CDPLAY,

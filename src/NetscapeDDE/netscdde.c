@@ -99,7 +99,7 @@ HWND            G_hwndContacting = NULLHANDLE;
  *      add a string to the listbox.
  */
 
-void ShowMessage(const char *pcszFormat, ...)
+void ShowMessage(PCSZ pcszFormat, ...)
 {
     CHAR szbuf[1000];
     va_list     args;

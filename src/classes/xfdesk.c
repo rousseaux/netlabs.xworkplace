@@ -148,7 +148,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
     pcnbp->pszName = cmnGetString(ID_XSSI_DTPMENUPAGE);  // pszDtpMenuPage
     // pcnbp->usFirstControlID = ID_XSDI_DTP_SORT;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP1_SUB;   // help panel for "Sort"
-    pcnbp->ulDlgID = ID_XSD_DTP_MENUITEMS;
+    pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_MENUITEMS; V0.9.16 (2002-01-09) [umoeller]
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_MENUITEMS;
     pcnbp->ulPageID = SP_DTP_MENUITEMS;
     pcnbp->pfncbInitPage    = dtpMenuItemsInitPage;
@@ -652,8 +652,7 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
 SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
                                                     PICONINFO pIconInfo)
 {
-    ULONG       ulrc;
-    HMODULE     hmodIconsDLL = NULLHANDLE;
+    ULONG       ulrc = 0;
 
     // M_XFldDesktopData *somThis = M_XFldDesktopGetData(somSelf);
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconData");
@@ -661,18 +660,25 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
 #ifndef __NOICONREPLACEMENTS__
     if (cmnQuerySetting(sfIconReplacements))
     {
-        hmodIconsDLL = cmnQueryIconsDLL();
+        /* hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
         if ((pIconInfo) && (hmodIconsDLL))
         {
             pIconInfo->fFormat = ICON_RESOURCE;
             pIconInfo->hmod = hmodIconsDLL;
             pIconInfo->resid = 110;
-        }
-        ulrc = sizeof(ICONINFO);
+        }*/
+
+        // now using cmnGetStandardIcon
+        // V0.9.16 (2002-01-13) [umoeller]
+        if (pIconInfo)
+            if (!cmnGetStandardIcon(STDICON_DESKTOP_CLOSED,
+                                    NULL,            // no hpointer
+                                    pIconInfo))      // fill icon info
+                ulrc = sizeof(ICONINFO);
     }
 
-    if (hmodIconsDLL == NULLHANDLE)
+    if (!ulrc)
 #endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconData(somSelf,
@@ -691,8 +697,7 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
                                                      ICONINFO* pIconInfo,
                                                      ULONG ulIconIndex)
 {
-    ULONG       ulrc;
-    HMODULE     hmodIconsDLL = NULLHANDLE;
+    ULONG       ulrc = 0;
 
     // M_XFldDesktopData *somThis = M_XFldDesktopGetData(somSelf);
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconDataN");
@@ -700,18 +705,25 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
 #ifndef __NOICONREPLACEMENTS__
     if (cmnQuerySetting(sfIconReplacements))
     {
-        hmodIconsDLL = cmnQueryIconsDLL();
+        /* hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
         if ((pIconInfo) && (hmodIconsDLL))
         {
             pIconInfo->fFormat = ICON_RESOURCE;
             pIconInfo->hmod = hmodIconsDLL;
             pIconInfo->resid = 111;
-        }
-        ulrc = sizeof(ICONINFO);
+        }*/
+
+        // now using cmnGetStandardIcon
+        // V0.9.16 (2002-01-13) [umoeller]
+        if (pIconInfo)
+            if (!cmnGetStandardIcon(STDICON_DESKTOP_OPEN,
+                                    NULL,            // no hpointer
+                                    pIconInfo))      // fill icon info
+                ulrc = sizeof(ICONINFO);
     }
 
-    if (hmodIconsDLL == NULLHANDLE)
+    if (!ulrc)
 #endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconDataN(somSelf,

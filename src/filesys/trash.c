@@ -248,7 +248,7 @@ int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 
 PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in \trash subdir name
                                     WPFolder *pFolderInTrash,   // in: direct \trash subfolder
-                                    const char *pcszSourceRealName,   // in: real name of source dir
+                                    PCSZ pcszSourceRealName,   // in: real name of source dir
                                     PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
                                          // and wpSaveDeferred must be called on the trash can
 {
@@ -291,7 +291,7 @@ PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in
  */
 
 ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
-                           const char *pcszTrashDir,    // in: "?:\trash"
+                           PCSZ pcszTrashDir,    // in: "?:\trash"
                            PBOOL pfNeedSave)     // out: set to TRUE if mappings are dirty
 {
     ULONG   ulrc = 0;
@@ -312,7 +312,7 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
 
         // 123 C:\Documents\FullPath
 
-        const char *pThis = pszDriveMappings;
+        PCSZ pThis = pszDriveMappings;
         while (*pThis)
         {
             PSZ pSpace = strchr(pThis, ' ');
@@ -518,7 +518,7 @@ VOID InitMappings(XWPTrashCan *somSelf,
  */
 
 PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
-                                               const char *pcszSourceFolder)
+                                               PCSZ pcszSourceFolder)
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
@@ -782,7 +782,7 @@ ULONG GetLowestTrashDirDecimal(VOID)
  */
 
 WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
-                                  const char *pcszSourceFolder, // in: real name of source folder
+                                  PCSZ pcszSourceFolder, // in: real name of source folder
                                   PBOOL pfNeedSave)
 {
     WPFolder    *pFolderInTrash = NULL;
@@ -2504,7 +2504,7 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
  *
  ********************************************************************/
 
-static XWPSETTING G_TrashCanSettingsBackup[] =
+static const XWPSETTING G_TrashCanSettingsBackup[] =
     {
         sflTrashConfirmEmpty
     };

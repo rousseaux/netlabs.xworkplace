@@ -1463,7 +1463,6 @@ const char *G_pcszXWPFontFolder = "XWPFontFolder";
 const char *G_pcszXWPFontFile = "XWPFontFile";
 const char *G_pcszXWPFontObject = "XWPFontObject";
 
-// @@todo
 const char *G_pcszXWPProgram = "XWPProgram";
 
 /********************************************************************

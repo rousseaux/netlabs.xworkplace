@@ -113,8 +113,8 @@
 
 // roots of linked lists for XStartup folders
 // these hold plain WPObject pointers, no auto-free
-OBJECTLIST          G_llSavedStartupFolders = {0};
-OBJECTLIST          G_llStartupFolders = {0};
+static OBJECTLIST          G_llSavedStartupFolders = {0};
+static OBJECTLIST          G_llStartupFolders = {0};
 
 /* ******************************************************************
  *                                                                  *

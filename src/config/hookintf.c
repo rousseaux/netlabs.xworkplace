@@ -112,7 +112,7 @@
  *                                                                  *
  ********************************************************************/
 
-PFNWP G_pfnwpEntryFieldOrig = 0;
+static PFNWP G_pfnwpEntryFieldOrig = 0;
 
 /* ******************************************************************
  *                                                                  *
@@ -1943,7 +1943,7 @@ SLDCDATA
                      0           // scale 2 spacing
              };
 
-CONTROLDEF
+static CONTROLDEF
 #ifndef __NOSLIDINGFOCUS__
     SlidingFocusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
@@ -2050,7 +2050,7 @@ CONTROLDEF
                             -1,
                             -1);
 
-DLGHITEM dlgMovement1[] =
+static const DLGHITEM dlgMovement1[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOSLIDINGFOCUS__
@@ -2679,8 +2679,8 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  ********************************************************************/
 
-ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-ULONG   G_ulScreenCornerSelectedIndex = 0;
+static ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
+static ULONG   G_ulScreenCornerSelectedIndex = 0;
                             // 0 = lower left corner,
                             // 1 = top left corner,
                             // 2 = lower right corner,
@@ -2692,12 +2692,12 @@ ULONG   G_ulScreenCornerSelectedIndex = 0;
                             // 7 = bottom border
 
 // screen corner object container d'n'd
-HOBJECT G_hobjBeingDragged = NULLHANDLE;
+static HOBJECT G_hobjBeingDragged = NULLHANDLE;
             // NULLHANDLE means dropping is invalid;
             // in between CN_DRAGOVER and CN_DROP, this
             // contains the object handle being dragged
 
-BOOL    G_fShutUpSlider = FALSE;
+static BOOL    G_fShutUpSlider = FALSE;
 
 /*
  *@@ UpdateScreenCornerIndex:

@@ -388,7 +388,7 @@ VOID UpdateStatusDescr(PNODERECORD prec)
     if (prec->arcResolve)
     {
         CHAR sz[100];
-        sprintf(sz, "Error %d occured", prec->arcResolve);
+        sprintf(sz, "wphComposePath returned %d", prec->arcResolve);
         Append(&str, sz, "; ");
     }
 
@@ -1102,7 +1102,8 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     {
                                         PNODERECORD pParentRec = NULL;
 
-                                        if (pNodeThis->pNode->usParentHandle)
+                                        if (    pNodeThis
+                                             && pNodeThis->pNode->usParentHandle)
                                         {
                                             // we have a parent:
                                             pParentRec
@@ -1866,34 +1867,35 @@ VOID SetupMainCnr(HWND hwndCnr)
 
 VOID UpdateStatusBar(LONG lSeconds)
 {
-    CHAR sz[100],
-         sz2[100],
-         sz3[100];
+    CHAR    sz[100] = "",
+            sz2[100],
+            sz3[100];
+    PSZ     psz = sz;
 
     if (G_cHandlesSelected && lSeconds == -1)
     {
         // any records selected:
-        sprintf(sz,
-                "%s out of %s handles selected.",
-                nlsThousandsULong(sz3, (ULONG)G_cHandlesSelected, G_cThousands[0]),
-                nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
+        psz += sprintf(psz,
+                       "%s out of %s handles selected",
+                       nlsThousandsULong(sz3, (ULONG)G_cHandlesSelected, G_cThousands[0]),
+                       nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
     }
     else
     {
-        sprintf(sz,
-                "Done, %s bytes (%s handles).",
-                nlsThousandsULong(sz3, (ULONG)G_pHandlesBuf->cbData, G_cThousands[0]),
-                nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
+        psz += sprintf(psz,
+                       "Done, %s bytes (%s handles)",
+                       nlsThousandsULong(sz3, (ULONG)G_pHandlesBuf->cbData, G_cThousands[0]),
+                       nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
         if (lSeconds != -1)
-            sprintf(sz + strlen(sz) - 1,
-                    ", %d seconds.",
-                    lSeconds / 1000);
+            psz += sprintf(psz,
+                           ", %d seconds",
+                           lSeconds / 1000);
     }
 
     if (G_cDuplicatesFound)
-        sprintf(sz + strlen(sz),
-                " -- WARNING: %d duplicate handles exist.",
-                G_cDuplicatesFound);
+        psz += sprintf(psz,
+                       " -- WARNING: %d duplicate handles exist!",
+                       G_cDuplicatesFound);
 
     SetStatusBarText(G_hwndMain, sz);
 }
@@ -3032,7 +3034,7 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
 VOID SelectByName(HWND hwndCnr)
 {
-    CONTROLDEF
+    static CONTROLDEF
                 Static = {
                             WC_STATIC,
                             "File mask:",
@@ -3103,7 +3105,7 @@ VOID SelectByName(HWND hwndCnr)
                             { 100, 30 },    // size
                             5               // spacing
                          };
-    DLGHITEM dlgTemplate[] =
+    static const DLGHITEM dlgSelect[] =
         {
             START_TABLE,
                 START_ROW(0),
@@ -3129,8 +3131,8 @@ VOID SelectByName(HWND hwndCnr)
                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                   fnwpSelectByName,
                                   "xfix: Select By Name",
-                                  dlgTemplate,      // DLGHITEM array
-                                  ARRAYITEMCOUNT(dlgTemplate),
+                                  dlgSelect,      // DLGHITEM array
+                                  ARRAYITEMCOUNT(dlgSelect),
                                   NULL,
                                   "9.WarpSans"))
     {
@@ -3583,7 +3585,6 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                             SetStatusBarText(G_hwndMain,
                                              "Parsing handles section, %03d%% done...",
                                              G_ulPercentDone);
-                        SetStatusBarText(G_hwndMain, sz);
                     }
                     else if (G_tidCheckFilesRunning)
                     {
@@ -3763,6 +3764,9 @@ int main(int argc, char* argv[])
             // subclass frame for supporting msgs
             G_fnwpMainFrameOrig = WinSubclassWindow(G_hwndMain,
                                                     fnwpSubclassedMainFrame);
+
+            SetStatusBarText(G_hwndMain,
+                             "Parsing handles...");
 
             SetupMainCnr(hwndCnr);
 

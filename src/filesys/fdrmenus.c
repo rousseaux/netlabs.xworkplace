@@ -2020,6 +2020,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                 }
                 break;
 
+#ifndef __NOSNAPTOGRID__
                 /*
                  * ID_XFMI_OFS_SNAPTOGRID:
                  *      "Snap to grid"
@@ -2029,6 +2030,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     fdrSnapToGrid(somSelf, TRUE);
                     brc = TRUE;
                 break;
+#endif
 
                 /*
                  * ID_XFMI_OFS_OPENPARENT:
@@ -2714,7 +2716,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *
  ********************************************************************/
 
-CONTROLDEF
+static CONTROLDEF
     FileMenusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
                             ID_XSDI_FILEMENUS_GROUP),
@@ -2764,7 +2766,7 @@ CONTROLDEF
 #endif
     ;
 
-DLGHITEM dlgAddMenus[] =
+static const DLGHITEM dlgAddMenus[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required
@@ -2799,7 +2801,7 @@ DLGHITEM dlgAddMenus[] =
         END_TABLE
     };
 
-static XWPSETTING G_AddMenusBackup[] =
+static const XWPSETTING G_AddMenusBackup[] =
     {
         sfFileAttribs,
         sfAddCopyFilenameItem,
@@ -2958,26 +2960,9 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_UNDO:
         {
-            // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
-
-            // and restore the settings for this page
+            // "Undo" button: restore the settings for this page
             cmnRestoreSettings(pcnbp->pUser,
                                ARRAYITEMCOUNT(G_AddMenusBackup));
-/*
-            cmnSetSetting(sfFileAttribs, pGSBackup->FileAttribs);
-            cmnSetSetting(sfAddCopyFilenameItem, pGSBackup->AddCopyFilenameItem);
-            cmnSetSetting(sfExtendFldrViewMenu, pGSBackup->ExtendFldrViewMenu);
-#ifndef __NOMOVEREFRESHNOW__
-            cmnSetSetting(sfMoveRefreshNow, pGSBackup->__fMoveRefreshNow);
-#endif
-            cmnSetSetting(sfAddSelectSomeItem, pGSBackup->AddSelectSomeItem);
-#ifndef __NOFOLDERCONTENTS__
-            cmnSetSetting(sfAddFolderContentItem, pGSBackup->__fAddFolderContentItem);
-            cmnSetSetting(sfFolderContentShowIcons, pGSBackup->__fFolderContentShowIcons);
-#endif
-   */
-            // cmnSetSetting(sfExtendCloseMenu, pGSBackup->fExtendCloseMenu);
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -3007,7 +2992,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-static XWPSETTING G_ConfigFolderMenusBackup[] =
+static const XWPSETTING G_ConfigFolderMenusBackup[] =
     {
         sfMenuCascadeMode,
         sfRemoveX,
@@ -3164,7 +3149,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-static XWPSETTING G_RemoveMenusBackup[] =
+static const XWPSETTING G_RemoveMenusBackup[] =
     {
         sflDefaultMenuItems,
         sfRemoveViewMenu,

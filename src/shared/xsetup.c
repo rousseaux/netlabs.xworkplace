@@ -170,7 +170,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSREPLACEFILEPAGE__
             ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __NOXSYSTEMSOUNDS__
             ID_XCSI_XSYSTEMSOUNDS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 
             // folder features
             ID_XCSI_FOLDERFEATURES, 0, 0, NULL,
@@ -186,8 +188,12 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSEXTSORT__
             ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __ALWAYSREPLACEREFRESH__
             ID_XCSI_REPLACEREFRESH, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+#ifndef __NOTURBOFOLDERS__
             ID_XCSI_TURBOFOLDERS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 
             // mouse/keyboard features
             ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
@@ -272,8 +278,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDLAST  230      // last object menu ID, inclusive
 
 // array of objects for "Standard Desktop objects" menu button
-static STANDARDOBJECT
-    G_WPSObjects[] =
+static STANDARDOBJECT G_WPSObjects[] =
     {
             &WPOBJID_KEYB, &G_pcszWPKeyboard, "<WP_CONFIG>", "", 100, 0,
             &WPOBJID_MOUSE, &G_pcszWPMouse, "<WP_CONFIG>", "", 101, 0,
@@ -463,6 +468,8 @@ typedef struct _XWPCLASSITEM
 
 } XWPCLASSITEM, *PXWPCLASSITEM;
 
+typedef const struct _XWPCLASSITEM *PCXWPCLASSITEM;
+
 /*
  *@@ XWPCLASSES:
  *      structure used for fnwpXWorkplaceClasses
@@ -486,7 +493,7 @@ VOID RegisterArray(HWND hwndDlg,
                    PTOOLINFO pti,
                    ULONG ulFirstID,
                    PBYTE pObjClass,
-                   PXWPCLASSITEM paClasses,
+                   PCXWPCLASSITEM paClasses,
                    ULONG cClasses)
 {
     ULONG ul;
@@ -494,7 +501,7 @@ VOID RegisterArray(HWND hwndDlg,
          ul < cClasses;
          ul++)
     {
-        PXWPCLASSITEM pThis = &paClasses[ul];
+        PCXWPCLASSITEM pThis = &paClasses[ul];
         HWND hwndCtl;
         if (hwndCtl = WinWindowFromID(hwndDlg, ulFirstID + ul))
         {
@@ -513,26 +520,26 @@ VOID RegisterArray(HWND hwndDlg,
     }
 }
 
-const char **G_RequirementsXFldStartupShutdown[] =
+static const char **G_RequirementsXFldStartupShutdown[] =
     {
         &G_pcszXFldDesktop,
         &G_pcszXFolder
     };
 
-const char **G_RequirementsXWPTrashCan[] =
+static const char **G_RequirementsXWPTrashCan[] =
     {
         &G_pcszXFolder,
         &G_pcszXWPTrashObject
     };
 
-const char **G_RequirementsXWPFontFolder[] =
+static const char **G_RequirementsXWPFontFolder[] =
     {
         &G_pcszXFolder,
         &G_pcszXWPFontObject,
         &G_pcszXWPFontFile
     };
 
-const char **G_RequiresXFolderOnly[] =
+static const char **G_RequiresXFolderOnly[] =
     {
         &G_pcszXFolder
     };
@@ -551,7 +558,7 @@ const char **G_RequiresXFolderOnly[] =
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static XWPCLASSITEM G_aClasses[] =
+static const XWPCLASSITEM G_aClasses[] =
     {
         // class replacements
         &G_pcszXFldObject, &G_pcszWPObject,
@@ -671,7 +678,7 @@ VOID HandleEnableItems(HWND hwndDlg)
     {
         // if the class is installed and requires others,
         // disable that other class
-        PXWPCLASSITEM pThis = &G_aClasses[ul];
+        PCXWPCLASSITEM pThis = &G_aClasses[ul];
         if (    (pThis->pRequirements)
              && (winhIsDlgItemChecked(hwndDlg,
                                       ID_CLASSES_FIRST + ul))
@@ -687,7 +694,7 @@ VOID HandleEnableItems(HWND hwndDlg)
                      ulR < pThis->cRequirements;
                      ulR++)
                 {
-                    const char *pcszRequirementThis = *(pThis->pRequirements[ulR]);
+                    PCSZ pcszRequirementThis = *(pThis->pRequirements[ulR]);
 
                     // go find that class in the array
                     ULONG ul2;
@@ -810,8 +817,8 @@ BOOL HandleOKButton(HWND hwndDlg)
          ul < ARRAYITEMCOUNT(G_aClasses);
          ul++)
     {
-        PXWPCLASSITEM pThis = &G_aClasses[ul];
-        const char *pcszClassName = *(pThis->ppcszClassName);
+        PCXWPCLASSITEM pThis = &G_aClasses[ul];
+        PCSZ pcszClassName = *(pThis->ppcszClassName);
         BOOL fChecked = winhIsDlgItemChecked(hwndDlg,
                                              ID_CLASSES_FIRST + ul);
         BOOL fInstalled = (winhQueryWPSClass(pObjClass,
@@ -1002,7 +1009,7 @@ BOOL HandleOKButton(HWND hwndDlg)
                         if (pszClass)
                         {
                             arc = winhRegisterClass(pszClass,
-                                                    cmnQueryMainModuleFilename(),
+                                                    cmnQueryMainCodeModuleFilename(),
                                                             // XFolder module
                                                     szRegisterError,
                                                     sizeof(szRegisterError));
@@ -1320,6 +1327,97 @@ VOID AppendClassesGroup(CONTROLDEF *pOneClass,
     }
 }
 
+static CONTROLDEF
+            OKButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
+                        DID_OK,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     },
+            CancelButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                        DID_CANCEL,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     },
+            HelpButton = {
+                        WC_BUTTON,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
+                        DID_HELP,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 30 },    // size
+                        5               // spacing
+                     },
+            ReplGroup = {
+                         WC_STATIC,
+                         LOAD_STRING,
+                         WS_VISIBLE | WS_TABSTOP | SS_GROUPBOX | DT_MNEMONIC,
+                         ID_XCD_CLASSES_REPLACEMENTS,
+                         CTL_COMMON_FONT,
+                         0,
+                         { -1, -1 },       // size
+                         0               // spacing
+                    },
+            NewGroup = {
+                         WC_STATIC,
+                         LOAD_STRING,
+                         WS_VISIBLE | WS_TABSTOP | SS_GROUPBOX | DT_MNEMONIC,
+                         ID_XCD_CLASSES_NEW,
+                         CTL_COMMON_FONT,
+                         0,
+                         { -1, -1 },       // size
+                         0               // spacing
+                    },
+            OneClass = {
+                        WC_BUTTON,
+                            NULL,      // text, to be replaced
+                            WS_VISIBLE | WS_TABSTOP
+                                | BS_AUTOCHECKBOX,
+                            0,              // ID, to be replaced
+                        CTL_COMMON_FONT,
+                        0,
+                        { -1, -1 },       // size
+                        0               // spacing
+                     };
+
+static const DLGHITEM
+    dlgClassesFront[] =
+    {
+        START_TABLE,
+            START_ROW(ROW_VALIGN_TOP),
+                START_GROUP_TABLE(&ReplGroup)
+    },
+
+    // here the class replacements are inserted
+
+    dlgClassesMiddle[] =
+    {
+                END_TABLE,
+                START_GROUP_TABLE(&NewGroup)
+    },
+
+    // here the new classes are inserted
+
+    dlgClassesTail[] =
+    {
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&OKButton),
+                CONTROL_DEF(&CancelButton),
+                CONTROL_DEF(&HelpButton),
+        END_TABLE
+    };
+
 /*
  *@@ ShowClassesDlg:
  *      displays the "XWorkplace classes" dialog.
@@ -1337,104 +1435,12 @@ VOID ShowClassesDlg(HWND hwndOwner)
         HWND hwndDlg = NULLHANDLE;
         APIRET arc;
 
-        CONTROLDEF
-                    OKButton = {
-                                WC_BUTTON,
-                                NULL,
-                                WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
-                                DID_OK,
-                                CTL_COMMON_FONT,
-                                0,
-                                { 100, 30 },    // size
-                                5               // spacing
-                             },
-                    CancelButton = {
-                                WC_BUTTON,
-                                NULL,
-                                WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                                DID_CANCEL,
-                                CTL_COMMON_FONT,
-                                0,
-                                { 100, 30 },    // size
-                                5               // spacing
-                             },
-                    HelpButton = {
-                                WC_BUTTON,
-                                NULL,
-                                WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
-                                DID_HELP,
-                                CTL_COMMON_FONT,
-                                0,
-                                { 100, 30 },    // size
-                                5               // spacing
-                             },
-                    ReplGroup = {
-                                 WC_STATIC,
-                                     "Class replacements",
-                                     WS_VISIBLE | WS_TABSTOP
-                                         | SS_GROUPBOX | DT_MNEMONIC,
-                                     -1,
-                                 CTL_COMMON_FONT,
-                                 0,
-                                 { -1, -1 },       // size
-                                 0               // spacing
-                            },
-                    NewGroup = {
-                                 WC_STATIC,
-                                     "New classes",
-                                     WS_VISIBLE | WS_TABSTOP
-                                         | SS_GROUPBOX | DT_MNEMONIC,
-                                     -1,
-                                 CTL_COMMON_FONT,
-                                 0,
-                                 { -1, -1 },       // size
-                                 0               // spacing
-                            },
-                    OneClass = {
-                                WC_BUTTON,
-                                    NULL,      // text, to be replaced
-                                    WS_VISIBLE | WS_TABSTOP
-                                        | BS_AUTOCHECKBOX,
-                                    0,              // ID, to be replaced
-                                CTL_COMMON_FONT,
-                                0,
-                                { -1, -1 },       // size
-                                0               // spacing
-                             };
-        DLGHITEM
-            DlgTemplateFront[] =
-            {
-                START_TABLE,
-                    START_ROW(ROW_VALIGN_TOP),
-                        START_GROUP_TABLE(&ReplGroup)
-            },
-
-            // here the class replacements are inserted
-
-            DlgTemplateMiddle[] =
-            {
-                        END_TABLE,
-                        START_GROUP_TABLE(&NewGroup)
-            },
-
-            // here the new classes are inserted
-
-            DlgTemplateTail[] =
-            {
-                        END_TABLE,
-                    START_ROW(0),
-                        CONTROL_DEF(&OKButton),
-                        CONTROL_DEF(&CancelButton),
-                        CONTROL_DEF(&HelpButton),
-                END_TABLE
-            };
-
         CONTROLDEF  *paControlDefs = malloc(   (ARRAYITEMCOUNT(G_aClasses) + 2)
                                              * sizeof(CONTROLDEF)),
                     *pControlDefThis = paControlDefs;
-        ULONG       cDlgItems =   ARRAYITEMCOUNT(DlgTemplateFront)
-                                + ARRAYITEMCOUNT(DlgTemplateMiddle)
-                                + ARRAYITEMCOUNT(DlgTemplateTail)
+        ULONG       cDlgItems =   ARRAYITEMCOUNT(dlgClassesFront)
+                                + ARRAYITEMCOUNT(dlgClassesMiddle)
+                                + ARRAYITEMCOUNT(dlgClassesTail)
                                   // we need 2 extra items for START_GROUP_TABLE
                                   // for replacements and new classes each
                                 // + 4
@@ -1447,10 +1453,10 @@ VOID ShowClassesDlg(HWND hwndOwner)
 
         // copy front
         for (ul = 0;
-             ul < ARRAYITEMCOUNT(DlgTemplateFront);
+             ul < ARRAYITEMCOUNT(dlgClassesFront);
              ul++)
         {
-            memcpy(pDlgItemThis, &DlgTemplateFront[ul], sizeof(DLGHITEM));
+            memcpy(pDlgItemThis, &dlgClassesFront[ul], sizeof(DLGHITEM));
             pDlgItemThis++;
         }
 
@@ -1462,10 +1468,10 @@ VOID ShowClassesDlg(HWND hwndOwner)
 
         // copy separator (middle)
         for (ul = 0;
-             ul < ARRAYITEMCOUNT(DlgTemplateMiddle);
+             ul < ARRAYITEMCOUNT(dlgClassesMiddle);
              ul++)
         {
-            memcpy(pDlgItemThis, &DlgTemplateMiddle[ul], sizeof(DLGHITEM));
+            memcpy(pDlgItemThis, &dlgClassesMiddle[ul], sizeof(DLGHITEM));
             pDlgItemThis++;
         }
 
@@ -1477,12 +1483,15 @@ VOID ShowClassesDlg(HWND hwndOwner)
 
         // copy tail
         for (ul = 0;
-             ul < ARRAYITEMCOUNT(DlgTemplateTail);
+             ul < ARRAYITEMCOUNT(dlgClassesTail);
              ul++)
         {
-            memcpy(pDlgItemThis, &DlgTemplateTail[ul], sizeof(DLGHITEM));
+            memcpy(pDlgItemThis, &dlgClassesTail[ul], sizeof(DLGHITEM));
             pDlgItemThis++;
         }
+
+        cmnLoadDialogStrings(dlgClassesFront, ARRAYITEMCOUNT(dlgClassesFront));
+        cmnLoadDialogStrings(dlgClassesMiddle, ARRAYITEMCOUNT(dlgClassesMiddle));
 
         OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
         CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
@@ -1492,7 +1501,7 @@ VOID ShowClassesDlg(HWND hwndOwner)
                                   hwndOwner,
                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                   fnwpXWorkplaceClasses,
-                                  "XWorkplace Classes",     // @@todo localize
+                                  cmnGetString(ID_XCD_CLASSES_TITLE),
                                   paDlgItems,
                                   cDlgItems,
                                   NULL,
@@ -1672,10 +1681,12 @@ typedef struct _XWPFEATURESDATA
 #ifndef __ALWAYSOBJHOTKEYS__
     BOOL                bObjectHotkeys;
 #endif
+#ifndef __ALWAYSREPLACEREFRESH__
     BOOL                bReplaceRefresh;
+#endif
 } XWPFEATURESDATA, *PXWPFEATURESDATA;
 
-static XWPSETTING G_FeaturesBackup[] =
+static const XWPSETTING G_FeaturesBackup[] =
     {
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
@@ -1689,7 +1700,9 @@ static XWPSETTING G_FeaturesBackup[] =
 #ifndef __ALWAYSREPLACEFILEPAGE__
         sfReplaceFilePage,
 #endif
+#ifndef __NOXSYSTEMSOUNDS__
         sfXSystemSounds,
+#endif
 #ifndef __ALWAYSFIXCLASSTITLES__
         sfFixClassTitles,
 #endif
@@ -1705,7 +1718,9 @@ static XWPSETTING G_FeaturesBackup[] =
 #ifndef __ALWAYSEXTSORT__
         sfExtendedSorting,
 #endif
+#ifndef __NOTURBOFOLDERS__
         sfTurboFolders,
+#endif
 #ifndef __ALWAYSHOOK__
         sfXWPHook,
 #endif
@@ -1741,6 +1756,7 @@ static XWPSETTING G_FeaturesBackup[] =
 #ifndef __NEVERNEWFILEDLG__
         sfNewFileDlg,
 #endif
+        ___LAST_SETTING             // dummy
     };
 
 /*
@@ -1788,7 +1804,9 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 #ifndef __ALWAYSOBJHOTKEYS__
             pFeaturesData->bObjectHotkeys = hifObjectHotkeysEnabled();
 #endif
+#ifndef __ALWAYSREPLACEREFRESH__
             pFeaturesData->bReplaceRefresh = krnReplaceRefreshEnabled();
+#endif
         }
 
         if (!ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
@@ -1920,8 +1938,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
                 cmnQuerySetting(sfReplaceFilePage));
 #endif
+#ifndef __NOXSYSTEMSOUNDS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 cmnQuerySetting(sfXSystemSounds));
+#endif
 #ifndef __ALWAYSFIXCLASSTITLES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FIXCLASSTITLES,
                 cmnQuerySetting(sfFixClassTitles));   // added V0.9.12 (2001-05-22) [umoeller]
@@ -1945,12 +1965,13 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_MONITORCDROMS,
            //      cmnQuerySetting(sMonitorCDRoms));
 
+#ifndef __NOTURBOFOLDERS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
                 // return the current global setting;
                 // cmnQuerySetting would return the initial
                 // WPS startup setting
                 cmnQuerySetting(sfTurboFolders));
-
+#endif
 #if 0
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
                 cmnQuerySetting(sfAniMouse));
@@ -2006,8 +2027,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 cmnQuerySetting(sfReplaceTrueDelete));
 #endif
 
+#ifndef __ALWAYSREPLACEREFRESH__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEREFRESH,
                 krnReplaceRefreshEnabled());
+#endif
 
 #ifndef __NEVERNEWFILEDLG__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_NEWFILEDLG,
@@ -2048,11 +2071,13 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (fXFolder));
 #endif
+#ifndef __NOTURBOFOLDERS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
                 (    fXFolder
                   && fXWPFileSystem
                   && fXWPProgramFile            // V0.9.16 (2001-12-08) [umoeller]
                 ));
+#endif
 
 #ifndef __ALWAYSHOOK__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
@@ -2067,10 +2092,13 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 hifXWPHookReady());
 #endif
 
+#ifndef __NOXSYSTEMSOUNDS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 (   (fXFolder)
                  || (fXFldDesktop)
                 ));
+#endif
+
 #ifndef __NOXSHUTDOWN__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_RESTARTWPS,
                 (fXFldDesktop));
@@ -2195,6 +2223,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 #endif
 
+#ifndef __NOXSYSTEMSOUNDS__
             case ID_XCSI_XSYSTEMSOUNDS:
                 cmnSetSetting(sfXSystemSounds, precc->usCheckState);
                 // check if sounds are to be installed or de-installed:
@@ -2205,6 +2234,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // are unlocked
                     cAskSoundsInstallMsg = precc->usCheckState;
             break;
+#endif
 
 #ifndef __ALWAYSFIXCLASSTITLES__
             case ID_XCSI_FIXCLASSTITLES: // added V0.9.12 (2001-05-22) [umoeller]
@@ -2255,6 +2285,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 #endif
 
+#ifndef __ALWAYSREPLACEREFRESH__
             case ID_XCSI_REPLACEREFRESH:
                 krnEnableReplaceRefresh(precc->usCheckState);
                 if (precc->usCheckState)
@@ -2262,7 +2293,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 else
                     ulNotifyMsg = 207;
             break;
+#endif
 
+#ifndef __NOTURBOFOLDERS__
             case ID_XCSI_TURBOFOLDERS:
                 cmnSetSetting(sfTurboFolders, precc->usCheckState);
                 if (precc->usCheckState)
@@ -2270,6 +2303,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 else
                     ulNotifyMsg = 224;
             break;
+#endif
 
 #ifndef __ALWAYSOBJHOTKEYS__
             case ID_XCSI_GLOBALHOTKEYS:
@@ -2500,7 +2534,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cEnableTrashCan = cmnQuerySetting(sfTrashDelete);
 #endif
 
+#ifndef __ALWAYSREPLACEREFRESH__
             krnEnableReplaceRefresh(0);
+#endif
+
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
         }
@@ -2524,6 +2561,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          148,       // "XWorkplace Setup"
                          ulNotifyMsg,
                          MB_OK);
+#ifndef __NOXSYSTEMSOUNDS__
     else if (cAskSoundsInstallMsg != -1)
     {
         if (cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -2538,6 +2576,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   cAskSoundsInstallMsg);
         }
     }
+#endif
     else if (cEnableTrashCan != -1)
     {
         cmnEnableTrashCan(pcnbp->hwndFrame,
@@ -3560,7 +3599,7 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *                                                                  *
  ********************************************************************/
 
-static XWPSETTING G_ParanoiaBackup[] =
+static const XWPSETTING G_ParanoiaBackup[] =
     {
         sulVarMenuOffset,
         sfNoFreakyMenus,

@@ -139,11 +139,23 @@ static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
  *
  ********************************************************************/
 
-#define PERCENTAGES_COUNT 11
 // PSZ's for percentage spinbutton
-static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
+static PCSZ     G_apcszPercentages[] =
+    {
+        "0.010",
+        "0.025",
+        "0.050",
+        "0.075",
+        "0.100",
+        "0.250",
+        "0.500",
+        "0.750",
+        "1.000",
+        "2.500",
+        "5.000"
+    };
 
-CONTROLDEF
+static CONTROLDEF
     ArcCriteriaGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ARC_CRITERIA_GROUP),
@@ -239,7 +251,7 @@ CONTROLDEF
                             -1,
                             -1);
 
-DLGHITEM dlgArchives[] =
+static const DLGHITEM dlgArchives[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required
@@ -309,19 +321,6 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pcnbp->pUser = malloc(sizeof(ARCHIVINGSETTINGS));
             memcpy(pcnbp->pUser, pArcSettings, sizeof(ARCHIVINGSETTINGS));
 
-            memset(&G_apszPercentages, 0, sizeof(G_apszPercentages));
-            G_apszPercentages[0]  = "0.010";
-            G_apszPercentages[1]  = "0.025";
-            G_apszPercentages[2]  = "0.050";
-            G_apszPercentages[3]  = "0.075";
-            G_apszPercentages[4]  = "0.100";
-            G_apszPercentages[5]  = "0.250";
-            G_apszPercentages[6]  = "0.500";
-            G_apszPercentages[7]  = "0.750";
-            G_apszPercentages[8]  = "1.000";
-            G_apszPercentages[9]  = "2.500";
-            G_apszPercentages[10] = "5.000";
-
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-11-22) [umoeller]
             ntbFormatPage(pcnbp->hwndDlgPage,
@@ -331,8 +330,8 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           SPBM_SETARRAY,
-                          (MPARAM)&G_apszPercentages,
-                          (MPARAM)PERCENTAGES_COUNT);       // array size
+                          (MPARAM)&G_apcszPercentages,
+                          (MPARAM)ARRAYITEMCOUNT(G_apcszPercentages));
     }
 
     if (flFlags & CBI_SET)
@@ -351,12 +350,12 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // INI files percentage:
         // go thru the spin button array and find
         // percentage that matches
-        for (ul = 0; ul < PERCENTAGES_COUNT; ul++)
+        for (ul = 0; ul < ARRAYITEMCOUNT(G_apcszPercentages); ul++)
         {
             float dTemp;
             // CHAR szTempx[100];
             // convert current array item to float
-            sscanf(G_apszPercentages[ul], "%f", &dTemp);
+            sscanf(G_apcszPercentages[ul], "%f", &dTemp);
 
             // same?
             if (fabs(dTemp - pArcSettings->dIniFilesPercent) < 0.00001)
@@ -750,7 +749,7 @@ VOID arcForceNoArchiving(VOID)
     arcSaveSettings();
 }
 
-CONTROLDEF
+static CONTROLDEF
     ArcStatusIcon = CONTROLDEF_ICON(
                             NULLHANDLE,     // replaced below
                             ID_ICONDLG),
@@ -759,7 +758,7 @@ CONTROLDEF
                             ID_XFDI_GENERICDLGTEXT,
                             400);
 
-DLGHITEM dlgArcStatus[] =
+static const DLGHITEM dlgArcStatus[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_CENTER),

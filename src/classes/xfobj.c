@@ -140,7 +140,7 @@ extern WPFolder     *G_pConfigFolder;
  ********************************************************************/
 
 /*
- *@@ xwpNukePhysical:
+ *@@ xwpDestroyStorage:
  *      new XFldObject method to destroy the physical
  *      representation of an object.
  *
@@ -157,12 +157,12 @@ extern WPFolder     *G_pConfigFolder;
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpNukePhysical(XFldObject *somSelf)
+SOM_Scope BOOL  SOMLINK xfobj_xwpDestroyStorage(XFldObject *somSelf)
 {
     BOOL    brc = FALSE;
     xfTD_wpDestroyObject _wpDestroyObject = NULL;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpNukePhysical");
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpDestroyStorage");
 
     if (_wpDestroyObject = (xfTD_wpDestroyObject)wpshResolveFor(
                                              somSelf,
@@ -1206,9 +1206,42 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetupOnce(XFldObject *somSelf,
  *      and then frees the memory that represented that object.
  *      See object.c for a detailed description of an object's lifecycle.
  *
- *      If the folder auto-refresh replacement is enabled, we override
- *      this method and use a complete replacement of this without
- *      calling the parent. See objFree for the implementation.
+ *      If folder auto-refresh has been replaced by XWP, we override
+ *      the entire WPObject::wpFree method without calling the parent.
+ *      This is necessary for a number of reasons:
+ *
+ *      --  wpFree in turn calls the undocumented wpDestroyObject
+ *          method, which has a number of bugs but cannot be overridden
+ *          (because it's not exported in the IDL file).
+ *
+ *          So in order to fix those bugs, wpFree had to be rewritten,
+ *          which now calls the new XFldObject::xwpDestroyStorage method
+ *          (which is our reimplementation of wpDestroyObject).
+ *
+ *      --  wpFree is not very good at cleaning up object data in the
+ *          INI files. This needs to be fixed finally.
+ *
+ *      In other words, when wpFree is now invoked on an object,
+ *      the following happens:
+ *
+ *      1) In this method override, we clean up some object data and
+ *         then call the xwpDestroyStorage method, using SOM name-lookup
+ *         resolution. This allows subclasses (such as XFolder
+ *         and XFldDataFile) to override the method, even though
+ *         SOM doesn't know that XFldObject is actually a parent
+ *         class of those subclasses (since the IDL files do not
+ *         reflect that WPObject has been replaced with XFldObject).
+ *
+ *      2) XFldObject::xwpDestroyStorage is the standard implementation,
+ *         which invokes the standard undocumented wpDestroyObject
+ *         method.
+ *
+ *      In summary, for classes which have not overridden xwpNukeObject,
+ *      the behavior is EXACTLY as with the standard WPObject::wpFree.
+ *
+ *      HOWEVER, this way we can override xwpDestroyStorage in
+ *      XFldDataFile and XFolder to fix the annoying message box
+ *      bugs.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
@@ -1222,8 +1255,61 @@ SOM_Scope BOOL  SOMLINK xfobj_wpFree(XFldObject *somSelf)
 
     if (pKernelGlobals->fAutoRefreshReplaced)
     {
-        brc = objFree(somSelf);
-    }
+        ULONG   ulStyle = _wpQueryStyle(somSelf);
+        PSZ     pszID = _wpQueryObjectID(somSelf);
+        somTD_XFldObject_xwpDestroyStorage pxwpDestroyStorage = NULL;
+        xfTD_wpDeleteWindowPosKeys _wpDeleteWindowPosKeys = NULL;
+        xfTD_wpMakeDormant _wpMakeDormant = NULL;
+
+        // if the object has an object ID assigned, remove this...
+        // this should clean the INI entry
+        if (pszID && strlen(pszID))
+            _wpSetObjectID(somSelf, NULL);
+
+        // if the object is a template, unset that bit...
+        // this should clean the INI entry as well
+        if (ulStyle & OBJSTYLE_TEMPLATE)
+            _wpModifyStyle(somSelf, OBJSTYLE_TEMPLATE, 0);
+
+        // OK, here comes the fun stuff.
+        // The WPS normally calls the "wpDestroyObject" method,
+        // which is responsible for killing the physical representation
+        // of the object. Unfortunately, we cannot override that method
+        // because IBM wasn't kind enough to make it public. Our way
+        // around this (without breaking compatibility) is to introduce
+        // a new method in XFldObject, which calls wpDestroyObject per
+        // default.
+
+        // We resolve the method by name because it is overridden
+        // in some XWorkplace classes. If it is not overridden,
+        // XFldObject::xwpDestroyStorage calls wpDestroyObject.
+        if (pxwpDestroyStorage = (somTD_XFldObject_xwpDestroyStorage)somResolveByName(
+                                  somSelf,
+                                  "xwpDestroyStorage"))
+            pxwpDestroyStorage(somSelf);
+
+        // the WPS then calls wpSaveImmediate just in case the object
+        // has called wpSaveDeferred. I'm not sure this is a good idea...
+        // this will add another entry to the INI file. This should be
+        // moved up.
+        _wpSaveImmediate(somSelf);
+
+        // then there's another undocumented method call... i'm unsure
+        // what this does, but what the heck. We need to resolve this
+        // manually.
+        if (_wpDeleteWindowPosKeys = (xfTD_wpDeleteWindowPosKeys)wpshResolveFor(
+                                                somSelf,
+                                                NULL,
+                                                "wpDeleteWindowPosKeys"))
+            _wpDeleteWindowPosKeys(somSelf);
+
+        // finally, this calls wpMakeDormant, which destroys the SOM object
+        if (_wpMakeDormant = (xfTD_wpMakeDormant)wpshResolveFor(
+                                                somSelf,
+                                                NULL,
+                                                "wpMakeDormant"))
+            brc = _wpMakeDormant(somSelf, 0);
+    } // if (pKernelGlobals->fAutoRefreshReplaced)
     else
         brc = XFldObject_parent_WPObject_wpFree(somSelf);
 
@@ -2489,5 +2575,80 @@ SOM_Scope BOOL  SOMLINK xfobjM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
     pSizl->cy = 150;       // size of "Object" page
 
     return (TRUE);
+}
+
+
+/*
+ *@@ wpclsSetIconData:
+ *      this WPObject class method sets the icon information
+ *      for the given class object.
+ *
+ *      Doesn't make much sense? Never made sense to me either.
+ *      What I found out is that when the WPS calls
+ *      M_WPObject::wpclsQueryIcon to get the default icon of
+ *      an object's class (because an object is not using a
+ *      custom icon), the icon only gets loaded once. On the
+ *      first call _per class_, the WPS then calls
+ *      wpclsQueryIconData (which is the method to be overridden
+ *      to change the class default icon) and then this method,
+ *      wpclsSetIconData, to have the class icon set. For that,
+ *      wpclsSetIconData calls wpclsSetIcon, which is then
+ *      returned in subsequent calls to wpclsQueryIcon.
+ *
+ *      The problem with this method (wpclsSetIconData) is
+ *      that it only appears to support the ICON_RESOURCE
+ *      format in ICONINFO. We'd love to be able to support
+ *      ICON_FILE too because that would come in handy with
+ *      the way cmnGetStandardIcon works, so we have to rewrite
+ *      this method too.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobjM_wpclsSetIconData(M_XFldObject *somSelf,
+                                                PICONINFO pIconInfo)
+{
+    BOOL brc = FALSE;
+    BOOL fCallDefault = TRUE;
+
+    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
+    M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsSetIconData");
+
+#ifndef __NOICONREPLACEMENTS__
+    // if icon replacements are enabled, we support ICON_FILE
+    // too; for all other cases, call the parent method
+    if (cmnQuerySetting(sfIconReplacements))
+    {
+        _Pmpf((__FUNCTION__ ", class %s, format %s",
+                _somGetName(somSelf),
+                (pIconInfo)
+                    ? ((pIconInfo->fFormat == ICON_FILE) ? "FILE"
+                        : (pIconInfo->fFormat == ICON_RESOURCE) ? "RESOURCE"
+                        : "UNKNOWN"  )
+                    : "NULL"));
+        if ((pIconInfo) && (pIconInfo->fFormat == ICON_FILE))
+        {
+            HPOINTER hptr;
+
+            fCallDefault = FALSE;
+
+            _Pmpf(("        pIconInfo->pszFileName %s", pIconInfo->pszFileName));
+
+            if (!icoLoadICOFile(pIconInfo->pszFileName,
+                                &hptr,
+                                NULL,
+                                NULL))
+            {
+                brc = _wpclsSetIcon(somSelf, hptr);
+            }
+        }
+    }
+#endif
+
+    if (fCallDefault)
+        brc = M_XFldObject_parent_M_WPObject_wpclsSetIconData(somSelf,
+                                                              pIconInfo);
+
+    return (brc);
 }
 

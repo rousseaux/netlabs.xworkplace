@@ -29,8 +29,8 @@
  *
  *      -- The new selections are intercepted in XFldDataFile::wpOpen.
  *
- *@@somclass XFldDataFile xfdf_
- *@@somclass M_XFldDataFile xfdfM_
+ *@@somclass XFldDataFile xdf_
+ *@@somclass M_XFldDataFile xdfM_
  */
 
 /*
@@ -52,8 +52,8 @@
  *      SOM Emitter emitctm: 2.41
  */
 
-#ifndef SOM_Module_xfdf_Source
-#define SOM_Module_xfdf_Source
+#ifndef SOM_Module_xdf_Source
+#define SOM_Module_xdf_Source
 #endif
 #define XFldDataFile_Class_Source
 #define M_XFldDataFile_Class_Source
@@ -122,13 +122,13 @@
  ********************************************************************/
 
 /*
- *@@ xwpNukePhysical:
- *      override of XFldObject::xwpNukePhysical, which must
+ *@@ xwpDestroyStorage:
+ *      override of XFldObject::xwpDestroyStorage, which must
  *      remove the physical representation of an object
  *      when it gets physically deleted.
  *
- *      xwpNukePhysical gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      xwpDestroyStorage gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
  *      calls WPObject::wpDestroyObject, which we must override
  *      for this class in order to suppress the stupid error
  *      message boxes if the file no longer exists.
@@ -143,12 +143,12 @@
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfdf_xwpNukePhysical(XFldDataFile *somSelf)
+SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
 {
     BOOL    brc = FALSE;
     CHAR    szFilename[CCHMAXPATH];
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_xwpNukePhysical");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpDestroyStorage");
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
@@ -189,15 +189,16 @@ SOM_Scope BOOL  SOMLINK xfdf_xwpNukePhysical(XFldDataFile *somSelf)
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
-                                            ULONG ulReserved)
+SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
+                                           ULONG ulReserved)
 {
     ULONG brc;
     somTD_WPObject_wpRestoreState pwpRestoreState = NULL;
 
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpRestoreState");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpRestoreState");
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
@@ -234,6 +235,7 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
     }
 
     if (!pwpRestoreState)
+#endif
         brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
                                                             ulReserved);
 
@@ -281,18 +283,18 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
-                                           HWND hwndOwner,
-                                           HWND hwndClient,
-                                           POINTL* ptlPopupPt,
-                                           ULONG ulMenuType,
-                                           ULONG ulReserved)
+SOM_Scope HWND  SOMLINK xdf_wpDisplayMenu(XFldDataFile *somSelf,
+                                          HWND hwndOwner,
+                                          HWND hwndClient,
+                                          POINTL* ptlPopupPt,
+                                          ULONG ulMenuType,
+                                          ULONG ulReserved)
 {
     HWND hwndMenu = 0;
 
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpDisplayMenu");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpDisplayMenu");
 
     // added exception handling V0.9.16 (2001-01-23) [umoeller]
     TRY_LOUD(excpt1)
@@ -349,15 +351,15 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
  *      submenu for the extended associations mechanism.
  */
 
-SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
-                                                ULONG ulFlags,
-                                                HWND hwndCnr,
-                                                BOOL fMultiSelect)
+SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
+                                               ULONG ulFlags,
+                                               HWND hwndCnr,
+                                               BOOL fMultiSelect)
 {
     ULONG ulMenuFilter = 0;
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpFilterPopupMenu");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpFilterPopupMenu");
 
     ulMenuFilter = XFldDataFile_parent_WPDataFile_wpFilterPopupMenu(somSelf,
                                                                     ulFlags,
@@ -400,13 +402,13 @@ SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
-                               HWND hwndMenu,
-                               HWND hwndCnr,
-                               ULONG iPosition,
-                               ULONG ulMenuType,
-                               ULONG ulView,
-                               ULONG ulReserved)
+BOOL _System xdf_wpModifyMenu(XFldDataFile *somSelf,
+                              HWND hwndMenu,
+                              HWND hwndCnr,
+                              ULONG iPosition,
+                              ULONG ulMenuType,
+                              ULONG ulView,
+                              ULONG ulReserved)
 {
     BOOL    brc = FALSE;
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -415,7 +417,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
     somMethodTabs pParentMTab;
     SOMClass      *pParentClass;
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyMenu");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpModifyMenu");
 
     fExtAssocs = cmnQuerySetting(sfExtAssocs);
 
@@ -525,15 +527,15 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
  *      window procedure by calling the functions in fdrmenus.c.
  */
 
-SOM_Scope BOOL  SOMLINK xfdf_wpModifyPopupMenu(XFldDataFile *somSelf,
-                                               HWND hwndMenu,
-                                               HWND hwndCnr,
-                                               ULONG iPosition)
+SOM_Scope BOOL  SOMLINK xdf_wpModifyPopupMenu(XFldDataFile *somSelf,
+                                              HWND hwndMenu,
+                                              HWND hwndCnr,
+                                              ULONG iPosition)
 {
     BOOL brc = TRUE;
 
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyPopupMenu");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpModifyPopupMenu");
 
     brc = XFldDataFile_parent_WPDataFile_wpModifyPopupMenu(somSelf,
                                                            hwndMenu,
@@ -560,11 +562,11 @@ SOM_Scope BOOL  SOMLINK xfdf_wpModifyPopupMenu(XFldDataFile *somSelf,
  *      display help for a context menu item.
  */
 
-SOM_Scope BOOL  SOMLINK xfdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
-                                                    ULONG MenuId)
+SOM_Scope BOOL  SOMLINK xdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
+                                                   ULONG MenuId)
 {
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpMenuItemHelpSelected");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpMenuItemHelpSelected");
 
     // call the common help processor in fdrmenus.c;
     if (mnuMenuItemHelpSelected(somSelf, MenuId))
@@ -624,19 +626,19 @@ SOM_Scope BOOL  SOMLINK xfdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
-                                    HWND hwndCnr,
-                                    ULONG ulView,
-                                    ULONG param)
+SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
+                                   HWND hwndCnr,
+                                   ULONG ulView,
+                                   ULONG param)
 {
     HWND        hwnd = NULLHANDLE;
     BOOL        fCallParent = TRUE;
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpOpen");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
     #ifdef DEBUG_ASSOCS
-    _Pmpf(("xfdf_wpOpen, ulView: 0x%lX", ulView));
+    _Pmpf(("xdf_wpOpen, ulView: 0x%lX", ulView));
     #endif
 
 #ifndef __NEVEREXTASSOCS__
@@ -698,7 +700,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
                                                      ulView,
                                                      param);
 
-    // _Pmpf(("End of xfdf_wpOpen, returning hwnd 0x%lX", hwnd));
+    // _Pmpf(("End of xdf_wpOpen, returning hwnd 0x%lX", hwnd));
 
     return (hwnd);
 
@@ -717,12 +719,12 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
  *@@added V0.9.0
  */
 
-SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
-                                             HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xdf_wpAddFile1Page(XFldDataFile *somSelf,
+                                            HWND hwndNotebook)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile1Page");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFile1Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
@@ -751,12 +753,12 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
  *@@added V0.9.0
  */
 
-SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
-                                             HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xdf_wpAddFile2Page(XFldDataFile *somSelf,
+                                            HWND hwndNotebook)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile2Page");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFile2Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
@@ -782,12 +784,12 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
  *@@added V0.9.0
  */
 
-SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
-                                             HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xdf_wpAddFile3Page(XFldDataFile *somSelf,
+                                            HWND hwndNotebook)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile3Page");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFile3Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
@@ -812,12 +814,12 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
+                                               HWND hwndNotebook)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFileTypePage");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFileTypePage");
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -845,6 +847,41 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
 #endif
         return (XFldDataFile_parent_WPDataFile_wpAddFileTypePage(somSelf,
                                                                  hwndNotebook));
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We replace the default help panel for data files
+ *      because, frankly, it sucks.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xdf_wpQueryDefaultHelp(XFldDataFile *somSelf,
+                                               PULONG pHelpPanelId,
+                                               PSZ HelpLibrary)
+{
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryDefaultHelp");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        strcpy(HelpLibrary, cmnQueryHelpLibrary());
+        *pHelpPanelId = ID_XSH_DATAFILE_MAIN;
+        return (TRUE);
+    }
+#endif
+
+    return (XFldDataFile_parent_WPDataFile_wpQueryDefaultHelp(somSelf,
+                                                              pHelpPanelId,
+                                                              HelpLibrary));
 }
 
 /*
@@ -894,18 +931,18 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
-                                                           ULONG ulView,
-                                                           PULONG pulHowMatched,
-                                                           PSZ pszMatchString,
-                                                           ULONG cbMatchString,
-                                                           PSZ pszDefaultType)
+SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
+                                                          ULONG ulView,
+                                                          PULONG pulHowMatched,
+                                                          PSZ pszMatchString,
+                                                          ULONG cbMatchString,
+                                                          PSZ pszDefaultType)
 {
     WPObject* pobj = 0;
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    // XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryAssociatedProgram");
+    // XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedProgram");
 
     #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
         _Pmpf(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
@@ -986,12 +1023,13 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
+SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 {
     HPOINTER hptrReturn = NULLHANDLE;
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryIcon");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIcon");
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
     {
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
@@ -1035,6 +1073,7 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
     }
 
     if (!hptrReturn)
+#endif
         hptrReturn = XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
 
     return (hptrReturn);
@@ -1053,10 +1092,10 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope void  SOMLINK xfdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
+SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
 {
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpSetAssociatedFileIcon");
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetAssociatedFileIcon");
 
     // _Pmpf(("Entering wpSetAssociatedFileIcon for %s", _wpQueryTitle(somSelf)));
     XFldDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);
@@ -1085,10 +1124,10 @@ SOM_Scope void  SOMLINK xfdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added method tables override
  */
 
-SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
+SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)
 {
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsInitData");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_wpclsInitData");
 
     M_XFldDataFile_parent_M_WPDataFile_wpclsInitData(somSelf);
 
@@ -1110,7 +1149,7 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
             // on Warp 4, override wpModifyMenu (Warp 4-specific method)
             wpshOverrideStaticMethod(_XFldDataFile,
                                      "wpModifyMenu",
-                                     (somMethodPtr)xfdf_wpModifyMenu);
+                                     (somMethodPtr)xdf_wpModifyMenu);
         }
     }
 #endif
@@ -1131,11 +1170,11 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
  *      folder.
  */
 
-SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf,
-                                                          WPObject* Folder)
+SOM_Scope BOOL  SOMLINK xdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf,
+                                                         WPObject* Folder)
 {
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsCreateDefaultTemplates");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_wpclsCreateDefaultTemplates");
 
     // we only override this class method if it is
     // being called for the _XFldDataFile class object itself.
@@ -1166,10 +1205,10 @@ SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSel
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope PSZ  SOMLINK xfdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
+SOM_Scope PSZ  SOMLINK xdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
 {
     /* M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf); */
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryTitle");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_wpclsQueryTitle");
 
 #ifndef __ALWAYSFIXCLASSTITLES__
     if (!cmnQuerySetting(sfFixClassTitles))
@@ -1194,30 +1233,36 @@ SOM_Scope PSZ  SOMLINK xfdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
  *      This is loaded from /ICONS/ICONS.DLL.
  */
 
-SOM_Scope ULONG  SOMLINK xfdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
-                                                  PICONINFO pIconInfo)
+SOM_Scope ULONG  SOMLINK xdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
+                                                 PICONINFO pIconInfo)
 {
-    ULONG       ulrc;
-    HMODULE     hmodIconsDLL = NULLHANDLE;
+    ULONG       ulrc = 0;
 
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryIconData");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_wpclsQueryIconData");
 
 #ifndef __NOICONREPLACEMENTS__
     if (cmnQuerySetting(sfIconReplacements))
     {
-        hmodIconsDLL = cmnQueryIconsDLL();
+        /* hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
         if ((pIconInfo) && (hmodIconsDLL))
         {
             pIconInfo->fFormat = ICON_RESOURCE;
             pIconInfo->hmod = hmodIconsDLL;
             pIconInfo->resid = 109;
-        }
-        ulrc = sizeof(ICONINFO);
+        }*/
+
+        // now using cmnGetStandardIcon
+        // V0.9.16 (2002-01-13) [umoeller]
+        if (pIconInfo)
+            if (!cmnGetStandardIcon(STDICON_DATAFILE,
+                                    NULL,            // no hpointer
+                                    pIconInfo))      // fill icon info
+                ulrc = sizeof(ICONINFO);
     }
 
-    if (hmodIconsDLL == NULLHANDLE)
+    if (!ulrc)
 #endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDataFile_parent_M_WPDataFile_wpclsQueryIconData(somSelf,

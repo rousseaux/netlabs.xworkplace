@@ -108,9 +108,8 @@
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
 
 // SOM headers which don't crash with prec. header files
-#pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include "xtrash.ih"                    // XWPTrashCan; needed for empty trash
-#include <wpdesk.h>                     // WPDesktop
+#include "xfdesk.ih"
 
 // XWorkplace implementation headers
 #include "bldlevel.h"                   // XWorkplace build level definitions
@@ -122,6 +121,7 @@
 #include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
+#include "filesys\icons.h"              // icons handling
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -130,55 +130,63 @@
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
 
+#pragma hdrstop
+
 /* ******************************************************************
  *
  *   Global variables
  *
  ********************************************************************/
 
-static CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
-static CHAR            G_szMessageFile[CCHMAXPATH] = "";
-
 // main module (XFLDR.DLL)
-static char            G_szDLLFile[CCHMAXPATH];
-static HMODULE         G_hmodDLL = NULLHANDLE;
+static char             G_szDLLFile[CCHMAXPATH];
+static HMODULE          G_hmodDLL = NULLHANDLE;
 
 // res module (XWPRES.DLL)
-static HMODULE         G_hmodRes = NULLHANDLE;
+static HMODULE          G_hmodRes = NULLHANDLE;
 
 // NLS
-static HMODULE         G_hmodNLS = NULLHANDLE;
+static HMODULE          G_hmodNLS = NULLHANDLE;
+
+// paths
+static CHAR             G_szXWPBasePath[CCHMAXPATH] = "";        // V0.9.16 (2002-01-13) [umoeller]
+
+static CHAR             G_szXWPThemeDir[CCHMAXPATH] = "";
+static CHAR             G_szHelpLibrary[CCHMAXPATH] = "";
+static CHAR             G_szMessageFile[CCHMAXPATH] = "";
 
 // static GLOBALSETTINGS  G_GlobalSettings = {0};
             // removed V0.9.16 (2002-01-05) [umoeller]
 // array of ULONGs with values for cmnGetSetting; this
 // is filled on startup
-static ULONG           G_aulSettings[___LAST_SETTING];
-extern BOOL            G_fTurboSettingsEnabled = FALSE;
+static ULONG            G_aulSettings[___LAST_SETTING];
+#ifndef __NOTURBOFOLDERS__
+extern BOOL             G_fTurboSettingsEnabled = FALSE;
             // set by cmnEnableTurboFolders() V0.9.16 (2002-01-05) [umoeller]
+#endif
 
 #ifndef __NOICONREPLACEMENTS__
-static HMODULE         G_hmodIconsDLL = NULLHANDLE;
+static HMODULE          G_hmodIconsDLL = NULLHANDLE;
 #endif
-static CHAR            G_szLanguageCode[20] = "";
+static CHAR             G_szLanguageCode[20] = "";
 
-static HPOINTER        G_hptrDlgIcon = NULLHANDLE;
+static HPOINTER         G_hptrDlgIcon = NULLHANDLE;
             // XWP icon for message boxes and stuff
             // V0.9.16 (2001-11-10) [umoeller]
 
-static COUNTRYSETTINGS G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
-static BOOL            G_fCountrySettingsLoaded = FALSE;
+static COUNTRYSETTINGS  G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
+static BOOL             G_fCountrySettingsLoaded = FALSE;
 
-static ULONG           G_ulCurHelpPanel = 0;      // holds help panel for dialog
+static ULONG            G_ulCurHelpPanel = 0;      // holds help panel for dialog
 
-static CHAR            G_szStatusBarFont[100] = "";
-static CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS] = "",
-                       G_szSBTextMultiSel[CCHMAXMNEMONICS] = "";
-static ULONG           G_ulStatusBarHeight = 0;
+static CHAR             G_szStatusBarFont[100] = "";
+static CHAR             G_szSBTextNoneSel[CCHMAXMNEMONICS] = "",
+                        G_szSBTextMultiSel[CCHMAXMNEMONICS] = "";
+static ULONG            G_ulStatusBarHeight = 0;
 
-static CHAR            G_szRunDirectory[CCHMAXPATH]; // V0.9.14
+static CHAR             G_szRunDirectory[CCHMAXPATH]; // V0.9.14
 
-static PTMFMSGFILE     G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [umoeller]
+static PTMFMSGFILE      G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [umoeller]
 
 // Declare C runtime prototypes, because there are no headers
 // for these:
@@ -192,22 +200,29 @@ int _CRT_init(void);
 // linked, as is the case with XFolder.
 void _CRT_term(void);
 
+VOID UnloadAllStrings(VOID);
+
 /* ******************************************************************
  *
- *   Main module handling (XFLDR.DLL)
+ *   Modules and paths
  *
  ********************************************************************/
 
 /*
  *@@ _DLL_InitTerm:
- *      this function gets called automatically by the OS/2
- *      module manager during DosLoadModule processing, on
+ *      this special function gets called automatically by the
+ *      OS/2 module manager during DosLoadModule processing, on
  *      the thread which invoked DosLoadModule.
  *
- *      Since this is a SOM DLL for the WPS, this gets called
- *      right when the WPS is starting and when the WPS process
- *      ends, e.g. due to a Desktop restart or trap. Since the WPS
- *      is the only process loading this DLL, we need not bother
+ *      Since this is a SOM DLL for the WPS, this probably gets
+ *      called when the first XWorkplace WPS class is accessed.
+ *      Since that is XFldObject, this gets called right when the
+ *      WPS is starting. I suspect this gets called somewhere in
+ *      somFindClass(), but who knows.
+ *
+ *      In addition, this gets called when the WPS process ends,
+ *      e.g. due to a Desktop restart or trap. Since the WPS is
+ *      the only process loading this DLL, we need not bother
  *      with details.
  *
  *      Defining this function is my preferred way of getting the
@@ -224,7 +239,7 @@ void _CRT_term(void);
  *      Since OS/2 calls this function directly, it must have
  *      _System linkage.
  *
- *      Note: You must then link using the /NOE option, because
+ *      Note: We must then link using the /NOE option, because
  *      the VAC++ runtimes also contain a _DLL_Initterm, and the
  *      linker gets in trouble otherwise. The XWorkplace makefile
  *      takes care of this.
@@ -284,11 +299,13 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
  *      (XFLDR.DLL). There are two more query-module
  *      functions:
  *
- *      -- To get the NLS module handle (for dialogs etc.),
- *         use cmnQueryNLSModuleHandle.
+ *      -- To get the NLS module handle (for dialogs,
+ *         strings and other NLS resources), use
+ *         cmnQueryNLSModuleHandle.
  *
- *      -- To get the main resource module handle (for icons
- *         etc.), use cmnQueryMainResModuleHandle.
+ *      -- To get the main resource module handle (for
+ *         resources which are the same with all languages),
+ *         use cmnQueryMainResModuleHandle.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from module.c
  *@@changed V0.9.7 (2000-12-13) [umoeller]: renamed from cmnQueryMainModuleHandle
@@ -300,7 +317,7 @@ HMODULE cmnQueryMainCodeModuleHandle(VOID)
 }
 
 /*
- *@@ cmnQueryMainModuleFilename:
+ *@@ cmnQueryMainCodeModuleFilename:
  *      this may be used to retrieve the fully
  *      qualified file name of the DLL
  *      which was stored by _DLL_InitTerm.
@@ -308,7 +325,7 @@ HMODULE cmnQueryMainCodeModuleHandle(VOID)
  *@@changed V0.9.0 [umoeller]: moved this func here from module.c
  */
 
-const char* cmnQueryMainModuleFilename(VOID)
+PCSZ cmnQueryMainCodeModuleFilename(VOID)
 {
     return (G_szDLLFile);
 }
@@ -332,8 +349,6 @@ const char* cmnQueryMainModuleFilename(VOID)
 HMODULE cmnQueryMainResModuleHandle(VOID)
 {
     BOOL fLocked = FALSE;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -366,9 +381,607 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
     if (fLocked)
         krnUnlock();
 
+    return (G_hmodRes);
+}
+
+/*
+ *@@ cmnQueryXWPBasePath:
+ *      this routine returns the path of where XFolder was installed,
+ *      i.e. the parent directory of where the xfldr.dll file
+ *      resides, without a trailing backslash (e.g. "C:\XFolder").
+ *
+ *      The buffer to copy this to is assumed to be CCHMAXPATH in size.
+ *
+ *      As opposed to versions before V0.81, OS2.INI is no longer
+ *      needed for this to work. The path is retrieved from the
+ *      DLL directly by evaluating what was passed to _DLL_InitTerm.
+ *
+ *@@changed V0.9.7 (2000-12-02) [umoeller]: renamed from cmnQueryXFolderBasePath
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: optimized
+ */
+
+BOOL cmnQueryXWPBasePath(PSZ pszPath)
+{
+    BOOL    brc = FALSE;
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (!G_szXWPBasePath[0])
+            {
+                // first call: V0.9.16 (2002-01-13) [umoeller]
+                PCSZ pszDLL;
+                if (pszDLL = cmnQueryMainCodeModuleFilename())
+                {
+                    // copy until last backslash minus four characters
+                    // (leave out "\bin\xfldr.dll")
+                    PSZ     pszLastSlash = strrchr(pszDLL, '\\');
+                    ULONG   cbBase = (pszLastSlash - pszDLL) - 4;
+                    memcpy(G_szXWPBasePath,
+                           pszDLL,
+                           cbBase);
+                    pszPath[cbBase] = '\0';
+                    brc = TRUE;
+                }
+            }
+            else
+                brc = TRUE;
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    if (brc)
+        strcpy(pszPath, G_szXWPBasePath);
+
+    return (brc);
+}
+
+/*
+ *@@ cmnQueryLanguageCode:
+ *      returns PSZ to three-digit language code (e.g. "001").
+ *      This points to a global variable, so do NOT change.
+ *
+ *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ */
+
+PCSZ cmnQueryLanguageCode(VOID)
+{
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (G_szLanguageCode[0] == '\0')
+                PrfQueryProfileString(HINI_USERPROFILE,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_LANGUAGECODE,
+                                      (PSZ)DEFAULT_LANGUAGECODE,
+                                      (PVOID)G_szLanguageCode,
+                                      sizeof(G_szLanguageCode));
+
+            G_szLanguageCode[3] = '\0';
+            #ifdef DEBUG_LANGCODES
+                _Pmpf(( "cmnQueryLanguageCode: %s", szLanguageCode ));
+            #endif
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return (G_szLanguageCode);
+}
+
+/*
+ *@@ cmnSetLanguageCode:
+ *      changes XFolder's language to three-digit language code in
+ *      pszLanguage (e.g. "001"). This does not reload the NLS DLL,
+ *      but only change the setting.
+ *
+ *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ */
+
+BOOL cmnSetLanguageCode(PSZ pszLanguage)
+{
+    BOOL brc = FALSE;
+
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
+        {
+            strcpy(G_szLanguageCode, pszLanguage);
+            G_szLanguageCode[3] = 0;
+
+            brc = PrfWriteProfileString(HINI_USERPROFILE,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_LANGUAGECODE,
+                                        G_szLanguageCode);
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return (brc);
+}
+
+/*
+ *@@ cmnQueryHelpLibrary:
+ *      returns PSZ to full help library path in XFolder directory,
+ *      depending on where XFolder was installed and on the current
+ *      language (e.g. "C:\XFolder\help\xfldr001.hlp").
+ *
+ *      This PSZ points to a global variable, so you better not
+ *      change it.
+ *
+ *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ */
+
+PCSZ cmnQueryHelpLibrary(VOID)
+{
+    PCSZ rc = 0;
+
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
+        {
+            if (cmnQueryXWPBasePath(G_szHelpLibrary))
+            {
+                // path found: append helpfile
+                sprintf(G_szHelpLibrary + strlen(G_szHelpLibrary),
+                        "\\help\\xfldr%s.hlp",
+                        cmnQueryLanguageCode());
+                #ifdef DEBUG_LANGCODES
+                    _Pmpf(( "cmnQueryHelpLibrary: %s", szHelpLibrary ));
+                #endif
+                rc = G_szHelpLibrary;
+            }
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return (rc);
+}
+
+/*
+ *@@ cmnHelpNotFound:
+ *      displays an error msg that the given help panel
+ *      could not be found.
+ *
+ *@@added V0.9.16 (2001-10-15) [umoeller]
+ */
+
+VOID cmnHelpNotFound(ULONG ulPanelID)
+{
+    CHAR sz[100];
+    PSZ psz = (PSZ)cmnQueryHelpLibrary();
+    PSZ apsz[] =
+        {  sz,
+           psz };
+    sprintf(sz, "%d", ulPanelID);
+
+    cmnMessageBoxMsgExt(NULLHANDLE,
+                        104,            // title
+                        apsz,
+                        2,
+                        134,
+                        MB_OK);
+}
+
+/*
+ *@@ cmnDisplayHelp:
+ *      displays an XWorkplace help panel,
+ *      using wpDisplayHelp.
+ *      If somSelf == NULL, we'll query the
+ *      active desktop.
+ */
+
+BOOL cmnDisplayHelp(WPObject *somSelf,
+                    ULONG ulPanelID)
+{
+    BOOL brc = FALSE;
+    if (somSelf == NULL)
+        somSelf = cmnQueryActiveDesktop();
+
+    if (somSelf)
+    {
+        if (!(brc = _wpDisplayHelp(somSelf,
+                                   ulPanelID,
+                                   (PSZ)cmnQueryHelpLibrary())))
+            // complain
+            cmnHelpNotFound(ulPanelID);
+
+    }
+    return (brc);
+}
+
+/*
+ *@@ cmnQueryMessageFile:
+ *      returns PSZ to full message file path in XFolder directory,
+ *      depending on where XFolder was installed and on the current
+ *      language (e.g. "C:\XFolder\help\xfldr001.tmf").
+ *
+ *@@changed V0.9.0 [umoeller]: changed, this now returns the TMF file (tmsgfile.c).
+ *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ */
+
+PCSZ cmnQueryMessageFile(VOID)
+{
+    PCSZ rc = 0;
+
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (cmnQueryXWPBasePath(G_szMessageFile))
+            {
+                // path found: append message file
+                sprintf(G_szMessageFile + strlen(G_szMessageFile),
+                        "\\help\\xfldr%s.tmf",
+                        cmnQueryLanguageCode());
+                #ifdef DEBUG_LANGCODES
+                    _Pmpf(( "cmnQueryMessageFile: %s", szMessageFile));
+                #endif
+                rc = G_szMessageFile;
+            }
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return (rc);
+}
+
+#ifndef __NOICONREPLACEMENTS__
+
+/*
+ * cmnQueryIconsDLL:
+ *      this returns the HMODULE of XFolder ICONS.DLL
+ *      (new with V0.84).
+ *
+ *      If this is queried for the first time, the DLL
+ *      is loaded from the /BIN directory.
+ *
+ *      In this case, this routine also checks if
+ *      ICONS.DLL exists in the /ICONS directory. If
+ *      so, it is copied to /BIN before loading the
+ *      DLL. This allows for replacing the DLL using
+ *      the REXX script in /ICONS.
+ *
+ *changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *removed V0.9.16 (2002-01-13) [umoeller]
+ */
+
+/* HMODULE cmnQueryIconsDLL(VOID)
+{
+    BOOL fLocked = FALSE;
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
+        {
+            // first query?
+            if (G_hmodIconsDLL == NULLHANDLE)
+            {
+                CHAR    szIconsDLL[CCHMAXPATH],
+                        szNewIconsDLL[CCHMAXPATH];
+                cmnQueryXWPBasePath(szIconsDLL);
+                strcpy(szNewIconsDLL, szIconsDLL);
+
+                sprintf(szIconsDLL+strlen(szIconsDLL),
+                        "\\bin\\icons.dll");
+                sprintf(szNewIconsDLL+strlen(szNewIconsDLL),
+                        "\\icons\\icons.dll");
+
+                #ifdef DEBUG_LANGCODES
+                    _Pmpf(("cmnQueryIconsDLL: checking %s", szNewIconsDLL));
+                #endif
+                // first check for /ICONS/ICONS.DLL
+                if (access(szNewIconsDLL, 0) == 0)
+                {
+                    #ifdef DEBUG_LANGCODES
+                        _Pmpf(("    found, copying to %s", szIconsDLL));
+                    #endif
+                    // exists: move to /BIN
+                    // and use that one
+                    DosDelete(szIconsDLL);
+                    DosMove(szNewIconsDLL,      // old
+                            szIconsDLL);        // new
+                    DosDelete(szNewIconsDLL);
+                }
+
+                #ifdef DEBUG_LANGCODES
+                    _Pmpf(("cmnQueryIconsDLL: loading %s", szIconsDLL));
+                #endif
+                // now load /BIN/ICONS.DLL
+                if (DosLoadModule(NULL,
+                                  0,
+                                  szIconsDLL,
+                                  &G_hmodIconsDLL)
+                        != NO_ERROR)
+                    G_hmodIconsDLL = NULLHANDLE;
+            }
+
+            #ifdef DEBUG_LANGCODES
+                _Pmpf(("cmnQueryIconsDLL: returning %lX", hmodIconsDLL));
+            #endif
+
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
     // DosExitMustComplete(&ulNesting);
 
-    return (G_hmodRes);
+    return (G_hmodIconsDLL);
+} */
+
+#endif
+
+#ifndef __NOBOOTLOGO__
+
+/*
+ *@@ cmnQueryBootLogoFile:
+ *      this returns the boot logo file as stored
+ *      in OS2.INI. If it is not stored there,
+ *      we return the default xfolder.bmp in
+ *      the XFolder installation directories.
+ *
+ *      The return value of this function must
+ *      be free()'d after use.
+ *
+ *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ */
+
+PSZ cmnQueryBootLogoFile(VOID)
+{
+    PSZ pszReturn;
+
+    if (!(pszReturn = prfhQueryProfileData(HINI_USER,
+                                           INIAPP_XWORKPLACE,
+                                           INIKEY_BOOTLOGOFILE,
+                                           NULL)))
+    {
+        // INI data not found: return default file
+        CHAR szBootLogoFile[CCHMAXPATH];
+        cmnQueryXWPBasePath(szBootLogoFile);
+        strcat(szBootLogoFile,
+                "\\bootlogo\\xfolder.bmp");
+        pszReturn = strdup(szBootLogoFile);
+    }
+
+    return (pszReturn);
+}
+
+#endif
+
+/*
+ *@@ cmnQueryNLSModuleHandle:
+ *      returns the module handle of the language-dependent XFolder
+ *      National Language Support DLL (XFLDRxxx.DLL).
+ *
+ *      This is called in two situations:
+ *
+ *          1) with (fEnforceReload == FALSE) everytime some part
+ *             of XFolder needs the NLS resources (e.g. for dialogs);
+ *             this only loads the NLS DLL on the very first call
+ *             then, whose module handle is cached for subsequent calls.
+ *
+ *          2) with (fEnforceReload == TRUE) only when the user changes
+ *             XFolder's language in the "Workplace Shell" object.
+ *
+ *      If the DLL is (re)loaded, this function also initializes
+ *      all language-dependent XWorkplace components.
+ *      This function also checks for whether the NLS DLL has a
+ *      decent version level to support this XFolder version.
+ *
+ *@@changed V0.9.0 [umoeller]: added various NLS strings
+ *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *@@changed V0.9.7 (2000-12-09) [umoeller]: restructured to fix mutex hangs with load errors
+ *@@changed V0.9.9 (2001-03-07) [umoeller]: now loading strings from array
+ */
+
+HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
+{
+    HMODULE hmodReturn = NULLHANDLE,
+            hmodLoaded = NULLHANDLE;
+
+    // load resource DLL if it's not loaded yet or a reload is enforced
+    if (    (G_hmodNLS == NULLHANDLE)
+         || (fEnforceReload)
+       )
+    {
+        CHAR    szResourceModuleName[CCHMAXPATH];
+
+        // get the XFolder path first
+        if (!cmnQueryXWPBasePath(szResourceModuleName))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "cmnQueryXWPBasePath failed.");
+        else
+        {
+            APIRET arc = NO_ERROR;
+            // now compose module name from language code
+            strcat(szResourceModuleName, "\\bin\\xfldr");
+            strcat(szResourceModuleName, cmnQueryLanguageCode());
+            strcat(szResourceModuleName, ".dll");
+
+            // try to load the module
+            if (arc = DosLoadModule(NULL,
+                                    0,
+                                    szResourceModuleName,
+                                    (PHMODULE)&hmodLoaded))
+            {
+                // error:
+                // display an error string;
+                // since we don't have NLS, this must be in English...
+                CHAR szError[1000];
+                sprintf(szError, "XWorkplace was unable to load its National "
+                                 "Language Support DLL \"%s\". DosLoadModule returned "
+                                 "error %d.",
+                        szResourceModuleName,
+                        arc);
+                // log
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       szError);
+                // and display
+                winhDebugBox(HWND_DESKTOP,
+                             "XWorkplace: Error",
+                             szError);
+            }
+            else
+            {
+                // module loaded alright!
+                // hmodLoaded has the new module handle
+                HAB habDesktop = G_habThread1;
+
+                if (fEnforceReload)
+                {
+                    // if fEnforceReload == TRUE, we will load a test string from
+                    // the module to see if it has at least the version level which
+                    // this XFolder version requires. This is done using a #define
+                    // in dlgids.h: XFOLDER_VERSION is compiled as a string resource
+                    // into both the NLS DLL and into the main DLL (this file),
+                    // so we always have the versions in there automatically.
+                    // MINIMUM_NLS_VERSION (dlgids.h too) contains the minimum
+                    // NLS version level that this XFolder version requires.
+                    CHAR   szTest[30] = "";
+                    LONG   lLength;
+                    cmnSetDlgHelpPanel(-1);
+                    lLength = WinLoadString(habDesktop,
+                                            G_hmodNLS,
+                                            ID_XSSI_XFOLDERVERSION,
+                                            sizeof(szTest), szTest);
+                    #ifdef DEBUG_LANGCODES
+                        _Pmpf(("%s version: %s", szResourceModuleName, szTest));
+                    #endif
+
+                    if (lLength == 0)
+                    {
+                        // version string not found: complain
+                        winhDebugBox(HWND_DESKTOP,
+                                     "XWorkplace",
+                                     "The requested file is not an XWorkplace National Language Support DLL.");
+                    }
+                    else if (memcmp(szTest, MINIMUM_NLS_VERSION, 4) < 0)
+                            // szTest has NLS version (e.g. "0.81 beta"),
+                            // MINIMUM_NLS_VERSION has minimum version required
+                            // (e.g. "0.9.0")
+                    {
+                        // version level not sufficient:
+                        // load dialog from _old_ NLS DLL which says
+                        // that the DLL is too old; if user presses
+                        // "Cancel", we abort loading the DLL
+                        if (WinDlgBox(HWND_DESKTOP,
+                                      HWND_DESKTOP,
+                                      (PFNWP)cmn_fnwpDlgWithHelp,
+                                      G_hmodNLS,        // still the old one
+                                      ID_XFD_WRONGVERSION,
+                                      (PVOID)NULL)
+                                == DID_CANCEL)
+                        {
+                            winhDebugBox(HWND_DESKTOP,
+                                         "XWorkplace",
+                                         "The new National Language Support DLL was not loaded.");
+                        }
+                        else
+                            // user wants outdated module:
+                            hmodReturn = hmodLoaded;
+                    }
+                    else
+                    {
+                        // new module is OK:
+                        hmodReturn = hmodLoaded;
+                    }
+                } // end if (fEnforceReload)
+                else
+                    // no enfore reload: that's OK always
+                    hmodReturn = hmodLoaded;
+            } // end else if (arc != NO_ERROR)
+        } // end if (cmnQueryXWPBasePath(szResourceModuleName))
+    } // end if (    (G_hmodNLS == NULLHANDLE)  || (fEnforceReload) )
+    else
+        // no (re)load neccessary:
+        // use old module (this must be != NULLHANDLE now)
+        hmodReturn = G_hmodNLS;
+
+    // V0.9.7 (2000-12-09) [umoeller]
+    // alright, now we have:
+    // --  hmodLoaded: != NULLHANDLE if we loaded a new module.
+    // --  hmodReturn: != NULLHANDLE if the new module is OK.
+
+    if (hmodLoaded)                    // new module loaded here?
+    {
+        if (hmodReturn == NULLHANDLE)      // but error?
+            DosFreeModule(hmodLoaded);
+        else
+        {
+            // module loaded, and OK:
+            // replace the global module handle for NLS,
+            // and reload all NLS strings...
+            // do this safely.
+            HMODULE hmodOld = G_hmodNLS;
+            BOOL fLocked = FALSE;
+
+            TRY_LOUD(excpt1)
+            {
+                fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+                if (fLocked)
+                {
+                    G_hmodNLS = hmodLoaded;
+                }
+            }
+            CATCH(excpt1) { } END_CATCH();
+
+            if (fLocked)
+                krnUnlock();
+
+            // DosExitMustComplete(&ulNesting);
+
+            // free all NLS strings we ever used;
+            // they will be dynamically re-loaded
+            // with the new NLS module
+            UnloadAllStrings();
+
+            if (hmodOld)
+                // after all this, unload the old resource module
+                DosFreeModule(hmodOld);
+        }
+    }
+
+    if (hmodReturn == NULLHANDLE)
+        // error:
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Returning NULLHANDLE. Some error occured.");
+
+    // return (new?) module handle
+    return (hmodReturn);
 }
 
 /* ******************************************************************
@@ -385,10 +998,10 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
  *@@added V0.9.2 (2000-03-06) [umoeller]
  */
 
-VOID cmnLog(const char *pcszSourceFile, // in: source file name
+VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
             ULONG ulLine,               // in: source line
-            const char *pcszFunction,   // in: function name
-            const char *pcszFormat,     // in: format string (like with printf)
+            PCSZ pcszFunction,   // in: function name
+            PCSZ pcszFormat,     // in: format string (like with printf)
             ...)                        // in: additional stuff (like with printf)
 {
     va_list     args;
@@ -426,16 +1039,25 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
  *
  ********************************************************************/
 
+/*
+ *@@ XWPENTITY:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
 typedef struct _XWPENTITY
 {
-    const char *pcszEntity,
-               **ppcszString;
+    PCSZ    pcszEntity;
+    PCSZ    *ppcszString;
 } XWPENTITY, *PXWPENTITY;
 
-PCSZ    G_pcszBldlevel = BLDLEVEL_VERSION,
-        G_pcszBldDate = __DATE__;
+typedef const struct _XWPENTITY *PCXWPENTITY;
 
-XWPENTITY  G_aEntities[] =
+static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
+                G_pcszBldDate = __DATE__,
+                G_pcszNewLine = "\n";
+
+static const XWPENTITY G_aEntities[] =
     {
         "&xwp;", &ENTITY_XWORKPLACE,
         "&os2;", &ENTITY_OS2,
@@ -443,7 +1065,8 @@ XWPENTITY  G_aEntities[] =
         "&xcenter;", &ENTITY_XCENTER,
         "&xsd;", &ENTITY_XSHUTDOWN,
         "&version;", &G_pcszBldlevel,
-        "&date;", &G_pcszBldDate
+        "&date;", &G_pcszBldDate,
+        "&nl;", &G_pcszNewLine
     };
 
 /*
@@ -462,7 +1085,7 @@ ULONG ReplaceEntities(PXSTRING pstr)
          ul++)
     {
         ULONG ulOfs = 0;
-        PXWPENTITY pThis = &G_aEntities[ul];
+        PCXWPENTITY pThis = &G_aEntities[ul];
         while (xstrFindReplaceC(pstr,
                                 &ulOfs,
                                 pThis->pcszEntity,
@@ -522,9 +1145,9 @@ void cmnLoadString(HAB habDesktop,
     // do not free string
 }
 
-HMTX        G_hmtxStringsCache = NULLHANDLE;
-TREE        *G_StringsCache;
-LONG        G_cStringsInCache = 0;
+static HMTX        G_hmtxStringsCache = NULLHANDLE;
+static TREE        *G_StringsCache;
+static LONG        G_cStringsInCache = 0;
 
 /*
  *@@ LockStrings:
@@ -744,8 +1367,9 @@ VOID UnloadAllStrings(VOID)
         UnlockStrings();
 }
 
-/* some frequently used dialog controls
-    V0.9.16 (2001-10-08) [umoeller] */
+// some frequently used dialog controls, these
+// are exported!
+// V0.9.16 (2001-10-08) [umoeller]
 
 CONTROLDEF
     G_UndoButton = CONTROLDEF_PUSHBUTTON(
@@ -777,7 +1401,7 @@ CONTROLDEF
  *@@added V0.9.16 (2001-10-08) [umoeller]
  */
 
-VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
+VOID cmnLoadDialogStrings(PCDLGHITEM paDlgItems,      // in: definition array
                           ULONG cDlgItems)           // in: array item count (NOT array size)
 {
     // load the strings
@@ -786,7 +1410,7 @@ VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
          ul < cDlgItems;
          ul++)
     {
-        PDLGHITEM pThis = &paDlgItems[ul];
+        PCDLGHITEM pThis = &paDlgItems[ul];
         PCONTROLDEF pDef;
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
@@ -820,13 +1444,63 @@ VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
  *
  ********************************************************************/
 
+#ifndef __NOICONREPLACEMENTS__
+
+/*
+ *@@ cmnQueryThemeDirectory:
+ *      returns the name of the directory that was
+ *      set to contain the current icon theme.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+PCSZ cmnQueryThemeDirectory(VOID)
+{
+    PCSZ    pReturn = NULL;
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (!G_szXWPThemeDir[0])
+            {
+                // first call: V0.9.16 (2002-01-13) [umoeller]
+                if (cmnQueryXWPBasePath(G_szXWPThemeDir))
+                    strcat(G_szXWPThemeDir, "\\themes\\os2");
+            }
+
+            pReturn = G_szXWPThemeDir;
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return (pReturn);
+}
+
+#endif
+
+/*
+ *@@ ICONTREENODE:
+ *      tree node structure for storing a standard
+ *      icon that was loaded. Created for each
+ *      standard icon that was loaded thru cmnGetStandardIcon.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
 typedef struct _ICONTREENODE
 {
     TREE        Tree;           // ulkey has the STDICON_* id
 
     HPOINTER    hptr;           // HPOINTER that was built
 
-    PCSZ        pcszIconFile;   // if icon was loaded from file
+    PSZ         pszIconFile;    // fully q'fied file name,
+                                // if icon was loaded from file
+                                // (malloc'd)
     HMODULE     hmod;           // if icon was loaded from module
     ULONG       ulResID;        // if icon was loaded from module
 } ICONTREENODE, *PICONTREENODE;
@@ -838,7 +1512,7 @@ LONG        G_cIconsInCache = 0;
 /*
  *@@ LockIcons:
  *
- *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
 BOOL LockIcons(VOID)
@@ -866,7 +1540,7 @@ BOOL LockIcons(VOID)
 /*
  *@@ UnlockIcons:
  *
- *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
 VOID UnlockIcons(VOID)
@@ -880,79 +1554,104 @@ typedef struct _STDICON
 {
     ULONG       ulStdIcon;          // STDICON_* id
 
-    ULONG       ulIconsDLL,         // ptr ID in icons.dll
-                ulPMWP;             // ptr ID in pmwp.dll; if the XWP_MODULE_BIT is
-                                    // set, use xwpres.dll instead
+    PCSZ        pcszFilename;       // filename of replacement icon for theming
+    ULONG       ulPMWP;             // ptr ID in pmwp.dll if pcszFilename not found
+                                    // or icon replacements are disabled;
+                                    // if the XWP_MODULE_BIT is set, use xwpres.dll
+                                    // instead
 } STDICON, *PSTDICON;
 
-STDICON aStdIcons[] =
+typedef const struct _STDICON *PCSTDICON;
+
+static const STDICON aStdIcons[] =
     {
         {
             STDICON_PM,
-            0,                      // no icon in icons.dll yet
+            "prgpm.ico",            // no icon in icons.dll yet
             3,                      // standard icon in pmwp.dll
                 // or this one? 25
         },
         {
             STDICON_WIN16,
-            0,                      // no icon in icons.dll yet
+            "prgwin16.ico",         // no icon in icons.dll yet
             52,                     // standard win-os2 icon in pmwp.dll
         },
         {
             STDICON_WIN32,
-            0,                      // no icon in icons.dll yet
+            "prgwin32.ico",         // no icon in icons.dll yet
             52,                     // standard win-os2 icon in pmwp.dll
         },
         {
             STDICON_OS2WIN,
-            108,
+            "prgos2wn.ico",         // 108,
             2,                      // standard os2win icon in pmwp.dll
         },
         {
             STDICON_OS2FULLSCREEN,
-            107,
+            "prgos2fs.ico",         // 107,
             4,                      // standard os2full icon in pmwp.dll
         },
         {
             STDICON_DOSWIN,
-            105,
+            "prgdoswn.ico",         // 105,
             46,                     // standard doswin icon in pmwp.dll
         },
         {
             STDICON_DOSFULLSCREEN,
-            104,
+            "prgdosfs.ico",         // 104,
             1,                      // standard dosfull icon in pmwp.dll
         },
         {
             STDICON_DLL,
-            103,
+            "prgdll.ico",           // 103,
             25,                     // standard program (non-pm) icon in pmwp.dll
         },
         {
             STDICON_DRIVER,
-            106,
+            "prgdrivr.ico",         // 106,
             25,                     // standard program (non-pm) icon in pmwp.dll
         },
         {
             STDICON_PROG_UNKNOWN,
-            102,
+            "prgunkwn.ico",        // 102,
             25,                     // standard program (non-pm) icon in pmwp.dll
         },
         {
             STDICON_DATAFILE,
-            0,
+            "datafile.ico",         // 0,
             24,                     // standard datafile icon in pmwp.dll
         },
         {
             STDICON_TRASH_EMPTY,
-            112,
+            "trashemp.ico",         // 112,
             XWP_MODULE_BIT | ID_ICONXWPTRASHEMPTY
         },
         {
             STDICON_TRASH_FULL,
-            113,
+            "trashful.ico",         // 113,
             XWP_MODULE_BIT | ID_ICONXWPTRASHFILLED
-        }
+        },
+        {
+            STDICON_DESKTOP_CLOSED,
+            "desk0.ico",
+            56                      // standard desktop icon in pmwp.dll
+        },
+        {
+            STDICON_DESKTOP_OPEN,
+            "desk1.ico",
+            56                      // standard desktop icon in pmwp.dll
+                                    // (there is no open desktop icon)
+        },
+        {
+            STDICON_FOLDER_CLOSED,
+            "folder0.ico",
+            26                      // standard folder icon in pmwp.dll
+        },
+        {
+            STDICON_FOLDER_OPEN,
+            "folder1.ico",
+            6                       // standard open folder icon in pmwp.dll
+        },
     };
 
 /*
@@ -975,13 +1674,13 @@ PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
     HPOINTER hptrReturn = NULLHANDLE;
     PICONTREENODE pNode;
 
-    PCSZ        pcszIconFile = NULL;        // if icon was loaded from file
+    PSZ         pszIconFile = NULL;         // if icon was loaded from file, malloc()
     HMODULE     hmod = NULLHANDLE;          // if icon was loaded from module
     ULONG       ulResID = NULLHANDLE;       // if icon was loaded from module
 
     // look up the STDICON_* id in the array
     ULONG ul;
-    PSTDICON pStdIcon = NULL;
+    PCSTDICON pStdIcon = NULL;
 
     for (ul = 0;
          ul < ARRAYITEMCOUNT(aStdIcons);
@@ -1000,26 +1699,40 @@ PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 
 #ifndef __NOICONREPLACEMENTS__
         // check if we have an icon in ICONS.DLL
-        if (    (pStdIcon->ulIconsDLL)
+        if (    (pStdIcon->pcszFilename)
              && (cmnQuerySetting(sfIconReplacements))
            )
         {
-            HMODULE hmodIcons;
+            CHAR szFilename[CCHMAXPATH];
+            sprintf(szFilename,
+                    "%s\\%s",
+                    cmnQueryThemeDirectory(),
+                    pStdIcon->pcszFilename);
+
+            if (!icoLoadICOFile(szFilename,
+                                &hptrReturn,
+                                NULL,
+                                NULL))
+            {
+                // icon loaded:
+                pszIconFile = strdup(szFilename);
+            }
+
+            /* HMODULE hmodIcons;
             if (hmodIcons = cmnQueryIconsDLL())     // loads on first call
             {
                 hmod = hmodIcons;
-                ulResID = pStdIcon->ulIconsDLL;
+                // ulResID = pStdIcon->ulIconsDLL;
                 hptrReturn = WinLoadPointer(HWND_DESKTOP,
                                             hmod,
                                             ulResID);
-                        // might fail, then we retry with standard icon
-            }
+            } */
         }
 #endif
 
         if (!hptrReturn)
         {
-            // icon replacements disabled, or not found,
+            // icon replacements disabled, or icon not found,
             // or icons.dll id was null in the first place:
 
             // load a default icon from either PMWP or XWPRES
@@ -1050,7 +1763,7 @@ PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 
         // set source fields so cmnGetStandardIcon can build
         // an ICONINFO too
-        pNode->pcszIconFile = pcszIconFile;
+        pNode->pszIconFile = pszIconFile;
         pNode->hmod = hmod;
         pNode->ulResID = ulResID;
 
@@ -1061,6 +1774,127 @@ PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
     }
 
     return (pNode);
+}
+
+/*
+ *@@ cmnGetStandardIcon:
+ *      returns a HPOINTER for the given STDICON_* id.
+ *
+ *      If icon replacements are enabled, this will
+ *      try to find an icon file in the current themes
+ *      directory. Otherwise, or if no such icon exists
+ *      for that id, an icon from PMWP.DLL is returned
+ *      instead.
+ *
+ *      As a result, unless something goes very wrong,
+ *      this will always load a pointer for the given
+ *      STDICON_* ID. The data is then cached so several
+ *      calls with the same ID will return the same
+ *      data.
+ *
+ *      The _output_ depends on the pointers that are
+ *      passed in:
+ *
+ *      --  If (phptr != NULL), *phptr receives the
+ *          HPOINTER that was built for the given icon
+ *          ID. Note that the HPOINTER is built even
+ *          if (phptr == NULL) for later calls.
+ *
+ *      --  If (pIconInfo != NULL), pIconInfo is fully
+ *          filled with data for wpQueryIconInfo.
+ *          fFormat is set to either ICON_FILE or
+ *          ICON_RESOURCE, depending on where the internal
+ *          standard icon was retrieved from, and the
+ *          other fields are either zeroed or set accordingly.
+ *          Freeing these values is not necessary and
+ *          taken care of by the cache functions.
+ *
+ *      As indicated above, for the same ID, this will reuse
+ *      the same HPOINTER to reduce the load on PM. This is
+ *      unlike the WPS which loads even default icons several
+ *      times.
+ *
+ *      As a result, NEVER FREE the icon that is returned.
+ *      If you set the icon on an object via _wpSetIcon,
+ *      make sure you unset the OBJSTYLE_NOTDEFAULTICON
+ *      style flag afterwards, or the icon will be nuked
+ *      when the object goes dormant... taking the other
+ *      objects' icons with it.
+ *
+ *      This function is now the central agency for all
+ *      the XWorkplace icons and is used from the following
+ *      places:
+ *
+ *      --  The various wpclsQueryIconData overrides to
+ *          change WPS default icons (folders, data files,
+ *          desktops).
+ *
+ *      --  The trash can to load the open and closed
+ *          icons.
+ *
+ *      --  Program (files) to get default icons for the
+ *          various executable types.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET cmnGetStandardIcon(ULONG ulStdIcon,
+                          HPOINTER *phptr,      // out: if != NULL, icon handle
+                          PICONINFO pIconInfo)  // out: if != NULL, icon info
+{
+    BOOL        fLocked = FALSE;
+    APIRET      arc = NO_ERROR;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockIcons())
+        {
+            // icon loaded yet?
+            PICONTREENODE pNode;
+            if (!(pNode = (PICONTREENODE)treeFind(G_IconsCache,
+                                                  ulStdIcon,
+                                                  treeCompareKeys)))
+                // no: create a new node
+                if (!(pNode = LoadNewIcon(ulStdIcon)))
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+
+            if (pNode)
+            {
+                // output data, depending on what
+                // the caller wants
+                if (phptr)
+                    *phptr = pNode->hptr;
+
+                if (pIconInfo)
+                {
+                    ZERO(pIconInfo);
+                    pIconInfo->cb = sizeof(ICONINFO);
+                    if (pNode->pszIconFile)
+                    {
+                        // loaded from file:
+                        pIconInfo->fFormat = ICON_FILE;
+                        pIconInfo->pszFileName = pNode->pszIconFile;
+                    }
+                    else
+                    {
+                        // loaded from resource:
+                        pIconInfo->fFormat = ICON_RESOURCE;
+                        pIconInfo->hmod = pNode->hmod;
+                        pIconInfo->resid = pNode->ulResID;
+                    }
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockIcons();
+
+    return (arc);
 }
 
 /*
@@ -1103,945 +1937,6 @@ BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
     return (hptrReturn);
 }
 
-/*
- *@@ cmnGetStandardIcon:
- *      returns a HPOINTER for the given STDICON_* id.
- *
- *      If icon replacements are enabled, this will
- *      try to find an icon in ICONS.DLL. Otherwise,
- *      or if no such icon exists for that id, an
- *      icon from PMWP.DLL is returned instead.
- *
- *      The output depends on the pointers that are
- *      passed in:
- *
- *      --  If (phptr != NULL), *phptr receives the
- *          HPOINTER for the given icon ID.
- *
- *      --  If (pIconInfo != NULL), pIconInfo is fully
- *          filled with data for wpQueryIconInfo.
- *          fFormat is set to either ICON_FILE or
- *          ICON_RESOURCE, depending on where the internal
- *          standard icon was retrieved from, and the
- *          other fields are either zeroed or set accordingly.
- *
- *      Note that if this gets called several times for
- *      the same STDICON_* id, this will reuse the same
- *      HPOINTER to reduce the load on PM. This is unlike
- *      the WPS which loads even default icons several
- *      times.
- *
- *      As a result, NEVER FREE the icon that is returned.
- *      If you set the icon on an object via _wpSetIcon,
- *      make sure you unset the OBJSTYLE_NOTDEFAULTICON
- *      style flag afterwards, or the icon will be nuked
- *      when the object goes dormant... taking the other
- *      objects' icons with it.
- *
- *      This function is now the central agency for all
- *      the XWorkplace icons. This will eventually allow
- *      us to change the way replacement icons are loaded
- *      to support themes and the like. The only places
- *      where this function cannot be used are the
- *      various wpclsQueryIconData methods because those
- *      only work properly with the ICON_RESOURCE format.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-APIRET cmnGetStandardIcon(ULONG ulStdIcon,
-                          HPOINTER *phptr,      // out: if != NULL, icon handle
-                          PICONINFO pIconInfo)  // out: if != NULL, icon info
-{
-    BOOL        fLocked = FALSE;
-    APIRET      arc = NO_ERROR;
-
-    TRY_LOUD(excpt1)
-    {
-        if (fLocked = LockIcons())
-        {
-            // icon loaded yet?
-            PICONTREENODE pNode;
-            if (!(pNode = (PICONTREENODE)treeFind(G_IconsCache,
-                                                  ulStdIcon,
-                                                  treeCompareKeys)))
-                // no: create a new node
-                if (!(pNode = LoadNewIcon(ulStdIcon)))
-                    arc = ERROR_NOT_ENOUGH_MEMORY;
-
-            if (pNode)
-            {
-                // output data, depending on what
-                // the caller wants
-                if (phptr)
-                    *phptr = pNode->hptr;
-
-                if (pIconInfo)
-                {
-                    ZERO(pIconInfo);
-                    pIconInfo->cb = sizeof(ICONINFO);
-                    if (pNode->pcszIconFile)
-                    {
-                        // loaded from file:
-                        pIconInfo->fFormat = ICON_FILE;
-                        pIconInfo->pszFileName = (PSZ)pNode->pcszIconFile;
-                    }
-                    else
-                    {
-                        // loaded from resource:
-                        pIconInfo->fFormat = ICON_RESOURCE;
-                        pIconInfo->hmod = pNode->hmod;
-                        pIconInfo->resid = pNode->ulResID;
-                    }
-                }
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-        arc = ERROR_PROTECTION_VIOLATION;
-    } END_CATCH();
-
-    if (fLocked)
-        UnlockIcons();
-
-    return (arc);
-}
-
-/* ******************************************************************
- *
- *   XWorkplace National Language Support (NLS)
- *
- ********************************************************************/
-
-/*
- *  The following routines are for querying the XFolder
- *  installation path and similiar routines, such as
- *  querying the current NLS module, changing it, loading
- *  strings, the help file and all that sort of stuff.
- */
-
-/*
- *@@ cmnQueryXWPBasePath:
- *      this routine returns the path of where XFolder was installed,
- *      i.e. the parent directory of where the xfldr.dll file
- *      resides, without a trailing backslash (e.g. "C:\XFolder").
- *
- *      The buffer to copy this to is assumed to be CCHMAXPATH in size.
- *
- *      As opposed to versions before V0.81, OS2.INI is no longer
- *      needed for this to work. The path is retrieved from the
- *      DLL directly by evaluating what was passed to _DLL_InitTerm.
- *
- *@@changed V0.9.7 (2000-12-02) [umoeller]: renamed from cmnQueryXFolderBasePath
- */
-
-BOOL cmnQueryXWPBasePath(PSZ pszPath)
-{
-    BOOL brc = FALSE;
-    const char *pszDLL = cmnQueryMainModuleFilename();
-    if (pszDLL)
-    {
-        // copy until last backslash minus four characters
-        // (leave out "\bin\xfldr.dll")
-        PSZ pszLastSlash = strrchr(pszDLL, '\\');
-        #ifdef DEBUG_LANGCODES
-            _Pmpf(( "cmnQueryMainModuleFilename: %s", pszDLL));
-        #endif
-        strncpy(pszPath, pszDLL, (pszLastSlash-pszDLL)-4);
-        pszPath[(pszLastSlash-pszDLL-4)] = '\0';
-        brc = TRUE;
-    }
-    #ifdef DEBUG_LANGCODES
-        _Pmpf(( "cmnQueryXWPBasePath: %s", pszPath ));
-    #endif
-    return (brc);
-}
-
-/*
- *@@ cmnQueryLanguageCode:
- *      returns PSZ to three-digit language code (e.g. "001").
- *      This points to a global variable, so do NOT change.
- *
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- */
-
-const char* cmnQueryLanguageCode(VOID)
-{
-    BOOL fLocked = FALSE;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            if (G_szLanguageCode[0] == '\0')
-                PrfQueryProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_LANGUAGECODE,
-                                      (PSZ)DEFAULT_LANGUAGECODE,
-                                      (PVOID)G_szLanguageCode,
-                                      sizeof(G_szLanguageCode));
-
-            G_szLanguageCode[3] = '\0';
-            #ifdef DEBUG_LANGCODES
-                _Pmpf(( "cmnQueryLanguageCode: %s", szLanguageCode ));
-            #endif
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
-
-    return (G_szLanguageCode);
-}
-
-/*
- *@@ cmnSetLanguageCode:
- *      changes XFolder's language to three-digit language code in
- *      pszLanguage (e.g. "001"). This does not reload the NLS DLL,
- *      but only change the setting.
- *
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- */
-
-BOOL cmnSetLanguageCode(PSZ pszLanguage)
-{
-    BOOL brc = FALSE;
-
-    BOOL fLocked = FALSE;
-   // ULONG ulNesting;
-   // DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            strcpy(G_szLanguageCode, pszLanguage);
-            G_szLanguageCode[3] = 0;
-
-            brc = PrfWriteProfileString(HINI_USERPROFILE,
-                                        (PSZ)INIAPP_XWORKPLACE,
-                                        (PSZ)INIKEY_LANGUAGECODE,
-                                        G_szLanguageCode);
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
-
-    return (brc);
-}
-
-/*
- *@@ cmnQueryHelpLibrary:
- *      returns PSZ to full help library path in XFolder directory,
- *      depending on where XFolder was installed and on the current
- *      language (e.g. "C:\XFolder\help\xfldr001.hlp").
- *
- *      This PSZ points to a global variable, so you better not
- *      change it.
- *
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- */
-
-const char* cmnQueryHelpLibrary(VOID)
-{
-    const char *rc = 0;
-
-    BOOL fLocked = FALSE;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            if (cmnQueryXWPBasePath(G_szHelpLibrary))
-            {
-                // path found: append helpfile
-                sprintf(G_szHelpLibrary + strlen(G_szHelpLibrary),
-                        "\\help\\xfldr%s.hlp",
-                        cmnQueryLanguageCode());
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(( "cmnQueryHelpLibrary: %s", szHelpLibrary ));
-                #endif
-                rc = G_szHelpLibrary;
-            }
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
-
-    return (rc);
-}
-
-/*
- *@@ cmnHelpNotFound:
- *      displays an error msg that the given help panel
- *      could not be found.
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-VOID cmnHelpNotFound(ULONG ulPanelID)
-{
-    CHAR sz[100];
-    PSZ psz = (PSZ)cmnQueryHelpLibrary();
-    PSZ apsz[] =
-        {  sz,
-           psz };
-    sprintf(sz, "%d", ulPanelID);
-
-    cmnMessageBoxMsgExt(NULLHANDLE,
-                        104,            // title
-                        apsz,
-                        2,
-                        134,
-                        MB_OK);
-}
-
-/*
- *@@ cmnDisplayHelp:
- *      displays an XWorkplace help panel,
- *      using wpDisplayHelp.
- *      If somSelf == NULL, we'll query the
- *      active desktop.
- */
-
-BOOL cmnDisplayHelp(WPObject *somSelf,
-                    ULONG ulPanelID)
-{
-    BOOL brc = FALSE;
-    if (somSelf == NULL)
-        somSelf = cmnQueryActiveDesktop();
-
-    if (somSelf)
-    {
-        if (!(brc = _wpDisplayHelp(somSelf,
-                                   ulPanelID,
-                                   (PSZ)cmnQueryHelpLibrary())))
-            // complain
-            cmnHelpNotFound(ulPanelID);
-
-    }
-    return (brc);
-}
-
-/*
- *@@ cmnQueryMessageFile:
- *      returns PSZ to full message file path in XFolder directory,
- *      depending on where XFolder was installed and on the current
- *      language (e.g. "C:\XFolder\help\xfldr001.tmf").
- *
- *@@changed V0.9.0 [umoeller]: changed, this now returns the TMF file (tmsgfile.c).
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- */
-
-const char* cmnQueryMessageFile(VOID)
-{
-    const char *rc = 0;
-
-    BOOL fLocked = FALSE;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            if (cmnQueryXWPBasePath(G_szMessageFile))
-            {
-                // path found: append message file
-                sprintf(G_szMessageFile + strlen(G_szMessageFile),
-                        "\\help\\xfldr%s.tmf",
-                        cmnQueryLanguageCode());
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(( "cmnQueryMessageFile: %s", szMessageFile));
-                #endif
-                rc = G_szMessageFile;
-            }
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
-
-    return (rc);
-}
-
-#ifndef __NOICONREPLACEMENTS__
-
-/*
- *@@ cmnQueryIconsDLL:
- *      this returns the HMODULE of XFolder ICONS.DLL
- *      (new with V0.84).
- *
- *      If this is queried for the first time, the DLL
- *      is loaded from the /BIN directory.
- *
- *      In this case, this routine also checks if
- *      ICONS.DLL exists in the /ICONS directory. If
- *      so, it is copied to /BIN before loading the
- *      DLL. This allows for replacing the DLL using
- *      the REXX script in /ICONS.
- *
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- */
-
-HMODULE cmnQueryIconsDLL(VOID)
-{
-    BOOL fLocked = FALSE;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            // first query?
-            if (G_hmodIconsDLL == NULLHANDLE)
-            {
-                CHAR    szIconsDLL[CCHMAXPATH],
-                        szNewIconsDLL[CCHMAXPATH];
-                cmnQueryXWPBasePath(szIconsDLL);
-                strcpy(szNewIconsDLL, szIconsDLL);
-
-                sprintf(szIconsDLL+strlen(szIconsDLL),
-                        "\\bin\\icons.dll");
-                sprintf(szNewIconsDLL+strlen(szNewIconsDLL),
-                        "\\icons\\icons.dll");
-
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("cmnQueryIconsDLL: checking %s", szNewIconsDLL));
-                #endif
-                // first check for /ICONS/ICONS.DLL
-                if (access(szNewIconsDLL, 0) == 0)
-                {
-                    #ifdef DEBUG_LANGCODES
-                        _Pmpf(("    found, copying to %s", szIconsDLL));
-                    #endif
-                    // exists: move to /BIN
-                    // and use that one
-                    DosDelete(szIconsDLL);
-                    DosMove(szNewIconsDLL,      // old
-                            szIconsDLL);        // new
-                    DosDelete(szNewIconsDLL);
-                }
-
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("cmnQueryIconsDLL: loading %s", szIconsDLL));
-                #endif
-                // now load /BIN/ICONS.DLL
-                if (DosLoadModule(NULL,
-                                  0,
-                                  szIconsDLL,
-                                  &G_hmodIconsDLL)
-                        != NO_ERROR)
-                    G_hmodIconsDLL = NULLHANDLE;
-            }
-
-            #ifdef DEBUG_LANGCODES
-                _Pmpf(("cmnQueryIconsDLL: returning %lX", hmodIconsDLL));
-            #endif
-
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
-
-    return (G_hmodIconsDLL);
-}
-
-#endif
-
-#ifndef __NOBOOTLOGO__
-
-/*
- *@@ cmnQueryBootLogoFile:
- *      this returns the boot logo file as stored
- *      in OS2.INI. If it is not stored there,
- *      we return the default xfolder.bmp in
- *      the XFolder installation directories.
- *
- *      The return value of this function must
- *      be free()'d after use.
- *
- *@@added V0.9.0 [umoeller]
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- */
-
-PSZ cmnQueryBootLogoFile(VOID)
-{
-    PSZ pszReturn = 0;
-
-    BOOL fLocked = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            pszReturn = prfhQueryProfileData(HINI_USER,
-                                             INIAPP_XWORKPLACE,
-                                             INIKEY_BOOTLOGOFILE,
-                                             NULL);
-            if (!pszReturn)
-            {
-                CHAR szBootLogoFile[CCHMAXPATH];
-                // INI data not found: return default file
-                cmnQueryXWPBasePath(szBootLogoFile);
-                strcat(szBootLogoFile,
-                        "\\bootlogo\\xfolder.bmp");
-                pszReturn = strdup(szBootLogoFile);
-            }
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    return (pszReturn);
-}
-
-#endif
-
-/*
- *@@ cmnQueryNLSModuleHandle:
- *      returns the module handle of the language-dependent XFolder
- *      National Language Support DLL (XFLDRxxx.DLL).
- *
- *      This is called in two situations:
- *
- *          1) with (fEnforceReload == FALSE) everytime some part
- *             of XFolder needs the NLS resources (e.g. for dialogs);
- *             this only loads the NLS DLL on the very first call
- *             then, whose module handle is cached for subsequent calls.
- *
- *          2) with (fEnforceReload == TRUE) only when the user changes
- *             XFolder's language in the "Workplace Shell" object.
- *
- *      If the DLL is (re)loaded, this function also initializes
- *      all language-dependent XWorkplace components.
- *      This function also checks for whether the NLS DLL has a
- *      decent version level to support this XFolder version.
- *
- *@@changed V0.9.0 [umoeller]: added various NLS strings
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- *@@changed V0.9.7 (2000-12-09) [umoeller]: restructured to fix mutex hangs with load errors
- *@@changed V0.9.9 (2001-03-07) [umoeller]: now loading strings from array
- */
-
-HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
-{
-    HMODULE hmodReturn = NULLHANDLE,
-            hmodLoaded = NULLHANDLE;
-
-    // load resource DLL if it's not loaded yet or a reload is enforced
-    if (    (G_hmodNLS == NULLHANDLE)
-         || (fEnforceReload)
-       )
-    {
-        CHAR    szResourceModuleName[CCHMAXPATH];
-
-        // get the XFolder path first
-        if (!cmnQueryXWPBasePath(szResourceModuleName))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "cmnQueryXWPBasePath failed.");
-        else
-        {
-            APIRET arc = NO_ERROR;
-            // now compose module name from language code
-            strcat(szResourceModuleName, "\\bin\\xfldr");
-            strcat(szResourceModuleName, cmnQueryLanguageCode());
-            strcat(szResourceModuleName, ".dll");
-
-            // try to load the module
-            arc = DosLoadModule(NULL,
-                                0,
-                                szResourceModuleName,
-                                (PHMODULE)&hmodLoaded);
-            if (arc != NO_ERROR)
-            {
-                // display an error string; since we don't have NLS,
-                // this must be in English...
-                CHAR szError[1000];
-                sprintf(szError, "XWorkplace was unable to load its National "
-                                 "Language Support DLL \"%s\". DosLoadModule returned "
-                                 "error %d.",
-                        szResourceModuleName,
-                        arc);
-                // log
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       szError);
-                // and display
-                winhDebugBox(HWND_DESKTOP,
-                             "XWorkplace: Error",
-                             szError);
-            }
-            else
-            {
-                // module loaded alright!
-                // hmodLoaded has the new module handle
-                HAB habDesktop = G_habThread1;
-
-                if (fEnforceReload)
-                {
-                    // if fEnforceReload == TRUE, we will load a test string from
-                    // the module to see if it has at least the version level which
-                    // this XFolder version requires. This is done using a #define
-                    // in dlgids.h: XFOLDER_VERSION is compiled as a string resource
-                    // into both the NLS DLL and into the main DLL (this file),
-                    // so we always have the versions in there automatically.
-                    // MINIMUM_NLS_VERSION (dlgids.h too) contains the minimum
-                    // NLS version level that this XFolder version requires.
-                    CHAR   szTest[30] = "";
-                    LONG   lLength;
-                    cmnSetDlgHelpPanel(-1);
-                    lLength = WinLoadString(habDesktop,
-                                            G_hmodNLS,
-                                            ID_XSSI_XFOLDERVERSION,
-                                            sizeof(szTest), szTest);
-                    #ifdef DEBUG_LANGCODES
-                        _Pmpf(("%s version: %s", szResourceModuleName, szTest));
-                    #endif
-
-                    if (lLength == 0)
-                    {
-                        // version string not found: complain
-                        winhDebugBox(HWND_DESKTOP,
-                                     "XWorkplace",
-                                     "The requested file is not an XWorkplace National Language Support DLL.");
-                    }
-                    else if (memcmp(szTest, MINIMUM_NLS_VERSION, 4) < 0)
-                            // szTest has NLS version (e.g. "0.81 beta"),
-                            // MINIMUM_NLS_VERSION has minimum version required
-                            // (e.g. "0.9.0")
-                    {
-                        // version level not sufficient:
-                        // load dialog from _old_ NLS DLL which says
-                        // that the DLL is too old; if user presses
-                        // "Cancel", we abort loading the DLL
-                        if (WinDlgBox(HWND_DESKTOP,
-                                      HWND_DESKTOP,
-                                      (PFNWP)cmn_fnwpDlgWithHelp,
-                                      G_hmodNLS,        // still the old one
-                                      ID_XFD_WRONGVERSION,
-                                      (PVOID)NULL)
-                                == DID_CANCEL)
-                        {
-                            winhDebugBox(HWND_DESKTOP,
-                                         "XWorkplace",
-                                         "The new National Language Support DLL was not loaded.");
-                        }
-                        else
-                            // user wants outdated module:
-                            hmodReturn = hmodLoaded;
-                    }
-                    else
-                    {
-                        // new module is OK:
-                        hmodReturn = hmodLoaded;
-                    }
-                } // end if (fEnforceReload)
-                else
-                    // no enfore reload: that's OK always
-                    hmodReturn = hmodLoaded;
-            } // end else if (arc != NO_ERROR)
-        } // end if (cmnQueryXWPBasePath(szResourceModuleName))
-    } // end if (    (G_hmodNLS == NULLHANDLE)  || (fEnforceReload) )
-    else
-        // no (re)load neccessary:
-        // use old module (this must be != NULLHANDLE now)
-        hmodReturn = G_hmodNLS;
-
-    // V0.9.7 (2000-12-09) [umoeller]
-    // alright, now we have:
-    // --  hmodLoaded: != NULLHANDLE if we loaded a new module.
-    // --  hmodReturn: != NULLHANDLE if the new module is OK.
-
-    if (hmodLoaded)                    // new module loaded here?
-    {
-        if (hmodReturn == NULLHANDLE)      // but error?
-            DosFreeModule(hmodLoaded);
-        else
-        {
-            // module loaded, and OK:
-            // replace the global module handle for NLS,
-            // and reload all NLS strings...
-            // do this safely.
-            HMODULE hmodOld = G_hmodNLS;
-            BOOL fLocked = FALSE;
-            // ULONG ulNesting;
-            // DosEnterMustComplete(&ulNesting);
-
-            TRY_LOUD(excpt1)
-            {
-                fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-                if (fLocked)
-                {
-                    G_hmodNLS = hmodLoaded;
-                }
-            }
-            CATCH(excpt1) { } END_CATCH();
-
-            if (fLocked)
-                krnUnlock();
-
-            // DosExitMustComplete(&ulNesting);
-
-            // free all NLS strings we ever used;
-            // they will be dynamically re-loaded
-            // with the new NLS module
-            UnloadAllStrings();
-
-            if (hmodOld)
-                // after all this, unload the old resource module
-                DosFreeModule(hmodOld);
-        }
-    }
-
-    if (hmodReturn == NULLHANDLE)
-        // error:
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Returning NULLHANDLE. Some error occured.");
-
-    // return (new?) module handle
-    return (hmodReturn);
-}
-
-/*
- *@@ cmnQueryCountrySettings:
- *      returns the global COUNTRYSETTINGS (see helpers\prfh.c)
- *      as set in the "Country" object, which are cached for speed.
- *
- *      If (fReload == TRUE), the settings are re-read.
- *
- *@@added V0.9.6 (2000-11-12) [umoeller]
- */
-
-PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
-{
-    if ((!G_fCountrySettingsLoaded) || (fReload))
-    {
-        nlsQueryCountrySettings(&G_CountrySettings);
-        G_fCountrySettingsLoaded = TRUE;
-    }
-
-    return (&G_CountrySettings);
-}
-
-/*
- *@@ cmnQueryThousandsSeparator:
- *      returns the thousands separator from the "Country"
- *      object.
- *
- *@@added V0.9.6 (2000-11-12) [umoeller]
- */
-
-CHAR cmnQueryThousandsSeparator(VOID)
-{
-    PCOUNTRYSETTINGS p = cmnQueryCountrySettings(FALSE);
-    return (p->cThousands);
-}
-
-/*
- *@@ cmnIsValidHotkey:
- *      returns TRUE if the specified key combo can
- *      be used as a hotkey without endangering the
- *      system.
- *
- *@@added V0.9.4 (2000-08-03) [umoeller]
- */
-
-BOOL cmnIsValidHotkey(USHORT usFlags,
-                      USHORT usKeyCode)
-{
-    BOOL brc
-        = (
-                // must be a virtual key
-                (  (  ((usFlags & KC_VIRTUALKEY) != 0)
-                // or Ctrl or Alt must be pressed
-                   || ((usFlags & KC_CTRL) != 0)
-                   || ((usFlags & KC_ALT) != 0)
-                // or one of the Win95 keys must be pressed
-                   || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                       && (     (usKeyCode == 0xEC00)
-                            ||  (usKeyCode == 0xED00)
-                            ||  (usKeyCode == 0xEE00)
-                          )
-                   )
-                )
-                // OK:
-                // filter out lone modifier keys
-                && (    ((usFlags & KC_VIRTUALKEY) == 0)
-                     || (   (usKeyCode != VK_SHIFT)     // shift
-                         && (usKeyCode != VK_CTRL)     // ctrl
-                         && (usKeyCode != VK_ALT)     // alt
-                // and filter out the tab key too
-                         && (usKeyCode != VK_TAB)     // tab
-                        )
-                   )
-                )
-           );
-    return (brc);
-}
-
-/*
- *@@ cmnDescribeKey:
- *      this stores a description of a certain
- *      key into pszBuf, using the NLS DLL strings.
- *      usFlags is as in WM_CHAR.
- *      If (usFlags & KC_VIRTUALKEY), usKeyCode must
- *      be usvk of WM_CHAR (VK_* code), or usch otherwise.
- *      Returns TRUE if this was a valid key combo.
- */
-
-BOOL cmnDescribeKey(PSZ pszBuf,
-                    USHORT usFlags,
-                    USHORT usKeyCode)
-{
-    BOOL brc = TRUE;
-
-    ULONG ulID = 0;
-    PCSZ pcszCopy = NULL;
-
-    *pszBuf = 0;
-    if (usFlags & KC_CTRL)
-        strcpy(pszBuf, cmnGetString(ID_XSSI_KEY_CTRL)) ; // pszCtrl
-    if (usFlags & KC_SHIFT)
-        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SHIFT)) ; // pszShift
-    if (usFlags & KC_ALT)
-        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_Alt)) ; // pszAlt
-
-    if (usFlags & KC_VIRTUALKEY)
-    {
-        switch (usKeyCode)
-        {
-            case VK_BACKSPACE: ulID = ID_XSSI_KEY_BACKSPACE; break; // pszBackspace
-            case VK_TAB: ulID = ID_XSSI_KEY_TAB; break; // pszTab
-            case VK_BACKTAB: ulID = ID_XSSI_KEY_BACKTABTAB; break; // pszBacktab
-            case VK_NEWLINE: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
-            case VK_ESC: ulID = ID_XSSI_KEY_ESC; break; // pszEsc
-            case VK_SPACE: ulID = ID_XSSI_KEY_SPACE; break; // pszSpace
-            case VK_PAGEUP: ulID = ID_XSSI_KEY_PAGEUP; break; // pszPageup
-            case VK_PAGEDOWN: ulID = ID_XSSI_KEY_PAGEDOWN; break; // pszPagedown
-            case VK_END: ulID = ID_XSSI_KEY_END; break; // pszEnd
-            case VK_HOME: ulID = ID_XSSI_KEY_HOME; break; // pszHome
-            case VK_LEFT: ulID = ID_XSSI_KEY_LEFT; break; // pszLeft
-            case VK_UP: ulID = ID_XSSI_KEY_UP; break; // pszUp
-            case VK_RIGHT: ulID = ID_XSSI_KEY_RIGHT; break; // pszRight
-            case VK_DOWN: ulID = ID_XSSI_KEY_DOWN; break; // pszDown
-            case VK_PRINTSCRN: ulID = ID_XSSI_KEY_PRINTSCRN; break; // pszPrintscrn
-            case VK_INSERT: ulID = ID_XSSI_KEY_INSERT; break; // pszInsert
-            case VK_DELETE: ulID = ID_XSSI_KEY_DELETE; break; // pszDelete
-            case VK_SCRLLOCK: ulID = ID_XSSI_KEY_SCRLLOCK; break; // pszScrlLock
-            case VK_NUMLOCK: ulID = ID_XSSI_KEY_NUMLOCK; break; // pszNumLock
-            case VK_ENTER: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
-            case VK_F1: pcszCopy = "F1"; break;
-            case VK_F2: pcszCopy = "F2"; break;
-            case VK_F3: pcszCopy = "F3"; break;
-            case VK_F4: pcszCopy = "F4"; break;
-            case VK_F5: pcszCopy = "F5"; break;
-            case VK_F6: pcszCopy = "F6"; break;
-            case VK_F7: pcszCopy = "F7"; break;
-            case VK_F8: pcszCopy = "F8"; break;
-            case VK_F9: pcszCopy = "F9"; break;
-            case VK_F10: pcszCopy = "F10"; break;
-            case VK_F11: pcszCopy = "F11"; break;
-            case VK_F12: pcszCopy = "F12"; break;
-            case VK_F13: pcszCopy = "F13"; break;
-            case VK_F14: pcszCopy = "F14"; break;
-            case VK_F15: pcszCopy = "F15"; break;
-            case VK_F16: pcszCopy = "F16"; break;
-            case VK_F17: pcszCopy = "F17"; break;
-            case VK_F18: pcszCopy = "F18"; break;
-            case VK_F19: pcszCopy = "F19"; break;
-            case VK_F20: pcszCopy = "F20"; break;
-            case VK_F21: pcszCopy = "F21"; break;
-            case VK_F22: pcszCopy = "F22"; break;
-            case VK_F23: pcszCopy = "F23"; break;
-            case VK_F24: pcszCopy = "F24"; break;
-            default: brc = FALSE; break;
-        }
-    } // end if (usFlags & KC_VIRTUALKEY)
-    else
-    {
-        switch (usKeyCode)
-        {
-            case 0xEC00: ulID = ID_XSSI_KEY_WINLEFT; break; // pszWinLeft
-            case 0xED00: ulID = ID_XSSI_KEY_WINRIGHT; break; // pszWinRight
-            case 0xEE00: ulID = ID_XSSI_KEY_WINMENU; break; // pszWinMenu
-            default:
-            {
-                CHAR szTemp[2];
-                if (usKeyCode >= 'a')
-                    szTemp[0] = (CHAR)usKeyCode-32;
-                else
-                    szTemp[0] = (CHAR)usKeyCode;
-                szTemp[1] = '\0';
-                strcat(pszBuf, szTemp);
-            }
-        }
-    }
-
-    if (ulID)
-        pcszCopy = cmnGetString(ulID);
-
-    if (pcszCopy)
-        strcat(pszBuf, pcszCopy);
-
-    #ifdef DEBUG_KEYS
-        _Pmpf(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
-    #endif
-
-    return (brc);
-}
-
-/*
- *@@ cmnAddCloseMenuItem:
- *      adds a "Close" menu item to the given menu.
- *
- *@@added V0.9.7 (2000-12-21) [umoeller]
- */
-
-VOID cmnAddCloseMenuItem(HWND hwndMenu)
-{
-    // add "Close" menu item
-    winhInsertMenuSeparator(hwndMenu,
-                            MIT_END,
-                            cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR);
-    winhInsertMenuItem(hwndMenu,
-                       MIT_END,
-                       WPMENUID_CLOSE,
-                       cmnGetString(ID_XSSI_CLOSE),  // "~Close", // pszClose
-                       MIS_TEXT, 0);
-}
-
 /* ******************************************************************
  *
  *   Status bar settings
@@ -2065,9 +1960,9 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
  *@@changed V0.9.16 (2001-12-02) [umoeller]: now loading on demand
  */
 
-const char* cmnQueryStatusBarSetting(USHORT usSetting)
+PCSZ cmnQueryStatusBarSetting(USHORT usSetting)
 {
-    const char *rc = 0;
+    PCSZ rc = 0;
 
     BOOL fLocked = FALSE;
 
@@ -2633,6 +2528,8 @@ typedef struct _SETTINGINFO
     PCSZ            pcszIniKey;         // INI key for this setting
 } SETTINGINFO, *PSETTINGINFO;
 
+typedef const struct _SETTINGINFO *PCSETTINGINFO;
+
 /*
  *@@ G_aSettingInfos:
  *      describes the various XWPSETTING's available
@@ -2643,7 +2540,7 @@ typedef struct _SETTINGINFO
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-static SETTINGINFO G_aSettingInfos[] =
+static const SETTINGINFO G_aSettingInfos[] =
     {
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements, FIELDOFFSET(OLDGLOBALSETTINGS, __fIconReplacements), 4,
@@ -2727,10 +2624,13 @@ static SETTINGINFO G_aSettingInfos[] =
         sfFolderHotkeys, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableFolderHotkeys), 4,
             SP_SETUP_FEATURES, 0,
             "FolderHotkeys",
+#endif
         sfFolderHotkeysDefault, FIELDOFFSET(OLDGLOBALSETTINGS, fFolderHotkeysDefault), 4,
             SP_4ACCELERATORS, 1,
             "FolderHotkeysDefault",
-#endif
+        sfShowHotkeysInMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fShowHotkeysInMenus), 1,
+            SP_4ACCELERATORS, 1,
+            "fShowHotkeysInMenus",
 
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
         sfResizeSettingsPages, FIELDOFFSET(OLDGLOBALSETTINGS, __fResizeSettingsPages), 1,
@@ -2777,7 +2677,7 @@ static SETTINGINFO G_aSettingInfos[] =
             "RestartDesktop",
         sflXShutdown, FIELDOFFSET(OLDGLOBALSETTINGS, __flXShutdown), 4,
             SP_DTP_SHUTDOWN,
-                    XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN,
+                    XSD_WPS_CLOSEWINDOWS | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN,
             "flXShutdown",
         sulSaveINIS, FIELDOFFSET(OLDGLOBALSETTINGS, _bSaveINIS), 1,
             SP_DTP_SHUTDOWN, 0, // new method, V0.9.5 (2000-08-16) [umoeller]
@@ -2823,10 +2723,11 @@ static SETTINGINFO G_aSettingInfos[] =
             "fShowBootupStatus",
 #endif
 
+#ifndef __NOTURBOFOLDERS__
         sfTurboFolders, FIELDOFFSET(OLDGLOBALSETTINGS, __fTurboFolders), 1,
             SP_SETUP_FEATURES, 0,
             "fTurboFolders",
-                // @@todo
+#endif
 
         sulVarMenuOffset, FIELDOFFSET(OLDGLOBALSETTINGS, VarMenuOffset), 4,
             SP_SETUP_PARANOIA, 700,
@@ -2884,12 +2785,14 @@ static SETTINGINFO G_aSettingInfos[] =
         sfDTMLockup, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMLockup), 4,
             SP_DTP_MENUITEMS, 1,
             "fDTMLockup",
+#ifndef __NOXSHUTDOWN__
         sfDTMShutdown, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMShutdown), 4,
             SP_DTP_MENUITEMS, 1,
             "fDTMShutdown",
         sfDTMShutdownMenu, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMShutdownMenu), 4,
             SP_DTP_MENUITEMS, 1,
             "fDTMShutdownMenu",
+#endif
         sfDTMLogoffNetwork, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMLogoffNetwork), 1,
             SP_DTP_MENUITEMS, 1,
             "fDTMLogoffNetwork",
@@ -2990,9 +2893,11 @@ static SETTINGINFO G_aSettingInfos[] =
             "fNoFreakyMenus",
 
         // misc
+#ifndef __NOXSYSTEMSOUNDS__
         sfXSystemSounds, FIELDOFFSET(OLDGLOBALSETTINGS, fXSystemSounds), 1,
             SP_SETUP_FEATURES, 0,
             "fXSystemSounds",
+#endif
         susLastRebootExt, FIELDOFFSET(OLDGLOBALSETTINGS, __usLastRebootExt), 2,
             0, 0,
             "usLastRebootExt",
@@ -3003,9 +2908,6 @@ static SETTINGINFO G_aSettingInfos[] =
         sflIntroHelpShown, FIELDOFFSET(OLDGLOBALSETTINGS, ulIntroHelpShown), 4,
             0, 0,
             "flIntroHelpShown",
-        sfShowHotkeysInMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fShowHotkeysInMenus), 1,
-            SP_4ACCELERATORS, 1,
-            "fShowHotkeysInMenus",
         sfFdrAutoRefreshDisabled, FIELDOFFSET(OLDGLOBALSETTINGS, fFdrAutoRefreshDisabled), 1,
             SP_1GENERIC, 0,
             "fFdrAutoRefreshDisabled",
@@ -3021,7 +2923,7 @@ static SETTINGINFO G_aSettingInfos[] =
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-PSETTINGINFO FindSettingInfo(XWPSETTING s)
+PCSETTINGINFO FindSettingInfo(XWPSETTING s)
 {
     ULONG ul2;
     for (ul2 = 0;
@@ -3062,7 +2964,7 @@ VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
          s++)
     {
         // look up the corresponding SETTINGINFO
-        PSETTINGINFO pStore;
+        PCSETTINGINFO pStore;
         if (    (pStore = FindSettingInfo(s))
                 // does entry exist?
              && (pStore->ulOffsetIntoOld != -1)
@@ -3125,7 +3027,7 @@ VOID cmnLoadGlobalSettings(VOID)
          ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
          ul2++)
     {
-        PSETTINGINFO pThis = &G_aSettingInfos[ul2];
+        PCSETTINGINFO pThis = &G_aSettingInfos[ul2];
         G_aulSettings[pThis->s] = pThis->ulDefaultValue;
     }
 
@@ -3166,7 +3068,7 @@ VOID cmnLoadGlobalSettings(VOID)
              ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
              ul2++)
         {
-            PSETTINGINFO pThis = &G_aSettingInfos[ul2];
+            PCSETTINGINFO pThis = &G_aSettingInfos[ul2];
             PULONG pulThis = &G_aulSettings[pThis->s];
             cb = sizeof(ULONG);
 
@@ -3217,7 +3119,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
          ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
          ul2++)
     {
-        PSETTINGINFO pThis = &G_aSettingInfos[ul2];
+        PCSETTINGINFO pThis = &G_aSettingInfos[ul2];
         if (    (usSettingsPage == 0)
              || (pThis->ulSettingsPageID == usSettingsPage)
            )
@@ -3234,15 +3136,22 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 #ifdef __DEBUG__
 
 ULONG cmnQuerySettingDebug(XWPSETTING s,
-                           const char *pcszSourceFile,
+                           PCSZ pcszSourceFile,
                            ULONG ulLine,
-                           const char *pcszFunction)
+                           PCSZ pcszFunction)
 {
+#ifndef __NOTURBOFOLDERS__
+    if (s == sfTurboFolders)
+        return G_fTurboSettingsEnabled;
+#endif
+
     if (s < ___LAST_SETTING)
         return (G_aulSettings[s]);
 
+#ifdef __DEBUG__
     cmnLog(pcszSourceFile, ulLine, pcszFunction,
            __FUNCTION__ " warning: Invalid setting %d queried.", s);
+#endif
 
     return FALSE;
 }
@@ -3280,14 +3189,18 @@ ULONG cmnQuerySettingDebug(XWPSETTING s,
 
 ULONG cmnQuerySetting(XWPSETTING s)
 {
+#ifndef __NOTURBOFOLDERS__
     if (s == sfTurboFolders)
         return G_fTurboSettingsEnabled;
+#endif
 
     if (s < ___LAST_SETTING)
         return (G_aulSettings[s]);
 
+#ifdef __DEBUG__
     cmnLog(__FILE__, __LINE__, __FUNCTION__,
            "Warning: Invalid feature %d queried.", s);
+#endif
 
     return FALSE;
 }
@@ -3311,7 +3224,7 @@ BOOL cmnSetSetting(XWPSETTING s,
 {
     if (s < ___LAST_SETTING)
     {
-        PSETTINGINFO pStore;
+        PCSETTINGINFO pStore;
         if (pStore = FindSettingInfo(s))
         {
             PULONG pulWrite;
@@ -3340,7 +3253,7 @@ BOOL cmnSetSetting(XWPSETTING s,
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Warning: Invalid feature %d set.", s);
+               "Warning: Invalid setting %d set.", s);
 
     return FALSE;
 }
@@ -3368,7 +3281,7 @@ BOOL cmnSetSetting(XWPSETTING s,
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-PSETTINGSBACKUP cmnBackupSettings(XWPSETTING *paSettings,
+PSETTINGSBACKUP cmnBackupSettings(const XWPSETTING *paSettings,
                                   ULONG cItems)         // in: array item count (NOT array size)
 {
     PSETTINGSBACKUP p1 = (PSETTINGSBACKUP)malloc(sizeof(SETTINGSBACKUP) * cItems),
@@ -3412,6 +3325,22 @@ VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
     }
 }
 
+#ifndef __NOTURBOFOLDERS__
+
+/*
+ *@@ cmnTurboFoldersEnabled:
+ *      returns the "real" turbo folders setting,
+ *      while cmnQuerySetting would return the
+ *      filtered feature setting.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+BOOL cmnTurboFoldersEnabled(VOID)
+{
+    return (G_aulSettings[sfTurboFolders]);
+}
+
 /*
  *@@ cmnEnableTurboFolders:
  *      private function called by XWPFileSystem::wpclsInitData
@@ -3428,6 +3357,8 @@ VOID cmnEnableTurboFolders(VOID)
     if (G_aulSettings[sfTurboFolders])
         G_fTurboSettingsEnabled = TRUE;
 }
+
+#endif
 
 /* ******************************************************************
  *
@@ -3777,7 +3708,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
 BOOL cmnSetupSave(WPObject *somSelf,
                   PXWPSETUPENTRY paSettings, // in: object's setup set
                   ULONG cSettings,         // in: array item count (NOT array size)
-                  const char *pcszClassName, // in: class name to be used with wpSave*
+                  PCSZ pcszClassName, // in: class name to be used with wpSave*
                   PVOID somThis)           // in: instance's somThis pointer
 {
     BOOL    brc = TRUE;
@@ -3850,7 +3781,7 @@ BOOL cmnSetupSave(WPObject *somSelf,
 BOOL cmnSetupRestore(WPObject *somSelf,
                      PXWPSETUPENTRY paSettings, // in: object's setup set
                      ULONG cSettings,         // in: array item count (NOT array size)
-                     const char *pcszClassName, // in: class name to be used with wpRestore*
+                     PCSZ pcszClassName, // in: class name to be used with wpRestore*
                      PVOID somThis)           // in: instance's somThis pointer
 {
     BOOL    brc = TRUE;
@@ -4141,9 +4072,9 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
                 HPOINTER hptrOld = winhSetWaitPointer();
 
                 if (WinRegisterObjectClass((PSZ)G_pcszXWPTrashCan,
-                                           (PSZ)cmnQueryMainModuleFilename()))
+                                           (PSZ)cmnQueryMainCodeModuleFilename()))
                     if (WinRegisterObjectClass((PSZ)G_pcszXWPTrashObject,
-                                               (PSZ)cmnQueryMainModuleFilename()))
+                                               (PSZ)cmnQueryMainCodeModuleFilename()))
                     {
                         fCreateObject = TRUE;
                         brc = TRUE;
@@ -4327,7 +4258,7 @@ BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" sub
 #define INFO_WIDTH  400
 
 
-CONTROLDEF
+static CONTROLDEF
     ProductInfoBitmap = CONTROLDEF_BITMAP(
                             NULLHANDLE,     // replaced with HBITMAP below
                             ID_XFD_PRODLOGO),
@@ -4336,7 +4267,7 @@ CONTROLDEF
     ProductInfoText1 =
         {
             WC_STATIC,
-            "eComStation Desktop Version 4.5",
+            NULL,
             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP | DT_WORDBREAK,
             -1,
             "9.WarpSans Bold",
@@ -4345,8 +4276,7 @@ CONTROLDEF
             COMMON_SPACING
         },
     ProductInfoText2 = CONTROLDEF_TEXT_WORDBREAK(
-                            "(C) Copyright 1992, 1996 IBM Corporation. All rights reserved.\n"
-                            "(C) Copyright 2001 Serenity Systems International. All rights reserved.",
+                            NULL,
                             -1,
                             INFO_WIDTH),
 #endif
@@ -4361,7 +4291,7 @@ CONTROLDEF
                             100,
                             30);
 
-DLGHITEM dlgProductInfo[] =
+static const DLGHITEM dlgProductInfo[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_BOTTOM),
@@ -4381,29 +4311,6 @@ DLGHITEM dlgProductInfo[] =
         END_TABLE
     };
 
-/* DLGTEMPLATE ID_XFD_PRODINFO LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Product Information", ID_XFD_PRODINFO, 20, 8, 266,
-            129, FS_SCREENALIGN, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        GROUPBOX        "XWorkplace %a", ID_XFDI_XFLDVERSION, 6, 24, 254, 99
-        LTEXT           "OpenSource Workplace Shell enhancer. Consider this "
-                        "your next OS/2 Warp upgrade.", -1, 16, 90, 139, 17,
-                        DT_WORDBREAK
-        LTEXT           "XWorkplace is a Netlabs project. See http://xworkpl"
-                        "ace.netlabs.org for details.", -1, 16, 74, 139, 17,
-                        DT_WORDBREAK
-        DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 60, 12
-        PUSHBUTTON      "Open User Guide", ID_XLD_CLASSLIST, 154, 6, 105, 12,
-                        BS_HELP | BS_NOPOINTERFOCUS
-        CONTROL         "", ID_XLDI_TEXT2, 15, 30, 235, 40, WC_MLE,
-                        MLS_READONLY | MLS_WORDWRAP | MLS_VSCROLL | WS_GROUP |
-                        WS_TABSTOP | WS_VISIBLE
-        CONTROL         "", ID_XFD_PRODLOGO, 164, 76, 86, 38, WC_STATIC,
-                        SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
-    END
-END */
-
 /*
  * PRODUCTINFODATA:
  *      small struct for QWL_USER in cmn_fnwpProductInfo.
@@ -4414,114 +4321,6 @@ typedef struct _PRODUCTINFODATA
     HBITMAP hbm;
     POINTL  ptlBitmap;
 } PRODUCTINFODATA, *PPRODUCTINFODATA;
-
-/*
- *@@ cmn_fnwpProductInfo:
- *      dialog func which paints the XWP logo directly
- *      as a bitmap, instead of using a static control.
- *
- *@@added V0.9.5 (2000-10-07) [umoeller]
- */
-
-/* MRESULT EXPENTRY cmn_fnwpProductInfo(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    BOOL fCallDefault = TRUE;
-
-    switch (msg)
-    {
-        case WM_INITDLG:
-        {
-            PPRODUCTINFODATA ppd = (PPRODUCTINFODATA)malloc(sizeof(PRODUCTINFODATA));
-            if (ppd)
-            {
-                HPS hpsTemp = 0;
-                memset(ppd, 0, sizeof(PRODUCTINFODATA));
-
-                hpsTemp = WinGetPS(hwndDlg);
-                if (hpsTemp)
-                {
-                    ppd->hbm = GpiLoadBitmap(hpsTemp,
-                                             cmnQueryNLSModuleHandle(FALSE),
-                                             ID_XFLDRBITMAP,
-                                             0, 0); // no stretch
-                    if (ppd->hbm)
-                    {
-                        HWND    hwndStatic = WinWindowFromID(hwndDlg, ID_XFD_PRODLOGO);
-                        if (hwndStatic)
-                        {
-                            SWP     swpFrame;
-                            BITMAPINFOHEADER2 bmih2;
-                            bmih2.cbFix = sizeof(bmih2);
-                            if (GpiQueryBitmapInfoHeader(ppd->hbm, &bmih2))
-                            {
-                                if (WinQueryWindowPos(hwndStatic,
-                                                      &swpFrame))
-                                {
-                                    ppd->ptlBitmap.x = swpFrame.x
-                                                       + ((swpFrame.cx - (LONG)bmih2.cx) / 2);
-                                    ppd->ptlBitmap.y = swpFrame.y
-                                                       + ((swpFrame.cy - (LONG)bmih2.cy) / 2);
-                                }
-
-                                WinDestroyWindow(hwndStatic);
-                            }
-                        }
-                    }
-
-                    WinReleasePS(hpsTemp);
-                }
-            }
-
-            WinSetWindowPtr(hwndDlg, QWL_USER, ppd);
-        break; }
-
-        case WM_PAINT:
-        {
-            HPS hpsPaint = 0;
-            mrc = cmn_fnwpDlgWithHelp(hwndDlg, msg, mp1, mp2);
-
-            hpsPaint = WinGetPS(hwndDlg);
-            if (hpsPaint)
-            {
-                PPRODUCTINFODATA ppd = (PPRODUCTINFODATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-                if (ppd)
-                {
-                    if (ppd->hbm)
-                    {
-                        POINTL ptlDest;
-                        ptlDest.x = ppd->ptlBitmap.x;
-                        ptlDest.y = ppd->ptlBitmap.y;
-                        WinDrawBitmap(hpsPaint,
-                                      ppd->hbm,
-                                      NULL,
-                                      &ptlDest,
-                                      0, 0, DBM_NORMAL);
-                    }
-                }
-
-                WinReleasePS(hpsPaint);
-            }
-        break; }
-
-        case WM_DESTROY:
-        {
-            PPRODUCTINFODATA ppd = (PPRODUCTINFODATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-            if (ppd)
-            {
-                if (ppd->hbm)
-                    GpiDeleteBitmap(ppd->hbm);
-                free(ppd);
-            }
-        break; }
-    }
-
-    if (fCallDefault)
-        mrc = cmn_fnwpDlgWithHelp(hwndDlg, msg, mp1, mp2);
-
-    return (mrc);
-} */
 
 /*
  *@@ cmnShowProductInfo:
@@ -4540,41 +4339,36 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     HPS     hps;
     HBITMAP hbmLogo = NULLHANDLE;
     HWND    hwndInfo;
-    XSTRING strInfo;
+    XSTRING strInfo,
+            strInfoECS1,
+            strInfoECS2;
 
-    xstrInit(&strInfo, 0);
-
-    // text view (GPL info)
-    /* txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
-    hwndTextView = txvReplaceWithTextView(hwndInfo,
-                                          ID_XLDI_TEXT2,
-                                          WS_VISIBLE | WS_TABSTOP,
-                                          XTXF_VSCROLL,
-                                          2);
-    WinSendMsg(hwndTextView, TXM_SETWORDWRAP, (MPARAM)TRUE, 0);
-    WinSetPresParam(hwndTextView,
-                    PP_BACKGROUNDCOLOR,
-                    sizeof(ULONG),
-                    &lBackClr);
-
-    cmnSetControlsFont(hwndInfo, 1, 10000); */
-
+#ifndef __NOXSYSTEMSOUNDS__
     cmnPlaySystemSound(ulSound);
+#endif
 
     // load and convert info text
+    xstrInit(&strInfo, 0);
     cmnGetMessage(NULL, 0,
                   &strInfo,
                   140);
+    ProductInfoText3.pcszText = strInfo.psz;
 
+#ifdef __XWPLITE__
+    xstrInit(&strInfoECS1, 0);
+    cmnGetMessageExt(NULL, 0,
+                     &strInfoECS1,
+                     "ECSPRODINFO01");
+    ProductInfoText1.pcszText = strInfoECS1.psz;
+
+    xstrInit(&strInfoECS2, 0);
+    cmnGetMessageExt(NULL, 0,
+                     &strInfoECS2,
+                     "ECSPRODINFO02");
+    ProductInfoText2.pcszText = strInfoECS2.psz;
+#endif
 
     // version string
-    /* winhSetWindowText(WinWindowFromID(hwndInfo, ID_XFDI_XFLDVERSION),
-                      "XWorkplace V%s (%s)",
-                      BLDLEVEL_VERSION,
-                      __DATE__);
-
-    cmnSetDlgHelpPanel(0); */
-
     if (hps = WinGetPS(HWND_DESKTOP))
     {
         hbmLogo = GpiLoadBitmap(hps,
@@ -4588,13 +4382,11 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     cmnLoadDialogStrings(dlgProductInfo,
                          ARRAYITEMCOUNT(dlgProductInfo));
 
-    ProductInfoText3.pcszText = strInfo.psz;
-
     if (!dlghCreateDlg(&hwndInfo,
                        hwndOwner,
                        FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                        WinDefDlgProc,
-                       "Product Information",    // @@todo localize
+                       cmnGetString(ID_XSDI_INFO_TITLE),
                        dlgProductInfo,
                        ARRAYITEMCOUNT(dlgProductInfo),
                        NULL,
@@ -4610,11 +4402,221 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     xstrClear(&strInfo);
 }
 
+#undef __XWPLITE__
+
 /* ******************************************************************
  *
  *   Miscellaneae
  *
  ********************************************************************/
+
+/*
+ *@@ cmnQueryCountrySettings:
+ *      returns the global COUNTRYSETTINGS (see helpers\prfh.c)
+ *      as set in the "Country" object, which are cached for speed.
+ *
+ *      If (fReload == TRUE), the settings are re-read.
+ *
+ *@@added V0.9.6 (2000-11-12) [umoeller]
+ */
+
+PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
+{
+    if ((!G_fCountrySettingsLoaded) || (fReload))
+    {
+        nlsQueryCountrySettings(&G_CountrySettings);
+        G_fCountrySettingsLoaded = TRUE;
+    }
+
+    return (&G_CountrySettings);
+}
+
+/*
+ *@@ cmnQueryThousandsSeparator:
+ *      returns the thousands separator from the "Country"
+ *      object.
+ *
+ *@@added V0.9.6 (2000-11-12) [umoeller]
+ */
+
+CHAR cmnQueryThousandsSeparator(VOID)
+{
+    PCOUNTRYSETTINGS p = cmnQueryCountrySettings(FALSE);
+    return (p->cThousands);
+}
+
+/*
+ *@@ cmnIsValidHotkey:
+ *      returns TRUE if the specified key combo can
+ *      be used as a hotkey without endangering the
+ *      system.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+BOOL cmnIsValidHotkey(USHORT usFlags,
+                      USHORT usKeyCode)
+{
+    BOOL brc
+        = (
+                // must be a virtual key
+                (  (  ((usFlags & KC_VIRTUALKEY) != 0)
+                // or Ctrl or Alt must be pressed
+                   || ((usFlags & KC_CTRL) != 0)
+                   || ((usFlags & KC_ALT) != 0)
+                // or one of the Win95 keys must be pressed
+                   || (   ((usFlags & KC_VIRTUALKEY) == 0)
+                       && (     (usKeyCode == 0xEC00)
+                            ||  (usKeyCode == 0xED00)
+                            ||  (usKeyCode == 0xEE00)
+                          )
+                   )
+                )
+                // OK:
+                // filter out lone modifier keys
+                && (    ((usFlags & KC_VIRTUALKEY) == 0)
+                     || (   (usKeyCode != VK_SHIFT)     // shift
+                         && (usKeyCode != VK_CTRL)     // ctrl
+                         && (usKeyCode != VK_ALT)     // alt
+                // and filter out the tab key too
+                         && (usKeyCode != VK_TAB)     // tab
+                        )
+                   )
+                )
+           );
+    return (brc);
+}
+
+/*
+ *@@ cmnDescribeKey:
+ *      this stores a description of a certain
+ *      key into pszBuf, using the NLS DLL strings.
+ *      usFlags is as in WM_CHAR.
+ *      If (usFlags & KC_VIRTUALKEY), usKeyCode must
+ *      be usvk of WM_CHAR (VK_* code), or usch otherwise.
+ *      Returns TRUE if this was a valid key combo.
+ */
+
+BOOL cmnDescribeKey(PSZ pszBuf,
+                    USHORT usFlags,
+                    USHORT usKeyCode)
+{
+    BOOL brc = TRUE;
+
+    ULONG ulID = 0;
+    PCSZ pcszCopy = NULL;
+
+    *pszBuf = 0;
+    if (usFlags & KC_CTRL)
+        strcpy(pszBuf, cmnGetString(ID_XSSI_KEY_CTRL)) ; // pszCtrl
+    if (usFlags & KC_SHIFT)
+        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SHIFT)) ; // pszShift
+    if (usFlags & KC_ALT)
+        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_Alt)) ; // pszAlt
+
+    if (usFlags & KC_VIRTUALKEY)
+    {
+        switch (usKeyCode)
+        {
+            case VK_BACKSPACE: ulID = ID_XSSI_KEY_BACKSPACE; break; // pszBackspace
+            case VK_TAB: ulID = ID_XSSI_KEY_TAB; break; // pszTab
+            case VK_BACKTAB: ulID = ID_XSSI_KEY_BACKTABTAB; break; // pszBacktab
+            case VK_NEWLINE: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
+            case VK_ESC: ulID = ID_XSSI_KEY_ESC; break; // pszEsc
+            case VK_SPACE: ulID = ID_XSSI_KEY_SPACE; break; // pszSpace
+            case VK_PAGEUP: ulID = ID_XSSI_KEY_PAGEUP; break; // pszPageup
+            case VK_PAGEDOWN: ulID = ID_XSSI_KEY_PAGEDOWN; break; // pszPagedown
+            case VK_END: ulID = ID_XSSI_KEY_END; break; // pszEnd
+            case VK_HOME: ulID = ID_XSSI_KEY_HOME; break; // pszHome
+            case VK_LEFT: ulID = ID_XSSI_KEY_LEFT; break; // pszLeft
+            case VK_UP: ulID = ID_XSSI_KEY_UP; break; // pszUp
+            case VK_RIGHT: ulID = ID_XSSI_KEY_RIGHT; break; // pszRight
+            case VK_DOWN: ulID = ID_XSSI_KEY_DOWN; break; // pszDown
+            case VK_PRINTSCRN: ulID = ID_XSSI_KEY_PRINTSCRN; break; // pszPrintscrn
+            case VK_INSERT: ulID = ID_XSSI_KEY_INSERT; break; // pszInsert
+            case VK_DELETE: ulID = ID_XSSI_KEY_DELETE; break; // pszDelete
+            case VK_SCRLLOCK: ulID = ID_XSSI_KEY_SCRLLOCK; break; // pszScrlLock
+            case VK_NUMLOCK: ulID = ID_XSSI_KEY_NUMLOCK; break; // pszNumLock
+            case VK_ENTER: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
+            case VK_F1: pcszCopy = "F1"; break;
+            case VK_F2: pcszCopy = "F2"; break;
+            case VK_F3: pcszCopy = "F3"; break;
+            case VK_F4: pcszCopy = "F4"; break;
+            case VK_F5: pcszCopy = "F5"; break;
+            case VK_F6: pcszCopy = "F6"; break;
+            case VK_F7: pcszCopy = "F7"; break;
+            case VK_F8: pcszCopy = "F8"; break;
+            case VK_F9: pcszCopy = "F9"; break;
+            case VK_F10: pcszCopy = "F10"; break;
+            case VK_F11: pcszCopy = "F11"; break;
+            case VK_F12: pcszCopy = "F12"; break;
+            case VK_F13: pcszCopy = "F13"; break;
+            case VK_F14: pcszCopy = "F14"; break;
+            case VK_F15: pcszCopy = "F15"; break;
+            case VK_F16: pcszCopy = "F16"; break;
+            case VK_F17: pcszCopy = "F17"; break;
+            case VK_F18: pcszCopy = "F18"; break;
+            case VK_F19: pcszCopy = "F19"; break;
+            case VK_F20: pcszCopy = "F20"; break;
+            case VK_F21: pcszCopy = "F21"; break;
+            case VK_F22: pcszCopy = "F22"; break;
+            case VK_F23: pcszCopy = "F23"; break;
+            case VK_F24: pcszCopy = "F24"; break;
+            default: brc = FALSE; break;
+        }
+    } // end if (usFlags & KC_VIRTUALKEY)
+    else
+    {
+        switch (usKeyCode)
+        {
+            case 0xEC00: ulID = ID_XSSI_KEY_WINLEFT; break; // pszWinLeft
+            case 0xED00: ulID = ID_XSSI_KEY_WINRIGHT; break; // pszWinRight
+            case 0xEE00: ulID = ID_XSSI_KEY_WINMENU; break; // pszWinMenu
+            default:
+            {
+                CHAR szTemp[2];
+                if (usKeyCode >= 'a')
+                    szTemp[0] = (CHAR)usKeyCode-32;
+                else
+                    szTemp[0] = (CHAR)usKeyCode;
+                szTemp[1] = '\0';
+                strcat(pszBuf, szTemp);
+            }
+        }
+    }
+
+    if (ulID)
+        pcszCopy = cmnGetString(ulID);
+
+    if (pcszCopy)
+        strcat(pszBuf, pcszCopy);
+
+    #ifdef DEBUG_KEYS
+        _Pmpf(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
+    #endif
+
+    return (brc);
+}
+
+/*
+ *@@ cmnAddCloseMenuItem:
+ *      adds a "Close" menu item to the given menu.
+ *
+ *@@added V0.9.7 (2000-12-21) [umoeller]
+ */
+
+VOID cmnAddCloseMenuItem(HWND hwndMenu)
+{
+    // add "Close" menu item
+    winhInsertMenuSeparator(hwndMenu,
+                            MIT_END,
+                            cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR);
+    winhInsertMenuItem(hwndMenu,
+                       MIT_END,
+                       WPMENUID_CLOSE,
+                       cmnGetString(ID_XSSI_CLOSE),  // "~Close", // pszClose
+                       MIS_TEXT, 0);
+}
 
 /*
  *@@ cmnRegisterView:
@@ -4638,7 +4640,7 @@ BOOL cmnRegisterView(WPObject *somSelf,
                      PUSEITEM pUseItem,     // in: USEITEM, immediately followed by VIEWITEM
                      ULONG ulViewID,        // in: view ID == menu item ID
                      HWND hwndFrame,        // in: frame window handle of new view (must be WC_FRAME)
-                     const char *pcszViewTitle) // in: view title for wpRegisterView (tilde chars are removed)
+                     PCSZ pcszViewTitle) // in: view title for wpRegisterView (tilde chars are removed)
 {
     BOOL        brc = FALSE;
     PSZ         pszViewTitle;
@@ -4673,6 +4675,8 @@ BOOL cmnRegisterView(WPObject *somSelf,
     return (brc);
 }
 
+#ifndef __NOXSYSTEMSOUNDS__
+
 /*
  *@@ cmnPlaySystemSound:
  *      this posts a msg to the XFolder Media thread to
@@ -4703,6 +4707,8 @@ BOOL cmnPlaySystemSound(USHORT usIndex)
 
     return (brc);
 }
+
+#endif
 
 /*
  *@@ cmnIsADesktop:
@@ -4782,7 +4788,7 @@ BOOL cmnIsObjectFromForeignDesktop(WPObject *somSelf)
     return (fForeign);
 }
 
-const char *G_apcszExtensions[]
+static PCSZ G_apcszExtensions[]
     = {
                 "EXE",
                 "COM",
@@ -5127,11 +5133,14 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 case ID_XFD_RUN_BROWSE:
                 {
                     FILEDLG filedlg;
-                    APSZ typelist[] = { "DOS Command File",
-                                        "Executable",
-                                        "OS/2 Command File",        // V0.9.16 (2001-09-29) [umoeller]
-                                        NULL };
-                    PSZ pszFilespec = "*.COM;*.EXE;*.CMD;*.BAT";
+                    static const APSZ typelist[] =
+                        {
+                            "DOS Command File",
+                            "Executable",
+                            "OS/2 Command File",        // V0.9.16 (2001-09-29) [umoeller]
+                            NULL
+                        };
+                    static const PSZ pszFilespec = "*.COM;*.EXE;*.CMD;*.BAT";
 
                     memset(&filedlg, '\0', sizeof(filedlg));
                     filedlg.cbSize = sizeof(filedlg);
@@ -5146,7 +5155,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                     else
                         strcpy(filedlg.szFullFile, pszFilespec);
 
-                    filedlg.papszITypeList = typelist;
+                    filedlg.papszITypeList = (PAPSZ)typelist;
                     if (    (WinFileDlg(HWND_DESKTOP, hwnd, &filedlg))
                          && (filedlg.lReturn == DID_OK)
                        )
@@ -5207,7 +5216,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  */
 
 HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
-                       const char *pcszStartupDir)  // in: startup dir or NULL
+                       PCSZ pcszStartupDir)  // in: startup dir or NULL
 {
     static HWND hwndDlg = NULLHANDLE;
     HAPP        happ = NULLHANDLE;
@@ -5383,7 +5392,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
  *@@added V0.9.0 [umoeller]
  */
 
-const char* cmnQueryDefaultFont(VOID)
+PCSZ cmnQueryDefaultFont(VOID)
 {
 #ifndef __XWPLITE__
     if (cmnQuerySetting(sfUse8HelvFont))
@@ -5471,8 +5480,8 @@ HPOINTER cmnQueryDlgIcon(VOID)
  */
 
 ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
-                    const char *pcszTitle,       // in: msgbox title
-                    const char *pcszMessage,     // in: msgbox text
+                    PCSZ pcszTitle,       // in: msgbox title
+                    PCSZ pcszMessage,     // in: msgbox text
                     ULONG flStyle)      // in: MB_* flags
 {
     ULONG   ulrc = DID_CANCEL;
@@ -5833,9 +5842,9 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
  */
 
 PSZ cmnTextEntryBox(HWND hwndOwner,
-                    const char *pcszTitle,
-                    const char *pcszDescription,
-                    const char *pcszDefault,
+                    PCSZ pcszTitle,
+                    PCSZ pcszDescription,
+                    PCSZ pcszDefault,
                     ULONG ulMaxLen,
                     ULONG fl)
 {
@@ -5897,7 +5906,7 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 /* WPObject    *pHelpSomSelf = cmnQueryActiveDesktop();
                 if (pHelpSomSelf)
                 {
-                    const char* pszHelpLibrary;
+                    PCSZ pszHelpLibrary;
                     BOOL fProcessed = FALSE;
                     if (pszHelpLibrary = cmnQueryHelpLibrary())
                         // path found: display help panel
@@ -5948,8 +5957,8 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
                                    // -- WINH_FOD_INILOADDIR: load FOD path from INI
                                    // -- WINH_FOD_INISAVEDIR: store FOD path to INI on OK
                 HINI hini,         // in: INI file to load/store last path from (can be HINI_USER)
-                const char *pcszApplication, // in: INI application to load/store last path from
-                const char *pcszKey)        // in: INI key to load/store last path from
+                PCSZ pcszApplication, // in: INI application to load/store last path from
+                PCSZ pcszKey)        // in: INI key to load/store last path from
 {
     HWND hwndFileDlg;
     FILEDLG fd;

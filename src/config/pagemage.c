@@ -1176,16 +1176,17 @@ MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARA
     return (mrc);
 }
 
-USHORT ausStaticFrameIDs[] = {
-                        ID_SCDI_PGMG2_DTP_INACTIVE,
-                        ID_SCDI_PGMG2_DTP_ACTIVE,
-                        ID_SCDI_PGMG2_DTP_BORDER,
-                        ID_SCDI_PGMG2_WIN_INACTIVE,
-                        ID_SCDI_PGMG2_WIN_ACTIVE,
-                        ID_SCDI_PGMG2_WIN_BORDER,
-                        ID_SCDI_PGMG2_TXT_INACTIVE,
-                        ID_SCDI_PGMG2_TXT_ACTIVE
-                   };
+static USHORT ausStaticFrameIDs[] =
+    {
+         ID_SCDI_PGMG2_DTP_INACTIVE,
+         ID_SCDI_PGMG2_DTP_ACTIVE,
+         ID_SCDI_PGMG2_DTP_BORDER,
+         ID_SCDI_PGMG2_WIN_INACTIVE,
+         ID_SCDI_PGMG2_WIN_ACTIVE,
+         ID_SCDI_PGMG2_WIN_BORDER,
+         ID_SCDI_PGMG2_TXT_INACTIVE,
+         ID_SCDI_PGMG2_TXT_ACTIVE
+    };
 
 /*
  *@@ pgmiPageMageColorsInitPage:
