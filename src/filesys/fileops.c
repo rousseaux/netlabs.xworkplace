@@ -763,6 +763,7 @@ MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
  *@@changed V0.9.9 (2001-03-27) [umoeller]: rewritten to no longer use wpshContainsFile, which caused find mutex deadlocks
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: forgot to populate folder first, fixed
  */
 
 WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object to check for
@@ -797,28 +798,31 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
     {
         WPObject    *pobj = 0;
 
-        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
-        if (fFolderLocked)
+        if (wpshCheckIfPopulated(pFolder, FALSE)) // V0.9.12 (2001-04-29) [umoeller]
         {
-            // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                    = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
-            for (   pobj = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
-                    (pobj);
-                    pobj = rslv_wpQueryContent(pFolder, pobj, (ULONG)QC_NEXT)
-                )
+            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
+            if (fFolderLocked)
             {
-                if (_somIsA(pobj, _WPFileSystem))
+                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
+                for (   pobj = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                        (pobj);
+                        pobj = rslv_wpQueryContent(pFolder, pobj, (ULONG)QC_NEXT)
+                    )
                 {
-                    CHAR    szThisName[CCHMAXPATH];
-                    if (_wpQueryFilename(pobj, szThisName, FALSE))
-                        if (!stricmp(szThisName, szCompare))
-                        {
-                            pFSReturn = pobj;
-                            strcpy(pszRealNameFound, szThisName);
-                            break;
-                        }
+                    if (_somIsA(pobj, _WPFileSystem))
+                    {
+                        CHAR    szThisName[CCHMAXPATH];
+                        if (_wpQueryFilename(pobj, szThisName, FALSE))
+                            if (!stricmp(szThisName, szCompare))
+                            {
+                                pFSReturn = pobj;
+                                strcpy(pszRealNameFound, szThisName);
+                                break;
+                            }
+                    }
                 }
             }
         }
