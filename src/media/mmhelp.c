@@ -110,6 +110,9 @@ LINKLIST    G_lstOpenDevices;
 
 /*
  *@@ xmmLockDevicesList:
+ *      internal helper to make the device functions
+ *      thread safe. This requests a mutex semaphore.
+ *      xmmUnlockDevicesList must be called to release it.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
@@ -132,6 +135,8 @@ BOOL xmmLockDevicesList(VOID)
 
 /*
  *@@ xmmUnlockDevicesList:
+ *      releases the mutex semaphore requested
+ *      by xmmLockDevicesList.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
@@ -144,6 +149,17 @@ BOOL xmmUnlockDevicesList(VOID)
 /*
  *@@ xmmOpenDevice:
  *      opens any multimedia device.
+ *      If *pusMMDeviceID is != 0, this simply
+ *      returns TRUE. Otherwise, the device is
+ *      opened from the specified parameters
+ *      and *pusMMDeviceID receives the device ID.
+ *      As a result, if TRUE is returned, you can
+ *      always be sure that the device is open.
+ *
+ *      Use xmmCloseDevice to close the device again.
+ *
+ *      This keeps a list of all open devices so that
+ *      xmmCleanup can clean up on shutdown.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
@@ -213,7 +229,7 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
 
 /*
  *@@ xmmCloseDevice:
- *      closes the device again and sets
+ *      closes a device opened by xmmOpenDevice and sets
  *      *pusMMDeviceID to null.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
@@ -281,7 +297,7 @@ VOID xmmCleanup(VOID)
 
 /*
  *@@ xmmOpenSound:
- *      this is called by the Media thread (fnwpMediaObject)
+ *      this is called by the Media thread (xmm_fnwpMediaObject)
  *      when it receives QM_PLAYSOUND to start playing a sound.
  *      In order to store the current status of
  *      the sound device, this func needs and modifies a MMPM/2
@@ -289,14 +305,14 @@ VOID xmmCleanup(VOID)
  *      sound file.
  *
  *      We also need the object window of the calling
- *      thread (which is hwndMediaObject from kernel.c)
+ *      thread (which is xmm_fnwpMediaObject)
  *      to inform MMPM/2 where to post notification
  *      messages.
  *
  *      We will only attempt to open the sound file here
  *      and then return; we will _not_ yet play the sound
  *      because we will need to wait for the MM_MCIPASSDEVICE
- *      message (which will be posted to hwndMediaObject, the Media
+ *      message (which will be posted to xmm_fnwpMediaObject, the Media
  *      thread object window) for checking whether the device
  *      is actually available.
  *
@@ -398,10 +414,10 @@ VOID xmmOpenSound(HWND hwndObject,       // in: Media thread object wnd
 
 /*
  *@@ xmmPlaySound:
- *      this is called by the Media thread (fnwpMediaObject)
+ *      this is called by the Media thread (xmm_fnwpMediaObject)
  *      when it receives MM_MCIPASSDEVICE with MCI_GAINING_USE
- *      set, i.e. the device is ready to play. So that's
- *      what we'll do here.
+ *      set, i.e. the device is ready to play. So playing
+ *      is what we'll do here.
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: this was in SOUND.DLL previously
  */
@@ -438,20 +454,18 @@ VOID xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
 
 /*
  *@@ xmmStopSound:
- *      this is called by the Media thread (fnwpMediaObject)
+ *      this is called by the Media thread (xmm_fnwpMediaObject)
  *      in two situations:
+ *
  *      1)  MMPM/2 is done playing our sound, i.e.
  *          upon receiving MM_MCINOTIFY;
+ *
  *      2)  another application requests the waveform
  *          device for playing, i.e. upon receiving
  *          MM_MCIPASSDEVICE with MCI_LOSING_USE set.
  *
  *      In both situations, we need to close our
  *      device.
- *
- *      Note: This function is _not_ prototyped in sound.h
- *      because its address is resolved dynamically by
- *      krnInitializeXWorkplace.
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: this was in SOUND.DLL previously
  */
@@ -488,6 +502,8 @@ VOID xmmStopSound(PUSHORT pusDeviceID)
 
 /*
  *@@ xmmCDOpenDevice:
+ *      opens the CD device by calling xmmOpenDevice
+ *      and prepares it for playing.
  *
  *      Returns TRUE if the CD device is open,
  *      either because the device has already been
@@ -537,7 +553,10 @@ BOOL xmmCDOpenDevice(PUSHORT pusMMDeviceID) // in/out: CD device ID
 
 /*
  *@@ xmmCDQueryStatus:
- *      returns one of the following:
+ *      returns the status of a CD device opened
+ *      with xmmCDOpenDevice.
+ *
+ *      Returns one of the following:
  *      -- 0: invalid device.
  *      -- MCI_MODE_NOT_READY
  *      -- MCI_MODE_PAUSE
@@ -768,7 +787,7 @@ typedef struct _DEVICETYPE
 
 DEVICETYPE aDeviceTypes[] =
         {
-            MCI_DEVTYPE_VIDEOTAPE, "Video tape",
+            MCI_DEVTYPE_VIDEOTAPE, "Video tape",        // ### NLS!
             MCI_DEVTYPE_VIDEODISC, "Video disc",
             MCI_DEVTYPE_CD_AUDIO, "CD Audio",
             MCI_DEVTYPE_DAT, "DAT",
@@ -791,6 +810,10 @@ DEVICETYPE aDeviceTypes[] =
 
 /*
  *@@ xmmQueryDevices:
+ *      returns an array of XMMDEVICE structures describing
+ *      all available MMPM/2 devices on your system.
+ *      *pcDevices receives the no. of items in the array
+ *      (not the array size!). Use xmmFreeDevices to clean up.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
@@ -877,6 +900,7 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
 
 /*
  *@@ xmmFreeDevices:
+ *      frees resources allocated by xmmQueryDevices.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */

@@ -42,7 +42,7 @@ Russian:
 "Andrew Cherepivsky" <skayer@muctr.edu.ru>
 
 Spanish:
-"Alfredo Fernandez Diaz" <x4717395@fedro.ugr.es>
+"Alfredo Fernandez Diaz" <nitro-si@correo.ctv.es>
 "Juan Miguel" <theoden@arrakis.es>
 "Lmaqui" <lmaqui@cgt.es>
 "Xavier Caballe" <xavi@caballe.com>

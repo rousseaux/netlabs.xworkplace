@@ -136,6 +136,7 @@ HMTX                G_hmtxFolderLists = NULLHANDLE;
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: bitmaps on boot drive are returned with "?:\" now
+ *@@changed V0.9.3 (2000-05-30) [umoeller]: ICONSHADOWCOLOR was reported as TREESHADOWCOLOR. Fixed.
  */
 
 ULONG fdrQuerySetup(WPObject *somSelf,
@@ -361,7 +362,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bGreen = *(pbArrayField + 1);
                         BYTE bBlue  = *(pbArrayField );
 
-                        sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                        sprintf(szTemp, "ICONSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
                         xstrcat(&pszTemp, szTemp);
                     }
                 }

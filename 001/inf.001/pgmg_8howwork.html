@@ -12,15 +12,17 @@ on your video card to have room for several desktops, PageMage simply moves
 windows around your screen.
 
 <P>To make this clear: With PageMage, technically, you still only have one screen.
+Neither PM nor your video driver know anything about virtual desktops.
 All PageMage does when switching desktops is to move windows off of and onto your
 one visible screen. That is, if you switch one desktop to the right, PageMage moves
-all windows to the left by the size of your physical screen.
+all windows to the left by the size of your physical screen (which makes them
+invisible, of course).
 As a result, no special hardware or software or drivers are required. If your
-computer can move windows, it can use PageMage.
+computer can handle moving windows, it can use PageMage.
 
-<P>The PageMage window then does a number of calculations to make all windows look
-as if they were part of a huge virtual screen, but your physical screen really doesn't
-change -- it's the windows that are moved.
+<P>The small PageMage pager window then does a number of calculations to make all
+windows look as if they were part of a huge virtual screen, but your physical screen
+really doesn't change -- it's the windows that are moved.
 
 <P>PageMage also needs to XWorkplace PM hook to be able to track window movement --
 for one, to reflect window changes in the PageMage window, secondly to be informed

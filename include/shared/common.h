@@ -995,7 +995,77 @@
                 pszOpenPartitions,
 
                 // "Syslevel" page title in "OS/2 kernel"
-                pszSyslevelPage;
+                pszSyslevelPage,
+
+                pszCalculating,
+
+                pszDeviceType,
+                pszDeviceIndex,
+                pszDeviceInfo,
+
+                pszTypeImage,
+                pszTypeAudio,
+                pszTypeMIDI,
+                pszTypeCompound,
+                pszTypeOther,
+                pszTypeUnknown,
+                pszTypeVideo,
+                pszTypeAnimation,
+                pszTypeMovie,
+
+                pszTypeStorage,
+                pszTypeFile,
+                pszTypeData,
+
+                pszDevTypeVideotape,
+                pszDevTypeVideodisc,
+                pszDevTypeCDAudio,
+                pszDevTypeDAT,
+                pszDevTypeAudioTape,
+                pszDevTypeOther,
+                pszDevTypeWaveformAudio,
+                pszDevTypeSequencer,
+                pszDevTypeAudioAmpmix,
+                pszDevTypeOverlay,
+                pszDevTypeAnimation,
+                pszDevTypeDigitalVideo,
+                pszDevTypeSpeaker,
+                pszDevTypeHeadphone,
+                pszDevTypeMicrophone,
+                pszDevTypeMonitor,
+                pszDevTypeCDXA,
+                pszDevTypeFilter,
+                pszDevTypeTTS,
+
+                pszColmnFourCC,
+                pszColmnName,
+                pszColmnIOProcType,
+                pszColmnMediaType,
+                pszColmnExtension,
+                pszColmnDLL,
+                pszColmnProcedure,
+
+                pszPagetitleDevices,
+                pszPagetitleIOProcs,
+                pszPagetitleCodecs,
+
+                pszPagetitlePageMage,
+
+                pszXWPStringPage,
+                pszXWPStringOpenMenu,
+
+                pszSyslevelComponent,
+                pszSyslevelFile,
+                pszSyslevelVersion,
+                pszSyslevelLevel,
+                pszSyslevelPrevious,
+
+                pszDriversVersion,
+                pszDriversVendor,
+
+                pszFuncKeyDescription,
+                pszFuncKeyScanCode,
+                pszFuncKeyModifier;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;

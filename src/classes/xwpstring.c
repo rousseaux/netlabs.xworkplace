@@ -5,6 +5,10 @@
  *
  *      --  XWPString: a WPAbstract subclass for managing setup strings.
  *
+ *      This class is new with V0.9.3.
+ *
+ *      Installation of this class is completely optional.
+ *
  *      Every instance of XWPString should contain any setup string
  *      which can be invoked on an object. Two functions are possible:
  *

@@ -63,4 +63,6 @@ del 049_de\inf.049\*.bmp
 del 049_de\help.049\xfldr049.ipf
 del 049_de\help.049\*.bmp
 
+del doc\*.ipf
+
 

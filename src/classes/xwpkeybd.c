@@ -10,7 +10,7 @@
  *      for hotkeys and such. This is all new with V0.9.0.
  *
  *      Installation of this class is optional, but you won't
- *      be able to influence certain keyboard settings without it.
+ *      be able to influence certain hook keyboard settings without it.
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.

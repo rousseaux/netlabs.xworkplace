@@ -743,6 +743,11 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween,
                 HWND    hwndNewFocus = NULLHANDLE,
                         hwndTitlebar;
 
+                /*
+                 * step 1: handle subframes
+                 *
+                 */
+
                 // let's check if we have an MDI frame, that is,
                 // another frame below the subframe:
                 HWND    hwndFocusSubwin = NULLHANDLE;
@@ -839,20 +844,23 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween,
                                    hwndNewFocus,
                                    FC_NOSETACTIVE);
 
-                // deactivate old window
-                WinPostMsg(hwndPreviousActive,
-                           WM_ACTIVATE,
-                           MPFROMSHORT(FALSE),      // deactivate
-                           MPFROMHWND(hwndNewFocus));
-
-                // activate new window
-                hwndTitlebar = WinWindowFromID(hwnd2Activate, FID_TITLEBAR);
-                if (hwndTitlebar)
+                if (hwndPreviousActive != hwnd2Activate)
                 {
-                    WinPostMsg(hwnd2Activate,
+                    // deactivate old window
+                    WinPostMsg(hwndPreviousActive,
                                WM_ACTIVATE,
-                               MPFROMSHORT(TRUE),
-                               MPFROMHWND(hwndTitlebar));
+                               MPFROMSHORT(FALSE),      // deactivate
+                               MPFROMHWND(hwndNewFocus));
+
+                    // activate new window
+                    hwndTitlebar = WinWindowFromID(hwnd2Activate, FID_TITLEBAR);
+                    if (hwndTitlebar)
+                    {
+                        WinPostMsg(hwnd2Activate,
+                                   WM_ACTIVATE,
+                                   MPFROMSHORT(TRUE),
+                                   MPFROMHWND(hwndTitlebar));
+                    }
                 }
 
                 // store activated window in hook data

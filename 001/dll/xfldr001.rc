@@ -467,7 +467,7 @@ BEGIN
     ID_XTSI_SIZE                        "Size"
     ID_XTSI_ORIGCLASS                   "Original class"
 
-    /* the following added with V0.9.1 */
+    /* all the following added with V0.9.1 */
 
     /* trash can status bar strings */
     ID_XTSI_STB_POPULATING              "Collecting trash on drive %c:..."
@@ -496,8 +496,80 @@ BEGIN
     /* "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller] */
     ID_XSSI_OPENPARTITIONS              "~Partitions view"
 
-    /* "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller] */
+    /* all the following added with V0.9.3 */
+
+    /* "Syslevel" page title in "OS/2 kernel" */
     ID_XSSI_SYSLEVELPAGE                "Syslevels"
+
+    ID_XTSI_CALCULATING                 "calculating..."
+
+    ID_MMSI_DEVICETYPE                  "Device type"
+    ID_MMSI_DEVICEINDEX                 "Device index"
+    ID_MMSI_DEVICEINFO                  "Info"
+
+    ID_MMSI_TYPE_IMAGE                  "Image"
+    ID_MMSI_TYPE_AUDIO                  "Audio"
+    ID_MMSI_TYPE_MIDI                   "MIDI"
+    ID_MMSI_TYPE_COMPOUND               "Compound"
+    ID_MMSI_TYPE_OTHER                  "Other"
+    ID_MMSI_TYPE_UNKNOWN                "Unknown"
+    ID_MMSI_TYPE_VIDEO                  "Video"
+    ID_MMSI_TYPE_ANIMATION              "Animation"
+    ID_MMSI_TYPE_MOVIE                  "Movie"
+
+    ID_MMSI_TYPE_STORAGE                "Storage"
+    ID_MMSI_TYPE_FILE                   "File"
+    ID_MMSI_TYPE_DATA                   "Data"
+
+    ID_MMSI_DEVTYPE_VIDEOTAPE           "Video tape"
+    ID_MMSI_DEVTYPE_VIDEODISC           "Video disc"
+    ID_MMSI_DEVTYPE_CD_AUDIO            "CD audio"
+    ID_MMSI_DEVTYPE_DAT                 "DAT"
+    ID_MMSI_DEVTYPE_AUDIO_TAPE          "Audio tape"
+    ID_MMSI_DEVTYPE_OTHER               "Other"
+    ID_MMSI_DEVTYPE_WAVEFORM_AUDIO      "Wave audio"
+    ID_MMSI_DEVTYPE_SEQUENCER           "Sequencer"
+    ID_MMSI_DEVTYPE_AUDIO_AMPMIX        "Ampmix"
+    ID_MMSI_DEVTYPE_OVERLAY             "Overlay"
+    ID_MMSI_DEVTYPE_ANIMATION           "Animation"
+    ID_MMSI_DEVTYPE_DIGITAL_VIDEO       "Digital video"
+    ID_MMSI_DEVTYPE_SPEAKER             "Speaker"
+    ID_MMSI_DEVTYPE_HEADPHONE           "Headphone"
+    ID_MMSI_DEVTYPE_MICROPHONE          "Microphone"
+    ID_MMSI_DEVTYPE_MONITOR             "Monitor"
+    ID_MMSI_DEVTYPE_CDXA                "CDXA"
+    ID_MMSI_DEVTYPE_FILTER              "Filter"
+    ID_MMSI_DEVTYPE_TTS                 "Text-to-speech"
+
+    ID_MMSI_COLMN_FOURCC                "FourCC"
+    ID_MMSI_COLMN_NAME                  "Name"
+    ID_MMSI_COLMN_IOPROC_TYPE           "IOProc type"
+    ID_MMSI_COLMN_MEDIA_TYPE            "Media type"
+    ID_MMSI_COLMN_EXTENSION             "Ext."
+    ID_MMSI_COLMN_DLL                   "DLL"
+    ID_MMSI_COLMN_PROCEDURE             "Entry point"
+
+    ID_MMSI_PAGETITLE_DEVICES           "~Devices"
+    ID_MMSI_PAGETITLE_IOPROCS           "~IOProcs"
+    ID_MMSI_PAGETITLE_CODECS            "~Codecs"
+
+    ID_XSSI_PAGETITLE_PAGEMAGE          "~PageMage"
+
+    ID_XSSI_XWPSTRING_PAGE              "~Setup string"
+    ID_XSSI_XWPSTRING_OPENMENU          "~Invoke setup string"
+
+    ID_XSSI_COLMN_SYSL_COMPONENT        "Component"
+    ID_XSSI_COLMN_SYSL_FILE             "SYLEVEL file"
+    ID_XSSI_COLMN_SYSL_VERSION          "Version"
+    ID_XSSI_COLMN_SYSL_LEVEL            "Syslevel"
+    ID_XSSI_COLMN_SYSL_PREVIOUS         "Previous"
+
+    ID_XSSI_DRIVERS_VERSION             "Version: "
+    ID_XSSI_DRIVERS_VENDOR              "Vendor: "
+
+    ID_XSSI_FUNCKEY_DESCRIPTION         "Key description"
+    ID_XSSI_FUNCKEY_SCANCODE            "Scan code"
+    ID_XSSI_FUNCKEY_MODIFIER            "Modifier"
 END
 
 /* Strings for XWPSetup "Features" page

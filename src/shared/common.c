@@ -1056,6 +1056,134 @@ VOID LoadNLSData(HAB habDesktop,
     // "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SYSLEVELPAGE,
             &(pNLSStrings->pszSyslevelPage));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_CALCULATING,
+            &(pNLSStrings->pszCalculating));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVICETYPE,
+            &(pNLSStrings->pszDeviceType));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVICEINDEX,
+            &(pNLSStrings->pszDeviceIndex));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVICEINFO,
+            &(pNLSStrings->pszDeviceInfo));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_IMAGE,
+            &(pNLSStrings->pszTypeImage));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_AUDIO,
+            &(pNLSStrings->pszTypeAudio));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_MIDI,
+            &(pNLSStrings->pszTypeMIDI));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_COMPOUND,
+            &(pNLSStrings->pszTypeCompound));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_OTHER,
+            &(pNLSStrings->pszTypeOther));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_UNKNOWN,
+            &(pNLSStrings->pszTypeUnknown));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_VIDEO,
+            &(pNLSStrings->pszTypeVideo));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_ANIMATION,
+            &(pNLSStrings->pszTypeAnimation));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_MOVIE,
+            &(pNLSStrings->pszTypeMovie));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_STORAGE,
+            &(pNLSStrings->pszTypeStorage));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_FILE,
+            &(pNLSStrings->pszTypeFile));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_TYPE_DATA,
+            &(pNLSStrings->pszTypeData));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_VIDEOTAPE,
+            &(pNLSStrings->pszDevTypeVideotape));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_VIDEODISC,
+            &(pNLSStrings->pszDevTypeVideodisc));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_CD_AUDIO,
+            &(pNLSStrings->pszDevTypeCDAudio));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_DAT,
+            &(pNLSStrings->pszDevTypeDAT));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_AUDIO_TAPE,
+            &(pNLSStrings->pszDevTypeAudioTape));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_OTHER,
+            &(pNLSStrings->pszDevTypeOther));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_WAVEFORM_AUDIO,
+            &(pNLSStrings->pszDevTypeWaveformAudio));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_SEQUENCER,
+            &(pNLSStrings->pszDevTypeSequencer));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_AUDIO_AMPMIX,
+            &(pNLSStrings->pszDevTypeAudioAmpmix));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_OVERLAY,
+            &(pNLSStrings->pszDevTypeOverlay));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_ANIMATION,
+            &(pNLSStrings->pszDevTypeAnimation));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_DIGITAL_VIDEO,
+            &(pNLSStrings->pszDevTypeDigitalVideo));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_SPEAKER,
+            &(pNLSStrings->pszDevTypeSpeaker));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_HEADPHONE,
+            &(pNLSStrings->pszDevTypeHeadphone));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_MICROPHONE,
+            &(pNLSStrings->pszDevTypeMicrophone));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_MONITOR,
+            &(pNLSStrings->pszDevTypeMonitor));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_CDXA,
+            &(pNLSStrings->pszDevTypeCDXA));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_FILTER,
+            &(pNLSStrings->pszDevTypeFilter));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_DEVTYPE_TTS,
+            &(pNLSStrings->pszDevTypeTTS));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_FOURCC,
+            &(pNLSStrings->pszColmnFourCC));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_NAME,
+            &(pNLSStrings->pszColmnName));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_IOPROC_TYPE,
+            &(pNLSStrings->pszColmnIOProcType));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_MEDIA_TYPE,
+            &(pNLSStrings->pszColmnMediaType));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_EXTENSION,
+            &(pNLSStrings->pszColmnExtension));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_DLL,
+            &(pNLSStrings->pszColmnDLL));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_COLMN_PROCEDURE,
+            &(pNLSStrings->pszColmnProcedure));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_PAGETITLE_DEVICES,
+            &(pNLSStrings->pszPagetitleDevices));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_PAGETITLE_IOPROCS,
+            &(pNLSStrings->pszPagetitleIOProcs));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_MMSI_PAGETITLE_CODECS,
+            &(pNLSStrings->pszPagetitleCodecs));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_PAGETITLE_PAGEMAGE,
+            &(pNLSStrings->pszPagetitlePageMage));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XWPSTRING_PAGE,
+            &(pNLSStrings->pszXWPStringPage));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XWPSTRING_OPENMENU,
+            &(pNLSStrings->pszXWPStringOpenMenu));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_COLMN_SYSL_COMPONENT,
+            &(pNLSStrings->pszSyslevelComponent));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_COLMN_SYSL_FILE,
+            &(pNLSStrings->pszSyslevelFile));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_COLMN_SYSL_VERSION,
+            &(pNLSStrings->pszSyslevelVersion));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_COLMN_SYSL_LEVEL,
+            &(pNLSStrings->pszSyslevelLevel));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_COLMN_SYSL_PREVIOUS,
+            &(pNLSStrings->pszSyslevelPrevious));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DRIVERS_VERSION,
+            &(pNLSStrings->pszDriversVersion));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DRIVERS_VENDOR,
+            &(pNLSStrings->pszDriversVendor));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FUNCKEY_DESCRIPTION,
+            &(pNLSStrings->pszFuncKeyDescription));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FUNCKEY_SCANCODE,
+            &(pNLSStrings->pszFuncKeyScanCode));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FUNCKEY_MODIFIER,
+            &(pNLSStrings->pszFuncKeyModifier));
 }
 
 /*

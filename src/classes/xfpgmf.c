@@ -77,8 +77,6 @@
 #include "helpers\dosh.h"
 
 // SOM headers which don't crash with prec. header files
-
-// other SOM headers
 #include "xfpgmf.ih"
 
 // XWorkplace implementation headers

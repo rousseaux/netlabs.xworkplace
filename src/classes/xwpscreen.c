@@ -8,7 +8,8 @@
  *      XFldSystem implements the "Screen" settings object
  *      for PM manipulation and PageMage configuration.
  *
- *      Installation of this class is optional.
+ *      Installation of this class is optional, but you cannot
+ *      configure PageMage without it.
  *
  *      This is all new with V0.9.2 (2000-02-23) [umoeller].
  *

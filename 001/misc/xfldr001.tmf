@@ -263,12 +263,12 @@ Copyright (C) 2000 Christian Langanke.
 English National Language Support:
 Copyright (C) 1998-2000 Ulrich M”ller.
 
-Contains code from WarpEnhancer (C) 1996-1997 Innotek Systemberatung.
-Contains code from WPTools (C) 1991-1998 Henk Kelder.
-Contains code from WPSArcO (C) 1997-1999 Stefan Milcke.
-Contains code from APM/2 (C) 1997-1998 Roman Stangl; ported to XFolder (C) 1998 ARAKAWA Atsushi.
-Contains code from ProcessCommander/2 (C) 1993-1999 Roman Stangl.
-Contains code from PageMage (C) 1995-1999 Carlos Ugarte.
+Contains code from WarpEnhancer (C) 1996-1997 Innotek Systemberatung. Used with permission.
+Contains code from WPTools (C) 1991-1998 Henk Kelder. Used with permission.
+Contains code from WPSArcO (C) 1997-1999 Stefan Milcke. Used with permission.
+Contains code from APM/2 (C) 1997-1998 Roman Stangl (OpenSource); ported to XFolder (C) 1998 ARAKAWA Atsushi.
+Contains code from ProgramCommander/2 (C) 1993-1999 Roman Stangl (OpenSource).
+Contains code from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
 
 Compiled using IBM VisualAge C++ 3.08.
 

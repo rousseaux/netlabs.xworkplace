@@ -29,6 +29,9 @@
  *             We use WPTransient in order not to clutter up OS2.INI
  *             with abstract objects which have no data to save anyways.
  *
+ *      Installation of these two classes is completely optional, but
+ *      you cannot install only one them, since one requires the other.
+ *
  *      There are two ways to delete an object using the trash can:
  *      1)  selecting "Delete" from an object's context menu;
  *          this behavior is implemented by the XFldObject class and the
@@ -1743,6 +1746,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpRestoreFromTrashCan(XWPTrashObject *somSelf,
 
 SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
 {
+    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpInitData");
 
@@ -1750,7 +1754,7 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
     // wpSetup, which apparently sets up the Details data...
     _pRelatedObject = NULL;
     _pszSourcePath = NULL;
-    strcpy(_szTotalSize, "calculating..."); // ###
+    strcpy(_szTotalSize, pNLSStrings->pszCalculating);
     _pvExpandedObject = 0;
 
     XWPTrashObject_parent_WPTransient_wpInitData(somSelf);

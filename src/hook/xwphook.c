@@ -2516,7 +2516,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         break;
 
         /*
-         *@@ WM_BUTTON2DOWN:
+         * WM_BUTTON2DOWN:
          *      if mb2 is clicked on titlebar,
          *      show system menu as context menu.
          *

@@ -3,14 +3,11 @@ This file lists feature suggestions from XWorkplace users.
 Please don't suggest features which are already listed in
 this file. Thank you.
 
-shutdown:
-    -- reboot anim to reboot too
-
 install:
     -- give main XWP folder nicer icons
 
 PageMage:
-    -- add configuration to "Screen" object
+    -- add sticky windows config to "Screen"
 
 folders:
     -- more than one config folder
@@ -38,22 +35,21 @@ status bars:
 trash can:
     -- support DELDIR
     -- add max space used limit
-    -- true delete thru Shift in menu
 
 configure color for fly-over help
 
 folder hotkey for deleting THIS folder
 
-archives.:
+archives:
     -- second page with os2.key file which files are 2be archived
 
 hook:
     -- Z-order move one/bottommost
     -- 3) an extended Lockup (like the one from PC/2) which can be accessed through a
        shortcut (in the keyboard object).
-    -- global special keys support (Win, notebook keys, Fujitsu...)
     -- add screen edges to hot corners too
     -- window list filtering from WarpEnhancer
+    -- PageMage and screen corner actions ("flash")
 
 startup:
     -- environment var for X, Y pos of classes initialization dlg

@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.3 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated May 20, 2000
+Last updated June 5, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,13 +20,13 @@ Last updated May 20, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.3. This version fixes more bugs,
-    including the infamous "folder no-close" bug, and adds new
-    features.
+    Welcome to XWorkplace V0.9.3.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell. Consider this the WPS upgrade IBM
-    should have released with OS/2 Warp 4.
+    should have released with OS/2 Warp 4. XWorkplace is the
+    successor to XFolder V0.85 and contains all of it, except the
+    bugs.
 
     XWorkplace can add features to pretty much all parts of the
     system, such as generic object features, folder enhancements,
@@ -34,20 +34,6 @@ Last updated May 20, 2000
 
     All parts of XWorkplace are fully configurable and can be
     selectively enabled in case something is going wrong.
-
-    XWorkplace is the successor to XFolder V0.85 and contains
-    all of it, except the bugs.
-
-    For an introduction to XWorkplace's many features, please
-    open the "XWorkplace User Guide" (XFLDR001.INF).
-
-    NOTE:
-
-    This is still a developer's release. It is not guaranteed
-    to be stable in every environment. Lots of new things have
-    been added since the last public XFolder release (which was
-    V0.85), and even though these are working on my system, this
-    does not mean it will work on yours. So beware.
 
     This README has additional information which is not included
     in the XWorkplace User Guide. Please read through all of this
@@ -57,10 +43,35 @@ Last updated May 20, 2000
     install directory.
 
 
+    About this release
+    ------------------
+
+    This version is a major release compared to V0.9.2. Many
+    bugs have been fixed, including the infamous "folder
+    no-close" bug and a number of hook problems. Also, even
+    more features have been added, such as new file operations
+    enhancements.
+
+    For details, refer to the "XWorkplace User Guide" after
+    unpacking the files. To extract the documentation only,
+    see "2. INSTALLATION" below.
+
+    Even though stability has increased, this is still a
+    developer's  release. It is not guaranteed to be stable
+    in every environment. It is running on my system for
+    everyday's work, but that doesn't mean it will run on
+    yours.
+
+
 2. INSTALLATION
 ===============
 
-    XWorkplace is installed using WarpIN.
+    XWorkplace must be installed using WarpIN.
+
+    Note: Use WarpIN V0.9.3 or higher to install this archive.
+    Older versions will not be able to create the XWorkplace
+    WPS objects and will probably fail when upgrading XWorkplace
+    from a previous version.
 
     If you are still unsure whether you should use XWorkplace at
     this point, you can have WarpIN unpack the XWorkplace files
@@ -77,24 +88,12 @@ Last updated May 20, 2000
     classes. To do this later, simply double-click on
     XWorkplace's WarpIN (.WPI) archive again.
 
-    Note: Use WarpIN V0.9.3 or higher to install this archive.
-    Since WarpIN V0.9.0 will be unable to create the XWorkplace
-    objects on your Desktop, with that version, you'll have to
-    execute BIN\CROBJ001.CMD manually after installation (in the
-    XWorkplace target directory tree).
-
 
 3. UPGRADING
 ============
 
     Upgrading from XWorkplace
     -------------------------
-
-    If you have an older XWorkplace installed when installing
-    this version, you MUST use WarpIN V0.9.3 also. If you are
-    still using an older WarpIN version, you must completely
-    de-install XWorkplace before installing this version.
-    Alternatively, manually kill XWPDAEMN.EXE before installing.
 
     With the latest WarpIN, you will get a notification message
     that XWPDAEMN.EXE is running. Have WarpIN kill that program
@@ -149,16 +148,16 @@ Last updated May 20, 2000
 5. GETTING STARTED
 ==================
 
-    In any case, open the new "XWorkplace Setup" object first and
-    go to the "Features" page. This is the most central place to
-    enable XWorkplace features. Refer to the "Help" button there.
+    In any case, after installation, open the new "XWorkplace Setup"
+    object first and go to the "Features" page. This is the most
+    central place to enable XWorkplace features. Press the "Help"
+    button there to get more information.
 
 
 6. KNOWN LIMITATIONS
 ====================
 
-    This version has known bugs. I have it running on my system for
-    everyday work, but some things are a bit annoying, so be warned.
+    This version has known bugs.
 
     Please check the BUGS and FEATURES files in this package also
     before reporting bugs or suggesting features. Thank you.
@@ -167,12 +166,14 @@ Last updated May 20, 2000
     does not work:
 
     1)  Christian Langanke's Animated Mouse Pointers for OS/2 are
-        not yet included. This is currently in the works and will
-        be added to a later release.
+        not yet included. This is still in the works and will be
+        added to a later release. If you have Christian's old
+        package installed, you can keep it running, it causes no
+        problems.
 
     2)  If "Extended associations" is enabled in XWPSetup, the new
-        "File types" page in "Workplace Shell" is working, but XFldDataFile
-        doesn't support the enhanced file type icons yet.
+        "File types" page in "Workplace Shell" is working, but
+        XFldDataFile doesn't support the enhanced file type icons yet.
         You'll see the proper icons and associations in the "Open"
         submenu, but clicking on them will not open the proper
         association.
@@ -187,12 +188,14 @@ Last updated May 20, 2000
 
     7)  PageMage is completely experimental at this point. We have
         problems during WPS startup and the configuration is quite
-        unstable. Don't use it unless you're daring.
+        unstable. Using PageMage can lead to system hangs, so be
+        warned. Also, the "Sticky windows" feature doesn't work yet.
 
     8)  I am currently having some problems with WPS restarts since
         I have installed FP13. The WPS crashes on exit and/or becomes
-        terminally slow after the restart. This might be due to XWorkplace
-        or to FP13, I still have to find out.
+        terminally slow after the restart. After reverting to FP11,
+        those problems were gone, so I suspect it's not XWorkplace's
+        fault.
 
     9)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
@@ -200,13 +203,16 @@ Last updated May 20, 2000
         I think I have found the problem, but solving it requires some
         more debugging and a major redesign of my folder object
         initialization. This problem has been reported for all XFolder
-        and XWorkplace versions. If you have never had problems with
-        "Create another", don't worry, nothing has changed.
+        and XWorkplace versions.
 
-        If, after using "Create another", the system freezes and the
-        hard disk rattles like crazy, press Ctrl+Alt+Del IMMEDIATELY
-        to avoid the black screen. This is a symptom of the swap file
-        growing constantly until the swap disk is full.
+        If you have never had problems with "Create another", don't
+        worry, nothing has changed.
+
+        However, if, after using "Create another", the system freezes
+        and the hard disk rattles like crazy, press Ctrl+Alt+Del
+        IMMEDIATELY to avoid the black screen. This is a symptom of
+        the swap file growing constantly until the swap disk is full,
+        which will then cause a trap somewhere.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

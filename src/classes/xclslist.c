@@ -5,6 +5,8 @@
  *
  *      -- XWPClassList (WPAbstract subclass)
  *
+ *      Installation of this class is optional.
+ *
  *      This class implements the "WPS Class List" object,
  *      which defines a new view for editing the WPS class list.
  *      With V0.9.0, this is now in a separate object,
@@ -20,8 +22,6 @@
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.
  *      The implementation for this class is in config\classlst.c.
- *
- *      Installation of this class is optional.
  *
  *      This class is an interesting example in two respects:
  *

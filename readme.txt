@@ -1,6 +1,6 @@
 XWorkplace 0.9.3 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated May 20 2000, Ulrich M”ller
+Last updated June 5, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -60,11 +60,11 @@ Last updated May 20 2000, Ulrich M”ller
 
     To check out the most current XWorkplace sources, use:
         CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xworkplace
-        USER = guest
+        USER=guest
 
     To check out the most current WarpIN sources, use:
         CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/warpin
-        USER = guest
+        USER=guest
 
     Then do a "cvs checkout".
 
@@ -81,7 +81,7 @@ Last updated May 20 2000, Ulrich M”ller
 
         The following environment variables are required:
 
-        -- XWPRUNNING must point to a valid XWorkplace directory
+        -- XWPRUNNING must point to a valid XWorkplace installation
            tree. The makefiles will copy all produced output files
            to the proper locations in that tree so that you can
            work on XWorkplace while it is installed. DLLs which
@@ -146,8 +146,9 @@ Last updated May 20 2000, Ulrich M”ller
 
         If you don't have XWorkplace or XFolder installed yet,
         run "nmake release" instead. This will create a complete
-        XWorkplace working set. Run "install.cmd" in that directory
-        to have XWorkplace installed then.
+        XWorkplace working set. (See XWPRELEASE above.)
+        Run "install.cmd" in that directory to have XWorkplace
+        installed then.
 
     Only if you want, you can replace the WPDataFile class with the DbgDataFile
     class in BIN\XDEBUG.DLL, which is created by the makefiles also. See

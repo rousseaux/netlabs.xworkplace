@@ -42,6 +42,7 @@ trash can:
     -- open subfolders are not closed when deleting parent folder
     -- sorting doesn't work right
     -- Drives page: multiple selections are not all moved
+    -- Drives page: drive Z: doesn't show up. Loop limit?
 
 archiving:
     -- after restoring a backup, archiving is enabled because of the
@@ -54,7 +55,6 @@ startup folder:
        down from 500 to 10000, but from 10000 up to 750. Why no option for 250ms?
 
 OS/2 Kernel:
-    -- "Help" button does nothing in "Configure" dialogs
     -- "Optimize" does nothing with CDFS.IFS
 
 other settings pages:
@@ -93,8 +93,6 @@ hook:
     -- VIO copy conflicts with WM_CHORD; check window class
 
     -- WM_CHORD over Netscape/PMMail no work
-
-    -- function keys (F-keys, Del, Pos, ...) don't work as hotkeys when VIO has focus
 
     -- Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
        ignore WinOS/2 windows.

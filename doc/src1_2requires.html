@@ -37,12 +37,11 @@ from the CVS tree).
 <P><LI>All the .C files have lots of debugging code which can conditionally be
 compiled using certain #define's in <CODE>include\setup.h</CODE>. That file
 is <CODE>#include</CODE>'d from all XWorkplace source files.
-<P>Only if you enable the debugging code,
+<P>All that debugging code is only enabled if you set the XWPDEBUG environment
+variable when building XWorkplace. Only if you enable the debugging code,
 you need the full <B>PMPRINTF package by Dennis Bareis.</B>
-You do <I>not</I> need that package if you don't uncomment the debugging #define's
-in that file.
-<P>Per default, those #define's are commented out, so don't worry.
-Check the <A HREF="src1_880debug.html">"Debugging"</A> section.
+<P>
+Check the <A HREF="src1_880debug.html">"Debugging"</A> section for details.
 
 </UL>Also see the <A HREF="src1_31make.html">"Making XWorkplace"</A> section for how to
 rebuild XWorkplace.

@@ -13,8 +13,9 @@
  *
  *      This is entirely new with XWorkplace V0.9.0.
  *
- *      Installation of this class is optional, but you won't
- *      be able to change XWorkplace's settings without it.
+ *      Theoretically, installation of this class is optional, but
+ *      you won't be able to change XWorkplace's most basic settings
+ *      without it.
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.

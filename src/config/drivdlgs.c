@@ -128,6 +128,9 @@
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
+// SOM headers which don't crash with prec. header files
+#include "xfsys.ih"
+
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
@@ -371,6 +374,11 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             }
         break;
 
+        case WM_HELP:
+            cmnDisplayHelp(NULL,        // active Desktop
+                           ID_XSH_DRIVER_HPFS);
+        break;
+
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
@@ -540,6 +548,11 @@ MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,        // active Desktop
+                           ID_XSH_DRIVER_CDFS);
         break;
 
         default:
@@ -2328,6 +2341,11 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,        // active Desktop
+                           ID_XSH_DRIVER_S506);
         break;
 
         case WM_DESTROY:

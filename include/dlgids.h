@@ -1391,6 +1391,76 @@
 // "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
 #define ID_XSSI_SYSLEVELPAGE            5867
 
+#define ID_XTSI_CALCULATING             5868
+
+#define ID_MMSI_DEVICETYPE              5869
+#define ID_MMSI_DEVICEINDEX             5870
+#define ID_MMSI_DEVICEINFO              5871
+
+#define ID_MMSI_TYPE_IMAGE              5872
+#define ID_MMSI_TYPE_AUDIO              5873
+#define ID_MMSI_TYPE_MIDI               5874
+#define ID_MMSI_TYPE_COMPOUND           5875
+#define ID_MMSI_TYPE_OTHER              5876
+#define ID_MMSI_TYPE_UNKNOWN            5877
+#define ID_MMSI_TYPE_VIDEO              5878
+#define ID_MMSI_TYPE_ANIMATION          5879
+#define ID_MMSI_TYPE_MOVIE              5880
+
+#define ID_MMSI_TYPE_STORAGE            5881
+#define ID_MMSI_TYPE_FILE               5882
+#define ID_MMSI_TYPE_DATA               5883
+
+#define ID_MMSI_DEVTYPE_VIDEOTAPE       5884
+#define ID_MMSI_DEVTYPE_VIDEODISC       5885
+#define ID_MMSI_DEVTYPE_CD_AUDIO        5886
+#define ID_MMSI_DEVTYPE_DAT             5887
+#define ID_MMSI_DEVTYPE_AUDIO_TAPE      5888
+#define ID_MMSI_DEVTYPE_OTHER           5889
+#define ID_MMSI_DEVTYPE_WAVEFORM_AUDIO  5890
+#define ID_MMSI_DEVTYPE_SEQUENCER       5891
+#define ID_MMSI_DEVTYPE_AUDIO_AMPMIX    5892
+#define ID_MMSI_DEVTYPE_OVERLAY         5893
+#define ID_MMSI_DEVTYPE_ANIMATION       5894
+#define ID_MMSI_DEVTYPE_DIGITAL_VIDEO   5895
+#define ID_MMSI_DEVTYPE_SPEAKER         5896
+#define ID_MMSI_DEVTYPE_HEADPHONE       5897
+#define ID_MMSI_DEVTYPE_MICROPHONE      5898
+#define ID_MMSI_DEVTYPE_MONITOR         5899
+#define ID_MMSI_DEVTYPE_CDXA            5900
+#define ID_MMSI_DEVTYPE_FILTER          5901
+#define ID_MMSI_DEVTYPE_TTS             5902
+
+#define ID_MMSI_COLMN_FOURCC            5903
+#define ID_MMSI_COLMN_NAME              5904
+#define ID_MMSI_COLMN_IOPROC_TYPE       5905
+#define ID_MMSI_COLMN_MEDIA_TYPE        5906
+#define ID_MMSI_COLMN_EXTENSION         5907
+#define ID_MMSI_COLMN_DLL               5908
+#define ID_MMSI_COLMN_PROCEDURE         5909
+
+#define ID_MMSI_PAGETITLE_DEVICES       5910
+#define ID_MMSI_PAGETITLE_IOPROCS       5911
+#define ID_MMSI_PAGETITLE_CODECS        5912
+
+#define ID_XSSI_PAGETITLE_PAGEMAGE      5913
+
+#define ID_XSSI_XWPSTRING_PAGE          5914
+#define ID_XSSI_XWPSTRING_OPENMENU      5915
+
+#define ID_XSSI_COLMN_SYSL_COMPONENT    5916
+#define ID_XSSI_COLMN_SYSL_FILE         5917
+#define ID_XSSI_COLMN_SYSL_VERSION      5918
+#define ID_XSSI_COLMN_SYSL_LEVEL        5919
+#define ID_XSSI_COLMN_SYSL_PREVIOUS     5920
+
+#define ID_XSSI_DRIVERS_VERSION         5921
+#define ID_XSSI_DRIVERS_VENDOR          5922
+
+#define ID_XSSI_FUNCKEY_DESCRIPTION     5923
+#define ID_XSSI_FUNCKEY_SCANCODE        5924
+#define ID_XSSI_FUNCKEY_MODIFIER        5925
+
 /******************************************
  *  Features on XWPSetup "Features" page  *
  ******************************************/

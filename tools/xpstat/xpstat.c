@@ -221,8 +221,8 @@ VOID SetupWindows(HWND hwndClient)
                (MPARAM)0,       // default format
                (MPARAM)&fmtp);
     fmtp.fWordWrap = FALSE;
-    fmtp.lLeftMargin = 30;
-    fmtp.lFirstLineMargin = -30;
+    fmtp.lLeftMargin = 0;
+    fmtp.lFirstLineMargin = 5;
     WinSendMsg(G_hwndProcView,
                TXM_SETPARFORMAT,
                (MPARAM)0,       // default format

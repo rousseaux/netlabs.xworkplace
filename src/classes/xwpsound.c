@@ -262,7 +262,7 @@ SOM_Scope ULONG  SOMLINK xsndM_wpclsQueryIconData(M_XWPSound *somSelf,
     /* M_XWPSoundData *somThis = M_XWPSoundGetData(somSelf); */
     M_XWPSoundMethodDebug("M_XWPSound","xsndM_wpclsQueryIconData");
 
-    if (pGlobalSettings->fReplaceIcons)
+    /* if (pGlobalSettings->fReplaceIcons)
     {
         if (pIconInfo)
         {
@@ -273,7 +273,7 @@ SOM_Scope ULONG  SOMLINK xsndM_wpclsQueryIconData(M_XWPSound *somSelf,
 
         return (sizeof(ICONINFO));
     }
-    else
+    else */
         return (M_XWPSound_parent_M_WPSound_wpclsQueryIconData(somSelf,
                                                                pIconInfo));
 }

@@ -207,6 +207,8 @@
 
     /*
      *@@ XMMDEVICE:
+     *      describes a single MMPM/2 device returned
+     *      by xmmQueryDevices.
      *
      *@@added V0.9.3 (2000-04-29) [umoeller]
      */

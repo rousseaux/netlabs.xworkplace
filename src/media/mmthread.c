@@ -163,6 +163,8 @@ RESOLVEFUNCTION G_aResolveFromMMIO[] =
 
 /*
  *@@ xmm_fnwpMediaObject:
+ *      window procedure for the Media thread
+ *      (xmm_fntMediaThread) object window.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
@@ -503,6 +505,9 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
 
 /*
  *@@ xmm_fntMediaThread:
+ *      thread func for the Media thread, which creates
+ *      an object window (xmm_fnwpMediaObject). This
+ *      is responsible for playing sounds and such.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
@@ -576,8 +581,8 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
 
 /*
  *@@ xmmInit:
- *      initializes the XWorkplace Media environemnt
- *      and resolved the MMPM/2 APIs.
+ *      initializes the XWorkplace Media environment
+ *      and resolves the MMPM/2 APIs.
  *      Gets called by krnInitializeXWorkplace on
  *      WPS startup.
  *
@@ -631,6 +636,20 @@ VOID xmmDisable(VOID)
 
 /*
  *@@ xmmQueryStatus:
+ *      returns the status of the XWorkplace media
+ *      engine, which is one of the following:
+ *
+ +      --  MMSTAT_UNKNOWN: initial value after startup.
+ +      --  MMSTAT_WORKING: media is working.
+ +      --  MMSTAT_MMDIRNOTFOUND: MMPM/2 directory not found.
+ +      --  MMSTAT_DLLNOTFOUND: MMPM/2 DLLs not found.
+ +      --  MMSTAT_IMPORTSFAILED: MMPM/2 imports failed.
+ +      --  MMSTAT_CRASHED: Media thread crashed, sounds disabled.
+ +      --  MMSTAT_DISABLED: media explicitly disabled in startup panic dlg.
+ *
+ *      You should check this value when using XWorkplace media
+ *      and use the media functions only when MMSTAT_WORKING is
+ *      returned.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
@@ -642,6 +661,8 @@ ULONG xmmQueryStatus(VOID)
 
 /*
  *@@ xmmPostMediaMsg:
+ *      posts a message to xmm_fnwpMediaObject with
+ *      error checking.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */

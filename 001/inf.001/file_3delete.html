@@ -1,0 +1,46 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Replacing "True Delete"
+    </TITLE>
+</HEAD>
+<!-- This is all new with V0.9.3. -->
+<BODY>
+<B>Classes: XFldObject</B><HR>
+
+Starting with V0.9.3, XWorkplace can replace the regular "delete" mechanism of the
+Workplace Shell as well. I call this "true delete", as opposed to moving objects
+into the trash can. "True delete" will immediately destroy the objects with no
+chance to recover.
+
+<P>"True delete" can be replaced by enabling the respective setting
+on the "Features" page in the <A HREF="sys_2global.html">"XWorkplace Setup" object.</A>
+This is also initially disabled.
+
+<P>Compared to the WPS's delete operations, XWorkplace's "true delete" has a number
+of advantages. For one, you get a proper progress bar which shows you the progress of
+the delete operation. Secondly, when you delete a folder with many sub-objects,
+you finally get a change to cancel deletion, which isn't possible with the WPS.
+I've had this a number of times... pressing the "Delete" key over a folder by
+accident, and 100 MB of files got deleted, with no chance to interrupt. Not a good
+idea.
+
+<P>If "true delete" is replaced, the following actions will be taken over by
+XWorkplace:
+
+<UL><LI>If the XWorkplace trash can is enabled, all "delete" operations move the
+objects into the trash can instead. However, you can still perform an
+XWorkplace "true delete" by holding down the "Shift" key while clicking on a
+"Delete" context menu item.
+
+<P>Also, in the XWorkplace trash can, "Destroy object" and "Empty trashcan" will be
+using the "true delete" routines.
+
+<P><LI>If the XWorkplace trash can is not enabled, this will affect all
+delete operations.
+
+</UL>
+</BODY>
+</HTML>
+
+

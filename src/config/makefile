@@ -145,6 +145,7 @@ $(OUTPUTDIR)\drivdlgs.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
         $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xfsys.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\$(@B).h

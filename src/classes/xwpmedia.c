@@ -5,6 +5,10 @@
  *
  *      --  XWPMedia: a WPAbstract subclass for multimedia.
  *
+ *      This class is new with V0.9.3.
+ *
+ *      Installation of XWPString is completely optional.
+ *
  *      Note: Those G_mmio* and G_mci* identifiers are global
  *      variables containing MMPM/2 API entries. Those are
  *      resolved by xmmInit (mmthread.c) and must only be used
@@ -244,6 +248,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[5];
@@ -252,17 +257,17 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszDeviceType);
-        xfi[i].pszColumnTitle = "Device type"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszDeviceType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, ulDeviceIndex);
-        xfi[i].pszColumnTitle = "Device index"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszDeviceIndex;
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_CENTER;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszInfo);
-        xfi[i].pszColumnTitle = "Info"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszDeviceInfo;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -313,42 +318,44 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 VOID DescribeMediaType(PSZ pszBuf,          // out: description
                        ULONG ulMediaType)   // in: MMIO_MEDIATYPE_* id
 {
+    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+
     switch (ulMediaType)
     {
         case MMIO_MEDIATYPE_IMAGE:
-            strcpy(pszBuf, "Image"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeImage);
         break;
 
         case MMIO_MEDIATYPE_AUDIO:
-            strcpy(pszBuf, "Audio"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeAudio);
         break;
 
         case MMIO_MEDIATYPE_MIDI:
-            strcpy(pszBuf, "MIDI"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeMIDI);
         break;
 
         case MMIO_MEDIATYPE_COMPOUND:
-            strcpy(pszBuf, "Compound"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeCompound);
         break;
 
         case MMIO_MEDIATYPE_OTHER:
-            strcpy(pszBuf, "Other"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeOther);
         break;
 
         case MMIO_MEDIATYPE_UNKNOWN:
-            strcpy(pszBuf, "Unknown"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeUnknown);
         break;
 
         case MMIO_MEDIATYPE_DIGITALVIDEO:
-            strcpy(pszBuf, "Video"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeVideo);
         break;
 
         case MMIO_MEDIATYPE_ANIMATION:
-            strcpy(pszBuf, "Animation"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeAnimation);
         break;
 
         case MMIO_MEDIATYPE_MOVIE:
-            strcpy(pszBuf, "Movie"); // ###
+            strcpy(pszBuf, pNLSStrings->pszTypeMovie);
         break;
 
         default:
@@ -439,6 +446,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
                                                          1);
                     if (precc)
                     {
+                        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                         PSZ     pszFormatName;
                         // index
                         precc->ulIndex = ul;
@@ -473,15 +481,15 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
                         switch(pmmfiThis->ulIOProcType)
                         {
                             case MMIO_IOPROC_STORAGESYSTEM:
-                                strcpy(precc->szIOProcType, "Storage"); // ###
+                                strcpy(precc->szIOProcType, pNLSStrings->pszTypeStorage);
                             break;
 
                             case MMIO_IOPROC_FILEFORMAT:
-                                strcpy(precc->szIOProcType, "File"); // ###
+                                strcpy(precc->szIOProcType, pNLSStrings->pszTypeFile);
                             break;
 
                             case MMIO_IOPROC_DATAFORMAT:
-                                strcpy(precc->szIOProcType, "Data"); // ###
+                                strcpy(precc->szIOProcType, pNLSStrings->pszTypeData);
                             break;
 
                             default:
@@ -535,6 +543,7 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];
@@ -543,32 +552,32 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, ulIndex);
-        xfi[i].pszColumnTitle = ""; // Index"; // ###
+        xfi[i].pszColumnTitle = ""; // Index";
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_CENTER;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, pszFourCC);
-        xfi[i].pszColumnTitle = "FourCC"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnFourCC;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, pszFormatName);
-        xfi[i].pszColumnTitle = "Name"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnName;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, pszIOProcType);
-        xfi[i].pszColumnTitle = "IOProc type"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnIOProcType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, pszMediaType);
-        xfi[i].pszColumnTitle = "Media type"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnMediaType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, pszExtension);
-        xfi[i].pszColumnTitle = "Ext."; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExtension;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -760,6 +769,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];
@@ -773,27 +783,27 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i++].ulOrientation = CFA_CENTER;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, pszFourCC);
-        xfi[i].pszColumnTitle = "FourCC"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnFourCC;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, pszCodecName);
-        xfi[i].pszColumnTitle = "Name"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnName;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, pszMediaType);
-        xfi[i].pszColumnTitle = "Media type"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnMediaType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, pszDLLName);
-        xfi[i].pszColumnTitle = "DLL"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnDLL;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, pszProcName);
-        xfi[i].pszColumnTitle = "Procedure"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnProcedure;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -846,7 +856,7 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = "Codecs";          // ###
+        pcnbp->pszName = pNLSStrings->pszPagetitleCodecs;
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_CODECS;
         pcnbp->ulPageID = SP_MEDIA_CODECS;
@@ -860,7 +870,7 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = "IOProcs";          // ###
+        pcnbp->pszName = pNLSStrings->pszPagetitleIOProcs;
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_IOPROCS;
         pcnbp->ulPageID = SP_MEDIA_IOPROCS;
@@ -874,9 +884,9 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = "Devices";          // ###
+        pcnbp->pszName = pNLSStrings->pszPagetitleDevices;
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_DEVICES; // ###
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_DEVICES;
         pcnbp->ulPageID = SP_MEDIA_DEVICES;
         pcnbp->pfncbInitPage    = xwmmDevicesInitPage;
         ntbInsertPage(pcnbp);
