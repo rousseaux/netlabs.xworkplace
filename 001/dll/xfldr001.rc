@@ -65,12 +65,7 @@
    why wpobject.h was needed. Since that file is only in the Toolkit,
    I'll just add the define here so everyone can compile. */
 #define WPMENUID_USER          0x6500
-/* #include <wpobject.h> */
 #include "..\..\include\dlgids.h"
-
-/* rcinclude "wpamptr.rc"
-rcinclude "wpamptr.dlg"
-rcinclude "amptr001.dlg" */
 
 /* icons, bitmaps */
 POINTER ID_ICONDLG LOADONCALL MOVEABLE DISCARDABLE xfldrdlg.ico

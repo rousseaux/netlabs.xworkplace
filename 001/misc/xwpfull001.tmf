@@ -118,6 +118,9 @@ This allows you to cancel shutdown while it's running, skip hung programs, and m
 This will add an "&xsd;" page to the Desktop's settings notebook which allows you to configure this feature.
 This was new with XFolder 0.60.
 See the &xwp; User Guide for details.
+<--FEATURES_6024-->: If "Check desktop integrity" is enabled, &xwp; will check the Desktop's integrity on every startup before the WPS can display the dull "Cannot find desktop" dialog, which isn't terribly helpful.
+If &xwp; finds problems with your desktop's integrity (like a broken file-system handles table, or a lost <WP_DESKTOP> object ID), it can try to repair those problems.
+You may try to disable this feature if &xwp; keeps reporting problems on startup and your desktop appears to work fine.
 
 <--FEATURES_6041-->: "Extended file associations" will make the WPS use file types only for associating programs with data files.
 Don't be shocked, file filters still exist. The difference is that files will be given automatic file types based on file filters, instead of associating programs based on filters directly.

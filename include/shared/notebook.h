@@ -89,7 +89,7 @@
      *@@ CREATENOTEBOOKPAGE:
      *      this structure must be passed to ntbInsertPage
      *      and specifies lots of data according to which
-     *      ntb_fnwpPageCommon will react.
+     *      fnwpPageCommon will react.
      *
      *      Always zero the entire structure and then fill
      *      in only the fields that you need. The top fields
@@ -194,7 +194,7 @@
                 // optional callback function thru which all dialog messages are going.
                 // You can use this if you need additional handling which the above
                 // callbacks do not provide for. This gets really all the messages
-                // which go thru ntb_fnwpPageCommon.
+                // which go thru fnwpPageCommon.
                 //
                 // This callback gets called _after_ all other message processing
                 // (i.e. the "item changed" and "timer" callbacks).
@@ -209,7 +209,7 @@
 
         // 4) The following fields are not intended for _input_ to ntbInsertPage.
         //    Instead, these contain additional data which can be evaluated from
-        //    the callbacks. These fields are only set by ntb_fnwpPageCommon
+        //    the callbacks. These fields are only set by fnwpPageCommon
         //    _after_ the page has been initialized.
         ULONG       ulNotebookPageID; // the PM notebook page ID, as returned by
                                       // wpInsertSettingsPage
@@ -237,7 +237,7 @@
                                       // callback with CBI_INIT set. Useful if you
                                       // want to find out if a control should respond
                                       // to something yet.
-        BOOL        fShowWaitPointer; // while TRUE, ntb_fnwpPageCommon shows the "Wait" pointer;
+        BOOL        fShowWaitPointer; // while TRUE, fnwpPageCommon shows the "Wait" pointer;
                                       // only meaningful if another thread is preparing data
         HWND        hwndTooltip;      // if this is != NULL, this window gets destroyed
                                       // automatically when the notebook page is destroyed.

@@ -410,6 +410,9 @@
         #else
             #define INT3()
         #endif
+    #else
+        #define INT3()
     #endif
+
 #endif
 

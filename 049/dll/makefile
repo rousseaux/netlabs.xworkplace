@@ -32,7 +32,7 @@
 # will support. Change this to a different language code, and
 # the makefile will support your language. The language code
 # MUST have three digits exactly.
-LANGUAGE = 001
+LANGUAGE = 049
 
 #
 # DO NOT CHANGE THE FOLLOWING
