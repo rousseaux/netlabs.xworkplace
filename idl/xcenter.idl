@@ -147,7 +147,7 @@ interface XCenter : WPAbstract
 
     wpInitData: override;
     wpUnInitData: override;
-    wpObjectReady: override;
+    // wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
 
     wpSetup: override;
 

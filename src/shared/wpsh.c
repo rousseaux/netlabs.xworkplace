@@ -1299,6 +1299,127 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
 }
 
 /*
+ *@@ wpshPopulateWithShadows:
+ *      awakes all shadows in the specified folder.
+ *
+ *      This runs _wpclsFindObjectFirst and its companions
+ *      on the folder... essentially, a sample of this is
+ *      in WPREF with that method documentation. In addition
+ *      however, we protect the folder contents with mutexes
+ *      properly.
+ *
+ *@@added V0.9.9 (2001-03-12) [umoeller]
+ */
+
+BOOL wpshPopulateWithShadows(WPFolder *somSelf)
+{
+    // OK, the following is from the WPREF docs for
+    // wpclsFindObjectFirst... appears to work
+    BOOL        brc = FALSE;
+
+    if (somSelf)
+    {
+        if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL))
+        {
+            M_WPObject  *pWPObject = _WPObject;
+            BOOL        fFindSem = FALSE,
+                        fFolderSem = FALSE;
+            HFIND       hFind = 0;          // find handle
+
+            TRY_LOUD(excpt1)
+            {
+                // request the find mutex... we are awaking objects here
+                fFindSem = !wpshRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+                if (fFindSem)
+                {
+                    fFolderSem = !wpshRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+                    if (fFolderSem)
+                    {
+                        CLASS       aClasses[2];        // array of classes to look for
+                        OBJECT      aObjects[100];      // buffer for returned objects
+                        ULONG       ulCount,
+                                    ulErrorID;
+                                                        // objects count
+
+                        // set "populate" flag
+                        _wpModifyFldrFlags(somSelf,
+                                           FOI_POPULATEINPROGRESS,
+                                           FOI_POPULATEINPROGRESS);
+
+                        // here's the trick how to awake all shadows:
+                        // run wpclsFindObjectFirst with the WPShadow class object
+                        // on the folder...
+                        aClasses[0] = _WPShadow;
+                        aClasses[1] = NULL;         // list terminator
+
+                        // reset the error indicators
+                        _wpclsSetError(pWPObject, 0);
+
+                        brc = FALSE;
+                        // attempt to find the first stack of objects into
+                        // the buffer
+                        ulCount = ARRAYITEMCOUNT(aObjects);
+                        brc = _wpclsFindObjectFirst(pWPObject,
+                                                    aClasses,    // classes to find
+                                                    &hFind,      // out: handle
+                                                    (PSZ)NULL,   // we don't care about the titled
+                                                    somSelf,     // folder to search
+                                                    FALSE,       // no recurse into subfolders
+                                                    NULL,        // extended criteria (?!?)
+                                                    aObjects,    // out: objects found
+                                                    &ulCount);   // in: size of array;
+                                                                 // out: object count found
+                                // all objs are locked!!
+
+                        ulErrorID = _wpclsQueryError(pWPObject);
+
+                        while (    (!brc)
+                                && (ulErrorID == WPERR_BUFFER_OVERFLOW)
+                              )
+                        {
+                            // buffer wasn't large enough:
+                            // get next set
+                            _wpclsSetError(pWPObject, 0);
+                            ulCount = ARRAYITEMCOUNT(aObjects);
+                            brc = _wpclsFindObjectNext(pWPObject,
+                                                       hFind,
+                                                       aObjects,
+                                                       &ulCount );
+                            ulErrorID = _wpclsQueryError(pWPObject);
+                        }
+
+                        // OK, now we got all shadows in the folder too.
+                    } // end if (fFolderSem)
+                } // end if (fFindSem)
+            }
+            CATCH(excpt1)
+            {
+                brc = FALSE;
+            } END_CATCH();
+
+            // release mutexes in reverse order
+            if (fFolderSem)
+                wpshReleaseFolderMutexSem(somSelf);
+            if (fFindSem)
+                wpshReleaseFindMutexSem(somSelf);
+
+            // clean up
+            _wpclsSetError(pWPObject, 0);
+
+            if (hFind)
+                _wpclsFindObjectEnd(pWPObject, hFind);
+
+            // unset "populate" flag again
+            _wpModifyFldrFlags(somSelf,
+                               FOI_POPULATEINPROGRESS,
+                               0);
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ wpshCheckIfPopulated:
  *      this populates a folder if it's not populated yet.
  *      Saves you from querying the full path and all that.
@@ -1334,6 +1455,23 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf,
                           0,
                           szRealName,
                           fFoldersOnly);
+
+        // OK, here comes the goody stuff... if populate is called
+        // with (fFoldersOnly = TRUE), the WPS will only create
+        // instances of WPFolder, and nothing else. However, at the
+        // same time, it attempts to put folder _shadows_ in tree views
+        // also. But since "folders only" populate never instantiates
+        // shadows, folder shadows rarely appear in tree view. How stupid.
+
+        // So what we do, if "folders only" has been specified, we
+        // also awake all shadows in the folder. This can be done
+        // by running "find" on the folder. Note that the WPFolder's
+        // have been awakened by wpPopulate above.
+
+        if (fFoldersOnly)
+        {
+            wpshPopulateWithShadows(somSelf);
+        }
     }
     else
         // already populated:
@@ -2180,10 +2318,21 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
  *      because we'll always hang the WPS if we don't
  *      request this properly.
  *
+ *      In addition to the regular object mutex, each folder
+ *      has associated with it a second mutex to protect the
+ *      folder contents. While this semaphore is held, one
+ *      can be sure that no objects are removed from or added
+ *      to a folder from some other WPS thread.
+ *      You should always request this semaphore before using
+ *      wpQueryContent and such things.
+ *
+ *      This semaphore is mentioned in the Warp 4 toolkit docs
+ *      for wpRequestObjectMutexSem, but never prototyped.
+ *
  *      WARNINGS:
  *
  *      -- As usual, you better not forget to release the
- *         mutex again.
+ *         mutex again. Use wpshReleaseFolderMutexSem.
  *
  *      -- In addition, if you also request the _object_
  *         mutex for the folder (WPObject::wpRequestObjectMutexSem),
@@ -2225,6 +2374,8 @@ ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
 
 /*
  *@@ wpshReleaseFolderMutexSem:
+ *      calls WPFolder::wpReleaseFolderMutexSem. This is
+ *      the reverse to wpshRequestFolderMutexSem.
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  */
@@ -2242,6 +2393,77 @@ ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf)
                "Unable to resolve method.");
     else
         ulrc = _wpReleaseFolderMutexSem(somSelf);
+
+    return (ulrc);
+}
+
+/*
+ *@@ wpshRequestFindMutexSem:
+ *      mutex requested by the populate thread to prevent
+ *      multiple populates, apparently. From my testing,
+ *      this semaphore is requested any time an object is
+ *      being made awake (created in memory).
+ *
+ *      As with the folder mutex sem, proper serialization
+ *      must be applied to avoid mutexes locking each other
+ *      out.
+ *
+ *      Apparently, the WPS uses the following order when
+ *      it requests this mutex:
+ *
+ *      1)  request find mutex
+ *
+ *      2)  request folder mutex,
+ *          while (wpQueryContent, ...)
+ *          release folder mutex
+ *
+ *      3)  awake/create object
+ *
+ *      4)  release find mutex
+ *
+ *      Whatever you do, never request the find AFTER the
+ *      folder mutex.
+ *
+ *@@added V0.9.9 (2001-03-11) [umoeller]
+ */
+
+ULONG wpshRequestFindMutexSem(WPFolder *somSelf,
+                              ULONG ulTimeout)
+{
+    ULONG ulrc = -1;
+
+    xfTD_wpRequestFindMutexSem _wpRequestFindMutexSem
+            = (xfTD_wpRequestFindMutexSem)wpshResolveFor(somSelf,
+                                                         NULL, // use somSelf's class
+                                                         "wpRequestFindMutexSem");
+    if (!_wpRequestFindMutexSem)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method.");
+    else
+        ulrc = _wpRequestFindMutexSem(somSelf, ulTimeout);
+
+    return (ulrc);
+}
+
+/*
+ *@@ wpshReleaseFindMutexSem:
+ *
+ *@@added V0.9.9 (2001-03-11) [umoeller]
+ */
+
+ULONG wpshReleaseFindMutexSem(WPFolder *somSelf)
+{
+    ULONG ulrc = -1;
+
+    xfTD_wpReleaseFindMutexSem _wpReleaseFindMutexSem
+            = (xfTD_wpReleaseFindMutexSem)wpshResolveFor(somSelf,
+                                                         NULL, // use somSelf's class
+                                                         "wpReleaseFindMutexSem");
+    if (!_wpReleaseFindMutexSem)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method.");
+    else
+        ulrc = _wpReleaseFindMutexSem(somSelf);
 
     return (ulrc);
 }

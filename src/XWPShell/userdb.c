@@ -423,7 +423,7 @@ APIRET LoadDatabase(PVOID pDatabase)
 
 /*
  *@@ UnloadDatabase:
- *          #### todo!!
+ *          @@todo
  */
 
 APIRET UnloadDatabase(PVOID pDatabase)
@@ -615,7 +615,7 @@ APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo)
                 arc = XWPSEC_USER_EXISTS;
             else
             {
-                // ###
+                // @@todo
                 arc = XWPSEC_INTEGRITY;
             }
 

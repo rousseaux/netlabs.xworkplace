@@ -320,6 +320,7 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.6 (2000-10-25) [umoeller]: no longer storing data statically, func renamed
  *@@changed V0.9.6 (2000-11-12) [umoeller]: now using thousands separator from "Country"
+ **@@todo add mutex
  */
 
 SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
@@ -329,7 +330,7 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectData");
 
-    // ### lock the object before doing this...
+    // *@@todo lock the object before doing this...
 
     _ulTotalSize = ulNewSize;
 
@@ -701,6 +702,8 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
  *      for the operations which are checked for here
  *      because XWPTrashCan::xwpProcessObjectCommand already
  *      handles those commands.
+ *
+ *@@todo TRASHDESTROY
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
@@ -721,7 +724,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
     else if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
     {
         // "Destroy object":
-        // brc = _xwpDestroyTrashObject(somSelf);   ###
+        // brc = _xwpDestroyTrashObject(somSelf);   *@@todo
                 // needs to be converted to freeing related object
     }
     // none of our menu items: call default

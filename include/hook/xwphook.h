@@ -277,6 +277,12 @@
                             //      0xFFFF0000 = show window list;
                             //      0xFFFF0001 = show Desktop's context menu.
                             //      0xFFFF0002 = show PageMage.
+                            //      (2001-01-26) [lafaix]
+                            //      0xFFFF0003 = up one screen
+                            //      0xFFFF0004 = right one screen
+                            //      0xFFFF0005 = down one screen
+                            //      0xFFFF0006 = left one screen
+                            //      [lafaix] end
                             // Otherwise (> 0 and < 0xFFFF0000), we have
                             // a "real" object handle, and a regular WPS
                             // object is to be opened.

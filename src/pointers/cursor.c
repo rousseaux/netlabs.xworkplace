@@ -243,8 +243,6 @@ if (rc != NO_ERROR)                     \
 }rc                                     \
 
 
-// ###########################################################################
-
 /*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
  *³ Name      : _CreatePointerFromCursor                                   ³
  *³ Comment   :                                                            ³
@@ -1151,8 +1149,6 @@ APIRET _ReadWinAnimationValues
 
 }
 
-
-// ###########################################################################
 
 /*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
  *³ Name      : LoadPointerFromCursorFile                                  ³
@@ -2085,8 +2081,6 @@ APIRET WriteWinAnimationFile
             break;
 
 
-        // ###########################################################################
-
         // calculate len of RIFF chunk
 
         ulRiffLen =             // determine length of chunks
@@ -2106,8 +2100,6 @@ APIRET WriteWinAnimationFile
 
             SIGSIZE + ulFramelistLen;   // - 'LIST' 'fram''icon'
 
-
-        // ###########################################################################
 
         // Open ani file
         rc = DosOpen(pszAnimationFileName,

@@ -384,16 +384,7 @@
      * xfTP_wpRequestFolderMutexSem:
      *      prototype for WPFolder::wpRequestFolderMutexSem.
      *
-     *      In addition to the regular object mutex, each folder
-     *      has associated with it a second mutex to protect the
-     *      folder contents. While this semaphore is held, one
-     *      can be sure that no objects are removed from or added
-     *      to a folder from some other WPS thread.
-     *      You should always request this semaphore before using
-     *      wpQueryContent and such things.
-     *
-     *      This semaphore is mentioned in the Warp 4 toolkit docs
-     *      for wpRequestObjectMutexSem, but never prototyped.
+     *      See wpshRequestFolderMutexSem.
      *
      *      This returns 0 if the semaphore was successfully obtained.
      */
@@ -416,6 +407,34 @@
     ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
                                     ULONG ulTimeout);
     ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf);
+
+    /*
+     * xfTP_wpRequestFindMutexSem:
+     *      prototype for WPFolder::wpRequestFindMutexSem.
+     *
+     *      See wpshRequestFindMutexSem.
+     *
+     *      This returns 0 if the semaphore was successfully obtained.
+     */
+
+    typedef ULONG _System xfTP_wpRequestFindMutexSem(WPFolder *somSelf,
+                                                     ULONG ulTimeout);
+    typedef xfTP_wpRequestFindMutexSem *xfTD_wpRequestFindMutexSem;
+
+    /*
+     * xfTP_wpReleaseFindMutexSem:
+     *      prototype for WPFolder::wpReleaseFindMutexSem.
+     *
+     *      This is the reverse to WPFolder::wpRequestFindMutexSem.
+     */
+
+    typedef ULONG _System xfTP_wpReleaseFindMutexSem(WPFolder *somSelf);
+    typedef xfTP_wpReleaseFindMutexSem *xfTD_wpReleaseFindMutexSem;
+
+    // wrappers
+    ULONG wpshRequestFindMutexSem(WPFolder *somSelf,
+                                    ULONG ulTimeout);
+    ULONG wpshReleaseFindMutexSem(WPFolder *somSelf);
 
     /*
      *@@ xfTP_wpFSNotifyFolder:

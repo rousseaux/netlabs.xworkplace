@@ -2467,6 +2467,7 @@ VOID objModifyPopupMenu(WPObject* somSelf,
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added NOCOPY, NODELETE etc.
  *@@changed V0.9.5 (2000-08-26) [umoeller]: added DEFAULTVIEW=RUNNING; fixed class default view
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added LOCKEDINPLACE
+ *@@todo some strings missing
  */
 
 ULONG objQuerySetup(WPObject *somSelf,
@@ -2554,7 +2555,7 @@ ULONG objQuerySetup(WPObject *somSelf,
         }
     }
 
-    // HELPLIBRARY  ###
+    // HELPLIBRARY  @@todo
 
     // HELPPANEL
     if (_pWPObjectData)

@@ -146,6 +146,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
  *      XFldProgramFile::wpAddProgramSessionPage override.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.9 (2001-03-11) [lafaix]: added two subpages (imports and exports)
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
@@ -161,12 +162,42 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MINOR;
+    pcnbp->fEnumerate = TRUE;
+    pcnbp->pszName = pNLSStrings->pszModule2Page;
+    pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE2;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE2;
+    pcnbp->ulPageID = SP_PROG_DETAILS2;
+    pcnbp->pfncbInitPage    = fsysProgram2InitPage;
+    ntbInsertPage(pcnbp);
+
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MINOR;
+    pcnbp->fEnumerate = TRUE;
+    pcnbp->pszName = pNLSStrings->pszModule1Page;
+    pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE1;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE1;
+    pcnbp->ulPageID = SP_PROG_DETAILS1;
+    pcnbp->pfncbInitPage    = fsysProgram1InitPage;
+    ntbInsertPage(pcnbp);
+
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = pNLSStrings->pszModulePage;
     pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
     pcnbp->ulPageID = SP_PROG_DETAILS;
     pcnbp->pfncbInitPage    = fsysProgramInitPage;
+
     return (ntbInsertPage(pcnbp));
 }
 

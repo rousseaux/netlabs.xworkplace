@@ -838,7 +838,7 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                     // disable auto-hide while we're showing the dlg
                     pXCenterData->fShowingSettingsDlg = TRUE;
                     pClass->pShowSettingsDlg(&DlgData);
-                                // ### no, this must be outside of the lock
+                                // @@todo no, this must be outside of the lock
 
                     pXCenterData->fShowingSettingsDlg = FALSE;
                 } // end if (pSettingsNode)
@@ -3843,7 +3843,7 @@ PLINKLIST ctrpQueryClasses(VOID)
  *
  *      May run on any thread.
  *
- *      ### add a global mutex for this
+ *      @@todo add a global mutex for this
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added PRIVATEWIDGETCLASS wrapping

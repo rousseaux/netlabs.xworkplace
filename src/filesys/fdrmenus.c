@@ -2119,7 +2119,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                     // object from it; do this in the supplementary
                                     // object window V0.9.2 (2000-02-26) [umoeller]
                                     PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
-                                                                            NULL);
+                                                                             NULL);
                                     if (psfv)
                                     {
                                         XFolderData     *somThis = XFolderGetData(somSelf);

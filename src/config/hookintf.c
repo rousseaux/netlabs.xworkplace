@@ -2213,6 +2213,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      Global Settings.
  *
  *@@changed V0.9.4 (2000-08-08) [umoeller]: added PageMage to special functions
+ *@@changed V0.9.9 (2001-01-25) [lafaix]: added more PageMage special functions
  */
 
 VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2254,6 +2255,12 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
             WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialWindowList);
             WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialDesktopPopup);
             WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
+
+            // V0.9.9 (2001-01-25) [lafaix] (clockwise)
+            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageUp);
+            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageRight);
+            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageDown);
+            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageLeft);
         }
 
         // set up container

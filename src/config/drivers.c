@@ -614,8 +614,8 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
     // load CONFIG.SYS text; freed below
     if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
         winhDebugBox(HWND_DESKTOP,
-                 pKernelGlobals->szConfigSys,
-                 "XFolder was unable to open the CONFIG.SYS file.");
+                 "XWorkplace",
+                 "XWorkplace was unable to open the CONFIG.SYS file.");
     else
     {
         // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
@@ -1153,8 +1153,8 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     if (csysLoadConfigSys(NULL, &pszConfigSys))
                         winhDebugBox(pcnbp->hwndFrame,
-                                 (PSZ)pKernelGlobals->szConfigSys,
-                                 "XFolder was unable to open the CONFIG.SYS file.");
+                                 "XWorkplace",
+                                 "XWorkplace was unable to open the CONFIG.SYS file.");
                     else
                     {
                         CHAR    szBackup[CCHMAXPATH];
@@ -1174,7 +1174,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // "file written" msg
                             cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
                                              100,
-                                             136,   // ###
+                                             136,   // @@todo
                                              MB_OK);
                         else
                             winhDebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");

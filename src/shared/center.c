@@ -256,6 +256,7 @@
 #define INCL_WININPUT
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
+#define INCL_WINSYS
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -273,10 +274,12 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"               // gpi helper
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
+#include "helpers\winh.h"               // win helper
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
@@ -514,6 +517,59 @@ BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
 
     return (brc);
 }
+
+/*
+ *@@ ctrPaintStaticWidgetBorder:
+ *      helper function exported from XFLDR.DLL.
+ *
+ *      This is useful if your widget is a static widget.
+ *
+ *      This function paints (if needed) a static widget border
+ *      around the widget.  It uses the appropriate colors.
+ *
+ *      This function is generaly called when handling the
+ *      WP_PAINT message in the widget's window proc.
+ *
+ *@@addev V0.9.9 (2001-03-10) [lafaix]
+ */
+
+VOID ctrPaintStaticWidgetBorder(HPS hps,
+                                PXCENTERWIDGET pWidget)
+{
+    if (hps && pWidget)
+    {
+        RECTL       rclWin;
+        LONG lDark, lLight;
+        HWND hwnd = pWidget->hwndWidget;
+
+        WinQueryWindowRect(hwnd, &rclWin);        // exclusive
+        gpihSwitchToRGB(hps);
+
+        rclWin.xRight--;
+        rclWin.yTop--;
+            // rclWin now inclusive
+
+        if (pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
+        {
+            lDark = pWidget->pGlobals->lcol3DDark;
+            lLight = pWidget->pGlobals->lcol3DLight;
+        }
+        else
+        {
+            lDark =
+            lLight = winhQueryPresColor(hwnd,
+                                        PP_BACKGROUNDCOLOR,
+                                        TRUE,
+                                        SYSCLR_DIALOGBACKGROUND);
+        }
+
+        gpihDraw3DFrame(hps,
+                        &rclWin,        // inclusive
+                        1,
+                        lDark,
+                        lLight);
+    }
+ }
 
 /*
  *@@ ctrShowContextMenu:

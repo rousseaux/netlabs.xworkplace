@@ -1098,7 +1098,175 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 }
 
 /*
+ *@@ IMPORTEDMODULERECORD:
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ */
+
+typedef struct _IMPORTEDMODULERECORD
+{
+    RECORDCORE  recc;
+
+    PSZ   pszModuleName;
+} IMPORTEDMODULERECORD, *PIMPORTEDMODULERECORD;
+
+/*
+ *@@ fsysProgram1InitPage:
+ *      "Imported modules" page notebook callback function (notebook.c).
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@todo: corresponding ItemChanged page
+ */
+
+VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                          ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_MODULE1);
+
+    /*
+     * CBI_INIT:
+     *      initialize page (called only once)
+     */
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[2];
+        PFIELDINFO pfi = NULL;
+        int        i = 0;
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(IMPORTEDMODULERECORD, pszModuleName);
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnModuleName;
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    /*
+     * CBI_SET:
+     *      set controls' data
+     */
+
+    if (flFlags & CBI_SET)
+    {
+        // fill container with imported modules
+    }
+
+    /*
+     * CBI_DESTROY:
+     *      clean up page before destruction
+     */
+
+    if (flFlags & CBI_DESTROY)
+    {
+        pcnbp->pUser = NULL;
+    }
+}
+
+/*
+ *@@ EXPORTEDFUNCTIONRECORD:
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ */
+
+typedef struct _EXPORTEDFUNCTIONRECORD
+{
+    RECORDCORE  recc;
+
+    ULONG ulFunctionOrdinal;
+    PSZ   pszFunctionType;
+    PSZ   pszFunctionName;
+} EXPORTEDFUNCTIONRECORD, *PEXPORTEDFUNCTIONRECORD;
+
+/*
+ *@@ fsysProgram2InitPage:
+ *      "Exported functions" page notebook callback function (notebook.c).
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@todo: corresponding ItemChanged page
+ */
+
+VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                          ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_MODULE2);
+
+    /*
+     * CBI_INIT:
+     *      initialize page (called only once)
+     */
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[4];
+        PFIELDINFO pfi = NULL;
+        int        i = 0;
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, ulFunctionOrdinal);
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportOrdinal;
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pszFunctionType);
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportType;
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pszFunctionName);
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportName;
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    /*
+     * CBI_SET:
+     *      set controls' data
+     */
+
+    if (flFlags & CBI_SET)
+    {
+        // fill container with functions
+    }
+
+    /*
+     * CBI_DESTROY:
+     *      clean up page before destruction
+     */
+
+    if (flFlags & CBI_DESTROY)
+    {
+    }
+}
+
+/*
  *@@ RESOURCERECORD:
+ *      frees resources allocated by fsysQueryResources.
  *
  *@@added V0.9.7 (2000-12-17) [lafaix]
  */
@@ -1112,201 +1280,6 @@ typedef struct _RESOURCERECORD
     ULONG ulResourceSize;
     PSZ   pszResourceFlag;
 } RESOURCERECORD, *PRESOURCERECORD;
-
-/*
- *@@ FSYSRESOURCE:
- *
- *@@added V0.9.7 (2000-12-18) [lafaix]
- */
-
-typedef struct _FSYSRESOURCE
-{
-    ULONG ulID;
-    ULONG ulType;
-    ULONG ulSize;
-    ULONG ulFlag;
-} FSYSRESOURCE, *PFSYSRESOURCE;
-
-#define OBJWRITE         0x0002L            /* Writeable Object  */
-#define OBJDISCARD       0x0010L            /* Object is Discardable */
-#define OBJSHARED        0x0020L            /* Object is Shared */
-#define OBJPRELOAD       0x0040L            /* Object has preload pages  */
-
-#define NSDISCARD       0x0010L             /* Object is Discardable */
-#define NSMOVE          NSDISCARD           /* Moveable object is for sure Discardabable */
-#define NSSHARED        0x0020              /* Shared segment flag */
-#define NSPRELOAD       0x0040L             /* Object has preload pages  */
-
-#define RNMOVE      0x0010      /* Moveable resource */
-#define RNPURE      0x0020      /* Pure (read-only) resource */
-#define RNPRELOAD   0x0040      /* Preloaded resource */
-#define RNDISCARD   0xF000      /* Discard priority level for resource */
-
-/*
- *@@ fsysQueryResources:
- *      returns an array of FSYSRESOURCE structures describing all
- *      available resources in the module.
- *
- *      *pcResources receives the no. of items in the array
- *      (not the array size!). Use fsysFreeResources to clean up.
- *
- *@@added V0.9.7 (2000-12-18) [lafaix]
- */
-
-PFSYSRESOURCE fsysQueryResources(PEXECUTABLE pExec, PULONG pcResources)
-{
-    ULONG         cResources = 0;
-    PFSYSRESOURCE paResources = NULL;
-    int i;
-
-    if (pExec)
-    {
-        if (pExec->ulOS == EXEOS_OS2)
-        {
-            ULONG ulDummy;
-
-            if (pExec->ulExeFormat == EXEFORMAT_LX)
-            {
-                // It's a 32bit OS/2 executable
-                cResources = pExec->pLXHeader->ulResTblCnt;
-
-                if (cResources)
-                {
-                    struct rsrc32                  /* Resource Table Entry */
-                    {
-                        unsigned short      type;   /* Resource type */
-                        unsigned short      name;   /* Resource name */
-                        unsigned long       cb;     /* Resource size */
-                        unsigned short      obj;    /* Object number */
-                        unsigned long       offset; /* Offset within object */
-                    } rs;
-
-                    struct o32_obj                    /* Flat .EXE object table entry */
-                    {
-                        unsigned long   o32_size;     /* Object virtual size */
-                        unsigned long   o32_base;     /* Object base virtual address */
-                        unsigned long   o32_flags;    /* Attribute flags */
-                        unsigned long   o32_pagemap;  /* Object page map index */
-                        unsigned long   o32_mapsize;  /* Number of entries in object page map */
-                        unsigned long   o32_reserved; /* Reserved */
-                    } ot;
-
-                    paResources = malloc(sizeof(FSYSRESOURCE) * cResources);
-
-                    DosSetFilePtr(pExec->hfExe,
-                                  pExec->pLXHeader->ulResTblOfs
-                                    + pExec->pDosExeHeader->ulNewHeaderOfs,
-                                  FILE_BEGIN,
-                                  &ulDummy);
-
-                    for (i = 0; i < cResources; i++)
-                    {
-                        DosRead(pExec->hfExe, &rs, 14, &ulDummy);
-                        paResources[i].ulID = rs.name;
-                        paResources[i].ulType = rs.type;
-                        paResources[i].ulSize = rs.cb;
-                        paResources[i].ulFlag = rs.obj; // Temp storage for Object
-                                                        // number.  Will be filled
-                                                        // with resource flag
-                                                        // later.
-                    }
-
-                    for (i = 0; i < cResources; i++)
-                    {
-                        DosSetFilePtr(pExec->hfExe,
-                                      pExec->pLXHeader->ulObjTblOfs
-                                        + pExec->pDosExeHeader->ulNewHeaderOfs
-                                        + (   sizeof(ot)
-                                            * (paResources[i].ulFlag - 1)),
-                                      FILE_BEGIN,
-                                      &ulDummy);
-                        DosRead(pExec->hfExe, &ot, sizeof(ot), &ulDummy);
-
-                        paResources[i].ulFlag  = (ot.o32_flags & OBJWRITE) ? 0 : RNPURE;
-                        paResources[i].ulFlag |= (ot.o32_flags & OBJDISCARD) ? 4096 : 0;
-                        paResources[i].ulFlag |= (ot.o32_flags & OBJSHARED) ? RNMOVE : 0;
-                        paResources[i].ulFlag |= (ot.o32_flags & OBJPRELOAD) ? RNPRELOAD : 0;
-                    }
-                }
-            }
-            else
-            if (pExec->ulExeFormat == EXEFORMAT_NE)
-            {
-               // It's a 16bit OS/2 executable
-               cResources = pExec->pNEHeader->usResSegmCount;
-
-               if (cResources)
-               {
-                   struct {unsigned short type; unsigned short name;} rti;
-                   struct new_seg                          /* New .EXE segment table entry */
-                   {
-                       unsigned short      ns_sector;      /* File sector of start of segment */
-                       unsigned short      ns_cbseg;       /* Number of bytes in file */
-                       unsigned short      ns_flags;       /* Attribute flags */
-                       unsigned short      ns_minalloc;    /* Minimum allocation in bytes */
-                   } ns;
-
-                   paResources = malloc(sizeof(FSYSRESOURCE) * cResources);
-
-                   // We first read the resources IDs and types
-                   DosSetFilePtr(pExec->hfExe,
-                                 pExec->pNEHeader->usResTblOfs
-                                    + pExec->pDosExeHeader->ulNewHeaderOfs,
-                                 FILE_BEGIN,
-                                 &ulDummy);
-
-                   for (i = 0; i < cResources; i++)
-                   {
-                       DosRead(pExec->hfExe, &rti, sizeof(rti), &ulDummy);
-                       paResources[i].ulID = rti.name;
-                       paResources[i].ulType = rti.type;
-                   }
-
-                   // And we then read their sizes and flags
-                   for (i = 0; i < cResources; i++)
-                   {
-                       DosSetFilePtr(pExec->hfExe,
-                                     pExec->pDosExeHeader->ulNewHeaderOfs
-                                            + pExec->pNEHeader->usSegTblOfs
-                                            + (sizeof(ns)
-                                                * (  pExec->pNEHeader->usSegTblEntries
-                                                   - pExec->pNEHeader->usResSegmCount
-                                                   + i)),
-                                     FILE_BEGIN,
-                                     &ulDummy);
-                       DosRead(pExec->hfExe, &ns, sizeof(ns), &ulDummy);
-
-                       paResources[i].ulSize = ns.ns_cbseg;
-
-                       paResources[i].ulFlag  = (ns.ns_flags & NSPRELOAD) ? RNPRELOAD : 0;
-                       paResources[i].ulFlag |= (ns.ns_flags & NSSHARED) ? RNPURE : 0;
-                       paResources[i].ulFlag |= (ns.ns_flags & NSMOVE) ? RNMOVE : 0;
-                       paResources[i].ulFlag |= (ns.ns_flags & NSDISCARD) ? 4096 : 0;
-                   }
-               }
-            }
-
-            *pcResources = cResources;
-        }
-
-        doshExecClose(pExec);
-    }
-
-    return (paResources);
-}
-
-/*
- *@@ fsysFreeResources:
- *      frees resources allocated by fsysQueryResources.
- *
- *@@added V0.9.7 (2000-12-18) [lafaix]
- */
-
-BOOL fsysFreeResources(PFSYSRESOURCE paResources)
-{
-    free(paResources);
-    return (TRUE);
-}
 
 /*
  *@@fsysGetResourceFlagName:
@@ -1436,7 +1409,7 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
 
             if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
             {
-                paResources = fsysQueryResources(pExec, &cResources);
+                paResources = doshExecQueryResources(pExec, &cResources);
 
                 if (paResources)
                 {
@@ -1472,8 +1445,10 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
 
                 // store resources
                 if (pcnbp->pUser)
-                    fsysFreeResources(pcnbp->pUser);
+                    doshExecFreeResources(pcnbp->pUser);
                 pcnbp->pUser = paResources;
+
+                doshExecClose(pExec);
             }
         }
     }
@@ -1506,32 +1481,33 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         XFIELDINFO xfi[6];
         PFIELDINFO pfi = NULL;
         int        i = 0;
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         // set up cnr details view
 /* !!! not yet implemented [lafaix]
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszDeviceType);
-        xfi[i].pszColumnTitle = "Icon"; // !!! to be localized
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceIcon;
         xfi[i].ulDataType = CFA_BITMAPORICON;
         xfi[i++].ulOrientation = CFA_LEFT;
 */
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceID);
-        xfi[i].pszColumnTitle = "ID"; // !!! to be localized
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceID;
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszResourceType);
-        xfi[i].pszColumnTitle = "Type"; // !!! to be localized
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceSize);
-        xfi[i].pszColumnTitle = "Size"; // !!! to be localized
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceSize;
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszResourceFlag);
-        xfi[i].pszColumnTitle = "Flags"; // !!! to be localized
+        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceFlags;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -1573,7 +1549,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     if (flFlags & CBI_DESTROY)
     {
         if (pcnbp->pUser)
-            fsysFreeResources(pcnbp->pUser);
+            doshExecFreeResources(pcnbp->pUser);
         pcnbp->pUser = NULL;
     }
 }

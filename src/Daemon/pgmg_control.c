@@ -884,7 +884,6 @@ VOID ClientCreate(HWND hwnd,
                      ) * G_szlEachDesktopReal.cy;
 
     strcpy(pClientData->szFaceName, "2.System VIO");
-                // ###
 
     WinPostMsg(hwnd,
                PGMG_ZAPPO,

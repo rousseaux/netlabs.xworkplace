@@ -280,6 +280,9 @@
     #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
     #define WGTF_TOOLTIP                0x0010
     #define WGTF_TOOLTIP_AT_MOUSE      (0x0020 + 0x0010)
+    #define WGTF_TRANSPARENT            0x0040
+    #define WGTF_CONTAINER              0x0080
+    #define WGTF_NONFOCUSTRAVERSABLE    0x0100
 
     /*
      *@@ XCENTERWIDGETCLASS:
@@ -530,6 +533,10 @@
     typedef VOID APIENTRY CTRSHOWCONTEXTMENU(PXCENTERWIDGET pWidget, HWND hwndContextMenu);
     typedef CTRSHOWCONTEXTMENU *PCTRSHOWCONTEXTMENU;
 
+    VOID APIENTRY ctrPaintStaticWidgetBorder(HPS hps, PXCENTERWIDGET pWidget);
+    typedef VOID APIENTRY CTRPAINTSTATICWIDGETBORDER(HPS hps, PXCENTERWIDGET pWidget);
+    typedef CTRPAINTSTATICWIDGETBORDER *PCTRPAINTSTATICWIDGETBORDER;
+
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
                 // a pointer to this is in XCENTERWIDGET if the widget
                 // is a non-container widget
@@ -666,26 +673,14 @@
      *      The widget must return the minimum required size needed
      *      to store the setup string (even if mp2 is NULL).
      *
-     *      **lafaix: copied this from your center.h. I don't quite
-     *      understand why this notification is needed... The XCenter
-     *      keeps a copy of each widget's setup string internally
-     *      already. The concept was that a widget only composes a
-     *      setup string itself when it itself thinks that a new setup
-     *      string is needed, e.g. because a font has been dropped
-     *      on it. It then sends XCM_SAVESETUP to the client to tell
-     *      the XCenter to update its internal structures.
-     *
-     *      This allows the widget to DECIDE ITSELF whether and when
-     *      it wants to compose setup strings.
-     *
-     *      Your concept here again is quite the reverse... it forces
-     *      the widget to compose its setup string when the XCenter
-     *      thinks this is needed. I don't think this is a good idea.
-     *
      *@@added V0.9.9 (2001-03-01) [lafaix]
      */
 
-    // #define XN_QUERYSETUP               4
+    #define XN_QUERYSETUP               4
+
+    // flags for XN_BEGINANIMATE and XN_ENDANIMATE
+    #define XAF_SHOW                    1
+    #define XAF_HIDE                    2
 
     /*
      *@@ XN_BEGINANIMATE:
@@ -709,11 +704,6 @@
      *      stop doing something.  For example, a gauge widget can
      *      choose to stop running when the container is hidden, to
      *      save CPU cycles.
-     *
-     *      **lafaix: copied this from your center.h. NOTE: How is the
-     *      "animate" XCenter view setting taken into account here? Is
-     *      this code always sent even if "animate" is disabled? Is the
-     *      widget itself supposed to check that setting in XCENTERGLOBALS?
      *
      *@added V0.9.9 (2001-03-01) [lafaix]
      */
@@ -743,8 +733,6 @@
      *      choose to stop running when the container is hidden, to
      *      save CPU cycles.
      *
-     *      **lafaix: copied this from your center.h
-     *
      *@added V0.9.9 (2001-03-01) [lafaix]
      */
 
@@ -768,9 +756,9 @@
      *      That is, if a container contains other containers, the
      *      elements in those sub-containers should not be included.
      *
-     *      The widget must return the count.
-     *
-     *      **lafaix: copied this from your center.h
+     *      The widget must return TRUE if it has put its count in the
+     *      ULONG.  Otherwise, the XCenter will assume some dumb default
+     *      for the count.
      *
      *@@added V0.9.9 (2001-02-23) [lafaix]
      */
@@ -795,8 +783,6 @@
      *      Otherwise it must return a pointer to the corresponding
      *      XCENTERWIDGET structure.
      *
-     *      **lafaix: copied this from your center.h
-     *
      *@@added V0.9.9 (2001-02-23) [lafaix]
      */
 
@@ -811,7 +797,11 @@
                    // the widget to be inserted
     } WIDGETINFO, *PWIDGETINFO;
 
-    /*
+    // flags and return values for XN_INSERTWIDGET:
+    #define WGT_END                     (-1)
+    #define WGT_ERROR                   (-1)
+
+   /*
      *@@ XN_INSERTWIDGET:
      *      notification code for WM_CONTROL sent from the XCenter
      *      to a widget when it needs to add a widget at a specified
@@ -828,8 +818,6 @@
      *
      *      The widget must return WGT_ERROR if the insertion failed.
      *      Otherwise it must return the inserted widget's offset.
-     *
-     *      **lafaix: copied this from your center.h
      *
      *@@added V0.9.9 (2001-02-23) [lafaix]
      */
@@ -851,8 +839,6 @@
      *      -- SHORT mp2: the to be removed widget's offset.
      *
      *      The widget must return the count of remaining widgets.
-     *
-     *      **lafaix: copied this from your center.h
      *
      *@@added V0.9.9 (2001-02-23) [lafaix]
      */

@@ -123,7 +123,7 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
  *
- *      Currently disabled. ###
+ *      Currently disabled. @@todo
  *
  *@@added V0.9.2 (2000-03-13) [umoeller]
  */

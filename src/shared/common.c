@@ -67,6 +67,7 @@
 #define INCL_WINMENUS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
+#define INCL_WINSTDFILE
 #define INCL_WINSTDCNR
 #define INCL_WINCOUNTRY
 #define INCL_WINPROGRAMLIST
@@ -110,6 +111,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\xsetup.h"              // XWPSetup implementation
 
+#include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -1567,6 +1569,10 @@ static LOADSTRING G_aStringIDs[] =
         ID_XSSI_PGMFILE_RESOURCES,
                 FIELDOFFSET(NLSSTRINGS, pszResourcesPage),
 
+    // title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller]
+        ID_XSSI_PGM_ASSOCIATIONS,
+                FIELDOFFSET(NLSSTRINGS, pszAssociationsPage),
+
     // miscellaneous new strings with V0.9.9 (2001-03-07) [umoeller]
         ID_XSSI_STYLEPAGE,
                 FIELDOFFSET(NLSSTRINGS, pszStylePage),
@@ -1663,7 +1669,43 @@ static LOADSTRING G_aStringIDs[] =
         ID_XSSI_ARCENABLED,
                 FIELDOFFSET(NLSSTRINGS, pszArcEnabled),
         ID_XSSI_ARCNOTNECC,
-                FIELDOFFSET(NLSSTRINGS, pszArcNotNecc)
+                FIELDOFFSET(NLSSTRINGS, pszArcNotNecc),
+
+    // new Module subpages V0.9.9 (2001-03-11) [lafaix]
+        ID_XSSI_PGMFILE_MODULE1,
+                FIELDOFFSET(NLSSTRINGS, pszModule1Page),
+        ID_XSSI_PGMFILE_MODULE2,
+                FIELDOFFSET(NLSSTRINGS, pszModule2Page),
+
+    // miscellaneous new columns headers V0.9.9 (2001-03-11) [lafaix]
+        ID_XSSI_COLMN_MODULENAME,
+                FIELDOFFSET(NLSSTRINGS, pszColmnModuleName),
+        ID_XSSI_COLMN_EXPORTORDINAL,
+                FIELDOFFSET(NLSSTRINGS, pszColmnExportOrdinal),
+        ID_XSSI_COLMN_EXPORTTYPE,
+                FIELDOFFSET(NLSSTRINGS, pszColmnExportType),
+        ID_XSSI_COLMN_EXPORTNAME,
+                FIELDOFFSET(NLSSTRINGS, pszColmnExportName),
+        ID_XSSI_COLMN_RESOURCEICON,
+                FIELDOFFSET(NLSSTRINGS, pszColmnResourceIcon),
+        ID_XSSI_COLMN_RESOURCEID,
+                FIELDOFFSET(NLSSTRINGS, pszColmnResourceID),
+        ID_XSSI_COLMN_RESOURCETYPE,
+                FIELDOFFSET(NLSSTRINGS, pszColmnResourceType),
+        ID_XSSI_COLMN_RESOURCESIZE,
+                FIELDOFFSET(NLSSTRINGS, pszColmnResourceSize),
+        ID_XSSI_COLMN_RESOURCEFLAGS,
+                FIELDOFFSET(NLSSTRINGS, pszColmnResourceFlags),
+
+    // new special functions on XWPMouse "Movement" page V0.9.9 (2001-03-11) [lafaix]
+        ID_XSSI_SPECIAL_PAGEMAGEUP,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageUp),
+        ID_XSSI_SPECIAL_PAGEMAGERIGHT,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageRight),
+        ID_XSSI_SPECIAL_PAGEMAGEDOWN,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageDown),
+        ID_XSSI_SPECIAL_PAGEMAGELEFT,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageLeft)
     };
 
 /*
@@ -2597,8 +2639,8 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             G_pGlobalSettings->fAniMouse = 0;
             G_pGlobalSettings->fEnableXWPHook = 0;
-            // global hotkeys ### V0.9.4 (2000-06-05) [umoeller]
-            G_pGlobalSettings->fEnablePageMage = 0; // ### V0.9.4 (2000-06-05) [umoeller]
+            // global hotkeys @@todo V0.9.4 (2000-06-05) [umoeller]
+            G_pGlobalSettings->fEnablePageMage = 0; // @@todo V0.9.4 (2000-06-05) [umoeller]
 
             G_pGlobalSettings->fReplaceArchiving = 0;
             G_pGlobalSettings->fRestartWPS = 0;
@@ -4734,5 +4776,91 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
     }
 
     return (mrc);
+}
+
+/*
+ *@@ cmnFileDlg:
+ *      same as winhFileDlg, but uses fdlgFileDlg
+ *      instead.
+ *
+ *@@added V0.9.9 (2001-03-10) [umoeller]
+ */
+
+BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
+                PSZ pszFile,       // in: file mask; out: fully q'd filename
+                                   //    (should be CCHMAXPATH in size)
+                ULONG flFlags,     // in: any combination of the following:
+                                   // -- WINH_FOD_SAVEDLG: save dlg; else open dlg
+                                   // -- WINH_FOD_INILOADDIR: load FOD path from INI
+                                   // -- WINH_FOD_INISAVEDIR: store FOD path to INI on OK
+                HINI hini,         // in: INI file to load/store last path from (can be HINI_USER)
+                const char *pcszApplication, // in: INI application to load/store last path from
+                const char *pcszKey)        // in: INI key to load/store last path from
+{
+    FILEDLG fd;
+    memset(&fd, 0, sizeof(FILEDLG));
+    fd.cbSize = sizeof(FILEDLG);
+    fd.fl = FDS_CENTER;
+
+    if (flFlags & WINH_FOD_SAVEDLG)
+        fd.fl |= FDS_SAVEAS_DIALOG;
+    else
+        fd.fl |= FDS_OPEN_DIALOG;
+
+    // default: copy pszFile
+    strcpy(fd.szFullFile, pszFile);
+
+    if ( (hini) && (flFlags & WINH_FOD_INILOADDIR) )
+    {
+        // overwrite with initial directory for FOD from OS2.INI
+        if (PrfQueryProfileString(hini,
+                                  (PSZ)pcszApplication,
+                                  (PSZ)pcszKey,
+                                  "",      // default string V0.9.9 (2001-02-10) [umoeller]
+                                  fd.szFullFile,
+                                  sizeof(fd.szFullFile)-10)
+                    >= 2)
+        {
+            // found: append "\*"
+            strcat(fd.szFullFile, "\\");
+            strcat(fd.szFullFile, pszFile);
+        }
+    }
+
+    if (    fdlgFileDlg(HWND_DESKTOP,    // parent
+                        hwndOwner, // owner
+                        &fd)
+        && (fd.lReturn == DID_OK)
+       )
+    {
+        // save path back?
+        if (    (hini)
+             && (flFlags & WINH_FOD_INISAVEDIR)
+           )
+        {
+            // get the directory that was used
+            PSZ p = strrchr(fd.szFullFile, '\\');
+            if (p)
+            {
+                // contains directory:
+                // copy to OS2.INI
+                PSZ pszDir = strhSubstr(fd.szFullFile, p);
+                if (pszDir)
+                {
+                    PrfWriteProfileString(hini,
+                                          (PSZ)pcszApplication,
+                                          (PSZ)pcszKey,
+                                          pszDir);
+                    free(pszDir);
+                }
+            }
+        }
+
+        strcpy(pszFile, fd.szFullFile);
+
+        return (TRUE);
+    }
+
+    return (FALSE);
 }
 

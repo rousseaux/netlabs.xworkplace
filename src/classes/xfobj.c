@@ -113,6 +113,7 @@
 // other SOM headers
 #pragma hdrstop
 #include <wpfolder.h>                   // WPFolder
+#include <wptrans.h>                    // WPTransient
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -1317,9 +1318,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
  *      gets called by WinDestroyObject and the REXX
  *      counterpart, SysDestroyObject.
  *
- *
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  *@@changed V0.9.7 (2001-01-15) [umoeller]: added WPMENUID_DELETE if trash can is enabled
+ *@@changed V0.9.9 (2001-03-10) [pr]: this screwed up print jobs, now checking for WPTransient
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
@@ -1406,8 +1407,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
             // this is never reached, because the subclassed folder
             // frame winproc already intercepts this
 
-            if (pGlobalSettings->fTrashDelete)
+            if (    (pGlobalSettings->fTrashDelete)
+                 && !_somIsA(somSelf, _WPTransient)  // V0.9.9 (2001-03-10) [pr]: fix print object delete
+               )
             {
+
                 cmnDeleteIntoDefTrashCan(somSelf);
                 brc = TRUE;     // processed
             }

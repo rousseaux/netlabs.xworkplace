@@ -190,6 +190,8 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
  *      We add the various XFolder menu entries here
  *      by calling mnuModifyFolderPopupMenu in fdrmenus.c,
  *      which is also used by the XFolder class.
+ *
+ *@@todo hwndCnr is NULLHANDLE always
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
@@ -221,7 +223,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
         // drive ready:
         rc = mnuModifyFolderPopupMenu(pFolder,
                                       hwndMenu,
-                                      hwndCnr,    // ### this seems to be NULLHANDLE
+                                      hwndCnr,    // @@todo this seems to be NULLHANDLE
                                       iPosition);
 
     return (rc);

@@ -37,6 +37,31 @@
 !error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
 !endif
 
+!ifndef CVS_WORK_ROOT
+!error in setup.in: You must set CVS_WORK_ROOT to the root of your CVS tree. See PROGREF.INF for details.
+!endif
+
+# RUNNING XWORKPLACE
+# ------------------
+
+# If XWPRUNNING is defined, the makefiles will copy all created
+# files to that directory. Change this to your existing XFolder
+# installation, or comment this out, if you don't want this to
+# happen. In any case, the files which were built are copied
+# to the INSTALL\ subdirs in our source tree.
+
+!ifndef XWPRUNNING
+!error in setup.in: You must set XWPRUNNING to an existing XWorkplace binary installation. See PROGREF.INF for details.
+!endif
+
+!ifdef XWP_DEBUG
+!if [@echo setup.in: Debug build has been enabled.]
+!endif
+!else
+!if [@echo setup.in: Building release code (debugging disabled).]
+!endif
+!endif
+
 !ifndef XWP_OUTPUT_ROOT
 XWP_OUTPUT_ROOT = $(PROJECT_BASE_DIR)\bin
 !endif
@@ -89,20 +114,6 @@ HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 !ifndef XWP_LANG_CODE
 XWP_LANG_CODE = 001
 !endif
-
-# RUNNING XWORKPLACE
-# ------------------
-
-# If XWPRUNNING is defined, the makefiles will copy all created
-# files to that directory. Change this to your existing XFolder
-# installation, or comment this out, if you don't want this to
-# happen. In any case, the files which were built are copied
-# to the INSTALL\ subdirs in our source tree.
-
-!ifndef XWPRUNNING
-XWPRUNNING = J:\Tools\WPS\XWorkplace
-!endif
-
 
 # XWORKPLACE RELEASE
 # ------------------

@@ -114,25 +114,38 @@ $(XWP_OUTPUT_ROOT)\xwpscreen.obj \
 $(XWP_OUTPUT_ROOT)\xwpsound.obj \
 $(XWP_OUTPUT_ROOT)\xwpstring.obj \
 # code from shared \
-    $(XWP_OUTPUT_ROOT)\center.obj $(XWP_OUTPUT_ROOT)\classes.obj $(XWP_OUTPUT_ROOT)\cnrsort.obj $(XWP_OUTPUT_ROOT)\common.obj $(XWP_OUTPUT_ROOT)\contentmenus.obj \
-    $(XWP_OUTPUT_ROOT)\notebook.obj $(XWP_OUTPUT_ROOT)\kernel.obj $(XWP_OUTPUT_ROOT)\xsetup.obj $(XWP_OUTPUT_ROOT)\wpsh.obj \
+$(XWP_OUTPUT_ROOT)\center.obj $(XWP_OUTPUT_ROOT)\classes.obj $(XWP_OUTPUT_ROOT)\cnrsort.obj $(XWP_OUTPUT_ROOT)\common.obj $(XWP_OUTPUT_ROOT)\contentmenus.obj \
+$(XWP_OUTPUT_ROOT)\notebook.obj $(XWP_OUTPUT_ROOT)\kernel.obj $(XWP_OUTPUT_ROOT)\xsetup.obj $(XWP_OUTPUT_ROOT)\wpsh.obj \
 # code from config\
-    $(XWP_OUTPUT_ROOT)\cfgsys.obj $(XWP_OUTPUT_ROOT)\classlst.obj $(XWP_OUTPUT_ROOT)\drivdlgs.obj $(XWP_OUTPUT_ROOT)\drivers.obj $(XWP_OUTPUT_ROOT)\fonts.obj \
-    $(XWP_OUTPUT_ROOT)\hookintf.obj $(XWP_OUTPUT_ROOT)\pagemage.obj $(XWP_OUTPUT_ROOT)\partitions.obj $(XWP_OUTPUT_ROOT)\sound.obj \
+$(XWP_OUTPUT_ROOT)\cfgsys.obj $(XWP_OUTPUT_ROOT)\classlst.obj $(XWP_OUTPUT_ROOT)\drivdlgs.obj $(XWP_OUTPUT_ROOT)\drivers.obj $(XWP_OUTPUT_ROOT)\fonts.obj \
+$(XWP_OUTPUT_ROOT)\hookintf.obj $(XWP_OUTPUT_ROOT)\pagemage.obj $(XWP_OUTPUT_ROOT)\partitions.obj $(XWP_OUTPUT_ROOT)\sound.obj \
 # code from filesys\
-    $(XWP_OUTPUT_ROOT)\disk.obj $(XWP_OUTPUT_ROOT)\fdrhotky.obj $(XWP_OUTPUT_ROOT)\fdrnotebooks.obj \
-    $(XWP_OUTPUT_ROOT)\fdrsubclass.obj $(XWP_OUTPUT_ROOT)\fdrmenus.obj $(XWP_OUTPUT_ROOT)\fhandles.obj \
-    $(XWP_OUTPUT_ROOT)\fileops.obj $(XWP_OUTPUT_ROOT)\filesys.obj $(XWP_OUTPUT_ROOT)\fops_bottom.obj \
-    $(XWP_OUTPUT_ROOT)\fops_top.obj $(XWP_OUTPUT_ROOT)\filetype.obj $(XWP_OUTPUT_ROOT)\folder.obj \
-    $(XWP_OUTPUT_ROOT)\object.obj $(XWP_OUTPUT_ROOT)\desktop.obj $(XWP_OUTPUT_ROOT)\program.obj \
-    $(XWP_OUTPUT_ROOT)\refresh.obj $(XWP_OUTPUT_ROOT)\statbars.obj $(XWP_OUTPUT_ROOT)\trash.obj \
-    $(XWP_OUTPUT_ROOT)\xthreads.obj \
+$(XWP_OUTPUT_ROOT)\desktop.obj \
+$(XWP_OUTPUT_ROOT)\disk.obj \
+$(XWP_OUTPUT_ROOT)\fdrhotky.obj \
+$(XWP_OUTPUT_ROOT)\fdrnotebooks.obj \
+$(XWP_OUTPUT_ROOT)\fdrsubclass.obj \
+$(XWP_OUTPUT_ROOT)\fdrmenus.obj \
+$(XWP_OUTPUT_ROOT)\fhandles.obj \
+$(XWP_OUTPUT_ROOT)\filedlg.obj \
+$(XWP_OUTPUT_ROOT)\fileops.obj \
+$(XWP_OUTPUT_ROOT)\filesys.obj \
+$(XWP_OUTPUT_ROOT)\filetype.obj \
+$(XWP_OUTPUT_ROOT)\folder.obj \
+$(XWP_OUTPUT_ROOT)\fops_bottom.obj \
+$(XWP_OUTPUT_ROOT)\fops_top.obj \
+$(XWP_OUTPUT_ROOT)\object.obj \
+$(XWP_OUTPUT_ROOT)\program.obj \
+$(XWP_OUTPUT_ROOT)\refresh.obj \
+$(XWP_OUTPUT_ROOT)\statbars.obj \
+$(XWP_OUTPUT_ROOT)\trash.obj \
+$(XWP_OUTPUT_ROOT)\xthreads.obj \
 # code from media\
-    $(XWP_OUTPUT_ROOT)\mmcdplay.obj $(XWP_OUTPUT_ROOT)\mmhelp.obj $(XWP_OUTPUT_ROOT)\mmthread.obj $(XWP_OUTPUT_ROOT)\mmvolume.obj \
+$(XWP_OUTPUT_ROOT)\mmcdplay.obj $(XWP_OUTPUT_ROOT)\mmhelp.obj $(XWP_OUTPUT_ROOT)\mmthread.obj $(XWP_OUTPUT_ROOT)\mmvolume.obj \
 # code from startshut\
-    $(XWP_OUTPUT_ROOT)\apm.obj $(XWP_OUTPUT_ROOT)\archives.obj $(XWP_OUTPUT_ROOT)\shutdown.obj $(XWP_OUTPUT_ROOT)\winlist.obj \
+$(XWP_OUTPUT_ROOT)\apm.obj $(XWP_OUTPUT_ROOT)\archives.obj $(XWP_OUTPUT_ROOT)\shutdown.obj $(XWP_OUTPUT_ROOT)\winlist.obj \
 # code from xcenter\
-    $(XWP_OUTPUT_ROOT)\ctr_engine.obj $(XWP_OUTPUT_ROOT)\ctr_notebook.obj $(XWP_OUTPUT_ROOT)\w_objbutton.obj $(XWP_OUTPUT_ROOT)\w_pulse.obj
+$(XWP_OUTPUT_ROOT)\ctr_engine.obj $(XWP_OUTPUT_ROOT)\ctr_notebook.obj $(XWP_OUTPUT_ROOT)\w_objbutton.obj $(XWP_OUTPUT_ROOT)\w_pulse.obj
 
 OBJS_ANICLASSES = $(XWP_OUTPUT_ROOT)\anand.obj $(XWP_OUTPUT_ROOT)\anos2ptr.obj $(XWP_OUTPUT_ROOT)\anwani.obj $(XWP_OUTPUT_ROOT)\anwcur.obj
 OBJS_ANICONVERT = $(XWP_OUTPUT_ROOT)\cursor.obj $(XWP_OUTPUT_ROOT)\pointer.obj $(XWP_OUTPUT_ROOT)\script.obj

@@ -268,6 +268,8 @@ SOM_Scope HWND  SOMLINK fon_wpOpen(XWPFontFolder *somSelf, HWND hwndCnr,
  *@@ wpPopulate:
  *      this instance method populates a folder, in this
  *      case, the font folder.
+ *
+ *@@changed V0.9.9 (2001-03-11) [umoeller]: fFoldersOnly wasn't respected, fixed.
  */
 
 SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
@@ -289,9 +291,12 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
         _ulFontsCurrent = 0;
         _ulFontsMax = 0;
 
-        // now create font objects...
-        fonPopulateFirstTime(somSelf);
-        _fFilledWithFonts = TRUE;
+        if (!fFoldersOnly)      // V0.9.9 (2001-03-11) [umoeller]
+        {
+            // now create font objects...
+            fonPopulateFirstTime(somSelf);
+            _fFilledWithFonts = TRUE;
+        }
     }
 
     return (brc);

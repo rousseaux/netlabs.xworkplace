@@ -811,7 +811,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                          ((fXShutdownOrWPSValid)
                          && (pKernelGlobals->pAwakeWarpCenter != NULL)));
-                                // ### this doesn't find the WarpCenter
+                                // @@todo this doesn't find the WarpCenter
                                 // if started thru CONFIG.SYS
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
@@ -4278,7 +4278,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                             // nothing else works right!
                                        MPFROM2SHORT(CMDSRC_OTHER,
                                                     FALSE));     // keyboard?!?
-                            winhSleep(pShutdownData->habShutdownThread, 400);
+                            winhSleep(400);
                         }
                         else
                             xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is OFF, skipping...\n");
@@ -4789,7 +4789,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         xsdFlushWPS2INI();  // added V0.9.0 (UM 99-10-22)
 
                         // and wait a while
-                        winhSleep(WinQueryAnchorBlock(hwndFrame), 500);
+                        winhSleep(500);
 
                         if (pShutdownData->fAwakeObjectsSemOwned)
                         {

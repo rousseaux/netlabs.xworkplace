@@ -659,6 +659,7 @@ void _Optlink cll_fntMethodCollectThread(PTHREADINFO pti)
  *@@changed V0.9.0 [umoeller]: added method information
  *@@changed V0.9.0 [umoeller]: now using a delay timer
  *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
+ *@@todo fix memory leak with background thread
  */
 
 VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
@@ -669,7 +670,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     CleanupMethodsInfo(pClientData);
-        // ### this still causes memory leaks when the methods thread is running
+        // @@todo this still causes memory leaks when the methods thread is running
 
     if ((pwps) && (pClientData->hwndClassInfoDlg))
     {

@@ -111,7 +111,7 @@ ULONG DELETE_PRE(PSZ pszPath)
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
  *
- *      Currently disabled. ###
+ *      Currently disabled. @@todo
  */
 
 VOID DELETE_POST(PSZ pszPath,

@@ -831,7 +831,7 @@ VOID pgmmRecoverAllWindows(VOID)
     PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
     #define MAX_WINDOWS 1000        // yes, that's a lot... too lazy
-                                    // to build another linked list here ###
+                                    // to build another linked list here
 
     HENUM       henum;
     HWND        hwndTemp[MAX_WINDOWS];

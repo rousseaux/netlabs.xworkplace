@@ -117,7 +117,7 @@ int RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packe
             ULONG   pidDaemon = utilGetTaskPID();
             if (pidDaemon == 0)
                 // error:
-                rc = 2;     // ###
+                rc = 2;     // @@todo
             else
             {
                 PSECIOREGISTER  pSecIORegister = NULL;

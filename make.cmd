@@ -24,14 +24,22 @@
     which sets compiler environent variables; otherwise
     comment this out. This is only because I don't like
     all the VAC++ settings in CONFIG.SYS.
+
+    If you have a standard VAC and toolkit installation
+    with all the variables set up in CONFIG.SYS, you
+    can comment these lines out.
 */
 
 "call envicc.cmd"
+"call envproject.cmd"
 
-/*  Set other variables to override the defaults (which
-    apply to my system only) in SETUP.IN.
+/*  Set other required environment variables for the built
+    process. YOU MUST SET THESE, or building will fail.
 
-    See README.TXT for details. */
+    See PROGREF.INF for details. */
+
+/* CVS_WORK_ROOT must point to the root of your CVS tree. */
+/* CVS_WORK_ROOT XWPRUNNING= */
 
 /* XWPRUNNING (current XFolder/XWorkplace installation
    from where WPS classes are registered; the executables
@@ -43,8 +51,6 @@
    a new .WPI file (for WarpIN); this is only used with
    "nmake release") */
 /* SET XWPRELEASE= */
-
-"SET PROJECT_BASE_DIR="directory()
 
 /* *** go! */
 

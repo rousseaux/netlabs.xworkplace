@@ -116,6 +116,7 @@
 
 // XWorkplace implementation headers
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
@@ -152,6 +153,9 @@ BOOL            G_fExitAllRefreshThreads = FALSE;
 
 /*
  *@@ refrAddNotification:
+ *      adds the specified notification to the linked
+ *      list of the folder that is specified in the
+ *      notification.
  *
  *      Preconditions:
  *
@@ -339,7 +343,7 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
 
                         // case NO_ERROR: the file has reappeared.
                         // DO NOT FREE IT.
-                        // ### refresh the FSobject instead
+                        // @@todo refresh the FSobject instead
                     }
                 }
                 // else object not in folder: no problem there
@@ -1028,6 +1032,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
         while (G_hwndNotifyWorker)
         {
             PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+            PCKERNELGLOBALS      pKernelGlobals = krnQueryGlobals();
 
             // allocate a block of tiled memory...
             // apparently this is a 16-bit API and
@@ -1063,6 +1068,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                                 // from my checking, cLogs is ALWAYS 0 here
 
                         if (    (G_hwndNotifyWorker)
+                             && (pKernelGlobals->fDesktopPopulated)
                              && (arc == NO_ERROR)
                            )
                         {
@@ -1103,7 +1109,6 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                                         // or queue is full... in any case,
                                         // we discard the notification then
                                         free(pInfo2);
-                                        _Pmpf((__FUNCTION__ ": !!! queue full !!!"));
                                     }
                                 }
                             }

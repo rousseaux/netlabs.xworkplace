@@ -502,7 +502,6 @@ BOOL dmnStartPageMage(VOID)
 
 VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGECLOSED (TRUE) to the kernel
 {
-// #ifdef __PAGEMAGE__
     if (G_pHookData->hwndPageMageFrame)
     {
         // PageMage running:
@@ -535,7 +534,6 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
                    (MPARAM)fNotifyKernel,       // if TRUE, PageMage will be disabled
                    0);
     }
-// #endif
 }
 
 /* ******************************************************************
@@ -1355,6 +1353,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *                  7 = right border,
              *                  8 = bottom border.
              *      -- mp2: unused, always 0.
+             *
+             *@@changed V0.9.9 (2001-01-25) [lafaix]: PageMage movements actions added
              */
 
             case XDM_HOTCORNER:
@@ -1381,6 +1381,52 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                 if (G_pHookData->PageMageConfig.fFlash)
                                     pgmgcStartFlashTimer();
 // #endif
+                            }
+                            else
+                            // added V0.9.9 (2001-01-25) [lafaix]
+                            // check if it's PageMage screen change
+                            if (   (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] >= 0xFFFF0003)
+                                && (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] <= 0xFFFF0006))
+                            {
+                                UCHAR ucScanCode;
+                                POINTL ptlCurrScreen;
+                                // shortcuts to global pagemage config
+                                PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+                                PPOINTL pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
+                                if (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] == 0xFFFF0003)
+                                    ucScanCode = 0x61;
+                                else
+                                if (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] == 0xFFFF0004)
+                                    ucScanCode = 0x64;
+                                else
+                                if (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] == 0xFFFF0005)
+                                    ucScanCode = 0x66;
+                                else
+                                    ucScanCode = 0x63;
+
+                                // where are we right now ?
+                                // (0,0) is _upper_ left, not bottom left
+                                ptlCurrScreen.x = G_ptlCurrPos.x / G_szlEachDesktopReal.cx;
+                                ptlCurrScreen.y = G_ptlCurrPos.y / G_szlEachDesktopReal.cy;
+
+                                // if we do move, wrap the pointer too so
+                                // that we don't move too much
+                                if (   (pPageMageConfig->bWrapAround)
+                                    || ((ucScanCode == 0x61) && (ptlCurrScreen.y > 0))
+                                    || ((ucScanCode == 0x66) && (ptlCurrScreen.y < (pptlMaxDesktops->y - 1)))
+                                    || ((ucScanCode == 0x64) && (ptlCurrScreen.x < (pptlMaxDesktops->x - 1)))
+                                    || ((ucScanCode == 0x63) && (ptlCurrScreen.x > 0)))
+                                {
+                                    WinSetPointerPos(HWND_DESKTOP,
+                                                     G_pHookData->lCXScreen / 2,
+                                                     G_pHookData->lCYScreen / 2);
+
+                                    WinPostMsg(G_pHookData->hwndPageMageMoveThread,
+                                               PGOM_HOOKKEY,
+                                               (MPARAM)ucScanCode,
+                                               0);
+                                }
                             }
                             else
                                 // no: let XFLDR.DLL thread-1 object handle this
@@ -1554,12 +1600,11 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
     // de-install the hook
     DeinstallHook();
     if (G_pDaemonShared)
-    {
         G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
-    }
 
     // and exit (we must not use return here)
-    DosExitList(EXLST_EXIT, (PFNEXITLIST)DaemonExitList);
+    DosExitList(EXLST_EXIT,
+                DaemonExitList);
 }
 
 /*
@@ -1708,6 +1753,10 @@ int main(int argc, char *argv[])
                                 DeinstallHook();
                                 // _Pmpf(("main: DeinstallHook() returned"));
                             }
+
+                            // this was missing V0.9.9 (2001-03-10) [umoeller]
+                            DosExitList(EXLST_REMOVE,
+                                        DaemonExitList);
 
                             WinDestroyWindow(G_pDaemonShared->hwndDaemonObject);
                             G_pDaemonShared->hwndDaemonObject = NULLHANDLE;

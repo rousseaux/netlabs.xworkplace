@@ -932,39 +932,6 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
         } // end if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
     }
 
-    /* if (G_HookData.PageMageConfig.fStayOnTop)
-    {
-        // implement "float on top" for PageMage frame
-        BOOL        fFixFloatOnTop = FALSE;
-
-        if (msg == WM_WINDOWPOSCHANGED)
-        {
-            PSWP pswp = (PSWP)mp1;
-            if (pswp)
-            {
-                if (pswp->fl & (SWP_ACTIVATE | SWP_ZORDER))
-                    fFixFloatOnTop = TRUE;
-            }
-        }
-
-        if (    (fFixFloatOnTop)
-             && (hwnd != G_HookData.hwndPageMageFrame)
-           )
-        {
-            HWND        hwndParent = WinQueryWindow(hwnd, QW_PARENT);
-            if (hwndParent == G_HookData.hwndPMDesktop)
-            {
-                // it's a top-level window:
-                WinSetWindowPos(G_HookData.hwndPageMageFrame,
-                                HWND_TOP,
-                                0, 0, 0, 0,
-                                SWP_ZORDER | SWP_SHOW);
-                    // ### no.... we're in the send-msg hook here!
-                    // ### hack WM_ADJUSTWINDOWPOS instead
-            }
-        }
-    } */
-
     if (    (msg == WM_DESTROY)
          && (hwnd == G_HookData.hwndLockupFrame)
        )
@@ -2723,7 +2690,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                                     0,
                                     0,
                                     SWP_NOADJUST | SWP_ZORDER);
-                        // ### yoo-hoo, this doesn't really work...
+                        // @@todo yoo-hoo, this doesn't really work...
                         // this activates the frame, which is not really
                         // what we want in every case... this breaks XCenter too
             }

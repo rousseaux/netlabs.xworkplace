@@ -58,6 +58,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\fdrnotebooks.obj \
        $(OUTPUTDIR)\fdrsubclass.obj \
        $(OUTPUTDIR)\fhandles.obj \
+       $(OUTPUTDIR)\filedlg.obj \
        $(OUTPUTDIR)\fileops.obj \
        $(OUTPUTDIR)\filesys.obj \
        $(OUTPUTDIR)\filetype.obj \
@@ -196,6 +197,17 @@ $(OUTPUTDIR)\fhandles.obj: \
     $(HLPINC)\except.h $(HLPINC)\wphandle.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\filedlg.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\threads.h \
+            $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xfdisk.h \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\filesys\trash.h $(INC)\filesys\folder.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\fileops.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
@@ -283,7 +295,7 @@ $(OUTPUTDIR)\refresh.obj: \
      $(INC)\setup.h \
      $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
      $(INC)\classes\xfldr.ih \
-     $(INC)\shared\common.h $(INC)\shared\wpsh.h \
+     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\filesys\folder.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 

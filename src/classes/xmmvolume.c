@@ -303,6 +303,7 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,
 /*
  *@@ wpMenuItemHelpSelected:
  *
+ *@@todo
  */
 
 SOM_Scope BOOL  SOMLINK vol_wpMenuItemHelpSelected(XMMVolume *somSelf,
@@ -310,8 +311,6 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemHelpSelected(XMMVolume *somSelf,
 {
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpMenuItemHelpSelected");
-
-    // ###
 
     return (XMMVolume_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
                                                                MenuId));

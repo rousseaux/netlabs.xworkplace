@@ -744,8 +744,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // now read CONFIG.SYS file to initialize the dlg items
         if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
             winhDebugBox(pcnbp->hwndFrame,
-                         (PSZ)pKernelGlobals->szConfigSys,
-                         "XFolder was unable to open the CONFIG.SYS file.");
+                         "XWorkplace",
+                         "XWorkplace was unable to open the CONFIG.SYS file.");
         else
         {
             // OK, file read successfully:
@@ -1299,6 +1299,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: added "System paths" page handling
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
+ *@@todo localize
  */
 
 MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1657,8 +1658,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     if (csysLoadConfigSys(NULL, &pszConfigSys))
                         winhDebugBox(pcnbp->hwndFrame,
-                                 (PSZ)pKernelGlobals->szConfigSys,
-                                 "XFolder was unable to open the CONFIG.SYS file.");
+                                 "XWorkplace",
+                                 "XWorkplace was unable to open the CONFIG.SYS file.");
                 }
 
                 if (pszConfigSys)
@@ -2021,11 +2022,11 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // "file written" msg
                         cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
                                          100,
-                                         136,       // ###
+                                         136,       // *@@todo
                                          MB_OK);
                     else
                         winhDebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
-                                // ###
+                                // @@todo localize
 
                     if (pszConfigSys)
                     {

@@ -1769,7 +1769,7 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
                     _wpRegisterView(somSelf,
                                     hwndNewView,
-                                    pNLSStrings->pszFontSampleView); // ###
+                                    pNLSStrings->pszFontSampleView); // @@todo
 
                     winhRestoreWindowPos(hwndNewView,
                                          HINI_USER,

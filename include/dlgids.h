@@ -458,6 +458,14 @@
 #define ID_XSD_PGMFILE_RESOURCES        790
 #define ID_XSDI_PROG_RESOURCES          791
 
+// "Imported modules" page (XFldProgramFile, V0.9.9)
+#define ID_XSD_PGMFILE_MODULE1          800
+#define ID_XSDI_PROG_MODULE1            801
+
+// "Exported functions" page (XFldProgramFile, V0.9.9)
+#define ID_XSD_PGMFILE_MODULE2          810
+#define ID_XSDI_PROG_MODULE2            811
+
 /******************************************
  * XWPSound (V0.9.0)              >= 1000  *
  ******************************************/
@@ -1784,6 +1792,23 @@
 #define ID_XSSI_ARCINILIMIT             6143            // "Limit: %f %%."
 #define ID_XSSI_ARCENABLED              6144            // "WPS archiving enabled."
 #define ID_XSSI_ARCNOTNECC              6145            // "WPS archiving not necessary."
+
+#define ID_XSSI_PGMFILE_MODULE1         6146           // "Imported modules"
+#define ID_XSSI_PGMFILE_MODULE2         6147           // "Exported functions"
+#define ID_XSSI_COLMN_MODULENAME        6148           // "Name"
+#define ID_XSSI_COLMN_EXPORTORDINAL     6149           // "Ordinal"
+#define ID_XSSI_COLMN_EXPORTTYPE        6150           // "Type"
+#define ID_XSSI_COLMN_EXPORTNAME        6151           // "Name"
+#define ID_XSSI_COLMN_RESOURCEICON      6152           // "Icon"
+#define ID_XSSI_COLMN_RESOURCEID        6153           // "ID"
+#define ID_XSSI_COLMN_RESOURCETYPE      6154           // "Type"
+#define ID_XSSI_COLMN_RESOURCESIZE      6155           // "Size"
+#define ID_XSSI_COLMN_RESOURCEFLAGS     6156           // "Flags"
+
+#define ID_XSSI_SPECIAL_PAGEMAGEUP      6157           // "One screen up"
+#define ID_XSSI_SPECIAL_PAGEMAGERIGHT   6158           // "One screen right"
+#define ID_XSSI_SPECIAL_PAGEMAGEDOWN    6159           // "One screen down"
+#define ID_XSSI_SPECIAL_PAGEMAGELEFT    6160           // "One screen left"
 
 /******************************************
  *          Treesize                      *

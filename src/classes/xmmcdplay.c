@@ -112,6 +112,7 @@ static const char *G_pszCDPlayer = "XMMCDPlayer";
 /*
  *@@ xwpCDQueryStatus:
  *      returns the current status of the CD player.
+ *@@todo
  */
 
 SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryStatus(XMMCDPlayer *somSelf)
@@ -121,7 +122,7 @@ SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryStatus(XMMCDPlayer *somSelf)
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_xwpCDQueryStatus");
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
-        ulrc = 0;       // ###
+        ulrc = 0;       // @@todo
 
     return (ulrc);
 }

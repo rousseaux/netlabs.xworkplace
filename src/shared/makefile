@@ -131,7 +131,8 @@ MYOWNINC = $(INC)\shared
 
 $(OUTPUTDIR)\center.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\timer.h \
+    $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
+        $(HLPINC)\stringh.h $(HLPINC)\timer.h $(HLPINC)\winh.h \
     $(INC)\classes\xcenter.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\wpsh.h \
@@ -161,7 +162,7 @@ $(OUTPUTDIR)\common.obj: \
      $(INC)\bldlevel.h $(INC)\dlgids.h \
      $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\xsetup.h \
      $(INC)\hook\xwphook.h \
-     $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
+     $(INC)\filesys\filedlg.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
      $(INC)\media\media.h \
      $(INC)\startshut\shutdown.h \
      $(@B).c $(MYOWNINC)\$(@B).h

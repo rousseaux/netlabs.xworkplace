@@ -231,7 +231,7 @@ SOM_Scope ULONG SOMLINK o2p_xwpGetAnimationTimeframeValue(XWPOS2Pointer * somSel
     XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpGetAnimationTimeframeValue");
     FUNCENTER();
 
-    // ###
+    // @@todo
     return 0;
 }
 
@@ -248,7 +248,7 @@ SOM_Scope BOOL SOMLINK o2p_xwpSetAnimationTimeframeValue(XWPOS2Pointer * somSelf
     XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpSetAnimationTimeframeValue");
     FUNCENTER();
 
-    // ###
+    // @@todo
     return TRUE;
 }
 
@@ -716,7 +716,7 @@ SOM_Scope BOOL SOMLINK o2p_wpMenuItemHelpSelected(XWPOS2Pointer * somSelf,
     XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_wpMenuItemHelpSelected");
     FUNCENTER();
 
-    // ###
+    // @@todo
     return (XWPOS2Pointer_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
                                                                   MenuId));
 }
@@ -768,7 +768,7 @@ SOM_Scope void SOMLINK o2p_wpUnInitData(XWPOS2Pointer * somSelf)
     XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_wpUnInitData");
     FUNCENTER();
 
-    XWPOS2Pointer_parent_WPDataFile_wpUnInitData(somSelf);   // ###
+    XWPOS2Pointer_parent_WPDataFile_wpUnInitData(somSelf);   // @@todo
 
     // Speicher freigeben
     if (_piconinfo)

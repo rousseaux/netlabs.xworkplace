@@ -1650,12 +1650,12 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(XCLASSRECORD, pszClassTitle);
-        xfi[i].pszColumnTitle = "Class title"; // ###
+        xfi[i].pszColumnTitle = "Class title"; // @@todo
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(XCLASSRECORD, pszVersion);
-        xfi[i].pszColumnTitle = "Version"; // ###
+        xfi[i].pszColumnTitle = "Version"; // @@todo
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 

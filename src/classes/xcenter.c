@@ -424,6 +424,10 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
  *      The parent method must always be called last.
  */
 
+/*
+ * wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
+ */
+
 SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
 {
     XCenterData *somThis = XCenterGetData(somSelf);
@@ -438,40 +442,6 @@ SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
     }
 
     XCenter_parent_WPAbstract_wpUnInitData(somSelf);
-}
-
-/*
- *@@ wpObjectReady:
- *      this WPObject notification method gets called by the
- *      WPS when object instantiation is complete, for any reason.
- *      ulCode and refObject signify why and where from the
- *      object was created.
- *      The parent method must be called first.
- *
- *      See XFldObject::wpObjectReady for remarks about using
- *      this method as a copy constructor.
- */
-
-SOM_Scope void  SOMLINK xctr_wpObjectReady(XCenter *somSelf,
-                                           ULONG ulCode, WPObject* refObject)
-{
-    XCenterData *somThis = XCenterGetData(somSelf);
-    XCenterMethodDebug("XCenter","xctr_wpObjectReady");
-
-    XCenter_parent_WPAbstract_wpObjectReady(somSelf, ulCode,
-                                            refObject);
-
-    if (ulCode & OR_REFERENCE)
-    {
-        // according to wpobject.h, this flag is set for
-        // OR_FROMTEMPLATE, OR_FROMCOPY, OR_SHADOW; this
-        // means that refObject is valid
-        // ###
-
-        // fix packed settings, copy linked list?!?
-        // _Pmpf(("XCenter copied, hwndOpenView: 0x%lX", _hwndOpenView));
-            // _hwndOpenView is NULLHANDLE...
-    }
 }
 
 /*

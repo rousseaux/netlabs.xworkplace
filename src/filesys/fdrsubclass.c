@@ -236,24 +236,50 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
 /*
  *@@ fdrSubclassFolderView:
  *      creates a SUBCLASSEDFOLDERVIEW for the given folder
- *      view and subclasses the folder frame with
- *      fdr_fnwpSubclassedFolderFrame.
+ *      view.
  *
  *      We also create a supplementary folder object window
  *      for the view here and store the HWND in the SFV.
  *
+ *      This stores the SFV pointer in the frame's window
+ *      words at the ulWindowWordOffset position (by calling
+ *      WinSetWindowPtr). If ulWindowWordOffset is -1,
+ *      this uses a special offset that was determined
+ *      internally. This is safe, but ONLY with folder windows
+ *      created from XFolder::wpOpen ("true" folder views).
+ *
+ *      The ulWindowWordOffset param has been added to allow
+ *      subclassing container owners other than "true" folder
+ *      frames, for example some container which was subclassed
+ *      by the WPS because objects have been inserted using
+ *      WPObject::wpCnrInsertObject. For example, if you have
+ *      a standard frame, specify QWL_USER (0) in those cases.
+ *
+ *      This no longer actually subclasses the frame because
+ *      fdr_fnwpSubclassedFolderFrame requires the
+ *      SFV to be at a fixed position. After calling this,
+ *      subclass the folder frame yourself.
+ *
  *@@added V0.9.3 (2000-04-08) [umoeller]
  *@@changed V0.9.3 (2000-04-08) [umoeller]: no longer using the linked list
+ *@@changed V0.9.9 (2001-03-11) [umoeller]: added ulWindowWordOffset param
+ *@@changed V0.9.9 (2001-03-11) [umoeller]: no longer subclassing
+ *@@changed V0.9.9 (2001-03-11) [umoeller]: renamed from fdrSubclassFolderView
  */
 
-PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
-                                            HWND hwndCnr,
-                                            WPFolder *somSelf,
-                                                 // in: folder; either XFolder's somSelf
-                                                 // or XFldDisk's root folder
-                                            WPObject *pRealObject)
-                                                 // in: the "real" object; for XFolder, this is == somSelf,
-                                                 // for XFldDisk, this is the disk object (needed for object handles)
+PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
+                                   HWND hwndCnr,
+                                   ULONG ulWindowWordOffset,
+                                       // in: offset at which to store
+                                       // SUBCLASSEDFOLDERVIEW ptr in
+                                       // frame's window words, or -1
+                                       // for safe default
+                                   WPFolder *somSelf,
+                                        // in: folder; either XFolder's somSelf
+                                        // or XFldDisk's root folder
+                                   WPObject *pRealObject)
+                                        // in: the "real" object; for XFolder, this is == somSelf,
+                                        // for XFldDisk, this is the disk object (needed for object handles)
 {
     BOOL fSemOwned = FALSE;
     PSUBCLASSEDFOLDERVIEW psliNew = 0;
@@ -290,13 +316,16 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Unable to create suppl. folder object window.");
 
+        psliNew->ulWindowWordOffset
+                = (ulWindowWordOffset == -1)
+                     ? G_SFVOffset        // window word offset which we've
+                                      // calculated in fdr_SendMsgHook
+                     : ulWindowWordOffset, // changed V0.9.9 (2001-03-11) [umoeller]
+
         // store SFV in frame's window words
         WinSetWindowPtr(hwndFrame,
-                        G_SFVOffset,        // window word offset which we've
-                                            // calculated in fdr_SendMsgHook
+                        psliNew->ulWindowWordOffset,
                         psliNew);
-        psliNew->pfnwpOriginal = WinSubclassWindow(hwndFrame,
-                                                   fdr_fnwpSubclassedFolderFrame);
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -306,11 +335,46 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
 }
 
 /*
+ *@@ fdrSubclassFolderView:
+ *      calls fdrCreateSFV and subclasses the folder
+ *      frame.
+ *
+ *      This gets called for standard XFldDisk and
+ *      XFolder frames.
+ *
+ *@@added V0.9.9 (2001-03-11) [umoeller]
+ */
+
+PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
+                                            HWND hwndCnr,
+                                            WPFolder *somSelf,
+                                                 // in: folder; either XFolder's somSelf
+                                                 // or XFldDisk's root folder
+                                            WPObject *pRealObject)
+                                                 // in: the "real" object; for XFolder, this is == somSelf,
+                                                 // for XFldDisk, this is the disk object (needed for object handles)
+{
+    PSUBCLASSEDFOLDERVIEW psfv = fdrCreateSFV(hwndFrame,
+                                              hwndCnr,
+                                              -1,    // default window word V0.9.9 (2001-03-11) [umoeller]
+                                              somSelf,
+                                              pRealObject);
+    if (psfv)
+        psfv->pfnwpOriginal = WinSubclassWindow(hwndFrame,
+                                                fdr_fnwpSubclassedFolderFrame);
+
+    return (psfv);
+}
+
+/*
  *@@ fdrQuerySFV:
  *      this retrieves the PSUBCLASSEDFOLDERVIEW from the
  *      specified subclassed folder frame. One of these
  *      structs is maintained for each open folder view
  *      to store window data which is needed everywhere.
+ *
+ *      Works only for "true" folder frames created by
+ *      XFolder::wpOpen.
  *
  *      Returns NULL if not found.
  *
@@ -325,7 +389,7 @@ PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to 
                                   PULONG pulIndex)       // out: index in linked list if found
 {
     PSUBCLASSEDFOLDERVIEW psliFound = (PSUBCLASSEDFOLDERVIEW)WinQueryWindowPtr(hwndFrame,
-                                                                           G_SFVOffset);
+                                                                               G_SFVOffset);
     return (psliFound);
 }
 
@@ -333,7 +397,7 @@ PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to 
  *@@ fdrRemoveSFV:
  *      reverse to fdrSubclassFolderView, this removes
  *      a PSUBCLASSEDFOLDERVIEW from the folder frame again.
- *      Called upon WM_CLOSE in folder frames.
+ *      Called upon WM_DESTROY in folder frames.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: moved this func here from common.c
@@ -343,7 +407,7 @@ PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to 
 VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv)
 {
     WinSetWindowPtr(psfv->hwndFrame,
-                    G_SFVOffset,
+                    psfv->ulWindowWordOffset, // V0.9.9 (2001-03-11) [umoeller]
                     NULL);
     free(psfv);
 }
@@ -1092,14 +1156,15 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
  *
  *@@added V0.9.3 (2000-04-08) [umoeller]
  *@@changed V0.9.7 (2001-01-13) [umoeller]: introduced xwpProcessObjectCommand for WM_COMMAND
+ *@@changed V0.9.9 (2001-03-11) [umoeller]: renamed from ProcessFolderMsgs, exported now
  */
 
-MRESULT ProcessFolderMsgs(HWND hwndFrame,
-                          ULONG msg,
-                          MPARAM mp1,
-                          MPARAM mp2,
-                          PSUBCLASSEDFOLDERVIEW psfv,  // in: folder view data
-                          PFNWP pfnwpOriginal)       // in: original frame window proc
+MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
+                             ULONG msg,
+                             MPARAM mp1,
+                             MPARAM mp2,
+                             PSUBCLASSEDFOLDERVIEW psfv,  // in: folder view data
+                             PFNWP pfnwpOriginal)       // in: original frame window proc
 {
     MRESULT mrc = 0;
     BOOL            fCallDefault = FALSE;
@@ -1361,7 +1426,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
              *      needs to be redrawn. This gets sent to us for
              *      items in folder content menus (if icons are on).
              *
-             *      ### Warning: Apparently we also get this for
+             *      @@todo Warning: Apparently we also get this for
              *      the WPS's container owner draw. We should add
              *      another check... V0.9.3 (2000-04-26) [umoeller]
              */
@@ -1763,14 +1828,14 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
 {
     MRESULT     mrc = 0;
     PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
-                                            NULL);
+                                             NULL);
     if (psfv)
-        mrc = ProcessFolderMsgs(hwndFrame,
-                                msg,
-                                mp1,
-                                mp2,
-                                psfv,
-                                psfv->pfnwpOriginal);
+        mrc = fdrProcessFolderMsgs(hwndFrame,
+                                   msg,
+                                   mp1,
+                                   mp2,
+                                   psfv,
+                                   psfv->pfnwpOriginal);
     else
     {
         // SFV not found: use the default

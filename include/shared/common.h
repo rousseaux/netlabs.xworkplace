@@ -338,6 +338,8 @@
 
     #define ID_XSH_SETTINGS_PGM_ASSOCIATIONS 120
     #define ID_XSH_SETTINGS_XC_THREADS      121
+    #define ID_XSH_SETTINGS_PGMFILE_MODULE1 122
+    #define ID_XSH_SETTINGS_PGMFILE_MODULE2 123
 
     /********************************************************************
      *
@@ -512,6 +514,8 @@
     #define SP_DISK_DETAILS         100     // new with V0.9.0
     #define SP_PROG_DETAILS         101     // new with V0.9.0
     #define SP_PROG_RESOURCES       102     // new with V0.9.7 (2000-12-17) [lafaix]
+    #define SP_PROG_DETAILS1        103
+    #define SP_PROG_DETAILS2        104
 
     // 12) XWPClassList
     #define SP_CLASSLIST            110     // new with V0.9.0
@@ -1286,7 +1290,28 @@
                 pszArcINIChanged,       // "INI files changed %f %%."
                 pszArcINILimit,         // "Limit: %f %%."
                 pszArcEnabled,          // "WPS archiving enabled."
-                pszArcNotNecc;          // "WPS archiving not necessary."
+                pszArcNotNecc,          // "WPS archiving not necessary."
+
+    // new Module subpages V0.9.9 (2001-03-11) [lafaix]
+                pszModule1Page,
+                pszModule2Page,
+
+    // miscellaneous new columns headers V0.9.9 (2001-03-11) [lafaix]
+                pszColmnModuleName,
+                pszColmnExportOrdinal,
+                pszColmnExportType,
+                pszColmnExportName,
+                pszColmnResourceIcon,
+                pszColmnResourceID,
+                pszColmnResourceType,
+                pszColmnResourceSize,
+                pszColmnResourceFlags,
+
+    // new special functions on XWPMouse "Movement" page V0.9.9 (2001-03-11) [lafaix]
+                pszSpecialPageMageUp,
+                pszSpecialPageMageRight,
+                pszSpecialPageMageDown,
+                pszSpecialPageMageLeft;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1760,5 +1785,11 @@
 
     MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 
+    BOOL cmnFileDlg(HWND hwndOwner,
+                    PSZ pszFile,
+                    ULONG flFlags,
+                    HINI hini,
+                    const char *pcszApplication,
+                    const char *pcszKey);
 #endif
 

@@ -780,7 +780,7 @@ VOID ConvertACLEntriesForSubject(TREE* pNode,       // in: current ACLDBENTRYNOD
  *      frees all ACL entries associated with the
  *      specified subject handle.
  *
- *          ### todo
+ *          @@todo
  *
  *      The caller must lock the ACLDB before using this.
  */

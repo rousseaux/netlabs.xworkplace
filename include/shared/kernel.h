@@ -95,6 +95,9 @@
          *      this structure only if you need to access
          *      data across several code files. Otherwise,
          *      please use global variables.
+         *
+         *@@changed V0.9.9 (2001-03-07) [umoeller]: removed all THREADINFO's
+         *@@changed V0.9.9 (2001-03-10) [umoeller]: added fDesktopPopulated
          */
 
         typedef struct _KERNELGLOBALS
@@ -226,7 +229,6 @@
              *      this thread is always running.
              */
 
-            // THREADINFO          tiSpeedyThread;
             HWND                hwndSpeedyObject;
 
             /*
@@ -235,7 +237,6 @@
              *      but with regular priority.
              */
 
-            // THREADINFO          tiFileThread;
             HWND                hwndFileObject;
 
             /*
@@ -243,8 +244,6 @@
              *      replacement thread for WPS "WheelWatcher".
              *      This does not have a PM message queue.
              */
-
-            // THREADINFO          tiSentinel;
 
             BOOL                fAutoRefreshReplaced;
                                     // this is set to TRUE if, on WPS startup,
@@ -259,17 +258,13 @@
              *      while XShutdown is in progress.
              */
 
-            // THREADINFO          tiShutdownThread,
-            //                     tiUpdateThread;
-
             BOOL                fShutdownRunning;
 
-            // debugging flags
-            ULONG               ulShutdownFunc,
-                                ulShutdownFunc2;
-
             // CONFIG.SYS filename (XFldSystem)
-            CHAR                szConfigSys[CCHMAXPATH];
+            // CHAR                szConfigSys[CCHMAXPATH];
+
+            // desktop already populated?
+            BOOL                fDesktopPopulated;
 
         } KERNELGLOBALS, *PKERNELGLOBALS;
 

@@ -231,7 +231,7 @@ SOM_Scope ULONG SOMLINK wani_xwpGetAnimationTimeframeValue(XWPWinAni * somSelf)
     XWPWinAniMethodDebug("XWPWinAni", "wani_xwpGetAnimationTimeframeValue");
     FUNCENTER();
 
-    // ###
+    // @@todo
     return 0;
 }
 
@@ -248,7 +248,7 @@ SOM_Scope BOOL SOMLINK wani_xwpSetAnimationTimeframeValue(XWPWinAni * somSelf,
     XWPWinAniMethodDebug("XWPWinAni", "wani_xwpSetAnimationTimeframeValue");
     FUNCENTER();
 
-    // ###
+    // @@todo
     return TRUE;
 }
 
@@ -716,7 +716,7 @@ SOM_Scope BOOL SOMLINK wani_wpMenuItemHelpSelected(XWPWinAni * somSelf,
     XWPWinAniMethodDebug("XWPWinAni", "wani_wpMenuItemHelpSelected");
     FUNCENTER();
 
-    // ###
+    // @@todo
     return (XWPWinAni_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
                                                                     MenuId));
 }
@@ -768,7 +768,7 @@ SOM_Scope void SOMLINK wani_wpUnInitData(XWPWinAni * somSelf)
     XWPWinAniMethodDebug("XWPWinAni", "wani_wpUnInitData");
     FUNCENTER();
 
-    XWPWinAni_parent_WPDataFile_wpUnInitData(somSelf);     // ###
+    XWPWinAni_parent_WPDataFile_wpUnInitData(somSelf);     // @@todo
 
     // Speicher freigeben
     if (_piconinfo)

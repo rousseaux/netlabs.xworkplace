@@ -80,7 +80,7 @@ VOID pgmsSetDefaults(VOID)
 
     // Display
     pPageMageConfig->fShowTitlebar = TRUE;
-    // pPageMageConfig->fStartMinimized = FALSE; // ###
+    // pPageMageConfig->fStartMinimized = FALSE;
     pPageMageConfig->fFlash = FALSE;
     pPageMageConfig->ulFlashDelay = 2000;
     // pPageMageConfig->bFloatToTop = FALSE;

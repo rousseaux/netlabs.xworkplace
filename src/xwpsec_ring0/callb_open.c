@@ -120,7 +120,7 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
  *
- *      Currently disabled. ###
+ *      Currently disabled. @@todo
  */
 
 ULONG CallType OPEN_POST(PSZ pszPath,

@@ -208,6 +208,7 @@
          *@@changed V0.9.1 (2000-01-29) [umoeller]: added pSourceObject and ulSelection fields
          *@@changed V0.9.2 (2000-03-06) [umoeller]: removed ulView, because this might change
          *@@changed V0.9.3 (2000-04-07) [umoeller]: renamed from SUBCLASSEDLISTITEM
+         *@@changed V0.9.9 (2001-03-10) [umoeller]: added ulWindowWordOffset
          */
 
         typedef struct _SUBCLASSEDFOLDERVIEW
@@ -219,6 +220,8 @@
                                             // disk object for WPRootFolders
             PFNWP       pfnwpOriginal;      // orig. frame wnd proc before subclassing
                                             // (WPS folder proc)
+            ULONG       ulWindowWordOffset; // as passed to fdrSubclassFolderView
+
             HWND        hwndStatusBar,      // status bar window; NULL if there's no
                                             // status bar for this view
                         hwndCnr,            // cnr window (child of hwndFrame)
@@ -266,6 +269,12 @@
          *
          ********************************************************************/
 
+        PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
+                                           HWND hwndCnr,
+                                           ULONG ulWindowWordOffset,
+                                           WPFolder *somSelf,
+                                           WPObject *pRealObject);
+
         PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                                                     HWND hwndCnr,
                                                     WPFolder *somSelf,
@@ -285,6 +294,13 @@
                                      HWND hwndCnr,
                                      WPObject* pFirstObject,
                                      ULONG ulSelectionFlags);
+
+        MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
+                                     ULONG msg,
+                                     MPARAM mp1,
+                                     MPARAM mp2,
+                                     PSUBCLASSEDFOLDERVIEW psfv,
+                                     PFNWP pfnwpOriginal);
 
         MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd,
                                                        ULONG msg,

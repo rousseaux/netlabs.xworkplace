@@ -85,6 +85,13 @@
 
         VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                    ULONG flFlags);
+
+        VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                 ULONG flFlags);
+
+        VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                 ULONG flFlags);
+
     #endif
 
     #ifdef XSTRING_HEADER_INCLUDED

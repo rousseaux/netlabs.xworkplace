@@ -241,7 +241,7 @@ INT main
         // ungltiger Parameter ?
         if (pszInvalidParm != NULL)
         {
-            // ###*
+            // @@todo
             rc = ShowMessage(ERROR_INVALID_PARAMETER, "Invalid Parameter.");
             break;
         }
@@ -1497,7 +1497,7 @@ MRESULT DLG_QUERY_SAVE(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     if (pparm->fModified)
     {
-        // display message // ###
+        // display message // @@todo
         rc = WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
                            "Animation has been modified. "
                            "Save current animation ?", szAppTitle, 0,

@@ -26,7 +26,6 @@ if (rc != NO_ERROR)                     \
    break;                               \
 }rc                                     \
 
-// ###
 #define READULONG(h,t)                  \
 READMEMORY(h, t, sizeof( ULONG))
 

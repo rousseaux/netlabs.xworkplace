@@ -457,8 +457,9 @@ PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
                                                                       pTypeThis,
                                                                       &pNewNode->cbObjectHandles);
 
-                    _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data",
-                                pTypeThis, pNewNode->cbObjectHandles));
+                    #ifdef DEBUG_ASSOCS
+                        _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data", pTypeThis, pNewNode->cbObjectHandles));
+                    #endif
 
                     // insert into binary tree
                     treeInsertNode(&G_WPSTypeAssocsTreeRoot,
@@ -480,11 +481,16 @@ PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
 
     if (G_fWPSTypesValid)
     {
-        _Pmpf((__FUNCTION__ ": looking for %s now...", pcszType));
+        #ifdef DEBUG_ASSOCS
+            _Pmpf((__FUNCTION__ ": looking for %s now...", pcszType));
+        #endif
+
         pWPSType = treeFindEQData(&G_WPSTypeAssocsTreeRoot,
                                   (PVOID)pcszType,
                                   CompareWPSTypeData);
-        _Pmpf(("    got 0x%lX", pWPSType));
+        #ifdef DEBUG_ASSOCS
+            _Pmpf(("    got 0x%lX", pWPSType));
+        #endif
     }
 
     return (pWPSType);
@@ -724,9 +730,11 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
             // get associations from WPS INI data
             PWPSTYPEASSOCTREENODE pWPSType = ftypFindWPSType(pszType2);
 
-            _Pmpf((__FUNCTION__ ": got %d bytes for type %s",
+            #ifdef DEBUG_ASSOCS
+                _Pmpf((__FUNCTION__ ": got %d bytes for type %s",
                     (pWPSType) ? pWPSType->cbObjectHandles : 0,
                     pszType2));
+            #endif
 
             if (pWPSType)
             {
@@ -1996,7 +2004,9 @@ BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
     {
         if (pusIndicator)
             *pusIndicator = DOR_NEVERDROP;
-        _Pmpf(("   invalid items or invalid target"));
+        #ifdef DEBUG_ASSOCS
+            _Pmpf(("   invalid items or invalid target"));
+        #endif
     }
     else
     {
@@ -2029,17 +2039,25 @@ BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
                             *pusOperation = DO_MOVE;
                         brc = TRUE;
                     }
+                    #ifdef DEBUG_ASSOCS
                     else
                         _Pmpf(("   target is child of source"));
+                    #endif
                 }
+                #ifdef DEBUG_ASSOCS
                 else
                     _Pmpf(("   invalid RMF"));
+                #endif
             }
+            #ifdef DEBUG_ASSOCS
             else
                 _Pmpf(("   cannot get drag item"));
+            #endif
         }
+        #ifdef DEBUG_ASSOCS
         else
             _Pmpf(("   invalid operation 0x%lX", pDragInfo->usOperation));
+        #endif
     }
 
     return (brc);
@@ -2507,7 +2525,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     // user operation (we don't want
                                     // the WPS to copy anything)
 
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("CN_DRAGOVER: entering"));
+                    #endif
 
                     // get access to the drag'n'drop structures
                     if (DrgAccessDraginfo(pcdi->pDragInfo))
@@ -2520,7 +2540,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         DrgFreeDraginfo(pcdi->pDragInfo);
                     }
 
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("CN_DRAGOVER: returning ind 0x%lX, op 0x%lX", usIndicator, usOp));
+                    #endif
 
                     // and return the drop flags
                     mrc = (MRFROM2SHORT(usIndicator, usOp));
@@ -2538,7 +2560,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
 
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("CN_DROP: entering"));
+                    #endif
 
                     // check global valid recc, which was set above
                     // get access to the drag'n'drop structures
@@ -2589,15 +2613,19 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     ftypInvalidateCaches();
                                 }
                             }
+                            #ifdef DEBUG_ASSOCS
                             else
                                 _Pmpf(("  Cannot get drag item"));
+                            #endif
                         }
 
                         DrgFreeDraginfo(pcdi->pDragInfo);
                                     // V0.9.7 (2000-12-10) [umoeller]
                     }
+                    #ifdef DEBUG_ASSOCS
                     else
                         _Pmpf(("  Cannot get draginfo"));
+                    #endif
 
                     // If CN_DROP was the result of a "real" (modal) d'n'd,
                     // the DrgDrag function in CN_INITDRAG (above)
@@ -2609,7 +2637,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // In both cases, we clean up the resources: either in
                     // CN_INITDRAG or in CN_DROPNOTIFY.
 
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("CN_DROP: returning"));
+                    #endif
 
                 break; } // case CN_DROP
 

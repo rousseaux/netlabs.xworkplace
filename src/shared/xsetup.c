@@ -1855,8 +1855,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
             pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
-            // global hotkeys... ### V0.9.4 (2000-06-05) [umoeller]
-            // pagemage... ### V0.9.4 (2000-06-05) [umoeller]
+            // global hotkeys... @@todo V0.9.4 (2000-06-05) [umoeller]
+            // pagemage... @@todo V0.9.4 (2000-06-05) [umoeller]
 
             pGlobalSettings->fReplaceArchiving = pGSBackup->fReplaceArchiving;
             pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
@@ -1869,7 +1869,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
             pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
             pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
-            // trash can ### V0.9.4 (2000-06-05) [umoeller]
+            // trash can @@todo V0.9.4 (2000-06-05) [umoeller]
             pGlobalSettings->fReplaceTrueDelete = pGSBackup->fReplaceTrueDelete;
 
             // update the display by calling the INIT callback

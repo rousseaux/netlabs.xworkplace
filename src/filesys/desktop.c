@@ -43,6 +43,7 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
+#define INCL_DOSMISC
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
@@ -241,6 +242,23 @@ BOOL dtpSetup(WPDesktop *somSelf,
         brc = xsdInitiateShutdownExt(&xsd);
     }
 
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pcszSetupString,
+                           "TESTFILEDLG",
+                           szValue,
+                           &cbValue))
+    {
+        if (cmnFileDlg(cmnQueryActiveDesktopHWND(),
+                       szValue,
+                       0,
+                       NULLHANDLE,
+                       NULL,
+                       NULL))
+            winhDebugBox(NULLHANDLE,
+                         "Test file dlg",
+                         szValue);
+    }
+
     return (brc);
 }
 
@@ -253,6 +271,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
  *      setup string part only.
  *
  *@@added V0.9.1 (2000-01-20) [umoeller]
+ *@@todo warp4 setup strings
  */
 
 ULONG dtpQuerySetup(WPDesktop *somSelf,
@@ -266,7 +285,7 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
 
     /*
 
-      ### This is the complete list of all WPDesktop setup
+      @@todo This is the complete list of all WPDesktop setup
       strings, as documented by WPSREF. However, method
       implementations only exist for Warp 4.
 

@@ -1051,37 +1051,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 }
 
 /*
- *xthrOnKillWorkerThread:
- *      thread "exit list" func registered with
- *      the TRY_xxx macros (helpers\except.c).
- *      In case the Worker thread gets killed,
- *      this function gets called. As opposed to
- *      real exit list functions, which always get
- *      called on thread 1, this gets called on
- *      the thread which registered the exception
- *      handler.
- *
- *      We release mutex semaphores here, which we
- *      must do, because otherwise the system might
- *      hang if another thread is waiting on the
- *      same semaphore.
- *
- *added V0.9.0 [umoeller]
- *removed V0.9.7 (2000-12-13) [umoeller]
- */
-
-/* VOID APIENTRY xthrOnKillWorkerThread(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
-{
-    if (G_fWorkerAwakeObjectsSemOwned)
-    {
-        PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-        DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-        G_fWorkerAwakeObjectsSemOwned = FALSE;
-    }
-    krnUnlockGlobals(); // just to make sure
-} */
-
-/*
  *@@ fntWorkerThread:
  *          this is the thread function for the XFolder
  *          "Worker" (= background) thread, to which
@@ -1459,6 +1428,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         case FIM_DESKTOPPOPULATED:
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            PKERNELGLOBALS pKernelGlobals = NULL;
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("fnwpFileObject: got FIM_DESKTOPPOPULATED"));
@@ -1484,10 +1454,23 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 _Pmpf(("    Desktop populated, sleep(1000)"));
             #endif
 
+            // V0.9.9 (2001-03-10) [umoeller]
+            TRY_LOUD(excpt1)
+            {
+                pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+                if (pKernelGlobals)
+                {
+                    pKernelGlobals->fDesktopPopulated = TRUE;
+                }
+            }
+            CATCH(excpt1) {} END_CATCH();
+
+            if (pKernelGlobals)
+                krnUnlockGlobals();
+
             // sleep a little while more
             // V0.9.4 (2000-08-02) [umoeller]
-            winhSleep(WinQueryAnchorBlock(hwndObject),
-                      pGlobalSettings->ulStartupInitialDelay);
+            winhSleep(pGlobalSettings->ulStartupInitialDelay);
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting XDM_DESKTOPREADY (0x%lX) to daemon",
@@ -2226,6 +2209,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *                       the expanded minirecordcore
          *
          *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Speedy thread from File thread
+         *@@changed V0.9.9 (2001-03-11) [umoeller]: fixed possible crash with broken shadows
          */
 
         case QM_TREEVIEWAUTOSCROLL:
@@ -2237,36 +2221,40 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 while (_somIsA(pFolder, _WPShadow))
                     pFolder = _wpQueryShadowedObject(pFolder, TRUE);
 
-                if (!_somIsA(pFolder, _WPFolder)) // check only folders, avoid disks
-                    break;
+                if (pFolder)  // V0.9.9 (2001-03-11) [umoeller]
+                {
+                    if (!_somIsA(pFolder, _WPFolder)) // check only folders, avoid disks
+                        break;
 
-                // now check if the folder whose "plus" sign has been
-                // clicked on is already populated: if so, the WPS seems
-                // to insert the objects directly (i.e. in the Workplace
-                // thread), if not, the objects are inserted by some
-                // background populate thread, which we have no control
-                // over...
-                if ( (_wpQueryFldrFlags(pFolder) & FOI_POPULATEDWITHFOLDERS) == 0)
-                {
-                    // NOT fully populated: sleep a while, then post
-                    // the same msg again, until the "populated" folder
-                    // flag has been set
-                    DosSleep(100);
-                    xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL, mp1, mp2);
-                }
-                else
-                {
-                    // otherwise: scroll the tree view properly
-                    HWND                hwndCnr = WinWindowFromID((HWND)mp1, 0x8008);
-                    PMINIRECORDCORE     preccLastChild;
-                    preccLastChild = WinSendMsg(hwndCnr, CM_QUERYRECORD,
-                                                mp2,   // PMINIRECORDCORE
-                                                MPFROM2SHORT(CMA_LASTCHILD,
-                                                             CMA_ITEMORDER));
-                    cnrhScrollToRecord(hwndCnr,
-                                       (PRECORDCORE)preccLastChild,
-                                       CMA_TEXT,
-                                       TRUE);
+                    // now check if the folder whose "plus" sign has been
+                    // clicked on is already populated: if so, the WPS seems
+                    // to insert the objects directly (i.e. in the Workplace
+                    // thread), if not, the objects are inserted by some
+                    // background populate thread, which we have no control
+                    // over...
+                    if ( (_wpQueryFldrFlags(pFolder) & FOI_POPULATEDWITHFOLDERS) == 0)
+                    {
+                        // NOT fully populated: sleep a while, then post
+                        // the same msg again, until the "populated" folder
+                        // flag has been set
+                        DosSleep(100);
+                        xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL, mp1, mp2);
+                    }
+                    else
+                    {
+                        // otherwise: scroll the tree view properly
+                        HWND                hwndCnr = WinWindowFromID((HWND)mp1, 0x8008);
+                        PMINIRECORDCORE     preccLastChild;
+                        preccLastChild = WinSendMsg(hwndCnr,
+                                                    CM_QUERYRECORD,
+                                                    mp2,   // PMINIRECORDCORE
+                                                    MPFROM2SHORT(CMA_LASTCHILD,
+                                                                 CMA_ITEMORDER));
+                        cnrhScrollToRecord(hwndCnr,
+                                           (PRECORDCORE)preccLastChild,
+                                           CMA_TEXT,
+                                           TRUE);
+                    }
                 }
             }
         break; }

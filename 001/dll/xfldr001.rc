@@ -645,6 +645,7 @@ BEGIN
 
     /* title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller] */
     ID_XSSI_PGM_ASSOCIATIONS            "~Associations"
+
 END
 
 /* Strings for XWPSetup "Features" page
@@ -750,6 +751,27 @@ BEGIN
     ID_XSSI_ARCINILIMIT                 "Limit: %f %%."
     ID_XSSI_ARCENABLED                  "WPS archiving enabled."
     ID_XSSI_ARCNOTNECC                  "WPS archiving not necessary."
+
+    /* titles of programfiles "Imported modules" and "Exported functions" pages V0.9.9 (2001-03-11) [lafaix] */
+    ID_XSSI_PGMFILE_MODULE1             "Imported modules"
+    ID_XSSI_PGMFILE_MODULE2             "Exported functions"
+
+    /* containers columns headers in programfiles notebooks V0.9.9 (2001-03-11) [lafaix] */
+    ID_XSSI_COLMN_MODULENAME            "Name"
+    ID_XSSI_COLMN_EXPORTORDINAL         "Ordinal"
+    ID_XSSI_COLMN_EXPORTTYPE            "Type"
+    ID_XSSI_COLMN_EXPORTNAME            "Name"
+    ID_XSSI_COLMN_RESOURCEICON          "Icon"
+    ID_XSSI_COLMN_RESOURCEID            "ID"
+    ID_XSSI_COLMN_RESOURCETYPE          "Type"
+    ID_XSSI_COLMN_RESOURCESIZE          "Size"
+    ID_XSSI_COLMN_RESOURCEFLAGS         "Flags"
+
+    /* pagemage special functions in XWPMouse "Movement" page V0.9.9 (2001-03-11 [lafaix] */
+    ID_XSSI_SPECIAL_PAGEMAGEUP          "One screen up"
+    ID_XSSI_SPECIAL_PAGEMAGERIGHT       "One screen right"
+    ID_XSSI_SPECIAL_PAGEMAGEDOWN        "One screen down"
+    ID_XSSI_SPECIAL_PAGEMAGELEFT        "One screen left"
 END
 
 /* Treesize definitions; added V0.9.0 */

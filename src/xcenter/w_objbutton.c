@@ -1035,7 +1035,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                                 // sleep a little while... otherwise the
                                 // "key up" or tiny "mouse move" will immediately
                                 // wake up the system again
-                                winhSleep(pWidget->habWidget, 300);
+                                winhSleep(300);
                                 // tell "Power" object to suspend
                                 _wpChangePowerState(pPrivate->pPower,
                                                     MAKEULONG(6,        // set power state

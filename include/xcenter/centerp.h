@@ -62,6 +62,7 @@
      *      widgets should not see.
      *
      *@@added V0.9.9 (2001-03-09) [umoeller]
+     *@@todo WGTF_UNIQUEGLOBAL tracking
      */
 
     typedef struct _PRIVATEWIDGETCLASS
@@ -78,7 +79,7 @@
         ULONG               ulInstancesGlobal;
                 // global count of widget instances which
                 // exist across all XCenters. This allows
-                // us to keep track of WGTF_UNIQUEGLOBAL. ###
+                // us to keep track of WGTF_UNIQUEGLOBAL. @@todo
 
         HMODULE             hmod;
                 // plugin DLL this widget comes from or

@@ -1587,7 +1587,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                          121,       // xwp
                                          199,       // welcome
                                          MB_OK);
-                */ // ### currently disabled... this hangs the system, dammit
+                */ // @@todo currently disabled... this hangs the system, dammit
             break;
 
             #ifdef __DEBUG__
@@ -2106,7 +2106,7 @@ VOID krnShowStartupDlgs(VOID)
                     GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                     if (pGlobalSettings2)
                     {
-                        pGlobalSettings2->fEnablePageMage = FALSE;  // ###
+                        pGlobalSettings2->fEnablePageMage = FALSE;  // @@todo
                         cmnUnlockGlobalSettings();
                         cmnStoreGlobalSettings();
                     }
@@ -2443,7 +2443,7 @@ VOID krnInitializeXWorkplace(VOID)
 
         fInitialized = TRUE;
 
-        if (TRUE)           // ###
+        if (TRUE)           // @@todo
         {
             sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
             DumpFile = fopen(szDumpFile, "a");
@@ -2536,11 +2536,6 @@ VOID krnInitializeXWorkplace(VOID)
             krnReplaceWheelWatcher(DumpFile);
         }
     }
-
-    // set up config.sys path
-    sprintf(G_KernelGlobals.szConfigSys,
-            "%c:\\config.sys",
-            doshQueryBootDrive());
 
     /*
      *  enable NumLock at startup

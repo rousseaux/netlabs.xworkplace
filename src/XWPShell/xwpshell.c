@@ -622,7 +622,7 @@ APIRET LocalLogon(VOID)
         arc = XWPSEC_NOT_AUTHENTICATED;
     else
     {
-        // debug... remove this! ###
+        // debug... remove this! @@todo
         if (strcmp(uiLogon.szUserName, "exit") == 0)
             // exit:
             WinPostMsg(G_hwndShellObject, WM_QUIT, 0, 0);
@@ -1346,7 +1346,7 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
             if (NO_ERROR == slogQueryLocalUser(&LoggedOnLocal))
             {
                 // local user logged on already:
-                // ### temporary version;
+                // @@todo temporary version;
                 // really we should query which uid the
                 // parent process is running on and check
                 // for agent (privileged) processes here...
