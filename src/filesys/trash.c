@@ -447,53 +447,59 @@ VOID InitMappings(XWPTrashCan *somSelf,
                                          // and wpSaveDeferred must be called on the trash can
 {
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        if (!G_fMappingsTreeInitialized)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // first call: initialize the mappings tree
-            M_WPFolder  *pWPFolderClass = _WPFolder;
-            BYTE        bIndex = 0;
-            CHAR        cDrive = 0;
-
-            treeInit(&G_MappingsTreeRoot);
-
-            // zero the "dirty" array
-            memset(&G_abMappingDrivesDirty, 0, sizeof(G_abMappingDrivesDirty));
-
-            cDrive = 'C';  // (bIndex == 0) = drive C:
-
-            for (bIndex = 0;
-                 bIndex < CB_SUPPORTED_DRIVES;
-                 bIndex++)
+            if (!G_fMappingsTreeInitialized)
             {
-                if (G_abSupportedDrives[bIndex] == XTRC_SUPPORTED)
+                // first call: initialize the mappings tree
+                M_WPFolder  *pWPFolderClass = _WPFolder;
+                BYTE        bIndex = 0;
+                CHAR        cDrive = 0;
+
+                treeInit(&G_MappingsTreeRoot);
+
+                // zero the "dirty" array
+                memset(&G_abMappingDrivesDirty, 0, sizeof(G_abMappingDrivesDirty));
+
+                cDrive = 'C';  // (bIndex == 0) = drive C:
+
+                for (bIndex = 0;
+                     bIndex < CB_SUPPORTED_DRIVES;
+                     bIndex++)
                 {
-                    // get "\trash" dir on that drive
-                    CHAR szTrashDir[50];
-                    sprintf(szTrashDir, "%c:\\Trash",
-                            cDrive);
-
-                    // first check if that directory exists using CP functions;
-                    // otherwise the WPS will initialize the drive which causes
-                    // a CHKDSK if the system crashes even though the drive
-                    // hasn't really been used
-                    if (doshQueryDirExist(szTrashDir))   // V0.9.4 (2000-07-22) [umoeller]
+                    if (G_abSupportedDrives[bIndex] == XTRC_SUPPORTED)
                     {
-                        // OK, we have a \trash dir:
-                        // load the "@mapping" file from there
-                        LoadMappingsForDrive(pWPFolderClass,
-                                             szTrashDir,
-                                             pfNeedSave);
-                    }
-                }
-                cDrive++;
-            }
+                        // get "\trash" dir on that drive
+                        CHAR szTrashDir[50];
+                        sprintf(szTrashDir, "%c:\\Trash",
+                                cDrive);
 
-            G_fMappingsTreeInitialized = TRUE;
+                        // first check if that directory exists using CP functions;
+                        // otherwise the WPS will initialize the drive which causes
+                        // a CHKDSK if the system crashes even though the drive
+                        // hasn't really been used
+                        if (doshQueryDirExist(szTrashDir))   // V0.9.4 (2000-07-22) [umoeller]
+                        {
+                            // OK, we have a \trash dir:
+                            // load the "@mapping" file from there
+                            LoadMappingsForDrive(pWPFolderClass,
+                                                 szTrashDir,
+                                                 pfNeedSave);
+                        }
+                    }
+                    cDrive++;
+                }
+
+                G_fMappingsTreeInitialized = TRUE;
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 }
 
 /*
@@ -513,13 +519,19 @@ PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pTrashCan))
+    TRY_LOUD(excpt1)
     {
-        pMapping = (PTRASHMAPPINGTREENODE)treeFind(G_MappingsTreeRoot,
-                                                   (ULONG)pcszSourceFolder,
-                                                   fnCompareStrings);
+        if (LOCK_OBJECT(Lock, pTrashCan))
+        {
+            pMapping = (PTRASHMAPPINGTREENODE)treeFind(G_MappingsTreeRoot,
+                                                       (ULONG)pcszSourceFolder,
+                                                       fnCompareStrings);
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (pMapping);
 }
@@ -543,21 +555,27 @@ PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pTrashCan))
+    TRY_LOUD(excpt1)
     {
-        PTRASHMAPPINGTREENODE pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
-        while (pNode)
+        if (LOCK_OBJECT(Lock, pTrashCan))
         {
-            if (pNode->pFolderInTrash == pFolderInTrash)
+            PTRASHMAPPINGTREENODE pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
+            while (pNode)
             {
-                pMapping = pNode;
-                break;
-            }
+                if (pNode->pFolderInTrash == pFolderInTrash)
+                {
+                    pMapping = pNode;
+                    break;
+                }
 
-            pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
+                pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (pMapping);
 }
@@ -581,29 +599,35 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
     // BOOL fDirty = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pTrashCan))
+    TRY_LOUD(excpt1)
     {
-        treeDelete(&G_MappingsTreeRoot,
-                   (TREE*)pMapping);
-        if (pMapping->Tree.ulKey) // pszSourceRealName)
+        if (LOCK_OBJECT(Lock, pTrashCan))
         {
-            // set the corresponding drive to "dirty"
-            PSZ pszSourceRealName = (PSZ)pMapping->Tree.ulKey;
-            ULONG ulDriveOfs = pszSourceRealName[0] - 'C';
-                    // 0 for C:, 1 for D:, ...
-            _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
-            G_abMappingDrivesDirty[ulDriveOfs] = 1;
+            treeDelete(&G_MappingsTreeRoot,
+                       (TREE*)pMapping);
+            if (pMapping->Tree.ulKey) // pszSourceRealName)
+            {
+                // set the corresponding drive to "dirty"
+                PSZ pszSourceRealName = (PSZ)pMapping->Tree.ulKey;
+                ULONG ulDriveOfs = pszSourceRealName[0] - 'C';
+                        // 0 for C:, 1 for D:, ...
+                _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
+                G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
-            // now clean up
-            free((PSZ)pMapping->Tree.ulKey); // pMapping->pszSourceRealName);
-            pMapping->Tree.ulKey = 0; // pMapping->pszSourceRealName = NULL;
+                // now clean up
+                free((PSZ)pMapping->Tree.ulKey); // pMapping->pszSourceRealName);
+                pMapping->Tree.ulKey = 0; // pMapping->pszSourceRealName = NULL;
 
-            *pfNeedSave = TRUE;
+                *pfNeedSave = TRUE;
+            }
+
+            free(pMapping);
         }
-
-        free(pMapping);
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 }
 
 /*
@@ -622,81 +646,87 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
 VOID trshSaveMappings(XWPTrashCan *pTrashCan)
 {
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pTrashCan))
+    TRY_LOUD(excpt1)
     {
-        // _Pmpf((__FUNCTION__ ": Entering"));
-
-        if (G_fMappingsTreeInitialized)
+        if (LOCK_OBJECT(Lock, pTrashCan))
         {
-            BYTE bIndex = 0;
-            CHAR cDrive = 'C'; // (bIndex == 0) = drive C:
+            // _Pmpf((__FUNCTION__ ": Entering"));
 
-            for (bIndex = 0;
-                 bIndex < CB_SUPPORTED_DRIVES;
-                 bIndex++, cDrive++)
+            if (G_fMappingsTreeInitialized)
             {
-                if (G_abMappingDrivesDirty[bIndex])
+                BYTE bIndex = 0;
+                CHAR cDrive = 'C'; // (bIndex == 0) = drive C:
+
+                for (bIndex = 0;
+                     bIndex < CB_SUPPORTED_DRIVES;
+                     bIndex++, cDrive++)
                 {
-                    // this drive is dirty:
-                    // compose a new "@mappings" file for this
-                    CHAR szMappingsFile[CCHMAXPATH];
-                    XSTRING     strMappings;
-                    ULONG       cEntries = 0;
-                    PTRASHMAPPINGTREENODE pNode;
-
-                    xstrInit(&strMappings, 1000);
-
-                    // now traverse the tree and add all mappings which
-                    // belong to this drive
-                    pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
-                    while (pNode)
+                    if (G_abMappingDrivesDirty[bIndex])
                     {
-                        PSZ pszSourceRealName = (PSZ)pNode->Tree.ulKey;
-                        if (toupper(pszSourceRealName[0]) == cDrive)
-                        {
-                            // this mapping is for our drive:
-                            xstrcat(&strMappings,
-                                    _wpQueryTitle(pNode->pFolderInTrash),
-                                            // same as filename... we only use decimal digits here
-                                    0);
-                            xstrcatc(&strMappings, ' ');
-                            xstrcat(&strMappings,
-                                    pszSourceRealName,
-                                    0);
-                            xstrcatc(&strMappings, '\n');
+                        // this drive is dirty:
+                        // compose a new "@mappings" file for this
+                        CHAR szMappingsFile[CCHMAXPATH];
+                        XSTRING     strMappings;
+                        ULONG       cEntries = 0;
+                        PTRASHMAPPINGTREENODE pNode;
 
-                            cEntries++;
+                        xstrInit(&strMappings, 1000);
+
+                        // now traverse the tree and add all mappings which
+                        // belong to this drive
+                        pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
+                        while (pNode)
+                        {
+                            PSZ pszSourceRealName = (PSZ)pNode->Tree.ulKey;
+                            if (toupper(pszSourceRealName[0]) == cDrive)
+                            {
+                                // this mapping is for our drive:
+                                xstrcat(&strMappings,
+                                        _wpQueryTitle(pNode->pFolderInTrash),
+                                                // same as filename... we only use decimal digits here
+                                        0);
+                                xstrcatc(&strMappings, ' ');
+                                xstrcat(&strMappings,
+                                        pszSourceRealName,
+                                        0);
+                                xstrcatc(&strMappings, '\n');
+
+                                cEntries++;
+                            }
+
+                            pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
                         }
 
-                        pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
+                        sprintf(szMappingsFile,
+                                "%c:\\trash\\" MAPPINGS_FILE,
+                                cDrive);
+
+                        /* _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
+                                    cEntries,
+                                    strMappings.psz)); */
+
+                        if (cEntries)
+                            doshWriteTextFile(szMappingsFile,
+                                              strMappings.psz,
+                                              NULL,
+                                              NULL);
+                        else
+                            DosDelete(szMappingsFile);
+
+                        // clean up
+                        xstrClear(&strMappings);
+
+                        // unset "dirty" flag
+                        G_abMappingDrivesDirty[bIndex] = 0;
                     }
-
-                    sprintf(szMappingsFile,
-                            "%c:\\trash\\" MAPPINGS_FILE,
-                            cDrive);
-
-                    /* _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
-                                cEntries,
-                                strMappings.psz)); */
-
-                    if (cEntries)
-                        doshWriteTextFile(szMappingsFile,
-                                          strMappings.psz,
-                                          NULL,
-                                          NULL);
-                    else
-                        DosDelete(szMappingsFile);
-
-                    // clean up
-                    xstrClear(&strMappings);
-
-                    // unset "dirty" flag
-                    G_abMappingDrivesDirty[bIndex] = 0;
                 }
             }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 }
 
 /*
@@ -756,8 +786,6 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
     // initialize the mappings if this hasn't been done yet
     InitMappings(pTrashCan, pfNeedSave);
 
-
-
     // check if we have a mapping for the source folder yet
     pMapping = trshGetMappingFromSource(pTrashCan,
                                         pcszSourceFolder);
@@ -769,45 +797,51 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
         // no: create a new trash dir...
 
         WPSHLOCKSTRUCT Lock;
-        if (wpshLockObject(&Lock, pTrashCan))
+        TRY_LOUD(excpt1)
         {
-            // 1) we need a unique decimal as the name
-            //    of the trash dir; we used to be using
-            //    the source folder's HOBJECT, but this
-            //    led to excessive handle creation for
-            //    the \trash subdirectories... instead,
-            //    we now always try to use low decimal
-            //    numbers so that handles are not necessarily
-            //    recreated
-
-            ULONG   ulDecimal = GetLowestTrashDirDecimal();
-            CHAR    szSubdirOfTrash[CCHMAXPATH];
-
-            sprintf(szSubdirOfTrash,
-                    "%c:\\Trash\\%d",
-                    *pcszSourceFolder,      // drive letter from source
-                    ulDecimal);             // rest of path
-
-            if (!doshQueryDirExist(szSubdirOfTrash))
-                // does not exist yet:
-                // create \trash subdirectory
-                doshCreatePath(szSubdirOfTrash,
-                               TRUE);   // hide that directory
-
-            // 2) awake the \trash subdir now
-            pFolderInTrash = _wpclsQueryFolder(_WPFolder,
-                                               szSubdirOfTrash,
-                                               TRUE);       // lock object
-            if (pFolderInTrash)
+            if (LOCK_OBJECT(Lock, pTrashCan))
             {
-                // 3) create a mapping
-                pMapping = CreateMapping(ulDecimal,
-                                         pFolderInTrash,
-                                         pcszSourceFolder,
-                                         pfNeedSave);
+                // 1) we need a unique decimal as the name
+                //    of the trash dir; we used to be using
+                //    the source folder's HOBJECT, but this
+                //    led to excessive handle creation for
+                //    the \trash subdirectories... instead,
+                //    we now always try to use low decimal
+                //    numbers so that handles are not necessarily
+                //    recreated
+
+                ULONG   ulDecimal = GetLowestTrashDirDecimal();
+                CHAR    szSubdirOfTrash[CCHMAXPATH];
+
+                sprintf(szSubdirOfTrash,
+                        "%c:\\Trash\\%d",
+                        *pcszSourceFolder,      // drive letter from source
+                        ulDecimal);             // rest of path
+
+                if (!doshQueryDirExist(szSubdirOfTrash))
+                    // does not exist yet:
+                    // create \trash subdirectory
+                    doshCreatePath(szSubdirOfTrash,
+                                   TRUE);   // hide that directory
+
+                // 2) awake the \trash subdir now
+                pFolderInTrash = _wpclsQueryFolder(_WPFolder,
+                                                   szSubdirOfTrash,
+                                                   TRUE);       // lock object
+                if (pFolderInTrash)
+                {
+                    // 3) create a mapping
+                    pMapping = CreateMapping(ulDecimal,
+                                             pFolderInTrash,
+                                             pcszSourceFolder,
+                                             pfNeedSave);
+                }
             }
         }
-        wpshUnlockObject(&Lock);
+        CATCH(excpt1) {} END_CATCH();
+
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
     }
 
     return (pFolderInTrash);

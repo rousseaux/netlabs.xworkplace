@@ -204,40 +204,46 @@ BOOL _System xfs_wpDestroyObject(XWPFileSystem *somSelf)
     BOOL    brc = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        // get the full path name so we can kill that beast
-        CHAR szFilename[CCHMAXPATH];
-        _Pmpf((__FUNCTION__ ": entering"));
-        if (_wpQueryFilename(somSelf,
-                             szFilename,
-                             TRUE))         // fully q'fied
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            APIRET arc = NO_ERROR;
-            if (_somIsA(somSelf, _WPFolder))
-                // folder:
-                arc = DosDeleteDir(szFilename);
-            else
-                // file:
-                arc = DosDelete(szFilename);
-
-            // now, as opposed to the WPS, we are smart enough
-            // to check the return code:
-            switch (arc)
+            // get the full path name so we can kill that beast
+            CHAR szFilename[CCHMAXPATH];
+            _Pmpf((__FUNCTION__ ": entering"));
+            if (_wpQueryFilename(somSelf,
+                                 szFilename,
+                                 TRUE))         // fully q'fied
             {
-                case NO_ERROR:
-                case ERROR_FILE_NOT_FOUND:
-                case ERROR_PATH_NOT_FOUND:
-                    // well, all these are OK -- report success
-                    brc = TRUE;
+                APIRET arc = NO_ERROR;
+                if (_somIsA(somSelf, _WPFolder))
+                    // folder:
+                    arc = DosDeleteDir(szFilename);
+                else
+                    // file:
+                    arc = DosDelete(szFilename);
 
-                // OTHERWISE DISPLAY NO FREAKING MESSAGE BOX.
-                // THIS MIGHT BE INVOKED PROGRAMATICALLY IN
-                // A LOOP SOMEWHERE. WHO CAME UP WITH THIS?!?
+                // now, as opposed to the WPS, we are smart enough
+                // to check the return code:
+                switch (arc)
+                {
+                    case NO_ERROR:
+                    case ERROR_FILE_NOT_FOUND:
+                    case ERROR_PATH_NOT_FOUND:
+                        // well, all these are OK -- report success
+                        brc = TRUE;
+
+                    // OTHERWISE DISPLAY NO FREAKING MESSAGE BOX.
+                    // THIS MIGHT BE INVOKED PROGRAMATICALLY IN
+                    // A LOOP SOMEWHERE. WHO CAME UP WITH THIS?!?
+                }
             }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }

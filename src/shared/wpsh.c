@@ -588,22 +588,28 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
     ULONG   ulView = 0;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        PUSEITEM    pUseItem = NULL;
-        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-             pUseItem;
-             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-            if (pViewItem->handle == hwndFrame)
+            PUSEITEM    pUseItem = NULL;
+            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                 pUseItem;
+                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
             {
-                ulView = pViewItem->view;
-                break;
+                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+                if (pViewItem->handle == hwndFrame)
+                {
+                    ulView = pViewItem->view;
+                    break;
+                }
             }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (ulView);
 }
@@ -633,22 +639,28 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
     BOOL    brc = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        PUSEITEM    pUseItem = NULL;
-        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-             pUseItem;
-             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-            if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
+            PUSEITEM    pUseItem = NULL;
+            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                 pUseItem;
+                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
             {
-                brc = TRUE;
-                break;
+                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+                if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
+                {
+                    brc = TRUE;
+                    break;
+                }
             }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -2255,7 +2267,7 @@ ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf)
  *@@added V0.9.7 (2000-12-08) [umoeller]
  */
 
-BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
+/* BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
                     WPObject *somSelf)
 {
     BOOL brc = FALSE;
@@ -2299,7 +2311,7 @@ BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
     }
 
     return (brc);
-}
+} */
 
 /*
  *@@ wpshUnlockObject:
@@ -2311,7 +2323,7 @@ BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
  *@@added V0.9.7 (2000-12-08) [umoeller]
  */
 
-BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
+/* BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
 {
     BOOL brc = FALSE;
     if (    (pLock->fLocked)
@@ -2332,7 +2344,7 @@ BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
     DosExitMustComplete(&pLock->ulNesting);
 
     return (brc);
-}
+} */
 
 /* ******************************************************************
  *

@@ -1291,120 +1291,126 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
         HPOINTER hptrOld = winhSetWaitPointer();
 
         WPSHLOCKSTRUCT Lock;
-        if (wpshLockObject(&Lock, somSelf))
+        TRY_LOUD(excpt1)
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-            // use our macro for determining this folder's always-sort flag;
-            // this is TRUE if "Always sort" is on either locally or globally
-            BOOL            AlwaysSort = (_lAlwaysSort == SET_DEFAULT)
-                                            ? pGlobalSettings->AlwaysSort
-                                            : _lAlwaysSort;
-
-            // get our sort comparison func
-            PFN             pfnSort =  (AlwaysSort)
-                                           ? fdrQuerySortFunc(somSelf,
-                                                              (_lDefSortCrit == SET_DEFAULT)
-                                                                 ? pGlobalSettings->lDefSortCrit
-                                                                 : _lDefSortCrit)
-                                           : NULL;
-            CNRINFO         CnrInfo = {0};
-            // BOOL            Update = FALSE;
-
-            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-            #ifdef DEBUG_SORT
-                _Pmpf((__FUNCTION__ ": %s with hwndCnr = 0x%lX",
-                        _wpQueryTitle(somSelf), hwndCnr ));
-                _Pmpf(( "  _Always: %d, Global->Always: %d",
-                        _lAlwaysSort, pGlobalSettings->AlwaysSort ));
-                _Pmpf(( "  ALWAYS_SORT returned %d", AlwaysSort ));
-                _Pmpf(( "  _Default: %d, Global->Default: %d",
-                        _lDefSortCrit, pGlobalSettings->lDefSortCrit ));
-                _Pmpf(( "  pfnSort is 0x%lX", pfnSort ));
-            #endif
-
-            // for icon views, we need extra precautions
-            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+            if (LOCK_OBJECT(Lock, somSelf))
             {
-                // for some reason, cnr icon views need to have "auto arrange" on
-                // when sorting, or the cnr will allow to drag'n'drop icons freely
-                // within the same cnr, which is not useful when auto-sort is on
+                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-                ULONG       ulStyle = winhQueryWindowStyle(hwndCnr);
+                // use our macro for determining this folder's always-sort flag;
+                // this is TRUE if "Always sort" is on either locally or globally
+                BOOL            AlwaysSort = (_lAlwaysSort == SET_DEFAULT)
+                                                ? pGlobalSettings->AlwaysSort
+                                                : _lAlwaysSort;
 
-                if (AlwaysSort)
-                {
-                    // always sort: we need to set CCS_AUTOPOSITION, if not set
-                    if ((ulStyle & CCS_AUTOPOSITION) == 0)
-                    {
-                        #ifdef DEBUG_SORT
-                            _Pmpf(( "  Setting CCS_AUTOPOSITION"));
-                        #endif
-                        WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
-                        // Update = TRUE;
-                    }
-                }
-                else
-                {
-                    // NO always sort: we need to unset CCS_AUTOPOSITION, if set
-                    if ((ulStyle & CCS_AUTOPOSITION) != 0)
-                    {
-                        #ifdef DEBUG_SORT
-                            _Pmpf(( "  Clearing CCS_AUTOPOSITION"));
-                        #endif
-                        WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
-                        // Update = TRUE;
-                    }
-                }
-            }
+                // get our sort comparison func
+                PFN             pfnSort =  (AlwaysSort)
+                                               ? fdrQuerySortFunc(somSelf,
+                                                                  (_lDefSortCrit == SET_DEFAULT)
+                                                                     ? pGlobalSettings->lDefSortCrit
+                                                                     : _lDefSortCrit)
+                                               : NULL;
+                CNRINFO         CnrInfo = {0};
+                // BOOL            Update = FALSE;
 
-            // now also update the internal WPFolder sort info, because otherwise
-            // the WPS will keep reverting the cnr attrs; we have obtained the pointer
-            // to this structure in wpRestoreData
-            if (_wpIsObjectInitialized(somSelf))
-                if (_pFolderSortInfo)
-                    ((PWPSSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
+                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
-            // finally, set the cnr sort function: we perform these checks
-            // to avoid cnr flickering
-            // V0.9.12 (2001-06-03) [umoeller]: no, we must do this always
-            // because otherwise changes won't get picked up by the cnr
-            /* if (    // sort function changed?
-                    (CnrInfo.pSortRecord != (PVOID)pfnSort)
-                    // ^^^ disabled this check, because we can now have
-                    // the same sort proc for several criteria
-                    // V0.9.12 (2001-05-18) [umoeller]
-                 ||
-                    // CCS_AUTOPOSITION flag changed above?
-                    (Update)
-                 || (fForce)
-               ) */
-            {
                 #ifdef DEBUG_SORT
-                    _Pmpf(( "  Resetting pSortRecord to %lX", pfnSort ));
+                    _Pmpf((__FUNCTION__ ": %s with hwndCnr = 0x%lX",
+                            _wpQueryTitle(somSelf), hwndCnr ));
+                    _Pmpf(( "  _Always: %d, Global->Always: %d",
+                            _lAlwaysSort, pGlobalSettings->AlwaysSort ));
+                    _Pmpf(( "  ALWAYS_SORT returned %d", AlwaysSort ));
+                    _Pmpf(( "  _Default: %d, Global->Default: %d",
+                            _lDefSortCrit, pGlobalSettings->lDefSortCrit ));
+                    _Pmpf(( "  pfnSort is 0x%lX", pfnSort ));
                 #endif
 
-                CnrInfo.pSortRecord = NULL;;
-                WinSendMsg(hwndCnr,
-                           CM_SETCNRINFO,       // @@todo, is this necessary?
-                           (MPARAM)&CnrInfo,
-                           (MPARAM)CMA_PSORTRECORD);
+                // for icon views, we need extra precautions
+                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                {
+                    // for some reason, cnr icon views need to have "auto arrange" on
+                    // when sorting, or the cnr will allow to drag'n'drop icons freely
+                    // within the same cnr, which is not useful when auto-sort is on
 
-                // set the cnr sort function; if this is != NULL, the
-                // container will always sort the records. If auto-sort
-                // is off, pfnSort has been set to NULL above.
-                // now update the CnrInfo, which will sort the
-                // contents and repaint the cnr also;
-                // this might take a long time
-                CnrInfo.pSortRecord = (PVOID)pfnSort;
-                WinSendMsg(hwndCnr,
-                           CM_SETCNRINFO,
-                           (MPARAM)&CnrInfo,
-                           (MPARAM)CMA_PSORTRECORD);
+                    ULONG       ulStyle = winhQueryWindowStyle(hwndCnr);
+
+                    if (AlwaysSort)
+                    {
+                        // always sort: we need to set CCS_AUTOPOSITION, if not set
+                        if ((ulStyle & CCS_AUTOPOSITION) == 0)
+                        {
+                            #ifdef DEBUG_SORT
+                                _Pmpf(( "  Setting CCS_AUTOPOSITION"));
+                            #endif
+                            WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
+                            // Update = TRUE;
+                        }
+                    }
+                    else
+                    {
+                        // NO always sort: we need to unset CCS_AUTOPOSITION, if set
+                        if ((ulStyle & CCS_AUTOPOSITION) != 0)
+                        {
+                            #ifdef DEBUG_SORT
+                                _Pmpf(( "  Clearing CCS_AUTOPOSITION"));
+                            #endif
+                            WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
+                            // Update = TRUE;
+                        }
+                    }
+                }
+
+                // now also update the internal WPFolder sort info, because otherwise
+                // the WPS will keep reverting the cnr attrs; we have obtained the pointer
+                // to this structure in wpRestoreData
+                if (_wpIsObjectInitialized(somSelf))
+                    if (_pFolderSortInfo)
+                        ((PWPSSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
+
+                // finally, set the cnr sort function: we perform these checks
+                // to avoid cnr flickering
+                // V0.9.12 (2001-06-03) [umoeller]: no, we must do this always
+                // because otherwise changes won't get picked up by the cnr
+                /* if (    // sort function changed?
+                        (CnrInfo.pSortRecord != (PVOID)pfnSort)
+                        // ^^^ disabled this check, because we can now have
+                        // the same sort proc for several criteria
+                        // V0.9.12 (2001-05-18) [umoeller]
+                     ||
+                        // CCS_AUTOPOSITION flag changed above?
+                        (Update)
+                     || (fForce)
+                   ) */
+                {
+                    #ifdef DEBUG_SORT
+                        _Pmpf(( "  Resetting pSortRecord to %lX", pfnSort ));
+                    #endif
+
+                    CnrInfo.pSortRecord = NULL;;
+                    WinSendMsg(hwndCnr,
+                               CM_SETCNRINFO,       // @@todo, is this necessary?
+                               (MPARAM)&CnrInfo,
+                               (MPARAM)CMA_PSORTRECORD);
+
+                    // set the cnr sort function; if this is != NULL, the
+                    // container will always sort the records. If auto-sort
+                    // is off, pfnSort has been set to NULL above.
+                    // now update the CnrInfo, which will sort the
+                    // contents and repaint the cnr also;
+                    // this might take a long time
+                    CnrInfo.pSortRecord = (PVOID)pfnSort;
+                    WinSendMsg(hwndCnr,
+                               CM_SETCNRINFO,
+                               (MPARAM)&CnrInfo,
+                               (MPARAM)CMA_PSORTRECORD);
+                }
             }
         }
-        wpshUnlockObject(&Lock);
+        CATCH(excpt1) {} END_CATCH();
+
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
 
         WinSetPointer(HWND_DESKTOP, hptrOld);
 

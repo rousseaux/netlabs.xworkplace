@@ -2925,31 +2925,32 @@ BEGIN
     DIALOG  "", ID_XSD_MOUSE_MOVEMENT2, 0, 0, 232, 164, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Auto-hide mouse pointer", -1, 6, 58, 194, 46
-        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 88, 44,
+        GROUPBOX        "Auto-hide mouse pointer", -1, 6, 66, 194, 48
+        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 98, 44,
                         8
-        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 22, 76, 28,
+        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 22, 86, 28,
                         12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 56, 76, 106, 12,
+        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 56, 86, 106, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
                         CTLDATA 12, 0, 60, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 160, 76, 28, 12,
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 160, 86, 28, 12,
                         DT_VCENTER | DT_MNEMONIC
         AUTOCHECKBOX    "Do not hide if a ~menu is open",
-                        ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 68, 164, 10
+                        ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 76, 164, 10
         AUTOCHECKBOX    "Do not hide if over a push button",
-                        ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 60, 164, 10
-        GROUPBOX        "Auto-move mouse pointer to dialog button", -1,
-                        6, 18, 194, 36
-        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 36, 46,
-                        10
-        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOMOVE_TXT1, 22, 22, 28, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOMOVE_SLIDER, 56, 22, 106, 12, SLS_SNAPTOINCREMENT |
-                        SLS_BUTTONSTOP | WS_GROUP
+                        ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 68, 164, 10
+        GROUPBOX        "Auto-move mouse pointer to dialog button", -1, 6,
+                        20, 194, 44
+        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 48, 46,
+                        8
+        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOMOVE_TXT1, 22, 34, 28,
+                        12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOMOVE_SLIDER, 56, 34, 106, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
                         CTLDATA 12, 0, 50, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOMOVE_TXT2, 160, 22, 28, 12, DT_VCENTER |
-                        DT_MNEMONIC
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOMOVE_TXT2, 160, 34, 28, 12,
+                        DT_VCENTER | DT_MNEMONIC
+        AUTOCHECKBOX    "~Animation", ID_XSDI_MOUSE_AUTOMOVE_ANIMATE, 22, 24, 50, 8
         PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP

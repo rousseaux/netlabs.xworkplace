@@ -2321,6 +2321,9 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
                                                  ID_XSDI_MOUSE_AUTOMOVE_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  pdc->ulAutoMoveDelay / 100);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_ANIMATE,
+                              ((pdc->ulAutoMoveFlags & AMF_ANIMATE) != 0));
+
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2345,6 +2348,9 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
                           pdc->fAutoMoveMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_TXT2,
                           pdc->fAutoMoveMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_ANIMATE,
+                             (pdc->fAutoMoveMouse)
+                          && (pdc->ulAutoMoveDelay > 0));
     }
 }
 
@@ -2426,7 +2432,16 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_AUTOMOVE_TXT2,
                               szTemp);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         }
+        break;
+
+        case ID_XSDI_MOUSE_AUTOMOVE_ANIMATE:
+            hifLoadHookConfig(pdc);
+            if (ulExtra)
+                pdc->ulAutoMoveFlags |= AMF_ANIMATE;
+            else
+                pdc->ulAutoMoveFlags &= ~AMF_ANIMATE;
         break;
 
         /*

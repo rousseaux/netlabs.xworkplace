@@ -1084,6 +1084,7 @@
 #define ID_XSDI_MOUSE_AUTOMOVE_TXT1     3478
 #define ID_XSDI_MOUSE_AUTOMOVE_SLIDER   3479
 #define ID_XSDI_MOUSE_AUTOMOVE_TXT2     3480
+#define ID_XSDI_MOUSE_AUTOMOVE_ANIMATE  3481
 
 /******************************************
  * XCenter (V0.9.7)         >= 3600       *

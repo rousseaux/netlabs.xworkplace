@@ -960,62 +960,67 @@ VOID DwgtDestroy(HWND hwnd)
         if (pXCenterData)
         {
             WPSHLOCKSTRUCT Lock;
-            if (wpshLockObject(&Lock, pXCenterData->somSelf))
+            TRY_LOUD(excpt1)
             {
-                // stop all running timers
-                // tmrStopAllTimers(hwnd);
-
-                if (pXCenterData)
+                if (LOCK_OBJECT(Lock, pXCenterData->somSelf))
                 {
-                    // remove the widget from the list of open
-                    // views in the XCenter, but only if this is
-                    // not part of a tray;
-                    // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
-                    // so this typecast works
-                    PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pWidget;
-                    if (!pView->pOwningTray)
-                        if (!lstRemoveItem(&pXCenterData->llWidgets,
-                                           pView))
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "lstRemoveItem failed.");
+                    // stop all running timers
+                    // tmrStopAllTimers(hwnd);
+
+                    if (pXCenterData)
+                    {
+                        // remove the widget from the list of open
+                        // views in the XCenter, but only if this is
+                        // not part of a tray;
+                        // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
+                        // so this typecast works
+                        PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pWidget;
+                        if (!pView->pOwningTray)
+                            if (!lstRemoveItem(&pXCenterData->llWidgets,
+                                               pView))
+                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                       "lstRemoveItem failed.");
+                    }
+
+                    if (pWidget->pcszWidgetClass)
+                    {
+                        free((PSZ)pWidget->pcszWidgetClass);
+                        pWidget->pcszWidgetClass = NULL;
+                    }
+
+                    if (pWidget->hwndContextMenu)
+                    {
+                        WinDestroyWindow(pWidget->hwndContextMenu);
+                        pWidget->hwndContextMenu = NULLHANDLE;
+                    }
+
+                    // if the widget was registered with the
+                    // tooltip control, remove it
+                    // V0.9.13 (2001-06-21) [umoeller]
+                    if (pWidget->ulClassFlags & WGTF_TOOLTIP)
+                    {
+                        TOOLINFO ti = {0};
+                        ti.hwndToolOwner = pWidget->pGlobals->hwndClient;
+                        ti.hwndTool = hwnd;
+                        WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                                   TTM_DELTOOL,
+                                   (MPARAM)0,
+                                   &ti);
+                    }
+
+                    free(pWidget);
+                    WinSetWindowPtr(hwnd, QWL_USER, 0);
+
+                    WinPostMsg(hwndClient,
+                               XCM_REFORMAT,
+                               (MPARAM)XFMF_REPOSITIONWIDGETS,
+                               0);
                 }
-
-                if (pWidget->pcszWidgetClass)
-                {
-                    free((PSZ)pWidget->pcszWidgetClass);
-                    pWidget->pcszWidgetClass = NULL;
-                }
-
-                if (pWidget->hwndContextMenu)
-                {
-                    WinDestroyWindow(pWidget->hwndContextMenu);
-                    pWidget->hwndContextMenu = NULLHANDLE;
-                }
-
-                // if the widget was registered with the
-                // tooltip control, remove it
-                // V0.9.13 (2001-06-21) [umoeller]
-                if (pWidget->ulClassFlags & WGTF_TOOLTIP)
-                {
-                    TOOLINFO ti = {0};
-                    ti.hwndToolOwner = pWidget->pGlobals->hwndClient;
-                    ti.hwndTool = hwnd;
-                    WinSendMsg(pWidget->pGlobals->hwndTooltip,
-                               TTM_DELTOOL,
-                               (MPARAM)0,
-                               &ti);
-                }
-
-                free(pWidget);
-                WinSetWindowPtr(hwnd, QWL_USER, 0);
-
-                WinPostMsg(hwndClient,
-                           XCM_REFORMAT,
-                           (MPARAM)XFMF_REPOSITIONWIDGETS,
-                           0);
             }
+            CATCH(excpt1) {} END_CATCH();
 
-            wpshUnlockObject(&Lock);
+            if (Lock.fLocked)
+                _wpReleaseObjectMutexSem(Lock.pObject);
         }
     }
 }
@@ -1051,54 +1056,58 @@ BOOL DwgtRender(HWND hwnd,
             XCenter        *somSelf = pXCenterData->somSelf;
             WPSHLOCKSTRUCT Lock;
 
-            if (wpshLockObject(&Lock,
-                               somSelf))
+            TRY_LOUD(excpt1)
             {
-                /* PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
-                ULONG       ulIndex = ctrpQueryWidgetIndexFromHWND(somSelf,
-                                                                   hwnd);
-                PPRIVATEWIDGETSETTING pSetting = lstItemFromIndex(pllWidgets,
-                                                                  ulIndex);
-
-                if (pSetting) */
-
-                // replaced this V0.9.14 (2001-08-01) [umoeller]
-                ULONG ulTrayWidgetIndex = 0,
-                      ulTrayIndex = 0,
-                      ulWidgetIndex = 0;
-                PPRIVATEWIDGETSETTING pSetting;
-                if (    (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                      pWidget->hwndWidget,
-                                                      &ulTrayWidgetIndex,
-                                                      &ulTrayIndex,
-                                                      &ulWidgetIndex))
-                     && (pSetting = ctrpFindWidgetSetting(pXCenterData->somSelf,
-                                                          ulTrayWidgetIndex,
-                                                          ulTrayIndex,
-                                                          ulWidgetIndex,
-                                                          NULL))
-                   )
+                if (LOCK_OBJECT(Lock, somSelf))
                 {
-                    CHAR ach[CCHMAXPATH];
+                    /* PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
+                    ULONG       ulIndex = ctrpQueryWidgetIndexFromHWND(somSelf,
+                                                                       hwnd);
+                    PPRIVATEWIDGETSETTING pSetting = lstItemFromIndex(pllWidgets,
+                                                                      ulIndex);
 
-                    DrgQueryStrName(pdt->hstrRenderToName,
-                                    CCHMAXPATH,
-                                    ach);
+                    if (pSetting) */
 
-                    brc = ctrpSaveToFile(ach,
-                                         pWidget->pcszWidgetClass,
-                                         pSetting->Public.pszSetupString);
+                    // replaced this V0.9.14 (2001-08-01) [umoeller]
+                    ULONG ulTrayWidgetIndex = 0,
+                          ulTrayIndex = 0,
+                          ulWidgetIndex = 0;
+                    PPRIVATEWIDGETSETTING pSetting;
+                    if (    (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                          pWidget->hwndWidget,
+                                                          &ulTrayWidgetIndex,
+                                                          &ulTrayIndex,
+                                                          &ulWidgetIndex))
+                         && (pSetting = ctrpFindWidgetSetting(pXCenterData->somSelf,
+                                                              ulTrayWidgetIndex,
+                                                              ulTrayIndex,
+                                                              ulWidgetIndex,
+                                                              NULL))
+                       )
+                    {
+                        CHAR ach[CCHMAXPATH];
 
-                    WinPostMsg(pdt->hwndClient,
-                               DM_RENDERCOMPLETE,
-                               MPFROMP(pdt),
-                               (brc) ? MPFROMSHORT(DMFL_RENDEROK)
-                                     : MPFROMSHORT(DMFL_RENDERFAIL));
+                        DrgQueryStrName(pdt->hstrRenderToName,
+                                        CCHMAXPATH,
+                                        ach);
 
-                } // end if (pSetting)
+                        brc = ctrpSaveToFile(ach,
+                                             pWidget->pcszWidgetClass,
+                                             pSetting->Public.pszSetupString);
+
+                        WinPostMsg(pdt->hwndClient,
+                                   DM_RENDERCOMPLETE,
+                                   MPFROMP(pdt),
+                                   (brc) ? MPFROMSHORT(DMFL_RENDEROK)
+                                         : MPFROMSHORT(DMFL_RENDERFAIL));
+
+                    } // end if (pSetting)
+                }
             }
+            CATCH(excpt1) {} END_CATCH();
 
-            wpshUnlockObject(&Lock);
+            if (Lock.fLocked)
+                _wpReleaseObjectMutexSem(Lock.pObject);
         } // end if (pXCenterData)
     }
     return (brc);

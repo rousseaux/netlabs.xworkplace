@@ -1347,57 +1347,62 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
                             // can be NULL if we have no open view
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock,
-                       somSelf))
+    TRY_LOUD(excpt1)
     {
-        PPRIVATEWIDGETSETTING pSetting;
-        PXCENTERWIDGET pViewData;
-
-        if (!(pSetting = ctrpFindWidgetSetting(somSelf,
-                                               ulTrayWidgetIndex,
-                                               ulTrayIndex,
-                                               ulWidgetIndex,
-                                               &pViewData)))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Cannot find widget index %d.%d.%d",
-                   ulTrayWidgetIndex,
-                   ulTrayIndex,
-                   ulWidgetIndex);
-        else
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            PXCENTERWIDGETCLASS pClass;
+            PPRIVATEWIDGETSETTING pSetting;
+            PXCENTERWIDGET pViewData;
 
-            if (    (pClass = ctrpFindClass(pSetting->Public.pszWidgetClass))
-                 && (pClass->pShowSettingsDlg)
-               )
+            if (!(pSetting = ctrpFindWidgetSetting(somSelf,
+                                                   ulTrayWidgetIndex,
+                                                   ulTrayIndex,
+                                                   ulWidgetIndex,
+                                                   &pViewData)))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot find widget index %d.%d.%d",
+                       ulTrayWidgetIndex,
+                       ulTrayIndex,
+                       ulWidgetIndex);
+            else
             {
-                // compose the "ugly hack" structure
-                // represented by the obscure "hSettings" field
-                // in the DlgData... this implementation is
-                // hidden from the widget, but the handle is
-                // passed to ctrSetSetupString
-                Temp.somSelf = somSelf;         // always valid
-                Temp.pSetting = pSetting;       // always valid
-                Temp.pWidget = pViewData;       // NULL if no open view
+                PXCENTERWIDGETCLASS pClass;
 
-                // compose the public dlgdata structure, which
-                // the widget will use
-                DlgData.hwndOwner = hwndOwner;
-                DlgData.pcszSetupString = pSetting->Public.pszSetupString;       // can be 0
-                *(PULONG)&DlgData.hSettings = (LHANDLE)&Temp;         // ugly hack
-                // XCenter globals: NULL if no open view
-                DlgData.pGlobals = (pXCenterData) ? &pXCenterData->Globals : NULL;
-                DlgData.pView = pViewData;      // widget view: NULL if no open view
-                DlgData.pUser = NULL;
-                DlgData.pctrSetSetupString = ctrSetSetupString;       // func pointer V0.9.9 (2001-02-06) [umoeller]
+                if (    (pClass = ctrpFindClass(pSetting->Public.pszWidgetClass))
+                     && (pClass->pShowSettingsDlg)
+                   )
+                {
+                    // compose the "ugly hack" structure
+                    // represented by the obscure "hSettings" field
+                    // in the DlgData... this implementation is
+                    // hidden from the widget, but the handle is
+                    // passed to ctrSetSetupString
+                    Temp.somSelf = somSelf;         // always valid
+                    Temp.pSetting = pSetting;       // always valid
+                    Temp.pWidget = pViewData;       // NULL if no open view
 
-                // set the function pointer for below
-                pShowSettingsDlg = pClass->pShowSettingsDlg;
+                    // compose the public dlgdata structure, which
+                    // the widget will use
+                    DlgData.hwndOwner = hwndOwner;
+                    DlgData.pcszSetupString = pSetting->Public.pszSetupString;       // can be 0
+                    *(PULONG)&DlgData.hSettings = (LHANDLE)&Temp;         // ugly hack
+                    // XCenter globals: NULL if no open view
+                    DlgData.pGlobals = (pXCenterData) ? &pXCenterData->Globals : NULL;
+                    DlgData.pView = pViewData;      // widget view: NULL if no open view
+                    DlgData.pUser = NULL;
+                    DlgData.pctrSetSetupString = ctrSetSetupString;       // func pointer V0.9.9 (2001-02-06) [umoeller]
 
-            } // end if (pViewData->pShowSettingsDlg)
-        } // end if (pClass);
-    } // end if (wpshLockObject)
-    wpshUnlockObject(&Lock);
+                    // set the function pointer for below
+                    pShowSettingsDlg = pClass->pShowSettingsDlg;
+
+                } // end if (pViewData->pShowSettingsDlg)
+            } // end if (pClass);
+        } // end if (wpshLockObject)
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     if (pShowSettingsDlg)
     {
@@ -2152,6 +2157,7 @@ MRESULT ctrpDragOver(HWND hwndClient,
                                   NULL))
                  && (    (pdrgInfo->usOperation == DO_DEFAULT)
                       || (pdrgInfo->usOperation == DO_MOVE)
+                      || (pdrgInfo->usOperation == DO_COPY)
                     )
                )
             {
@@ -5974,82 +5980,88 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
     BOOL        fFound = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XCenterData *somThis = XCenterGetData(somSelf);
-        if (_pvOpenView)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // XCenter view currently open:
-            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-
-            // go thru the root widgets
-            PLISTNODE   pViewNode = lstQueryFirstNode(&pXCenterData->llWidgets);
-            ULONG       ulRootThis = 0;
-
-            while (    (pViewNode)
-                    && (!fFound)
-                  )
+            XCenterData *somThis = XCenterGetData(somSelf);
+            if (_pvOpenView)
             {
-                PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pViewNode->pItemData;
-                if (pView->Widget.hwndWidget == hwndWidget)
+                // XCenter view currently open:
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+
+                // go thru the root widgets
+                PLISTNODE   pViewNode = lstQueryFirstNode(&pXCenterData->llWidgets);
+                ULONG       ulRootThis = 0;
+
+                while (    (pViewNode)
+                        && (!fFound)
+                      )
                 {
-                    // root widget found:
-                    *pulTrayWidgetIndex = -1;
-                    *pulTrayIndex = -1;
-                    *pulWidgetIndex = ulRootThis;
-                    fFound = TRUE;
-                    break;
-                }
-                else
-                {
-                    // if the current widget is a tray widget,
-                    // we need to seach its member widgets too
-                    // V0.9.13 (2001-06-19) [umoeller]
-                    if (pView->pllSubwidgetViews)
+                    PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pViewNode->pItemData;
+                    if (pView->Widget.hwndWidget == hwndWidget)
                     {
-                        // this is a tray:
-                        // search the member widgets
-                        ULONG ulSubThis = 0;
-                        PLISTNODE pSubNode = lstQueryFirstNode(pView->pllSubwidgetViews);
-                        while (pSubNode)
+                        // root widget found:
+                        *pulTrayWidgetIndex = -1;
+                        *pulTrayIndex = -1;
+                        *pulWidgetIndex = ulRootThis;
+                        fFound = TRUE;
+                        break;
+                    }
+                    else
+                    {
+                        // if the current widget is a tray widget,
+                        // we need to seach its member widgets too
+                        // V0.9.13 (2001-06-19) [umoeller]
+                        if (pView->pllSubwidgetViews)
                         {
-                            PPRIVATEWIDGETVIEW pSubView = (PPRIVATEWIDGETVIEW)pSubNode->pItemData;
-                            if (pSubView->Widget.hwndWidget == hwndWidget)
+                            // this is a tray:
+                            // search the member widgets
+                            ULONG ulSubThis = 0;
+                            PLISTNODE pSubNode = lstQueryFirstNode(pView->pllSubwidgetViews);
+                            while (pSubNode)
                             {
-                                // OK, this is it:
-                                // to find the current tray, we must also
-                                // query the tray widget's _settings_... sigh
-                                PLINKLIST pllSettings;
-                                PPRIVATEWIDGETSETTING pTraySetting;
-                                if (    (pllSettings = ctrpQuerySettingsList(somSelf))
-                                     && (pTraySetting = lstItemFromIndex(pllSettings,
-                                                                         ulRootThis))
-                                   )
+                                PPRIVATEWIDGETVIEW pSubView = (PPRIVATEWIDGETVIEW)pSubNode->pItemData;
+                                if (pSubView->Widget.hwndWidget == hwndWidget)
                                 {
-                                    *pulTrayWidgetIndex = ulRootThis;
-                                    *pulTrayIndex = pTraySetting->ulCurrentTray;
-                                    *pulWidgetIndex = ulSubThis;
-                                    fFound = TRUE;
-                                    break;
+                                    // OK, this is it:
+                                    // to find the current tray, we must also
+                                    // query the tray widget's _settings_... sigh
+                                    PLINKLIST pllSettings;
+                                    PPRIVATEWIDGETSETTING pTraySetting;
+                                    if (    (pllSettings = ctrpQuerySettingsList(somSelf))
+                                         && (pTraySetting = lstItemFromIndex(pllSettings,
+                                                                             ulRootThis))
+                                       )
+                                    {
+                                        *pulTrayWidgetIndex = ulRootThis;
+                                        *pulTrayIndex = pTraySetting->ulCurrentTray;
+                                        *pulWidgetIndex = ulSubThis;
+                                        fFound = TRUE;
+                                        break;
+                                    }
                                 }
+
+                                pSubNode = pSubNode->pNext;
+                                ulSubThis++;
                             }
 
-                            pSubNode = pSubNode->pNext;
-                            ulSubThis++;
+                            if (fFound)
+                                // found it: exit outer loop too
+                                break;
                         }
-
-                        if (fFound)
-                            // found it: exit outer loop too
-                            break;
                     }
-                }
 
-                pViewNode = pViewNode->pNext;
-                ulRootThis++;
-            } // end while (    (pViewNode)  ...
-        } // end if (_pvOpenView)
+                    pViewNode = pViewNode->pNext;
+                    ulRootThis++;
+                } // end while (    (pViewNode)  ...
+            } // end if (_pvOpenView)
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (fFound);
 }
@@ -6067,29 +6079,35 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
 VOID ctrpFreeWidgets(XCenter *somSelf)
 {
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XCenterData *somThis = XCenterGetData(somSelf);
-        // _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
-        if (_pllAllWidgetSettings)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            PLINKLIST pll = _pllAllWidgetSettings;
-            PLISTNODE pNode = lstQueryFirstNode(pll);
-            while (pNode)
+            XCenterData *somThis = XCenterGetData(somSelf);
+            // _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
+            if (_pllAllWidgetSettings)
             {
-                PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
-                FreeSettingData(pSetting);
-                free(pSetting);
+                PLINKLIST pll = _pllAllWidgetSettings;
+                PLISTNODE pNode = lstQueryFirstNode(pll);
+                while (pNode)
+                {
+                    PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+                    FreeSettingData(pSetting);
+                    free(pSetting);
 
-                pNode = pNode->pNext; // V0.9.14
+                    pNode = pNode->pNext; // V0.9.14
+                }
+
+                // now nuke the main list; the LISTNODEs are still left,
+                // but the item data has been removed above
+                lstFree((LINKLIST**)&_pllAllWidgetSettings);
             }
-
-            // now nuke the main list; the LISTNODEs are still left,
-            // but the item data has been removed above
-            lstFree((LINKLIST**)&_pllAllWidgetSettings);
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 }
 
 /*
@@ -6105,38 +6123,43 @@ PVOID ctrpQueryWidgets(XCenter *somSelf,
     PXCENTERWIDGETSETTING paSettings = NULL;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
-        PLISTNODE pNode = lstQueryFirstNode(pllSettings);
-        ULONG cSettings = lstCountItems(pllSettings);
-        paSettings = malloc(sizeof(XCENTERWIDGETSETTING) * cSettings);
-        if (paSettings)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            ULONG ul = 0;
-            for (;
-                 ul < cSettings;
-                 ul++)
+            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
+            PLISTNODE pNode = lstQueryFirstNode(pllSettings);
+            ULONG cSettings = lstCountItems(pllSettings);
+            paSettings = malloc(sizeof(XCENTERWIDGETSETTING) * cSettings);
+            if (paSettings)
             {
-                PPRIVATEWIDGETSETTING pSource = (PPRIVATEWIDGETSETTING)pNode->pItemData;
-                paSettings[ul].pszWidgetClass = strhdup(pSource->Public.pszWidgetClass);
-                paSettings[ul].pszSetupString = strhdup(pSource->Public.pszSetupString);
+                ULONG ul = 0;
+                for (;
+                     ul < cSettings;
+                     ul++)
+                {
+                    PPRIVATEWIDGETSETTING pSource = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+                    paSettings[ul].pszWidgetClass = strhdup(pSource->Public.pszWidgetClass);
+                    paSettings[ul].pszSetupString = strhdup(pSource->Public.pszSetupString);
 
-                pNode = pNode->pNext;
+                    pNode = pNode->pNext;
+                }
+            }
+        }
+        else
+        {
+            // we get here on crashes
+            if (paSettings)
+            {
+                free(paSettings);
+                paSettings = NULL;
             }
         }
     }
-    else
-    {
-        // we get here on crashes
-        if (paSettings)
-        {
-            free(paSettings);
-            paSettings = NULL;
-        }
-    }
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (paSettings);
 }
@@ -6194,36 +6217,42 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
     XCenterData *somThis = XCenterGetData(somSelf);
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        // _Pmpf((__FUNCTION__ ": entering with %s, %s",
-        //         (pcszWidgetClass) ? pcszWidgetClass : "NULL",
-           //      (pcszSetupString) ? pcszSetupString : "NULL"));
-
-        if (pcszWidgetClass)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            pSetting = NEW(PRIVATEWIDGETSETTING);
+            // _Pmpf((__FUNCTION__ ": entering with %s, %s",
+            //         (pcszWidgetClass) ? pcszWidgetClass : "NULL",
+               //      (pcszSetupString) ? pcszSetupString : "NULL"));
 
-            if (pSetting)
+            if (pcszWidgetClass)
             {
-                ZERO(pSetting);
+                pSetting = NEW(PRIVATEWIDGETSETTING);
 
-                pSetting->Public.pszWidgetClass = strhdup(pcszWidgetClass);
-                pSetting->Public.pszSetupString = strhdup(pcszSetupString);
-                                        // can be NULL
+                if (pSetting)
+                {
+                    ZERO(pSetting);
 
-                // add new widget setting to internal linked list
-                AddWidgetSetting(somSelf,
-                                 pSetting,
-                                 ulBeforeIndex,
-                                 &ulNewItemCount,
-                                 &ulWidgetIndex);
+                    pSetting->Public.pszWidgetClass = strhdup(pcszWidgetClass);
+                    pSetting->Public.pszSetupString = strhdup(pcszSetupString);
+                                            // can be NULL
 
-                brc = TRUE;
+                    // add new widget setting to internal linked list
+                    AddWidgetSetting(somSelf,
+                                     pSetting,
+                                     ulBeforeIndex,
+                                     &ulNewItemCount,
+                                     &ulWidgetIndex);
+
+                    brc = TRUE;
+                }
             }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     if (pSetting)
     {
@@ -6276,85 +6305,90 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
 {
     BOOL brc = FALSE;
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XCenterData *somThis = XCenterGetData(somSelf);
-        PLINKLIST   pllWidgetSettings = ctrpQuerySettingsList(somSelf);
-        PLISTNODE   pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
-        HWND        hwndXCenterClient = NULLHANDLE;
-
-        if (!pSettingsNode)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Invalid widget index 0x%lX.", ulIndex);
-        else
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // widget exists:
+            XCenterData *somThis = XCenterGetData(somSelf);
+            PLINKLIST   pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+            PLISTNODE   pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
+            HWND        hwndXCenterClient = NULLHANDLE;
 
-            PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSettingsNode->pItemData;
-
-            if (_pvOpenView)
+            if (!pSettingsNode)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Invalid widget index 0x%lX.", ulIndex);
+            else
             {
-                // XCenter view currently open:
-                PPRIVATEWIDGETVIEW pView;
-                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-                PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+                // widget exists:
 
-                // store XCenter client so we can update the client
-                // at the bottom
-                hwndXCenterClient = pGlobals->hwndClient;
+                PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSettingsNode->pItemData;
 
-                pView = lstItemFromIndex(&pXCenterData->llWidgets,
-                                         ulIndex);
-                if (pView)
+                if (_pvOpenView)
                 {
-                    // we must send a msg instead of doing WinDestroyWindow
-                    // directly because only the XCenter GUI thread can
-                    // destroy the window
+                    // XCenter view currently open:
+                    PPRIVATEWIDGETVIEW pView;
+                    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
 
-                    // unlock the object first!! otherwise we get a deadlock
-                    wpshUnlockObject(&Lock);
+                    // store XCenter client so we can update the client
+                    // at the bottom
+                    hwndXCenterClient = pGlobals->hwndClient;
 
-                    WinSendMsg(pGlobals->hwndClient,
-                               XCM_DESTROYWIDGET,
-                               (MPARAM)pView->Widget.hwndWidget,
-                               0);
-                        // the window is responsible for cleaning up pView->pUser;
-                        // ctrDefWidgetProc will also free pView and remove it
-                        // from the widget views list
+                    pView = lstItemFromIndex(&pXCenterData->llWidgets,
+                                             ulIndex);
+                    if (pView)
+                    {
+                        // we must send a msg instead of doing WinDestroyWindow
+                        // directly because only the XCenter GUI thread can
+                        // destroy the window
 
-                    wpshLockObject(&Lock, somSelf);
-                }
-            } // end if (_hwndOpenView)
+                        // unlock the object first!! otherwise we get a deadlock
+                        _wpReleaseObjectMutexSem(Lock.pObject);
 
-            // clear all the setting members, including
-            // tray and subwidget stuff
-            FreeSettingData(pSetting);      // V0.9.13 (2001-06-21) [umoeller]
+                        WinSendMsg(pGlobals->hwndClient,
+                                   XCM_DESTROYWIDGET,
+                                   (MPARAM)pView->Widget.hwndWidget,
+                                   0);
+                            // the window is responsible for cleaning up pView->pUser;
+                            // ctrDefWidgetProc will also free pView and remove it
+                            // from the widget views list
+                        _wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+                    }
+                } // end if (_hwndOpenView)
 
-            brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
+                // clear all the setting members, including
+                // tray and subwidget stuff
+                FreeSettingData(pSetting);      // V0.9.13 (2001-06-21) [umoeller]
 
-            // no auto-free, so free setting
-            // V0.9.13 (2001-06-21) [umoeller]
-            free(pSetting);
+                brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
 
-            if (brc)
-                // save instance data (with that linked list)
-                _wpSaveDeferred(somSelf);
+                // no auto-free, so free setting
+                // V0.9.13 (2001-06-21) [umoeller]
+                free(pSetting);
 
-            // update the "widgets" notebook page, if open
-            ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
+                if (brc)
+                    // save instance data (with that linked list)
+                    _wpSaveDeferred(somSelf);
 
-        } // end if (pSettingsNode)
+                // update the "widgets" notebook page, if open
+                ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
 
-        if (hwndXCenterClient)
-        {
-            // we found the open view above:
-            WinPostMsg(hwndXCenterClient,
-                       XCM_REFORMAT,
-                       (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
-                       0);
+            } // end if (pSettingsNode)
+
+            if (hwndXCenterClient)
+            {
+                // we found the open view above:
+                WinPostMsg(hwndXCenterClient,
+                           XCM_REFORMAT,
+                           (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
+                           0);
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -6374,79 +6408,85 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
     BOOL brc = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
-        PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex2Move);
-        PXCENTERWINDATA pXCenterData = NULL;
-
-        if (!pSettingsNode)
-            // index invalid: use last widget instead
-            pSettingsNode = lstNodeFromIndex(pllWidgetSettings,
-                                             lstCountItems(pllWidgetSettings) - 1);
-
-        if (pSettingsNode)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // widget exists:
-            XCenterData *somThis = XCenterGetData(somSelf);
-            PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSettingsNode->pItemData,
-                                  pNewSetting = NULL;
+            PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+            PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex2Move);
+            PXCENTERWINDATA pXCenterData = NULL;
 
-            if (_pvOpenView)
+            if (!pSettingsNode)
+                // index invalid: use last widget instead
+                pSettingsNode = lstNodeFromIndex(pllWidgetSettings,
+                                                 lstCountItems(pllWidgetSettings) - 1);
+
+            if (pSettingsNode)
             {
-                // XCenter view currently open:
-                PLISTNODE pViewNode;
-                pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-                pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
-                                             ulIndex2Move);
-                if (pViewNode)
+                // widget exists:
+                XCenterData *somThis = XCenterGetData(somSelf);
+                PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSettingsNode->pItemData,
+                                      pNewSetting = NULL;
+
+                if (_pvOpenView)
                 {
-                    // the list is NOT in auto-free mode;
-                    // re-insert the node at the new position
-                    lstInsertItemBefore(&pXCenterData->llWidgets,
-                                        pViewNode->pItemData,
-                                        ulBeforeIndex);
-                    // remove old node
-                    lstRemoveNode(&pXCenterData->llWidgets, pViewNode);
-                }
-            } // end if (_hwndOpenView)
+                    // XCenter view currently open:
+                    PLISTNODE pViewNode;
+                    pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                    pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
+                                                 ulIndex2Move);
+                    if (pViewNode)
+                    {
+                        // the list is NOT in auto-free mode;
+                        // re-insert the node at the new position
+                        lstInsertItemBefore(&pXCenterData->llWidgets,
+                                            pViewNode->pItemData,
+                                            ulBeforeIndex);
+                        // remove old node
+                        lstRemoveNode(&pXCenterData->llWidgets, pViewNode);
+                    }
+                } // end if (_hwndOpenView)
 
-            // move the setting...
-            pNewSetting = (PPRIVATEWIDGETSETTING)malloc(sizeof(PRIVATEWIDGETSETTING));
-            // cheap trick: we simply overwrite the pointers
-            // in the new setting with the existing ones so
-            // we won't have to reallocate everything
-            memcpy(pNewSetting, pSetting, sizeof(*pNewSetting));
-            // fixed order of calls here V0.9.9 (2001-03-10) [umoeller]...
-            // above, we did "insert" and then "remove"; this used to be reverse,
-            // which got the items badly confused...
-            lstInsertItemBefore(pllWidgetSettings,
-                                pNewSetting,
-                                ulBeforeIndex);
-            brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
-            // and free the old setting V0.9.13 (2001-06-21) [umoeller]
-            // the member pointers are now all in the new setting
-            free(pSetting);
+                // move the setting...
+                pNewSetting = (PPRIVATEWIDGETSETTING)malloc(sizeof(PRIVATEWIDGETSETTING));
+                // cheap trick: we simply overwrite the pointers
+                // in the new setting with the existing ones so
+                // we won't have to reallocate everything
+                memcpy(pNewSetting, pSetting, sizeof(*pNewSetting));
+                // fixed order of calls here V0.9.9 (2001-03-10) [umoeller]...
+                // above, we did "insert" and then "remove"; this used to be reverse,
+                // which got the items badly confused...
+                lstInsertItemBefore(pllWidgetSettings,
+                                    pNewSetting,
+                                    ulBeforeIndex);
+                brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
+                // and free the old setting V0.9.13 (2001-06-21) [umoeller]
+                // the member pointers are now all in the new setting
+                free(pSetting);
 
-            if (brc)
-                // save instance data (with that linked list)
-                _wpSaveDeferred(somSelf);
+                if (brc)
+                    // save instance data (with that linked list)
+                    _wpSaveDeferred(somSelf);
 
-            // update the "widgets" notebook page, if open
-            ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
+                // update the "widgets" notebook page, if open
+                ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
 
-        } // end if (pSettingsNode)
+            } // end if (pSettingsNode)
 
-        if (pXCenterData)
-        {
-            // we found the open view above:
-            WinPostMsg(pXCenterData->Globals.hwndClient,
-                       XCM_REFORMAT,
-                       (MPARAM)(XFMF_REPOSITIONWIDGETS),
-                       0);
+            if (pXCenterData)
+            {
+                // we found the open view above:
+                WinPostMsg(pXCenterData->Globals.hwndClient,
+                           XCM_REFORMAT,
+                           (MPARAM)(XFMF_REPOSITIONWIDGETS),
+                           0);
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -6464,25 +6504,30 @@ BOOL ctrpSetPriority(XCenter *somSelf,
     BOOL brc = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock,
-                       somSelf))
+    TRY_LOUD(excpt1)
     {
-        XCenterData *somThis = XCenterGetData(somSelf);
-        _ulPriorityClass = ulClass;
-        _lPriorityDelta = lDelta;
-
-        if (_pvOpenView)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-            DosSetPriority(PRTYS_THREAD,
-                           ulClass,
-                           lDelta,
-                           _tidRunning);   // tid of XCenter GUI thread
+            XCenterData *somThis = XCenterGetData(somSelf);
+            _ulPriorityClass = ulClass;
+            _lPriorityDelta = lDelta;
+
+            if (_pvOpenView)
+            {
+                // PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                DosSetPriority(PRTYS_THREAD,
+                               ulClass,
+                               lDelta,
+                               _tidRunning);   // tid of XCenter GUI thread
+            }
         }
+        else
+            brc = FALSE;
     }
-    else
-        brc = FALSE;
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -6596,48 +6641,54 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
 {
     BOOL brc = TRUE;
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XCenterData *somThis = XCenterGetData(somSelf);
-        MENUITEM mi;
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        // get handle to the "Open" submenu in the
-        // the popup menu
-        if (winhQueryMenuItem(hwndMenu,
-                              WPMENUID_OPEN,
-                              TRUE,
-                              &mi))
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // mi.hwndSubMenu now contains "Open" submenu handle,
-            // which we add items to now
-            // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-            winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                               G_pcszXCenter,
-                               MIS_TEXT, 0);
-        }
+            XCenterData *somThis = XCenterGetData(somSelf);
+            MENUITEM mi;
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // get handle to the "Open" submenu in the
+            // the popup menu
+            if (winhQueryMenuItem(hwndMenu,
+                                  WPMENUID_OPEN,
+                                  TRUE,
+                                  &mi))
+            {
+                // mi.hwndSubMenu now contains "Open" submenu handle,
+                // which we add items to now
+                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                                   G_pcszXCenter,
+                                   MIS_TEXT, 0);
+            }
 
-        if (_fShowingOpenViewMenu)
-        {
-            // context menu for open XCenter client:
+            if (_fShowingOpenViewMenu)
+            {
+                // context menu for open XCenter client:
 
-            winhInsertMenuSeparator(hwndMenu,
-                                    MIT_END,
-                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                winhInsertMenuSeparator(hwndMenu,
+                                        MIT_END,
+                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
-            // add the "Add widget" submenu with all the available widget classes
-            ctrpAddWidgetsMenu(somSelf,
-                               hwndMenu,
-                               MIT_END,
-                               FALSE);      // all widgets
+                // add the "Add widget" submenu with all the available widget classes
+                ctrpAddWidgetsMenu(somSelf,
+                                   hwndMenu,
+                                   MIT_END,
+                                   FALSE);      // all widgets
 
-            // add "Close"
-            cmnAddCloseMenuItem(hwndMenu);
+                // add "Close"
+                cmnAddCloseMenuItem(hwndMenu);
 
-            _fShowingOpenViewMenu = FALSE;
+                _fShowingOpenViewMenu = FALSE;
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }

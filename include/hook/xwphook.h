@@ -133,6 +133,7 @@
     // flags for HOOKCONFIG.ulAutoMoveFlags
     #define AMF_ALWAYSMOVE      0x00000001L
     #define AMF_IGNORENOBUTTON  0x00000002L
+    #define AMF_ANIMATE         0x00000004L
 
     /*
      *@@ HOOKCONFIG:

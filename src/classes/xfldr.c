@@ -301,45 +301,52 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     XFolderData *somThis = XFolderGetData(somSelf);
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    WPSHLOCKSTRUCT Lock;
-
     #ifdef DEBUG_SORT
         _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf)));
         _Pmpf(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
         _Pmpf(("  New: Default %d, Always %d", lDefaultSort, lAlwaysSort));
     #endif
 
-    if (wpshLockObject(&Lock, somSelf))
-    {
-        XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
+    BOOL fLocked = FALSE;
 
-        if (lDefaultSort != _lDefSortCrit)
+    WPSHLOCKSTRUCT Lock;
+
+    TRY_LOUD(excpt1)
+    {
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            if (    ((lDefaultSort >= -4) && (lDefaultSort < 0))
-                 || (lDefaultSort == SET_DEFAULT)
-                 || (_wpIsSortAttribAvailable(somSelf,
-                                              lDefaultSort))
-               )
+            XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
+
+            if (lDefaultSort != _lDefSortCrit)
             {
-                _lDefSortCrit = lDefaultSort;
+                if (    ((lDefaultSort >= -4) && (lDefaultSort < 0))
+                     || (lDefaultSort == SET_DEFAULT)
+                     || (_wpIsSortAttribAvailable(somSelf,
+                                                  lDefaultSort))
+                   )
+                {
+                    _lDefSortCrit = lDefaultSort;
+                    Update = TRUE;
+                }
+            }
+
+            if (lFoldersFirst != _lFoldersFirst)
+            {
+                _lFoldersFirst = lFoldersFirst;
                 Update = TRUE;
             }
-        }
 
-        if (lFoldersFirst != _lFoldersFirst)
-        {
-            _lFoldersFirst = lFoldersFirst;
-            Update = TRUE;
-        }
+            if (lAlwaysSort != _lAlwaysSort)
+            {
+                _lAlwaysSort = lAlwaysSort;
+                Update = TRUE;
+            }
+        } // end if (fFolderLocked)
+    }
+    CATCH(excpt1) {} END_CATCH();
 
-        if (lAlwaysSort != _lAlwaysSort)
-        {
-            _lAlwaysSort = lAlwaysSort;
-            Update = TRUE;
-        }
-    } // end if (fFolderLocked)
-
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     if (Update)
     {
@@ -387,42 +394,48 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
     if (pGlobalSettings->ExtFolderSort)
     {
         WPSHLOCKSTRUCT Lock;
-        if (wpshLockObject(&Lock, somSelf))
+        TRY_LOUD(excpt1)
         {
-            HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-            // XFolderData *somThis = XFolderGetData(somSelf);
-            XFolderMethodDebug("XFolder","xf_xfSortByExt");
-
-            if (hwndCnr)
+            if (LOCK_OBJECT(Lock, somSelf))
             {
-                CNRINFO CnrInfo;
-                ULONG   ulStyle = 0;
+                HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+                // XFolderData *somThis = XFolderGetData(somSelf);
+                XFolderMethodDebug("XFolder","xf_xfSortByExt");
 
-                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                if (hwndCnr)
                 {
-                    // for some reason, icon views need to have "auto arrange" on,
-                    // or nothing will happen
-                    ulStyle = winhQueryWindowStyle(hwndCnr);
-                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
+                    CNRINFO CnrInfo;
+                    ULONG   ulStyle = 0;
+
+                    cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+
+                    if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                    {
+                        // for some reason, icon views need to have "auto arrange" on,
+                        // or nothing will happen
+                        ulStyle = winhQueryWindowStyle(hwndCnr);
+                        WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
+                    }
+
+                    // send sort msg with proper sort (comparison) func
+                    WinSendMsg(hwndCnr,
+                               CM_SORTRECORD,
+                               (MPARAM)fdrQuerySortFunc(somSelf,
+                                                        lSort),
+                               MPNULL);
+
+                    if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                        // restore old cnr style
+                        WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
+
+                    rc = TRUE;
                 }
+            } // end if (fFolderLocked)
+        }
+        CATCH(excpt1) {} END_CATCH();
 
-                // send sort msg with proper sort (comparison) func
-                WinSendMsg(hwndCnr,
-                           CM_SORTRECORD,
-                           (MPARAM)fdrQuerySortFunc(somSelf,
-                                                    lSort),
-                           MPNULL);
-
-                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                    // restore old cnr style
-                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
-
-                rc = TRUE;
-            }
-        } // end if (fFolderLocked)
-        wpshUnlockObject(&Lock);
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
     }
 
     return (rc);
@@ -907,31 +920,36 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
     BOOL brc = FALSE;
     XFolderMethodDebug("XFolder","xf_xwpSetDefaultDocument");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFolderData *somThis = XFolderGetData(somSelf);
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            XFolderData *somThis = XFolderGetData(somSelf);
 
-        if (!pDefDoc)
-        {
-            // NULL:
-            _pDefaultDocument = NULL;
-            brc = TRUE;
-        }
-        else
-        {
-            if (    (_somIsA(pDefDoc, _WPFileSystem))       // must be a WPFileSystem
-                 && (_wpQueryFolder(pDefDoc) == somSelf)    // must be in this folder
-               )
+            if (!pDefDoc)
             {
-                _pDefaultDocument = pDefDoc;
+                // NULL:
+                _pDefaultDocument = NULL;
                 brc = TRUE;
             }
+            else
+            {
+                if (    (_somIsA(pDefDoc, _WPFileSystem))       // must be a WPFileSystem
+                     && (_wpQueryFolder(pDefDoc) == somSelf)    // must be in this folder
+                   )
+                {
+                    _pDefaultDocument = pDefDoc;
+                    brc = TRUE;
+                }
+            }
+
+            _wpSaveDeferred(somSelf);
         }
-
-        _wpSaveDeferred(somSelf);
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -954,19 +972,24 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
     if (!cmnIsADesktop(somSelf))
     {
         WPSHLOCKSTRUCT Lock;
-        if (wpshLockObject(&Lock, somSelf))
+        TRY_LOUD(excpt1)
         {
-            XFolderData *somThis = XFolderGetData(somSelf);
+            if (LOCK_OBJECT(Lock, somSelf))
+            {
+                XFolderData *somThis = XFolderGetData(somSelf);
 
-            if (_pszDefaultDocDeferred)
-                // we have a default document, but this hasn't been
-                // resolved yet:
-                rc = NULL;
-            else
-                rc = _pDefaultDocument;
+                if (_pszDefaultDocDeferred)
+                    // we have a default document, but this hasn't been
+                    // resolved yet:
+                    rc = NULL;
+                else
+                    rc = _pDefaultDocument;
+            }
         }
+        CATCH(excpt1) {} END_CATCH();
 
-        wpshUnlockObject(&Lock);
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
     }
 
     return (rc);
@@ -1468,34 +1491,39 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                       (MPARAM)somSelf,
                       MPNULL);
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFolderData *somThis = XFolderGetData(somSelf);
-
-        // were we copied?
-        if (ulCode & OR_REFERENCE)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // XFolderData *somThat = XFolderGetData(refObject);
-            // yes: fix the instance data which SOM has done
-            // a flat binary copy on... V0.9.7 (2000-12-13) [umoeller]
-            _pfnResolvedUpdateStatusBar = NULL;
+            XFolderData *somThis = XFolderGetData(somSelf);
 
-            _pDefaultDocument = NULL;
-        }
+            // were we copied?
+            if (ulCode & OR_REFERENCE)
+            {
+                // XFolderData *somThat = XFolderGetData(refObject);
+                // yes: fix the instance data which SOM has done
+                // a flat binary copy on... V0.9.7 (2000-12-13) [umoeller]
+                _pfnResolvedUpdateStatusBar = NULL;
+
+                _pDefaultDocument = NULL;
+            }
 
 
-        // in all cases, resolve deferred default document
-        if (_pszDefaultDocDeferred)
-        {
-            // this has been set by wpRestoreState
-            _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
-                // can return NULL if not found
-            free(_pszDefaultDocDeferred);
-            _pszDefaultDocDeferred = NULL;
+            // in all cases, resolve deferred default document
+            if (_pszDefaultDocDeferred)
+            {
+                // this has been set by wpRestoreState
+                _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
+                    // can return NULL if not found
+                free(_pszDefaultDocDeferred);
+                _pszDefaultDocDeferred = NULL;
+            }
         }
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 }
 
 /*

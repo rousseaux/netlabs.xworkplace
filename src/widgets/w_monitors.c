@@ -555,7 +555,15 @@ VOID MwgtScanSetup(const char *pcszSetupString,
             pctrFreeSetupValue(p);
         }
         else
-            pSetup->pszDisks = strdup("F");     // @@todo
+        {
+            ULONG ulBootDrive;
+            CHAR ch[3] = "?";
+            DosQuerySysInfo(QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                            &ulBootDrive,
+                            sizeof(ulBootDrive));
+            ch[0] = ulBootDrive + 'A' - 1;
+            pSetup->pszDisks = strdup(ch);
+        }
 
         // width
         if (p = pctrScanSetupString(pcszSetupString,

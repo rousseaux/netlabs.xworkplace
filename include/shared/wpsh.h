@@ -162,7 +162,7 @@
     #ifdef EXCEPT_HEADER_INCLUDED
 
         /*
-         *@@ WPSHLOCKSTRUCT:
+         * WPSHLOCKSTRUCT:
          *      structure used with wpshLockObject. This
          *      must be on the function's stack. See
          *      wpshLockObject for usage.
@@ -172,15 +172,19 @@
 
         typedef struct _WPSHLOCKSTRUCT
         {
-            EXCEPTSTRUCT    ExceptStruct;       // exception struct from helpers\except.h
+            // EXCEPTSTRUCT    ExceptStruct;       // exception struct from helpers\except.h
+            WPObject        *pObject;
             BOOL            fLocked;            // TRUE if object was locked
-            ULONG           ulNesting;          // for DosEnter/ExitMustComplete
+            // ULONG           ulNesting;          // for DosEnter/ExitMustComplete
         } WPSHLOCKSTRUCT, *PWPSHLOCKSTRUCT;
 
-        BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
+        /* BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
                             WPObject *somSelf);
 
-        BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock);
+        BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock); */
+
+        #define LOCK_OBJECT(Lock, pobj) \
+        ((Lock.pObject = pobj) && (Lock.fLocked = !_wpRequestObjectMutexSem(pobj, SEM_INDEFINITE_WAIT)))
 
     #endif
 

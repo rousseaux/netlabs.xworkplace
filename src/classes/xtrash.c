@@ -323,26 +323,31 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpTrashCanBusy");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        if (lBusy > 0)
-            // raise busy count:
-            _ulBusyCount++;
-        else if (lBusy < 0)
-            // lower busy count:
-            if (_ulBusyCount > 0)
-                _ulBusyCount--;
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            if (lBusy > 0)
+                // raise busy count:
+                _ulBusyCount++;
+            else if (lBusy < 0)
+                // lower busy count:
+                if (_ulBusyCount > 0)
+                    _ulBusyCount--;
 
-        brc = (    (_ulBusyCount != 0)
-                || (_cDrivePopulating != 0)
-              );
+            brc = (    (_ulBusyCount != 0)
+                    || (_cDrivePopulating != 0)
+                  );
+        }
+        else
+            // couldn't get mutex:
+            // trash can is probably busy too
+            brc = TRUE;
     }
-    else
-        // couldn't get mutex:
-        // trash can is probably busy too
-        brc = TRUE;
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -365,14 +370,19 @@ SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSize");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        _dSizeOfAllObjects += ulNewSize;
-        // update all visible status bars
-        fdrUpdateStatusBars(somSelf);
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            _dSizeOfAllObjects += ulNewSize;
+            // update all visible status bars
+            fdrUpdateStatusBars(somSelf);
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 }
 
 /*
@@ -418,50 +428,55 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpSetCorrectTrashIcon");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        // ULONG    ulIconID = 0;
-        BOOL     fTrashFilled = FALSE;
-
-        if (_ulTrashObjectCount)
-            fTrashFilled = TRUE;
-
-        if (    (fForce)
-             || (fTrashFilled != _fFilledIconSet)
-           )
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            // icon changed:
-            HPOINTER hptr = NULLHANDLE;
+            // ULONG    ulIconID = 0;
+            BOOL     fTrashFilled = FALSE;
 
-            if (fTrashFilled)
-                hptr = _hptrFull;
-            else
-                hptr = _hptrEmpty;
+            if (_ulTrashObjectCount)
+                fTrashFilled = TRUE;
 
-            if (hptr)
+            if (    (fForce)
+                 || (fTrashFilled != _fFilledIconSet)
+               )
             {
-                brc = _wpSetIcon(somSelf, hptr);
+                // icon changed:
+                HPOINTER hptr = NULLHANDLE;
 
-                // make sure this icon never gets destroyed;
-                // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
-                // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
-                _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
+                if (fTrashFilled)
+                    hptr = _hptrFull;
+                else
+                    hptr = _hptrEmpty;
 
-                // do not automatically destroy icon, because
-                // we'll need it again; if we don't set this,
-                // the WPS will automatically destroy the old
-                // icon, which is still needed by us...
-                /* _wpSetStyle(somSelf,
-                            _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON); */
-                                    // OBJSTYLE_CUSTOMICON doesn't work!!
+                if (hptr)
+                {
+                    brc = _wpSetIcon(somSelf, hptr);
+
+                    // make sure this icon never gets destroyed;
+                    // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
+                    // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
+                    _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
+
+                    // do not automatically destroy icon, because
+                    // we'll need it again; if we don't set this,
+                    // the WPS will automatically destroy the old
+                    // icon, which is still needed by us...
+                    /* _wpSetStyle(somSelf,
+                                _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON); */
+                                        // OBJSTYLE_CUSTOMICON doesn't work!!
+                }
+                _fFilledIconSet = fTrashFilled;
+
+                fSave = TRUE;
             }
-            _fFilledIconSet = fTrashFilled;
-
-            fSave = TRUE;
         }
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     // save trash can state so that the correct icon
     // is displayed after a WPS restart

@@ -1294,7 +1294,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                     | SBCF_PERCENTAGE   // lPos has split bar pos
                                                         // in percent of the client
                                     | SBCF_3DSUNK       // draw 3D "sunk" frame
-                                    | SBCF_MOVEABLE;    // moveable split bar
+                                    | SBCF_MOVEABLE ;    // moveable split bar
             sbcd.lPos = 50;
             sbcd.hwndParentAndOwner = hwndClient;
             sbcd.ulLeftOrBottomLimit = 100;

@@ -1116,27 +1116,32 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
     BOOL        brc = FALSE;
 
     WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        PUSEITEM    pUseItem = NULL;
-        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-             pUseItem;
-             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-            if (    (pViewItem->view == OPEN_CONTENTS)
-                 || (pViewItem->view == OPEN_DETAILS)
-                 || (pViewItem->view == OPEN_TREE)
-               )
+            PUSEITEM    pUseItem = NULL;
+            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                 pUseItem;
+                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
             {
-                fdrSetOneFrameWndTitle(somSelf,
-                                       pViewItem->handle); // hwndFrame);
-                break;
+                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+                if (    (pViewItem->view == OPEN_CONTENTS)
+                     || (pViewItem->view == OPEN_DETAILS)
+                     || (pViewItem->view == OPEN_TREE)
+                   )
+                {
+                    fdrSetOneFrameWndTitle(somSelf,
+                                           pViewItem->handle); // hwndFrame);
+                    break;
+                }
             }
-        }
-    } // end if fFolderLocked
+        } // end if fFolderLocked
+    }
+    CATCH(excpt1) {} END_CATCH();
 
-    wpshUnlockObject(&Lock);
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     /* if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS))
     {
@@ -3158,35 +3163,41 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
        )
     {
         WPSHLOCKSTRUCT Lock;
-        if (wpshLockObject(&Lock, pFolder))
+        TRY_LOUD(excpt1)
         {
-            PVIEWITEM   pViewItem;
-            for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
-                 pViewItem;
-                 pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+            if (LOCK_OBJECT(Lock, pFolder))
             {
-                switch (pViewItem->view)
+                PVIEWITEM   pViewItem;
+                for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+                     pViewItem;
+                     pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
                 {
-                    case OPEN_CONTENTS:
-                    case OPEN_TREE:
-                    case OPEN_DETAILS:
+                    switch (pViewItem->view)
                     {
-                        HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
-                        if (hwndCnr)
+                        case OPEN_CONTENTS:
+                        case OPEN_TREE:
+                        case OPEN_DETAILS:
                         {
-                            PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
-                            if (_wpCnrInsertObject(pObject,
-                                                   hwndCnr,
-                                                   pptlIcon,
-                                                   NULL,     // parent record
-                                                   NULL))     // RECORDINSERT, next pos.
-                                brc = TRUE;
+                            HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
+                            if (hwndCnr)
+                            {
+                                PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
+                                if (_wpCnrInsertObject(pObject,
+                                                       hwndCnr,
+                                                       pptlIcon,
+                                                       NULL,     // parent record
+                                                       NULL))     // RECORDINSERT, next pos.
+                                    brc = TRUE;
+                            }
                         }
                     }
                 }
             }
         }
-        wpshUnlockObject(&Lock);
+        CATCH(excpt1) {} END_CATCH();
+
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
     }
 
     return (brc);
@@ -3524,36 +3535,41 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                 BOOL fStillOpen = FALSE;
                 WPSHLOCKSTRUCT Lock;
 
-                if (wpshLockObject(&Lock,
-                                   ppf->pObject))
+                TRY_LOUD(excpt1)
                 {
-                    PUSEITEM    pUseItem = NULL;
-
-                    #ifdef DEBUG_STARTUP
-                        _Pmpf(("  WOM_WAITFORPROCESSNEXT: checking open views"));
-                        _Pmpf(("  obj %s, hwnd 0x%lX",
-                                    _wpQueryTitle(ppf->pObject),
-                                    ppf->hwndView));
-                    #endif
-
-                    for (pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, NULL);
-                         pUseItem;
-                         pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, pUseItem))
+                    if (LOCK_OBJECT(Lock, ppf->pObject))
                     {
-                        PVIEWITEM pvi = (PVIEWITEM)(pUseItem + 1);
+                        PUSEITEM    pUseItem = NULL;
 
                         #ifdef DEBUG_STARTUP
-                            _Pmpf(("    got view 0x%lX", pvi->handle));
+                            _Pmpf(("  WOM_WAITFORPROCESSNEXT: checking open views"));
+                            _Pmpf(("  obj %s, hwnd 0x%lX",
+                                        _wpQueryTitle(ppf->pObject),
+                                        ppf->hwndView));
                         #endif
 
-                        if (pvi->handle == hwndCurrentView)
+                        for (pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, NULL);
+                             pUseItem;
+                             pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, pUseItem))
                         {
-                            fStillOpen = TRUE;
-                            break;
+                            PVIEWITEM pvi = (PVIEWITEM)(pUseItem + 1);
+
+                            #ifdef DEBUG_STARTUP
+                                _Pmpf(("    got view 0x%lX", pvi->handle));
+                            #endif
+
+                            if (pvi->handle == hwndCurrentView)
+                            {
+                                fStillOpen = TRUE;
+                                break;
+                            }
                         }
                     }
                 }
-                wpshUnlockObject(&Lock);
+                CATCH(excpt1) {} END_CATCH();
+
+                if (Lock.fLocked)
+                    _wpReleaseObjectMutexSem(Lock.pObject);
 
                 fOKGetNext = !fStillOpen;
             } // end if (ppf->ulTiming == 0)

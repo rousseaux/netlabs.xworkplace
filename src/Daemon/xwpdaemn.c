@@ -1304,15 +1304,23 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             POINTL  ptlCurrent;
 
             ARCPARAMS ap = {1, 1, 0, 0};
-            HPS     hps = WinGetScreenPS(HWND_DESKTOP);
+            HPS     hps = NULLHANDLE;
 
-            GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
-            GpiSetColor(hps, 0x00FFFFFF);
-            GpiSetMix(hps, FM_XOR);
-            GpiSetLineWidth(hps, MAKEFIXED(3, 0));
+            if (G_pHookData->HookConfig.ulAutoMoveFlags & AMF_ANIMATE)
+            {
+                // animation: prepare painting then
+                hps = WinGetScreenPS(HWND_DESKTOP);
 
-            GpiSetArcParams(hps, &ap);
-            GpiMove(hps, &G_ptlMovingPtrEnd);
+                GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
+                GpiSetColor(hps, 0x00FFFFFF);
+                GpiSetMix(hps, FM_XOR);
+                GpiSetLineWidth(hps, MAKEFIXED(3, 0));
+
+                // prepare the full arc: center is middle
+                // of the mouse button
+                GpiSetArcParams(hps, &ap);
+                GpiMove(hps, &G_ptlMovingPtrEnd);
+            }
 
             // go check if the user is currently moving the mouse...
             // if so, we should stop doing all this.
@@ -1322,7 +1330,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                )
                 pulStopTimer = &G_ulMovingPtrTimer;
 
-            if (G_lLastRadius)
+            if ((hps) && (G_lLastRadius))
                 // un-paint the last item
                 GpiFullArc(hps,
                            DRO_OUTLINE,
@@ -1362,17 +1370,21 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                                  G_ptlMovingPtrNow.y);
 
                 // now go paint on the screen
-                lOfs =   100L
-                       - (  100L
-                          * lMSElapsed
-                          / lMax);
-                GpiFullArc(hps,
-                           DRO_OUTLINE,
-                           MAKEFIXED(lOfs, 0));
-                G_lLastRadius = lOfs;
+                if ((hps) && (!pulStopTimer))
+                {
+                    lOfs =   100L
+                           - (  100L
+                              * lMSElapsed
+                              / lMax);
+                    GpiFullArc(hps,
+                               DRO_OUTLINE,
+                               MAKEFIXED(lOfs, 0));
+                    G_lLastRadius = lOfs;
+                }
             }
 
-            WinReleasePS(hps);
+            if (hps)
+                WinReleasePS(hps);
         }
         break;
 

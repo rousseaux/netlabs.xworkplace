@@ -137,21 +137,27 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFile");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        if (_pszFontFile)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            free(_pszFontFile);
-            _pszFontFile = NULL;
+            if (_pszFontFile)
+            {
+                free(_pszFontFile);
+                _pszFontFile = NULL;
+            }
+
+            if (pszFontFile)
+                _pszFontFile = strdup(pszFontFile);
+
+
+            brc = TRUE;
         }
-
-        if (pszFontFile)
-            _pszFontFile = strdup(pszFontFile);
-
-
-        brc = TRUE;
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -175,15 +181,21 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFile(XWPFontObject *somSelf,
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFile");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        if (_pszFontFile)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            strcpy(pszFontFile, _pszFontFile);
-            brc = TRUE;
+            if (_pszFontFile)
+            {
+                strcpy(pszFontFile, _pszFontFile);
+                brc = TRUE;
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -204,21 +216,27 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFamily(XWPFontObject *somSelf,
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFamily");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        if (_pszFontFamily)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            free(_pszFontFamily);
+            if (_pszFontFamily)
+            {
+                free(_pszFontFamily);
+            }
+
+            if (pszFontFamily)
+                _pszFontFamily = strdup(pszFontFamily);
+            else
+                _pszFontFamily = NULL;
+
+            brc = TRUE;
         }
-
-        if (pszFontFamily)
-            _pszFontFamily = strdup(pszFontFamily);
-        else
-            _pszFontFamily = NULL;
-
-        brc = TRUE;
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -247,15 +265,21 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFamily(XWPFontObject *somSelf,
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFamily");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        if (_pszFontFamily)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            strcpy(pszFontFamily, _pszFontFamily);
-            brc = TRUE;
+            if (_pszFontFamily)
+            {
+                strcpy(pszFontFamily, _pszFontFamily);
+                brc = TRUE;
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -277,44 +301,50 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFileError");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        _arcFontFileError = arc;
-
-        if (_pszFontFileError)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            free(_pszFontFileError);
-            _pszFontFileError = NULL;
-        }
+            _arcFontFileError = arc;
 
-        if (arc)
-        {
-            // we have a new error:
-            CHAR szError2[200];
-            PSZ  pszError = NULL;
-
-            switch (arc)
+            if (_pszFontFileError)
             {
-                // give descriptions for a few common errors:
-                case ERROR_FILE_NOT_FOUND:
-                    pszError = "File not found."; break;
-
-                case ERROR_PATH_NOT_FOUND:
-                    pszError = "Path not found."; break;
-
-                case ERROR_BAD_FORMAT:      // returned by our font description
-                    pszError = "Unknown font format."; break;
-
-                default:
-                    sprintf(szError2, "Error %d occured.", arc);
-                    pszError = szError2;
+                free(_pszFontFileError);
+                _pszFontFileError = NULL;
             }
-            _pszFontFileError = strdup(pszError);
 
-            brc = TRUE;
+            if (arc)
+            {
+                // we have a new error:
+                CHAR szError2[200];
+                PSZ  pszError = NULL;
+
+                switch (arc)
+                {
+                    // give descriptions for a few common errors:
+                    case ERROR_FILE_NOT_FOUND:
+                        pszError = "File not found."; break;
+
+                    case ERROR_PATH_NOT_FOUND:
+                        pszError = "Path not found."; break;
+
+                    case ERROR_BAD_FORMAT:      // returned by our font description
+                        pszError = "Unknown font format."; break;
+
+                    default:
+                        sprintf(szError2, "Error %d occured.", arc);
+                        pszError = szError2;
+                }
+                _pszFontFileError = strdup(pszError);
+
+                brc = TRUE;
+            }
         }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }

@@ -365,12 +365,18 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
     WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryListNotify");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        ulrc = _ulListNotify;
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            XFldObjectData *somThis = XFldObjectGetData(somSelf);
+            ulrc = _ulListNotify;
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (ulrc);
 }
@@ -427,13 +433,19 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
     WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetListNotify");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        _ulListNotify = flNotifyFlags;
-        brc = TRUE;
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            XFldObjectData *somThis = XFldObjectGetData(somSelf);
+            _ulListNotify = flNotifyFlags;
+            brc = TRUE;
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -471,19 +483,25 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
     WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpModifyListNotify");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        _ulListNotify = (
-                            // copy all unaffected
-                            (_ulListNotify & ~flNotifyFlags)
-                            // OR with masked new ones
-                          | (flNotifyFlags & flNotifyMask)
-                        );
-        brc = TRUE;
+            _ulListNotify = (
+                                // copy all unaffected
+                                (_ulListNotify & ~flNotifyFlags)
+                                // OR with masked new ones
+                              | (flNotifyFlags & flNotifyMask)
+                            );
+            brc = TRUE;
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -529,31 +547,37 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpAddWidgetNotify(XFldObject *somSelf,
     WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpAddWidgetNotify");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        if (_pvllWidgetNotifies == NULL)
-            // list not created yet: do it now
-            _pvllWidgetNotifies = lstCreate(FALSE);     // no auto-free
-        else
-            // list exists:
-            // make sure it's not in the list yet
-            // V0.9.13 (2001-06-21) [umoeller]
-            if (lstIndexFromItem(_pvllWidgetNotifies,
-                                 (PVOID)hwnd)
-                    != -1)
-            {
-                // exists already:
-                brc = TRUE;
-            }
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            XFldObjectData *somThis = XFldObjectGetData(somSelf);
+            if (_pvllWidgetNotifies == NULL)
+                // list not created yet: do it now
+                _pvllWidgetNotifies = lstCreate(FALSE);     // no auto-free
+            else
+                // list exists:
+                // make sure it's not in the list yet
+                // V0.9.13 (2001-06-21) [umoeller]
+                if (lstIndexFromItem(_pvllWidgetNotifies,
+                                     (PVOID)hwnd)
+                        != -1)
+                {
+                    // exists already:
+                    brc = TRUE;
+                }
 
-        if ((_pvllWidgetNotifies) && (!brc))
-            lstAppendItem((PLINKLIST)_pvllWidgetNotifies,
-                          (PVOID)hwnd);
+            if ((_pvllWidgetNotifies) && (!brc))
+                lstAppendItem((PLINKLIST)_pvllWidgetNotifies,
+                              (PVOID)hwnd);
 
-        brc = TRUE;
+            brc = TRUE;
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -572,18 +596,24 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
     WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpRemoveDestroyNotify");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        if (_pvllWidgetNotifies)
+        if (LOCK_OBJECT(Lock, somSelf))
         {
-            lstRemoveItem((PLINKLIST)_pvllWidgetNotifies,
-                          (PVOID)hwnd);
-        }
+            XFldObjectData *somThis = XFldObjectGetData(somSelf);
+            if (_pvllWidgetNotifies)
+            {
+                lstRemoveItem((PLINKLIST)_pvllWidgetNotifies,
+                              (PVOID)hwnd);
+            }
 
-        brc = TRUE;
+            brc = TRUE;
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (brc);
 }
@@ -709,17 +739,23 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
     WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup");
 
-    if (wpshLockObject(&Lock, somSelf))
+    TRY_LOUD(excpt1)
     {
-        // obtain "xwpQuerySetup2" method pointer
-        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2
-            = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(somSelf,
-                                                                "xwpQuerySetup2");
-        if (pfn_xwpQuerySetup2)
-            // method resolved: call it
-            ulrc  = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            // obtain "xwpQuerySetup2" method pointer
+            somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2
+                = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(somSelf,
+                                                                    "xwpQuerySetup2");
+            if (pfn_xwpQuerySetup2)
+                // method resolved: call it
+                ulrc  = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
+        }
     }
-    wpshUnlockObject(&Lock);
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
 
     return (ulrc);
 }
