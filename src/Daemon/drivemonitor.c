@@ -452,10 +452,10 @@ void _Optlink fntDiskWatch(PTHREADINFO ptiMyself)
                             if (dFree != pWatch->dFreeLast)
                             {
                                 // free space changed:
-                                _Pmpf((__FUNCTION__ ": drive %d changed, old: %f, new: %f",
-                                        pWatch->ulLogicalDrive,
-                                        pWatch->dFreeLast,
-                                        dFree));
+                                // _Pmpf((__FUNCTION__ ": drive %d changed, old: %f, new: %f",
+                                //         pWatch->ulLogicalDrive,
+                                   //      pWatch->dFreeLast,
+                                      //   dFree));
                                 lKB = dFree / 1024L;
                                 pWatch->dFreeLast = dFree;
                                 pWatch->arcLast = NO_ERROR;

@@ -14,8 +14,87 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
+--  spacing lines are missing on trays
+
+--  rc.exe fails on recreating icons.dll
+
+--  add spacing between icons in folder content menus
+
+--  reboot hangs on "releasing filesystems" on some systems
+
+--  startup folders:
+    run in a loop sometimes
+
+--  PageMage:
+    window list comes up hidden on different screen
+
+--  XCenter:
+    --  if tray is on top, icons are moved down (xwpbug.jpg)
+    --  make obj button hatching optional
+
+--  startup:
+    boot logo remains on screen forever (check startup sequence for whether
+    this might be lost somwhere)
+
+--  drive not ready:
+    reports garbage with TVFS drives
+
+--  Font folder:
+    >b8) Fontfolder: Deinstalling OS2\DLL\COURIERI.FON, HELVI.FON,
+    >TIMESI.FON (file not found errors), fails with error 30024.
+    >b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
+    >(i.e. non-sized)
+
+--  XCenter pulse:
+    double click should open kernel obj
+
+--  XCenter / folder content menus
+     The problem is complex and is related to data files associated
+    with VIO windows being started by selecting the data file icon
+    (a S3M file, by example) using some folder object on XCenter
+    (like the drive folder object).
+
+--  dragging XCenter text files can hang WPS (check file types?)
+
+--  file exists dlg:
+
+    The problem is when you try to copy a file (click copy on the
+    contex menu) a Dialog opens where you want to copy it.
+
+    Also you can give it another name by typing it in the edit
+    field.
+
+    When you now have enabled "replace file exist dialog" in the
+    Xcenter Setup the problem appears as following:
+
+    By copying the file 123.exe for example from D:\ to E:\ the
+    file exists dialog from XWorkplace pops up and tells me that
+    on the target drive (E:\) a file named 123.EXE already
+    exists. (wich does not exists)
+
+--  folder content functions ignore INCLUDe settings
+
+--  setup strings for WPShadow: SHADOWEDOBJECT (?) not reported
+
+--  installation:
+    2) Hang on some systems. Dunno what causes this, need to debug more. I can't remember changing anything with the install between 0.9.13 and 0.9.14 (except for making the archive an EXE file), so this really beats me now.
+    I'll try to see if replacing the XCenter is causing this maybe.
+
+    3) Trash can disappears after fresh install. I have seen this too now and will
+    see how this happens. Strange too. :-/
+
+    4) After screen lockup, hook stops working. OK, that one is easy to trace.
+
+--  if trash can doesn't exist, "drive not supported" comes up
+
 MINOR PROBLEMS
 --------------
+
+all windows filters (pagemage etc.):
+        -- allow wildcards
+
+sort:
+    --  sort by type doesn't sort files with same (or no) type
 
 install:
     --  if lockup on start is enabled, first xwp msg box hangs the system
@@ -69,6 +148,10 @@ prog start:
     --  cmd files not started minimized?
 
 XCenter:
+    --  in XCenter X->Run the lookup that finds the executable
+        hits on directories as well. Typing Netscape results
+        in E:\OS2\INSTALL\NETSCAPE here (which is a directory).
+
     --  dragging locale object over XCenter crashes WPS
 
     --  "show frame" setting on a per-widget basis
@@ -138,6 +221,8 @@ XWPSetup:
        PageMage isn't affected
 
 folders:
+    --  sorting: sorts wrong after renaming file (intercept cnr msg)
+
     --  dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
 

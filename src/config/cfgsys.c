@@ -682,7 +682,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.7 (2000-12-17) [umoeller]: moved config.sys path composition to krnInitializeXWorkplace
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: moved config.sys path composition to initMain
  *@@changed V0.9.7 (2000-12-17) [umoeller]: raised buffer size for syspaths page
  *@@changed V0.9.7 (2001-01-17) [umoeller]: changed QSV_MAX compile problems; thanks, Martin Lafaix
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"

@@ -3,6 +3,8 @@ This file lists feature suggestions from XWorkplace users.
 Please don't suggest features which are already listed in
 this file. Thank you.
 
+alt-f4 on desktop shuts down
+
 add zip folders
 
 There's a INI file entry for the font size for VIO windows It's possible to change that
@@ -16,6 +18,7 @@ is, that the name of the key is language dependent.
 --  "Create program object" menu item
 
 XCenter:
+    -- X button: give it any icon
     -- XCenter run command: history log
     --  more options for winlist... button size, minimize behavior.
     --  winlist: edit filter entries (instead of remove and add).
@@ -66,6 +69,7 @@ hook:
        accidental open.
 
 PageMage:
+    --  feature to snap all windows to current (context menu item)
     -- When moving windows within the virtual desktop display,
         >they should only be moved from a position in one desktop to
         >the same position in another, except if the user presses e.g.
@@ -77,6 +81,7 @@ PageMage:
     --  if windows appear totally outside of all desktops, move them
         to current
     --  pagemage widget
+    --  save window/app positions
 
 folders:
     -- Ctrl+right mouse: folder contents menu

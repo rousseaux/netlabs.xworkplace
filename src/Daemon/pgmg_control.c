@@ -145,40 +145,6 @@ HMTX        G_hmtxDisableSwitching = NULLHANDLE;    // V0.9.14 (2001-08-25) [umo
 
 /* ******************************************************************
  *
- *   Debugging
- *
- ********************************************************************/
-
-/*
- *@@ DumpAllWindows:
- *
- */
-
-/* VOID DumpAllWindows(VOID)
-{
-    ULONG  usIdx;
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
-    {
-        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
-        {
-            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
-            _Pmpf(("Dump %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
-                   usIdx,
-                   pEntryThis->hwnd,
-                   pEntryThis->szSwitchName,
-                   pEntryThis->szClassName,
-                   pEntryThis->pid,
-                   pEntryThis->pid,
-                   pEntryThis->bWindowType));
-        }
-
-        DosReleaseMutexSem(G_hmtxWindowList);
-    }
-} */
-
-/* ******************************************************************
- *
  *   PageMage hook serialization
  *
  ********************************************************************/
@@ -240,6 +206,46 @@ VOID pgmcReenableSwitching(VOID)
         DosReleaseMutexSem(G_hmtxDisableSwitching);
     }
 }
+
+/* ******************************************************************
+ *
+ *   Debugging
+ *
+ ********************************************************************/
+
+#ifdef __DEBUG__
+
+/*
+ *@@ DumpAllWindows:
+ *
+ */
+
+VOID DumpAllWindows(VOID)
+{
+    ULONG  usIdx = 0;
+    if (pgmwLock())
+    {
+        PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
+        while (pNode)
+        {
+            PPGMGWININFO pEntryThis = (PPGMGWININFO)pNode->pItemData;
+            _Pmpf(("Dump %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
+                   usIdx++,
+                   pEntryThis->hwnd,
+                   pEntryThis->szSwitchName,
+                   pEntryThis->szClassName,
+                   pEntryThis->pid,
+                   pEntryThis->pid,
+                   pEntryThis->bWindowType));
+
+            pNode = pNode->pNext;
+        }
+
+        pgmwUnlock();
+    }
+}
+
+#endif
 
 /* ******************************************************************
  *
@@ -1215,7 +1221,6 @@ MRESULT ClientButtonClick(HWND hwnd,
                           ULONG msg,
                           MPARAM mp1)
 {
-    // ULONG       ulRequest;
     ULONG       ulMsg = PGOM_CLICK2ACTIVATE;
     LONG        lMouseX = SHORT1FROMMP(mp1),
                 lMouseY = SHORT2FROMMP(mp1);
@@ -1403,13 +1408,18 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
              */
 
             case WM_BUTTON1CLICK:
+            #ifndef __DEBUG__           // dblclick below doesn't work otherwise
             case WM_BUTTON2CLICK:
+            #endif
                 mrc = ClientButtonClick(hwnd, msg, mp1);
             break;
 
-            /* case WM_BUTTON2DBLCLK:
+            #ifdef __DEBUG__
+            case WM_BUTTON2DBLCLK:
+                DosBeep(1000, 50);
                 DumpAllWindows();
-            break; */
+            break;
+            #endif
 
             /*
              * WM_BUTTON2MOTIONSTART:

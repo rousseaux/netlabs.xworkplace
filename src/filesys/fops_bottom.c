@@ -549,21 +549,21 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
                 // we examine each incoming message.
                 QMSG qmsg;
                 BOOL fQuit = FALSE;
-                while (WinGetMsg(hab,
-                                 &qmsg, 0, 0, 0))
+                while (WinGetMsg(hab, &qmsg, 0, 0, 0))
                 {
                     // current message for our object window?
-                    if (qmsg.hwnd == hwndNotify)
-                        // yes: "done" message?
-                        if (qmsg.msg == T1M_FOPS_TASK_DONE)
-                            // yes: check if it's our handle
-                            // (for security)
-                            if (qmsg.mp1 == pftl)
-                            {
-                                fQuit = TRUE;
-                                // mp2 has FOPSRET return code
-                                frc = (ULONG)qmsg.mp2;
-                            }
+                    if (    (qmsg.hwnd == hwndNotify)
+                            // "done" message?
+                         && (qmsg.msg == T1M_FOPS_TASK_DONE)
+                            // check if it's our handle (for security)
+                         && (qmsg.mp1 == pftl)
+                       )
+                    {
+                        fQuit = TRUE;
+                        // mp2 has FOPSRET return code
+                        frc = (ULONG)qmsg.mp2;
+                    }
+
                     WinDispatchMsg(hab, &qmsg);
                     if (fQuit)
                         break;

@@ -120,7 +120,7 @@ $(XWPRUNNING)\bin\$(APPNAME).exe: $(MODULESDIR)\$(@B).exe
           $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
           cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2
+#          cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2
 
 # The .OBJ-from-sources dependencies are now automatically
 # created by "nmake dep" into the .depend include file.

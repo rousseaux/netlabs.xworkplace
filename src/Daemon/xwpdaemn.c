@@ -41,12 +41,12 @@
  *             WPS (PMSHELL.EXE).
  *
  *          b) When the WPS is started for the first time (after
- *             a reboot), krnInitializeXWorkplace (XFLDR.DLL)
+ *             a reboot), initMain (XFLDR.DLL)
  *             checks for whether a XWPGLOBALSHARED structure (xwphook.h)
  *             has already been allocated as a block of shared memory.
  *
  *             At system startup, this is not the case. As a result,
- *             krnInitializeXWorkplace allocates that block and then
+ *             initMain allocates that block and then
  *             starts XWPDAEMN.EXE using WinStartApp.
  *
  *          c) The daemon then requests access to that block of
@@ -80,7 +80,7 @@
  *             is not freed, because the daemon is still using
  *             it.
  *
- *          e) When the WPS is re-initializing, krnInitializeXWorkplace
+ *          e) When the WPS is re-initializing, initMain
  *             this time realizes that the XWPGLOBALSHARED structure is
  *             still in use and will thus find out that the WPS is not
  *             started for the first time. Instead, access to the
@@ -900,7 +900,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
         {
             CHAR szClass[100];
             WinQueryClassName(hwndClient, sizeof(szClass), szClass);
-            if (strcmp(szClass, WC_XCENTER_CLIENT) == 0)
+            if (!strcmp(szClass, WC_XCENTER_CLIENT))
                 // target is XCenter:
                 return;
         }
@@ -928,7 +928,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
         WinQueryClassName(hwndClient, sizeof(szClassName), szClassName);
         // _Pmpf(("ProcessSlidingFocus: hwndClient 0x%lX", hwndClient));
         // _Pmpf(("  class name: %s", szClassName));
-        if (strcmp(szClassName, "SeamlessClass") == 0)
+        if (!strcmp(szClassName, "SeamlessClass"))
             fIsSeamless = TRUE;
     }
 
@@ -1363,7 +1363,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                        / lMax;
                 G_ptlMovingPtrNow.y = G_ptlMovingPtrStart.y + lOfs;
 
-                _Pmpf(("ms elapsed: %d, new x/y: %d/%d", lMSElapsed, G_ptlMovingPtrNow.x, G_ptlMovingPtrNow.y));
+                // _Pmpf(("ms elapsed: %d, new x/y: %d/%d", lMSElapsed, G_ptlMovingPtrNow.x, G_ptlMovingPtrNow.y));
 
                 WinSetPointerPos(HWND_DESKTOP,
                                  G_ptlMovingPtrNow.x,
@@ -2392,7 +2392,7 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
  *      not get started by curious XWorkplace users.
  *
  *      Then, we access the XWPGLOBALSHARED structure which
- *      has been allocated by krnInitializeXWorkplace
+ *      has been allocated by initMain
  *      (filesys\kernel.c).
  *
  *      We then create our object window (fnwpDaemonObject),
@@ -2471,7 +2471,7 @@ int main(int argc, char *argv[])
             // access the shared memory allocated by
             // XFLDR.DLL; this should always work:
             // a) if the daemon has been started during first
-            //    WPS startup, krnInitializeXWorkplace has
+            //    WPS startup, initMain has
             //    allocated the memory before starting the
             //    daemon;
             // b) at any time later (if the daemon is restarted

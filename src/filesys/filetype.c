@@ -664,7 +664,9 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
         // filter matches the object title
         PLINKLIST pllTypesWithFilters = GetCachedTypesWithFilters();
 
+        #ifdef DEBUG_ASSOCS
         _Pmpf((__FUNCTION__ ": getting types for objtitle %s", pcszObjectTitle));
+        #endif
 
         if (pllTypesWithFilters)
         {
@@ -680,7 +682,9 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
                     // check if this matches the data file name
                     if (strhMatchOS2(pFilterThis, pcszObjectTitle))
                     {
-                        _Pmpf(("  found type %s", pTypeWithFilters->pszType));
+                        #ifdef DEBUG_ASSOCS
+                            _Pmpf(("  found type %s", pTypeWithFilters->pszType));
+                        #endif
 
                         // matches:
                         // now we have:
@@ -986,9 +990,11 @@ ULONG RemoveAssocReferences(const char *pcszHandle,     // in: decimal object ha
                     // check if this assoc is to be removed
                     if (!strcmp(pAssoc, pcszHandle))
                     {
-                        _Pmpf((__FUNCTION__ ": removing handle %s from %s",
-                                    pcszHandle,
-                                    pKey));
+                        #ifdef DEBUG_ASSOCS
+                            _Pmpf((__FUNCTION__ ": removing handle %s from %s",
+                                        pcszHandle,
+                                        pKey));
+                        #endif
 
                         // yes: well then...
                         // is this the last entry?
@@ -1078,7 +1084,9 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
             // leave the old entries in there.
             sprintf(szHandle, "%d", hobj);
 
-            _Pmpf((__FUNCTION__ ": running with %s", szHandle));
+            #ifdef DEBUG_ASSOCS
+                _Pmpf((__FUNCTION__ ": running with %s", szHandle));
+            #endif
 
             ulrc += RemoveAssocReferences(szHandle,
                                           WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
@@ -4786,18 +4794,22 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 XSTRING str;
                 xstrInitCopy(&str, pszTypes, 0);
 
+                #ifdef DEBUG_ASSOCS
                 _Pmpf((__FUNCTION__ ": pre: str.psz is %s (ulLength: %u)",
                             (str.psz) ? str.psz : "NULL",
                             str.ulLength));
+                #endif
 
                 // modify the types according to record click
                 HandleRecordChecked(ulExtra,         // from "item changed" callback
                                     &str,
                                     ",");      // types separator
 
+                #ifdef DEBUG_ASSOCS
                 _Pmpf((__FUNCTION__ ": post: str.psz is %s (ulLength: %u)",
                             (str.psz) ? str.psz : "NULL",
                             str.ulLength));
+                #endif
 
                 // set new types
                 _wpSetAssociationType(pcnbp->somSelf,
@@ -4880,9 +4892,11 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
         PLISTNODE pNode;
         lstInit(&llAllFilters, FALSE);      // will hold all PSZ's, no auto-free
 
+        #ifdef DEBUG_ASSOCS
         _Pmpf(("     got %d new filters for %s, merging",
                     lstCountItems(pllElementFilters),
                     pcszTypeNameThis));
+        #endif
 
         if (pszFiltersData)
         {
@@ -4890,14 +4904,18 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
             // defined filters, each null-terminated
             PSZ     pFilter = pszFiltersData;
 
+            #ifdef DEBUG_ASSOCS
             _Pmpf(("       got %d bytes of existing filters", cbFiltersData));
+            #endif
 
             if (pFilter)
             {
                 // now parse the filters string
                 while ((*pFilter) && (!arc))
                 {
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("           appending existing %s", pFilter));
+                    #endif
 
                     lstAppendItem(&llAllFilters,
                                   pFilter);
@@ -4909,8 +4927,10 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
                 } // end while (*pFilter)
             }
         }
+        #ifdef DEBUG_ASSOCS
         else
             _Pmpf(("       no existing filters"));
+        #endif
 
         // 2) add the new filters from the elements, if they are not on the list yet
         for (pNode = lstQueryFirstNode(pllElementFilters);
@@ -4923,8 +4943,10 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
             const XSTRING *pstrFilter = xmlGetAttribute(pFilterNode,
                                                         "VALUE");
 
+            #ifdef DEBUG_ASSOCS
             _Pmpf(("           adding new %s",
                         (pstrFilter) ? pstrFilter->psz : "NULL"));
+            #endif
 
             if (pstrFilter)
             {
@@ -4957,9 +4979,10 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
              pNode = pNode->pNext)
         {
             PSZ pszFilterThis = (PSZ)pNode->pItemData;
+            #ifdef DEBUG_ASSOCS
             _Pmpf(("       appending filter %s",
                              pszFilterThis));
-
+            #endif
             cbFilters += sprintf(&(szFilters[cbFilters]),
                                  "%s",
                                  pszFilterThis    // filter string
@@ -5027,9 +5050,11 @@ APIRET ImportTypes(PDOMNODE pParentElement,
                 // check if it's in OS2.INI already
                 ULONG cb = 0;
 
+                #ifdef DEBUG_ASSOCS
                 _Pmpf((__FUNCTION__ ": importing %s, parent is %s",
                         pstrTypeName->psz,
                         (pcszParentType) ? pcszParentType : "NULL"));
+                #endif
 
                 if (    (!PrfQueryProfileSize(HINI_USER,
                                               (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
@@ -5042,8 +5067,10 @@ APIRET ImportTypes(PDOMNODE pParentElement,
                     // (no associations yet)
                     CHAR NullByte = '\0';
 
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("   type %s doesn't exist, adding to PMWP_ASSOC_TYPE",
                             pstrTypeName->psz));
+                    #endif
 
                     PrfWriteProfileData(HINI_USER,
                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
@@ -5051,8 +5078,10 @@ APIRET ImportTypes(PDOMNODE pParentElement,
                                         &NullByte,
                                         1);
                 }
+                #ifdef DEBUG_ASSOCS
                 else
                     _Pmpf(("   type %s exists",  pstrTypeName->psz));
+                #endif
 
                 // now update parent type
                 // in any case, write the parent type
@@ -5242,10 +5271,12 @@ APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (d
 
         *ppNewNode = pNodeReturn;
     }
+    #ifdef DEBUG_ASSOCS
     else
         _Pmpf((__FUNCTION__ ": xmlCreateElementNode returned %d for %s",
                     arc,
                     pliAssoc->pszFileType));
+    #endif
 
     return (arc);
 }
@@ -5401,17 +5432,21 @@ APIRET ExportAddTypesTree(PDOMNODE pRootElement)
             while ((*pKey != 0) && (!arc))
             {
                 PDOMNODE pNewElement;
+                #ifdef DEBUG_ASSOCS
                 _Pmpf((__FUNCTION__ ": processing %s", pKey));
+                #endif
                 arc = ExportAddFileTypeAndAllParents(pRootElement,
                                                      &llFileTypes,
                                                      pKey,
                                                      &pNewElement);
                                                 // this will recurse
+                #ifdef DEBUG_ASSOCS
                 if (arc)
                     _Pmpf((__FUNCTION__ ": ExportAddFileTypeAndAllParents returned %d for %s",
                                 arc, pKey));
                 else
                     _Pmpf((__FUNCTION__ ": %s processed OK", pKey));
+                #endif
 
                 // go for next key
                 pKey += strlen(pKey)+1;
@@ -5435,8 +5470,10 @@ APIRET ExportAddTypesTree(PDOMNODE pRootElement)
                     arc = ExportAddType(pRootElement,
                                         pliAssoc,
                                         &pNewElement);
+                    #ifdef DEBUG_ASSOCS
                     if (arc)
                         _Pmpf((__FUNCTION__ ": xmlCreateElementNode returned %d", arc));
+                    #endif
                 }
                 pAssocNode = pAssocNode->pNext;
             }
@@ -5526,8 +5563,10 @@ APIRET ftypExportTypes(const char *pcszFilename)        // in: XML file name
                 // kill the DOM document
                 xmlDeleteNode((PNODEBASE)pDocument);
             }
+            #ifdef DEBUG_ASSOCS
             else
                 _Pmpf((__FUNCTION__ ": xmlCreateDocument returned %d", arc));
+            #endif
         }
     }
     CATCH(excpt1)

@@ -45,6 +45,7 @@
 
 #define IDM_SELECT              300
 #define IDMI_SELECT_INVALID     301
+#define IDMI_SELECT_BYNAME      302
 
 #define IDM_HELP                400
 #define IDMI_HELP_USINGHELP     401

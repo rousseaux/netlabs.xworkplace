@@ -1037,7 +1037,7 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
                 == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY)
        )
     {
-        _Pmpf(("    first item is DUMMY"));
+        // _Pmpf(("    first item is DUMMY"));
 
         // get folder to be populated from the linked list
         // (llContentMenuItems)
@@ -1054,7 +1054,7 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
             pcmli = 0;
         }
 
-        _Pmpf(("    folder is %s", (pFolder) ? _wpQueryTitle(pFolder) : "NULL"));
+        // _Pmpf(("    folder is %s", (pFolder) ? _wpQueryTitle(pFolder) : "NULL"));
 
         // pFolder now contains the folder,
         // pcmli has the CONTENTMENULISTITEM

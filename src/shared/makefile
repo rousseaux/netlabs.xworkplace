@@ -58,6 +58,7 @@ OBJS = $(OUTPUTDIR)\center.obj \
        $(OUTPUTDIR)\common.obj \
        $(OUTPUTDIR)\contentmenus.obj \
        $(OUTPUTDIR)\dummyfont.obj \
+       $(OUTPUTDIR)\init.obj \
        $(OUTPUTDIR)\notebook.obj \
        $(OUTPUTDIR)\kernel.obj \
        $(OUTPUTDIR)\xsetup.obj \

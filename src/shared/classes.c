@@ -144,8 +144,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
     {
         // store the WPS class info structure into recc
         // set extra recc attribute (WPSLISTITEM)
-        preccNew->pwps = pwpsMyself;
-        if (pwpsMyself)
+        if (preccNew->pwps = pwpsMyself)
         {
             pwpsMyself->pRecord = (PRECORDCORE)preccNew;
 
@@ -155,7 +154,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
                 // attributes; this way, a class can be
                 // disabled, expanded etc.
                 if (pscd->pfnwpReturnAttrForClass)
-                    usAttrs = (USHORT)(*pscd->pfnwpReturnAttrForClass)(
+                    usAttrs = (USHORT)pscd->pfnwpReturnAttrForClass(
                                                       hwndCnr,
                                                       (ULONG)pscd,
                                                       (MPARAM)pwpsMyself,
@@ -176,6 +175,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         #ifdef DEBUG_WPSCLASSES
             _Pmpf(("    Inserting %s\n", pszCurrentClass));
         #endif
+
         // insert the record (helpers/winh.c)
         cnrhInsertRecords(hwndCnr,
                           (PRECORDCORE)preccParent,
@@ -207,6 +207,13 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
                       );
         }
 
+        // expand the new record? V0.9.15 (2001-09-14) [umoeller]
+        if (usAttrs & CRA_EXPANDED)
+            WinSendMsg(hwndCnr,
+                       CM_EXPANDTREE,
+                       (MPARAM)preccNew,
+                       0);
+
         // mark the class as processed (needed by clsWPSClasses2Cnr)
         if (pwpsMyself)
             pwpsMyself->fProcessed = TRUE;
@@ -215,8 +222,112 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
 }
 
 /*
+ *@@ clsResolveReplacements:
+ *      called from clsWpsClasses2Cnr to resolve class
+ *      replacements.
+ *
+ *      Initially this gets called with pwpsCurrent pointing
+ *      to the root item to be inserted. This will then
+ *      recurse into the children.
+ *
+ *      This was added with 0.9.15 to finally resolve all
+ *      class replacements _before_ the records get
+ *      inserted into the container, because otherwise
+ *      the "get record attrs" callback can never determine
+ *      whether a class replacement is in effect.
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+VOID clsResolveReplacements(PWPSLISTITEM pwpsCurrent,
+                                // in: class to process; on the first
+                                // call, this will be the "root" class,
+                                // but other classes when recursing
+                            PWPSCLASSESINFO pwpsci)
+                                // in: complete list
+{
+    PLISTNODE pNode = 0;
+    PWPSLISTITEM pwpsParentToCheck;
+
+    _Pmpf(("Checking replacements for %s",
+            pwpsCurrent->pszClassName));
+
+    // query if any parent class has been replaced by this class;
+    // in order to find out about that, we climb up the parent record
+    // cores in the container and ask the WPS class manager if
+    // replacements are in effect
+    pwpsParentToCheck = pwpsCurrent->pParent;
+            // start out with parent; this might be NULL if
+            // the class has no parent (i.e. is the root class)
+    while (pwpsParentToCheck)
+    {
+        // get class name for parent class object
+        // PSZ pszParentToCheckClass = _somGetName(pwpsParentToCheck->pClassObject);
+        // call WPS class manager to query replacement;
+        // SOMClassMgrObject is a global variable defined
+        // by the SOM kernel, and the WPS replaces the
+        // SOM class manager with its own (see WPSREF)
+        if (_wpReplacementIsInEffect(SOMClassMgrObject,
+                                     pwpsParentToCheck->pszClassName, // parent class
+                                     pwpsCurrent->pszClassName)) // current class
+        {
+            // yes, pszParentToCheckClass has been replaced by current class:
+            // store replacement in our structure
+            _Pmpf(("  %s replaces %s",
+                    pwpsCurrent->pszClassName,
+                    pwpsParentToCheck->pszClassName));
+            pwpsCurrent->pszReplacesClass = strdup(pwpsParentToCheck->pszClassName);
+            // did we find replacements of the parent already?
+            if (pwpsParentToCheck->pszReplacedWithClasses)
+            {
+                // if there are several class replacements for the parent,
+                // append this class name to the other replacements
+                PSZ psz2 = malloc(   strlen(pwpsParentToCheck->pszReplacedWithClasses)
+                                   + strlen(pwpsCurrent->pszClassName)
+                                   + 6);
+                sprintf(psz2, "%s, %s",
+                        pwpsParentToCheck->pszReplacedWithClasses,
+                        pwpsCurrent->pszClassName);
+                free(pwpsParentToCheck->pszReplacedWithClasses);
+                pwpsParentToCheck->pszReplacedWithClasses = psz2;
+            }
+            else
+            {
+                // otherwise, use this class name only
+                pwpsParentToCheck->pszReplacedWithClasses
+                = strdup(pwpsCurrent->pszClassName);
+            }
+        }
+        else
+            _Pmpf(("  %s does not replace %s",
+                    pwpsCurrent->pszClassName,
+                    pwpsParentToCheck->pszClassName));
+
+        // climb up to next parent
+        pwpsParentToCheck = pwpsParentToCheck->pParent;
+    } // end while (preccParentToCheck)
+
+    // now recurse for all children of this item
+    pNode = lstQueryFirstNode(pwpsci->pllClassList);
+    while (pNode)
+    {
+        PWPSLISTITEM pwps0 = pNode->pItemData;
+        if (pwps0->pParentClassObject == pwpsCurrent->pClassObject)
+        {
+            // this class is an immediate child of ours:
+            // recurse! This will add this class's
+            // record core to the cnr and check for
+            // children again
+            clsResolveReplacements(pwps0,
+                                   pwpsci);
+        }
+        pNode = pNode->pNext;
+    }
+}
+
+/*
  *@@ clsAddClassTree2Cnr:
- *      This is initially called by clsWpsClasses2Cnr
+ *      this gets initially called by clsWpsClasses2Cnr
  *      with pwpsCurrent being the list item for the
  *      root class (normally WPObject). This will insert
  *      that class into the container and then recurse
@@ -249,17 +360,14 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
                                 // calls)
 {
     PLISTNODE pNode = 0;
+
+#if 0
     PWPSLISTITEM pwps0, pwpsParentToCheck;
     PCLASSRECORDCORE preccParentToCheck;
     PSZ pszParentToCheckClass;
 
-    // add the current class to the cnr;
-    // initially, this is WPObject, for recursive calls,
-    // this will be a child of WPObject
-    clsAddClass2Cnr(hwndCnr,
-                    preccParent, // parent recc
-                    pwpsCurrent,
-                    pscd);
+    // V0.9.15 (2001-09-14) [umoeller]:
+    // moved clsAddClass2Cnr call down
 
     // query if any parent class has been replaced by this class;
     // in order to find out about that, we climb up the parent record
@@ -290,8 +398,9 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
             {
                 // if there are several class replacements for the parent,
                 // append this class name to the other replacements
-                PSZ psz2 = malloc(strlen(pwpsParentToCheck->pszReplacedWithClasses)
-                                  +strlen(pwpsCurrent->pszClassName)+6);
+                PSZ psz2 = malloc(   strlen(pwpsParentToCheck->pszReplacedWithClasses)
+                                   + strlen(pwpsCurrent->pszClassName)
+                                   + 6);
                 sprintf(psz2, "%s, %s",
                         pwpsParentToCheck->pszReplacedWithClasses,
                         pwpsCurrent->pszClassName);
@@ -301,8 +410,8 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
             else
             {
                 // otherwise, use this class name only
-                pwpsParentToCheck->pszReplacedWithClasses =
-                        strdup(pwpsCurrent->pszClassName);
+                pwpsParentToCheck->pszReplacedWithClasses
+                = strdup(pwpsCurrent->pszClassName);
             }
         }
 
@@ -319,13 +428,27 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
             preccParentToCheck = NULL;
         // if it's NULL, the while loop will exit
     } // end while (preccParentToCheck)
+#endif
+
+    // add the current class to the cnr;
+    // initially, this is WPObject, for recursive calls,
+    // this will be a child of WPObject
+    clsAddClass2Cnr(hwndCnr,
+                    preccParent, // parent recc
+                    pwpsCurrent,
+                    pscd);
+            // V0.9.15 (2001-09-14) [umoeller]:
+            // moved this code down, because the "get recc attrs"
+            // callback checks for replacement classes, which
+            // are only determined in the above code... duh,
+            // no wonder this never worked
 
     // now go thru WPS class list and add all immediate
     // children of ours
     pNode = lstQueryFirstNode(pwpsci->pllClassList);
     while (pNode)
     {
-        pwps0 = pNode->pItemData;
+        PWPSLISTITEM pwps0 = pNode->pItemData;
         if (pwps0->pParentClassObject == pwpsCurrent->pClassObject)
         {
             // this class is an immediate child of ours:
@@ -385,6 +508,7 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
  *
  *@@changed V0.9.1 (99-12-07) [umoeller]: fixed memory leak
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
+ *@@changed V0.9.15 (2001-09-14) [umoeller]: reorganized to fix replacements resolution which never worked in time
  */
 
 PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
@@ -404,7 +528,10 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
     ULONG   ulSize;
     ULONG   ul;
 
-    // prepare data
+    /*
+     * 1) prepare data
+     *
+     */
 
     // create common buffer
     pwpsciReturn = malloc(sizeof(WPSCLASSESINFO));
@@ -416,6 +543,11 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
     WinEnumObjectClasses(NULL, &ulSize);        // query size
     pwpsciReturn->pObjClass = malloc(ulSize+1); // allocate buffer
     WinEnumObjectClasses(pwpsciReturn->pObjClass, &ulSize); // query list
+
+    /*
+     * 2) handle orphans
+     *
+     */
 
     if (pscd->pszOrphans)
     {
@@ -465,6 +597,11 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
 
     // OK, now we have the orphaned classes in the container.
 
+    /*
+     * 3) create linked list of WPSLISTITEMs
+     *
+     */
+
     // Now get SOMClassMgr's list of registered classes.
     // This is only mentioned in SOMCM.IDL and not
     // otherwise documented, but it works. This list
@@ -480,9 +617,10 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
             //      _buffer[_length] has the items
 
     // get class object of root class to process
-    somidRoot = somIdFromString(pszRootClass);
-    if (somidRoot)
+    if (somidRoot = somIdFromString(pszRootClass))
     {
+        PLISTNODE pNode;
+
         // find root class object (e.g. M_WPObject).
         pRootClassObject = _somFindClass(SOMClassMgrObject, somidRoot, 0, 0);
 
@@ -502,7 +640,9 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
         // and build a linked list (linklist.h)
         // with all the classes
         // (RegisteredClasses is a SOMClassSequence)
-        for (ul=0; ul < RegisteredClasses._length; ul++)
+        for (ul = 0;
+             ul < RegisteredClasses._length;
+             ul++)
         {
             // current class to work on
             SOMClass *pClass = RegisteredClasses._buffer[ul];
@@ -544,8 +684,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                 // appear in the "official" WPS class list
 
                 // get class's parent
-                pwpsNew->pParentClassObject = _somGetParent(pClass);
-                if (pwpsNew->pParentClassObject)
+                if (pwpsNew->pParentClassObject = _somGetParent(pClass))
                     strcpy(pwpsNew->szParentClass,
                            _somGetName(pwpsNew->pParentClassObject));
 
@@ -557,6 +696,55 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
             }
         }
 
+        /*
+         * 4) resolve parents
+         *
+         */
+
+        // now run thru the list we have created and for
+        // each WPSLISTITEM, set the parent pointer
+        for (pNode = lstQueryFirstNode(pwpsciReturn->pllClassList);
+             pNode;
+             pNode = pNode->pNext)
+        {
+            PWPSLISTITEM pThis = (PWPSLISTITEM)pNode->pItemData;
+
+            // root item has no parent
+            if (pThis != pwpsRoot)
+            {
+                PLISTNODE pNode2;
+
+                for (pNode2 = lstQueryFirstNode(pwpsciReturn->pllClassList);
+                     pNode2;
+                     pNode2 = pNode2->pNext)
+                {
+                    PWPSLISTITEM pThis2 = (PWPSLISTITEM)pNode2->pItemData;
+                    if (!strcmp(pThis->szParentClass,
+                                pThis2->pszClassName))
+                    {
+                        _Pmpf(("Parent of %s is %s",
+                                pThis->pszClassName,
+                                pThis2->pszClassName));
+                        pThis->pParent = pThis2;
+                        break;
+                    }
+                }
+            }
+        }
+
+        /*
+         * 5) resolve replacements
+         *
+         */
+
+        clsResolveReplacements(pwpsRoot,
+                               pwpsciReturn);
+
+        /*
+         * 6) create and insert records
+         *
+         */
+
         // now insert the root record (normally WPObject);
         // this will then recurse and also handle class replacement info
         clsAddClassTree2Cnr(hwndCnr,
@@ -564,8 +752,9 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                             pwpsciReturn,
                             NULL,
                             pscd);
+
+        SOMFree(somidRoot);
     }
-    SOMFree(somidRoot);
 
     return (pwpsciReturn);
 }

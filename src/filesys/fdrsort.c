@@ -1020,7 +1020,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                             ? pGlobalSettings->fFoldersFirst
                             : _lFoldersFirst;
 
-    _Pmpf((__FUNCTION__ ": FOLDERS_FIRST = %d", fFoldersFirst));
+    // _Pmpf((__FUNCTION__ ": FOLDERS_FIRST = %d", fFoldersFirst));
 
     if (lSort == SET_DEFAULT)
         lSort =  pGlobalSettings->lDefSortCrit;
@@ -1031,48 +1031,48 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
         case -1:
             if (fFoldersFirst)
             {
-                _Pmpf(("  returning compareType, folders first"));
+                // _Pmpf(("  returning compareType, folders first"));
                 return ((PFN)fnCompareTypeFoldersFirst);
             }
             else
             {
-                _Pmpf(("  returning compareType, NO folders first"));
+                // _Pmpf(("  returning compareType, NO folders first"));
                 return ((PFN)fnCompareType);
             }
 
         case -2:
             if (fFoldersFirst)
             {
-                _Pmpf(("  returning compare name, folders first"));
+                // _Pmpf(("  returning compare name, folders first"));
                 return ((PFN)fnCompareNameFoldersFirst);
             }
             else
             {
-                _Pmpf(("  returning compare name, NO folders first"));
+                // _Pmpf(("  returning compare name, NO folders first"));
                 return ((PFN)fnCompareName);
             }
 
         case -3:
             if (fFoldersFirst)
             {
-                _Pmpf(("  returning compare class, folders first"));
+                // _Pmpf(("  returning compare class, folders first"));
                 return ((PFN)fnCompareClassFoldersFirst);
             }
             else
             {
-                _Pmpf(("  returning compare class, NO folders first"));
+                // _Pmpf(("  returning compare class, NO folders first"));
                 return ((PFN)fnCompareClass);
             }
 
         case -4:
             if (fFoldersFirst)
             {
-                _Pmpf(("  returning compare extension, folders first"));
+                // _Pmpf(("  returning compare extension, folders first"));
                 return ((PFN)fnCompareExtFoldersFirst);
             }
             else
             {
-                _Pmpf(("  returning compare class, NO folders first"));
+                // _Pmpf(("  returning compare class, NO folders first"));
                 return ((PFN)fnCompareExt);
             }
         default:
@@ -1153,9 +1153,9 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                     //    read this
                     _fCachedFoldersFirst = fFoldersFirst;
 
-                    _Pmpf(("  returning compare details, column %d, folders first: %d",
+                    /* _Pmpf(("  returning compare details, column %d, folders first: %d",
                             psi->lCurrentSort,
-                            fFoldersFirst));
+                            fFoldersFirst)); */
 
                     // 4) return the details column _cnr_ comparison func,
                     //    which will use the WPS comparison func

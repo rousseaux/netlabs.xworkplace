@@ -42,6 +42,7 @@
 
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
+#include "helpers\dialog.h"
 #include "helpers\except.h"
 #include "helpers\linklist.h"
 #include "helpers\prfh.h"
@@ -68,6 +69,8 @@
 
 ULONG       G_ulrc = 0;         // return code from main()
 
+HAB         G_hab = NULLHANDLE;
+
 HWND        G_hwndMain = NULLHANDLE;
 HWND        G_hwndStatusBar = NULLHANDLE;
 HWND        G_hwndContextMenuSingle = NULLHANDLE,
@@ -76,6 +79,8 @@ HWND        G_hwndHelp = NULLHANDLE;        // help instance
 
 PFNWP       G_pfnwpCnrOrig = NULL,
             G_fnwpFrameOrig = NULL;
+
+HPOINTER    G_hptrMain = NULLHANDLE;        // xfix icon V0.9.15 (2001-09-14) [umoeller]
 
 PBYTE       G_pHandlesBuffer = NULL;
 ULONG       G_cbHandlesBuffer = 0;
@@ -102,7 +107,8 @@ LINKLIST    G_llDeferredNukes;
 const char  *INIAPP                 = "XWorkplace";
 const char  *INIKEY_MAINWINPOS      = "HandleFixWinPos";
 
-#define     TIMERID_THREADRUNNING  998
+#define     TIMERID_THREADRUNNING       998
+#define     TIMERID_SELECTIONCHANGED    997
 
 #define NODESTAT_OK                     0x0000
 #define NODESTAT_DUPLICATEDRIV          0x0001
@@ -211,6 +217,12 @@ PNODE           G_NodeHashTable[65536];
 
 // NODERECORD hash table
 PNODERECORD     G_RecordHashTable[65536];
+
+// record with source emphasis
+PRECORDCORE     G_preccSource = NULL;
+
+// count of selected records
+ULONG           G_cSelected = 0;
 
 /*
  *@@ DEFERREDINI:
@@ -1224,6 +1236,38 @@ VOID SetupCnr(HWND hwndCnr)
  ********************************************************************/
 
 /*
+ *@@ MessageBox:
+ *      wrapper for showing a message box.
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+ULONG MessageBox(const char *pcszMessage,   // in: message
+                 ULONG flFlags)             // in: standard message box flags
+{
+    MSGBOXSTRINGS Strings =
+        {
+            "~Yes",
+            "~No",
+            "~OK",
+            "~Cancel",
+            "~Abort",
+            "~Retry",
+            "~Ignore",
+            "~Enter",
+            "Yes to ~all"
+        };
+
+    return (dlghMessageBox(G_hwndMain,
+                           G_hptrMain,
+                           "xfix",
+                           pcszMessage,
+                           flFlags,
+                           "9.WarpSans",
+                           &Strings));
+}
+
+/*
  *@@ UpdateStatusBar:
  *
  */
@@ -1240,13 +1284,26 @@ VOID UpdateStatusBar(LONG lSeconds)
                         "sThousand",
                         cThousands,
                         &cb);
-    sprintf(sz, "Done, %s bytes (%s handles).",
-            strhThousandsULong(sz3, (ULONG)G_cbHandlesBuffer, cThousands[0]),
-            strhThousandsULong(sz2, (ULONG)G_cHandlesParsed, cThousands[0]));
-    if (lSeconds != -1)
-        sprintf(sz + strlen(sz) - 1,
-                ", %d seconds.",
-                lSeconds / 1000);
+
+    if (G_cSelected && lSeconds == -1)
+    {
+        // any records selected:
+        sprintf(sz,
+                "%s out of %s handles selected.",
+                strhThousandsULong(sz3, (ULONG)G_cSelected, cThousands[0]),
+                strhThousandsULong(sz2, (ULONG)G_cHandlesParsed, cThousands[0]));
+    }
+    else
+    {
+        sprintf(sz,
+                "Done, %s bytes (%s handles).",
+                strhThousandsULong(sz3, (ULONG)G_cbHandlesBuffer, cThousands[0]),
+                strhThousandsULong(sz2, (ULONG)G_cHandlesParsed, cThousands[0]));
+        if (lSeconds != -1)
+            sprintf(sz + strlen(sz) - 1,
+                    ", %d seconds.",
+                    lSeconds / 1000);
+    }
 
     if (G_cDuplicatesFound)
         sprintf(sz + strlen(sz),
@@ -1291,6 +1348,22 @@ VOID UpdateMenuItems(USHORT usSortCmd)
             usLastCmd = usSortCmd;
         }
     }
+}
+
+/*
+ *@@ SelectionChanged:
+ *      starts the update timer for the status bar
+ *      to avoid excessive recalculations.
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+VOID SelectionChanged(VOID)
+{
+    WinStartTimer(G_hab,
+                  G_hwndMain,
+                  TIMERID_SELECTIONCHANGED,
+                  200);
 }
 
 /*
@@ -2008,27 +2081,19 @@ BOOL WriteAllBlocks(PSZ pszHandles,
 
 VOID WriteBack(VOID)
 {
-    if (WinMessageBox(HWND_DESKTOP,
-                      G_hwndMain,
-                      "This will write all changes back to the OS2.INI and OS2SYS.INI files. "
-                      "You should be sure of at least the following:\n"
-                      "-- your changes won't nuke your system;\n"
-                      "-- the WPS is not currently running, or you have started xfix from "
-                      "the XWorkplace \"Panic\" dialog;\n"
-                      "-- you have a working WPS backup somewhere.\n"
-                      "So, are you sure you want to do this?",
-                      "xfix",
-                      0,
-                      MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+    if (MessageBox("This will write all changes back to the OS2.INI and OS2SYS.INI files. "
+                   "You should be sure of at least the following:\n"
+                   "-- your changes won't nuke your system;\n"
+                   "-- the WPS is not currently running, or you have started xfix from "
+                   "the XWorkplace \"Panic\" dialog;\n"
+                   "-- you have a working WPS backup somewhere.\n"
+                   "So, are you sure you want to do this?",
+                   MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
             != MBID_YES)
     {
         // "no":
-        WinMessageBox(HWND_DESKTOP,
-                      G_hwndMain,
-                      "No changes have been made to your system. To leave xfix, just close the main window.",
-                      "xfix",
-                      0,
-                      MB_OK | MB_MOVEABLE);
+        MessageBox("No changes have been made to your system. To leave xfix, just close the main window.",
+                   MB_OK | MB_MOVEABLE);
     }
     else
     {
@@ -2091,12 +2156,8 @@ VOID WriteBack(VOID)
                     "%d keys in OS2.INI have been deleted. ", cNukes);
 
         strcat(szText, "To end xfix, just close the main window now.");
-        WinMessageBox(HWND_DESKTOP,
-                      G_hwndMain,
-                      szText,
-                      "xfix",
-                      0,
-                      MB_OK | MB_MOVEABLE);
+        MessageBox(szText,
+                   MB_OK | MB_MOVEABLE);
     }
 }
 
@@ -2154,6 +2215,9 @@ ULONG EXPENTRY fncbSelectInvalid(HWND hwndCnr,
     return (0);     // continue
 }
 
+
+
+
 /*
  *@@ GetSelectedRecords:
  *      creates a linked list with all records that are
@@ -2188,6 +2252,274 @@ PLINKLIST GetSelectedRecords(HWND hwndCnr,
     }
 
     return (pll);
+}
+
+#define IDDI_FILEMASK       500
+#define IDDI_SELECT         501
+#define IDDI_DESELECT       502
+#define IDDI_SELECTALL      503
+#define IDDI_DESELECTALL    504
+
+/*
+ *@@ RefreshAfterSelect:
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+VOID RefreshAfterSelect(HWND hwndDlg)
+{
+    // cnr is in QWL_USER
+    HWND hwndCnr = WinQueryWindowULong(hwndDlg, QWL_USER);
+
+    cnrhInvalidateAll(hwndCnr);
+
+    // give entry field the focus again
+    HWND hwndEF = WinWindowFromID(hwndDlg, IDDI_FILEMASK);
+    winhEntryFieldSelectAll(hwndEF);
+    WinSetFocus(HWND_DESKTOP, hwndEF);
+    // update the status bar
+    UpdateStatusBar(-1);
+}
+
+/*
+ *@@ fnwpSelectByName:
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_COMMAND:
+        {
+            USHORT usCommand = SHORT1FROMMP(mp1);
+            switch (usCommand)
+            {
+                case IDDI_SELECT:
+                case IDDI_DESELECT:
+                {
+                    PSZ pszMask;
+                    if (pszMask = winhQueryDlgItemText(hwndDlg, IDDI_FILEMASK))
+                    {
+                        // cnr is in QWL_USER
+                        HWND hwndCnr = WinQueryWindowULong(hwndDlg, QWL_USER);
+
+                        // run thru all records and select/deselect them if
+                        // they match
+                        HPOINTER hptrOld = winhSetWaitPointer();
+
+                        PNODERECORD prec = G_preccVeryFirst;
+                        while (prec)
+                        {
+                            // does this match the file mask?
+                            if (strhMatchExt(pszMask,
+                                             prec->szShortNameCopy,
+                                             // prec->szLongName,
+                                             FNM_OS2 | FNM_IGNORECASE))
+                            {
+                                // yes:
+                                if (usCommand == IDDI_SELECT)
+                                {
+                                    if (0 == (prec->recc.flRecordAttr & CRA_SELECTED))
+                                    {
+                                        G_cSelected++;
+                                        prec->recc.flRecordAttr |= CRA_SELECTED;
+                                    }
+                                }
+                                else
+                                    if (prec->recc.flRecordAttr & CRA_SELECTED)
+                                    {
+                                        G_cSelected--;
+                                        prec->recc.flRecordAttr &= ~CRA_SELECTED;
+                                    }
+                            }
+
+                            prec = prec->pNextRecord;
+                        }
+
+                        RefreshAfterSelect(hwndDlg);
+
+                        WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                        free(pszMask);
+                    }
+                }
+                break;
+
+                case IDDI_SELECTALL:
+                case IDDI_DESELECTALL:
+                {
+                    HPOINTER hptrOld = winhSetWaitPointer();
+                    // cnr is in QWL_USER
+                    HWND hwndCnr = WinQueryWindowULong(hwndDlg, QWL_USER);
+
+                    PNODERECORD prec = G_preccVeryFirst;
+                    while (prec)
+                    {
+                        if (usCommand == IDDI_SELECTALL)
+                        {
+                            if (0 == (prec->recc.flRecordAttr & CRA_SELECTED))
+                            {
+                                G_cSelected++;
+                                prec->recc.flRecordAttr |= CRA_SELECTED;
+                            }
+                        }
+                        else
+                            if (prec->recc.flRecordAttr & CRA_SELECTED)
+                            {
+                                G_cSelected--;
+                                prec->recc.flRecordAttr &= ~CRA_SELECTED;
+                            }
+
+                        prec = prec->pNextRecord;
+                    }
+
+                    RefreshAfterSelect(hwndDlg);
+
+                    WinSetPointer(HWND_DESKTOP, hptrOld);
+                }
+                break;
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
+        }
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ SelectByName:
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+VOID SelectByName(HWND hwndCnr)
+{
+    CONTROLDEF
+                Static = {
+                            WC_STATIC,
+                            "File mask:",
+                            WS_VISIBLE | SS_TEXT | DT_LEFT | DT_WORDBREAK,
+                            -1,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 300, SZL_AUTOSIZE },     // size
+                            5               // spacing
+                         },
+                Entry = {
+                            WC_ENTRYFIELD,
+                            "*",
+                            WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MARGIN | ES_AUTOSCROLL,
+                            IDDI_FILEMASK,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 300, 20 },     // size
+                            5               // spacing
+                         },
+                SelectButton = {
+                            WC_BUTTON,
+                            "~Select",
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
+                            IDDI_SELECT,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         },
+                DeselectButton = {
+                            WC_BUTTON,
+                            "~Deselect",
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                            IDDI_DESELECT,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         },
+                SelectAllButton = {
+                            WC_BUTTON,
+                            "Select ~all",
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                            IDDI_SELECTALL,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         },
+                DeselectAllButton = {
+                            WC_BUTTON,
+                            "Deselect a~ll",
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                            IDDI_DESELECTALL,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         },
+                CloseButton = {
+                            WC_BUTTON,
+                            "~Close",
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                            DID_CANCEL,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         };
+    DLGHITEM DlgTemplate[] =
+        {
+            START_TABLE,
+                START_ROW(0),
+                    CONTROL_DEF(&Static),
+                START_ROW(0),
+                    CONTROL_DEF(&Entry),
+                START_ROW(0),
+                    CONTROL_DEF(&SelectButton),
+                    CONTROL_DEF(&DeselectButton),
+                START_ROW(0),
+                    CONTROL_DEF(&SelectAllButton),
+                    CONTROL_DEF(&DeselectAllButton),
+                START_ROW(0),
+                    CONTROL_DEF(&CloseButton),
+            END_TABLE
+        };
+
+    HWND hwndDlg = NULLHANDLE;
+    PSZ  pszReturn = NULL;
+
+    if (NO_ERROR == dlghCreateDlg(&hwndDlg,
+                                  G_hwndMain,
+                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                  fnwpSelectByName,
+                                  "xfix: Select By Name",
+                                  DlgTemplate,      // DLGHITEM array
+                                  ARRAYITEMCOUNT(DlgTemplate),
+                                  NULL,
+                                  "9.WarpSans"))
+    {
+        HWND hwndEF = WinWindowFromID(hwndDlg, IDDI_FILEMASK);
+        winhCenterWindow(hwndDlg);
+        winhSetEntryFieldLimit(hwndEF, CCHMAXPATH);
+        winhEntryFieldSelectAll(hwndEF);
+        WinSetFocus(HWND_DESKTOP, hwndEF);
+
+        // store cnr in QWL_USER
+        WinSetWindowULong(hwndDlg, QWL_USER, hwndCnr);
+
+        // go!
+        WinProcessDlg(hwndDlg);             // fnwpSelectByName handles the buttons
+
+        WinDestroyWindow(hwndDlg);
+    }
 }
 
 /*
@@ -2257,7 +2589,12 @@ VOID FrameCommand(HWND hwndFrame,
                                   0, 0);
                 cnrhInvalidateAll(hwndCnr);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
-            break; }
+            }
+            break;
+
+            case IDMI_SELECT_BYNAME:
+                SelectByName(hwndCnr);
+            break;
 
             case IDMI_DELETE:
             {
@@ -2271,32 +2608,23 @@ VOID FrameCommand(HWND hwndFrame,
                     sprintf(szText, "You have selected %d handle(s) for removal. "
                                     "Are you sure you want to do this?", cRecs);
 
-                    if (WinMessageBox(HWND_DESKTOP,
-                                      G_hwndMain,
-                                      szText,
-                                      "xfix",
-                                      0,
-                                      MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+                    if (MessageBox(szText,
+                                   MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
                             == MBID_YES)
                     {
-                        ULONG ulrc = RemoveHandles(hwndCnr, pll);
-
-                        if (ulrc != 0)
+                        ULONG ulrc;
+                        if (ulrc = RemoveHandles(hwndCnr, pll))
                         {
                             sprintf(szText, "Error %d occured.", ulrc);
-                            WinMessageBox(HWND_DESKTOP,
-                                          G_hwndMain,
-                                          szText,
-                                          "xfix",
-                                          0,
-                                          MB_OK | MB_MOVEABLE);
+                            MessageBox(szText,
+                                       MB_OK | MB_MOVEABLE);
                         }
                     }
 
                     lstFree(&pll);
                 }
-
-            break; }
+            }
+            break;
 
             case IDMI_NUKEFOLDERPOS:
             {
@@ -2352,7 +2680,8 @@ VOID FrameCommand(HWND hwndFrame,
 
                     lstFree(&pll);
                 }
-            break; }
+            }
+            break;
 
             /*
              * IDMI_MOVEABSTRACTS:
@@ -2402,12 +2731,8 @@ VOID FrameCommand(HWND hwndFrame,
                                         "should be moved to the deskop.\n"
                                         "Are you sure you want to do this?",
                                         cRecs);
-                        if (WinMessageBox(HWND_DESKTOP,
-                                          G_hwndMain,
-                                          szText,
-                                          "xfix",
-                                          0,
-                                          MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+                        if (MessageBox(szText,
+                                       MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
                                 == MBID_YES)
                         {
                             // user really wants this:
@@ -2430,7 +2755,8 @@ VOID FrameCommand(HWND hwndFrame,
                 }
                 else
                     winhDebugBox(G_hwndMain, "xfix", "An error occured moving the abstracts.");
-            break; }
+            }
+            break;
 
             case IDMI_HELP_GENERAL:
             case IDMI_HELP_USINGHELP:
@@ -2452,16 +2778,119 @@ VOID FrameCommand(HWND hwndFrame,
                         "(C) 2000-2001 Ulrich M”ller\n\n"
                         "XWorkplace File Handles Fixer.");
 
-                WinMessageBox(HWND_DESKTOP,
-                              G_hwndMain,
-                              szInfo,
-                              "xfix",
-                              0,
-                              MB_OK | MB_MOVEABLE);
-            break; }
+                MessageBox(szInfo,
+                           MB_OK | MB_MOVEABLE);
+            }
+            break;
         }
     }
     CATCH(excpt1) {} END_CATCH();
+}
+
+/*
+ *@@ FrameWMControl:
+ *      handler for WM_CONTROL for the client in
+ *      winh_fnwpFrameWithStatusBar.
+ *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
+ */
+
+MRESULT FrameWMControl(HWND hwndFrame,
+                       USHORT usNotifyCode,
+                       MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (usNotifyCode)
+    {
+        /*
+         * CN_CONTEXTMENU:
+         *
+         */
+
+        case CN_CONTEXTMENU:
+        {
+            HWND hwndCnr = WinWindowFromID(G_hwndMain, FID_CLIENT);
+            if (G_preccSource = (PRECORDCORE)mp2)
+            {
+                ULONG       cRecs = 0;
+                PLINKLIST   pll = GetSelectedRecords(hwndCnr,
+                                                     G_preccSource,
+                                                     &cRecs);
+                if (pll)
+                {
+                    HWND hwndMenu = G_hwndContextMenuSingle;
+                    if (cRecs > 1)
+                    {
+                        // more than one record selected:
+                        hwndMenu = G_hwndContextMenuMulti;
+                    }
+
+                    // go thru selected records and disable menu
+                    // items accordingly
+                    BOOL    fGotAbstracts = FALSE,
+                            fGotFolderPoses = FALSE;
+
+                    PLISTNODE pNode = lstQueryFirstNode(pll);
+                    while (pNode)
+                    {
+                        PNODERECORD prec = (PNODERECORD)pNode->pItemData;
+
+                        if (prec->cAbstracts)
+                            fGotAbstracts = TRUE;
+                        if (prec->fFolderPos)
+                            fGotFolderPoses = TRUE;
+
+                        pNode = pNode->pNext;
+                    }
+
+                    WinEnableMenuItem(hwndMenu,
+                                      IDMI_NUKEFOLDERPOS,
+                                      fGotFolderPoses);
+                    WinEnableMenuItem(hwndMenu,
+                                      IDMI_MOVEABSTRACTS,
+                                      fGotAbstracts);
+
+                    cnrhShowContextMenu(hwndCnr,
+                                        G_preccSource,
+                                        hwndMenu,
+                                        hwndFrame);
+
+                    lstFree(&pll);
+                }
+            }
+        }
+        break;
+
+        /*
+         * CN_EMPHASIS:
+         *
+         */
+
+        case CN_EMPHASIS:
+        {
+            PNOTIFYRECORDEMPHASIS pnre;
+            PNODERECORD prec;
+            if (    (pnre = (PNOTIFYRECORDEMPHASIS)mp2)
+                 && (prec = G_preccVeryFirst)
+               )
+            {
+                G_cSelected = 0;
+                while (prec)
+                {
+                    if (prec->recc.flRecordAttr & CRA_SELECTED)
+                        G_cSelected++;
+
+                    prec = prec->pNextRecord;
+                }
+
+                SelectionChanged();
+            }
+        }
+        break;
+    }
+
+    return (mrc);
 }
 
 /*
@@ -2475,8 +2904,6 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
 {
     MRESULT mrc = 0;
 
-    static PRECORDCORE preccSource = NULL;
-
     switch (msg)
     {
         case WM_QUERYFRAMECTLCOUNT:
@@ -2488,7 +2915,8 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
             ulrc++;
 
             mrc = (MPARAM)ulrc;
-        break; }
+        }
+        break;
 
         case WM_FORMATFRAME:
         {
@@ -2535,7 +2963,8 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
             // increment the number of frame controls
             // to include our status bar
             mrc = (MRESULT)(ulCount + 1);
-        break; }
+        }
+        break;
 
         case WM_CALCFRAMERECT:
         {
@@ -2543,32 +2972,45 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
 
             // we have a status bar: calculate its rectangle
             // CalcFrameRect(mp1, mp2);
-        break; }
+        }
+        break;
 
         case WM_TIMER:
         {
             ULONG ulID = (ULONG)mp1;
-            if (G_tidInsertHandlesRunning)
+            switch (ulID)
             {
-                CHAR sz[100];
-                if (G_fResolvingRefs)
-                    sprintf(sz, "Resolving cross-references, %03d%% done...",
-                            G_ulPercentDone);
-                else
-                    sprintf(sz, "Parsing handles section, %03d%% done...",
-                            G_ulPercentDone);
-                WinSetWindowText(G_hwndStatusBar,
-                                 sz);
+                case TIMERID_SELECTIONCHANGED:
+                    WinStopTimer(G_hab,
+                                 G_hwndMain,
+                                 ulID);
+                    UpdateStatusBar(-1);
+                break;
+
+                default:
+                    if (G_tidInsertHandlesRunning)
+                    {
+                        CHAR sz[100];
+                        if (G_fResolvingRefs)
+                            sprintf(sz, "Resolving cross-references, %03d%% done...",
+                                    G_ulPercentDone);
+                        else
+                            sprintf(sz, "Parsing handles section, %03d%% done...",
+                                    G_ulPercentDone);
+                        WinSetWindowText(G_hwndStatusBar,
+                                         sz);
+                    }
+                    else if (G_tidCheckFilesRunning)
+                    {
+                        CHAR sz[100];
+                        sprintf(sz, "Checking files, %03d%% done...",
+                                G_ulPercentDone);
+                        WinSetWindowText(G_hwndStatusBar,
+                                         sz);
+                    }
             }
-            else if (G_tidCheckFilesRunning)
-            {
-                CHAR sz[100];
-                sprintf(sz, "Checking files, %03d%% done...",
-                        G_ulPercentDone);
-                WinSetWindowText(G_hwndStatusBar,
-                                 sz);
-            }
-        break; }
+        }
+        break;
 
         /*
          * WM_USER:
@@ -2606,7 +3048,8 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
 
                 UpdateMenuItems(0);
             }
-        break; }
+        }
+        break;
 
         case WM_USER + 1:
             WinSetWindowText(G_hwndStatusBar,
@@ -2617,81 +3060,37 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
             UpdateMenuItems(0);
         break;
 
+        /*
+         * WM_CONTROL:
+         *
+         */
+
         case WM_CONTROL:
         {
             USHORT usID = SHORT1FROMMP(mp1),
                    usNotifyCode = SHORT2FROMMP(mp1);
-            if ((usID == FID_CLIENT) && (usNotifyCode == CN_CONTEXTMENU) )
-            {
-                HWND hwndCnr = WinWindowFromID(G_hwndMain, FID_CLIENT);
-                preccSource = (PRECORDCORE)mp2;
-                if (preccSource)
-                {
-                    ULONG       cRecs = 0;
-                    PLINKLIST   pll = GetSelectedRecords(hwndCnr,
-                                                         preccSource,
-                                                         &cRecs);
-                    if (pll)
-                    {
-                        HWND hwndMenu = G_hwndContextMenuSingle;
-                        if (cRecs > 1)
-                        {
-                            // more than one record selected:
-                            hwndMenu = G_hwndContextMenuMulti;
-                        }
-
-                        // go thru selected records and disable menu
-                        // items accordingly
-                        BOOL    fGotAbstracts = FALSE,
-                                fGotFolderPoses = FALSE;
-
-                        PLISTNODE pNode = lstQueryFirstNode(pll);
-                        while (pNode)
-                        {
-                            PNODERECORD prec = (PNODERECORD)pNode->pItemData;
-
-                            if (prec->cAbstracts)
-                                fGotAbstracts = TRUE;
-                            if (prec->fFolderPos)
-                                fGotFolderPoses = TRUE;
-
-                            pNode = pNode->pNext;
-                        }
-
-                        WinEnableMenuItem(hwndMenu,
-                                          IDMI_NUKEFOLDERPOS,
-                                          fGotFolderPoses);
-                        WinEnableMenuItem(hwndMenu,
-                                          IDMI_MOVEABSTRACTS,
-                                          fGotAbstracts);
-
-                        cnrhShowContextMenu(hwndCnr,
-                                            preccSource,
-                                            hwndMenu,
-                                            hwndFrame);
-
-                        lstFree(&pll);
-                    }
-                }
-            }
-        break; }
+            if (usID == FID_CLIENT)
+                mrc = FrameWMControl(hwndFrame, usNotifyCode, mp2);
+        }
+        break;
 
         case WM_MENUEND:
             if (    (    ((HWND)mp2 == G_hwndContextMenuSingle)
                       || ((HWND)mp2 == G_hwndContextMenuMulti)
                     )
-                 && (preccSource)
+                 && (G_preccSource)
                )
                 cnrhSetSourceEmphasis(WinWindowFromID(G_hwndMain, FID_CLIENT),
-                                      preccSource,
+                                      G_preccSource,
                                       FALSE);
         break;
 
         case WM_COMMAND:
         {
             USHORT  usCmd = SHORT1FROMMP(mp1);
-            FrameCommand(hwndFrame, usCmd, preccSource);
-        break; }
+            FrameCommand(hwndFrame, usCmd, G_preccSource);
+        }
+        break;
 
         default:
             mrc = G_fnwpFrameOrig(hwndFrame, msg, mp1, mp2);
@@ -2708,17 +3107,18 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
 
 int main(int argc, char* argv[])
 {
-    HAB         hab;
     HMQ         hmq;
     QMSG        qmsg;
 
     DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
 
-    if (!(hab = WinInitialize(0)))
+    if (!(G_hab = WinInitialize(0)))
         return FALSE;
 
-    if (!(hmq = WinCreateMsgQueue(hab, 0)))
+    if (!(hmq = WinCreateMsgQueue(G_hab, 0)))
         return FALSE;
+
+    G_hptrMain = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
 
     // get the index of WPFileSystem from the base classes list...
     // we need this to determine the hiword for file-system handles
@@ -2877,10 +3277,8 @@ int main(int argc, char* argv[])
                        0);
 
             // standard PM message loop
-            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-            {
-                WinDispatchMsg(hab, &qmsg);
-            }
+            while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
+                WinDispatchMsg(G_hab, &qmsg);
 
             if (G_tidInsertHandlesRunning)
                 thrFree(&G_tiInsertHandles);
@@ -2891,7 +3289,7 @@ int main(int argc, char* argv[])
 
     // clean up on the way out
     WinDestroyMsgQueue(hmq);
-    WinTerminate(hab);
+    WinTerminate(G_hab);
 
     return (G_ulrc);        // 0 if nothing changed
                             // 1 if OS2SYS.INI was changed

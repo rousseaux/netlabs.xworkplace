@@ -353,7 +353,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
                              MCI_DEVTYPE_WAVEFORM_AUDIO,   // in: MCI_DEVTYPE_* ID
                              0,             // in: device index (0 for default)
                              pusDeviceID);   // in/out: MMPM/2 device ID
-        _Pmpf((__FUNCTION__ ": xmmOpenDevice returned 0x%lX", ulrc));
+        // _Pmpf((__FUNCTION__ ": xmmOpenDevice returned 0x%lX", ulrc));
     }
     else
     {
@@ -409,7 +409,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
                             MCI_WAIT | MCI_OPEN_ELEMENT | MCI_READONLY,
                             &mlp,
                             0);
-    _Pmpf((__FUNCTION__ ": MCI_LOAD returned 0X%LX", ulrc));
+    // _Pmpf((__FUNCTION__ ": MCI_LOAD returned 0X%LX", ulrc));
 
     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
     {
@@ -420,7 +420,8 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
                                 MCI_SET,
                                 MCI_WAIT | MCI_SET_AUDIO | MCI_SET_VOLUME,
                                 &msp, 0);
-        _Pmpf((__FUNCTION__ ": MCI_SET returned 0x%lX", ulrc));
+        // _Pmpf((__FUNCTION__ ": MCI_SET returned 0x%lX", ulrc));
+
         if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
         {
             // play and request MM_MCINOTIFY msg to
@@ -432,7 +433,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
                                     MCI_FROM | MCI_NOTIFY,
                                     (PVOID)&mpp,
                                     0);
-            _Pmpf((__FUNCTION__ ": MCI_PLAY returned 0x%lX", ulrc));
+            // _Pmpf((__FUNCTION__ ": MCI_PLAY returned 0x%lX", ulrc));
         }
     }
 
@@ -469,7 +470,7 @@ ULONG xmmStopSound(PUSHORT pusDeviceID)
                             MCI_WAIT,
                             &mgp,
                             0);
-    _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
+    // _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
 
     // go release the device
     ulrc = G_mciSendCommand(*pusDeviceID,
@@ -477,7 +478,7 @@ ULONG xmmStopSound(PUSHORT pusDeviceID)
                             MCI_RETURN_RESOURCE, // MCI_WAIT,
                             &mgp,
                             0);
-    _Pmpf((__FUNCTION__ ": MCI_RELEASEDEVICE returned 0x%lX", ulrc));
+    // _Pmpf((__FUNCTION__ ": MCI_RELEASEDEVICE returned 0x%lX", ulrc));
 
     return (ulrc);
 }

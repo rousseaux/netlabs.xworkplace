@@ -72,6 +72,8 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSPROCESS
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 #define INCL_WINMENUS
@@ -80,12 +82,14 @@
 
 // C library headers
 #include <stdio.h>
+#include <setjmp.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -217,32 +221,40 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpDisplayMenu");
 
-    hwndMenu = XFldDataFile_parent_WPDataFile_wpDisplayMenu(somSelf,
-                                                            hwndOwner,
-                                                            hwndClient,
-                                                            ptlPopupPt,
-                                                            ulMenuType,
-                                                            ulReserved);
-
-    if (!doshIsWarp4())
+    // added exception handling V0.9.16 (2001-01-23) [umoeller]
+    TRY_LOUD(excpt1)
     {
-        // on Warp 3, manipulate the "Open" submenu...
-        if (pGlobalSettings->fExtAssocs)
+        hwndMenu = XFldDataFile_parent_WPDataFile_wpDisplayMenu(somSelf,
+                                                                hwndOwner,
+                                                                hwndClient,
+                                                                ptlPopupPt,
+                                                                ulMenuType,
+                                                                ulReserved);
+
+        if (!doshIsWarp4())
         {
-            MENUITEM        mi;
-            // find "Open" submenu
-            if (WinSendMsg(hwndMenu,
-                           MM_QUERYITEM,
-                           MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                           (MPARAM)&mi))
+            // on Warp 3, manipulate the "Open" submenu...
+            if (pGlobalSettings->fExtAssocs)
             {
-                // found:
-                ftypModifyDataFileOpenSubmenu(somSelf,
-                                              mi.hwndSubMenu,
-                                              TRUE);        // delete existing
+                MENUITEM        mi;
+                // find "Open" submenu
+                if (WinSendMsg(hwndMenu,
+                               MM_QUERYITEM,
+                               MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                               (MPARAM)&mi))
+                {
+                    // found:
+                    ftypModifyDataFileOpenSubmenu(somSelf,
+                                                  mi.hwndSubMenu,
+                                                  TRUE);        // delete existing
+                }
             }
         }
     }
+    CATCH(excpt1)
+    {
+    }
+    END_CATCH();
 
     return (hwndMenu);
 }
@@ -542,7 +554,9 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpOpen");
 
+    #ifdef DEBUG_ASSOCS
     _Pmpf(("xfdf_wpOpen, ulView: 0x%lX", ulView));
+    #endif
 
     if (pGlobalSettings->fExtAssocs)
     {

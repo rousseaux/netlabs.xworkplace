@@ -626,7 +626,7 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
  *      and calls arcSwitchArchivingOn according to the
  *      result of these checks.
  *
- *      This gets called from krnInitializeXWorkplace
+ *      This gets called from initMain
  *      while the WPS is booting up (see remarks there).
  *      If we enable WPS archiving here, the WPS will
  *      archive the Desktop soon afterwards.
@@ -636,7 +636,7 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
  *      HWND of the notification window in mp1 to be able
  *      to destroy it later.
  *
- *      krnInitializeXWorkplace sets this to the XWorkplace
+ *      initMain sets this to the XWorkplace
  *      Thread-1 object window (krn_fnwpThread1Object), which in
  *      turn starts a timer to destroy the window later.
  *

@@ -24,6 +24,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
 
@@ -202,6 +203,7 @@ VOID pgmwClearWinInfos(VOID)
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-08-08) [umoeller]: removed "special" windows; now ignoring ShapeWin windows
+ *@@changed V0.9.15 (2001-09-14) [umoeller]: now always checking for visibility; this fixes VX-REXX apps hanging PageMage
  */
 
 BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
@@ -237,36 +239,44 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
             else
             {
                 const char *pcszClassName = pWinInfo->szClassName;
-                if (   // not PM Desktop child?
+                if (
+                        // make sure this is a desktop child;
+                        // we use WinSetMultWindowPos, which requires
+                        // that all windows have the same parent
                         (!WinIsChild(hwnd, HWND_DESKTOP))
+                        // ignore PM "Icon title" class:
                      || (!strcmp(pcszClassName, "#32765"))
-                            // PM "Icon title" class
+                        // ignore Warp 4 "Alt tab" window; this always exists,
+                        // but is hidden most of the time
                      || (!strcmp(pcszClassName, "AltTabWindow"))
-                            // Warp 4 "Alt tab" window; this always exists,
-                            // but is hidden most of the time
+                        // ignore all menus:
                      || (!strcmp(pcszClassName, "#4"))
-                            // menu, always ignore those
+                        // ignore shaped windows (src\helpers\shapewin.c):
                      || (!strcmp(pcszClassName, WC_SHAPE_WINDOW))
                      || (!strcmp(pcszClassName, WC_SHAPE_REGION))
-                            // ignore shaped windows (src\helpers\shapewin.c)
                    )
                     brc = FALSE;
                 else
                 {
-                    HSWITCH hswitch = WinQuerySwitchHandle(hwnd, 0);
+                    HSWITCH hswitch;
+                    ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
 
                     pWinInfo->bWindowType = WINDOW_NORMAL;
 
-                    if (hswitch == NULLHANDLE)
-                    {
-                        // V0.9.7 (2001-01-23) [dk]
-                        ULONG ulQ = WinQueryWindowULong(hwnd, QWL_STYLE);
-                        if (
-                                (!(ulQ & WS_VISIBLE))
-                             || (ulQ & FCF_SCREENALIGN)  // netscape dialog
-                           )
-                            pWinInfo->bWindowType = WINDOW_RESCAN;
-                    }
+                    if (    (!(hswitch = WinQuerySwitchHandle(hwnd, 0)))
+                            // V0.9.15 (2001-09-14) [umoeller]:
+                            // _always_ check for visibility, and
+                            // if the window isn't visible, don't
+                            // mark it as normal
+                            // (this helps VX-REXX apps, which can
+                            // solidly lock PageMage with their hidden
+                            // frame in the background, upon which
+                            // WinSetMultWindowPos fails)
+                         || (!(ulStyle & WS_VISIBLE))
+                         || (pWinInfo->swp.fl & SWP_HIDE)
+                         || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
+                       )
+                        pWinInfo->bWindowType = WINDOW_RESCAN;
                     else if (pWinInfo->swp.fl & SWP_MINIMIZE)
                         pWinInfo->bWindowType = WINDOW_MINIMIZE;
                     else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
@@ -283,7 +293,7 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                                     swctl.szSwtitle,
                                     sizeof(pWinInfo->szSwitchName) - 1);
 
-                        if (pgmwStickyCheck(swctl.szSwtitle))
+                        if (pgmwStickyCheck(hwnd, swctl.szSwtitle))
                              pWinInfo->bWindowType = WINDOW_STICKY;
                     }
                 }
@@ -563,9 +573,10 @@ BOOL pgmwWindowListRescan(VOID)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-BOOL pgmwStickyCheck(const char *pcszSwitchName)
+BOOL pgmwStickyCheck(HWND hwnd,
+                     const char *pcszSwitchName)
 {
-    BOOL    bFound = FALSE;
+    HWND hwndClient;
 
     // shortcuts to global pagemage config
     if (pcszSwitchName)
@@ -581,13 +592,23 @@ BOOL pgmwStickyCheck(const char *pcszSwitchName)
             if (strstr(pcszSwitchName,
                        pPageMageConfig->aszSticky[usIdx]))
             {
-                bFound = TRUE;
-                break;
+                return TRUE;
             }
         }
     }
 
-    return (bFound);
+    // not in sticky names list:
+    // check if it's an XCenter (check client class name)
+    if (hwndClient = WinWindowFromID(hwnd, FID_CLIENT))
+    {
+        CHAR szClass[100];
+        WinQueryClassName(hwndClient, sizeof(szClass), szClass);
+        if (!strcmp(szClass, WC_XCENTER_CLIENT))
+            // target is XCenter:
+            return TRUE;
+    }
+
+    return (FALSE);
 }
 
 /*
@@ -596,7 +617,7 @@ BOOL pgmwStickyCheck(const char *pcszSwitchName)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
+/* BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
 {
     // shortcuts to global pagemage config
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
@@ -617,7 +638,7 @@ BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
     }
 
     return (bFound);
-}
+} */
 
 /*
  *@@ pgmwGetWindowFromClientPoint:

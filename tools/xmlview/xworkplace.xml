@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="cp850"?>
 
-<!-- <?xml version="1.0" encoding="ISO-8859-1"?>
- -->
-
 <!DOCTYPE WARPIN SYSTEM "warpin.dtd"
 [
     <!ENTITY VersionMajor "0">
@@ -28,6 +25,8 @@
     <REGISTERCLASS
         CLASSNAME="XFolder"
         DLLPATH="$(1)\bin\xfldr.dll" />
+
+    <REPLACECLASS />
 
     <REPLACECLASS
         OLDCLASSNAME="WPFolder"

@@ -50,6 +50,7 @@ BEGIN
     SUBMENU "~Select", IDM_SELECT, MIS_TEXT
     BEGIN
         MENUITEM "Select all invalid", IDMI_SELECT_INVALID, MIS_TEXT
+        MENUITEM "Select by name...", IDMI_SELECT_BYNAME, MIS_TEXT
     END
 
     SUBMENU "~Help", IDM_SELECT, MIS_TEXT

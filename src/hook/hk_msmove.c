@@ -317,7 +317,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                                   sizeof(szFocusClass),
                                   szFocusClass);
 
-                if (strcmp(szFocusClass, "#4") == 0)
+                if (!strcmp(szFocusClass, "#4"))
                 {
                     // menu:
                     // stop timers and quit

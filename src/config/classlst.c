@@ -837,11 +837,12 @@ VOID StartMethodsUpdateTimer(PCLASSLISTCLIENTDATA pClientData)
  *      we need to return the record core attributes.
  *
  *      For classes which have been replaced, we set the CRA_DISABLED
- *      attribute.
+ *      attribute. This is now finally working with 0.9.15.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfsys.c.
  *@@changed V0.9.0 [umoeller]: added CRA_DISABLED
  *@@changed V0.9.0 [umoeller]: changed initially expanded classes
+ *@@changed V0.9.15 (2001-09-14) [umoeller]: now expanding replaced classes too
  */
 
 MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
@@ -849,35 +850,72 @@ MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
                                         MPARAM mpwps,  // current WPSLISTITEM struct
                                         MPARAM mpreccParent) // parent record core
 {
-    PWPSLISTITEM        pwps = (PWPSLISTITEM)mpwps;
-    // PSELECTCLASSDATA    pscd = (PSELECTCLASSDATA)ulscd;
-    // PRECORDCORE         preccParent = NULL;
+    PWPSLISTITEM        pwps;
 
-    USHORT              usAttr = CRA_RECORDREADONLY
-                                    | CRA_COLLAPSED;
+    USHORT              usAttr = CRA_RECORDREADONLY;
+    BOOL                fExpand = FALSE;
 
-    if (pwps)
+    if (pwps = (PWPSLISTITEM)mpwps)
     {
-        #ifdef DEBUG_SETTINGS
-            _Pmpf(("Checking %s\n", pwps->pszClassName));
-        #endif
+        // #ifdef DEBUG_SETTINGS
+            _Pmpf(("Checking %s", pwps->pszClassName));
+        // #endif
 
         // if the class is one of the following,
         // expand all the parent records of the new record
         // so that these classes are initially visible
-        if (    (strcmp(pwps->pszClassName, "WPAbstract") == 0)
-             || (strcmp(pwps->pszClassName, "WPDataFile") == 0) // V0.9.0
+        if (    (!strcmp(pwps->pszClassName, "WPAbstract"))
+             || (!strcmp(pwps->pszClassName, "WPDataFile")) // V0.9.0
 
-             || (strcmp(pwps->pszClassName, "WPFolder") == 0)   // V0.9.0
+             || (!strcmp(pwps->pszClassName, "WPFolder"))   // V0.9.0
            )
         {
             cnrhExpandFromRoot(hwndCnr, (PRECORDCORE)mpreccParent);
         }
+        else
+            // if this class replaces a parent class,
+            // expand all records up to that parent class only
+            if (pwps->pszReplacesClass)
+            {
+                PCLASSRECORDCORE preccParent = (PCLASSRECORDCORE)mpreccParent;
+                while (preccParent)
+                {
+                    WinSendMsg(hwndCnr, CM_EXPANDTREE, (MPARAM)preccParent, MPNULL);
+                    if (!strcmp(preccParent->pwps->pszClassName,
+                                pwps->pszReplacesClass))
+                        // reached the replacement class: stop
+                        break;
 
-        // class replaced:
+                    preccParent = (PCLASSRECORDCORE)WinSendMsg(hwndCnr,
+                                                          CM_QUERYRECORD,
+                                                          (MPARAM)preccParent,
+                                                          MPFROM2SHORT(CMA_PARENT,
+                                                                       CMA_ITEMORDER));
+
+                    if (    (!preccParent)
+                         || (preccParent == (PCLASSRECORDCORE)-1)
+                       )
+                        break;
+                }
+            }
+
         if (pwps->pszReplacedWithClasses)
+        {
+            // if the class itself is replaced,
+            // disable it (cnr owner draw will paint it gray)
+            _Pmpf(("class %s is replaced with %s",
+                   pwps->pszClassName,
+                   pwps->pszReplacedWithClasses));
+
             usAttr |= CRA_DISABLED;
+        }
     }
+
+    if (fExpand)        // V0.9.15 (2001-09-14) [umoeller]
+        usAttr |= CRA_EXPANDED;
+    else
+        usAttr |= CRA_COLLAPSED;
+
     return (MPARAM)(usAttr);
 }
 
@@ -907,15 +945,15 @@ MRESULT EXPENTRY fncbReplaceClassSelected(HWND hwndCnr,
         {
             ULONG ulFlags;
             if (!ParseDescription(pszClassInfo,
-                        pwps->pszClassName,
-                        &ulFlags,
-                        szInfo))
+                                  pwps->pszClassName,
+                                  &ulFlags,
+                                  szInfo))
             {
                 // not found: search for "UnknownClass"
                 ParseDescription(pszClassInfo,
-                        "UnknownClass",
-                        &ulFlags,
-                        szInfo);
+                                 "UnknownClass",
+                                 &ulFlags,
+                                 szInfo);
             }
         }
     }

@@ -108,6 +108,7 @@ $(XWP_OUTPUT_ROOT)\classes.obj \
 $(XWP_OUTPUT_ROOT)\cnrsort.obj \
 $(XWP_OUTPUT_ROOT)\common.obj \
 $(XWP_OUTPUT_ROOT)\contentmenus.obj \
+$(XWP_OUTPUT_ROOT)\init.obj \
 $(XWP_OUTPUT_ROOT)\notebook.obj \
 $(XWP_OUTPUT_ROOT)\kernel.obj \
 $(XWP_OUTPUT_ROOT)\xsetup.obj \
@@ -231,11 +232,11 @@ really_all:     idl helpers helpers_exe_mt compile_really_all tools link nls
 
 # "dep": create dependencies.
 dep:
-    @echo $(MAKEDIR)\makefile: Going for subdir src (dep)
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src (dep)
     @cd src
     $(MAKE) -nologo dep "SUBTARGET=dep" "RUNDEPONLY=1" "REALLYALL=1"
     @cd $(CURRENT_DIR)
-    @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
+    @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo dep "NOINCLUDEDEPEND=1" $(SUBMAKE_PASS_STRING)
     @cd $(CURRENT_DIR)
@@ -252,7 +253,7 @@ dep:
 # idl always gets invoked first to check whether
 # src\classes\*.c needs to be refreshed from idl\*.idl.
 idl:
-    @echo $(MAKEDIR)\makefile: Going for subdir idl
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir idl
     @cd idl
     @nmake -nologo all "MAINMAKERUNNING=YES"
     @cd ..
@@ -262,7 +263,7 @@ helpers:
 # this branches over to the xwphelpers source tree,
 # which is prepared for this. The helpers.lib file
 # is created in $(XWP_OUTPUT_ROOT) then.
-    @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
+    @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)" "CC_HELPERS=$(CC_HELPERS_DLL)"
@@ -274,7 +275,7 @@ helpers_exe_mt:
 # helpers_exe_mt:
 # same as the above, but this builds a multithread lib for EXEs
 # in $(XWP_OUTPUT_ROOT)\exe_mt\ instead.
-    @echo $(MAKEDIR)\makefile: Going for src\helpers (EXE MT version)
+    @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (EXE MT version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
@@ -282,48 +283,48 @@ helpers_exe_mt:
 
 # compile_all: compile main (without treesize etc.)
 compile_all:
-    @echo $(MAKEDIR)\makefile: Going for subdir src
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src
     @cd src
     $(MAKE) -nologo "SUBTARGET=all"
     @cd $(CURRENT_DIR)
 
 # compile_really_all: compile really_all
 compile_really_all:
-    @echo $(MAKEDIR)\makefile: Going for subdir src (REALLY_ALL)
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src (REALLY_ALL)
     @cd src
     $(MAKE) -nologo "SUBTARGET=all" "REALLYALL=1"
     @cd $(CURRENT_DIR)
 
 tools:
-    @echo $(MAKEDIR)\makefile: Going for subdir tools
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir tools
     @cd tools
     $(MAKE) -nologo "SUBTARGET=all" "MAINMAKERUNNING=YES"
     @cd ..
 
 xwpsecurity:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\xwpsec_ring0
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\xwpsec_ring0
     @cd src\xwpsec_ring0
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
-    @echo $(MAKEDIR)\makefile: Going for subdir src\XWPShell
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\XWPShell
     @cd src\XWPShell
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 nls:
-    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\dll
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\dll
     @cd $(XWP_LANG_CODE)\dll
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)
     @cd inf.$(XWP_LANG_CODE)
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\misc
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\misc
     @cd misc
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\xwphelp
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\xwphelp
     @cd xwphelp
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..

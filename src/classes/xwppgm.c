@@ -437,6 +437,7 @@ SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpgm_wpOpen");
 
+/*
     _Pmpf((__FUNCTION__ ": _pvProgramLongs is 0x%lX", _pvProgramLongs));
     if (_pvProgramLongs)
     {
@@ -450,7 +451,6 @@ SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
                 _wpQueryFilename(pobj, sz, TRUE);
         }
         _Pmpf(("  executable: hobj = 0x%lX, \"%s\"", hobj, sz));
-
     }
 
     _Pmpf((__FUNCTION__ ": _pvStringArray is 0x%lX, cb %d",
@@ -486,11 +486,11 @@ SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
         }
     }
 
-    /* if (ulView == OPEN_RUNNING)
+    if (ulView == OPEN_RUNNING)
         return (progOpenProgram(somSelf,
                                 NULL,           // no data file argument
                                 0));            // no menu ID
-       */
+*/
 
     return (XWPProgram_parent_WPProgram_wpOpen(somSelf, hwndCnr,
                                                ulView, param));

@@ -96,6 +96,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -2043,7 +2044,7 @@ SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
  *      system (for M_WPObject, that is), so we use this
  *      to set up some stuff, most notably, start the
  *      additional XWorkplace threads by calling
- *      krnInitializeXWorkplace, which handles the details.
+ *      initMain, which handles the details.
  *
  *      The beautiful thing is that at this point we appear
  *      to own the computer all alone. It seems that no
@@ -2100,7 +2101,7 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         if (!fOpenFoldersFound)
             // only if no open folders are found:
             // initialize the kernel (kernel.c)
-            krnInitializeXWorkplace();
+            initMain();
 
         {
             // store the class object in KERNELGLOBALS

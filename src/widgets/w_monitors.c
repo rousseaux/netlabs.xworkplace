@@ -815,7 +815,7 @@ MRESULT MwgtCreate(HWND hwnd,
                     // no error at all:
                     // read first value, because next update
                     // won't be before 1 minute from now
-                    if (!(pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm)))
+                    if (!(pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm, NULL)))
                     {
                         // and load the icons
                         pPrivate->hptrAC = WinLoadPointer(HWND_DESKTOP,
@@ -1545,6 +1545,7 @@ VOID ForceRepaint(PMONITORPRIVATE pPrivate)
  *@@ MwgtTimer:
  *
  *@@added V0.9.14 (2001-08-01) [umoeller]
+ *@@changed V0.9.16 (2001-09-20) [umoeller]: battery widget didn't repaint background on status change, fixed
  */
 
 VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
@@ -1567,9 +1568,19 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
                      && (pPrivate->pApm)
                      && (!pPrivate->arcAPM)
                    )
-                    pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm);
-
-                ForceRepaint(pPrivate);
+                {
+                    BOOL fChanged = FALSE;
+                    if (    (pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm,
+                                                                &fChanged))
+                         || (fChanged)
+                       )
+                        // ForceRepaint isn't enough here because we must
+                        // also invalidate the background
+                        // V0.9.16 (2001-09-20) [umoeller]
+                        WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                }
+                else
+                    ForceRepaint(pPrivate);
             }
             break;
 
@@ -1580,7 +1591,7 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
                     ULONG ulLogicalDrive,
                           cFlashing = 0;
 
-                    _Pmpf((__FUNCTION__ ": timer 2000"));
+                    // _Pmpf((__FUNCTION__ ": timer 2000"));
 
                     // run over the array of DISKDATA's and update
                     // all the drive flags that are currently flashing;
@@ -1667,8 +1678,7 @@ VOID UpdateLogicalDrive(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
     {
         PDISKDATA       pThis = &pPrivate->paDiskDatas[(ULONG)mp1];
 
-        _Pmpf((__FUNCTION__ ": drive %d",
-                (ULONG)mp1));
+        // _Pmpf((__FUNCTION__ ": drive %d", (ULONG)mp1));
 
         // flash the rectangle
         pThis->fl |= (DFFL_FLASH | DFFL_REPAINT);

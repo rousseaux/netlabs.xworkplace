@@ -1104,7 +1104,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *      (using fnwpWorkerObject as the window proc)
  *      and stores its handle in KERNELGLOBALS.hwndWorkerObject.
  *
- *      This thread is created by krnInitializeXWorkplace.
+ *      This thread is created by initMain.
  *
  *@@changed V0.9.7 (2000-12-13) [umoeller]: made awake-objects mutex unnamed
  *@@changed V0.9.7 (2000-12-13) [umoeller]: fixed semaphore protection
@@ -1602,7 +1602,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
     // destroy boot logo, if present
     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
 
-    // if XFolder was just installed, check for
+    // if XWorkplace was just installed, check for
     // existence of config folders and
     // display welcome msg
     if (PrfQueryProfileInt(HINI_USER,
@@ -1846,9 +1846,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             {
                 pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
                 if (pKernelGlobals)
-                {
                     pKernelGlobals->fDesktopPopulated = TRUE;
-                }
             }
             CATCH(excpt1) {} END_CATCH();
 
@@ -2111,7 +2109,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
  *          As opposed to the "Worker" thread, this thread runs
  *          with normal regular priority (delta +/- 0).
  *
- *          This thread is also created from krnInitializeXWorkplace.
+ *          This thread is also created from initMain.
  *
  *@@added V0.9.0 [umoeller]
  */
@@ -2500,7 +2498,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *          As opposed to the "Worker" thread, this thread runs
  *          with high regular priority.
  *
- *          This thread is also created from krnInitializeXWorkplace.
+ *          This thread is also created from initMain.
  *
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
@@ -2598,7 +2596,7 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
 
 /*
  *@@ xthrStartThreads:
- *      this gets called by krnInitializeXWorkplace upon
+ *      this gets called by initMain upon
  *      system startup to start the three additional
  *      XWorkplace threads.
  *
@@ -2624,7 +2622,7 @@ BOOL xthrStartThreads(FILE *DumpFile)
 
             // store the thread ID of the calling thread;
             // this should always be 1
-            // ... moved this to krnInitializeXWorkplace
+            // ... moved this to initMain
 
             /*
              *  start threads

@@ -492,19 +492,23 @@ BOOL ctrpSetup(XCenter *somSelf,
 
     // scan the standard stuff from the table...
     // this saves us a lot of work.
-    BOOL    brc = cmnSetupScanString(somSelf,
-                                     G_XCenterSetupSet,
-                                     ARRAYITEMCOUNT(G_XCenterSetupSet),
-                                     somThis,
-                                     pszSetupString,
-                                     &cSuccess);
+    BOOL    brc;
+
+    _Pmpf((__FUNCTION__ ": string is \"%s\"", pszSetupString));
 
     // now comes the non-standard stuff:
-
-    if (brc)
+    if (brc = cmnSetupScanString(somSelf,
+                                 G_XCenterSetupSet,
+                                 ARRAYITEMCOUNT(G_XCenterSetupSet),
+                                 somThis,
+                                 pszSetupString,
+                                 &cSuccess))
     {
         CHAR    szValue[100];
         ULONG   cb = sizeof(szValue);
+
+        _Pmpf(("   cmnSetupScanString returned TRUE"));
+
         if (_wpScanSetupString(somSelf,
                                pszSetupString,
                                "POSITION",
@@ -524,6 +528,9 @@ BOOL ctrpSetup(XCenter *somSelf,
     {
         // WIDGETS can be very long, so query size first
         ULONG   cb = 0;
+
+        _Pmpf(("   brc still TRUE; scanning WIDGETS string"));
+
         if (_wpScanSetupString(somSelf,
                                pszSetupString,
                                "WIDGETS",
@@ -545,6 +552,8 @@ BOOL ctrpSetup(XCenter *somSelf,
                 PSZ pszToken = strtok(pszWidgets, ",");
                 if (pszToken)
                 {
+                    _Pmpf(("got WIDGETS string, nuking existing widgets"));
+
                     // first of all, remove all existing widgets,
                     // we have a replacement here
                     while (_xwpRemoveWidget(somSelf,
@@ -559,6 +568,9 @@ BOOL ctrpSetup(XCenter *somSelf,
                         PSZ pszWidgetSetup = NULL;
                         // check if this has brackets with the setup string
                         PSZ pBracket = strchr(pszToken, '(');
+
+                        _Pmpf(("processing token \"%s\"", pszToken));
+
                         if (pBracket)
                         {
                             pszWidgetClass = strhSubstr(pszToken, pBracket);

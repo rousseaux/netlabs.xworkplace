@@ -757,6 +757,9 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
          && (hwnd == G_HookData.hwndLockupFrame)
        )
     {
+        // DosBeep(1000, 100);
+            // tested, works V0.9.16 (2001-01-27) [umoeller]
+
         // current lockup frame being destroyed
         // (system is being unlocked):
         G_HookData.hwndLockupFrame = NULLHANDLE;

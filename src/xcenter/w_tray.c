@@ -162,6 +162,7 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
@@ -1333,7 +1334,9 @@ MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                                      cmnGetString(ID_CRSI_ENTERNEWTRAY),
                                                      szTemp,
                                                      50,
-                                                     TEBF_REMOVETILDE | TEBF_REMOVEELLIPSE))
+                                                     TEBF_REMOVETILDE
+                                                        | TEBF_REMOVEELLIPSE
+                                                        | TEBF_SELECTALL))
                 {
                     // create a tray with that name
                     ULONG ulIndex = 0;
@@ -1360,7 +1363,9 @@ MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                                          cmnGetString(ID_CRSI_ENTERRENAMETRAY),
                                                          pCurrentTray->pszTrayName,
                                                          50,
-                                                         TEBF_REMOVETILDE | TEBF_REMOVEELLIPSE))
+                                                         TEBF_REMOVETILDE
+                                                            | TEBF_REMOVEELLIPSE
+                                                            | TEBF_SELECTALL))
                     {
                         if (pCurrentTray->pszTrayName)
                             free(pCurrentTray->pszTrayName);

@@ -483,7 +483,7 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
  *@@ xmmInit:
  *      initializes the XWorkplace Media environment
  *      and resolves the MMPM/2 APIs.
- *      Gets called by krnInitializeXWorkplace on
+ *      Gets called by initMain on
  *      WPS startup.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
@@ -539,7 +539,7 @@ BOOL xmmInit(FILE* DumpFile)
 /*
  *@@ xmmDisable:
  *      disables multimedia completely.
- *      Called from krnInitializeXWorkplace if
+ *      Called from initMain if
  *      the flag in the panic dialog has been set.
  *
  *@@added V0.9.3 (2000-04-30) [umoeller]
