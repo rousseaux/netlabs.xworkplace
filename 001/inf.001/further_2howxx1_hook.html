@@ -65,7 +65,7 @@ you will see that all hook functionality will be gone.
 
 <P><CODE>XWPDAEMN.EXE</CODE> is started by &xwp; while the WPS is starting up
 for the first time and keeps running until the system is shut down. That is, the
-daemon even keeps running between WPS restarts.
+daemon even keeps running between Desktop restarts.
 
 <P>Even though the daemon is a PM program, it doesn't create any windows (except for
 the PageMage window, see below).
@@ -83,8 +83,8 @@ But I hope you get the basic idea.
 crashes, it's more difficult to clean up installed hooks because the WPS is so
 complex in itself.
 
-<P><LI>Since the daemon keeps running between WPS restarts, it can also keep track
-of certain data which is needed between WPS restarts. For example, the
+<P><LI>Since the daemon keeps running between Desktop restarts, it can also keep track
+of certain data which is needed between Desktop restarts. For example, the
 &xwp; startup folder shouldn't be processed again when the WPS is restarted
 (unless the user requests this). Try it out: If you kill the daemon and then restart
 the WPS, you'll see that the &xwp; startup folder will get processed again, because

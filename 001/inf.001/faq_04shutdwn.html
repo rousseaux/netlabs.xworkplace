@@ -1,7 +1,7 @@
 <HTML NOSUBLINKS="xices" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
 <HEAD>
     <TITLE>
-        FAQ: XShutdown Questions
+        FAQ: &xshutdown; Questions
     </TITLE>
 </HEAD>
 <!-- This file is all new with V0.82. -->
@@ -23,18 +23,18 @@ have the IBM BootManager installed, you can circumvent this problem by specifyin
 <CITE>SETBOOT.EXE</CITE> as a user reboot option (Desktop settings notebook -> "XDesktop"
 page 1 -> "Actions").
 
-<P><LI><B>Is there anything which XShutdown does not properly save?</B>
-<P>Yes. XShutdown does not save positions of folders which have changed just before
-XShutdown was initiated, because the WPS <I>delays</I> saving folder positions
+<P><LI><B>Is there anything which &xshutdown; does not properly save?</B>
+<P>Yes. &xshutdown; does not save positions of folders which have changed just before
+&xshutdown; was initiated, because the WPS <I>delays</I> saving folder positions
 in some background
 thread to which I have found no access, and the format of the folder position entries
 in OS2.INI is not documented, so I cannot do it myself. The same applies to
-folders which are closed by XShutdown itself. If you want folder positions to
+folders which are closed by &xshutdown; itself. If you want folder positions to
 be saved, close them manually and wait a few (about 10-20) seconds before
-starting XShutdown.
+starting &xshutdown;.
 <P>(With "folder positions", I mean the position of an open folder <I>window</I> itself,
 not the positions of the icons in a folder. These are properly saved.)
-<P>Also, XShutdown cannot save changes to the Tasklist window (e.g. fonts or
+<P>Also, &xshutdown; cannot save changes to the Tasklist window (e.g. fonts or
 colors being dropped on them). If you want these changes saved, you'll have to
 use &os2;'s regular shutdown just once.
 
@@ -60,7 +60,7 @@ way above 1 MB per INI file.
 new INI file (for the user and system INI file, respectively)
 and then went through all applications and keys in the profile and simply copied them.
 This caused quite some stress on the PM shared memory management.
-<P>Reducing the size of the INI files did help. By the way, it was not only XShutdown
+<P>Reducing the size of the INI files did help. By the way, it was not only &xshutdown;
 which fails on these INIs, but any other application which copies the user and system
 profiles bytewise also (I've checked this with WPSBackup once, which just crashes).
 <P>To reduce the size of the INIs, first of all, run CHECKINI (from Henk Kelder's
@@ -81,7 +81,7 @@ again.
 used for creating the new profiles. Since Carsten Arnold told me the file format
 of the INI files, I wrote a set of routines which write these without using shared
 memory. Apparently, this helped. This is the "new method" which is now selectable
-on the "XShutdown" page in the Desktop's settings notebook.
+on the "&xshutdown;" page in the Desktop's settings notebook.
 </UL>
 <!-- the following Q added with V0.9.4 -->
 <P><LI><B>After using Xhutdown, at the next reboot, the screen is reset to VGA, and
@@ -92,7 +92,7 @@ files have not been properly saved. As a result, &os2; reverts to default values
 the screen and cannot find your desktop.
 
 <P>If this happens, you will find a backup copy of both OS2.INI and OS2SYS.INI in your
-\OS2 directory, renamed to .BAK. Before XShutdown saves the INI files, it renames the
+\OS2 directory, renamed to .BAK. Before &xshutdown; saves the INI files, it renames the
 old ones. Boot to a command line (using Alt-F1 during startup) and rename these two
 backups back to *.INI.
 <!-- the following is unchanged -->
@@ -104,7 +104,7 @@ backups back to *.INI.
 <CODE>APM.SYS</CODE> device driver, after which it has no control over what
 that driver is doing to power off the system.
 <P>IBM updated the APM APM support with Warp 4 Fixpak 6 (and possibly
-later too). The "XShutdown" page in the Desktop's settings
+later too). The "&xshutdown;" page in the Desktop's settings
 notebook displays the version number of the installed APM driver, which should be
 at least 1.2 to make APM power-off work.
 <P>Even worse, there are many systems which have no 100% compatible APM support

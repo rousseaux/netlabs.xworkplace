@@ -36,7 +36,7 @@ additional information from the executable direcly.
 now has a history of the last 10 file masks which were entered.
 <P><LI>Status bars can now dereference shadows (new setting in "Workplace Shell").
 <P><LI>New "Menu bar" setting in Warp 4's "View" context submenu.
-<P><LI>New "&xwp; panic" dialog when Shift key is held down during WPS startup,
+<P><LI>New "&xwp; panic" dialog when Shift key is held down during Desktop startup,
 which allows you to selectively disable &xwp; features.
 <P><LI>New "Startup" and "Shutdown" pages in Desktop's settings notebook. Startup
 page allows you to configure the <A HREF="xsd_03bootlogo.html">boot logo</A> now.
@@ -73,7 +73,7 @@ with regular priority which takes over some functionality from the Worker thread
 <P><LI>Also, "Refresh now" now operates in the "File" thread (which blocked
 the user interface previously).
 <P><LI>"File exists" dialog now displays file sizes in bytes, not KB.
-<P><LI>XShutdown now writes time information into the XSHUTDWN.LOG file with each
+<P><LI>&xshutdown; now writes time information into the XSHUTDWN.LOG file with each
 line.
 
 </UL>Bugfixes:
@@ -111,9 +111,9 @@ corresponding data is freed.
 <P><LI>Previous versions sometimes forgot to process the contents of the &xwp;
 startup folder upon first bootup. This has been completely reworked, now using the
 &xwp; daemon (XWPDAEMON.EXE).
-<P><LI>XShutdown would crash when the INI file names were specified in lower case
-in CONFIG.SYS. Fixed.
-<P><LI>XShutdown sent WM_CLOSE to some applications instead of just WM_QUIT. For
+<P><LI>&xshutdown; would crash when the INI file names were specified in lower case
+in &cfgsys;. Fixed.
+<P><LI>&xshutdown; sent WM_CLOSE to some applications instead of just WM_QUIT. For
 example, Program Commander didn't like this too much. Fixed; all PM apps get
 WM_QUIT now.
 <P><LI>For some reason, XFldObject::wpObjectReady does not get called for WPFolder
@@ -125,8 +125,8 @@ are not running on thread 1, which happens sometimes (e.g. folders opened from R
 or TREESIZE.EXE).
 <P><LI>Reworked exception handlers once again. This fixes hangs in the Worker thread
 when PMSHELL.EXE got killed or trapped somewhere, which used to require a system reboot.
-<P><LI>I have reorganized large portions of the XShutdown code, which should help
-with some hung systems during XShutdown.
+<P><LI>I have reorganized large portions of the &xshutdown; code, which should help
+with some hung systems during &xshutdown;.
 </UL>
 </BODY>
 </HTML>

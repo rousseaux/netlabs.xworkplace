@@ -63,7 +63,7 @@ close the active Desktop, and it does not have a title bar.
 <P>The WPS implements a derivative structure such that all objects are logically
 grouped and interdependent. On an even more abstract level,
 all object classes of the WPS are descendants of a SINGLE CLASS named "WPObject", which provides
-certain functions that all WPS objects need: mainly the ability to display context menus and
+certain functions that all Desktop objects need: mainly the ability to display context menus and
 notebooks at all and things like that. This is typical of object-oriented programming; such a
 global ancestor class is commonly called the "root class" of a "class hierarchy".
 <P>On WPObject, the WPS builds a complete tree of classes known as the
@@ -89,7 +89,7 @@ the one that was defined with the ancestor class.
 can be seen with the "Help" menu item which is available in every object's
 context menu. Selecting the "Extended help" menu item will result in an object's
 <CITE>wpDisplayHelp</CITE> method to be called. This method is introduced by the
-by the WPS root class, WPObject, so that all WPS objects can display help:
+by the WPS root class, WPObject, so that all Desktop objects can display help:
 the &os2; help manager is initialized, the
 help window is displayed, etc.
 The actual help page to be displayed however is

@@ -12,13 +12,13 @@
 <B>&xwp; 0.9.9 (April 8, 2001)</B>
 
 <P>New features:
-<UL><LI>Added detailed <A HREF="095plugins.html">documentation for XCenter plugins</A>
+<UL><LI>Added detailed <A HREF="095plugins.html">documentation for &xcenter; plugins</A>
 plus the "toolkit" directory with the binary release.
 <P><LI>Added replacement <A HREF="file_8autorefresh.html">folder auto-refresh</A>.
-<P><LI>XCenter remembers fonts and colors for main XCenter painting also.
-<P><LI>XCenters can be enlarged vertically now with the mouse.
-<P><LI>Widgets can now be dragged within their XCenter to allow reordering them.
-<P><LI>Added delay setting for XCenter auto-hide.
+<P><LI>&xcenter; remembers fonts and colors for main &xcenter; painting also.
+<P><LI>&xcenter;s can be enlarged vertically now with the mouse.
+<P><LI>Widgets can now be dragged within their &xcenter; to allow reordering them.
+<P><LI>Added delay setting for &xcenter; auto-hide.
 <P><LI>"Pulse" widget now displays IRQ load as well.
 <P><LI>Added "Sentinel" widget.
 <P><LI>fonz contributed the "Disk Usage" widget.
@@ -37,10 +37,10 @@ WPS filters.
 <P><LI>Martin Lafaix added more pages to the settings notebooks of program files.
 <P><LI>Paul Ratcliffe reworked the startup folders so that several of them may
 exist and you can set for each of them individually whether they should be processed
-on each WPS restart or after bootup only.
-<P><LI>"Partitions" button in XShutdown "Reboot actions" dialog finally works with
+on each Desktop restart or after bootup only.
+<P><LI>"Partitions" button in &xshutdown; "Reboot actions" dialog finally works with
 LVM too.
-<P><LI>Now allowing XShutdown power-off with APM 1.1 also. Use at your own risk; if
+<P><LI>Now allowing &xshutdown; power-off with APM 1.1 also. Use at your own risk; if
 it ain't working, don't blame me.
 <P><LI>Fixed xfix, which contained a number of embarrasing bugs and therefore crashed
 all the time.
@@ -51,10 +51,10 @@ that this would break the code for 386 and 486 processors, but the VAC documenta
 clearly says this is not so. If this information is incorrect, please notify me,
 if you can still reach your system.
 <P><LI>Reworked WarpIN installation so that class registration and object creation
-is deferred until the WPS restarts. This should fix the various upgrade problems
+is deferred until the Desktop restarts. This should fix the various upgrade problems
 many people had. Besides, WarpIN supports de-install programs now, so the &xwp;
 objects can now be deleted on deinstall too. &xwp; now requires WarpIN V0.9.9 though.
-<P><LI>Worked some more on the standard XCenter widgets.
+<P><LI>Worked some more on the standard &xcenter; widgets.
 <P><LI>Moved "Screen corners" page from XWPMouse to XWPScreen, where it seems more
 logical.
 <P><LI>Reworked PageMage settings pages in XWPScreen. Thanks, Martin Lafaix.
@@ -66,19 +66,19 @@ of the "\TRASH" directories on each drive. This should finally solve the problem
 with the "File exists" dialog popping up all the time. Besides, this should avoid
 the excessive creation of WPS file handles that used to occur for the "deep paths"
 that were used earlier.
-<P><LI><I>Dramatically</I> sped up trash can populate on first open after WPS startup.
+<P><LI><I>Dramatically</I> sped up trash can populate on first open after Desktop startup.
 <P><LI>Added several internal caches for the extended data file associations.
 This <I>dramatically</I> speeds up populating folders with many files. Looks like
 the extended file assocs are now even faster than the standard WPS assocs.
 <P><LI>Auto-hide mouse in the XWP hook now reacts to mouse clicks too.
 <P><LI>The XWP hook now allows multiple objects on the same hotkey. If you have found
 out how to do it, go ahead. Otherwise don't. Thanks, Paul Ratcliffe.
-<P><LI>Changed the prototype for the "init" export of XCenter plug-in DLLs so that
+<P><LI>Changed the prototype for the "init" export of &xcenter; plug-in DLLs so that
 widgets can easily know about their own HMODULE.
 <P><LI>Font settings weren't respected by "Import WPS filters" dialog.
 <P><LI>Further optimized string routines.
-<P><LI>Reworked large parts of XShutdown to get rid of several race conditions and
-improper sequencing between the two shutdown threads. Also, the saving of WPS objects
+<P><LI>Reworked large parts of &xshutdown; to get rid of several race conditions and
+improper sequencing between the two shutdown threads. Also, the saving of Desktop objects
 was reworked because the old routines simply dumped all abstracts to disk... which
 excluded non-folders that had changes pending in the WPS background threads. All
 such pending changes should now be properly detected.
@@ -98,19 +98,19 @@ menu items from config folder (as mentioned in readme for quite a while)... I te
 this and it appears to work now.
 <P><LI>Deleting the config folder would sometimes lead to WPS crashes. Should be
 fixed now; added another mutex for protecting the config folder cache.
-<P><LI>Fixed problems with XCenter closing on shutdown and WPS restart. This was
-several problems actually... a race condition during XShutdown, and improper thread
+<P><LI>Fixed problems with &xcenter; closing on shutdown and Desktop restart. This was
+several problems actually... a race condition during &xshutdown;, and improper thread
 termination with the timers. The separate timer thread has been removed.
-<P><LI>Dragging objects on XCenter bar caused them to always appear on the left. Fixed,
+<P><LI>Dragging objects on &xcenter; bar caused them to always appear on the left. Fixed,
 they are now properly added to the right.
-<P><LI>XCenter settings view sometimes appeared on the XCenter view thread, which
+<P><LI>&xcenter; settings view sometimes appeared on the &xcenter; view thread, which
 wasn't such a good idea. This is now redirected to thread 1.
-<P><LI>Some XCenter default values were reported wrong in its setup string. Fixed by
+<P><LI>Some &xcenter; default values were reported wrong in its setup string. Fixed by
 Paul Ratcliffe.
 <P><LI>Widgets drag'n'drop on "Widgets" settings page got badly confused with the widget
 order at times. Fixed.
 <P><LI>"Pulse" widget broke CPU counters on close. Fixed.
-<P><LI>"Undo" and "Default" on XCenter settings pages never worked. Fixed.
+<P><LI>"Undo" and "Default" on &xcenter; settings pages never worked. Fixed.
 <P><LI>"Undo" and "Default" also had problems on several hook-related pages. Fixed
 by Martin Lafaix.
 <P><LI>Fixed object hotkey entry fields so that "Set" and "Clear" can still be
@@ -129,7 +129,7 @@ got filled with too many messages. Fixed.
 <P><LI>Completely reworked tracking of awake objects by the Worker thread. All
 awake objects are now tracked (check the "Status" page in XWPSetup), and performance
 is still much better than previously.
-<P><LI>"Shutdown" etc. menu items weren't disabled on XCenter X-button if shutdown
+<P><LI>"Shutdown" etc. menu items weren't disabled on &xcenter; X-button if shutdown
 was already running. Desktop "Shutdown" menu item wasn't either if submenu was disabled.
 
 </UL>

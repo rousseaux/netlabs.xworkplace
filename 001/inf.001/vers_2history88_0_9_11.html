@@ -19,7 +19,7 @@ empty space in the pager itself.
 $zb etc. for total disk size, $L for disk label.
 <P><LI>Really added diskfree widget to the distribution this time.
 <P><LI>Made Health widget a separate package in the distribution.
-<P><LI>Widgets can now be deleted from "Widgets" page in XCenter settings notebook.
+<P><LI>Widgets can now be deleted from "Widgets" page in &xcenter; settings notebook.
 Properties dialogs can be opened from there too, but this has not been extensively
 tested yet.
 
@@ -43,12 +43,12 @@ which was used from, among other places, the trash can routines.
 <P><LI>Toggling the folder status bar state via the "View" context menu rarely
 saved the change. Fixed.
 <P><LI>Removed a number of useless settings pages for DLL and driver files.
-<P><LI>Opening objects from the XCenter made them run on the XCenter thread, which
-caused a forced close when the XCenter thread terminated (because the XCenter was
+<P><LI>Opening objects from the &xcenter; made them run on the &xcenter; thread, which
+caused a forced close when the &xcenter; thread terminated (because the &xcenter; was
 closed). Fixed; now routing all open requests to thread 1.
-<P><LI>XCenter "Run" command couldn't handle parameters and fully qualified
+<P><LI>&xcenter; "Run" command couldn't handle parameters and fully qualified
 executables. Fixed.
-<P><LI>XCenter "Run" entry fields were limited to 30 some characters. Fixed.
+<P><LI>&xcenter; "Run" entry fields were limited to 30 some characters. Fixed.
 <P><LI>Standard widget menu items ("Remove", "Help") never worked for object button
 widgets. Fixed.
 <P><LI>"Immediate hilite" handling for sliding menus was completely rewritten.
@@ -58,9 +58,9 @@ system for good. Added thread-granular termination handling now, which should
 properly clean up now (still looks like a PM bug for me).
 <P><LI>PageMage "Sticky" page in "Screen" object listed invisible switchlist entries.
 Fixed, only listing visible ones now.
-<P><LI>New XShutdown save-object routines from V0.9.8 attempted to save objects
+<P><LI>New &xshutdown; save-object routines from V0.9.8 attempted to save objects
 which no longer existed, which could hang shutdown in certain situations. Fixed.
-<P><LI>XShutdown hung the system if print jobs were still pending. Fixed; XShutdown
+<P><LI>&xshutdown; hung the system if print jobs were still pending. Fixed; &xshutdown;
 will now simply tell the user to remove those first.
 
 </UL>

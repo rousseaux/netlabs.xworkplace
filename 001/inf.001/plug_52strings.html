@@ -10,27 +10,27 @@ OK, so your minimal widget from step 1 is running.
 
 <P>You probably have figured out already that even though the minimal widget does
 react to fonts and colors dropped on it, those fonts and colors are not saved
-when the XCenter is closed and then re-opened.
+when the &xcenter; is closed and then re-opened.
 
 <P>Similarly, if you changed the minimal widget to be sizeable (by setting the
 <CODE>WGTF_SIZEABLE</CODE> flag in the <CODE>ulClassFlags</CODE> field of
 of <A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>,
 you will find out that the widget's size will not be remembered either.
 
-<P>Of course, the XCenter could have implemented saving these settings for your
-widget. But then, where would your widget store additional data that the XCenter
+<P>Of course, the &xcenter; could have implemented saving these settings for your
+widget. But then, where would your widget store additional data that the &xcenter;
 would not know of? Using the profile functions to store the widget data in
 <CODE>OS2.INI</CODE> would not be a good idea because there can be several
 instances of your widget, which should all store their data independently.
 
 <P>As a result, I figured that storing widgets data together with the data of
-the XCenter that the widget belongs to would be the best idea.
+the &xcenter; that the widget belongs to would be the best idea.
 
 <P>To make this most flexible and easy to use, the widgets can have <B>setup strings</B>
-associated with them. If you look at the "Widgets" page of an XCenter, you will see
+associated with them. If you look at the "Widgets" page of an &xcenter;, you will see
 that each widget can have its own setup string to store any data it wants.
 
-<P>Even though the widgets are not WPS objects themselves, for simplicity, I chose
+<P>Even though the widgets are not Desktop objects themselves, for simplicity, I chose
 to use the WPS setup string format for the widgets also. That is, your widget
 can understand, for example, a <CODE>BACKGROUNDCOLOR=00FF00;</CODE> setup string,
 which would set the widget's background color to green.
@@ -59,10 +59,10 @@ color has been dropped on it), it should compose a new full setup string.
 <!-- V0.9.14: changed the following -->
 After the new setup string is composed, the widget must send the
 <CODE>XCM_SAVESETUP</CODE> message to its parent window (which is either the
-XCenter client or a tray widget window, if the widget resides in a tray),
+&xcenter; client or a tray widget window, if the widget resides in a tray),
 <!-- end V0.9.14 -->
 which will cause the
-new setup string to be stored together with the other widget data in the XCenter's
+new setup string to be stored together with the other widget data in the &xcenter;'s
 private data. See <CODE>center.h</CODE> for details.
 
 <P>In order to encapsulate the setup string functionality, I recommend that you

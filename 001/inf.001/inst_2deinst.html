@@ -27,7 +27,7 @@ to do the job right), you can <B>manually de-install &xwp;.</B>
 
 <P>&xwp;'s installation is entirely based on WPS classes. If you deregister
 all of &xwp;'s classes, you'll get your regular &os2; Workplace Shell back.
-You don't have to undo any CONFIG.SYS changes, because there are none.
+You don't have to undo any &cfgsys; changes, because there are none.
 
 <P>However, before deregistering classes, you should undo all of &xwp;'s
 class replacements. So this is a two-step process (you can use the "WPS Class List"
@@ -76,7 +76,7 @@ Open a command line from the "Recovery choices" menu.
 <P><LI>From the command line, rename the &xwp; directory (the parent directory
 of the <CODE>BIN</CODE> directory with <CODE>XFLDR.DLL</CODE>.
 
-<P><LI>Reboot. When the WPS starts up, it will not find the &xwp; classes
+<P><LI>Reboot. When the Desktop starts up, it will not find the &xwp; classes
 (in <CODE>XFLDR.DLL</CODE>), because the directory specified when registering
 the classes is now invalid. You should get a clean WPS this way too. Note however
 that this does not unreplace or deregister the &xwp; classes!

@@ -17,7 +17,7 @@ installation directory that might be useful to you:
 <UL><LI><CITE><STRONG>BOOTMGR.CMD</STRONG></CITE> is new with V0.83.
 This script was supplied by
 Duane A. Chamblee <duanec@ibm.net> and will automatically add all the
-current BootManager choices to the &xwp; user-reboot actions for XShutdown.
+current BootManager choices to the &xwp; user-reboot actions for &xshutdown;.
 This is done by modifying the &xwp; keys in OS2.INI directly. No guarantee
 that this will actually work on your system!
 
@@ -27,7 +27,7 @@ as described in <A HREF="inst_4nls.html">National Language Support</A>) are used
 by &xwp; to create the default Configuration Folders. These are just plain REXX
 scripts which create a number of objects on your desktop.
 <P>These scripts are called both after &xwp; has been installed (after the first
-WPS restart) and also whenever &xwp; fails to locate its Configuration Folder.
+Desktop restart) and also whenever &xwp; fails to locate its Configuration Folder.
 <P>You may modify these scripts to have a different default configuration created.
 However, you should be very careful in changing the various object settings, especially
 the <CITE>OBJECTID</CITE> keywords, because &xwp; might rely on these.
@@ -117,12 +117,11 @@ onto the main window, whose size will be calculated then also.
 
 <P><LI><CITE><STRONG>WPSRESET.EXE</STRONG></CITE>
 can restart your WPS without rebooting your computer
-altogether (see the <A HREF="xsd_1restartwps.html">"Restart WPS"</A> page for details).
+altogether (see the <A HREF="xsd_1restartwps.html">"Restart Desktop"</A> page for details).
 It is now (V0.71) only used by the install script any more, while &xwp; does its
-own WPS restarting internally.
+own Desktop restarting internally.
 In order to prevent accidental execution, WPSRESET.EXE must be started with a
-<CITE>"-D"</CITE> parameter on the command line. (I have forgotten what "-D" stands
-for, but I'm sure it used to have a meaning.)
+<CITE>"-D"</CITE> parameter on the command line.
 
 <P><LI><CITE><STRONG>XHELP.CMD</STRONG></CITE>
 is a powerful REXX script which can display language-dependent messages, both

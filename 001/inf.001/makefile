@@ -82,7 +82,7 @@ all: $(COPYTO)\xfldr$(LANGUAGE).inf
 $(COPYTO)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
         cmd.exe /c copy $(OUTPUTDIR)\$(@B).inf $(COPYTO)
 
-xfldr$(LANGUAGE).ipf: *.html *.gif makefile
+xfldr$(LANGUAGE).ipf: *.html *.gif makefile ..\$(ENTITYDEFS)
         $(HTML2IPF) xfldr$(LANGUAGE).html
 
 $(OUTPUTDIR)\xfldr$(LANGUAGE).inf: xfldr$(LANGUAGE).ipf

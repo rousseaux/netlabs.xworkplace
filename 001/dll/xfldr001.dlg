@@ -35,69 +35,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_NDD_EXPLAIN LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Netscape DDE Interface", ID_NDD_EXPLAIN, 15, -3, 330, 174,
-            FS_SCREENALIGN, FCF_SYSMENU | FCF_TITLEBAR
-            PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-    BEGIN
-        LTEXT           "You must at least specify the URL you wish to open."
-                        " NETSCDDE uses the following syntax:", -1, 10, 134,
-                        315, 11, DT_WORDBREAK
-        LTEXT           "netscdde [-q] [-[x|X]n]] [-p <exe>] [-P <params>] ["
-                        "-m[h]] <URL>", -1, 20, 125, 300, 8, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        LTEXT           "dont' start Netscape if it's not yet running.", -1,
-                        70, 96, 250, 7, DT_WORDBREAK
-        LTEXT           "do start Netscape if it's not yet running.", -1, 70,
-                        84, 255, 11, DT_WORDBREAK
-        LTEXT           "Per default you will be prompted for whether Netsca"
-                        "pe should be started.", -1, 10, 75, 295, 11,
-                        DT_WORDBREAK
-        LTEXT           "open a new window for the URL. The default is not t"
-                        "o open a new window.", -1, 70, 66, 260, 11,
-                        DT_WORDBREAK
-        LTEXT           "with <URL> the URL to open (just as you would enter"
-                        " it in Netscape itself).", -1, 10, 107, 300, 13,
-                        DT_WORDBREAK
-        LTEXT           "Options:", -1, 10, 102, 235, 8, DT_WORDBREAK
-        LTEXT           "-x", ID_NDD_QUERYSTART, 10, 96, 20, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        LTEXT           "-X", ID_NDD_CONTACTING, 10, 87, 20, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        LTEXT           "-n", ID_NDD_STARTING, 10, 69, 20, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        LTEXT           "specify full path for Netscape (e.g. -p ""C:\\NETSC"
-                        "APE.EXE""); default is NETSCAPE.EXE on your PATH",
-                        -1, 70, 54, 235, 14, DT_WORDBREAK
-        LTEXT           "-p <exe>", 206, 10, 60, 55, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        LTEXT           "specify Netscape parameters (e.g. -P ""-3""); defau"
-                        "lt is none", -1, 70, 42, 235, 11, DT_WORDBREAK
-        LTEXT           "-P <params>", 207, 10, 45, 55, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        RTEXT           "Netscape DDE Interface V1.2 (C) 1998-2000 Ulrich M”"
-                        "ller", 205, 10, 159, 275, 8
-        LTEXT           "start Netscape minimized", -1, 70, 33, 260, 11,
-                        DT_WORDBREAK
-        LTEXT           "-m", 204, 10, 36, 20, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        LTEXT           "start Netscape hidden (invisibly)", -1, 70, 24, 260,
-                        11, DT_WORDBREAK
-        LTEXT           "-mh", 209, 10, 27, 20, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        RTEXT           "Free software under the GNU General Public Licence.",
-                        208, 10, 153, 275, 8
-        RTEXT           "See the COPYING file for details.",
-                        ID_XFD_SELECTSOME, 10, 147, 275, 8
-        DEFPUSHBUTTON   "~OK", DID_OK, 10, 4, 100, 12
-        LTEXT           """quiet"" mode: don't show status windows", -1, 70,
-                        16, 260, 11, DT_WORDBREAK
-        LTEXT           "-q", 10104, 10, 19, 20, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-    END
-END
-
 DLGTEMPLATE ID_NDD_QUERYSTART LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Netscape DDE Interface", ID_NDD_QUERYSTART, 15, 21, 250, 55,
@@ -722,7 +659,7 @@ END
 
 DLGTEMPLATE ID_SDD_CONFIRMWPS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Restart WPS", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, , FCF_SYSMENU |
+    DIALOG  "Restart Desktop", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, , FCF_SYSMENU |
             FCF_TITLEBAR
     BEGIN
         ICON            ID_SDICON, ID_SDDI_ICON, 10, 53, 20, 16, WS_GROUP
@@ -1468,9 +1405,9 @@ BEGIN
         GROUPBOX        "Archiving Criteria", -1, 4, 52, 205, 75
         AUTOCHECKBOX    "~Archive Desktop", ID_XSDI_ARC_ENABLE, 10, 110, 195,
                         8
-        AUTOCHECKBOX    "at ~every WPS startup", ID_XSDI_ARC_ALWAYS, 20, 102,
+        AUTOCHECKBOX    "at ~every Desktop startup", ID_XSDI_ARC_ALWAYS, 20, 102,
                         185, 8
-        AUTOCHECKBOX    "at ~next WPS startup only", ID_XSDI_ARC_NEXT, 20,
+        AUTOCHECKBOX    "at ~next Desktop startup only", ID_XSDI_ARC_NEXT, 20,
                         92, 185, 8
         AUTOCHECKBOX    "if ~INI files have changed", ID_XSDI_ARC_INI, 20,
                         80, 110, 10
@@ -1485,7 +1422,7 @@ BEGIN
                         SPBS_FASTSPIN | WS_GROUP
         LTEXT           "days", ID_XSDI_ARC_DAYS_SPINTXT1, 110, 68, 20, 10,
                         DT_VCENTER
-        AUTOCHECKBOX    "Sho~w archiving status at WPS bootup",
+        AUTOCHECKBOX    "Sho~w archiving status at Desktop startup",
                         ID_XSDI_ARC_SHOWSTATUS, 20, 58, 185, 8
         GROUPBOX        "Archives", -1, 4, 28, 205, 22
         LTEXT           "Kee~p", -1, 10, 30, 24, 10, DT_VCENTER |
@@ -1521,59 +1458,6 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 6, 6, 60, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 70, 6, 60, 12, WS_GROUP
         PUSHBUTTON      "~Help", DID_HELP, 134, 6, 60, 12, BS_HELP |
-                        WS_GROUP
-    END
-END
-
-DLGTEMPLATE ID_XSD_DTP_SHUTDOWN LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_SHUTDOWN, 0, 0, 232, 182, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Shutdown settings", -1, 6, 100, 218, 78
-        AUTOCHECKBOX    "~Reboot afterwards", ID_SDDI_REBOOT, 12, 158, 104,
-                        12
-        PUSHBUTTON      "Reboot actio~ns...", ID_SDDI_REBOOTEXT, 120, 158,
-                        94, 12
-        AUTOCHECKBOX    "An~imation before shutdown",
-                        ID_SDDI_ANIMATE_SHUTDOWN, 12, 148, 140, 8
-        AUTOCHECKBOX    "An~imation before reboot", ID_SDDI_ANIMATE_REBOOT,
-                        12, 138, 140, 8
-        AUTOCHECKBOX    "Attempt APM ~1.2 power-off", ID_SDDI_APMPOWEROFF,
-                        12, 128, 122, 8
-        AUTOCHECKBOX    "Dela~y", ID_SDDI_DELAY, 22, 118, 90, 8
-        LTEXT           "APM level:", ID_SDDI_APMVERSION_TXT, 122, 128, 57,
-                        8, NOT WS_GROUP
-        RTEXT           "unknown", ID_SDDI_APMVERSION, 174, 128, 38, 8, NOT
-                        WS_GROUP
-        LTEXT           "APM.SYS driver:", ID_SDDI_APMSYS_TXT, 122, 118, 59,
-                        8, NOT WS_GROUP
-        RTEXT           "unknown", ID_SDDI_APMSYS, 174, 118, 38, 8, NOT
-                        WS_GROUP
-        LTEXT           "Save INI files:", ID_SDDI_SAVEINIS_TXT, 12, 106, 48,
-                        8, NOT WS_GROUP
-        CONTROL         "", ID_SDDI_SAVEINIS_LIST, 62, 68, 150, 47,
-                        WC_COMBOBOX, CBS_DROPDOWNLIST | LS_HORZSCROLL |
-                        WS_TABSTOP | WS_VISIBLE
-        GROUPBOX        "Shutdown and WPS restart settings", -1, 6, 22, 218,
-                        76
-        AUTOCHECKBOX    "~Empty trash can", ID_SDDI_EMPTYTRASHCAN, 12, 80,
-                        104, 8
-        AUTOCHECKBOX    "~Confirm", ID_SDDI_CONFIRM, 12, 70, 104, 8
-        AUTOCHECKBOX    "Close ~WarpCenter before Desktop",
-                        ID_SDDI_WARPCENTERFIRST, 12, 60, 150, 8
-        AUTOCHECKBOX    "Auto-close non-~PM sessions", ID_SDDI_AUTOCLOSEVIO,
-                        12, 48, 102, 12
-        PUSHBUTTON      "Auto-close det~ails...", ID_SDDI_AUTOCLOSEDETAILS,
-                        120, 48, 94, 12
-        AUTOCHECKBOX    "Write XSHUTDWN.LO~G file", ID_SDDI_LOG, 12, 40, 108,
-                        8
-        PUSHBUTTON      "Create XShutdown folder",
-                        ID_SDDI_CREATESHUTDOWNFLDR, 12, 26, 140, 12,
-                        WS_GROUP
-        PUSHBUTTON      "~Undo", DID_UNDO, 6, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 86, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 164, 6, 60, 12, BS_HELP |
                         WS_GROUP
     END
 END
@@ -1987,31 +1871,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_SETTINGS_FLDR1 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SETTINGS_FLDR1, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        AUTOCHECKBOX    "~Favorite folder", ID_XSDI_FAVORITEFOLDER, 5, 78,
-                        170, 8, WS_GROUP
-        AUTOCHECKBOX    "~Quick open at WPS startup", ID_XSDI_QUICKOPEN, 5,
-                        70, 170, 8
-        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH,
-                        5, 58, 160, 8
-        AUTOCHECKBOX    "~Keep original title", ID_XSDI_KEEPTITLE, 14, 50,
-                        160, 8
-        AUTOCHECKBOX    "Add ""Sna~p to grid""", ID_XSDI_SNAPTOGRID, 5, 38,
-                        170, 8
-        AUTOCHECKBOX    "React to folder h~otkeys", ID_XSDI_ACCELERATORS, 5,
-                        30, 170, 8
-        AUTOCHECKBOX    "Show ~status bar", ID_XSDI_ENABLESTATUSBAR, 5, 22,
-                        165, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_STARTUPFOLDER LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_STARTUPFOLDER, 0, 0, 224, 180, NOT FS_DLGBORDER |
@@ -2037,7 +1896,7 @@ BEGIN
         GROUPBOX        "Start folder content", -1, 10, 29, 186, 38
         AUTORADIOBUTTON "~Reboots only", ID_SDDI_STARTUP_REBOOTSONLY, 15, 47,
                         80, 12, BS_NOCURSORSELECT | WS_TABSTOP
-        AUTORADIOBUTTON "~Every WPS restart",
+        AUTORADIOBUTTON "~Every Desktop restart",
                         ID_SDDI_STARTUP_EVERYWPSRESTART, 15, 33, 80, 12,
                         BS_NOCURSORSELECT | WS_TABSTOP
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 60, 12, WS_GROUP
@@ -2176,74 +2035,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_STARTUPPANIC LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Panic", ID_XFD_STARTUPPANIC, 32, -16, 223, 194, ,
-            FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "You have held down the Shift key while the WPS is i"
-                        "nitializing.", -1, 5, 182, 210, 8, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "You can now selectively disable certain XWorkplace "
-                        "features in case these don't work right.", -1, 5,
-                        164, 210, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Note that most of these changes will only affect th"
-                        "is one WPS session. To permanently disable a featur"
-                        "e, open the respective XWorkplace settings object a"
-                        "fter the WPS has started.", -1, 5, 146, 210, 20,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip ~boot logo once", ID_XFDI_PANIC_SKIPBOOTLOGO,
-                        6, 132, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip XWorkplace S~tartup folder once",
-                        ID_XFDI_PANIC_SKIPXFLDSTARTUP, 6, 124, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip ""~Quick open"" folders once",
-                        ID_XFDI_PANIC_SKIPQUICKOPEN, 6, 116, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip WPS ~archiving once",
-                        ID_XFDI_PANIC_NOARCHIVING, 6, 108, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Permanently ~disable all features",
-                        ID_XFDI_PANIC_DISABLEFEATURES, 6, 96, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Permanently disable ~icon replacements",
-                        ID_XFDI_PANIC_DISABLEREPLICONS, 6, 88, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "~Remove all object hotkeys",
-                        ID_XFDI_PANIC_REMOVEHOTKEYS, 6, 80, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Disable ~PageMage", ID_XFDI_PANIC_DISABLEPAGEMAGE,
-                        6, 72, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Disable ~multimedia",
-                        ID_XFDI_PANIC_DISABLEMULTIMEDIA, 6, 64, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        DEFPUSHBUTTON   "C~ontinue", DID_OK, 4, 46, 75, 12, WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "This will continue WPS startup.", -1, 84, 46, 135,
-                        11, NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        PUSHBUTTON      "Run x~fix", DID_UNDO, 4, 32, 75, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Run the XWorkplace Handles Fixer.", -1, 84, 32, 135,
-                        11, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        PUSHBUTTON      "Run ~CMD.EXE", DID_APPLY, 4, 18, 75, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Starts a command line session now.", -1, 84, 18,
-                        135, 11, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        PUSHBUTTON      "~Shut down now", DID_CANCEL, 4, 4, 75, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
-                        4, 135, 11, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-    END
-END
-
 DLGTEMPLATE ID_XCD_STATUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XCD_STATUS, 0, 0, 275, 180, NOT FS_DLGBORDER | WS_VISIBLE
@@ -2254,14 +2045,14 @@ BEGIN
                         42, 8
         RTEXT           "unknown", ID_XCDI_INFO_KERNEL_RELEASE, 58, 108, 138,
                         8
-        LTEXT           "Awake WPS objects:", ID_XCDI_INFO_AWAKEOBJECTS_TXT,
+        LTEXT           "Awake Desktop objects:", ID_XCDI_INFO_AWAKEOBJECTS_TXT,
                         14, 100, 95, 8
         RTEXT           "unknown", ID_XCDI_INFO_AWAKEOBJECTS, 152, 100, 44,
                         8
         LTEXT           "WPS thread count:", ID_XCDI_INFO_WPSTHREADS_TXT, 14,
                         92, 95, 8
         RTEXT           "unknown", ID_XCDI_INFO_WPSTHREADS, 152, 92, 44, 8
-        LTEXT           "WPS restarts:", ID_XCDI_INFO_WPSRESTARTS_TXT, 14,
+        LTEXT           "Desktop restarts:", ID_XCDI_INFO_WPSRESTARTS_TXT, 14,
                         84, 95, 8
         RTEXT           "unknown", ID_XCDI_INFO_WPSRESTARTS, 152, 84, 44, 8
         LTEXT           "Sound status:", ID_XCDI_INFO_SOUNDSTATUS_TXT, 14,
@@ -2459,47 +2250,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Folder view settings", -1, 6, 64, 213, 78,
-                        DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH,
-                        12, 126, 160, 8
-        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 22, 118,
-                        155, 8
-        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 22, 106,
-                        44, 8, DT_MNEMONIC | NOT WS_GROUP
-        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 68, 108, 35, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
-                        SPBS_FASTSPIN | WS_GROUP
-        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 106, 106, 75,
-                        8, NOT WS_GROUP
-        AUTOCHECKBOX    "Auto-scroll Tree vie~ws",
-                        ID_XSDI_TREEVIEWAUTOSCROLL, 12, 96, 190, 8
-        AUTOCHECKBOX    "~Enable default documents in folders",
-                        ID_XSDI_FDRDEFAULTDOC, 12, 86, 190, 8
-        AUTOCHECKBOX    "De~fault document = default folder view",
-                        ID_XSDI_FDRDEFAULTDOCVIEW, 22, 78, 190, 8
-        AUTOCHECKBOX    "Enable folder ~auto-refresh",
-                        ID_XSDI_FDRAUTOREFRESH, 12, 68, 190, 8
-        GROUPBOX        "Default folder view", -1, 6, 18, 214, 44
-        AUTORADIOBUTTON "Use pare~nt folder's default view",
-                        ID_XSDI_FDRVIEW_INHERIT, 12, 46, 202, 8, WS_TABSTOP
-        AUTORADIOBUTTON "~Icon", ID_XSDI_FDRVIEW_ICON, 12, 38, 202, 8,
-                        WS_TABSTOP
-        AUTORADIOBUTTON "T~ree", ID_XSDI_FDRVIEW_TREE, 12, 30, 202, 8,
-                        WS_TABSTOP
-        AUTORADIOBUTTON "Detail~s", ID_XSDI_FDRVIEW_DETAILS, 12, 22, 202, 8,
-                        WS_TABSTOP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 4, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 4, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 155, 4, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_KEYB_EDITFUNCTIONKEY LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Edit Function Key Definition", ID_XSD_KEYB_EDITFUNCTIONKEY, 12,
@@ -2596,32 +2346,6 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_SET25ADDMENUS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET25ADDMENUS, 0, 0, 260, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "File menus", -1, 4, 80, 173, 30
-        AUTOCHECKBOX    "Add ""A~ttributes"" menu", ID_XSDI_FILEATTRIBS, 10,
-                        92, 165, 10
-        AUTOCHECKBOX    "~Add ""Copy filename""", ID_XSDI_COPYFILENAME, 10,
-                        84, 155, 10
-        GROUPBOX        "Folder menus", -1, 4, 22, 173, 56, NOT WS_GROUP
-        AUTOCHECKBOX    "Add ""~Refresh now"" to main menu",
-                        ID_XSDI_MOVE4REFRESH, 10, 60, 160, 10, WS_GROUP
-        AUTOCHECKBOX    "Add ""Se~lect by name""", ID_XSDI_SELECTSOME, 10,
-                        52, 160, 10
-        AUTOCHECKBOX    "Extend ""~View"" menu", ID_XSDI_FLDRVIEWS, 10, 44,
-                        155, 10
-        AUTOCHECKBOX    "Add f~older content menus", ID_XSDI_FOLDERCONTENT,
-                        10, 32, 160, 10
-        AUTOCHECKBOX    "Show ~icons", ID_XSDI_FC_SHOWICONS, 20, 24, 150, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 64, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 124, 6, 55, 12, BS_HELP
     END
 END
 
@@ -2861,43 +2585,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_DTP_STARTUP LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_STARTUP, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Workplace Shell boot logo", -1, 4, 62, 205, 90
-        AUTOCHECKBOX    "Enable ~boot logo", ID_XSDI_DTP_BOOTLOGO, 10, 130,
-                        100, 10
-        GROUPBOX        "Boot logo style", -1, 20, 102, 100, 28, NOT
-                        WS_GROUP
-        AUTORADIOBUTTON "~Transparent style", ID_XSDI_DTP_LOGO_TRANSPARENT,
-                        24, 114, 90, 8, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "B~low-up style", ID_XSDI_DTP_LOGO_BLOWUP, 24, 106,
-                        85, 8, WS_TABSTOP
-        GROUPBOX        "", ID_XSDI_DTP_LOGOFRAME, 128, 102, 78, 45
-        CONTROL         "", ID_XSDI_DTP_LOGOBITMAP, 132, 106, 70, 34,
-                        WC_STATIC, SS_FGNDFRAME | WS_VISIBLE
-        LTEXT           "OS/2 1.3 BMP ~file for boot logo:",
-                        ID_XSDI_DTP_LOGOFILETXT, 20, 92, 180, 8, DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_DTP_LOGOFILE, 86, 82, 116, 8, ES_MARGIN
-        PUSHBUTTON      "Bro~wse...", ID_XSDI_DTP_LOGO_BROWSE, 84, 66, 55,
-                        12
-        PUSHBUTTON      "T~est logo", ID_XSDI_DTP_TESTLOGO, 144, 66, 60, 12
-        AUTOCHECKBOX    "Write XWP~START.LOG file",
-                        ID_XSDI_DTP_WRITEXWPSTARTLOG, 4, 52, 200, 8
-        AUTOCHECKBOX    "Show W~PS class initialization",
-                        ID_XSDI_DTP_BOOTUPSTATUS, 4, 44, 200, 8
-        PUSHBUTTON      "Create ~XWorkplace Startup folder",
-                        ID_XSDI_DTP_CREATESTARTUPFLDR, 4, 30, 160, 12
-        AUTOCHECKBOX    "Enable ~NumLock at startup", ID_XSDI_DTP_NUMLOCKON,
-                        6, 20, 200, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT2 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_MOUSE_MOVEMENT2, 0, 0, 232, 164, NOT FS_DLGBORDER |
@@ -2965,3 +2652,12 @@ BEGIN
         PUSHBUTTON      "~Help", DID_HELP, 170, 4, 50, 12, BS_HELP
     END
 END
+
+DLGTEMPLATE ID_XFD_EMPTYDLG LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XFD_EMPTYDLG, 0, 0, 260, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+    END
+END
+

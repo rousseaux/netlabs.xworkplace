@@ -20,7 +20,7 @@ to prevent inheriting the default view from the parent folder.
 non-default sort classes (e.g. in the trash can, which can finally be sorted now too).
 Also added "Folders first" as an additional sort setting to be applied on top of
 the standard criterion.
-<P><LI>XCenter: added "lockup" to X-button menu.
+<P><LI>&xcenter;: added "lockup" to X-button menu.
 <P><LI>XWPString: added setup string support.
 <P><LI>General: XWP can now read extended BLDLEVEL information, as used by most
 of the IBM networking software. Reworked the "Module" page in XFldProgramFile for
@@ -43,7 +43,7 @@ startup folders, I hope. At least it makes the code much more readable.
 too and refreshes the entire folder if an overflow occured. Also fixed some
 crashes and locks on the way.
 <P><LI>Function keys: removed "Modifier" setting, since it did nothing in the first place.
-<P><LI>XCenter: Winlist widget filters now match the first characters only.
+<P><LI>&xcenter;: Winlist widget filters now match the first characters only.
 
 </UL>Bugfixes:
 
@@ -67,36 +67,36 @@ notebook pages caused a trap. Fixed. Also fixed a small memory leak.
 <P><LI>"OS/2 Kernel": "Drivers" page frequently displayed garbage for the driver
 info. Fixed.
 <P><LI>"OS/2 Kernel": HPFS and HPFS386 dialogs crashed if no parameters existed
-in CONFIG.SYS. Fixed, thanks Lars Erdmann.
+in &cfgsys;. Fixed, thanks Lars Erdmann.
 <P><LI>"OS/2 Kernel": HPFS386 dialog displayed nothing if HPFS386.INI wasn't explicitly
-given on the IFS line in CONFIG.SYS. Fixed.
-<P><LI>"OS/2 Kernel": Fixed another quirk in the CONFIG.SYS routines which caused
+given on the IFS line in &cfgsys;. Fixed.
+<P><LI>"OS/2 Kernel": Fixed another quirk in the &cfgsys; routines which caused
 the wrong line to be replaced in rare cases.
 <P><LI>Trash can wasn't very good at setting meaningful drive support defaults. Fixed;
 per default drives are supported only if they are FAT, HPFS, JFS, or FAT32.
-<P><LI>XCenter: Added mutex protection to the internal timers to prevent some
+<P><LI>&xcenter;: Added mutex protection to the internal timers to prevent some
 race conditions.
-<P><LI>XCenter: Winlist widget now shows hidden windows on click.
-<P><LI>XCenter: Winlist widget filter changes weren't picked up any longer since
+<P><LI>&xcenter;: Winlist widget now shows hidden windows on click.
+<P><LI>&xcenter;: Winlist widget filter changes weren't picked up any longer since
 the changes in 0.9.11. Fixed.
-<P><LI>XCenter: Pulse widget didn't update display if some app occupied the SIQ.
+<P><LI>&xcenter;: Pulse widget didn't update display if some app occupied the SIQ.
 Fixed; a separate thread now gets the performance data from OS/2 kernel.
-<P><LI>XCenter: Trapped sometimes when several threads attempted to load the
+<P><LI>&xcenter;: Trapped sometimes when several threads attempted to load the
 widget classes. Fixed, added mutex protection to DLL loading.
-<P><LI>XCenter: Added extra checks for view creation/destruction.
-<P><LI>XCenter: Fixed crash in tmrTimerTick when animations were enabled.
-<P><LI>XCenter: Hopefully fixed hang on XShutdown.
-<P><LI>XCenter: X-Button started shutdown/restart WPS etc. on XCenter thread. Fixed,
+<P><LI>&xcenter;: Added extra checks for view creation/destruction.
+<P><LI>&xcenter;: Fixed crash in tmrTimerTick when animations were enabled.
+<P><LI>&xcenter;: Hopefully fixed hang on &xshutdown;.
+<P><LI>&xcenter;: X-Button started shutdown/restart Desktop etc. on &xcenter; thread. Fixed,
 now started on thread 1.
 <P><LI>PageMage: reworked internal mutex handling some. This seems to fix some of
 the strange PM hangs that occured sporadically.
 <P><LI>Hook: Martin Lafaix fixed the new sliding menus mechanism introduced with
 V0.9.11. Pulldowns are no longer delayed, and all submenu selections should be
 properly processed now (except for some Netscape submenus, but that's a minor annoyance).
-<P><LI>XShutdown: Animations frequently didn't show. Fixed.
-<P><LI>XShutdown: Now recovering all windows from other desktops to screen before
+<P><LI>&xshutdown;: Animations frequently didn't show. Fixed.
+<P><LI>&xshutdown;: Now recovering all windows from other desktops to screen before
 closing windows.
-<P><LI>XShutdown: Fixed shutdown folder which never waited for objects to close.
+<P><LI>&xshutdown;: Fixed shutdown folder which never waited for objects to close.
 
 </UL>
 </BODY>

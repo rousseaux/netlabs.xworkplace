@@ -139,7 +139,7 @@ MMTIFF 1 (OS/2 V4) Multimedia class for Tagged Image File Format (TIFF) image fi
 MMBitmap 1 (OS/2 V4) Multimedia class for various Bitmap (.BMP) file formats. This format is the default file format for both Windows and OS/2, with only slight differences between the two.
 
 // Items added with V0.84
-BlackHole 1 Part of the BlackHole package. This is the class of a formidable shredder-type object which can delete really all WPS objects.
+BlackHole 1 Part of the BlackHole package. This is the class of a formidable shredder-type object which can delete really all Desktop objects.
 ECAssist 1 Part of the Assistant/2 package. This is used for configuring that package.
 ECEDataFile 1 This is the WPDataFile replacement class of the Assistant/2 package.
 ECFolder 1 This is the WPFolder replacement class of the Assistant/2 package.
@@ -390,8 +390,8 @@ FpwSSData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally 
 XWPMedia 1 This implements the new XWorkplace "Multimedia" object.
 XWPString 1 XWorkplace "setup string" class. An instance of this can hold a WPS setup string and an object.
 
-BA2Device 1 (BackAgain/2) This provides WPS objects for backup devices.
-MLPlayer 1 (Microlearn Game Pack Volume II) This provides a WPS object for configuring a playing character.
+BA2Device 1 (BackAgain/2) This provides Desktop objects for backup devices.
+MLPlayer 1 (Microlearn Game Pack Volume II) This provides a Desktop object for configuring a playing character.
 wpTelevision 1 (WarpTV) TV program for the Hauppage WinTV cards.
 PCDesk 1 Part of Process Commander by Stardock.
 SDFolder 1 Part of Object Desktop by Stardock.

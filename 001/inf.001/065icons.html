@@ -24,7 +24,7 @@ setting in the <A HREF="sys_2global.html">"Workplace Shell" object</A>, page 1.
 you need to replace the icons in the <CODE>/ICONS</CODE> subdirectory of the
 &xwp; installation directory and rebuild the <CODE>ICONS.DLL</CODE> file.
 This is explained below.
-</OL><B>Note:</B> All these changes require a WPS restart because it is impossible
+</OL><B>Note:</B> All these changes require a Desktop restart because it is impossible
 to replace icons which are already in use by the WPS.
 <P>
 Now, replacing the default icons with your own favorites is fairly easy. Look into
@@ -34,7 +34,7 @@ you will find a number of icon files:
 <P>Replace any of these files with your own favorites and execute the
 <CODE>ICONS.CMD</CODE> script in the same directory. This will create a file
 <CODE>ICONS.DLL</CODE>, which will be copied by &xwp; to its <CODE>/BIN</CODE>
-subdirectory at the next WPS restart.
+subdirectory at the next Desktop restart.
 <P><B>Notes:</B> The script expects the icon file names to be exactly as they are now.
 Also, you cannot replace <CODE>ICONS.DLL</CODE> in <CODE>/BIN</CODE> yourself,
 because once the WPS has started, that DLL is locked. So always use <CODE>ICONS.CMD</CODE>.

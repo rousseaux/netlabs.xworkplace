@@ -7,7 +7,7 @@
 <!-- This file is all new with V0.9.0. -->
 <BODY>
 &xwp; stores all its global settings in your OS2.INI file. (By contrast,
-the settings for individual WPS objects are stored by the WPS, mostly in
+the settings for individual Desktop objects are stored by the WPS, mostly in
 the <CODE>.CLASSINFO</CODE> extended attributes.)
 <!-- the following changed with V0.9.1 -->
 <P>This section is supposed to explain the keys in the "&xwp;" section
@@ -16,7 +16,7 @@ data from the "XFolder" section, which remains in OS2.INI so that you can
 switch back to XFolder later if you choose to de-install &xwp;.
 <P>Note: &xwp; does not rely on the INI keys. If you really mess up something
 bad, you can simply delete a key with an INI editor or the whole "XFolder"
-section altogether. After the next WPS restart, &xwp; will reinitialize itself
+section altogether. After the next Desktop restart, &xwp; will reinitialize itself
 with safe default values.
 <P>Here we go:
 
@@ -30,13 +30,13 @@ as defined in <CODE>\shared\common.h</CODE> of the &xwp; sources.
 <A HREF="fldr_5xelerators.html">"Folder hotkeys"</A> page.
 
 <DT><CODE>AutoClose</CODE>
-<DD>The list of items which are to be closed automatically by XShutdown. Each item
+<DD>The list of items which are to be closed automatically by &xshutdown;. Each item
 on this list is a zero-terminated string, followed by a ULONG which signifies what
 to do with this item. Then comes the next item; if it's 0, the list is terminated.
 
 <DT><CODE>BootLogoFile</CODE>
 <DD>The fully qualified filename of the
-OS/2 V1.3 .BMP file to use for the WPS boot logo, as set by the "Startup"
+OS/2 V1.3 .BMP file to use for the Desktop start logo, as set by the "Startup"
 page in the Desktop's settings notebook. This is a plain zero-terminated string.
 
 <DT><CODE>DialogFont</CODE>
@@ -54,7 +54,7 @@ the "Workplace Shell" object. This corresponds to
 the <CODE>GLOBALSETTINGS</CODE> structure
 as defined in <CODE>\shared\common.h</CODE> of the &xwp; sources. You better not
 change values in here manually, but you can delete this whole key to reset &xwp;
-to safe default values (after the next WPS startup).
+to safe default values (after the next Desktop startup).
 This gets rewritten every time some global setting is
 changed in any of the settings objects.
 
@@ -77,7 +77,7 @@ as hex object handles separated by spaces.
 
 <DT><CODE>RebootTo</CODE>
 <DD>A list of user-reboot items (which appear in the "Reboot" drop-down box
-in the XShutdown confirmation dialog). This is a list of pairs of zero-terminated
+in the &xshutdown; confirmation dialog). This is a list of pairs of zero-terminated
 strings: the first one describes the item, the second one specifies the command
 to execute. The list is terminated by two extra zero bytes.
 

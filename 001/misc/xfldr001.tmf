@@ -41,19 +41,19 @@
 ;       GNU General Public License for more details.
 ;
 
-<--XFL0100-->: XWorkplace: Modify CONFIG.SYS
+<--XFL0100-->: &xwp;: Modify CONFIG.SYS
 
-<--XFL0101-->: In order to enable the new settings, XWorkplace will now modify your CONFIG.SYS file. XFolder will create a backup file under the name CONFIG.001 (or a higher numerical extension, if neccessary). Are you sure you wish to change your CONFIG.SYS file?
+<--XFL0101-->: In order to enable the new settings, &xwp; will now modify your CONFIG.SYS file. XFolder will create a backup file under the name CONFIG.001 (or a higher numerical extension, if neccessary). Are you sure you wish to change your CONFIG.SYS file?
 
-<--XFL0102-->: XWorkplace: Language Changed
+<--XFL0102-->: &xwp;: Language Changed
 
-<--XFL0103-->: XWorkplace's language has now been changed. The "Workplace Shell" object will now be closed. When you open it the next time, the language will have changed.
+<--XFL0103-->: &xwp;'s language has now been changed. The "Workplace Shell" object will now be closed. When you open it the next time, the language will have changed.
 
-<--XFL0104-->: XWorkplace: Error
+<--XFL0104-->: &xwp;: Error
 
-<--XFL0105-->: XWorkplace was unable to create the Startup Folder on the Desktop. Most probably the WPS class XFldStartup has not been properly installed.
+<--XFL0105-->: &xwp; was unable to create the Startup Folder on the Desktop. Most probably the WPS class XFldStartup has not been properly installed.
 
-<--XFL0106-->: XWorkplace was unable to create the XShutdown Folder on the Desktop. Most probably the WPS class XFldShutdown has not been properly installed.
+<--XFL0106-->: &xwp; was unable to create the &xsd; Folder on the Desktop. Most probably the WPS class XFldShutdown has not been properly installed.
 
 <--XFL0107-->: Change WPS Object ID
 
@@ -61,9 +61,9 @@
 
 <--XFL0109-->: Are you sure you want to change this WPS object ID?
 
-<--XFL0110-->: XShutdown: Error
+<--XFL0110-->: &xsd;: Error
 
-<--XFL0111-->: An error occured saving the INI files. There is a possibility that the Workplace Shell might be damaged at the next reboot. Instead of continuing the eXtended Shutdown, you can now restart the WPS, disable the eXtended Shutdown, and perform a regular OS/2 shutdown. Do you wish to restart the WPS now?
+<--XFL0111-->: An error occured saving the INI files. There is a possibility that the Workplace Shell might be damaged at the next reboot. Instead of continuing the eXtended Shutdown, you can now restart the WPS, disable the eXtended Shutdown, and perform a regular &os2; shutdown. Do you wish to restart the WPS now?
 
 <--XFL0112-->: Select Object Class
 
@@ -72,19 +72,19 @@
 <--XFL0114-->: eXtended Shutdown
 
 ; V0.9.11: changed the following
-<--XFL0115-->: There are currently %1 print job(s) in the spooler queues. XShutdown will not work properly when print jobs are still pending. Remove the jobs from the spooler first.
+<--XFL0115-->: There are currently %1 print job(s) in the spooler queues. &xsd; will not work properly when print jobs are still pending. Remove the jobs from the spooler first.
 
-<--XFL0116-->: XWorkplace: Warning
+<--XFL0116-->: &xwp;: Warning
 
 ; 117 is gone with V0.9.7 (2000-12-13) [umoeller]:
 
-<--XFL0118-->: You have chosen to remove the class "%1" from the WPS class list. You should only alter the WPS class list if you know exactly what you're doing. Deregistering certain classes can lead to severe malfunction of the Workplace Shell and might even require a complete re-installation of OS/2. Are you still sure you wish to deregister this class?
+<--XFL0118-->: You have chosen to remove the class "%1" from the WPS class list. You should only alter the WPS class list if you know exactly what you're doing. Deregistering certain classes can lead to severe malfunction of the Workplace Shell and might even require a complete re-installation of &os2;. Are you still sure you wish to deregister this class?
 
 <--XFL0119-->: The class "%1" could not be deregistered.
 
-<--XFL0120-->: You have chosen to remove the class "%1" from the WPS class list. This class belongs to the XWorkplace package. All the XWorkplace classes are designed to work together, and removing only some of them can lead to serious malfunction of the Workplace Shell. Are you still sure you which to deregister this class?
+<--XFL0120-->: You have chosen to remove the class "%1" from the WPS class list. This class belongs to the &xwp; package. All the &xwp; classes are designed to work together, and removing only some of them can lead to serious malfunction of the Workplace Shell. Are you still sure you which to deregister this class?
 
-<--XFL0121-->: XWorkplace
+<--XFL0121-->: &xwp;
 
 <--XFL0122-->: The class "%1" has been successfully deregistered. You will need to restart the WPS to see the effects.
 
@@ -92,9 +92,9 @@
 
 <--XFL0124-->: Are you sure that you wish to replace the object class "%1" with "%2"? This can only work for classes which were specifically designed for this purpose. Otherwise this procedure might lead to serious malfunction of the Workplace Shell and might even require a complete re-install. Do you wish to replace anyway?
 
-<--XFL0125-->: You have chosen to undo the replacement of class "%1" with "%2". This class belongs to the XWorkplace package. All the XWorkplace classes are designed to work together, and changing replacements can lead to serious malfunction of the Workplace Shell. Are you still sure you which to un-replace this class?
+<--XFL0125-->: You have chosen to undo the replacement of class "%1" with "%2". This class belongs to the &xwp; package. All the &xwp; classes are designed to work together, and changing replacements can lead to serious malfunction of the Workplace Shell. Are you still sure you which to un-replace this class?
 
-<--XFL0126-->: You have chosen to undo the replacement of class "%1" with "%2". You should only change WPS class replacements if you know exactly what you're doing. Unreplacing certain classes can lead to severe malfunction of the Workplace Shell and might even require a complete re-installation of OS/2. Are you still sure you which to un-replace this class?
+<--XFL0126-->: You have chosen to undo the replacement of class "%1" with "%2". You should only change WPS class replacements if you know exactly what you're doing. Unreplacing certain classes can lead to severe malfunction of the Workplace Shell and might even require a complete re-installation of &os2;. Are you still sure you which to un-replace this class?
 
 <--XFL0127-->: The replacement of class "%1" with "%2" has been successfully undone.
 
@@ -110,13 +110,13 @@
 
 <--XFL0133-->: You have chosen to have all folders on your system sorted by default. This will include the Desktop. Do you wish to disable auto-sort for the Desktop?
 
-<--XFL0134-->: XWorkplace could not find the requested help topic. Either you have moved the XWorkplace help file (XFLDR001.HLP) to a different folder, or the author of XWorkplace has confused something. Try to reinstall XWorkplace.
+<--XFL0134-->: &xwp; could not find the requested help topic. Either you have moved the &xwp; help file (XFLDR001.HLP) to a different folder, or the author of &xwp; has confused something. Try to reinstall &xwp;.
 
-<--XFL0135-->: You have opened a submenu which contains no menu items because the corresponding XWorkplace configuration folder contains no objects. Place objects into the configuration folders to create menu items.
+<--XFL0135-->: You have opened a submenu which contains no menu items because the corresponding &xwp; configuration folder contains no objects. Place objects into the configuration folders to create menu items.
 
 <--XFL0136-->: The CONFIG.SYS file has been changed. In order to let the settings take effect, you will need to shut down and reboot your system. A WPS restart will not suffice for this.
 
-<--XFL0137-->: XWorkplace could not find its Online Reference. You have probably deleted the respective object that was created by the installation program. You will find the Online Reference (XFLDR001.INF) in the XWorkplace installation directory.
+<--XFL0137-->: &xwp; could not find its Online Reference. You have probably deleted the respective object that was created by the installation program. You will find the Online Reference (XFLDR001.INF) in the &xwp; installation directory.
 
 <--XFL0138-->: Are you sure you wish to start all objects in this folder? This might lead to problems if programs in this folder are already running.
 
@@ -127,7 +127,7 @@
 
 <--XFL0141-->: This will create an object of the class "%1" named "%2" on the Desktop. Warning: Some WPS classes were not designed to have objects created of them, and some may cause trouble with your system configuration only. Continue anyway?
 
-<--XFL0142-->: You have made the following changes to the XWorkplace class setup:
+<--XFL0142-->: You have made the following changes to the &xwp; class setup:
 
 <--XFL0143-->: Register the following classes:
 
@@ -137,17 +137,17 @@
 
 <--XFL0146-->: Undo the following class replacements:
 
-<--XFL0147-->: Warning: Partial changes to the XWorkplace class setup have not been extensively tested. There might still be some side-effects between the different XWorkplace classes which have not been fully resolved. Are you sure you want to do this?
+<--XFL0147-->: Warning: Partial changes to the &xwp; class setup have not been extensively tested. There might still be some side-effects between the different &xwp; classes which have not been fully resolved. Are you sure you want to do this?
 
-<--XFL0148-->: XWorkplace Setup
+<--XFL0148-->: &xwp; Setup
 
-<--XFL0149-->: Errors occured with the following XWorkplace classes:
+<--XFL0149-->: Errors occured with the following &xwp; classes:
 %1
 Some of the class changes might have been successful however. Restart the WPS for the changes to take effect.
 
 <--XFL0150-->: The WPS class list has been successfully changed. You will need to restart the WPS for the changes to take effect.
 
-<--XFL0151-->: XWorkplace: "Sound" Object
+<--XFL0151-->: &xwp;: "Sound" Object
 
 <--XFL0152-->: The sound scheme "%1" already exists. Overwrite?
 
@@ -167,9 +167,9 @@ Are you sure you want to do this?
 
 <--XFL0156-->: No changes were made to the driver "%1". Modifying CONFIG.SYS is not necessary.
 
-<--XFL0157-->: The XWorkplace Hook has been installed. Object hotkeys and mouse movement features are available in the "Keyboard" and "Mouse" settings objects.
+<--XFL0157-->: The &xwp; Hook has been installed. Object hotkeys and mouse movement features are available in the "Keyboard" and "Mouse" settings objects.
 
-<--XFL0158-->: The XWorkplace Hook has now been deinstalled. Object hotkeys and mouse movement features are no longer available in the "Keyboard" and "Mouse" settings objects.
+<--XFL0158-->: The &xwp; Hook has now been deinstalled. Object hotkeys and mouse movement features are no longer available in the "Keyboard" and "Mouse" settings objects.
 
 ;
 ; the following items have been added with V0.9.1
@@ -177,29 +177,29 @@ Are you sure you want to do this?
 ; changed XFL0159 with V0.9.7
 ;
 
-<--XFL0159-->: Welcome to XWorkplace. The Workplace Shell is now starting up with XWorkplace installed.
+<--XFL0159-->: Welcome to &xwp;. The Workplace Shell is now starting up with &xwp; installed.
 
-If you have just installed XWorkplace for the very first time, all XWorkplace settings are disabled to avoid problems.
+If you have just installed &xwp; for the very first time, all &xwp; settings are disabled to avoid problems.
 
-If you had XFolder installed previously, XWorkplace will import most of your old XFolder settings.
+If you had XFolder installed previously, &xwp; will import most of your old XFolder settings.
 
-If you had XWorkplace installed previously, your settings are not changed.
+If you had &xwp; installed previously, your settings are not changed.
 
-Now, if you run into any trouble with XWorkplace, e.g. should the system hang upon startup, first press Ctrl+Alt+Del to restart the system.
+Now, if you run into any trouble with &xwp;, e.g. should the system hang upon startup, first press Ctrl+Alt+Del to restart the system.
 
-While the WPS is starting up after the reboot, hold down the "Shift" key. This will cause XWorkplace to display a "Panic" dialog where you can disable certain XWorkplace features.
+While the WPS is starting up after the reboot, hold down the "Shift" key. This will cause &xwp; to display a "Panic" dialog where you can disable certain &xwp; features.
 
 Press "OK" to continue WPS startup now. This message will not be shown again.
 
-<--XFL0160-->: No settings for XWorkplace exist in your OS2.INI file. However, settings for an older XFolder version were found.
+<--XFL0160-->: No settings for &xwp; exist in your OS2.INI file. However, settings for an older XFolder version were found.
 
-XWorkplace can now import your old XFolder settings so that you don't have to reconfigure everything. In that case, XWorkplace will initially mostly behave like your existing XFolder version. Your old XFolder settings will not be changed, so you can re-install XFolder instead of XWorkplace later.
+&xwp; can now import your old XFolder settings so that you don't have to reconfigure everything. In that case, &xwp; will initially mostly behave like your existing XFolder version. Your old XFolder settings will not be changed, so you can re-install XFolder instead of &xwp; later.
 
-If you don't want this, all XWorkplace features will initially be disabled.
+If you don't want this, all &xwp; features will initially be disabled.
 
-Do you wish to have your old XFolder settings converted for XWorkplace?
+Do you wish to have your old XFolder settings converted for &xwp;?
 
-<--XFL0161-->: This will create the XWorkplace Configuration Folder in the XWorkplace installation folder or, if that folder does not exist, on your Desktop.
+<--XFL0161-->: This will create the &xwp; Configuration Folder in the &xwp; installation folder or, if that folder does not exist, on your Desktop.
 
 Do you wish to continue?
 
@@ -215,29 +215,29 @@ Do you wish to continue?
 
 <--XFL0165-->: Error: The object could not be created. Make sure you have the corresponding WPS class installed.
 
-<--XFL0166-->: You have selected to enable the extended system sounds, but the additional XWorkplace system sounds have not been installed in the "Sound" object yet. Do you wish to have this done now?
+<--XFL0166-->: You have selected to enable the extended system sounds, but the additional &xwp; system sounds have not been installed in the "Sound" object yet. Do you wish to have this done now?
 
-<--XFL0167-->: You have selected to disable the extended system sounds. Do you wish to remove the additional XWorkplace system sounds from the "Sound" object?
+<--XFL0167-->: You have selected to disable the extended system sounds. Do you wish to remove the additional &xwp; system sounds from the "Sound" object?
 
-<--XFL0168-->: XWorkplace Trash Can
+<--XFL0168-->: &xwp; Trash Can
 
 <--XFL0169-->: This will delete all the objects in the trash can for good.
 
 Are you sure you wish to empty the trash can?
 
-<--XFL0170-->: The trash can WPS classes which are required for the XWorkplace trash can to work (XWPTrashCan, XWPTrashObject) have not been registered yet.
+<--XFL0170-->: The trash can WPS classes which are required for the &xwp; trash can to work (XWPTrashCan, XWPTrashObject) have not been registered yet.
 
 Should we do this now?
 
 <--XFL0171-->: An error occured registering the trash can WPS classes.
 
-<--XFL0172-->: Do you wish to destroy the trash object and deregister the XWorkplace trash can classes (XWPTrashCan, XWPTrashObject)?
+<--XFL0172-->: Do you wish to destroy the trash object and deregister the &xwp; trash can classes (XWPTrashCan, XWPTrashObject)?
 
 <--XFL0173-->: The trash can object has been successfully destroyed and the trash can classes have been deregistered. You should restart the WPS for the changes to take effect.
 
 <--XFL0174-->: This operation is invalid for trash objects.
 
-<--XFL0175-->: XWorkplace: File Operations Error
+<--XFL0175-->: &xwp;: File Operations Error
 
 ;
 ; the following items have been added with V0.9.3
@@ -269,7 +269,7 @@ Should we do this now?
 
 <--XFL0187-->: The trash can must have a name. The old name has been restored.
 
-<--XFL0188-->: You have just restored a WPS archive. XWorkplace's automatic archiving has been disabled in order to prevent archive overwrites. You can turn archiving back on in the Desktop's settings notebook.
+<--XFL0188-->: You have just restored a WPS archive. &xwp;'s automatic archiving has been disabled in order to prevent archive overwrites. You can turn archiving back on in the Desktop's settings notebook.
 
 <--XFL0189-->: Emptying the trash can failed. Do you wish to continue shutdown?
 
@@ -277,15 +277,15 @@ Should we do this now?
 ; the following items are new with V0.9.5
 ;
 
-<--XFL0190-->: Before using XShutdown the first time, please fine-tune XShutdown on the new "XShutdown" page in the Desktop's settings notebook.
+<--XFL0190-->: Before using &xsd; the first time, please fine-tune &xsd; on the new "&xsd;" page in the Desktop's settings notebook.
 
-Warning: Even though XShutdown has been tested, it MIGHT NOT WORK on your system. Before shutting down the first time using XShutdown, make sure you have a working WPS backup. Don't say you haven't been warned!
+Warning: Even though &xsd; has been tested, it MIGHT NOT WORK on your system. Before shutting down the first time using &xsd;, make sure you have a working WPS backup. Don't say you haven't been warned!
 
 ;
 ; the following items are new with V0.9.6
 ;
 
-<--XFL0191-->: XWorkplace Setup String
+<--XFL0191-->: &xwp; Setup String
 
 <--XFL0192-->: This will invoke the setup string "%1" on the object "%2". Are you sure you want to do this?
 
@@ -299,27 +299,27 @@ Are you sure you want to do this?
 ; the following items are new with V0.9.7
 ;
 
-<--XFL0194-->: XCenter: Error
+<--XFL0194-->: &xcenter;: Error
 
-<--XFL0195-->: The XCenter failed to create the widget of the class "%1".
+<--XFL0195-->: The &xcenter; failed to create the widget of the class "%1".
 
 Check if maybe the xwplog.log file in the root directory of your boot drive contains additional information.
 
-Do you wish to remove this widget from the XCenter's widget list?
+Do you wish to remove this widget from the &xcenter;'s widget list?
 
 <--XFL0196-->: Error creating file type "%1". Maybe the file type already exists.
 
-<--XFL0197-->: XCenter
+<--XFL0197-->: &xcenter;
 
 <--XFL0198-->: Are you sure you want to switch your system to "Suspend" state?
 
-<--XFL0199-->: Whew... apparently all went well. To get you started: Everything you need to enable XWorkplace features is in the "XWorkplace Setup" object in the installation folder that just opened.
+<--XFL0199-->: Whew... apparently all went well. To get you started: Everything you need to enable &xwp; features is in the "&xwp; Setup" object in the installation folder that just opened.
 
 The other shadows in that folder mostly point to the original objects that were created in your "System setup" folder.
 
-The "XWorkplace User Guide" contains all the information you will need... and if it doesn't, it has contact addresses for support.
+The "&xwp; User Guide" contains all the information you will need... and if it doesn't, it has contact addresses for support.
 
-Have fun with XWorkplace!
+Have fun with &xwp;!
 
 <--XFL0200-->: Error %1 occured installing the font file "%2".
 
@@ -337,9 +337,9 @@ Do you wish to ignore this error and continue installing fonts?
 
 Do you wish to ignore this error and continue removing fonts?
 
-<--XFL0205-->: The handle section in OS2SYS.INI has been rewritten. XWorkplace will restart the WPS now.
+<--XFL0205-->: The handle section in OS2SYS.INI has been rewritten. &xwp; will restart the WPS now.
 
-<--XFL0206-->: Hmmmm. XWorkplace was unable to start "%1".
+<--XFL0206-->: Hmmmm. &xwp; was unable to start "%1".
 
 <--XFL0207-->: You must restart the Workplace Shell for this change to take effect.
 
@@ -360,23 +360,24 @@ Contains code from ProgramCommander/2 (C) 1993-1999 Roman Stangl (OpenSource).
 Contains code from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
 Contains code from the Standard Function Library (SFL) (C) 1991-99 iMatix Corporation (http://www.imatix.com).
 
-See the "Notices" section in the XWorkplace User Guide for more detailed credits and trademark notices.
+See the "Notices" section in the &xwp; User Guide for more detailed credits and trademark notices.
 
 Compiled using IBM VisualAge C++ 3.08.
 
 Contact xworkplace-user@yahoogroups.com for bug reports and suggestions.
-Contact xworkplace-dev@yahoogroups.com if you are (or want to become) familiar with the XWorkplace source code.
+Contact xworkplace-dev@yahoogroups.com if you are (or want to become) familiar with the &xwp; source code.
 
-XWorkplace is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the XWorkplace installation directory. The full source code is available from http://xworkplace.netlabs.org in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GPL.
-XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself.
+&xwp; is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the &xwp; installation directory. The full source code is available from http://xworkplace.netlabs.org in a separate package. You are welcome to redistribute and/or modify &xwp; under the conditions of the GPL.
+&xwp; comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the &xwp; User Guide and the GPL itself.
+
 
 ;
 ; the following items are new with V0.9.9
 ;
 
-<--XFL0208-->: XWorkplace's extended file associations are now enabled.
+<--XFL0208-->: &xwp;'s extended file associations are now enabled.
 
-Note: If you have not configured the XWorkplace file types yet, all your present WPS associations are currently disabled. Go to the "Workplace Shell" object, where you will find a new "File types" page, to set up file types for your existing associations.
+Note: If you have not configured the &xwp; file types yet, all your present WPS associations are currently disabled. Go to the "Workplace Shell" object, where you will find a new "File types" page, to set up file types for your existing associations.
 
 You can always disable the extended file associations again to get the old WPS mechanism back.
 
@@ -384,17 +385,17 @@ You can always disable the extended file associations again to get the old WPS m
 
 <--XFL0210-->: The file type %1 already exists and cannot be used for renaming.
 
-<--XFL0211-->: XWorkplace will now create the standard installation objects for you.
+<--XFL0211-->: &xwp; will now create the standard installation objects for you.
 
-This will add a number of objects to your "System setup" folder for detailed configuration of XWorkplace and the WPS.
+This will add a number of objects to your "System setup" folder for detailed configuration of &xwp; and the WPS.
 
-In addition, this will produce an "XWorkplace installation" folder on your desktop with a standard configuration folder for your folder context menus.
+In addition, this will produce an "&xwp; installation" folder on your desktop with a standard configuration folder for your folder context menus.
 
-If you do not wish to have this done, press "Cancel" now. You should only do this though if you are sure that you do not want the objects to be created; this will prevent you from being able to configure XWorkplace, if the objects do not exist yet.
+If you do not wish to have this done, press "Cancel" now. You should only do this though if you are sure that you do not want the objects to be created; this will prevent you from being able to configure &xwp;, if the objects do not exist yet.
 
 Otherwise, press "OK" to continue.
 
-<--XFL0212-->: You must restart the WPS for the XWorkplace auto-refresh threads to become active.
+<--XFL0212-->: You must restart the WPS for the &xwp; auto-refresh threads to become active.
 
 WARNING: This feature is still slightly unstable. It will probably not hang your system, but you might get crashes in the auto-refresh background threads. Use at your own risk.
 
@@ -426,11 +427,11 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 ; the following items are new with V0.9.14
 ;
 
-<--XFL0222-->: The XCenter failed to create the widget of the class "%1".
+<--XFL0222-->: The &xcenter; failed to create the widget of the class "%1".
 
 This widget class cannot be used in a tray.
 
-Do you wish to remove this widget from the XCenter's widget list?
+Do you wish to remove this widget from the &xcenter;'s widget list?
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -452,7 +453,7 @@ Do you wish to remove this widget from the XCenter's widget list?
 Availability: DANIS506.ADD and newer IBM1S506.ADD versions.
 
 <--S506DLG_1624-->: This checkbox determines whether DMA Scatter/Gather is enabled.
-According to the OS/2 Command Reference, the default is "enabled".
+According to the &os2; Command Reference, the default is "enabled".
 
 <--S506DLG_1625-->: This selects adapter 0 (the "primary" controller") for the adapter settings below.
 Note that "/A:0" is only added to the parameters list if any non-default settings are set for this adapter or any of its units (drives).
@@ -464,7 +465,7 @@ Note that "/A:1" is only added to the parameters list if any non-default setting
 This is probably only necessary if you have more than two adapters on your system and need to load the IDE driver more than once.
 
 <--S506DLG_1628-->: This setting determines whether the driver is allow to reset an adapter when hardware errors occur.
-According to the OS/2 Command Reference, if errors occur (lost interrupts, command timeouts, invalid commands), resetting the adapter can help. However, some adapters with non-default commands might lose data upon resets.
+According to the &os2; Command Reference, if errors occur (lost interrupts, command timeouts, invalid commands), resetting the adapter can help. However, some adapters with non-default commands might lose data upon resets.
 Disable this checkbox to prohibit adapter resets for the current adapter.
 Enable this checkbox to explicitly allow adapter resets.
 If the check box is gray (indeterminate state), no parameter will be added.
@@ -493,7 +494,7 @@ This is probably only necessary if you have more than two adapters on your syste
 
 <--S506DLG_1637-->: If the checkbox on the left is enabled, you can specify the port address for DMA scatter/gather for the current adapter here.
 This is a hexadecimal value.
-According to the OS/2 Command Reference, the default is always 400.
+According to the &os2; Command Reference, the default is always 400.
 
 <--S506DLG_1638-->: This selects whether busmastering (direct memory access, DMA) will be enabled for the entire current adapter (/BM or /!BM with the adapter parameter).
 DANIS506.ADD and newer versions of IBM1S506.ADD support specifying this parameter on a per-unit basis also (see the right of this dialog).
@@ -524,7 +525,7 @@ For general remarks about busmastering, press the "Help" button.
 <--S506DLG_1644-->: Check this box to explicitly override the default error recovery time for the current unit (/T:xxx).
 
 <--S506DLG_1645-->: If the checkbox above has been enabled, this allows you to override the default error recovery time for the currently selected unit (in seconds).
-According to the OS/2 Command Reference, the default is 30 seconds. Lower values might be desirable for fault-tolerant applications. Values below five seconds cannot be specified with the driver.
+According to the &os2; Command Reference, the default is 30 seconds. Lower values might be desirable for fault-tolerant applications. Values below five seconds cannot be specified with the driver.
 
 <--S506DLG_1647-->: Check this box to explicitly specify the drive geometry for the currently selected unit. Otherwise, the driver will determine the geometry itself according to the BIOS setup, which is OK in most cases.
 I guess this parameter is not that useful any more, now that all BIOSes have built-in IDE auto-detection and LBA support.
@@ -542,13 +543,13 @@ Uncheck this box to explicitly disable SMS for a unit (/!SMS). Note that newer v
 According to DANIS506.DOC, every harddisk has a maximum SMS run length defined by the manufacturer specific to each model, which is queried by the driver.
 
 <--S506DLG_1653-->: Check this box to explicitly enable Logical Block Addressing (LBA) for the current unit, if the driver does not detect this right.
-LBA is a BIOS feature which has been introduced a few years ago to access large hard drives (beyond 504 MB) by remapping the drive geometry logically. Modern hard drives should always have this enabled in the BIOS setup, and normally, this is properly detected by OS/2.
+LBA is a BIOS feature which has been introduced a few years ago to access large hard drives (beyond 504 MB) by remapping the drive geometry logically. Modern hard drives should always have this enabled in the BIOS setup, and normally, this is properly detected by &os2;.
 
-<--S506DLG_1654-->: This setting determines whether a unit will be passed to the OS/2 storage device manager (OS2DASD.DMD).
-That manager driver is the interface between the various adapter drivers (*.ADD) and the OS/2 file systems (FAT, HPFS, ...). It is this driver which reports logical drives to the OS/2 Kernel at bootup so that drive letters can be assigned.
-Uncheck this box to explicitly disable OS/2 support for the current drive (so that no drive letter will be assigned).
-Check this box to explicitly enable OS/2 support for the current drive.
-If the check box is gray (indeterminate state), the IDE driver will decide for itself whether the drive should be supported by OS/2, which is appropriate in most cases.
+<--S506DLG_1654-->: This setting determines whether a unit will be passed to the &os2; storage device manager (OS2DASD.DMD).
+That manager driver is the interface between the various adapter drivers (*.ADD) and the &os2; file systems (FAT, HPFS, ...). It is this driver which reports logical drives to the &os2; Kernel at bootup so that drive letters can be assigned.
+Uncheck this box to explicitly disable &os2; support for the current drive (so that no drive letter will be assigned).
+Check this box to explicitly enable &os2; support for the current drive.
+If the check box is gray (indeterminate state), the IDE driver will decide for itself whether the drive should be supported by &os2;, which is appropriate in most cases.
 
 <--S506DLG_1655-->: Check this box to enfore availability of the current unit, even if the driver detects that the unit is not installed.
 This is useful for external devices which can be powered off separately, e.g. external CD-ROM drives. For those, enable the "ATAPI" checkbox also.
@@ -560,7 +561,7 @@ Checking this box is useful for external CD-ROMs which can be powered off separa
 
 <--S506DLG_1657-->: This entry field is read-only and displays what the parameters of the IDE driver will look like in CONFIG.SYS.
 This field is dynamically updated if you change any of the settings in this dialog.
-If you press the "OK" button, these parameters will be copied to the "Drivers" page in the "OS/2 Kernel" notebook.
+If you press the "OK" button, these parameters will be copied to the "Drivers" page in the "&os2; Kernel" notebook.
 
 <--S506DLG_1660-->: Enable this checkbox to explicitly specify the clock speed of the PCI bus on your system.
 Availability: DANIS506.ADD only.
@@ -628,12 +629,12 @@ Availability: DANIS506.ADD only.
 
 <--S506DLG_1675-->: This setting determines whether a drive will be treated as a removeable drive.
 From DANIS506.DOC: "If you have a removable drive which you want to boot from, this reportedly fails. To enable booting from this unit it has to be treated as a fixed one. This can be done with the option /!RMV applied to the proper unit.
-It is reported also that some Syquest drives have buggy firmware which doesn't report properly the support of the removable feature set. To announce these drives to OS/2 a removable drives add the /RMV option to the appropriate unit."
+It is reported also that some Syquest drives have buggy firmware which doesn't report properly the support of the removable feature set. To announce these drives to &os2; a removable drives add the /RMV option to the appropriate unit."
 Availability: DANIS506.ADD only.
 
-<--S506DLG_0001-->: Pressing "OK" will close the dialog and copy the current parameter list as shown in the "New parameters" field to the "Drivers" page in the "OS/2 Kernel" settings notebook.
+<--S506DLG_0001-->: Pressing "OK" will close the dialog and copy the current parameter list as shown in the "New parameters" field to the "Drivers" page in the "&os2; Kernel" settings notebook.
 
-<--S506DLG_0002-->: Pressing "Cancel" will close the dialog, but not change the "Drivers" page in the "OS/2 Kernel" settings notebook.
+<--S506DLG_0002-->: Pressing "Cancel" will close the dialog, but not change the "Drivers" page in the "&os2; Kernel" settings notebook.
 
 <--S506DLG_0095-->: Pressing "All defaults" will reset the dialog to a default state, as if no driver parameters had been specified in CONFIG.SYS.
 
@@ -648,16 +649,16 @@ Availability: DANIS506.ADD only.
 ;
 ; ---------------------------------------------------------------------------------
 
-<--FEATURES_6000-->: If "Replace icons" is enabled, XWorkplace will replace the WPS default icons with prettier ones (in my view, that is). Those icons are freely configurable.
+<--FEATURES_6000-->: If "Replace icons" is enabled, &xwp; will replace the WPS default icons with prettier ones (in my view, that is). Those icons are freely configurable.
 This was new with XFolder 0.84.
-See the XWorkplace User Guide for details.
+See the &xwp; User Guide for details.
 <--FEATURES_6002-->: If "Add Object page..." is enabled, a new "Object" page will be added to the settings notebooks of all objects on your system.
-On that page, you can view object internals and set a global hotkey for an object, if the XWorkplace Hook is also enabled (see "Mouse and Keyboard features" below).
-This was added with XWorkplace 0.9.0 and replaces the "Internals" page which was present in XFolder 0.85.
-<--FEATURES_6003-->: If this is enabled, XWorkplace combines the three standard "File" pages in folder and data file settings notebooks into a more convenient single "File" page.
+On that page, you can view object internals and set a global hotkey for an object, if the &xwp; Hook is also enabled (see "Mouse and Keyboard features" below).
+This was added with &xwp; 0.9.0 and replaces the "Internals" page which was present in XFolder 0.85.
+<--FEATURES_6003-->: If this is enabled, &xwp; combines the three standard "File" pages in folder and data file settings notebooks into a more convenient single "File" page.
 Also, a second page for viewing extended attributes is added.
 Also, this replaces the "Details" page in disk objects with a graphical pie chart view.
-This was added with XWorkplace 0.9.0.
+This was added with &xwp; 0.9.0.
 <--FEATURES_6004-->: "Extended system sounds" allows you to define more sounds than the WPS usually offers.
 You'll get additional sounds for context menus, object selections, and more.
 You can set up those new sounds in the regular "Sound" object, as usual.
@@ -665,81 +666,81 @@ This was new with XFolder 0.70.
 
 ; FEATURES_6001 added with V0.9.4
 
-<--FEATURES_6001-->: If "Adjust settings pages..." is checked, XWorkplace can adjust the size of certain settings pages if the entire notebook is resized. This can come in handy for some of the more complex XWorkplace pages to be able to view more data at once.
-Note that this will only affect some of the new XWorkplace pages, but not the default WPS pages.
-This was added with XWorkplace 0.9.4.
+<--FEATURES_6001-->: If "Adjust settings pages..." is checked, &xwp; can adjust the size of certain settings pages if the entire notebook is resized. This can come in handy for some of the more complex &xwp; pages to be able to view more data at once.
+Note that this will only affect some of the new &xwp; pages, but not the default WPS pages.
+This was added with &xwp; 0.9.4.
 
 ; FEATURES_6005 added with V0.9.12
 
-<--FEATURES_6005-->: If "Fix class titles" is checked, XWorkplace will override the class titles of the folder, file, and disk classes.
+<--FEATURES_6005-->: If "Fix class titles" is checked, &xwp; will override the class titles of the folder, file, and disk classes.
 The class titles are shown in the third column in Details view (and also on status bars, if you have told them to do so).
-Unfortunately, if the WPS networking classes are installed, these titles are no longer very meaningful, so XWorkplace can reset them to "folder", "data file", and "disk" again.
+Unfortunately, if the WPS networking classes are installed, these titles are no longer very meaningful, so &xwp; can reset them to "folder", "data file", and "disk" again.
 
 <--FEATURES_6011-->: If "Enable status bars" is checked, you may configure folders to show status bars with detailed information for the selected objects in a folder.
-If this is enabled, you'll get two additional settings pages in XWorkplace's "Workplace Shell" object, which allow you to configure status bars in detail.
+If this is enabled, you'll get two additional settings pages in &xwp;'s "Workplace Shell" object, which allow you to configure status bars in detail.
 Also, you can define whether status bars should be visible for each folder individually.
 So after enabling this, go to the "Workplace Shell" object and turn to the "Status bars" pages.
-See the XWorkplace User Guide for details, especially for how to fine-tune status bars for your needs.
+See the &xwp; User Guide for details, especially for how to fine-tune status bars for your needs.
 This was new with XFolder 0.70.
 <--FEATURES_6012-->: Check "Enable Snap to grid" to be able to add a "Snap to grid" item to folder context menus.
 This item will make all objects in the folder snap onto a grid of invisible lines, which makes object alignment easier.
 Enabling this will also add a "Snap to grid" page to the "Workplace Shell" object, where you can define the grid to be used.
-See the XWorkplace User Guide for an introduction what this means.
+See the &xwp; User Guide for an introduction what this means.
 This was new with XFolder 0.50.
-<--FEATURES_6013-->: If "Folder hotkeys" are enabled, you will be able to define new shortcuts to more than 30 frequently used folder functions (such as "select all") in XWorkplace's "Workplace Shell" object.
+<--FEATURES_6013-->: If "Folder hotkeys" are enabled, you will be able to define new shortcuts to more than 30 frequently used folder functions (such as "select all") in &xwp;'s "Workplace Shell" object.
 This was new with XFolder 0.50.
-See the XWorkplace User Guide for details and the default hotkeys setup.
-<--FEATURES_6014-->: "Extended folder sorting" replaces the default WPS sort functions for folders. If this is enabled, you can finally define global sort options in XWorkplace's "Workplace Shell" object, but you can still override the default settings for each folder.
+See the &xwp; User Guide for details and the default hotkeys setup.
+<--FEATURES_6014-->: "Extended folder sorting" replaces the default WPS sort functions for folders. If this is enabled, you can finally define global sort options in &xwp;'s "Workplace Shell" object, but you can still override the default settings for each folder.
 Also, this introduces new sort criteria, such as "Sort by extension" or "Sort folders first".
 This was new with XFolder 0.70.
-See the XWorkplace User Guide for details.
+See the &xwp; User Guide for details.
 
-<--FEATURES_6051-->: The "XWorkplace Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
+<--FEATURES_6051-->: The "&xwp; Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
 Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.
-Also, the XWorkplace Hook is required for global object hotkeys to work.
+Also, the &xwp; Hook is required for global object hotkeys to work.
 If this is enabled, you'll get additional settings pages in the "Keyboard" and "Mouse" objects in your "System setup" folder.
-This was added with XWorkplace 0.9.0.
-See the XWorkplace User Guide for details.
-<--FEATURES_6052-->: "Animated mouse pointers" replaces the "Pointers" page in the "Mouse" object (in your "System Setup" folder) with a new page which allows you to define animated mouse pointers, instead of the default static ones of OS/2.
-This feature used to be in the separate "Animated Mouse Pointers for OS/2" program, but is now part of XWorkplace 0.9.0.
-See the XWorkplace User Guide for details.
+This was added with &xwp; 0.9.0.
+See the &xwp; User Guide for details.
+<--FEATURES_6052-->: "Animated mouse pointers" replaces the "Pointers" page in the "Mouse" object (in your "System Setup" folder) with a new page which allows you to define animated mouse pointers, instead of the default static ones of &os2;.
+This feature used to be in the separate "Animated Mouse Pointers for &os2;" program, but is now part of &xwp; 0.9.0.
+See the &xwp; User Guide for details.
 <--FEATURES_6053-->: If this is enabled, you can assign a global hotkey to any WPS object. Whenever you press that hotkey, the object will be opened in its default view.
 You can set an object's hotkey on the "Object" page in each object's settings notebook.
 Also, a "Hotkeys" page is added to the "Keyboard" settings object in your "System setup" folder where you can view all hotkeys at once.
-This item is unavailable if the XWorkplace hook is not installed.
+This item is unavailable if the &xwp; hook is not installed.
 Make sure that you also have the "Object page" setting in the "General features" group enabled, or you won't be able to configure hotkeys.
-This was added with XWorkplace V0.9.1.
-<--FEATURES_6054-->: "PageMage" offers you virtual desktops. This means that XWorkplace makes your current desktop one out of several, and you can switch between those.
+This was added with &xwp; V0.9.1.
+<--FEATURES_6054-->: "PageMage" offers you virtual desktops. This means that &xwp; makes your current desktop one out of several, and you can switch between those.
 Enabling this will add a settings page to the new "Screen" settings object where you can fine-tune PageMage.
-This item is unavailable if the XWorkplace hook is not installed.
-PageMage used to be separate program written by Carlos Ugarte and is now integrated into XWorkplace.
-This was added with XWorkplace V0.9.2.
+This item is unavailable if the &xwp; hook is not installed.
+PageMage used to be separate program written by Carlos Ugarte and is now integrated into &xwp;.
+This was added with &xwp; V0.9.2.
 
 <--FEATURES_6021-->: This replaces the "Archives" page in the Desktop's settings notebook. If this is enabled, you can define precise conditions for whether the Workplace Shell should be backed up automatically -- instead of just being able to enable or disable archiving altogether.
-This functionality used to be in the separate "WPSArcO" program, but is now part of XWorkplace 0.9.0, and can be configured more easily.
-See the XWorkplace User Guide for details.
+This functionality used to be in the separate "WPSArcO" program, but is now part of &xwp; 0.9.0, and can be configured more easily.
+See the &xwp; User Guide for details.
 <--FEATURES_6022-->: "Restart WPS" is a new menu item in the Desktop's settings notebook, which will restart the Workplace Shell only, instead of having to reboot the whole system.
-As opposed to other utilities, XWorkplace saves the WPS's state before restarting it.
-This will add an "XShutdown" page to the Desktop's settings notebook which allows you to configure this feature.
+As opposed to other utilities, &xwp; saves the WPS's state before restarting it.
+This will add an "&xsd;" page to the Desktop's settings notebook which allows you to configure this feature.
 This was new with XFolder 0.60.
-See the XWorkplace User Guide for details.
-<--FEATURES_6023-->: "XShutdown" is a complete rewrite of the default OS/2 shutdown sequence.
-If this setting is enabled, XShutdown will be executed instead of OS/2's default shutdown if you select "Shutdown" from the Desktop's context menu.
+See the &xwp; User Guide for details.
+<--FEATURES_6023-->: "&xsd;" is a complete rewrite of the default &os2; shutdown sequence.
+If this setting is enabled, &xsd; will be executed instead of &os2;'s default shutdown if you select "Shutdown" from the Desktop's context menu.
 This allows you to cancel shutdown while it's running, skip hung programs, and more.
-This will add an "XShutdown" page to the Desktop's settings notebook which allows you to configure this feature.
+This will add an "&xsd;" page to the Desktop's settings notebook which allows you to configure this feature.
 This was new with XFolder 0.60.
-See the XWorkplace User Guide for details.
+See the &xwp; User Guide for details.
 
 <--FEATURES_6041-->: "Extended file associations" will make the WPS use file types only for associating programs with data files.
 Don't be shocked, file filters still exist. The difference is that files will be given automatic file types based on file filters, instead of associating programs based on filters directly.
 Also, you can define hierarchical file types, such that all files of type "C Code" will automatically be considered "Plain text" also.
-If this is enabled, you'll get a new settings page for file types in XWorkplace's "Workplace Shell" object.
-This was added with XWorkplace 0.9.0.
-See the XWorkplace User Guide for details.
+If this is enabled, you'll get a new settings page for file types in &xwp;'s "Workplace Shell" object.
+This was added with &xwp; 0.9.0.
+See the &xwp; User Guide for details.
 <--FEATURES_6042-->: "Clean up INI files" will automatically remove some entries from the system profile (OS2.INI) which the WPS frequently forgets to delete.
 I guess this was new with XFolder 0.80.
 <--FEATURES_6043-->: This replaces the "File exists" dialog which appears if you move or copy files to a folder where another object already has the same title.
-This replacement dialog is a bit more useful and shows much more information than OS/2's default one.
+This replacement dialog is a bit more useful and shows much more information than &os2;'s default one.
 This was new with XFolder 0.80.
 <--FEATURES_6044-->: This replaces the ugly white system-modal hard-error popup box which appears if you open a drive object which is not ready.
 If this is enabled, you'll get a regular dialog box, which also has a "retry" button.
@@ -747,42 +748,42 @@ This was new with XFolder 0.85.
 ;
 ; the following was changed with V0.9.3
 ;
-<--FEATURES_6045-->: If this is enabled, all regular Workplace Shell "Delete" operations will not actually delete objects, but move them to the XWorkplace trash can instead.
+<--FEATURES_6045-->: If this is enabled, all regular Workplace Shell "Delete" operations will not actually delete objects, but move them to the &xwp; trash can instead.
 This includes pressing the "Del" key and selecting the "Delete" context menu items for all objects on your system.
 You can still force a "true" delete by holding down the "Shift" key when selecting the "Delete" context menu item.
-Selecting this item will install XWorkplace's trash can WPS classes and create a trash can object on your Desktop, if these requirements are not met yet.
-See the XWorkplace User Guide for details.
-This was added with XWorkplace 0.9.1.
+Selecting this item will install &xwp;'s trash can WPS classes and create a trash can object on your Desktop, if these requirements are not met yet.
+See the &xwp; User Guide for details.
+This was added with &xwp; 0.9.1.
 ;
 ; the following was changed with V0.9.5
 ;
 <--FEATURES_6047-->: This will replace the Workplace Shell's file-system handles management in OS2SYS.INI, attempting to reduce the number of unneccessary handles which are created.
-Please see the XWorkplace User Guide for an introduction of this feature.
-This was added with XWorkplace 0.9.5.
+Please see the &xwp; User Guide for an introduction of this feature.
+This was added with &xwp; 0.9.5.
 
 ;
 ; the following was added with V0.9.3
 ;
-<--FEATURES_6046-->: If "Replace true delete" is enabled, XWorkplace will replace the Workplace Shell's "true" delete operations.
+<--FEATURES_6046-->: If "Replace true delete" is enabled, &xwp; will replace the Workplace Shell's "true" delete operations.
 If the trash can has been enabled above, this applies to destroying trash objects as well as the "true" delete which is started when "Delete" is selected with the "Shift" key pressed.
 If the trash can has not been enabled above, this applies to all delete operations.
 Compared to the WPS's default delete operations, this will allow you to cancel a delete operation in progress if a folder has lots of subfolders.
-This was added with XWorkplace 0.9.3.
+This was added with &xwp; 0.9.3.
 
 ;
 ; the following was added with V0.9.9
 ;
-<--FEATURES_6048-->: If "Replace folder auto-refresh" is enabled, XWorkplace will disable the internal WPS threads which monitor file-system activity to automatically refresh folders. Instead, it will start its own threads for this job.
-XWorkplace's implementation has the advantage that it does not create excessive file-system handles.
-Enabling or disabling this replacement requires a WPS restart. However, once the XWorkplace replacement is enabled, you can dynamically enable or disable folder auto-refresh on the "View" page in the "Workplace Shell" object.
-Please see the XWorkplace User Guide for an introduction of this feature.
-This was added with XWorkplace 0.9.9.
+<--FEATURES_6048-->: If "Replace folder auto-refresh" is enabled, &xwp; will disable the internal WPS threads which monitor file-system activity to automatically refresh folders. Instead, it will start its own threads for this job.
+&xwp;'s implementation has the advantage that it does not create excessive file-system handles.
+Enabling or disabling this replacement requires a WPS restart. However, once the &xwp; replacement is enabled, you can dynamically enable or disable folder auto-refresh on the "View" page in the "Workplace Shell" object.
+Please see the &xwp; User Guide for an introduction of this feature.
+This was added with &xwp; 0.9.9.
 
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
 ;
-; Here follow the toolinfos (fly-over help) for the new "XWorkplace Classes" dialog
+; Here follow the toolinfos (fly-over help) for the new "&xwp; Classes" dialog
 ; (XWPSetup).
 ; Each item starts with "XWPCLS_", followed by the dialog ID from include\dlgids.h.
 ; NOTE: The internal string buffer for these messages is limited to 3000 characters,
@@ -790,63 +791,63 @@ This was added with XWorkplace 0.9.9.
 ;
 ; ---------------------------------------------------------------------------------
 
-<--XWPCLS_1251-->: "XFldObject" is the XWorkplace replacement for the WPObject class and is required for XWorkplace's operation. This cannot be deselected.
+<--XWPCLS_1251-->: "XFldObject" is the &xwp; replacement for the WPObject class and is required for &xwp;'s operation. This cannot be deselected.
 
-<--XWPCLS_1252-->: "XFolder" is the XWorkplace replacement for the WPFolder class.
-This introduces all the folder enhancements that XWorkplace offers, such as extended context menus, extended sorting, folder status bars, and much more.
+<--XWPCLS_1252-->: "XFolder" is the &xwp; replacement for the WPFolder class.
+This introduces all the folder enhancements that &xwp; offers, such as extended context menus, extended sorting, folder status bars, and much more.
 
-<--XWPCLS_1253-->: "XFldDisk" is the XWorkplace replacement for the WPDisk class, which is used by the WPS for "disk" objects, as found in the "Drives" folder.
+<--XWPCLS_1253-->: "XFldDisk" is the &xwp; replacement for the WPDisk class, which is used by the WPS for "disk" objects, as found in the "Drives" folder.
 This replacements introduces a number of enhancements to disk handling and also routes the folder enhancements to disk objects.
 If this class is to be installed, XFolder must be installed too.
 
-<--XWPCLS_1254-->: "XFldDesktop" is the XWorkplace replacement for the WPDesktop class, which implements the Desktop.
+<--XWPCLS_1254-->: "XFldDesktop" is the &xwp; replacement for the WPDesktop class, which implements the Desktop.
 This replacements offers enhancements to the Desktop, such as extended startup (boot logos, archiving) and extended shutdown.
 
-<--XWPCLS_1255-->: "XFldDataFile" is the XWorkplace replacement for the WPDataFile class, which is used for all physical files on your system.
+<--XWPCLS_1255-->: "XFldDataFile" is the &xwp; replacement for the WPDataFile class, which is used for all physical files on your system.
 This replacement offers enhancements to the WPS association mechanisms, replacement default icons, and the "Copy filename to clipboard" feature.
 
-<--XWPCLS_1256-->: "XFldProgramFile" is the XWorkplace replacement for the WPProgramFile class, which is used for all physical executable files (.EXE, .COM, etc.).
+<--XWPCLS_1256-->: "XFldProgramFile" is the &xwp; replacement for the WPProgramFile class, which is used for all physical executable files (.EXE, .COM, etc.).
 This class adds a new "Module" page to the executable's settings notebook and offers default icon replacements.
 
-<--XWPCLS_1257-->: "XWPSound" is the XWorkplace replacement for the WPSound class, which implements the "Sound" object found in your "System setup" folder.
+<--XWPCLS_1257-->: "XWPSound" is the &xwp; replacement for the WPSound class, which implements the "Sound" object found in your "System setup" folder.
 This replacement offers a better version of the "Sounds" page in that object's settings notebook, now allowing you to edit sound schemes.
-This was added with XWorkplace 0.9.0.
+This was added with &xwp; 0.9.0.
 
-<--XWPCLS_1258-->: "XWPMouse" is the XWorkplace replacement for the WPMouse class, which implements the "Mouse" object found in your "System setup" folder.
-This replacement adds the "Animated Mouse Pointers for OS/2" functionality, which is now part of XWorkplace.
-Also, this replacement adds settings pages for configuring the XWorkplace hook mouse features, such as sliding focus and screen corner objects.
+<--XWPCLS_1258-->: "XWPMouse" is the &xwp; replacement for the WPMouse class, which implements the "Mouse" object found in your "System setup" folder.
+This replacement adds the "Animated Mouse Pointers for &os2;" functionality, which is now part of &xwp;.
+Also, this replacement adds settings pages for configuring the &xwp; hook mouse features, such as sliding focus and screen corner objects.
 
-<--XWPCLS_1259-->: "XWPKeyboard" is the XWorkplace replacement for the WPKeyboard class, which implements the "Keyboard" object found in your "System setup" folder.
-This replacement adds settings pages for configuring the XWorkplace hook keyboard features, such as global object hotkeys.
+<--XWPCLS_1259-->: "XWPKeyboard" is the &xwp; replacement for the WPKeyboard class, which implements the "Keyboard" object found in your "System setup" folder.
+This replacement adds settings pages for configuring the &xwp; hook keyboard features, such as global object hotkeys.
 
-<--XWPCLS_1260-->: "XWPSetup" implements the "XWorkplace Setup" settings object and is required for XWorkplace's operation. This cannot be deselected.
-This was added with XWorkplace 0.9.0.
+<--XWPCLS_1260-->: "XWPSetup" implements the "&xwp; Setup" settings object and is required for &xwp;'s operation. This cannot be deselected.
+This was added with &xwp; 0.9.0.
 
-<--XWPCLS_1261-->: "XFldSystem" implements the "OS/2 Kernel" settings object, which allows you to easily configure various CONFIG.SYS settings.
+<--XWPCLS_1261-->: "XFldSystem" implements the "&os2; Kernel" settings object, which allows you to easily configure various CONFIG.SYS settings.
 
-<--XWPCLS_1262-->: "XFldWPS" implements the "Workplace Shell" object, which contains all the WPS settings pages from the default "System" object plus lots of new settings pages for XWorkplace.
-Installing this class is strongly recommended, because without it, you won't be able to configure XWorkplace much.
+<--XWPCLS_1262-->: "XFldWPS" implements the "Workplace Shell" object, which contains all the WPS settings pages from the default "System" object plus lots of new settings pages for &xwp;.
+Installing this class is strongly recommended, because without it, you won't be able to configure &xwp; much.
 
-<--XWPCLS_1263-->: "XFldStartup" is the special folder class for the new XWorkplace Startup folder, which offers you many enhancements over the default WPS startup folder.
+<--XWPCLS_1263-->: "XFldStartup" is the special folder class for the new &xwp; Startup folder, which offers you many enhancements over the default WPS startup folder.
 The old startup folder continues to work though, so you can use both together.
 If this class is to be installed, XFolder must be installed too.
 
-<--XWPCLS_1264-->: "XFldShutdown" is the special folder class for the new XWorkplace Shutdown folder, which is processed during XWorkplace's extended shutdown.
+<--XWPCLS_1264-->: "XFldShutdown" is the special folder class for the new &xwp; Shutdown folder, which is processed during &xwp;'s extended shutdown.
 If this class is to be installed, XFolder and XFldDesktop must be installed too.
 
 <--XWPCLS_1265-->: "XWPClassList" implements an all-new abstract object for editing the WPS class list.
-This was added with XWorkplace 0.9.0.
+This was added with &xwp; 0.9.0.
 With previous versions of XFolder, this functionality was contained in the "Workplace Shell" object, but has now been moved and extended to this new object which defines a completely new view.
 This can now even display WPS method information, which might be helpful for WPS programmers.
 
-<--XWPCLS_1266-->: "XWPTrashCan" is new with XWorkplace 0.9.0 and finally implements a special "trash can" folder object, similar to those found on Macintosh, KDE and Win95 systems.
+<--XWPCLS_1266-->: "XWPTrashCan" is new with &xwp; 0.9.0 and finally implements a special "trash can" folder object, similar to those found on Macintosh, KDE and Win95 systems.
 "XWPTrashObject" implements the "trash objects" found in that folder and will automatically be installed with XWPTrashCan.
-This was added with XWorkplace 0.9.0.
+This was added with &xwp; 0.9.0.
 
 <--XWPCLS_1267-->: "XWPScreen" implements the "Screen" settings object, which has all the
-screen-related pages from the old "System" object plus new XWorkplace screen settings,
+screen-related pages from the old "System" object plus new &xwp; screen settings,
 such as PageMage configuration.
-This was added with XWorkplace 0.9.2.
+This was added with &xwp; 0.9.2.
 
 ;
 ; the following was added with V0.9.3
@@ -854,24 +855,24 @@ This was added with XWorkplace 0.9.2.
 
 <--XWPCLS_1268-->: "XWPString" is a handy class for invoking WPS setup strings on any object.
 By creating an object of this class and entering any setup string, you can later invoke that setup string on any object.
-This was added with XWorkplace 0.9.3.
+This was added with &xwp; 0.9.3.
 
 ;
 ; the following was added with V0.9.5
 ;
 
-<--XWPCLS_1269-->: "XWPMedia" implements a new settings object called "Multimedia", which allows you to view some internals of the OS/2 multimedia subsystem.
-This was added with XWorkplace 0.9.4.
+<--XWPCLS_1269-->: "XWPMedia" implements a new settings object called "Multimedia", which allows you to view some internals of the &os2; multimedia subsystem.
+This was added with &xwp; 0.9.4.
 
-<--XWPCLS_0001-->: Pressing "OK" will register, deregister, replace, and unreplace classes according to the changes you have made to the XWorkplace class setup.
+<--XWPCLS_0001-->: Pressing "OK" will register, deregister, replace, and unreplace classes according to the changes you have made to the &xwp; class setup.
 
-<--XWPCLS_0002-->: Pressing "Cancel" will close this dialog without making any changes to the XWorkplace class setup.
+<--XWPCLS_0002-->: Pressing "Cancel" will close this dialog without making any changes to the &xwp; class setup.
 
 ;
 ; the following was added with V0.9.7
 ;
 
-<--XWPCLS_1270-->: "XCenter" implements a new system bar at the top or the bottom of your desktop. This can be used as a WarpCenter replacement, or even together with the WarpCenter.
+<--XWPCLS_1270-->: "XCenter" implements a new system bar at the top or the bottom of your desktop. This can be used as a &warpcenter; replacement, or even together with the &warpcenter;.
 
 
 ;

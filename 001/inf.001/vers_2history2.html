@@ -16,7 +16,7 @@ and is identical to the "Revision history" page of the XFolder V0.85 documentati
 <H6>Well, V0.84 proved to have a few more bugs.
 <P>New features:
 <UL><LI>Added lots more WPS class descriptions sent in by various people.
-<P><LI>Replaceable shape window <A HREF="xsd_03bootlogo.html">WPS boot logos.</A>
+<P><LI>Replaceable shape window <A HREF="xsd_03bootlogo.html">Desktop start logos.</A>
 
 </UL>Bugfixes:
 <UL><LI>Status bar information for program objects failed if WPProgram class
@@ -41,7 +41,7 @@ SYSxxx error message. That's a bit better, I think.
 <P><LI>Status bar support for WPUrl objects; they display the URL in the
 status bar per default.
 <P><LI>Double-click on status bar opens folder settings notebook.
-<P><LI><A HREF="xsd_4cmdline.html">XSHUTDWN.EXE</A> can finally do a WPS restart too.
+<P><LI><A HREF="xsd_4cmdline.html">XSHUTDWN.EXE</A> can finally do a Desktop restart too.
 
 </UL>Miscellaneous changes:
 <UL><LI>Reworked thread and exception handling once more. Added exception handling to
@@ -80,7 +80,7 @@ due to some of my DosDevIOCtl's, which I have removed now.
 <P><LI>On some systems, opening folder content menus for removeable drives
 hung the system when those drives were empty (e.g. because no floppy disk
 was in the drive). Added drive checking for folder content menus.
-<P><LI>In rare occasions, previous versions would mess up the CONFIG.SYS file
+<P><LI>In rare occasions, previous versions would mess up the &cfgsys; file
 by not setting the correct file size after writing, which led to
 garbage characters at the end of the file. Fixed, thanks to ARAKAWA, Atshushi.
 <P><LI>The Worker thread was frequently given "regular" priority, which slowed
@@ -122,15 +122,15 @@ several shadows were selected. Fixed (mnuFileSystemSelectingMenuItem, menus.c).
 a context menu of several shadows. Fixed (same place).
 <P><LI>Replacement "File conflict" dialog sometimes displayed outdated file
 size/date/time information. Fixed (wpConfirmObjectTitle, xfobj.c).
-<P><LI>With V0.82, XFolder forgot how to write CONFIG.SYS to disk. That rendered the whole
+<P><LI>With V0.82, XFolder forgot how to write &cfgsys; to disk. That rendered the whole
 "&os2; Kernel" object pretty useless. Fixed, sorry (fncbConfigItemChanged, xfsys.c).
-<P><LI>SUPPRESSPOPUPS wasn't properly read from CONFIG.SYS ("Errors" page). Fixed.
+<P><LI>SUPPRESSPOPUPS wasn't properly read from &cfgsys; ("Errors" page). Fixed.
 <P><LI>The second "Screen" page which is inserted into the "System" object for some
 video drivers did not appear in "&os2; Kernel", but somewhere in "Workplace Shell".
 Fixed (wpAddDMQSDisplayTypePage, xfsys.*).
-<P><LI>XShutdown sometimes reported a data size of 0 when saving INI keys. This is
+<P><LI>&xshutdown; sometimes reported a data size of 0 when saving INI keys. This is
 now silently ignored, so that those error messages shouldn't appear any longer.
-<P><LI>XShutdown got confused with programs which appeared with a PROG_DEFAULT
+<P><LI>&xshutdown; got confused with programs which appeared with a PROG_DEFAULT
 type in the tasklist. Fixed (xsdBuildShutList, xfdesk.c).
 <P><LI>APM power-off entered a critical section after calling the APM interface, which
 kept power-off from functioning. Fixed (apm.c).
@@ -158,7 +158,7 @@ test this.)
 caused installation failures on Warp 3 without fixpaks. Its functionality is now
 handled by the XFolder and XFldDataFile classes directly.
 <P><LI>Removed the XFolder exit list because this seemed to have caused some problems
-during WPS restarts (xfdesk.c). Also changed the algorithm which determines whether
+during Desktop restarts (xfdesk.c). Also changed the algorithm which determines whether
 the startup folder should be processed (fnwpWorkerObject, xfdesk.c).
 <P><LI>Completely reworked all the settings notebook page logic. Almost all pages are
 now using much more lucid callbacks from the new notebook.* files. This also ensures
@@ -172,7 +172,7 @@ Found an interesting undocumented
 SOM method (see clsWpsClasses2Cnr in classlist.c for details).
 <P><LI>Also added source emphasis to the "WPS Classes" container when context menus
 are opened. Previous versions had trouble keeping the selected classes apart.
-<P><LI>XFolder is now smart enough to write changes to CONFIG.SYS in lower case if the
+<P><LI>XFolder is now smart enough to write changes to &cfgsys; in lower case if the
 keyword which is replaced contains lower-case characters too (fnwpConfigCommon, xfsys.c,
 and str* helper functions in /helpers/dosh.*).
 <P><LI>Fixed a coupla things with NLS DLL loading to make V0.82 work with V0.81 NLS DLLs
@@ -280,7 +280,7 @@ Unfortunately this caused .LONGNAME EAs not to be rewritten when the main config
 was altered. Fixed, this now uses non-flowed icon view.
 
 </UL>Bugfixes:
-<UL><LI>"HPFS" page wrote "LAZY:1" instead of "/LAZY:1" to CONFIG.SYS. Fixed (xfsys.c,
+<UL><LI>"HPFS" page wrote "LAZY:1" instead of "/LAZY:1" to &cfgsys;. Fixed (xfsys.c,
 fnwpConfigCommon).
 <P><LI>"HPFS" page could read a few IFS parameters in upper case only. Fixed.
 <P><LI>"Memory" page wrote "HPFS" settings too. Forgot a "break" in fnwpConfigCommon,
@@ -332,7 +332,7 @@ the objects in it even after the WPS is up.
 "&os2; Kernel" and "Workplace Shell" objects. Refer to
 <A HREF="sys_1intro.html">this page</A> for more.
 <P><LI>New settings pages therein to change
-those risky and obscure CONFIG.SYS settings.
+those risky and obscure &cfgsys; settings.
 Included <A HREF="sys_1intro.html">plenty of information</A> for this.
 <P><LI>New "WPS classes"
 page for manipulating the WPS class list.
@@ -356,13 +356,13 @@ Global Settings.
 <P><LI>Status bars now display the folder's context menu when you right-click on
 them.
 <P><LI>Added a new status bar display style ("Warp 3 sunken").
-<P><LI>XShutdown can now display a little animation.
-<P><LI>"Restart WPS" now has a setting for whether the startup folder should
+<P><LI>&xshutdown; can now display a little animation.
+<P><LI>"Restart Desktop" now has a setting for whether the startup folder should
 be processed after the restart.
 <P><LI>I have provided a source-code plug-in interface for people who are willing
-and able to teach XShutdown how to do an APM V1.2 power-off. My BIOS does not support
+and able to teach &xshutdown; how to do an APM V1.2 power-off. My BIOS does not support
 this, so I cannot do this myself. Hopefully somebody will succeed.
-<P><LI>XShutdown <A HREF="xsd_4cmdline.html">command-line interface.</A>
+<P><LI>&xshutdown; <A HREF="xsd_4cmdline.html">command-line interface.</A>
 
 </UL>Miscellaneous changes:
 <UL><LI>Rearranged the "Context menu" settings pages more logically (I hope).
@@ -401,7 +401,7 @@ operating system from time to time.
 an old programmers CD-ROM which are way faster.
 <P><LI>Converted a few SOM instance methods into regular C functions. This
 should speed up XFolder a little bit.
-<P><LI>XShutdown now always closes the Desktop and WarpCenter windows last. This
+<P><LI>&xshutdown; now always closes the Desktop and &warpcenter; windows last. This
 will prevent the situation that you'll be unable to use your system after Shutdown
 has been cancelled because the Desktop has already been closed.
 
@@ -446,26 +446,26 @@ For all programmers: contrary to what IBM says in the SOM documentation,
 somIsObj obviously is NOT crash-safe.) Fixed.
 <P><LI>Previous versions opened the objects in the startup / shutdown folders from the
 (background) Worker thread, which led to sporadic, unpredictable crashes. Besides
-the WarpCenter strongly disliked not being started from the Workplace thread.
+the &warpcenter; strongly disliked not being started from the Workplace thread.
 These objects are now opened from the main
 WPS (Workplace) thread.
 <P><LI>XFolder Startup folder was not processed during first startup after installation.
 (But only this one time.) Fixed.
 <P><LI>The "XFolder Internals" settings page crashed when the filenames of the
 NLS DLLs were in capital letters (esp. on FAT drives). Fixed.
-<P><LI>XShutdown hung when it tried to close a PM program which was hung also.
+<P><LI>&xshutdown; hung when it tried to close a PM program which was hung also.
 (Especially with Netscape...)
 The "Skip" button wouldn't help anymore then, because it just didn't react.
 Fixed: Messages are now posted, not sent, to PM windows.
 <P><LI>Contrary to what the "Auto-close non-PM sessions" window said, no Ctrl+C signal
 was sent to a non-PM session, but Ctrl+Break instead. Fixed.
-<P><LI>The XShutdown Update thread got lost sometimes when shutdown was initialized. Fixed.
-<P><LI>Completely reworked the XShutdown routines dealing with saving the INI files.
+<P><LI>The &xshutdown; Update thread got lost sometimes when shutdown was initialized. Fixed.
+<P><LI>Completely reworked the &xshutdown; routines dealing with saving the INI files.
 Included a lot more error checking, and the error messages are now more meaningful.
 I hope that the errors many users have reported have now disappeared, and if not, they
 won't take the whole system down or even crash your WPS.
 <P><LI>Fixed a bug which caused saving the INI files to crash when they were specified
-in lower case in CONFIG.SYS.
+in lower case in &cfgsys;.
 <P><LI>"Paste" and "View" were still called "Insert" and "Display" in some places. Fixed.
 <P><LI>A few links in the INF files were messed up. Fixed.
 
@@ -490,23 +490,23 @@ Again, I don't have those keys, but I've fixed something. Let's see if it works.
 for this (folder content menus) and aborts processing then.
 <P><LI>The Warp 4 "Insert" menu item is actually called "Paste". Sorry, I have a
 German &os2;. Fixed.
-<P><LI>"Restart WPS" now saves and closes all open WPS windows, including the Desktop,
+<P><LI>"Restart Desktop" now saves and closes all open WPS windows, including the Desktop,
 regardless of whether "Close all open windows" was checked. Since all WPS windows will
 be closed anyway when the WPS terminates, I might just as well do it myself. This has the
 advantage that icon positions are finally saved for the Desktop too.
-<P><LI>"Restart WPS" doesn't use WPSRESET.EXE any more. A simple DosExit(EXIT_PROCESS, 0)
+<P><LI>"Restart Desktop" doesn't use WPSRESET.EXE any more. A simple DosExit(EXIT_PROCESS, 0)
 does it too. If I had figured this out earlier, this could have saved me a couple of days of
 trial and error. ;-)
 <P><LI>Moved a lot of code from the subclassed frame window procedure to a new, separate
 object window, which is also running in the PMSHELL Workplace thread. This might increase
 compatibility with other WPS software which also does subclassing.
-<P><LI>Just a cosmetic correction: the "reboot" drop-down list box in the XShutdown
+<P><LI>Just a cosmetic correction: the "reboot" drop-down list box in the &xshutdown;
 confirmation dialog was disabled illogically. Fixed.
 <P><LI>Not really a bugfix, but XFolder now creates a shutdown log in the root directory
-of your boot drive ("xshutdwn.log"). Some people still have trouble getting XShutdown to work, and this might
+of your boot drive ("xshutdwn.log"). Some people still have trouble getting &xshutdown; to work, and this might
 help tracking these problems down.
 <P><LI>Now that I had the shutdown log, I was able to track down the mysterious problems
-WRT closing VIO sessions, and I found a major bug which caused XShutdown to sometimes close
+WRT closing VIO sessions, and I found a major bug which caused &xshutdown; to sometimes close
 a different session than the one that was intended. Fixed.
 <P><LI>I also rearranged the order of commands that were executed while saving the INIs
 during shutdown. Maybe this helps those people who (mysteriously) still can't get those
@@ -536,11 +536,11 @@ for use with REXX.
 (from where the context menu was opened).
 <P><LI>Support for Win95 keyboards (folder hotkeys).
 <P><LI>Beautified dialogs a little. ;-)
-<P><LI>XShutdown now checks for existing printer queues before shutting down.
-<P><LI>"Restart WPS" now remembers whether to close windows between restarts
+<P><LI>&xshutdown; now checks for existing printer queues before shutting down.
+<P><LI>"Restart Desktop" now remembers whether to close windows between restarts
 (checkbox in confirmation window).
 <P><LI>User-configurable reboot actions.
-<P><LI>"Shutdown" and "Restart WPS" items in Desktop context menu now contain "..."
+<P><LI>"Shutdown" and "Restart Desktop" items in Desktop context menu now contain "..."
 only when confirmations are enabled.
 
 </UL>Still more bugfixes:
@@ -557,38 +557,38 @@ on the root folder of the boot drive. Fixed (I hope).
 "Auto-scroll tree views". Fixed.
 <P><LI>The Warp 4 "View" menu was dubbed "Display" in XFolder dialogs and help files.
 Sorry, I don't have an English Warp 4. Fixed.
-<P><LI>XShutdown failed to save INIs when the existing OS2*.INI files had the HRS attributes
+<P><LI>&xshutdown; failed to save INIs when the existing OS2*.INI files had the HRS attributes
 on ("An error occured saving the INI files: 5"). This should be fixed now.
-<P><LI>XShutdown would sometimes hang after closing all windows, waiting forever for the
+<P><LI>&xshutdown; would sometimes hang after closing all windows, waiting forever for the
 Update thread to terminate. Fixed.
-<P><LI>XShutdown would sometimes fail to begin shutdown, although the status window was already
+<P><LI>&xshutdown; would sometimes fail to begin shutdown, although the status window was already
 displayed, because it was resetting some event semaphore which was already posted. Fixed.
 
 </UL></H6><B>Version 0.61 (beta) (May 10, 1998)</B>
 <H6>This is mainly a maintenance release to fix the bugs detected in the last version.
 <P>Some new features anyway:
-<UL><LI>XFolder now populates the Config folders in the background after WPS bootup, so
+<UL><LI>XFolder now populates the Config folders in the background after Desktop startup, so
 you don't have to wait forever on the first right mouse-click.
-<P><LI>New "Auto-close non-PM sessions" setting for XShutdown. By popular demand. ;-)
+<P><LI>New "Auto-close non-PM sessions" setting for &xshutdown;. By popular demand. ;-)
 <P><LI>New NETSCDDE included. See NETSCDDE.TXT for details.
 <P><LI>Changed the default folder hotkey configuration for more
 <A HREF="fldr_5xelerators.html">default hotkeys</A>.
-<P><LI>Documented <A HREF="further_2howxshutdown.html">XShutdown internals</A>.
+<P><LI>Documented <A HREF="further_2howxshutdown.html">&xshutdown; internals</A>.
 
 </UL>Even more bugfixes:
-<UL><LI>XShutdown failed to save data of folders which were awake (i.e. stored somewhere in
+<UL><LI>&xshutdown; failed to save data of folders which were awake (i.e. stored somewhere in
 the WPS process),
 although they were not visibly open. This applied especially to the XFolder Config Folder.
 This is now fixed; all awake folders are saved too.
-<P><LI>XShutdown sometimes failed to save INI files properly. Error checking is now implemented.
-<P><LI>XShutdown sometimes failed to close non-PM sessions.
+<P><LI>&xshutdown; sometimes failed to save INI files properly. Error checking is now implemented.
+<P><LI>&xshutdown; sometimes failed to close non-PM sessions.
 At least DOS/&winos2; sessions had to be closed manually. This
 was due to a bug (feature?!?) in WinQueryWindowProcess, which does not return the process and
 session IDs of DOS machines, but those of the first PMSHELL instance. I don't know what this
 should be good for... anyway, it's fixed.
-<P><LI>XShutdown threads had wrong priority settings, so they would wait forever when a
+<P><LI>&xshutdown; threads had wrong priority settings, so they would wait forever when a
 session had higher priority settings than them. Fixed.
-<P><LI>XShutdown also sometimes got confused with its thread management and would
+<P><LI>&xshutdown; also sometimes got confused with its thread management and would
 start the same thread twice. Fixed.
 <P><LI>Fixed some minor annoyments in the install script.
 <P><LI>Somehow languages got messed up after installation; the dialogs were in German, the help
@@ -611,7 +611,7 @@ which is seen in Name or Details views of the corresponding config folder. This 
 hassle...
 <P><LI>"Auto-scroll tree views" feature.
 <P><LI>XFolder is now fully multi-threaded ("XFolder Worker thread").
-<P><LI><A HREF="xsd_2xshutdown.html">Extended Shutdown</A> and "Restart WPS" features
+<P><LI><A HREF="xsd_2xshutdown.html">Extended Shutdown</A> and "Restart Desktop" features
 and new settings page for Desktop.
 <P><LI><A HREF="menu_91copyfilename.html">"Copy filename"</A> feature.
 <P><LI>Moved the recreation of the default Config folder into the XFolder code; this
@@ -624,7 +624,7 @@ which tells XFolder what to do after <A HREF="menu_2template.html">creating
 an object from a template.</A>
 <P><LI>"XFolder" settings page in every folder.
 <P><LI>XFolder now also replaces the WPObject class in order to be able to
-suppress menu items for all WPS objects.
+suppress menu items for all Desktop objects.
 Moreover, "Check disk" and "Format disk" can be removed from WPDisk objects.
 <A HREF="sys_2global.html">Settings</A> page 2 has been redesigned for all this.
 <P><LI>My "Netscape DDE Interface" is now included in this package. See

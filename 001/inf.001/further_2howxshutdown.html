@@ -1,12 +1,12 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        How Does XShutdown Work?
+        How Does &xshutdown; Work?
     </TITLE>
 </HEAD>
 <!-- changes with V0.9.0: replace XFolder with &xwp; -->
 <BODY>
-The XShutdown feature has cost me a lot of thought, because it is really not documented
+The &xshutdown; feature has cost me a lot of thought, because it is really not documented
 anywhere what happens during the normal shutdown process.
 
 <P>&os2; per default knows two different shutdown APIs:
@@ -19,7 +19,7 @@ which closes
 all windows, saves the WPS and finally calls <CITE>DosShutdown</CITE>.
 Just the regular shutdown procedure that you are used to: this is executed when you
 select "Shutdown" from the Desktop's context menu or the respective icons from the
-Launchpad or WarpCenter.
+Launchpad or &warpcenter;.
 
 </UL>Trouble is, there is no function "in between" these two. If you call
 <CITE>DosShutdown</CITE> the WPS data is not saved. And if you call
@@ -30,21 +30,21 @@ which will now be explained. This was quite difficult, since IBM hardly explains
 anything about what is really going on during <CITE>WinShutdownSystem</CITE>.
 
 <P>Note: In &xwp;, the "eXtended Shutdown" and
-"Restart WPS" routines share the same code; they
+"Restart Desktop" routines share the same code; they
 only differ in what happens after all windows have been closed. I will thus use the term
-"XShutdown" in the following explanations for both features, unless otherwise stated.
+"&xshutdown;" in the following explanations for both features, unless otherwise stated.
 
-<P>XShutdown is <STRONG>integrated into the WPS</STRONG>
+<P>&xshutdown; is <STRONG>integrated into the WPS</STRONG>
 and relies heavily on the &xwp; class replacements.
-I have intentionally not put the XShutdown code into a separate .EXE file for
-two reasons: for one, XShutdown needs access to WPS internal data, which is
+I have intentionally not put the &xshutdown; code into a separate .EXE file for
+two reasons: for one, &xshutdown; needs access to WPS internal data, which is
 only available from the SOM context; second, I want to prevent people from
-trying to use XShutdown separately, without having the
+trying to use &xshutdown; separately, without having the
 &xwp; classes installed, because this could severely damage the Workplace Shell.
-In more detail, XShutdown relies on the XFldObject replacement class and the &xwp; Worker
+In more detail, &xshutdown; relies on the XFldObject replacement class and the &xwp; Worker
 thread, which cooperatively keep track of the WPS internal data.
 
-<P>To understand what XShutdown is now doing, it is necessary to understand how the
+<P>To understand what &xshutdown; is now doing, it is necessary to understand how the
 <STRONG>WPS handles its objects</STRONG> internally. Every single
 object which becomes relevant to the WPS at some point, be it through populating a folder or
 querying its settings or starting a program or whatever, is -- in WPS terminology --
@@ -58,9 +58,9 @@ Even after you close an open folder, the objects therein remain awake; this
 speeds up populating the folder when it's opened a second time.
 As a result however, the WPS eats up more and more of your memory with each
 folder you open.
-(If you have turned on the XShutdown log file, you can see how many awake objects
-were saved by XShutdown; these are usually several hundred objects, even though
-XShutdown doesn't save all awake objects, but only descendants of WPFolder and WPAbstract.
+(If you have turned on the &xshutdown; log file, you can see how many awake objects
+were saved by &xshutdown;; these are usually several hundred objects, even though
+&xshutdown; doesn't save all awake objects, but only descendants of WPFolder and WPAbstract.
 On the "Internals" page in the Desktop's settings notebook you can take a look at how
 many objects are currently awake.)
 <BR><LI>A change to the object's data sometimes has only an
@@ -70,7 +70,7 @@ trouble if you make comprehensive changes, such as
 moving a folder containing many abstract objects, and do not shutdown properly:
 the physical file data on disk and the WPS records differ then.
 
-</OL>This is what XShutdown needs the <B>XFldObject</B> class for, which
+</OL>This is what &xshutdown; needs the <B>XFldObject</B> class for, which
 replaces WPObject.
 Every time an object is awakened,
 the WPS calls several methods (among them <CITE>wpInitData</CITE> and
@@ -82,7 +82,7 @@ As far as I know, there
 is no other way to find out which objects are currently awake; at least
 there is no documented API for enumerating them.
 
-<P>Now, when <STRONG>XShutdown is initiated</STRONG> and confirmed, it first starts
+<P>Now, when <STRONG>&xshutdown; is initiated</STRONG> and confirmed, it first starts
 two new threads for the following shutdown procedure,
 which run parallel to the regular WPS threads: the main <STRONG>"Shutdown thread"</STRONG>
 with the message queue for
@@ -112,7 +112,7 @@ In addition, shutdown took ages then.)
 <P>Finally, depending on what action was desired, the Shutdown thread does one of the
 following:
 
-<UL><LI>If you selected <STRONG>"Restart WPS",</STRONG> the Shutdown thread
+<UL><LI>If you selected <STRONG>"Restart Desktop",</STRONG> the Shutdown thread
 simply executes <CITE>DosExit(EXIT_PROCESS, 0)</CITE>. Since &xwp; is part of
 the Workplace process, and all parts of the WPS are running in this one process
 (the second instance of <CITE>PMSHELL.EXE</CITE>),
@@ -121,7 +121,7 @@ this will terminate the whole Workplace Shell. The Shell process
 automatically.
 
 <BR><LI>If you selected "Shutdown" and <STRONG>"Reboot afterwards",</STRONG>
-XShutdown now also saves the INI files
+&xshutdown; now also saves the INI files
 to disk. This is necessary, because <CITE>DosShutdown,</CITE>
 which is called afterwards, does not save them either.
 (I guess it's because the INI file API's belong to Presentation Manager.)
@@ -135,7 +135,7 @@ to the DOS.SYS device driver.
 This feature is documented in <A HREF="http://www.edm2.com/">EDM/2</A> volume 5, issue 9.
 
 <BR><LI>If you selected "Shutdown" and <STRONG>NOT "Reboot afterwards",</STRONG>
-after <CITE>DosShutdown,</CITE> XShutdown disables the window list and then
+after <CITE>DosShutdown,</CITE> &xshutdown; disables the window list and then
 simply blocks the system by calling <CITE>DosEnterCritSec</CITE>
 and staying in an infinite loop. Since all file systems are closed, no further
 action should

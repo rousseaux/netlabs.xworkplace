@@ -120,8 +120,12 @@ BEGIN
     MENUITEM "~Import WPS filters...", ID_XSMI_FILEFILTER_IMPORTWPS
 END
 
+/* menu extended with 0.9.16 */
 MENU ID_XSM_FILEASSOC_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
+    MENUITEM "~Object properties", ID_XSMI_FILEASSOC_SETTINGS
+    MENUITEM "Open ~folder", ID_XSMI_FILEASSOC_OPENFDR
+    MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Delete association", ID_XSMI_FILEASSOC_DELETE
 END
 
@@ -234,7 +238,7 @@ BEGIN
     MENUITEM "~Lockup now", ID_CRMI_LOCKUPNOW
     MENUITEM "~Suspend...", ID_CRMI_SUSPEND
     MENUITEM "Lo~g off...", ID_CRMI_LOGOFF
-    MENUITEM "~Restart WPS...", ID_CRMI_RESTARTWPS
+    MENUITEM "~Restart Desktop...", ID_CRMI_RESTARTWPS
     MENUITEM "Shut ~down...", ID_CRMI_SHUTDOWN
 END
 
@@ -264,7 +268,7 @@ STRINGTABLE
 BEGIN
     /* miscellaneous menu items */
     ID_XSSI_NOTDEFINED              "[not defined]"
-    ID_XSSI_PRODUCTINFO             "~XWorkplace product information"
+    ID_XSSI_PRODUCTINFO             "~&xwp; product information"
     ID_XSSI_REFRESHNOW              "~Refresh now"
     ID_XSSI_SNAPTOGRID              "~Snap to grid"
 
@@ -383,9 +387,9 @@ BEGIN
        XShutdown might crash. These are needed for inserting
        variable data (sprintf). */
     ID_SDSI_SHUTDOWN                "Shut~down"
-    ID_SDSI_RESTARTWPS              "~Restart WPS..."
-    ID_SDSI_RESTARTINGWPS           "Restarting WPS..."
-    ID_SDSI_SAVINGDESKTOP           "Saving %d WPS objects..."
+    ID_SDSI_RESTARTWPS              "~Restart Desktop..."
+    ID_SDSI_RESTARTINGWPS           "Restarting Desktop..."
+    ID_SDSI_SAVINGDESKTOP           "Saving %d Desktop objects..."
     ID_SDSI_SAVINGPROFILES          "Saving INI files..."
     ID_SDSI_STARTING                "Starting ""%s""..."
     ID_SDSI_FLUSHING                "Releasing filesystems..."
@@ -407,13 +411,13 @@ BEGIN
     ID_XSSI_INTERNALS               "~Object" /* changed V0.9.0 */
     ID_XSSI_SORT                    "~Sort"
     /* the following are new with V0.9.0 */
-    ID_XSSI_XWPSTATUS               "~XWorkplace Status"
+    ID_XSSI_XWPSTATUS               "~&xwp; Status"
     ID_XSSI_FEATURES                "~Features"
     ID_XSSI_PARANOIA                "~Paranoia"
     ID_XSSI_OBJECTS                 "~Objects"
     ID_XSSI_FILEPAGE                "~File"
     ID_XSSI_DETAILSPAGE             "~Details"
-    ID_XSSI_XSHUTDOWNPAGE           "~XShutdown"
+    ID_XSSI_XSHUTDOWNPAGE           "~&xsd;"
     ID_XSSI_STARTUPPAGE             "~Startup"
     ID_XSSI_DTPMENUPAGE             "~Menu items"
     ID_XSSI_FILETYPESPAGE           "~File types"
@@ -646,8 +650,8 @@ BEGIN
     ID_XSSI_ICONPAGE                    "~Icon"
 
     /* INI save methods V0.9.5 (2000-08-20) [umoeller] */
-    ID_XSSI_XSD_SAVEINIS_NEW            "New method: use XWorkplace INI routines"
-    ID_XSSI_XSD_SAVEINIS_OLD            "Old method: use OS/2 INI routines"
+    ID_XSSI_XSD_SAVEINIS_NEW            "New method: use &xwp; INI routines"
+    ID_XSSI_XSD_SAVEINIS_OLD            "Old method: use &os2; INI routines"
     ID_XSSI_XSD_SAVEINIS_NONE           "Do not save INIs at all"
 
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
@@ -671,7 +675,9 @@ END
 STRINGTABLE
 BEGIN
     ID_XCSI_GENERALFEATURES             "General features"
+#ifndef __NOICONREPLACEMENTS__
     ID_XCSI_REPLACEICONS                "Replace Icons"
+#endif
     /* this item added with V0.9.4 V0.9.4 (2000-08-08) [umoeller] */
     ID_XCSI_RESIZESETTINGSPAGES         "Adjust settings pages on notebook resize"
     ID_XCSI_ADDOBJECTPAGE               "Add ""Object"" page to all settings notebooks"
@@ -688,13 +694,13 @@ BEGIN
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
-    ID_XCSI_XWPHOOK                     "Enable XWorkplace Hook"
+    ID_XCSI_XWPHOOK                     "Enable &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
     ID_XCSI_PAGEMAGE                    "PageMage: virtual desktops"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
-    ID_XCSI_ARCHIVING                   "Replace WPS archiving"
-    ID_XCSI_RESTARTWPS                  "Enable ""Restart WPS"""
+    ID_XCSI_ARCHIVING                   "Replace Desktop archiving"
+    ID_XCSI_RESTARTWPS                  "Enable ""Restart Desktop"""
     ID_XCSI_XSHUTDOWN                   "Enable eXtended Shutdown"
 
     ID_XCSI_FILEOPERATIONS              "File operations"
@@ -704,7 +710,7 @@ BEGIN
     ID_XCSI_REPLHANDLES                 "Replace WPS handles management"
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
     ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
-    ID_XCSI_XWPTRASHCAN                 "XWorkplace trash can"
+    ID_XCSI_XWPTRASHCAN                 "&xwp; trash can"
 /* the following has been added V0.9.3 (2000-04-26) [umoeller] */
     ID_XCSI_REPLACEDELETE               "Replace true delete"
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
@@ -746,7 +752,7 @@ BEGIN
     ID_XSSI_SCANCODE                    "Hardware scan code"
     ID_XSSI_MODIFIER                    "Modifier"
 
-    ID_XSSI_DEFAULTSHUTDOWN             "Default OS/2 shutdown..."
+    ID_XSSI_DEFAULTSHUTDOWN             "Default &os2; shutdown..."
     ID_XSSI_INSTALLINGFONTS             "Installing fonts..."
 
     ID_XSSI_PARAMETERS                  "Parameter"
@@ -758,7 +764,7 @@ BEGIN
     ID_XSSI_THREADSTHREAD               "Thread"
     ID_XSSI_THREADSTID                  "TID"
     ID_XSSI_THREADSPRIORITY             "Priority"
-    ID_XSSI_THREADSGROUPTITLE           "XWorkplace threads"
+    ID_XSSI_THREADSGROUPTITLE           "&xwp; threads"
 
     /* Do not leave our or change the order of the %d, %f and %%
        keys, or XWP might crash. These are needed for inserting
@@ -769,8 +775,8 @@ BEGIN
     ID_XSSI_ARCINICHECKING              "Checking INI files..."
     ID_XSSI_ARCINICHANGED               "INI files changed %f %%."
     ID_XSSI_ARCINILIMIT                 "Limit: %f %%."
-    ID_XSSI_ARCENABLED                  "WPS archiving enabled."
-    ID_XSSI_ARCNOTNECC                  "WPS archiving not necessary."
+    ID_XSSI_ARCENABLED                  "Desktop archiving enabled."
+    ID_XSSI_ARCNOTNECC                  "Desktop archiving not necessary."
 
     /* titles of programfiles "Imported modules" and "Exported functions" pages V0.9.9 (2001-03-11) [lafaix] */
     ID_XSSI_PGMFILE_MODULE1             "Imported modules"
@@ -817,13 +823,13 @@ BEGIN
 
     /* miscellaneous new strings V0.9.12 (2001-05-22) [umoeller] */
     ID_XSSI_INVALID_OBJECT              "Invalid object"
-    ID_XSSI_XSHUTDOWN                   "~XShutdown"
+    ID_XSSI_XSHUTDOWN                   "~&xsd;"
     ID_XSSI_XC_CLASSTITLE               "Class title"
     ID_XSSI_XC_VERSION                  "Version"
     ID_XSSI_XC_OBJBUTTONWIDGET          "Object button widget"
 
     /* another archive string V0.9.13 (2001-06-14) [umoeller] */
-    ID_XSSI_ARCENABLEDONCE              "WPS archiving enabled once."
+    ID_XSSI_ARCENABLEDONCE              "Desktop archiving enabled once."
 
     /* more multimedia strings V0.9.13 (2001-06-14) [umoeller] */
     ID_MMSI_INSTALLNAME                 "Install name";
@@ -884,6 +890,125 @@ BEGIN
     ID_XSSI_SBMNC_500                    "Executable program file"
     ID_XSSI_SBMNC_510                    "Parameter list"
     ID_XSSI_SBMNC_520                    "Working directory"
+END
+
+/* ******************************************************************
+ *
+ *   Strings formerly in xfldr001.dlg
+ *
+ ********************************************************************/
+
+/* Starting with V0.9.16, I am successively converting dialogs
+   not to use regular DLGEDIT dialog templates any more, but
+   instead have them being dynamically formatted from the
+   strings directly. The following section contains strings
+   which were therefore formerly in the dialog templates in
+   xfldr001.dlg. Each string has the same ID as the dialog
+   item ID, so if you have translated them already, you can
+   simply use the dialog item ID and the translated string
+   below. This will make translations much easier in the
+   future. */
+
+STRINGTABLE
+BEGIN
+    /* general strings */
+    DID_UNDO                            "~Undo"
+    DID_DEFAULT                         "~Default"
+    DID_HELP                            "~Help"
+
+    /* strings formerly in ID_XSD_SET25ADDMENUS */
+    ID_XSDI_FILEMENUS_GROUP             "File menus"
+    ID_XSDI_FILEATTRIBS                 "Add ""A~ttributes"" menu"
+    ID_XSDI_COPYFILENAME                "~Add ""Copy filename"""
+    ID_XSDI_FOLDERMENUS_GROUP           "Folder menus"
+    ID_XSDI_MOVE4REFRESH                "Add ""~Refresh now"" to main menu"
+    ID_XSDI_SELECTSOME                  "Add ""Se~lect by name"""
+    ID_XSDI_FLDRVIEWS                   "Extend ""~View"" menu"
+    ID_XSDI_FOLDERCONTENT               "Add f~older content menus"
+    ID_XSDI_FC_SHOWICONS                "Show ~icons"
+
+    /* strings formerly in ID_XSD_SETTINGS_FLDR1 */
+    ID_XSDI_FAVORITEFOLDER              "~Favorite folder"
+    ID_XSDI_QUICKOPEN                   "~Quick open at Desktop startup"
+    ID_XSDI_FULLPATH                    "Show full path in folder ~title"
+    ID_XSDI_KEEPTITLE                   "~Keep original title"
+    ID_XSDI_SNAPTOGRID                  "Add ""Sna~p to grid"""
+    ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
+    ID_XSDI_ENABLESTATUSBAR             "Show ~status bar"
+
+    /* strings formerly in ID_XSD_DTP_SHUTDOWN */
+    ID_SDDI_SHAREDGROUP                 "Common settings"
+    ID_SDDI_EMPTYTRASHCAN               "~Empty trash can"
+    ID_SDDI_CONFIRM                     "~Confirm"
+    ID_SDDI_WARPCENTERFIRST             "Close ~&warpcenter; before Desktop"
+    ID_SDDI_AUTOCLOSEVIO                "Auto-close non-~PM sessions"
+    ID_SDDI_AUTOCLOSEDETAILS            "Auto-close det~ails..."
+    ID_SDDI_LOG                         "Write XSHUTDWN.LO~G file"
+    ID_SDDI_CREATESHUTDOWNFLDR          "Create &xsd; folder"
+
+    ID_SDDI_SHUTDOWNGROUP               "Shutdown only"
+    ID_SDDI_REBOOT                      "~Reboot afterwards"
+    ID_SDDI_REBOOTEXT                   "Reboot actio~ns..."
+    ID_SDDI_ANIMATE_SHUTDOWN            "An~imation before shutdown"
+    ID_SDDI_ANIMATE_REBOOT              "An~imation before reboot"
+    ID_SDDI_APMPOWEROFF                 "Attempt APM ~1.2 power-off"
+    ID_SDDI_DELAY                       "Dela~y"
+    ID_SDDI_APMVERSION_TXT              "APM level:"
+    ID_SDDI_APMVERSION                  "unknown"
+    ID_SDDI_APMSYS_TXT                  "APM.SYS driver:"
+    ID_SDDI_APMSYS                      "unknown"
+    ID_SDDI_SAVEINIS_TXT                "Save INI files:"
+
+    /* strings formerly in ID_XSD_DTP_STARTUP */
+    ID_XSDI_DTP_LOGOGROUP               "Workplace Shell boot logo"
+    ID_XSDI_DTP_BOOTLOGO                "Enable ~boot logo"
+    ID_XSDI_DTP_LOGOSTYLEGROUP          "Boot logo style"
+    ID_XSDI_DTP_LOGO_TRANSPARENT        "~Transparent style"
+    ID_XSDI_DTP_LOGO_BLOWUP             "B~low-up style"
+    ID_XSDI_DTP_LOGOFILETXT             "OS/2 1.3 BMP ~file for boot logo:"
+    ID_XSDI_DTP_LOGO_BROWSE             "Bro~wse..."
+    ID_XSDI_DTP_TESTLOGO                "T~est logo"
+    ID_XSDI_DTP_WRITEXWPSTARTLOG        "Write XWP~START.LOG file"
+    ID_XSDI_DTP_BOOTUPSTATUS            "Show W~PS class initialization"
+    ID_XSDI_DTP_CREATESTARTUPFLDR       "Create ~&xwp; Startup folder"
+    ID_XSDI_DTP_NUMLOCKON               "Enable ~NumLock at startup"
+
+    /* strings formerly in ID_XFD_STARTUPPANIC */
+    ID_XFDI_PANIC_TITLE                 "&xwp; Panic"
+    ID_XFDI_PANIC_SKIPBOOTLOGO          "Skip ~boot logo once"
+    ID_XFDI_PANIC_SKIPXFLDSTARTUP       "Skip &xwp; S~tartup folder once"
+    ID_XFDI_PANIC_SKIPQUICKOPEN         "Skip ""~Quick open"" folders once"
+    ID_XFDI_PANIC_NOARCHIVING           "Skip Desktop ~archiving once"
+    ID_XFDI_PANIC_DISABLEFEATURES       "Permanently ~disable all features"
+    ID_XFDI_PANIC_DISABLEREPLICONS      "Permanently disable ~icon replacements"
+    ID_XFDI_PANIC_REMOVEHOTKEYS         "~Remove all object hotkeys"
+    ID_XFDI_PANIC_DISABLEPAGEMAGE       "Disable ~PageMage"
+    ID_XFDI_PANIC_DISABLEMULTIMEDIA     "Disable ~multimedia"
+    ID_XFDI_PANIC_CONTINUE              "C~ontinue"
+    ID_XFDI_PANIC_CONTINUE_TXT          "This will continue Desktop startup."
+    ID_XFDI_PANIC_XFIX                  "Run x~fix"
+    ID_XFDI_PANIC_XFIX_TXT              "Run the &xwp; Handles Fixer."
+    ID_XFDI_PANIC_CMD                   "Run ~CMD.EXE"
+    ID_XFDI_PANIC_CMD_TXT               "Starts a command line session now."
+    ID_XFDI_PANIC_SHUTDOWN              "~Shut down now"
+    ID_XFDI_PANIC_SHUTDOWN_TXT          "This performs a default &os2; shutdown now."
+
+    /* strings formerly in ID_XSD_FOLDERVIEWS */
+    ID_XSD_FOLDERVIEWGROUP              "Folder view settings"
+    /* ID_XSDI_FULLPATH                    "Show full path in folder ~title" */
+    /* ID_XSDI_KEEPTITLE                   "Kee~p original title" */
+        /* already in ID_XSDI_FAVORITEFOLDER */
+    ID_XSDI_MAXPATHCHARS_TX1            "~Limit path to"
+    ID_XSDI_MAXPATHCHARS_TX2            "characters"
+    ID_XSDI_TREEVIEWAUTOSCROLL          "Auto-scroll Tree vie~ws"
+    ID_XSDI_FDRDEFAULTDOC               "~Enable default documents in folders"
+    ID_XSDI_FDRDEFAULTDOCVIEW           "De~fault document = default folder view"
+    ID_XSDI_FDRAUTOREFRESH              "Enable folder ~auto-refresh"
+    ID_XSDI_FDRVIEWDEFAULT_GROUP        "Default folder view"
+    ID_XSDI_FDRVIEW_INHERIT             "Use pare~nt folder's default view"
+    ID_XSDI_FDRVIEW_ICON                "~Icon"
+    ID_XSDI_FDRVIEW_TREE                "T~ree"
+    ID_XSDI_FDRVIEW_DETAILS             "Detail~s"
 END
 
 /* Treesize definitions; added V0.9.0 */

@@ -13,12 +13,12 @@ in your widget source code instead of this definition.
 <PRE>
     /*
      *@@ XCENTERGLOBALS:
-     *      global data for a running XCenter instance.
+     *      global data for a running &xcenter; instance.
      *      A pointer to this structure exists in each
      *      XCENTERWIDGET instance so that the widgets
      *      can access some of the global data.
      *
-     *      In this structure, an XCenter instance
+     *      In this structure, an &xcenter; instance
      *      passes a number of variables to its member
      *      widgets so that they can access some things
      *      more quickly for convenience. This structure
@@ -27,7 +27,7 @@ in your widget source code instead of this definition.
      *
      *      "Globals" isn't really a good name since
      *      one of these structures is created for
-     *      each open XCenter (and there can be several),
+     *      each open &xcenter; (and there can be several),
      *      but this is definitely more global than the
      *      widget-specific structures.
      */
@@ -35,8 +35,8 @@ in your widget source code instead of this definition.
     typedef struct _XCENTERGLOBALS
     {
         HAB                 hab;                // anchor block of frame and client
-        HWND                hwndFrame,          // XCenter frame window
-                            hwndClient;         // client (child of XCenter frame)
+        HWND                hwndFrame,          // &xcenter; frame window
+                            hwndClient;         // client (child of &xcenter; frame)
 
         PVOID               pCountrySettings;
                     // country settings; this points to a COUNTRYSETTINGS
@@ -56,21 +56,21 @@ in your widget source code instead of this definition.
         // settings page;
         // a widget may or may not want to consider these.
         ULONG               flDisplayStyle;
-                    // XCenter display style flags;
+                    // &xcenter; display style flags;
                     // a widget may or may not want to consider these.
                     // These flags can be any combination of the following:
                     // -- XCS_FLATBUTTONS: paint buttons flat. If not set,
                     //      paint them raised.
                     // -- XCS_SUNKBORDERS: paint static controls (e.g. CPU meter)
                     //      with a "sunk" 3D frame. If not set, do not.
-                    // -- XCS_SIZINGBARS: XCenter should automatically paint
+                    // -- XCS_SIZINGBARS: &xcenter; should automatically paint
                     //      sizing bars for sizeable widgets.
-                    // -- XCS_ALL3DBORDERS: XCenter should draw all four 3D
+                    // -- XCS_ALL3DBORDERS: &xcenter; should draw all four 3D
                     //      borders around itself. If not set, it will only
                     //      draw one border (the one towards the screen).
 
         ULONG               ulPosition;
-                    // XCenter position on screen, if a widget cares...
+                    // &xcenter; position on screen, if a widget cares...
                     // This is _one_ of the following:
                     // -- XCENTER_BOTTOM
                     // -- XCENTER_TOP

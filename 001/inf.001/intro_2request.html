@@ -77,16 +77,16 @@ in a fairly random way. This should be improved.
 <P><LI><B>WPProgram.</B> I have never understood why there's an object for global
 DOS/&winos2; settings if the program objects don't respect the settings there. We need
 support for global settings and also global and individual environment variables
-in program objects so that CONFIG.SYS does not always have to be modified.
+in program objects so that &cfgsys; does not always have to be modified.
 
-<P><LI><B>WarpCenter.</B> That thing is instable, slow, and does not conform very well
+<P><LI><B>&warpcenter;.</B> That thing is instable, slow, and does not conform very well
 with the rest of the WPS. This should be completely reprogrammed. Since &xwp; already
 has code for those "folder content" menus, this shouldn't be too hard to to.
 
 <P><LI><B>Multi-user support.</B> The WPS is already designed to support multiple
 users thru the use of multiple OS2.INI files and Desktop hierarchies, so I cannot
 quite understand why IBM is not implementing this. &xwp; could do this; I am thinking
-of replacing the PROTSHELL and/or RUNWORKPLACE statements in CONFIG.SYS with some
+of replacing the PROTSHELL and/or RUNWORKPLACE statements in &cfgsys; with some
 &xwp; executable,
 which will then start PMSHELL.EXE with a bunch of preset environment variables, most
 importantly OS2.INI settings and a UNIX-like HOME environment variable to support multiple

@@ -20,7 +20,7 @@ automatically.
 standard implementation of this in the WPS. Most importantly, the WPS will create
 excessive file-system handles for all objects that are auto-refreshed, which will
 unnecessarily blow up your INI files. Note that this even happens if you have the
-<CODE>AUTOREFRESHFOLDERS=NO</CODE> setting in your <CODE>CONFIG.SYS</CODE> file.
+<CODE>AUTOREFRESHFOLDERS=NO</CODE> setting in your &cfgsys; file.
 
 <P>&xwp; can now replace this entire mechanism if you have enabled this replacement
 on the "Features" page in the <A HREF="sys_2global.html">"&xwp; Setup" object.</A>
@@ -31,7 +31,7 @@ will prevent file-system handles from being created. Instead, &xwp; will start
 its own threads which will start monitoring file-system activity and automatically
 refresh folders then.
 
-<P>Note that as a result, enabling or disabling the replacement requires a WPS restart
+<P>Note that as a result, enabling or disabling the replacement requires a Desktop restart
 because &xwp; can only do this replacement while the WPS is starting up.
 
 <P>However, once the replacement has been enabled and the WPS has been restarted,

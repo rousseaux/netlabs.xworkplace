@@ -8,7 +8,7 @@
              from the old "xices_30wpsstrings.html" page. -->
 <BODY>
 WPObject is the WPS base class for all objects. It is not used directly, but all
-other WPS classes are derived from it. As a result, all WPS objects (including
+other WPS classes are derived from it. As a result, all Desktop objects (including
 files, folders, and program objects) support the following setup strings:
 <DL>
 <DT><CODE><B>CCVIEW</B>=DEFAULT</CODE>
@@ -137,7 +137,7 @@ on every system; the XFolder Configuration folder is assigned an ID of
 <CODE>&lt;XFOLDER_CONFIG&gt;</CODE>, so that XFolder finds it even though
 you might have moved it to a different location. See the
 <A HREF="xices_2wpsobjids.html">"WPS Object IDs"</A> page for a listing of system IDs.
-<P>Object IDs are even necessary to be able to locate abstract WPS objects
+<P>Object IDs are even necessary to be able to locate abstract Desktop objects
 (e.g. shadows or program objects) from REXX, since these objects do not
 appear in the file system. So if you create an abstract object from REXX and
 wish to be able to open it from REXX also, you must assign it an Object ID.

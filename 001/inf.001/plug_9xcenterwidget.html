@@ -13,13 +13,13 @@ in your widget source code instead of this definition.
 <PRE>
     /*
      *@@ XCENTERWIDGET:
-     *      public structure to hold data for an XCenter
-     *      widget, i.e. a PM window in the XCenter client
+     *      public structure to hold data for an &xcenter;
+     *      widget, i.e. a PM window in the &xcenter; client
      *      area.
      *
-     *      Each XCenter widget is a separate window,
-     *      being a child window of the XCenter client,
-     *      which in turn is a child of the XCenter frame.
+     *      Each &xcenter; widget is a separate window,
+     *      being a child window of the &xcenter; client,
+     *      which in turn is a child of the &xcenter; frame.
      *
      *      This structure is created once for each widget
      *      and passed to each widget in mp1 of WM_CREATE.
@@ -32,7 +32,7 @@ in your widget source code instead of this definition.
      *      field.
      *
      *      This structure is automatically freed by the
-     *      XCenter when the widget is destroyed. However,
+     *      &xcenter; when the widget is destroyed. However,
      *      if you allocated more memory for pUser, it is
      *      your own responsibility to free that on WM_DESTROY.
      *      General rule: The widget must clean up what it
@@ -44,7 +44,7 @@ in your widget source code instead of this definition.
         /*
          *  Informational fields:
          *      all these are meant for reading only
-         *      and set up by the XCenter for the widget.
+         *      and set up by the &xcenter; for the widget.
          */
 
         HWND        hwndWidget;
@@ -74,7 +74,7 @@ in your widget source code instead of this definition.
                 // internal name of the widget's class; this
                 // is the same as pWidgetClass->pcszWidgetClass,
                 // but this is valid after WM_CREATE.
-                // DO NOT CHANGE it, the XCenter relies on this!
+                // DO NOT CHANGE it, the &xcenter; relies on this!
         ULONG       ulClassFlags;
                 // class flags copied from XCENTERWIDGETCLASS.
 
@@ -89,7 +89,7 @@ in your widget source code instead of this definition.
         /*
          *  Setup fields:
          *      all these should be set up by the widget
-         *      (normally during WM_CREATE). The XCenter
+         *      (normally during WM_CREATE). The &xcenter;
          *      reads these fields to find out more about
          *      the widget's wishes.
          *
@@ -104,13 +104,13 @@ in your widget source code instead of this definition.
                 // class has the WGTF_SIZEABLE flag, but can be
                 // changed by the widget at any time.
                 // NOTE: If your widget is "greedy", i.e. wants
-                // all remaining size on the XCenter bar (by
+                // all remaining size on the &xcenter; bar (by
                 // returning -1 for cx with WM_CONTROL and
                 //
 
         HWND        hwndContextMenu;
                 // default context menu for this widget.
-                // The XCenter loads a the same standard context menu
+                // The &xcenter; loads a the same standard context menu
                 // for each widget, which is displayed on WM_CONTEXTMENU
                 // in ctrDefWidgetProc. Normally, the widget needs not
                 // do anything to have the context menu displayed;
@@ -123,7 +123,7 @@ in your widget source code instead of this definition.
 
         const char  *pcszHelpLibrary;
         ULONG       ulHelpPanelID;
-                // if these two are specified, the XCenter will
+                // if these two are specified, the &xcenter; will
                 // enable the "Help" item in the widget's context
                 // menu and display the specified help panel when
                 // the menu item is selected. Both default to NULL.

@@ -30,7 +30,7 @@ moving a 30 MB file into the trash can this way.) By contrast, since the
 large folder trees should take place very fast.
 <P><LI>In order to still make the object visible in the trash can itself, an instance
 of XWPTrashObject is created in the trash can. This class is a subclass of WPTransient,
-which means that it is not persistent between WPS restarts, but only while the WPS is
+which means that it is not persistent between Desktop restarts, but only while the WPS is
 running. As a result, these "trash objects" do not consume any space in OS2.INI.
 <!-- V0.9.5: added the following paragraph -->
 <P>So when an object is moved to the trash can, it is actually duplicated: the "real"
@@ -58,7 +58,7 @@ the usual problems associated with that.
 <P>Besides, using a subclass of WPTransient has another advantage. Since the
 trash objects (the transient objects) are recreated from scratch after every WPS
 restart, if something goes wrong really bad, you can manually delete all the hidden
-<CODE>\TRASH</CODE> directories on all drives, and after the next WPS startup, the
+<CODE>\TRASH</CODE> directories on all drives, and after the next Desktop startup, the
 trash can is completely empty.
 <BR>
 </BODY>

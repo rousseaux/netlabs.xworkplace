@@ -204,7 +204,7 @@
 #define IDT_IDDLG_ST_ANIMTIMEOUT                 "Default Frame Length Value in ms.:"
 
 //
-// General/Icon page replacement (see General/Icon page of any WPS object of your OS/2 !)
+// General/Icon page replacement (see General/Icon page of any Desktop object of your OS/2 !)
 //
 
 // In english this page is called:

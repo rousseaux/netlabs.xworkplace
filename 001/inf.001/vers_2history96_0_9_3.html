@@ -68,7 +68,7 @@ replaces the old ugly routines which have been in XFolder/&xwp; forever. I hope
 this doesn't conflict with Object Desktop.
 Hope that this fixes the "no folder close" problem which everybody experiences
 irregularily from time to time.
-<P><LI>A timer which was started at WPS startup was never stopped. Unfortunately, that
+<P><LI>A timer which was started at Desktop startup was never stopped. Unfortunately, that
 timer's responsibility was to destroy the "Archiving" status window. Since the timer
 kept running, it kept trying to destroy that window, which resulted in random windows
 being destroyed from time to time in the WPS process... fixed that. This is maybe the
@@ -87,11 +87,11 @@ the startup folder would never disappear, and neither would the boot logo. Fixed
 Fixed.
 <P><LI>"Drivers" page in "OS/2 Kernel" didn't detect non-existent drivers. Fixed.
 <P><LI>Driver dialog for IBM1S506/DANIS506.ADD crashed if the driver had no parameters
-at all in CONFIG.SYS. Fixed.
+at all in &cfgsys;. Fixed.
 <P><LI>DRVF_NOPARAMS broke. Fixed.
 <P><LI>"Dos window" replacement icon was missing a detail in 32x32 resolution. Thanks,
 Alfredo whatever-your-last-name-is from Spain, for supplying a replacement.
-<P><LI>"8.Helv" font wasn't set right in "Restart WPS" confirmation dlg.
+<P><LI>"8.Helv" font wasn't set right in "Restart Desktop" confirmation dlg.
 <P><LI>PageMage kept appearing in tasklist. Fixed that, because the daemon should not
 be closed.
 <P><LI>Extended system sounds were played even if disabled in XWPSetup. Fixed.
@@ -105,7 +105,7 @@ was hidden. Fixed.
 <P><LI>Fixed the problems with sliding focus combo-boxes closing all the time.
 <P><LI>Fixed the problems with sliding focus and frames within frames (VIEW.EXE). You
 can now even slide between subframes of a main frame. ;-)
-<P><LI>Invoking XShutdown via launch pad broke with V0.9.0. Fixed.
+<P><LI>Invoking &xshutdown; via launch pad broke with V0.9.0. Fixed.
 <P><LI>Fixed a few quirks at the end of shutdown, which prevented the system from displaying
 the animation and/or end box right.
 
