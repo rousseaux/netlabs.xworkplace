@@ -1,0 +1,41 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Standardordneranzeige
+    </TITLE>
+</HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
+<!-- this is all new with V0.9.12 -->
+<BODY>
+Die Auswahl in der Gruppe "Standardordneranzeige" erlaubt Ihnen, die 
+standardm„áige Ordneransicht fr alle Ordner Ihres Systems festzulegen.
+ 
+<P>Diese Einstellung wirkt sich nur aus,
+wenn eine Standardansicht nicht explizit fr einen Ordner gesetzt ist. Sie
+k”nnen eine Standardanzeige explizit fr einen Ordner auf der Seite "Men"
+in seinem Einstellungsnotizbuch setzen. Auáerdem k”nnen spezielle 
+Ordnerklassen das Standardverhalten der WPS-Ordner „ndern, so daá diese
+Einstellung dann eventuell auch nicht mehr wirkt.
+ 
+<UL><LI>Wenn <B>"Standardanzeige des Stammordners verwenden"</B> ausgew„hlt 
+ist, wird ein Ordner die Standardanzeige von seinem bergeordneten Ordner
+bernehmen.
+ 
+<P>Dies ist das normale Verhalten der WPS. Wenn Sie beispielsweise 
+<CODE>C:\folder\subfolder</CODE> ”ffnen und fr <CODE>subfolder</CODE> keine
+explizite Ansicht festgelegt ist, schaut die WPS nach, ob <CODE>folder</CODE> 
+eine Standardanzeige festgelegt hat, und so weiter, bis die Wurzel des 
+Laufwerks erreicht ist.
+<!-- V0.9.19: removed this Only
+if the WPS still hasn't found a default view then, the setting from the
+third "Window" page in the "Workplace Shell" (or "System") object applies. -->
+ 
+<P><LI>Wenn Sie dieses Verhalten nicht m”gen, erlaubt &xwp; Ihnen nun, die 
+Standardanzeige fr Ordner global zu setzen, also ohne Vererbung vom 
+Stammordner. Die Vererbung wird deaktiviert, wenn Sie in dieser Gruppe
+einen der Eintr„ge <B>"Symbol", "Strukturanzeige" oder "Detailanzeige"</B> 
+anw„hlen.
+</UL>
+</BODY>
+</HTML>
+ 

@@ -1238,6 +1238,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *@@changed V0.9.19 (2002-04-25) [umoeller]: this didn't allow empty titles, fixed
  *@@changed V0.9.19 (2002-05-23) [umoeller]: title was read before page was ready, fixed
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed excessive rename when page was inited
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed excessive save
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1254,7 +1255,10 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
             ulStyleMask = 0;        // style bits to be set or cleared;
                                     // to set a bit, set it in both flags and mask
                                     // to clear a bit set it in flags only
-    BOOL    fRefresh = TRUE;
+
+    // separated these bools V0.9.21 (2002-08-31) [umoeller]
+    BOOL    fRefreshPage = FALSE,
+            fSave = FALSE;
 
     APIRET  arc;
 
@@ -1265,8 +1269,6 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
         switch (ulItemID)
         {
             case ID_XSDI_ICON_TITLE_EF:
-                fRefresh = FALSE;
-
                 if (    (usNotifyCode == MLN_KILLFOCUS)
                      // title controls available?
                      && (flIconPageFlags & ICONFL_TITLE)
@@ -1312,7 +1314,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                     if (pszNewTitle)
                         free(pszNewTitle);
 
-                    fRefresh = TRUE;
+                    fRefreshPage = TRUE;
                 }
             break;
 
@@ -1352,7 +1354,10 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
 
             case ID_XSDI_ICON_RESET_BUTTON:
                 if (pData->flIconPageFlags & ICONFL_ICON)
+                {
                     icomResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
+                    WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
+                }
             break;
 
             case ID_XSDI_ICON_TEMPLATE_CB:
@@ -1409,8 +1414,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                     break;
                 }
 
-                fRefresh = FALSE;
-                        // or we'll hang
+                // do not refresh the page, or we'll hang
 
             break;
 
@@ -1425,6 +1429,8 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                                     &pData->Hotkey);
                 pData->fHotkeyPending = FALSE;
                 pData->fHasHotkey = TRUE;
+
+                fRefreshPage = TRUE;
             break;
 
             /*
@@ -1440,6 +1446,8 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                                  cmnGetString(ID_XSSI_NOTDEFINED)); // (cmnQueryNLSStrings())->pszNotDefined);
                 pData->fHotkeyPending = FALSE;
                 pData->fHasHotkey = FALSE;
+
+                fRefreshPage = TRUE;
             break;
 
             /*
@@ -1462,8 +1470,11 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                      && (pData->pszTitleBackup)
                      && (!pData->fNoRename)
                    )
+                {
                     // set backed-up title
                     _wpSetTitle(pnbp->inbp.somSelf, pData->pszTitleBackup);
+                    fRefreshPage = TRUE;
+                }
 
                 if (flIconPageFlags & ICONFL_ICON)
                 {
@@ -1476,6 +1487,8 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                     else
                         // was using default icon:
                         icomResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
+
+                    WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
                 }
 
                 if (flIconPageFlags & ICONFL_TEMPLATE)
@@ -1509,7 +1522,10 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                                             NULL);
                         pData->fHasHotkey = FALSE;
                     }
+
                     pData->fHotkeyPending = FALSE;
+
+                    fRefreshPage = TRUE;
                 }
             break;
 
@@ -1522,13 +1538,20 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                 if (    (flIconPageFlags & ICONFL_TITLE)
                      && (!pData->fNoRename)
                    )
+                {
                     // set class default title
                     _wpSetTitle(pnbp->inbp.somSelf,
                                 _wpclsQueryTitle(_somGetClass(pnbp->inbp.somSelf)));
+                    fRefreshPage = TRUE;
+                }
 
                 if (flIconPageFlags & ICONFL_ICON)
+                {
                     // reset standard icon
                     icomResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
+
+                    WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
+                }
 
                 if (flIconPageFlags & ICONFL_TEMPLATE)
                     // clear template bit
@@ -1543,13 +1566,13 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                     // delete hotkey
                     _xwpSetObjectHotkey(pnbp->inbp.somSelf,
                                         NULL);
+
                     pData->fHasHotkey = FALSE;
                     pData->fHotkeyPending = FALSE;
+
+                    fRefreshPage = TRUE;
                 }
             break;
-
-            default:
-                fRefresh = FALSE;
         }
     }
 
@@ -1559,16 +1582,17 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
         _wpModifyStyle(pnbp->inbp.somSelf,
                        ulStyleFlags,        // affected flags
                        ulStyleMask);        // bits to be set or cleared
-        fRefresh = TRUE;
+        fRefreshPage = TRUE;
+        fSave = TRUE;
     }
 
-    if (fRefresh)
-    {
+    if (fRefreshPage)  // V0.9.21 (2002-08-31) [umoeller]
         // update the display by calling the INIT callback
         pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        // and save the object (to be on the safe side)
+
+    if (fSave)  // V0.9.21 (2002-08-31) [umoeller]
+        // save the object (to be on the safe side)
         _wpSaveDeferred(pnbp->inbp.somSelf);
-    }
 
     return mrc;
 }

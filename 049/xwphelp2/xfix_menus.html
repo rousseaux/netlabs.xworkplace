@@ -1,0 +1,80 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Befehlsreferenz zum Men
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<BODY> 
+Dies ist eine Beschreibung der Befehle aus der xfix-<B>Menleiste</B>. 
+(Eine Beschreibung des &popmenu;s der Handle-Eintr„ge finden Sie am Ende dieser Seite):
+
+<UL><LI><B>xfix</B>-Men
+
+<BR><UL><LI>Mit <B>Puffer neu einlesen</B> wird der Handles-Puffer neu eingelesen,
+den xfix beim Starten aus der <CODE>OS2SYS.INI</CODE> gelesen hat, und anschlieáend
+die komplette Handle-Liste aktualisiert. Diese Aktion liest jedoch nicht die Handles
+aus der <CODE>OS2SYS.INI</CODE> neu ein, dies tut xfix nur beim Start. Dieser 
+Meneintrag ist einzig dafr gedacht, falls xfix einen Bug enthalten sollte, der in 
+einer defekten Anzeige resultiert. Dabei werden auch die Indizes in der "i"-Spalte 
+auf den neuesten Stand gebracht, die nicht automatisch aktualisiert werden, wenn
+Handles gel”scht wurden.
+ 
+<P><LI><B>Zurckschreiben in OS2SYS.INI</B> schreibt die Handles-Tabelle in die 
+Datei <CODE>OS2SYS.INI</CODE> zurck. Alle nderungen, die Sie in der Handles-Liste
+vorgenommen haben, werden solange nicht gespeichert, bis Sie diesen Menpunkt 
+benutzt haben. Beachten Sie bitte, daá dies vermutlich keinen Effekt haben wird, 
+wenn die WPS aktuell l„uft, da die WPS eine interne Kopie der Handles-Tabelle
+vorh„lt und Ihre nderungen wahrscheinlich bald wieder berschreiben wird. Deshalb 
+sollte die WPS nicht laufen, w„hrend Sie die Handles zurckschreiben.
+ 
+<P>Siehe dazu auch <LI><A HREF="xfix_delete.html">L”schen von Handles</A>.
+
+<!-- V0.9.20: rewrote this -->
+<P><LI><B>Beenden</B> schlieát das Programm.
+</UL>
+
+<LI><B>Sortieren</B>-Men
+
+<P>Diese Men erlaubt Ihnen, die Handles-Liste nach den Werten der verschiedenen
+Spalten zu ordnen. (Siehe  <A HREF="xfix_list.html">Die Handles-Liste</A> fr 
+eine Beschreibung der Spalten.) Wenn Sie nach Index sortieren, wird Ihnen die 
+Anzeige die genaue Reihenfolge der Handle-Eintr„ge zeigen, wie sie in der Tabelle
+der <CODE>OS2SYS.INI</CODE> stehen (natrlich mit steigendem Knoten-Offset).
+"Sortieren nach Index" ist die Standard-Sortierreihenfolge, nachdem xfix gestartet wurde.
+ 
+<P><LI><B>Aktionen</B>-Men
+ 
+<P><B>Ungltige Dateien finden</B> berprft alle Handles in der Tabelle, ob sie auf
+gltige Dateien zeigen. Jeder veraltetet Eintrag wird als ungltig markiert und 
+erh„lt den Status "Datei nicht gefunden". Diese Prozeá wird nicht automatisch erledigt, 
+weil er einige Minuten dauern kann.
+
+<P>Siehe <A HREF="xfix_howto.html">Wie kann ich...</A> fr eine typische Benutzung
+dieses Menpunktes.
+
+<P><LI><B>Auswahl</B>-Men
+
+<P>Mittels <B>Alle Ungltigen ausw„hlen</B> werden alle Handles ausgew„hlt, die aus
+irgendeinem Grund als ungltig markiert wurden (d.h. mit einer grauen Farbe hinterlegt sind).
+Sie k”nnen dann einen Rechtsklick auf einen der ausgew„hlten Eintr„ge durchfhren und 
+"L”schen" aus dem &popmenu; w„hlen.
+
+<P><LI><B>Hilfe</B>-Men
+
+<P>Zeigt die Hilfe sowie das xfix-Produktinfo mit der aktuellen Version und Erstellungsdatum an.
+ 
+</UL>
+
+Zu„tzlich erscheint ein <B>&popmenu;</B>, wenn
+Sie auf einen der ausgew„hlten Eintr„ge mit Maustaste 2 klicken. Es enth„lt
+nur den Befehl </B>L”schen</B>. Das wird dann den Handle aus dem internen Puffer
+l”schen, der aus der <CODE>OS2SYS.INI</CODE> gelesen wurde, sowie von der 
+Anzeige der Handles-Liste.
+ 
+<P>Mehr darber in <A HREF="xfix_delete.html">L”schen von Handles</A>.
+
+<BR>
+</BODY>
+</HTML>
+
