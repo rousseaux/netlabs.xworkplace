@@ -933,8 +933,9 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
             if (pPrivate->arcWin32K == NO_ERROR)
                 pdrv_sprintf(p,
-                        "\nFree in swapper: %s KB ",
-                        pnlsThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
+                             // localized this too V0.9.21 (2002-08-21) [umoeller]
+                             pcmnGetString(ID_CRSI_SENTINELTOOLTIP2), // "\nFree in swapper: %s KB ",
+                             pnlsThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
 
             if (pPrivate->fTooltipShowing)
                 // tooltip currently showing:

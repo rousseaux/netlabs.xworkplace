@@ -2324,6 +2324,12 @@
 #define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6292
 #define ID_CRSI_IPWGT_BYTESTOTAL        6293
 
+#define ID_CRSI_SENTINELTOOLTIP2        6294        // V0.9.21 (2002-08-21) [umoeller]
+#define ID_CRSI_MEMORYTOOLTIP           6295        // V0.9.21 (2002-08-21) [umoeller]
+#define ID_CRSI_BATTERYTOOLTIP          6296        // V0.9.21 (2002-08-21) [umoeller]
+#define ID_CRSI_DISKFREECONDTOOLTIP     6297        // V0.9.21 (2002-08-21) [umoeller]
+#define ID_CRMI_IPWIDGET_SOURCE         6298        // V0.9.21 (2002-08-21) [umoeller]
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000

@@ -470,9 +470,11 @@ This class adds a new "Module" page to the executable's settings notebook and of
 This replacement offers a better version of the "Sounds" page in that object's settings notebook, now allowing you to edit sound schemes.
 This was added with &xwp; 0.9.0.
 
+;
+; V0.9.21: replaced this silly description
+;
 <--XWPCLS_1258-->: "XWPMouse" is the &xwp; replacement for the WPMouse class, which implements the "Mouse" object found in your "System setup" folder.
-This replacement adds the "Animated Mouse Pointers for &os2;" functionality, which is now part of &xwp;.
-Also, this replacement adds settings pages for configuring the &xwp; hook mouse features, such as sliding focus and screen corner objects.
+This replacement adds new pages to the object for configuring the &xwp; hook mouse features, such as sliding focus and screen corner objects.
 
 <--XWPCLS_1259-->: "XWPKeyboard" is the &xwp; replacement for the WPKeyboard class, which implements the "Keyboard" object found in your "System setup" folder.
 This replacement adds settings pages for configuring the &xwp; hook keyboard features, such as global object hotkeys.

@@ -35,7 +35,7 @@
  *  6)  dlgids.h, headers in shared\ (as needed)
  *  7)  headers in implementation dirs (e.g. filesys\, as needed)
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
-ew */
+ */
 
 #define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
@@ -225,12 +225,12 @@ MRESULT EXPENTRY fnwpConfigJFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             lCacheSizeKB = GetDefaultJFSCacheSize();
 
             // now parse the parameters
-            pszParamsCopy = strdup(pddd->szParams);
-            if (pszParamsCopy)
+            if (pszParamsCopy = strdup(pddd->szParams))
             {
                 pszToken = pdrv_strtok(pszParamsCopy, " ");
                 if (pszToken) // V0.9.4 (2000-06-11) [umoeller]
-                    do {
+                    do
+                    {
                         // lazywrite
                         if (!pdrv_memicmp(pszToken, "/L", 2))
                         {
@@ -720,8 +720,7 @@ MRESULT EXPENTRY fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
             // now parse the parameters
-            pszParamsCopy = strdup(pddd->szParams);
-            if (pszParamsCopy)
+            if (pszParamsCopy = strdup(pddd->szParams))
             {
                 pszToken = pdrv_strtok(pszParamsCopy, " ");
                 if (pszToken) // V0.9.4 (2000-06-11) [umoeller]

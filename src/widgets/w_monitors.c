@@ -139,7 +139,7 @@
  ********************************************************************/
 
 #define MWGT_DATE               1
-#define MWGT_SWAPPER            2
+// #define MWGT_SWAPPER            2        disabled V0.9.21 (2002-08-21) [umoeller]
 #define MWGT_MEMORY             3
 #define MWGT_TIME               4
 #define MWGT_POWER              5       // V0.9.12 (2001-05-26) [umoeller]
@@ -243,6 +243,7 @@ PAPMHOPEN papmhOpen = NULL;
 PAPMHREADSTATUS papmhReadStatus = NULL;
 PAPMHCLOSE papmhClose = NULL;
 
+PCMNGETSTRING pcmnGetString = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 PCMNQUERYMAINRESMODULEHANDLE pcmnQueryMainResModuleHandle = NULL;
@@ -292,6 +293,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "apmhOpen", (PFN*)&papmhOpen,
         "apmhReadStatus", (PFN*)&papmhReadStatus,
         "apmhClose", (PFN*)&papmhClose,
+        "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
@@ -815,9 +817,11 @@ MRESULT MwgtCreate(HWND hwnd,
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_CLOCK_MAIN;
         break;
 
+        /*  disabled V0.9.21 (2002-08-21) [umoeller]
         case MWGT_SWAPPER:
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_SWAP_MAIN;
         break;
+        */
 
         case MWGT_MEMORY:
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_MEMORY_MAIN;
@@ -1015,20 +1019,25 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         }
                         break;
 
+                        /*  disabled V0.9.21 (2002-08-21) [umoeller]
                         case MWGT_SWAPPER:
                             pttt->pszText = "Current swapper size";
                         break;
+                        */
 
                         case MWGT_MEMORY:
-                            pttt->pszText = "Currently free memory";
+                            pttt->pszText = pcmnGetString(ID_CRSI_MEMORYTOOLTIP); // "Currently free memory";
+                                        // localized V0.9.21 (2002-08-21) [umoeller]
                         break;
 
                         case MWGT_POWER:
-                            pttt->pszText = "Battery power";
+                            pttt->pszText = pcmnGetString(ID_CRSI_BATTERYTOOLTIP); // "Battery power";
+                                        // localized V0.9.21 (2002-08-21) [umoeller]
                         break;
 
                         case MWGT_DISKFREE:
-                            pttt->pszText = "Free space on disks";
+                            pttt->pszText = pcmnGetString(ID_CRSI_DISKFREECONDTOOLTIP); // "Free space on disks";
+                                        // localized V0.9.21 (2002-08-21) [umoeller]
                         break;
                     }
 
@@ -1450,8 +1459,10 @@ VOID MwgtPaint2(HWND hwnd,
         }
         break;
 
+        /* disabled V0.9.21 (2002-08-21) [umoeller]
         case MWGT_SWAPPER:
         break;
+        */
 
         case MWGT_MEMORY:
         {
@@ -1982,7 +1993,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
                         // changed V0.9.20 (2002-07-19) [umoeller]
             break;
 
-            case MWGT_SWAPPER:
+            // case MWGT_SWAPPER:       disabnled V0.9.21 (2002-08-21) [umoeller]
             case MWGT_MEMORY:
                 pcszID = "<XWP_KERNEL>"; // XFOLDER_KERNELID; // "<XWP_KERNEL>";
             break;

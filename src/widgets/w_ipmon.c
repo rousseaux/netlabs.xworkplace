@@ -1707,7 +1707,8 @@ static VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
     if (hwndSubmenu = pwinhInsertSubmenu(pPrivate->pWidget->hwndContextMenu,
                                          s + 2,
                                          1999,
-                                         "Source",
+                                         pcmnGetString(ID_CRMI_IPWIDGET_SOURCE), // "Source",
+                                                // localized V0.9.21 (2002-08-21) [umoeller]
                                          MIS_TEXT,
                                          0,
                                          NULL,

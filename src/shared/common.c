@@ -4767,6 +4767,8 @@ static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
 
                 if (!strcmp(mp2, "inf"))
                 {
+                    HAPP happ;
+
                     cmnQueryXWPBasePath(szTemp);
                     sprintf(szTemp + strlen(szTemp),
                             "\\xfldr%s.inf",
@@ -4776,6 +4778,7 @@ static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                                      PROG_PM,
                                      szTemp,
                                      NULL,
+                                     &happ,
                                      NULL);         // don't wait
                 }
                 else if (!strcmp(mp2, "copying"))
@@ -4790,7 +4793,9 @@ static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                 }
                 else if (!strnicmp(mp2, "http://", 7))
                 {
-                    appOpenURL((PCSZ)mp2);
+                    appOpenURL((PCSZ)mp2,
+                               NULL,
+                               0);
                 }
             }
         break;

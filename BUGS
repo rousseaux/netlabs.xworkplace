@@ -20,6 +20,11 @@ CURRENT PROBLEMS
 --  when hook is disabled, window list widget doesn't work; restart of
     XCenter required for getting it to work
 
+--  xcenter: doesn't remember tray from last startup
+
+--  Batch rename window opens twice when selected from folder context
+    menu
+
 --  I recerved the following error message when importing the XML generated
     by the extended associations.
 

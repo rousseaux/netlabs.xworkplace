@@ -3083,7 +3083,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_WORDBREAK,
                             -1,
                             CTL_COMMON_FONT,
-                            0,
                             { 150, SZL_AUTOSIZE },     // size
                             COMMON_SPACING,
                          },
@@ -3093,7 +3092,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MARGIN | ES_AUTOSCROLL,
                             IDDI_FILEMASK,
                             CTL_COMMON_FONT,
-                            0,
                             { 150, -1 },     // size
                             COMMON_SPACING,
                          },
@@ -3103,7 +3101,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
                             IDDI_SELECT,
                             CTL_COMMON_FONT,
-                            0,
                             { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
                             COMMON_SPACING,
                          },
@@ -3113,7 +3110,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             IDDI_DESELECT,
                             CTL_COMMON_FONT,
-                            0,
                             { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
                             COMMON_SPACING,
                          },
@@ -3123,7 +3119,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             IDDI_SELECTALL,
                             CTL_COMMON_FONT,
-                            0,
                             { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
                             COMMON_SPACING,
                          },
@@ -3133,7 +3128,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             IDDI_DESELECTALL,
                             CTL_COMMON_FONT,
-                            0,
                             { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
                             COMMON_SPACING,
                          },
@@ -3143,7 +3137,6 @@ VOID SelectByName(HWND hwndCnr)
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             DID_CANCEL,
                             CTL_COMMON_FONT,
-                            0,
                             { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
                             COMMON_SPACING,
                          };

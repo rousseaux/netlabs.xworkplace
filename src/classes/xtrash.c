@@ -193,8 +193,8 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
 {
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpDeleteIntoTrashCan");
 
-    return (trshDeleteIntoTrashCan(somSelf,
-                                   pObject));
+    return trshDeleteIntoTrashCan(somSelf,
+                                  pObject);
 }
 
 /*
@@ -225,7 +225,8 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
     inbp.ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
     inbp.pfncbInitPage    = trshTrashCanSettingsInitPage;
     inbp.pfncbItemChanged = trshTrashCanSettingsItemChanged;
-    return (ntbInsertPage(&inbp));
+
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -255,7 +256,8 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
     inbp.ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_DRIVES;
     inbp.pfncbInitPage    = trshTrashCanDrivesInitPage;
     inbp.pfncbItemChanged = trshTrashCanDrivesItemChanged;
-    return (ntbInsertPage(&inbp));
+
+    return ntbInsertPage(&inbp);
 }
 
 /*

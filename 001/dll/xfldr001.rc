@@ -933,6 +933,14 @@ BEGIN
                               Used RAM: %s KB
                               Swapper size: %s KB
             */
+
+    /* the following five added V0.9.21 (2002-08-21) [umoeller] */
+    ID_CRSI_SENTINELTOOLTIP2            "&nl;Free in swapper: %s KB "
+    ID_CRSI_MEMORYTOOLTIP               "Currently free memory"
+    ID_CRSI_BATTERYTOOLTIP              "Battery power"
+    ID_CRSI_DISKFREECONDTOOLTIP         "Free space on disks"
+    ID_CRMI_IPWIDGET_SOURCE             "Source interface"
+
     ID_CRSI_BUILTINCLASS                "Built-in"
     ID_CRSI_OWGT_MENUITEMS              "Visible menu items"
 
