@@ -3014,12 +3014,12 @@ STATIC void _Optlink fntInsertResources(PTHREADINFO pti)
  *@@ KillPointersInRecords:
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: adjusted for cnrhForAllRecords updates
  */
 
-STATIC ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
+STATIC ULONG XWPENTRY KillPointersInRecords(HWND hwndCnr,
                                             PRECORDCORE precc,
-                                            ULONG ulUser1,
-                                            ULONG ulUser2)
+                                            ULONG ulUser)
 {
     HPOINTER hptr;
     if (hptr = ((PRESOURCERECORD)precc)->hptrResource)
@@ -3128,7 +3128,6 @@ VOID progResourcesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         cnrhForAllRecords(hwndCnr,
                           NULL,     // root records
                           KillPointersInRecords,
-                          0,
                           0);
 
         if (pnbp->pUser)

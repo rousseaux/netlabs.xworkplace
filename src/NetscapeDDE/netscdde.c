@@ -520,11 +520,12 @@ int main(int argc,
                 else
                 {
                     // no option ("-"): seems to be URL
-                    if (strchr(argv[i], ' '))
-                    {
-                        // if the URL contains spaces, we enclose it in quotes
+                    _PmpfF(("got URL [%s]", argv[i]));
+                    // if the URL contains spaces, we enclose it in quotes
+                    // V0.9.21 (2002-09-09) [umoeller]: not only spaces,
+                    // but other weird characters too
+                    if (strpbrk(argv[i], " &|="))
                         sprintf(G_szURL, "\"%s\"", argv[i]);
-                    }
                     else
                         strcpy(G_szURL, argv[i]);
                 }

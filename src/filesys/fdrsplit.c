@@ -137,12 +137,12 @@ PFNWP       G_pfnwpSplitFrameOrig = NULL;
  *      Runs on the split populate thread (fntSplitPopulate).
  *
  *@@added V0.9.18 (2002-02-06) [umoeller]
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: removed linklist
  */
 
 STATIC WPObject* AddFirstChild(WPFolder *pFolder,
                                PMINIRECORDCORE precParent,     // in: folder record to insert first child for
-                               HWND hwndCnr,                   // in: cnr where precParent is inserted
-                               PLINKLIST pll)                  // in/out: list of objs
+                               HWND hwndCnr)                   // in: cnr where precParent is inserted
 {
     PMINIRECORDCORE     precFirstChild;
     WPFolder            *pFirstChildFolder = NULL;
@@ -271,13 +271,11 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
         if (pFirstChildFolder)
         {
             POINTL ptl = {0, 0};
-            if (_wpCnrInsertObject(pFirstChildFolder,
-                                   hwndCnr,
-                                   &ptl,        // without this the func fails
-                                   precParent,
-                                   NULL))
-                lstAppendItem(pll,
-                              pFirstChildFolder);
+            _wpCnrInsertObject(pFirstChildFolder,
+                               hwndCnr,
+                               &ptl,        // without this the func fails
+                               precParent,
+                               NULL);
         }
     }
 
@@ -434,8 +432,7 @@ STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
 
                 AddFirstChild(pFolder,
                               precParent,
-                              hwndCnr,
-                              &psv->llTreeObjectsInserted);
+                              hwndCnr);
             }
         break;
 
@@ -638,6 +635,7 @@ HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv)
  *      this will fire an CM_ADDFIRSTCHILD msg to that
  *      window for every record that was inserted.
  *
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: removed linklist
  */
 
 VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
@@ -645,8 +643,7 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                        PMINIRECORDCORE precParent,     // in: parent record or NULL
                        ULONG ulFoldersOnly,            // in: as with fdrIsInsertable
                        HWND hwndAddFirstChild,         // in: if != 0, we post CM_ADDFIRSTCHILD for each item too
-                       PCSZ pcszFileMask,              // in: file mask filter or NULL
-                       PLINKLIST pllObjects)           // in/out: linked list of objs that were inserted
+                       PCSZ pcszFileMask)              // in: file mask filter or NULL
 {
     BOOL        fFolderLocked = FALSE;
 
@@ -692,10 +689,6 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
 
                         // store in array
                         papObjects[cObjects++] = pObject;
-
-                        // if caller wants a list, add that to
-                        if (pllObjects)
-                            lstAppendItem(pllObjects, pObject);
                     }
 
                     // even if the object is already in the
@@ -846,9 +839,6 @@ MPARAM fdrSetupSplitView(HWND hwnd,
     SPLITBARCDATA sbcd;
     HAB hab = WinQueryAnchorBlock(hwnd);
 
-    lstInit(&psv->llTreeObjectsInserted, FALSE);
-    lstInit(&psv->llFileObjectsInserted, FALSE);
-
     // set the window font for the main client...
     // all controls will inherit this
     winhSetWindowFont(hwnd,
@@ -970,9 +960,9 @@ VOID fdrCleanupSplitView(PFDRSPLITVIEW psv)
     // prevent dialog updates
     psv->fSplitViewReady = FALSE;
     fdrvClearContainer(psv->hwndTreeCnr,
-                       &psv->llTreeObjectsInserted);
+                       TRUE);       // tree view
     fdrvClearContainer(psv->hwndFilesCnr,
-                       &psv->llFileObjectsInserted);
+                       FALSE);      // not tree view
 
     // clean up
     if (psv->hwndSplitWindow)
@@ -1138,8 +1128,10 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
                         WPFolder    *pFolder;
 
+                        PMPF_POPULATESPLITVIEW(("  calling fdrvClearContainer"));
+
                         fdrvClearContainer(psv->hwndFilesCnr,
-                                           &psv->llFileObjectsInserted);
+                                           FALSE);      // not tree view
 
                         // if we had a previous view item for the
                         // files cnr, remove it... since the entire
@@ -1267,8 +1259,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                       (PMINIRECORDCORE)mp1,
                                       INSERT_FOLDERSANDDISKS,
                                       hwndAddFirstChild,
-                                      NULL,       // file mask
-                                      &psv->llTreeObjectsInserted);
+                                      NULL);      // file mask
                 }
             }
             break;
@@ -1358,8 +1349,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                           NULL,        // parent
                                           INSERT_ALL,
                                           NULLHANDLE,  // no add first child
-                                          NULL,        // no file mask
-                                          &psv->llFileObjectsInserted);
+                                          NULL);        // no file mask
 
                         // clear the "opening" flag in the VIEWITEM
                         // so that XFolder::wpAddToContent will start
@@ -2070,8 +2060,8 @@ STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
  *      (fnwpSplitController) as its FID_CLIENT.
  *
  *      The caller is responsible for allocating a FDRSPLITVIEW
- *      structure and passing it in. It is assumed that
- *      the structure is zeroed completely.
+ *      structure and passing it in. The struct is zeroed here
+ *      and then filled with meaningful data.
  *
  *      The caller must also subclass the frame that is
  *      returned and free that structure on WM_DESTROY.
@@ -2091,6 +2081,15 @@ STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
  *          fonts, colors) of the folders they are
  *          currently displaying. This is CPU-intensive,
  *          but pretty.
+ *
+ *      --  SPLIT_MULTIPLESEL: make the files cnr support
+ *          multiple selections.
+ *
+ *      --  SPLIT_STATUSBAR: create a status bar below
+ *          the split view. Note that is the responsibility
+ *          of the caller then to position the status bar.
+ *
+ *      --  SPLIT_MENUBAR: create a menu bar for the frame.
  *
  *@@added V0.9.21 (2002-08-28) [umoeller]
  */

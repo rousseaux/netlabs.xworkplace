@@ -68,11 +68,7 @@
     BOOL fdrvIsObjectInCnr(WPObject *pObject,
                            HWND hwndCnr);
 
-    #ifdef LINKLIST_HEADER_INCLUDED
-
-        ULONG fdrvClearContainer(HWND hwndCnr,
-                                 PLINKLIST pllObjects);
-
-    #endif
+    ULONG fdrvClearContainer(HWND hwndCnr,
+                             BOOL fTreeView);
 
 #endif

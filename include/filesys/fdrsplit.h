@@ -62,7 +62,6 @@
     #define SPLIT_STATUSBAR         0x0008
     #define SPLIT_MENUBAR           0x0010
 
-    #ifdef LINKLIST_HEADER_INCLUDED
     #ifdef THREADS_HEADER_INCLUDED
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
 
@@ -157,11 +156,11 @@
             volatile TID    tidSplitPopulate;
             HWND            hwndSplitPopulate;
 
-            LINKLIST        llTreeObjectsInserted;
+            // LINKLIST        llTreeObjectsInserted;
                                 // linked list of plain WPObject* pointers
                                 // currently inserted in the left tree;
                                 // no auto-free, needed for cleanup
-            LINKLIST        llFileObjectsInserted;
+            // LINKLIST        llFileObjectsInserted;
                                 // linked list of plain WPObject* pointers
                                 // currently inserted in the files cnr;
                                 // no auto-free, needed for cleanup
@@ -173,8 +172,7 @@
                                PMINIRECORDCORE precParent,
                                ULONG ulFoldersOnly,
                                HWND hwndAddFirstChild,
-                               PCSZ pcszFileMask,
-                               PLINKLIST pllObjects);
+                               PCSZ pcszFileMask);
 
         HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv);
 
@@ -205,7 +203,6 @@
                                  PCSZ pcszFileMask,
                                  LONG lSplitBarPos);
 
-    #endif
     #endif
     #endif
 

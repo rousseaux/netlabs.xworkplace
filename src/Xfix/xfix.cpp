@@ -3249,7 +3249,7 @@ VOID FrameCommand(HWND hwndFrame,
                 cnrhForAllRecords(hwndCnr,
                                   NULL, // preccParent,
                                   fncbSelectInvalid,        // callback
-                                  0, 0);
+                                  0);
                 cnrhInvalidateAll(hwndCnr);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
             }

@@ -1080,7 +1080,7 @@ VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts ar
             winhSetWindowFont(hwndCnr,
                               _wpQueryFldrFont(pFolder, ulView));
 
-            WinEnableWindowUpdate(hwndCnr, TRUE);
+            WinShowWindow(hwndCnr, TRUE);
         }
     }
     CATCH(excpt1)
@@ -1329,59 +1329,61 @@ BOOL fdrvIsObjectInCnr(WPObject *pObject,
 }
 
 /*
+ *@@ fncbClearCnr:
+ *      callback for cnrhForAllRecords, specified
+ *      by fdrvClearContainer.
+ *
+ *@@added V0.9.21 (2002-09-09) [umoeller]
+ */
+
+STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
+                                   PRECORDCORE precc,
+                                   ULONG ulUser)
+{
+    WPObject *pobj = OBJECT_FROM_PREC(precc);
+
+    _wpCnrRemoveObject(pobj,
+                       hwndCnr);
+
+    // this is the "unlock" that corresponds to the "lock"
+    // that was issued on every object by wpPopulate
+    _wpUnlockObject(pobj);
+
+    return 0;
+}
+
+/*
  *@@ fdrvClearContainer:
  *      removes all objects that were inserted into the
  *      specified container and updates the USEITEM's
  *      correctly.
+ *
+ *      It is assumed that all the objects in the container
+ *      were initially locked once by populate.
+ *
+ *      Returns the no. of records that were removed.
  */
 
-ULONG fdrvClearContainer(HWND hwndCnr,              // in: cnr to clear
-                         PLINKLIST pllObjects)      // in: list of objects to remove
+ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
+                         BOOL fTreeView)    // in: if TRUE, we recurse into child records
 {
-    ULONG       ulrc = 0;
-    PLISTNODE   pNode;
-    // OK, nuke the container contents...
-    // we could simply call wpCnrRemoveObject
-    // for each object in the container, but
-    // this causes a lot of overhead.
-    // From my testing, wpCnrRemoveObject
-    // does the following:
-    // 1) search the object's useitems and
-    //    remove the matching RECORDITEM;
-    // 2) only after that, it attempts to
-    //    remove the record from the container.
-    //    If that fails, the useitem has been
-    //    removed anyway.
+    ULONG ulrc;
 
-    // So to speed things up, we just kill
-    // the entire container contents in one
-    // flush and then call wpCnrRemoveObject
-    // on each object that was inserted...
-    WinSendMsg(hwndCnr,
-               CM_REMOVERECORD,
-               NULL,                // all records
-               MPFROM2SHORT(0,      // all records
-                            CMA_INVALIDATE));
-                                // no free, WPS shares records
+    // disable window updates
+    // for the cnr or this takes forever
+    WinEnableWindowUpdate(hwndCnr, FALSE);
 
-    // WinEnableWindowUpdate(hwndCnr, FALSE);
+    ulrc = cnrhForAllRecords(hwndCnr,
+                             // do not recurse if not tree view
+                             (fTreeView)
+                                ? NULL
+                                : (PRECORDCORE)-1,
+                             fncbClearCnr,
+                             0);
 
-    pNode = lstQueryFirstNode(pllObjects);
-    while (pNode)
-    {
-        WPObject *pobj = (WPObject*)pNode->pItemData;
-        _wpCnrRemoveObject(pobj,
-                           hwndCnr);
-        _wpUnlockObject(pobj);       // was locked by "insert"
-        pNode = pNode->pNext;
-        ulrc++;
-    }
+    WinShowWindow(hwndCnr, TRUE);
 
-    lstClear(pllObjects);
-
-    //  WinEnableWindowUpdate(hwndCnr, TRUE);
-
-    return (ulrc);
+    return ulrc;
 }
 
 
