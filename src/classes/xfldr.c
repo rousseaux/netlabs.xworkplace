@@ -224,7 +224,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpDestroyStorage(XFolder *somSelf)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -742,7 +742,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
         brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -937,7 +937,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1022,7 +1022,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
             }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1622,7 +1622,7 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
                               (MPARAM)hObj, NULL);
        */
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1688,7 +1688,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
         _Pmpf(("%s: End of wpSaveState", _wpQueryTitle(somSelf)));
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1826,7 +1826,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         _Pmpf(("  End of XFolder::wpRestoreState"));
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1890,7 +1890,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
                    *pulValue));        // data returned
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1947,7 +1947,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                    pszValue));        // data returned
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2179,7 +2179,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     *pcbValue));    // size out
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2710,7 +2710,7 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
                     _wpQueryTitle(somSelf),
                     brc));
     #endif
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2962,7 +2962,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderBackgroundPage(XFolder *somSelf,
         _xwpAddXFolderPages(somSelf, hwndNotebook);
        */
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3123,7 +3123,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                                    STBM_UPDATESTATUSBAR,
                                    stb_PostCallback);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3177,7 +3177,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
                                    STBM_UPDATESTATUSBAR,
                                    stb_PostCallback);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3277,7 +3277,7 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
 
     _Pmpf(("XFolder::wpDragOver: parent returned MRESULT 0x%lX", mrc));
 
-    return (mrc);
+    return mrc;
 } */
 
 /*
@@ -3297,7 +3297,7 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
 
     _Pmpf(("XFolder::wpRender: parent returned MRESULT 0x%lX", mrc));
 
-    return (mrc);
+    return mrc;
 
 } */
 
@@ -3322,7 +3322,7 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
 
     _Pmpf(("XFolder::wpRenderComplete: parent returned MRESULT 0x%lX", mrc));
 
-    return (mrc);
+    return mrc;
 } */
 
 /*
@@ -3343,7 +3343,7 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
                                                      pdrgItem));
     _Pmpf(("XFolder::wpFormatDragItem: parent returned BOOL %d", brc));
 
-    return (brc);
+    return brc;
 
 } */
 
@@ -3365,7 +3365,7 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
                                            pdrgInfo, pdrgItem));
     _Pmpf(("XFolder::wpDrop: parent returned MRESULT 0x%lX", mrc));
 
-    return (mrc);
+    return mrc;
 } */
 
 /*
@@ -3567,7 +3567,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -3698,7 +3698,7 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

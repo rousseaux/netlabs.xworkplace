@@ -419,7 +419,7 @@ BOOL krnClassInitialized(PCSZ pcszClassName)
         krnUnlock();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -444,7 +444,7 @@ BOOL krnIsClassReady(PCSZ pcszClassName)
         krnUnlock();
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -765,7 +765,7 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -866,12 +866,29 @@ HAPP krnStartDaemon(VOID)
 
 BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    BOOL brc = FALSE;
     HWND hwnd;
     if (hwnd = krnQueryDaemonObject())
-        brc = WinPostMsg(hwnd, msg, mp1, mp2);
+        return WinPostMsg(hwnd, msg, mp1, mp2);
 
-    return (brc);
+    return FALSE;
+}
+
+/*
+ *@@ krnSendDaemonMsg:
+ *      this sends a message to the XWorkplace
+ *      Daemon (XWPDAEMN.EXE). If the daemon
+ *      is not running, returns NULL.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+MRESULT krnSendDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    HWND hwnd;
+    if (hwnd = krnQueryDaemonObject())
+        return WinSendMsg(hwnd, msg, mp1, mp2);
+
+    return 0;
 }
 
 /* ******************************************************************
@@ -1801,7 +1818,7 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
             mrc = G_pfnwpStatic(hwndObject, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1840,7 +1857,7 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     if (pKernelGlobals->hwndThread1Object)
         mrc = WinSendMsg(pKernelGlobals->hwndThread1Object, msg, mp1, mp2);
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1939,7 +1956,7 @@ static MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MP
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

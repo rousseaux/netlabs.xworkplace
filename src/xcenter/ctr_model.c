@@ -741,7 +741,7 @@ APIRET ctrpFindClass(PCSZ pcszWidgetClass,
         pNode = pNode->pNext;
     }
 
-    return (arc);    // can be NULL
+    return arc;    // can be NULL
 }
 
 typedef struct _CLASSTOINSERT
@@ -975,7 +975,7 @@ APIRET ctrpCheckClass(PCSZ pcszWidgetClass,
         ctrpUnlockClasses();
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1092,7 +1092,7 @@ APIRET ctrpCreateWidgetSetting(XCenter *somSelf,
     else
         arc = ERROR_INVALID_PARAMETER;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1221,7 +1221,7 @@ APIRET ctrpFindWidgetSetting(XCenter *somSelf,
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1342,7 +1342,7 @@ APIRET ctrpRemoveWidgetSetting(XCenter *somSelf,
         // now clean up
         ctrpFreeSettingData(ppSetting);
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************

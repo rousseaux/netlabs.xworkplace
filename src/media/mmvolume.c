@@ -348,7 +348,7 @@ MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
             mrc = pWinData->pfnwpFrameOriginal(hwndFrame, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

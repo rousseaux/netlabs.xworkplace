@@ -683,7 +683,7 @@ static MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

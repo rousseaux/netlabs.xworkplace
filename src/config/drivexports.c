@@ -129,4 +129,13 @@ int drv_sprintf(char *pBuf, const char *pcszFormat, ...)
     return (i);
 }
 
+/*
+ *@@ drv_strstr:
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
 
+char* drv_strstr(const char *string1, const char *string2)
+{
+    return strstr(string1, string2);
+}

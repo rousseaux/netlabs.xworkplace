@@ -404,7 +404,7 @@ SOM_Scope BOOL  SOMLINK xfsysM_wpclsQuerySettingsPageSize(M_XFldSystem *somSelf,
             pSizl->cy -= WARP4_NOTEBOOK_OFFSET;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

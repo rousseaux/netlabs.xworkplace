@@ -228,7 +228,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpSetRelatedObject(XWPTrashObject *somSelf,
 
         brc = TRUE;
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -357,7 +357,7 @@ SOM_Scope ULONG  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpValidateTrashObject");
 
     arc = trshValidateTrashObject(somSelf);
-    return (arc);
+    return arc;
 }
 
 /*
@@ -693,7 +693,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -747,7 +747,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
                                                                    hwndFrame,
                                                                    ulMenuId);
 
-    return (brc);
+    return brc;
 }
 
 /*

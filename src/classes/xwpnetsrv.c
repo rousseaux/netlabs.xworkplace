@@ -146,7 +146,7 @@ SOM_Scope BOOL  SOMLINK xsrv_wpSetupOnce(XWPNetServer *somSelf,
             brc = FALSE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

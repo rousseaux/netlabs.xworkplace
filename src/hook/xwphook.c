@@ -615,7 +615,7 @@ BOOL EXPENTRY hookKill(void)
         G_hmtxGlobalHotkeys = NULLHANDLE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -735,7 +735,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
     if (fSemOpened)
         DosCloseMutexSem(G_hmtxGlobalHotkeys);
 
-    return (arc);
+    return arc;
 }
 
 /******************************************************************
@@ -769,7 +769,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
                 mrc = G_pfnwpSwitchListOrig(hwnd, msg, mp1, mp2);
         }
 
-        return (mrc);
+        return mrc;
     }
 
     #pragma pack(1)
@@ -937,7 +937,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 #ifndef __NOPAGER__
 
 /*
- *@@ ProcessMsgsForXPager:
+ *@@ ProcessMsgsForWinlist:
  *      message processing which is needed for both
  *      hookInputHook and hookSendMsgHook.
  *
@@ -947,12 +947,13 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed lockup call, pager doesn't need this
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky odin windows
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky EPM
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: reworked for new winlist handling
  */
 
-VOID ProcessMsgsForXPager(HWND hwnd,
-                          ULONG msg,
-                          MPARAM mp1,
-                          MPARAM mp2)
+VOID ProcessMsgsForWinlist(HWND hwnd,
+                           ULONG msg,
+                           MPARAM mp1,
+                           MPARAM mp2)
 {
     // first check, just for speed
     if (    (msg == WM_CREATE)
@@ -963,6 +964,7 @@ VOID ProcessMsgsForXPager(HWND hwnd,
          || (   (msg == WM_SETWINDOWPARAMS)
              && (((PWNDPARAMS)mp1)->fsStatus & WPM_TEXT) // 0x0001
             )
+         || (msg == WM_SETICON)     // V0.9.19 (2002-05-28) [umoeller]
        )
     {
         if (    (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
@@ -982,31 +984,16 @@ VOID ProcessMsgsForXPager(HWND hwnd,
                                 // that's for EPM V0.9.7 (2001-01-19) [dk]
                    )
                 {
-                    // window creation/destruction:
-
-                    switch (msg)
-                    {
-                        case WM_CREATE:
-                        case WM_DESTROY:
-                        case WM_SETWINDOWPARAMS:
-                        case WM_WINDOWPOSCHANGED:
-                            WinPostMsg(G_HookData.hwndPagerClient,
-                                       PGRM_WINDOWCHANGED,
-                                       (MPARAM)hwnd,
-                                       (MPARAM)msg);
-                        break;
-
-                        case WM_ACTIVATE:
-                            if (mp1)
-                            {
-                                // new active window:
-                                WinPostMsg(G_HookData.hwndPagerClient,
-                                           PGRM_ACTIVECHANGED,
-                                           (MPARAM)hwnd,
-                                           0);
-                            }
-                        break;
-                    }
+                    if (msg == WM_SETICON)
+                        WinPostMsg(G_HookData.hwndDaemonObject,
+                                   XDM_ICONCHANGE,
+                                   (MPARAM)hwnd,
+                                   (MPARAM)mp1);        // HPOINTER
+                    else
+                        WinPostMsg(G_HookData.hwndDaemonObject,
+                                   XDM_WINDOWCHANGE,
+                                   (MPARAM)hwnd,
+                                   (MPARAM)msg);
                 } // end if (    (strcmp(szClass, ...
             } // end if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
         } // end if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
@@ -1058,19 +1045,15 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 
 #ifndef __NOPAGER__
 
-    if (    // XPager running?
-            (G_HookData.hwndPagerFrame)
-            // switching not disabled?
-         && (!G_HookData.cDisablePagerSwitching)
+    if (!G_HookData.cDisablePagerSwitching)
                 // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
-       )
     {
         // OK, go ahead:
         PSWP pswp;
 
-        ProcessMsgsForXPager(psmh->hwnd,
+        ProcessMsgsForWinlist(psmh->hwnd,
                              psmh->msg,
                              psmh->mp1,
                              psmh->mp2);
@@ -1199,7 +1182,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
     }
 #endif
 
-    // moved this here from ProcessMsgsForXPager;
+    // moved this here from ProcessMsgsForWinlist;
     // otherwise this is not picked up if XPager
     // isn't running V0.9.16 (2001-11-22) [umoeller]
     if (    (psmh->msg == WM_DESTROY)
@@ -1348,20 +1331,16 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         return FALSE;
 
 #ifndef __NOPAGER__
-    if (    // XPager running?
-            (G_HookData.hwndPagerFrame)
-            // switching not disabled?
-         && (!G_HookData.cDisablePagerSwitching)
+    if (!G_HookData.cDisablePagerSwitching)
                 // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
-       )
     {
         // OK, go ahead:
-        ProcessMsgsForXPager(pqmsg->hwnd,
-                             pqmsg->msg,
-                             pqmsg->mp1,
-                             pqmsg->mp2);
+        ProcessMsgsForWinlist(pqmsg->hwnd,
+                              pqmsg->msg,
+                              pqmsg->mp1,
+                              pqmsg->mp2);
     }
 #endif
 
@@ -1548,7 +1527,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 #endif
 
     // V0.9.14 (2001-08-21) [umoeller]
-    if (G_HookData.fClickWatches)
+    if (G_HookData.cClickWatches)
         switch (pqmsg->msg)
         {
             case WM_BUTTON1DOWN:
@@ -1566,7 +1545,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                            pqmsg->mp1);             // POINTS pointer pos
         }
 
-    return (brc);                           // msg not processed if FALSE
+    return brc;                           // msg not processed if FALSE
 }
 
 /******************************************************************
@@ -1657,6 +1636,6 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
         break; // WM_CHAR
     } // end switch(msg)
 
-    return (brc);
+    return brc;
 }
 

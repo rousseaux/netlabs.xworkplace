@@ -258,7 +258,7 @@ SOM_Scope BOOL  SOMLINK xpg_xwpDestroyStorage(XWPProgram *somSelf)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Cannot resolve WPAbstract::wpDestroyObject.");
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -326,7 +326,7 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
         END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -798,7 +798,7 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1142,7 +1142,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetAssociationType(XWPProgram *somSelf,
     ftypInvalidateCaches();
 #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1332,7 +1332,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
             _Pmpf((__FUNCTION__ ": returning %d", brc));
         #endif
 
-        return (brc);
+        return brc;
 
     } // end if (RunReplacement)
 
@@ -1415,7 +1415,7 @@ APIRET progStore(WPObject *somSelf,
                 *pfWeAllocated = TRUE;
             }
             else
-                return (arc);
+                return arc;
         }
         else
             *ppszTarget = NULL;
@@ -1635,7 +1635,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
         if (fLocked)
             _wpReleaseObjectMutexSem(somSelf);
 
-        return (brc);       // do not call parent, whatever happens
+        return brc;       // do not call parent, whatever happens
                             // V0.9.19 (2002-04-17) [umoeller]
     }
 

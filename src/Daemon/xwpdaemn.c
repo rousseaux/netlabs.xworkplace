@@ -234,16 +234,16 @@
 #define CENTER    8
 
 /*
- *@@ CLICKWATCH:
+ *@@ NOTIFYCLIENT:
  *
  *@@added V0.9.14 (2001-08-21) [umoeller]
  */
 
-typedef struct _CLICKWATCH
+typedef struct _NOTIFYCLIENT
 {
     HWND            hwndNotify;
     ULONG           ulMessage;
-} CLICKWATCH, *PCLICKWATCH;
+} NOTIFYCLIENT, *PNOTIFYCLIENT;
 
 /* ******************************************************************
  *
@@ -280,8 +280,10 @@ MPARAM          G_SlidingMenuMp1Saved = 0;
             // MP1 of WM_MOUSEMOVE posted back to hook; added for checking
 
 // click watches
-LINKLIST        G_llClickWatches;           // linked list of CLICKWATCH structs,
-                                            // auto-free
+LINKLIST        G_llClickWatches;           // linked list of NOTIFYCLIENT structs
+                                            // for click watches, auto-free
+LINKLIST        G_llWinlistWatches;         // linked list of NOTIFYCLIENT structs
+                                            // for winlist watches, auto-free
 
 // auto-move ptr data
 ULONG           G_ulMovingPtrTimer = 0;
@@ -315,6 +317,8 @@ POINTL          G_ptlScrollOrigin = {0},
 LONG            G_lScrollMode = ALL;
 HPOINTER        G_ahptrPointers[9] = {0};
 ULONG           G_ulAutoScrollTick = 0;
+
+THREADINFO      G_tiWinlistThread = {0};
 
 /* ******************************************************************
  *
@@ -448,7 +452,7 @@ BOOL dmnStartXPager(VOID)
         }
 #endif
 
-    return (brc);
+    return brc;
 }
 
 #ifndef __NOPAGER__
@@ -768,7 +772,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
 #endif
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1801,13 +1805,16 @@ static MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ ProcessAddClickWatch:
+ *@@ ProcessAddNotify:
  *      implementation for XDM_ADDCLICKWATCH in fnwpDaemonObject.
  *
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static MRESULT ProcessAddClickWatch(MPARAM mp1, MPARAM mp2)
+static MRESULT ProcessAddNotify(HWND hwndNotify,            // in: window to receive notifications
+                                ULONG ulMessage,            // in: msg to post
+                                PLINKLIST pllNotifies,      // in/out: list of CLIENTNOTIFY structs
+                                PULONG pcNotifies)          // out: no. of notifications on the list
 {
     MRESULT mrc = (MRESULT)FALSE;
 
@@ -1818,15 +1825,15 @@ static MRESULT ProcessAddClickWatch(MPARAM mp1, MPARAM mp2)
     {
         // no need to lock here, since the daemon object
         // is the only one using this list
-        PCLICKWATCH p = NULL;
+        PNOTIFYCLIENT p = NULL;
 
-        PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches),
+        PLISTNODE pNode = lstQueryFirstNode(pllNotifies),
                   pNodeFound = NULL;
         while (pNode)
         {
             PLISTNODE pNext = pNode->pNext;
-            p = (PCLICKWATCH)pNode->pItemData;
-            if (p->hwndNotify == (HWND)mp1)
+            p = (PNOTIFYCLIENT)pNode->pItemData;
+            if (p->hwndNotify == hwndNotify)
             {
                 pNodeFound = pNode;
                 break;
@@ -1835,12 +1842,12 @@ static MRESULT ProcessAddClickWatch(MPARAM mp1, MPARAM mp2)
             pNode = pNext;
         }
 
-        if ((ULONG)mp2 == -1)
+        if (ulMessage == -1)
         {
             // remove watch:
             if (pNodeFound)
             {
-                lstRemoveNode(&G_llClickWatches, pNodeFound);
+                lstRemoveNode(pllNotifies, pNodeFound);
                 // DosBeep(500, 100);
                 mrc = (MPARAM)TRUE;
             }
@@ -1850,19 +1857,21 @@ static MRESULT ProcessAddClickWatch(MPARAM mp1, MPARAM mp2)
             // add watch:
             if (!pNodeFound)
                 // we didn't already have one for this window:
-                p = NEW(CLICKWATCH);
+                p = NEW(NOTIFYCLIENT);
             // else: p still points to the item found
 
-            p->hwndNotify = (HWND)mp1;
-            p->ulMessage = (ULONG)mp2;
+            p->hwndNotify = hwndNotify;
+            p->ulMessage = ulMessage;
             if (!pNodeFound)
-                lstAppendItem(&G_llClickWatches, p);
+                lstAppendItem(pllNotifies, p);
 
             mrc = (MPARAM)TRUE;
         }
 
         // refresh flag for hook
-        G_pHookData->fClickWatches = (lstCountItems(&G_llClickWatches) > 0);
+        if (pcNotifies)
+            *pcNotifies = lstCountItems(pllNotifies);
+
     } // end if (G_pHookData)
 
     return mrc;
@@ -1881,7 +1890,7 @@ static VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
     while (pNode)
     {
         PLISTNODE pNext = pNode->pNext;
-        PCLICKWATCH p = (PCLICKWATCH)pNode->pItemData;
+        PNOTIFYCLIENT p = (PNOTIFYCLIENT)pNode->pItemData;
         if (WinIsWindow(G_habDaemon, p->hwndNotify))
             WinPostMsg(p->hwndNotify,
                        p->ulMessage,
@@ -2078,6 +2087,98 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
     } // if (!(arc = DosGetSharedMem(mp2,
 
     return (MRESULT)arc;
+}
+
+/*
+ *@@ ProcessNotifies:
+ *      called from ProcessWindowChange and
+ *      ProcessIconChange to notify all clients
+ *      on the notification list about a window
+ *      list change. This will post pNotify->ulMessage
+ *      plus ulMsgOffset to every window on the
+ *      notify list, with the given MPARAM's.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+static VOID ProcessNotifies(ULONG ulMsgOffset,
+                            MPARAM mp1,
+                            MPARAM mp2)
+{
+    PLISTNODE pNode = lstQueryFirstNode(&G_llWinlistWatches);
+    while (pNode)
+    {
+        PLISTNODE pNext = pNode->pNext;
+        PNOTIFYCLIENT pNotify = (PNOTIFYCLIENT)pNode->pItemData;
+        if (!WinIsWindow(G_habDaemon, pNotify->hwndNotify))
+            // window is no longer valid:
+            ProcessAddNotify(pNotify->hwndNotify,
+                             -1,
+                             &G_llWinlistWatches,
+                             &G_pHookData->cWinlistWatches);
+        else
+            WinPostMsg(pNotify->hwndNotify,
+                       pNotify->ulMessage + ulMsgOffset,
+                       mp1,
+                       mp2);
+
+        pNode = pNext;
+    }
+}
+
+/*
+ *@@ ProcessWindowChange:
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
+{
+    BOOL fPost = TRUE;
+
+    // refresh the list
+    switch ((ULONG)mp2)
+    {
+        case WM_CREATE:
+            fPost = pgrCreateWinInfo((HWND)mp1);
+            _Pmpf((__FUNCTION__ ": pgrCreateWinInfo 0x%lX", mp1));
+        break;
+
+        case WM_DESTROY:
+            pgrFreeWinInfo((HWND)mp1);
+        break;
+
+        case WM_SETWINDOWPARAMS:
+            fPost = pgrRefresh((HWND)mp1);
+        break;
+    }
+
+    if (fPost)
+    {
+        // process notifies
+        ProcessNotifies(0,     // message offset
+                        mp1,
+                        mp2);
+    }
+}
+
+/*
+ *@@ ProcessIconChange:
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
+{
+    if (pgrIconChange((HWND)mp1, (HPOINTER)mp2))
+    {
+        // process notifies
+        _Pmpf((__FUNCTION__ ": sending iconchange for hwnd 0x%lX",
+                mp1));
+        ProcessNotifies(1,     // message offset
+                        mp1,
+                        mp2);
+    }
 }
 
 /* ******************************************************************
@@ -2674,7 +2775,10 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_ADDCLICKWATCH:
-                mrc = ProcessAddClickWatch(mp1, mp2);
+                mrc = ProcessAddNotify((HWND)mp1,
+                                       (ULONG)mp2,
+                                       &G_llClickWatches,
+                                       &G_pHookData->cClickWatches);
             break;
 
             /*
@@ -2758,6 +2862,198 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 mrc = ProcessStartApp(mp1, mp2);
             break;
 
+            /*
+             *@@ XDM_ADDWINLISTWATCH:
+             *      similar to XDM_ADDCLICKWATCH, adds a
+             *      "window list watch" to the daemon.
+             *      This way any window can request to be
+             *      notified whenever the window list changes.
+             *
+             *      This must be sent, not posted, to
+             *      the daemon.
+             *
+             *      Parameters:
+             *
+             *      -- HWND mp1: window to be notified on
+             *         mouse clicks.
+             *
+             *      -- ULONG mp2: messages to be posted on
+             *         window list changes. Note that the
+             *         window specified in mp1 will receive
+             *         _this_ message plus this message + 1
+             *         (see below). If -1, the watch for mp1
+             *         is removed.
+             *
+             *      The message specified in mp2 will be posted
+             *      every time the window list changes with the
+             *      following parameters:
+             *
+             *      --  HWND mp1: the window that changed.
+             *
+             *      --  ULONG mp2: a message value indicating
+             *          the type of change. This will be one
+             *          of the following:
+             *
+             *          --  WM_CREATE: (HWND)mp1 was created.
+             *          --  WM_DESTROY: (HWND)mp1 was destroyed.
+             *          --  WM_SETWINDOWPARAMS: (HWND)mp1 had its
+             *              title or switch list entry changed.
+             *          --  WM_WINDOWPOSCHANGED: (HWND)mp1 had its
+             *              position changed.
+             *          --  WM_ACTIVATE: (HWND)mp1 was activated
+             *              or deactivated.
+             *
+             *      In addition, if a frame icon changes for an
+             *      entry in the private window list, the message
+             *      (ULONG)mp2 + 1 will be posted with the following
+             *      parameters:
+             *
+             *      --  HWND mp1: frame window that changed.
+             *
+             *      --  HPOINTER mp2: new icon for the frame.
+             *
+             *      Returns TRUE on success.
+             *
+             *@@added V0.9.19 (2002-05-28) [umoeller]
+             */
+
+            case XDM_ADDWINLISTWATCH:
+                if (    (G_pHookData)
+                     && (mrc = ProcessAddNotify((HWND)mp1,
+                                                (ULONG)mp2,
+                                                &G_llWinlistWatches,
+                                                &G_pHookData->cWinlistWatches))
+                   )
+                {
+                    if ((ULONG)mp2 != -1)
+                    {
+                        if (G_pHookData->cWinlistWatches == 1)
+                        {
+                            _Pmpf((__FUNCTION__ ": initializing winlist"));
+                            // we just added the first winlist watch:
+                            // then scan the full switch list so we
+                            // don't produce a flurry of messages on
+                            // the winlist thread
+                            pgrBuildWinlist();
+
+                            // and start the winlist thread if it's not running
+                            thrCreate(&G_tiWinlistThread,
+                                      fntWinlistThread,
+                                      NULL,
+                                      "WinList",
+                                      THRF_PMMSGQUEUE,
+                                      0);
+                        }
+                    }
+                    else if (!G_pHookData->cWinlistWatches)
+                    {
+                        // we just removed the last winlist watch:
+                        // stop winlist thread
+                        G_tiWinlistThread.fExit = TRUE;
+                    }
+                }
+            break;
+
+            /*
+             *@@ XDM_WINDOWCHANGE:
+             *      posted by ProcessMsgsForWinlist in the hook
+             *      or the window list thread (fntWinlistThread)
+             *      whenever important window changes are detected.
+             *      This applies only to the msgs listed below.
+             *
+             *      Parameters:
+             *
+             *      --  HWND mp1: window for which the msg came in.
+             *
+             *      --  ULONG mp2: message that came in.
+             *
+             *      mp2 will be one of the following messages:
+             *
+             *      --  WM_CREATE
+             *
+             *      --  WM_DESTROY
+             *
+             *      --  WM_SETWINDOWPARAMS
+             *
+             *      --  WM_WINDOWPOSCHANGED
+             *
+             *      --  WM_ACTIVATE
+             *
+             *@@added V0.9.19 (2002-05-07) [umoeller]
+             */
+
+            case XDM_WINDOWCHANGE:
+                if (G_pHookData->cWinlistWatches)
+                    ProcessWindowChange(mp1, mp2);
+            break;
+
+            /*
+             *@@ XDM_ICONCHANGE:
+             *      posted by ProcessMsgsForWinlist in the hook
+             *      or the window list thread (fntWinlistThread)
+             *      whenever a frame icon appears to have changed.
+             *
+             *      Parameters:
+             *
+             *      --  HWND mp1: window whose icon changed.
+             *
+             *      --  HPOINTER mp2: new icon.
+             *
+             *@@added V0.9.19 (2002-05-28) [umoeller]
+             */
+
+            case XDM_ICONCHANGE:
+                if (G_pHookData->cWinlistWatches)
+                    ProcessIconChange(mp1, mp2);
+            break;
+
+            /*
+             *@@ XDM_QUERYWINLIST:
+             *      causes the daemon to build a SWBLOCK
+             *      buffer with the current window list
+             *      in shared memory and give it to the
+             *      caller, who must specify his pid in
+             *      mp1.
+             *
+             *      This must be sent, not posted.
+             *
+             *      Parameters:
+             *
+             *      --  PID mp1: pid of sender.
+             *
+             *      --  mp2: unused.
+             *
+             *      Returns:
+             *
+             *      PSWBLOCK with the full window list,
+             *      or NULL on errors. The sender must
+             *      issue DosFreeMem on the pointer that
+             *      is returned.
+             *
+             *      Specialties:
+             *
+             *      --  PSWBLOCK->cswentries contains
+             *          the no. of items in the array.
+             *          This better be respected or
+             *          you'll bump behind the shared
+             *          memory that was allocated.
+             *
+             *      --  Each SWENTRY.SWCNTRL.hwndIcon is
+             *          set to the frame icon that has
+             *          been queried by the background
+             *          threads in the daemon so that the
+             *          caller is saved from having to
+             *          send WM_QUERYICON to each frame,
+             *          which can block with misbehaving
+             *          apps like PMMail.
+             *
+             *@@added V0.9.19 (2002-05-28) [umoeller]
+             */
+
+            case XDM_QUERYWINLIST:
+                mrc = (MRESULT)pgrQueryWinList((ULONG)mp1);
+            break;
+
             default:
                 mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
         }
@@ -2767,7 +3063,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         mrc = 0;
     } END_CATCH();
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2903,6 +3199,7 @@ int main(int argc, char *argv[])
 
         // initialize click-watch list V0.9.14 (2001-08-21) [umoeller]
         lstInit(&G_llClickWatches, TRUE);
+        lstInit(&G_llWinlistWatches, TRUE);
 
         // check security dummy parameter "-D"
         if (    (argc != 2)

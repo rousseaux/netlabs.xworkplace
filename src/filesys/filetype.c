@@ -998,7 +998,7 @@ static BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; l
         // not found:
         brc = (lstAppendItem(pll, pszNewType) != NULL);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1402,7 +1402,7 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
         ftypUnlockCaches();
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2021,7 +2021,7 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -2647,7 +2647,7 @@ static BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" 
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2960,7 +2960,7 @@ static BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
         ftypInvalidateCaches();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3056,7 +3056,7 @@ static BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
         #endif
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4505,7 +4505,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -4912,7 +4912,7 @@ static MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -5289,7 +5289,7 @@ MRESULT ftypDatafileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
     } // end switch (ulItemID)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -5462,7 +5462,7 @@ MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
 
     } // end switch (ulItemID)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -5623,7 +5623,7 @@ static APIRET ImportFilters(PDOMNODE pTypeElementThis,
     // else no filters: no problem,
     // we leave the existing intact, if any
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -5728,7 +5728,7 @@ static APIRET ImportTypes(PDOMNODE pParentElement,
         lstFree(&pllTypes);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -5858,7 +5858,7 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
         free(pszContent);
     }
 
-    return (arc);
+    return arc;
 }
 
 
@@ -5952,7 +5952,7 @@ static APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
                     pliAssoc->pszFileType));
     #endif
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -6044,7 +6044,7 @@ static APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
         *ppNewElement = pNodeReturn;
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -6160,7 +6160,7 @@ static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
     ClearAvailableTypes(NULLHANDLE,     // no cnr here
                         &llFileTypes);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -6251,7 +6251,7 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
     if (fLocked)
         ftypUnlockCaches();
 
-    return (arc);
+    return arc;
 }
 
 #endif

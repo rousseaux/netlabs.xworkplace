@@ -448,7 +448,7 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -534,7 +534,7 @@ static BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions 
         }
         free(pszSrch2);
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1479,7 +1479,7 @@ static MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
            mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2351,7 +2351,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     } END_CATCH();
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2494,7 +2494,7 @@ static MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MP
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2900,7 +2900,7 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -3195,7 +3195,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

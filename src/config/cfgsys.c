@@ -297,7 +297,7 @@ static MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -574,7 +574,7 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2351,7 +2351,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
        // re-enable controls
        cfgConfigInitPage(pnbp, 100);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2720,7 +2720,7 @@ MRESULT cfgSyslevelItemChanged(PNOTEBOOKPAGE pnbp,
     {
     } */
 
-    return (mrc);
+    return mrc;
 }
 
 

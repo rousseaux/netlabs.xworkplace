@@ -466,7 +466,7 @@ MRESULT WgtCreate(HWND hwnd,
     // pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     // pWidget->ulHelpPanelID = ID_XSH_WIDGET_WINLIST_MAIN;
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -544,7 +544,7 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         } // end if (pPrivate)
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -804,7 +804,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

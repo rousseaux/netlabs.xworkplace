@@ -171,10 +171,6 @@ typedef struct _PAGERWINDATA
 
 } PAGERWINDATA, *PPAGERWINDATA;
 
-#define TIMERID_PGR_ACTIVECHANGED   1
-#define TIMERID_PGR_FLASH           2
-#define TIMERID_PGR_REFRESHDIRTIES  3
-
 /* ******************************************************************
  *
  *   Global variables
@@ -255,46 +251,6 @@ VOID pgrUnlockHook(VOID)
         DosReleaseMutexSem(G_hmtxDisableSwitching);
     }
 }
-
-/* ******************************************************************
- *
- *   Debugging
- *
- ********************************************************************/
-
-#ifdef __DEBUG__
-
-/*
- *@@ DumpAllWindows:
- *
- */
-
-static VOID DumpAllWindows(VOID)
-{
-    if (pgrLockWinlist())
-    {
-        ULONG ul = 0;
-        PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
-        while (pNode)
-        {
-            PPAGERWININFO pEntryThis = (PPAGERWININFO)pNode->pItemData;
-            _Pmpf(("Dump %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
-                   ul++,
-                   pEntryThis->hwnd,
-                   pEntryThis->szSwtitle,
-                   pEntryThis->szClassName,
-                   pEntryThis->pid,
-                   pEntryThis->pid,
-                   pEntryThis->bWindowType));
-
-            pNode = pNode->pNext;
-        }
-
-        pgrUnlockWinlist();
-    }
-}
-
-#endif
 
 /* ******************************************************************
  *
@@ -671,7 +627,6 @@ static VOID RefreshPagerBmp(HWND hwnd,
     {
         PMINIWINDOW     paMiniWindows = NULL;
         ULONG           cWinInfos = 0;
-        BOOL            fDirtiesFound = FALSE;
 
         // lock the window list all the while we're doing this
         // V0.9.7 (2001-01-21) [umoeller]
@@ -722,7 +677,7 @@ static VOID RefreshPagerBmp(HWND hwnd,
                         BYTE    bTypeThis = pWinInfo->bWindowType;
 
                         // update window pos in window list
-                        WinQueryWindowPos(pWinInfo->hwnd,
+                        WinQueryWindowPos(pWinInfo->swctl.hwnd,
                                           &pWinInfo->swp);
 
                         // update the bWindowType status, as restoring
@@ -745,19 +700,12 @@ static VOID RefreshPagerBmp(HWND hwnd,
                                 bTypeThis = WINDOW_MAXIMIZE;
                         }
 
-                        if (bTypeThis == WINDOW_DIRTY)
-                        {
-                            // window is in unknown state:
-                            if (!pgrGetWinInfo(pWinInfo))
-                                fDirtiesFound = TRUE;
-                        }
-
                         if (    (bTypeThis == WINDOW_NORMAL)
                              || (bTypeThis == WINDOW_MAXIMIZE)
                              || (    (bTypeThis == WINDOW_STICKY)
                                   && (flPager & PGRFL_INCLUDESTICKY)
                                 )
-                             || (    (bTypeThis == WINDOW_DIRTY)
+                             || (    (bTypeThis == WINDOW_NIL)
                                   && (flPager & PGRFL_INCLUDESECONDARY)
                                 )
                            )
@@ -857,7 +805,7 @@ static VOID RefreshPagerBmp(HWND hwnd,
 
                         // draw window text too?
                         if (    (flPager & PGRFL_MINIWIN_TITLES)
-                             && (pcszSwtitle = pMiniThis->pWinInfo->szSwtitle)
+                             && (pcszSwtitle = pMiniThis->pWinInfo->swctl.szSwtitle)
                              && (ulSwtitleLen = strlen(pcszSwtitle))
                            )
                         {
@@ -886,14 +834,6 @@ static VOID RefreshPagerBmp(HWND hwnd,
 
         if (paMiniWindows)
             free(paMiniWindows);
-
-        // if we've found any windows with WINDOW_DIRTY set,
-        // go refresh windows later
-        if (fDirtiesFound)
-            WinPostMsg(G_pHookData->hwndPagerClient,
-                       PGRM_REFRESHDIRTIES,
-                       0,
-                       0);
     }
 }
 
@@ -1203,10 +1143,10 @@ static MRESULT PagerButtonClick(HWND hwnd,
                 // clicked on the currently active window
                 // because then there's no change...
                 // so post PGRM_ACTIVECHANGED anyway
-                WinPostMsg(hwnd,
-                           PGRM_ACTIVECHANGED,
+                WinPostMsg(G_pHookData->hwndDaemonObject,
+                           XDM_WINDOWCHANGE,
                            0,
-                           0);
+                           (MPARAM)WM_ACTIVATE);
 
                 // and refresh client right away because
                 // we have a delay with activechanged
@@ -1623,6 +1563,12 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             case WM_CREATE:
                 WinSetWindowPtr(hwnd, QWL_USER, mp1);
 
+                // make the pager a client of the switchlist thread
+                WinSendMsg(G_pHookData->hwndDaemonObject,
+                           XDM_ADDWINLISTWATCH,
+                           (MPARAM)hwnd,        // window to be notified
+                           (MPARAM)PGRM_WINDOWCHANGE);      // msg to post
+
                 // set offsets for current desktop
                 G_pHookData->ptlCurrentDesktop.x
                     =   (G_pHookData->PagerConfig.bStartX - 1)
@@ -1632,27 +1578,38 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                       * G_pHookData->szlEachDesktopFaked.cy;
             break;
 
+            case WM_DESTROY:
+                // un-make the pager a client of the switchlist thread
+                WinSendMsg(G_pHookData->hwndDaemonObject,
+                           XDM_ADDWINLISTWATCH,
+                           (MPARAM)hwnd,        // window to be notified
+                           (MPARAM)-1);         // remove
+            break;
+
             case WM_PAINT:
                 PagerPaint(hwnd);
             break;
 
             case WM_WINDOWPOSCHANGED:
-                if (((PSWP)mp1)->fl & SWP_SIZE)
+            {
+                PPAGERWINDATA pWinData;
+                if (    (((PSWP)mp1)->fl & SWP_SIZE)
+                     && (pWinData = (PPAGERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER))
+                     && (pWinData->szlClient.cx != ((PSWP)mp1)->cx)
+                     && (pWinData->szlClient.cy != ((PSWP)mp1)->cy)
+                   )
                 {
                     // size changed:
                     // then the bitmaps need a resize,
                     // destroy both the template and the client bitmaps
-                    PPAGERWINDATA pWinData;
-                    if (pWinData = (PPAGERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER))
-                    {
-                        DestroyBitmaps(pWinData);
+                    DestroyBitmaps(pWinData);
 
-                        pWinData->szlClient.cx = ((PSWP)mp1)->cx;
-                        pWinData->szlClient.cy = ((PSWP)mp1)->cy;
+                    pWinData->szlClient.cx = ((PSWP)mp1)->cx;
+                    pWinData->szlClient.cy = ((PSWP)mp1)->cy;
 
-                        // we have CS_SIZEREDRAW, so we get repainted now
-                    }
+                    // we have CS_SIZEREDRAW, so we get repainted now
                 }
+            }
             break;
 
             case WM_PRESPARAMCHANGED:
@@ -1670,6 +1627,31 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             case PGRM_POSITIONFRAME:
                 PagerPositionFrame();
+            break;
+
+            /*
+             *@@ PGRM_WINDOWCHANGE:
+             *      implementation for the pager being
+             *      a "window list notify" client (see
+             *      XDM_ADDWINLISTWATCH).
+             *
+             *@@added V0.9.19 (2002-05-28) [umoeller]
+             */
+
+            case PGRM_WINDOWCHANGE:
+                if ((ULONG)mp2 == WM_ACTIVATE)
+                    // at this point, start a timer only so we can
+                    // defer processing a bit to avoid flicker
+                    WinStartTimer(G_habDaemon,
+                                  hwnd,
+                                  TIMERID_PGR_ACTIVECHANGED,
+                                  200);     // 200 ms
+                else
+                    // refresh the client bitmap
+                    WinPostMsg(hwnd,
+                               PGRM_REFRESHCLIENT,
+                               (MPARAM)FALSE,
+                               0);
             break;
 
             /*
@@ -1751,6 +1733,7 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
              *@@added V0.9.19 (2002-05-07) [umoeller]
              */
 
+            /*
             case PGRM_WINDOWCHANGED:
                 switch ((ULONG)mp2)
                 {
@@ -1773,6 +1756,7 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                            (MPARAM)FALSE,
                            0);
             break;
+            */
 
             /*
              *@@ PGRM_ACTIVECHANGED:
@@ -1789,6 +1773,7 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
              *@@added V0.9.19 (2002-05-07) [umoeller]
              */
 
+            /*
             case PGRM_ACTIVECHANGED:
                 // at this point, start a timer only so we can
                 // defer processing a bit to avoid flicker
@@ -1797,29 +1782,7 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                               TIMERID_PGR_ACTIVECHANGED,
                               200);     // 200 ms
             break;
-
-            /*
-             *@@ PGRM_REFRESHDIRTIES:
-             *      refreshes all nodes on the window
-             *      list that have been marked as dirty.
-             *
-             *      This only gets posted from RefreshPagerBmp
-             *      when dirty windows were encountered so
-             *      we get a chance to refresh them maybe if
-             *      a window was still in the process of
-             *      building up.
-             *
-             *      No parameters.
-             *
-             *@@added V0.9.19 (2002-05-07) [umoeller]
-             */
-
-            case PGRM_REFRESHDIRTIES:
-                WinStartTimer(G_habDaemon,
-                              hwnd,
-                              TIMERID_PGR_REFRESHDIRTIES,
-                              300);
-            break;
+            */
 
             /*
              *@@ PGRM_WRAPAROUND:
@@ -1880,15 +1843,6 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                     case TIMERID_PGR_FLASH:
                         WinShowWindow(G_pHookData->hwndPagerFrame, FALSE);
-                    break;
-
-                    case TIMERID_PGR_REFRESHDIRTIES:
-                        if (pgrRefreshDirties())
-                            // refresh the client bitmap
-                            WinPostMsg(hwnd,
-                                       PGRM_REFRESHCLIENT,
-                                       (MPARAM)FALSE,
-                                       0);
                     break;
 
                     default:
@@ -2184,8 +2138,6 @@ BOOL pgrCreatePager(VOID)
                                 sizeof(DEFAULTFONT),
                                 DEFAULTFONT);
 
-                pgrBuildWinlist();
-
                 thrCreate(&G_tiMoveThread,
                           fntMoveThread,
                           NULL, // running flag
@@ -2211,7 +2163,7 @@ BOOL pgrCreatePager(VOID)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 

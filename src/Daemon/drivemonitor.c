@@ -292,7 +292,7 @@ BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,    // in: disk to be watched or
     if (fLocked)
         UnlockDrivesList();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -337,7 +337,7 @@ BOOL dmnQueryDisks(ULONG ulLogicalDrive,
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*

@@ -230,7 +230,7 @@ int utilOpenLog(VOID)
                             | OPEN_ACCESS_READWRITE);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -274,7 +274,7 @@ int utilWriteLog(const char *pcszFormat, ...)
             // written for next time
             G_ulOffset += cb;
     }
-    return (arc);
+    return arc;
 }
 
 /*

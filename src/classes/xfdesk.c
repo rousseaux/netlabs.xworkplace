@@ -311,7 +311,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpSetup(XFldDesktop *somSelf,
 
     dtpSetup(somSelf, pszSetupString);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -574,7 +574,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
 
     initLog("Leaving " __FUNCTION__);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -717,7 +717,7 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
             pSizl->cx = 260;    // and the width
 
     }
-    return (brc);
+    return brc;
 }
 
 /*

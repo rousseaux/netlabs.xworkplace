@@ -210,7 +210,7 @@ BOOL sndAddtlSoundsInstalled(HAB hab)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -280,7 +280,7 @@ BOOL sndInstallAddtlSounds(HAB hab,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 #endif
@@ -527,7 +527,7 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
         } // end if (WinProcessDlg(hwndDlg) == DID_OK)
     } // end if (hwndDlg)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -578,7 +578,7 @@ static BOOL LoadSoundSchemeFrom(PNOTEBOOKPAGE pnbp)
         PrfCloseProfile(hiniMMPM);
     } // end if (hiniMMPM)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -781,7 +781,7 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
             mrc = (*(pspd->pfnwpSoundFileOriginal))(hwndEntryField, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

@@ -24,12 +24,17 @@
  *
  *      This is all new with V0.9.7.
  *
+ *      With V0.9.19, the window list has been reworked
+ *      quite a bit to cooperate with the XWP daemon
+ *      in order to no longer block the PM SIQ in certain
+ *      situations.
+ *
  *@@added V0.9.7 (2000-12-06) [umoeller]
  *@@header "shared\center.h"
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -57,6 +62,7 @@ ew */
 
 #define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -110,8 +116,11 @@ ew */
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "config\drivdlgs.h"            // driver configuration dialogs
+
+#include "hook\xwphook.h"               // hook and daemon definitions
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -127,6 +136,9 @@ ew */
 #define THICK_BUTTON_BORDER     2
 
 #define ICON_TEXT_SPACING       4
+
+#define WLM_WINDOWCHANGE            (WM_USER + 200)
+#define WLM_ICONCHANGE              (WM_USER + 201)
 
 // string used for separating filters in setup strings;
 // this better not appear in window titles
@@ -184,6 +196,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
  */
 
 // resolved function pointers from XFLDR.DLL
+PCMNGETSTRING pcmnGetString = NULL;
 PCMNLOADDLG pcmnLoadDlg = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
@@ -200,10 +213,15 @@ PCTRISXCENTERVIEW pctrIsXCenterView = NULL;
 PDOSHMYPID pdoshMyPID = NULL;
 
 PDRV_SPRINTF pdrv_sprintf = NULL;
+PDRV_STRSTR pdrv_strstr = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHMANIPULATERGB pgpihManipulateRGB = NULL;
+PGPIHMEDIUMRGB pgpihMediumRGB = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
+
+PKRNPOSTDAEMONMSG pkrnPostDaemonMsg = NULL;
+PKRNSENDDAEMONMSG pkrnSendDaemonMsg = NULL;
 
 PLSTAPPENDITEM plstAppendItem = NULL;
 PLSTCLEAR plstClear = NULL;
@@ -235,6 +253,7 @@ PXSTRINIT pxstrInit = NULL;
 
 static const RESOLVEFUNCTION G_aImports[] =
     {
+        "cmnGetString", (PFN*)&pcmnGetString,
         "cmnLoadDlg", (PFN*)&pcmnLoadDlg,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
@@ -248,9 +267,13 @@ static const RESOLVEFUNCTION G_aImports[] =
         "ctrIsXCenterView", (PFN*)&pctrIsXCenterView,
         "doshMyPID", (PFN*)&pdoshMyPID,
         "drv_sprintf", (PFN*)&pdrv_sprintf,
+        "drv_strstr", (PFN*)&pdrv_strstr,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihManipulateRGB", (PFN*)&pgpihManipulateRGB,
+        "gpihMediumRGB", (PFN*)&pgpihMediumRGB,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
+        "krnPostDaemonMsg", (PFN*)&pkrnPostDaemonMsg,
+        "krnSendDaemonMsg", (PFN*)&pkrnSendDaemonMsg,
         "lstAppendItem", (PFN*)&plstAppendItem,
         "lstClear", (PFN*)&plstClear,
         "lstCountItems", (PFN*)&plstCountItems,
@@ -283,11 +306,6 @@ static const RESOLVEFUNCTION G_aImports[] =
  *
  ********************************************************************/
 
-/* #define WLF_SHOWBUTTON      0x0001
-#define WLF_LASTBUTTON      0x0002
-#define WLF_JUMPABLE        0x0004
-#define WLF_VISIBLE         0x0008 */
-
 /*
  *@@ WINLISTSETUP:
  *      instance data to which setup strings correspond.
@@ -319,6 +337,41 @@ typedef struct _WINLISTSETUP
 } WINLISTSETUP, *PWINLISTSETUP;
 
 /*
+ *@@ SWLISTENTRY:
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+typedef struct _WINLISTENTRY
+{
+    SWCNTRL     swctl;          // original switch list entry
+            /*
+              typedef struct _SWCNTRL {
+                HWND         hwnd;                   window handle
+                HWND         hwndIcon;               window-handle icon
+                                                     --> hacked to contain frame icon
+                HPROGRAM     hprog;                  program handle (not used)
+                PID          idProcess;              process identity
+                ULONG        idSession;              session identity
+                ULONG        uchVisibility;          visibility
+                                                     --> hacked to button index
+                ULONG        fbJump;                 jump indicator
+                                                     --> hacked to contain SWP.fl
+                CHAR         szSwtitle[MAXNAMEL+4];  switch-list control block title (null-terminated)
+                ULONG        bProgType;              program type
+              } SWCNTRL;
+            */
+
+    ULONG       flSWP;
+
+    // items not touched by FillEntry
+
+    HPOINTER    hptr;
+    ULONG       ulIndex;
+
+} WINLISTENTRY, *PWINLISTENTRY;
+
+/*
  *@@ WINLISTPRIVATE:
  *      more window data for the "Winlist" widget.
  *
@@ -341,10 +394,8 @@ typedef struct _WINLISTPRIVATE
                 hwndContextMenuShowing;
             // != 0 while context menu is showing (overriding standard widget)
 
-    ULONG       ulTimerID;              // if != NULLHANDLE, update timer is running
-
-    LINKLIST    llSwitchEntries;
-            // linked list of SWCNTRL's with items to be displayed.
+    LINKLIST    llWinList;
+            // linked list of SWLISTENTRY's with items to be displayed.
             // First item is displayed left, last item right.
             // This constructed from the current switch list, however:
             // -- filtered items are not on here;
@@ -354,38 +405,21 @@ typedef struct _WINLISTPRIVATE
             // WinQuerySwitchList reuses the existing items so that
             // sometimes new items appear randomly in the middle.
 
-            /*
-              typedef struct _SWCNTRL {
-                HWND         hwnd;                   window handle
-                HWND         hwndIcon;               window-handle icon --> hacked to contain frame icon
-                HPROGRAM     hprog;                  program handle
-                PID          idProcess;              process identity
-                ULONG        idSession;              session identity
-                ULONG        uchVisibility;          visibility --> hacked to button index
-                ULONG        fbJump;                 jump indicator
-                CHAR         szSwtitle[MAXNAMEL+4];  switch-list control block title (null-terminated)
-                ULONG        bProgType;              program type
-              } SWCNTRL;
-            */
-
             // Note that we hack the uchVisbility field to contain
             // the button index of the entry. We set this to -1
             // if no button is to be shown, just to make sure.
 
-    PSWCNTRL    pCtrlActive,
+    PWINLISTENTRY   pCtrlActive,
             // ptr into pswBlock for last active window or NULL if none
-                pCtrlSourceEmphasis,
+                    pCtrlSourceEmphasis,
             // ptr into pswBlock for button with source emphasis or NULL if none
-                pCtrlMenu;
+                    pCtrlMenu;
             // same as pCtrlSourceEmphasis; second field needed because WM_COMMAND
             // might come in after WM_MENUEND (for source emphasis)
 
     XSTRING     strTooltip;
             // tip for the tooltip control
 } WINLISTPRIVATE, *PWINLISTPRIVATE;
-
-ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
-                     PLINKLIST pllDirty);
 
 /* ******************************************************************
  *
@@ -481,7 +515,7 @@ VOID WwgtScanSetup(PCSZ pcszSetupString,
         ULONG ulSeparatorLength = strlen(G_pcszFilterSeparator);
         do
         {
-            if (pSep = strstr(pFilter, G_pcszFilterSeparator))
+            if (pSep = pdrv_strstr(pFilter, G_pcszFilterSeparator))
                 *pSep = '\0';
             // append copy filter; use plstStrDup to
             // allow auto-free of the list
@@ -961,7 +995,7 @@ static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1061,22 +1095,33 @@ VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
  *      all other parts to determine whether the
  *      specified switch control is filtered.
  *
+ *      Note: You must pass in an original switch
+ *      list entry, not one from the private list,
+ *      because we are hacking the entries on
+ *      that list.
+ *
  *@@changed V0.9.12 (2001-04-28) [umoeller]: now matching first chars of filter only
  *@@changed V0.9.16 (2001-11-25) [umoeller]: now ruling out desktop and all XCenters always
  */
 
 BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
                     HWND hwndXCenterFrame,  // in: pPrivate->pWidget->pGlobals->hwndFrame
-                    PSWCNTRL pCtrl)
+                    PSWCNTRL pCtrlOrig)     // in: un-hacked switch list entry
 {
     BOOL brc = FALSE;
 
     // rule out invisible tasklist entries
-    if ((pCtrl->uchVisibility & SWL_VISIBLE) == 0)
+    if (!(pCtrlOrig->uchVisibility & SWL_VISIBLE))
+    {
+        _Pmpf((__FUNCTION__ ": SWL_VISIBLE is null, filtering"));
         brc = TRUE;
+    }
     // rule out Desktop and all XCenters
-    else if (IsCtrlDesktopOrXCenter(pCtrl->hwnd))
+    else if (IsCtrlDesktopOrXCenter(pCtrlOrig->hwnd))
+    {
+        _Pmpf((__FUNCTION__ ": item is desktop or XCenter, filtering"));
         brc = TRUE;
+    }
     else
     {
         // go thru user-defined filters
@@ -1084,7 +1129,7 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
         while (pNode)
         {
             PSZ pszFilterThis = (PSZ)pNode->pItemData;
-            if (!strncmp(pCtrl->szSwtitle,
+            if (!strncmp(pCtrlOrig->szSwtitle,
                          pszFilterThis,
                          strlen(pszFilterThis)))    // match length of filter only
                                                     // V0.9.12 (2001-04-28) [umoeller]
@@ -1096,7 +1141,7 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
             pNode = pNode->pNext;
         }
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1123,8 +1168,125 @@ PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
     return (NULL);
 }
 
-#define SCANF_REDRAWSOME         0x0001
-#define SCANF_REDRAWALL             0x1000
+/*
+ *@@ FillEntry:
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+static VOID FillEntry(PWINLISTENTRY pCtrl,
+                      PSWCNTRL pOrigEntry)
+{
+    SWP     swp;
+
+    memcpy(&pCtrl->swctl, pOrigEntry, sizeof(SWCNTRL));
+    WinQueryWindowPos(pOrigEntry->hwnd,
+                      &swp);
+    pCtrl->flSWP = swp.fl;
+}
+
+/*
+ *@@ AddEntry:
+ *      adds a new window list entry for the given
+ *      SWCNTRL. Checks the filters list beforehand.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
+                       PSWCNTRL pOrigEntry)
+{
+    PWINLISTENTRY pCtrl = NULL;
+
+    _Pmpf((__FUNCTION__ ": %lX (%s)", pOrigEntry->hwnd, pOrigEntry->szSwtitle));
+
+    if (    (!IsCtrlFiltered(&pPrivate->Setup.llFilters,
+                             pPrivate->pWidget->pGlobals->hwndFrame,
+                             pOrigEntry))
+         && (pCtrl = plstMalloc(sizeof(WINLISTENTRY)))
+            // use XFLDR.DLL heap, this is auto-free
+       )
+    {
+        FillEntry(pCtrl, pOrigEntry);
+        pCtrl->hptr = pOrigEntry->hwndIcon;     // set by daemon probably
+        pCtrl->ulIndex = plstCountItems(&pPrivate->llWinList);
+
+        plstAppendItem(&pPrivate->llWinList,
+                       pCtrl);
+    }
+
+    return pCtrl;
+}
+
+/*
+ *@@ AddOrRefreshEntry:
+ *      adds or refreshes the window list entry for
+ *      hwnd. This calls AddEntry, which checks the
+ *      filters list.
+ *
+ *      Returns the new entry or NULL if the entry
+ *      was not added (probably because it's on the
+ *      filters list).
+ *
+ *      Note: Despite its name, this function may actually
+ *      _remove_ a node from the list if its title changed
+ *      and now matches a filter.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
+                                HWND hwnd,                // in: window to add entry for
+                                PBOOL pfRefreshAll)       // out: TRUE if item was added or removed
+{
+    HSWITCH hsw;
+    PWINLISTENTRY  pCtrl = NULL;
+
+    if (hsw = WinQuerySwitchHandle(hwnd, 0))
+    {
+        // check if the item is in the list
+        PLISTNODE pNode;
+        SWCNTRL ctl;
+        if (pNode = FindSwitchNodeFromHWND(&pPrivate->llWinList,
+                                           hwnd))
+        {
+            // yes: refresh title
+            pCtrl = (PWINLISTENTRY)pNode->pItemData;
+            WinQuerySwitchEntry(hsw, &ctl);
+
+            // now, the item might be filtered now because its
+            // title changed, so check filters list again
+            if (IsCtrlFiltered(&pPrivate->Setup.llFilters,
+                               pPrivate->pWidget->pGlobals->hwndFrame,
+                               &ctl))
+            {
+                // filtered: kill it!
+                plstRemoveNode(&pPrivate->llWinList, pNode);
+                pCtrl = NULL;
+                *pfRefreshAll = TRUE;
+            }
+            else
+                // not filtered:
+                FillEntry(pCtrl, &ctl);
+        }
+        else
+        {
+            // not in list: add it if it's not filtered
+            if (    (!WinQuerySwitchEntry(hsw, &ctl))
+                 && (pCtrl = AddEntry(pPrivate, &ctl))
+               )
+                *pfRefreshAll = TRUE;
+        }
+
+        // check if this is active
+        if (    (pCtrl)
+             && (pCtrl->swctl.hwnd == WinQueryActiveWindow(HWND_DESKTOP))
+           )
+            pPrivate->pCtrlActive = pCtrl;
+    }
+
+    return pCtrl;
+}
 
 /*
  *@@ ScanSwitchList:
@@ -1134,217 +1296,45 @@ PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
  *
  *      Gets called from WwgtCreate.
  *
- *      This does not repaint the widget, but instead
- *      returns a bitfield with the following flags:
- *
- *      -- SCANF_REDRAWSOME: only some nodes changed,
- *         and pllDirty has received a list of SWCNTRL
- *         nodes (pointing into the main list) to be
- *         repainted. This also happens if only the
- *         active window changed.
- *
- *      -- SCANF_REDRAWALL: redraw all (items added or
- *         removed or icons or texts changed).
- *
- *      -- 0: no repaint necessary.
- *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
  *@@changed V0.9.12 (2001-04-28) [umoeller]: didn't pick up changes in the filters, fixed
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten
  */
 
-ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
-                     PLINKLIST pllDirty)
+VOID ScanSwitchList(HWND hwndWidget,
+                    PWINLISTPRIVATE pPrivate)
 {
-    ULONG       flReturn = 0;
-    PSWBLOCK    pswBlock;
+    PSWBLOCK pswBlock;
+    ULONG pid, tid;
 
-    PLINKLIST   pllFilters = &pPrivate->Setup.llFilters;
+    plstClear(&pPrivate->llWinList);      // auto-free
 
-    if (pswBlock = pwinhQuerySwitchList(pPrivate->pWidget->habWidget))
+    // we used to call WinQuerySwitchList here, but let's ask
+    // the daemon for his list because he's got those entries in order
+    // V0.9.19 (2002-05-28) [umoeller]
+    if (    (WinQueryWindowProcess(hwndWidget,
+                                   &pid,
+                                   &tid))
+         && (pswBlock = (PSWBLOCK)pkrnSendDaemonMsg(XDM_QUERYWINLIST,
+                                                    (MPARAM)pid,
+                                                    0))
+        )
     {
-        // loop 1: go thru all items in the "show" list
-        // and see if they are still in the switch list.
+        // daemon has given us a block of shared memory:
+        ULONG ul;
 
-        ULONG       ul;
-        ULONG       ulIndexThis = 0;            // item counter
-        PSWCNTRL    pNewActive = NULL;
-        HWND        hwndCurrentActive = WinQueryActiveWindow(HWND_DESKTOP);
-
-        PLISTNODE pNode = plstQueryFirstNode(&pPrivate->llSwitchEntries);
-        while (pNode)
+        for (ul = 0;
+             ul < pswBlock->cswentry;
+             ++ul)
         {
-            PSWCNTRL    pCtrlInList = (PSWCNTRL)pNode->pItemData;
-            BOOL        fRemove = TRUE;
-            PLISTNODE   pNodeNext = pNode->pNext;
+            PSWCNTRL pswCtl = &pswBlock->aswentry[ul].swctl;
 
-            // check if this is still in the current switchlist
-            for (ul = 0;
-                 ul < pswBlock->cswentry;
-                 ul++)
-            {
-                PSWCNTRL pCtrlThis = &pswBlock->aswentry[ul].swctl;
-                if (    (pCtrlThis->hwnd == pCtrlInList->hwnd)
-                     && (pCtrlThis->idProcess == pCtrlInList->idProcess)
-                     && (pCtrlThis->idSession == pCtrlInList->idSession)
-                     && (pCtrlThis->bProgType == pCtrlInList->bProgType)
-                   )
-                {
-                    HWND hwndIcon;
-                    BOOL fDirty = FALSE;
+            AddEntry(pPrivate,
+                     pswCtl);
+        }
 
-                    // OK, this list node is still in the switchlist:
-                    // check if all the data is still valid
-                    if (strcmp(pCtrlThis->szSwtitle, pCtrlInList->szSwtitle))
-                    {
-                        // session title changed:
-                        memcpy(pCtrlInList->szSwtitle,
-                               pCtrlThis->szSwtitle,
-                               sizeof(pCtrlThis->szSwtitle));
-                        fDirty = TRUE;
-                    }
-
-                    // check icon
-                    hwndIcon = (HWND)WinSendMsg(pCtrlInList->hwnd,
-                                                WM_QUERYICON, 0, 0);
-                    if (hwndIcon != pCtrlInList->hwndIcon)
-                    {
-                        // icon changed:
-                        pCtrlInList->hwndIcon = hwndIcon;
-                        fDirty = TRUE;
-                    }
-
-                    // check if this item is now filtered;
-                    // maybe filters changed, or the title changed
-                    // in a way that a filter now applies
-                    // V0.9.12 (2001-04-28) [umoeller]
-                    if (!IsCtrlFiltered(pllFilters,
-                                        // pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
-                                        pPrivate->pWidget->pGlobals->hwndFrame,
-                                        pCtrlThis))
-                    {
-                        if (fDirty)
-                        {
-                            if (pllDirty)
-                                // caller wants dirty windows:
-                                plstAppendItem(pllDirty, pCtrlInList);
-                            flReturn |= SCANF_REDRAWSOME;
-                        }
-
-                        // so do not remove this list node
-                        fRemove = FALSE;
-                    }
-                    // else item filtered now: fRemove is still FALSE
-
-                    break;      // for switch list
-                }
-            }
-
-            if (fRemove)
-            {
-                if (pCtrlInList == pPrivate->pCtrlActive)
-                    // this was marked as active:
-                    pPrivate->pCtrlActive = NULL;
-
-                // alright, remove this
-                plstRemoveNode(&pPrivate->llSwitchEntries,
-                               pNode);           // auto-free
-                flReturn = SCANF_REDRAWALL;
-            }
-
-            // remember currently active switch entry
-            if (pCtrlInList->hwnd == hwndCurrentActive)
-                pNewActive = pCtrlInList;       // checked below
-
-            // re-number all list entries
-            if (!fRemove)
-                pCtrlInList->uchVisibility = ulIndexThis++;
-
-            pNode = pNodeNext;
-        } // end while (pNode)
-
-        // we can skip this check if we're redrawing anyway
-        if (0 == (flReturn & SCANF_REDRAWALL))
-        {
-            // loop 2: go thru all items in the switch list
-            // and see if they have already been added to
-            // the "show" list, if not filtered
-            ulIndexThis = plstCountItems(&pPrivate->llSwitchEntries);
-
-            for (ul = 0;
-                 ul < pswBlock->cswentry;
-                 ul++)
-            {
-                PSWCNTRL pCtrlThis = &pswBlock->aswentry[ul].swctl;
-
-                // apply filter
-                if (!IsCtrlFiltered(pllFilters,
-                                    // pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
-                                    pPrivate->pWidget->pGlobals->hwndFrame,
-                                    pCtrlThis))
-                {
-                    if (!FindSwitchNodeFromHWND(&pPrivate->llSwitchEntries,
-                                                pCtrlThis->hwnd))
-                    {
-                        // not in list yet:
-                        // append
-                        PSWCNTRL pNew = plstMalloc(sizeof(SWCNTRL));
-                                    // use XFLDR.DLL heap, this is auto-free
-                        if (pNew)
-                        {
-                            memcpy(pNew, pCtrlThis, sizeof(SWCNTRL));
-
-                            // hack fields
-                            pNew->uchVisibility = ulIndexThis++;
-
-                            // get its icon
-                            pNew->hwndIcon = (HWND)WinSendMsg(pCtrlThis->hwnd,
-                                                              WM_QUERYICON, 0, 0);
-
-                            plstAppendItem(&pPrivate->llSwitchEntries,
-                                           pNew);
-
-                            flReturn = SCANF_REDRAWALL;
-
-                            // check if this is active
-                            if (pNew->hwnd == hwndCurrentActive)
-                                pPrivate->pCtrlActive = pNew;
-                        }
-                    } // end if (!FindSwitchNodeFromHWND(pPrivate,
-                } // end if (!IsCtrlFiltered(pllFilters,
-            } // end for (ul = 0; ul < pswBlock->cswentry;
-
-            if (0 == (flReturn & SCANF_REDRAWALL))
-            {
-                // we're not redrawing all yet:
-                // check if active window changed
-                if (pPrivate->pCtrlActive != pNewActive)
-                {
-                    // changed:
-                    flReturn |= SCANF_REDRAWSOME;
-
-                    if (pllDirty)
-                    {
-                        // caller wants dirty windows:
-                        if (pPrivate->pCtrlActive)
-                            if (!FindSwitchNodeFromHWND(pllDirty, pPrivate->pCtrlActive->hwnd))
-                                // old active is not on dirty list yet: append
-                                plstAppendItem(pllDirty, pPrivate->pCtrlActive);
-
-                        if (pNewActive)
-                            if (!FindSwitchNodeFromHWND(pllDirty, pNewActive->hwnd))
-                                // new active is not on dirty list yet: append
-                                plstAppendItem(pllDirty, pNewActive);
-                    }
-
-                    pPrivate->pCtrlActive = pNewActive;
-                }
-            }
-        } // end if (0 == (flReturn & SCANF_REDRAWALL))
-
-        pwinhFree(pswBlock);
-    } // end if (pswBlock)
-
-    return (flReturn);
+        DosFreeMem(pswBlock);
+    }
 }
 
 /*
@@ -1358,16 +1348,16 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
 
-ULONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
-                   PRECTL prclSubclient,
-                   PSWCNTRL pCtrlThis,      // in: switch list entry; can be NULL
-                   PULONG pcxRegular)
+LONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
+                  PRECTL prclSubclient,
+                  PWINLISTENTRY pCtrlThis,  // in: switch list entry; can be NULL
+                  PLONG pcxRegular)
 {
-    ULONG cxPerButton = 0,
-          cShow = plstCountItems(&pPrivate->llSwitchEntries);
+    LONG    cxPerButton = 0;
+    ULONG   cShow;
 
     // avoid division by zero
-    if (cShow)
+    if (cShow = plstCountItems(&pPrivate->llWinList))
     {
         // max paint space:
         ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
@@ -1385,9 +1375,6 @@ ULONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
         {
             // no limit:
             *pcxRegular = cxPerButton;
-            /* if ((pCtrlThis) && (pCtrlThis->fbJump & WLF_LASTBUTTON))
-                // last button: add leftover space
-                cxPerButton += (ulCX % cShow); */ // @@todo
         }
     }
 
@@ -1405,31 +1392,31 @@ ULONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
  *      been scanned (ScanSwitchList).
  *
  *@@changed V0.9.9 (2001-02-08) [umoeller]: now centering icons on button vertically
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: added halftoning
  */
 
 VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
                  HPS hps,
                  PRECTL prclSubclient,     // in: paint area (exclusive)
-                 PSWCNTRL pCtrlThis,       // in: switch list entry to paint
+                 PWINLISTENTRY pCtrlThis,  // in: switch list entry to paint
                  HWND hwndActive,          // in: currently active window
-                 PULONG pulNextX)          // out: next X pos (ptr can be NULL)
+                 PLONG plNextX)            // out: next X pos (ptr can be NULL)
 {
     // colors for borders
     LONG    lLeft,
             lRight;
-    // LONG    xText = 0;
-    ULONG   cShow = plstCountItems(&pPrivate->llSwitchEntries);
+    ULONG   cShow;
 
     const XCENTERGLOBALS *pGlobals = pPrivate->pWidget->pGlobals;
 
     // avoid division by zero
-    if (cShow)
+    if (cShow = plstCountItems(&pPrivate->llWinList))
     {
         RECTL   rclButtonArea;
 
         LONG    lButtonColor = pPrivate->Setup.lcolBackground;
 
-        ULONG   cxRegular = 0,
+        LONG    cxRegular = 0,
                 cxThis = CalcButtonCX(pPrivate,
                                       prclSubclient,
                                       pCtrlThis,
@@ -1440,7 +1427,9 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
                             ? THICK_BUTTON_BORDER   // raised buttons
                             : 1;        // flat buttons
 
-        if ((hwndActive) && (pCtrlThis->hwnd == hwndActive))
+        BOOL    fHalftone;
+
+        if ((hwndActive) && (pCtrlThis->swctl.hwnd == hwndActive))
         {
             // active window: paint rect lowered
             lLeft = pGlobals->lcol3DDark;
@@ -1457,11 +1446,11 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
 
         // draw frame
         rclButtonArea.yBottom = prclSubclient->yBottom;
-        // calculate X coordinate: uchVisibility has
+        // calculate X coordinate: ulindex has
         // the button index as calculated by ScanSwitchList,
         // so we can multiply
         rclButtonArea.xLeft = prclSubclient->xLeft
-                              + (pCtrlThis->uchVisibility * cxRegular);
+                              + (pCtrlThis->ulIndex * cxRegular);
         rclButtonArea.yTop = prclSubclient->yTop - 1;
         rclButtonArea.xRight = rclButtonArea.xLeft + cxThis - 1;
 
@@ -1473,8 +1462,8 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
                          lRight);
 
         // store next X if caller wants it
-        if (pulNextX)
-            *pulNextX = rclButtonArea.xRight + 1;
+        if (plNextX)
+            *plNextX = rclButtonArea.xRight + 1;
 
         // source emphasis for this control?
         if (    (pPrivate->pCtrlSourceEmphasis)
@@ -1505,19 +1494,24 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
                     &rclButtonArea,         // exclusive
                     lButtonColor);
 
-        if (pCtrlThis->hwndIcon)
+        // draw halftone if minimized or hidden
+        fHalftone = (!!(pCtrlThis->flSWP & (SWP_MINIMIZE | SWP_HIDE)));
+
+        if (pCtrlThis->hptr)
         {
             // V0.9.9 (2001-02-08) [umoeller] now centering icons
             // on buttons vertically, if the widget is really tall
-            ULONG   cy = rclButtonArea.yTop - rclButtonArea.yBottom;
+            LONG   cy = rclButtonArea.yTop - rclButtonArea.yBottom;
             LONG    y = rclButtonArea.yBottom + (cy - pGlobals->cxMiniIcon) / 2;
             if (y < rclButtonArea.yBottom + 1)
                 y = rclButtonArea.yBottom + 1;
             WinDrawPointer(hps,
                            rclButtonArea.xLeft + 1,
                            y,
-                           pCtrlThis->hwndIcon,
-                           DP_MINI);
+                           pCtrlThis->hptr,
+                           (fHalftone)
+                            ? DP_MINI | DP_HALFTONED
+                            : DP_MINI);
             rclButtonArea.xLeft += pGlobals->cxMiniIcon;
         }
 
@@ -1528,13 +1522,18 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
         rclButtonArea.xRight--;
 
         // draw switch list title
+        GpiSetColor(hps,
+                    (fHalftone)
+                        ? pgpihMediumRGB(pPrivate->Setup.lcolForeground,
+                                         lButtonColor)
+                        : pPrivate->Setup.lcolForeground);
         WinDrawText(hps,
-                    strlen(pCtrlThis->szSwtitle),
-                    pCtrlThis->szSwtitle,
+                    strlen(pCtrlThis->swctl.szSwtitle),
+                    pCtrlThis->swctl.szSwtitle,
                     &rclButtonArea,
-                    pPrivate->Setup.lcolForeground,
                     0,
-                    DT_LEFT | DT_VCENTER);
+                    0,
+                    DT_LEFT | DT_VCENTER | DT_TEXTATTRS);
     }
 }
 
@@ -1550,12 +1549,10 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                   HPS hps,
                   PRECTL prclSubclient)       // in: max available space (exclusive)
 {
-    // ULONG   ul = 0;
-
     LONG    lcolBackground = pPrivate->Setup.lcolBackground;
 
     // count of entries in switch list:
-    ULONG   cEntries = plstCountItems(&pPrivate->llSwitchEntries);
+    ULONG   cEntries = plstCountItems(&pPrivate->llWinList);
 
     // make background color darker:
     pgpihManipulateRGB(&lcolBackground, 0.91);
@@ -1571,27 +1568,27 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
     {
         HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
-        ULONG   ulNextX = 0;
+        LONG    lNextX = 0;
 
         PLISTNODE pNode;
-        for (pNode = plstQueryFirstNode(&pPrivate->llSwitchEntries);
+        for (pNode = plstQueryFirstNode(&pPrivate->llWinList);
              pNode;
              pNode = pNode->pNext)
         {
-            PSWCNTRL pCtrlThis = (PSWCNTRL)pNode->pItemData;
+            PWINLISTENTRY pCtrlThis = (PWINLISTENTRY)pNode->pItemData;
             DrawOneCtrl(pPrivate,
                         hps,
                         prclSubclient,
                         pCtrlThis,
                         hwndActive,
-                        &ulNextX);
+                        &lNextX);
         }
 
-        if (ulNextX < prclSubclient->xRight)
+        if (lNextX < prclSubclient->xRight)
         {
             // we have leftover space at the right:
             RECTL rcl2;
-            rcl2.xLeft = ulNextX;
+            rcl2.xLeft = lNextX;
             rcl2.yBottom = prclSubclient->yBottom;
             rcl2.xRight = prclSubclient->xRight;
             rcl2.yTop = prclSubclient->yTop;
@@ -1600,84 +1597,6 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                         lcolBackground);
         }
     } // end if (cWins)
-}
-
-/*
- *@@ UpdateSwitchList:
- *      updates the switch list. Gets called from WwgtTimer
- *      to check if the switch list has changed... if so,
- *      we repaint parts of the window, or the entire window
- *      maybe.
- *
- *      This is now pretty efficient... it can even repaint
- *      single switch entries if its icon or title has changed.
- *
- *@@added V0.9.7 (2001-01-03) [umoeller]
- *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
- */
-
-VOID UpdateSwitchList(HWND hwnd,
-                      PWINLISTPRIVATE pPrivate)
-{
-    // re-scan the system switchlist and update the
-    // internal list... flRepaint tells us if and what
-    // we need to repaint, and llDirty receives a list
-    // of SWCNTRL nodes to repaint
-
-    LINKLIST llDirty;
-    ULONG flRepaint;
-    plstInit(&llDirty, FALSE);
-    flRepaint = ScanSwitchList(pPrivate,
-                               &llDirty);
-
-    if (flRepaint & SCANF_REDRAWALL)
-    {
-        // redraw all:
-        HPS hps;
-        if (hps = WinGetPS(hwnd))
-        {
-            RECTL rclSubclient;
-            GetPaintableRect(pPrivate, &rclSubclient);
-            pgpihSwitchToRGB(hps);
-            DrawAllCtrls(pPrivate,
-                         hps,
-                         &rclSubclient);
-            WinReleasePS(hps);
-        }
-    }
-    else if (    (flRepaint & SCANF_REDRAWSOME)
-              && (plstCountItems(&llDirty))
-            )
-    {
-        // redraw only some: go thru list then
-        HPS hps;
-        if (hps = WinGetPS(hwnd))
-        {
-            RECTL       rclSubclient;
-            PLISTNODE   pNode;
-            HWND        hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
-
-            GetPaintableRect(pPrivate, &rclSubclient);
-            pgpihSwitchToRGB(hps);
-
-            for (pNode = plstQueryFirstNode(&llDirty);
-                 pNode;
-                 pNode = pNode->pNext)
-            {
-                PSWCNTRL pCtrl = (PSWCNTRL)pNode->pItemData;
-                DrawOneCtrl(pPrivate,
-                            hps,
-                            &rclSubclient,     // in: paint area (exclusive)
-                            pCtrl,
-                            hwndActive,
-                            NULL);
-            }
-
-            WinReleasePS(hps);
-        }
-    }
-
-    plstClear(&llDirty);
 }
 
 /*
@@ -1691,20 +1610,19 @@ VOID UpdateSwitchList(HWND hwnd,
  *@@changed V0.9.11 (2001-04-18) [umoeller]: adjusted for new linklist
  */
 
-PSWCNTRL FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
-                           PPOINTL pptl,
-                           PRECTL prclSubclient)    // in: from GetPaintableRect
+PWINLISTENTRY FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
+                                PPOINTL pptl,
+                                PRECTL prclSubclient)    // in: from GetPaintableRect
 {
-    PSWCNTRL pCtrl = NULL;
+    PWINLISTENTRY pCtrl = NULL;
 
     if (WinPtInRect(pPrivate->pWidget->habWidget,
                     prclSubclient,
                     pptl))
     {
-        // ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
         // calc width for this button...
         // use standard with, except for last button
-        ULONG   cxRegular = 0,
+        LONG    cxRegular = 0,
                 cxThis = CalcButtonCX(pPrivate,
                                       prclSubclient,
                                       NULL,
@@ -1712,12 +1630,12 @@ PSWCNTRL FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
         // avoid division by zero
         if (cxRegular)
         {
-            ULONG   ulButtonIndex = pptl->x / cxRegular;
             // go find button with that index
-            PLISTNODE pNode = plstNodeFromIndex(&pPrivate->llSwitchEntries,
-                                                ulButtonIndex);
-            if (pNode)
-                pCtrl = (PSWCNTRL)pNode->pItemData;
+            ULONG   ulButtonIndex = pptl->x / cxRegular;
+            PLISTNODE pNode;
+            if (pNode = plstNodeFromIndex(&pPrivate->llWinList,
+                                          ulButtonIndex))
+                pCtrl = (PWINLISTENTRY)pNode->pItemData;
         }
     }
 
@@ -1729,6 +1647,7 @@ PSWCNTRL FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
  *      implementation for WM_CREATE.
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: adjusted for new linklist
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: adjusted for new daemon interface
  */
 
 MRESULT WwgtCreate(HWND hwnd,
@@ -1744,7 +1663,7 @@ MRESULT WwgtCreate(HWND hwnd,
 
     pxstrInit(&pPrivate->strTooltip, 0);
 
-    plstInit(&pPrivate->llSwitchEntries,
+    plstInit(&pPrivate->llWinList,
              TRUE);         // auto-free
 
     // initialize binary setup structure from setup string
@@ -1763,17 +1682,24 @@ MRESULT WwgtCreate(HWND hwnd,
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     pWidget->ulHelpPanelID = ID_XSH_WIDGET_WINLIST_MAIN;
 
-    // initialize switch list data
-    ScanSwitchList(pPrivate,
-                   NULL);
-
     // start update timer
-    pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+    /* pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
                                           hwnd,
                                           1,
-                                          250);
+                                          250); */
+            // V0.9.19 (2002-05-28) [umoeller]
 
-    return (mrc);
+    // use XWPDAEMN instead V0.9.19 (2002-05-28) [umoeller]
+    pkrnSendDaemonMsg(XDM_ADDWINLISTWATCH,
+                      (MPARAM)hwnd,
+                      (MPARAM)WLM_WINDOWCHANGE);
+
+    // initialize switch list data
+    // (must be after XDM_ADDWINLISTWATCH so we can receive
+    // the frame icons)
+    ScanSwitchList(hwnd, pPrivate);
+
+    return mrc;
 }
 
 /*
@@ -1837,8 +1763,7 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     WwgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
 
                     // rescan switch list, because filters might have changed
-                    ScanSwitchList(pPrivate,
-                                   NULL);
+                    ScanSwitchList(hwnd, pPrivate);
                     WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                 }
                 break;
@@ -1852,10 +1777,10 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     case TTN_NEEDTEXT:
                     {
-                        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                        RECTL       rclSubclient;
-                        POINTL      ptlPointer;
-                        PSWCNTRL    pCtrlClicked = 0;
+                        PTOOLTIPTEXT    pttt = (PTOOLTIPTEXT)mp2;
+                        RECTL           rclSubclient;
+                        POINTL          ptlPointer;
+                        PWINLISTENTRY   pCtrlClicked = NULL;
 
                         // find the winlist item under the mouse
                         WinQueryPointerPos(HWND_DESKTOP,
@@ -1865,17 +1790,18 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                            &ptlPointer,
                                            1);
                         GetPaintableRect(pPrivate, &rclSubclient);
-                        pCtrlClicked = FindCtrlFromPoint(pPrivate,
-                                                         &ptlPointer,
-                                                         &rclSubclient);
                         pxstrClear(&pPrivate->strTooltip);
-                        if (pCtrlClicked)
+
+                        if (pCtrlClicked = FindCtrlFromPoint(pPrivate,
+                                                             &ptlPointer,
+                                                             &rclSubclient))
                             pxstrcpy(&pPrivate->strTooltip,
-                                     pCtrlClicked->szSwtitle,
+                                     pCtrlClicked->swctl.szSwtitle,
                                      0);
                         else
                             pxstrcpy(&pPrivate->strTooltip,
-                                     "Window list",
+                                     pcmnGetString(ID_CRSI_WIDGET_WINDOWLIST),
+                                            // "Window list",
                                      0);
 
                         pttt->pszText = pPrivate->strTooltip.psz;
@@ -1887,7 +1813,7 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     } // end if (pPrivate)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1938,13 +1864,19 @@ VOID WwgtPaint(HWND hwnd)
 }
 
 /*
- *@@ WwgtTimer:
- *      implementation for WM_TIMER. This checks whether
- *      the switch list has changed and repaints everything
- *      or only the parts that have changed.
+ *@@ WwgtWindowChange:
+ *      implementation for WLM_WINDOWCHANGE and WLM_ICONCHANGE.
+ *
+ *      This is our implementation msg for XDM_ADDWINLISTWATCH
+ *      and gets posted from XWPDAEMN.EXE when the switch list
+ *      changes. As a result, we no longer need a timer for
+ *      scanning the switch list, since the daemon does that
+ *      for us now.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-VOID WwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
+VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PWINLISTPRIVATE pPrivate;
@@ -1952,10 +1884,117 @@ VOID WwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
          && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
        )
     {
-        if ((USHORT)mp1 == 1)
-            UpdateSwitchList(hwnd, pPrivate);
+        HWND            hwndRefresh = NULLHANDLE;
+        BOOL            fRedrawAll = FALSE;
+        PWINLISTENTRY   pCtrlRedraw = NULL;
+
+        if (msg == WLM_WINDOWCHANGE)
+        {
+            switch ((ULONG)mp2)
+            {
+                case WM_CREATE: // (HWND)mp1 was created.
+                case WM_SETWINDOWPARAMS:
+                case WM_WINDOWPOSCHANGED:
+                    hwndRefresh = (HWND)mp1;
+                break;
+
+                case WM_DESTROY: // (HWND)mp1 was destroyed.
+                {
+                    PLISTNODE pNode = plstQueryFirstNode(&pPrivate->llWinList);
+                    ULONG ulIndexThis = 0;
+                    _Pmpf((__FUNCTION__ ": WLM_WINDOWCHANGE %lX, WM_DESTROY", mp1));
+                    while (pNode)
+                    {
+                        // run thru the list, remove the item
+                        // corresponding to mp1, and renumber
+                        // all at the same time
+                        PLISTNODE pNext = pNode->pNext;
+                        pCtrlRedraw = (PWINLISTENTRY)pNode->pItemData;
+
+                        if (pCtrlRedraw->swctl.hwnd == (HWND)mp1)
+                        {
+                            plstRemoveNode(&pPrivate->llWinList,
+                                           pNode);           // auto-free
+                            fRedrawAll = TRUE;
+                        }
+                        else
+                            pCtrlRedraw->ulIndex = ulIndexThis++;
+
+                        pNode = pNext;
+                    }
+
+                    pCtrlRedraw = NULL;     // we've set fRedrawAll
+                }
+                break;
+
+                case WM_ACTIVATE: // (HWND)mp1 was activated or deactivated.
+                {
+                    if (pPrivate->pCtrlActive)
+                    {
+                        pCtrlRedraw = pPrivate->pCtrlActive;
+                        pPrivate->pCtrlActive = NULL;
+                    }
+
+                    if (!pCtrlRedraw)
+                        hwndRefresh = WinQueryActiveWindow(HWND_DESKTOP);
+                }
+                break;
+            }
+        } // if (msg == WLM_WINDOWCHANGE)
         else
-            pWidget->pfnwpDefWidgetProc(hwnd, WM_TIMER, mp1, mp2);
+        {
+            // WLM_ICONCHANGE:
+            PLISTNODE pNode;
+            if (pNode = FindSwitchNodeFromHWND(&pPrivate->llWinList,
+                                               (HWND)mp1))
+            {
+                // redraw icon then
+                pCtrlRedraw = (PWINLISTENTRY)pNode->pItemData;
+                pCtrlRedraw->hptr = (HPOINTER)mp2;
+                _Pmpf((__FUNCTION__ ": WLM_ICONCHANGE %lX (%s), %lX",
+                        mp1,
+                        pCtrlRedraw->swctl.szSwtitle,
+                        mp2));
+            }
+        }
+
+        if (hwndRefresh)
+            // one list item to refresh: find it in the list
+            pCtrlRedraw = AddOrRefreshEntry(pPrivate,
+                                            hwndRefresh,
+                                            &fRedrawAll);
+
+        // do we need to repaint?
+        if (pCtrlRedraw || fRedrawAll)
+        {
+            HPS hps;
+
+            // and repaint
+            if (hps = WinGetPS(hwnd))
+            {
+                RECTL       rclSubclient;
+                GetPaintableRect(pPrivate, &rclSubclient);
+                pgpihSwitchToRGB(hps);
+
+                // check if we need to redraw _everything_
+                // (entry added or removed, which changes the scaling)
+                if (fRedrawAll)
+                    DrawAllCtrls(pPrivate,
+                                 hps,
+                                 &rclSubclient);
+                else
+                    // redraw _one_ control only
+                    // (title or icon or active window changed)
+                    DrawOneCtrl(pPrivate,
+                                hps,
+                                &rclSubclient,
+                                pCtrlRedraw,
+                                WinQueryActiveWindow(HWND_DESKTOP),
+                                NULL);
+
+                WinReleasePS(hps);
+            }
+        }
     }
 }
 
@@ -1976,24 +2015,23 @@ VOID WwgtButton1Down(HWND hwnd,
          && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
        )
     {
-        POINTL      ptlClick;
-        PSWCNTRL    pCtrlClicked = 0;
-        RECTL       rclSubclient;
+        POINTL          ptlClick;
+        PWINLISTENTRY   pCtrlClicked;
+        RECTL           rclSubclient;
 
         ptlClick.x = SHORT1FROMMP(mp1);
         ptlClick.y = SHORT2FROMMP(mp1);
         GetPaintableRect(pPrivate, &rclSubclient);
 
         // find the button the user clicked on
-        pCtrlClicked = FindCtrlFromPoint(pPrivate,
-                                         &ptlClick,
-                                         &rclSubclient);
-        if (pCtrlClicked)
+        if (pCtrlClicked = FindCtrlFromPoint(pPrivate,
+                                             &ptlClick,
+                                             &rclSubclient))
         {
             // check the window's state...
             SWP swp;
             BOOL fRedrawActive = FALSE;
-            if (WinQueryWindowPos(pCtrlClicked->hwnd, &swp))
+            if (WinQueryWindowPos(pCtrlClicked->swctl.hwnd, &swp))
             {
                 if (swp.fl & (SWP_HIDE | SWP_MINIMIZE))
                 {
@@ -2007,14 +2045,14 @@ VOID WwgtButton1Down(HWND hwnd,
                     // the above never worked for maximized windows which
                     // were minimized... the trick is to switch to the
                     // program instead! V0.9.11 (2001-04-18) [umoeller]
-                    HSWITCH hsw = WinQuerySwitchHandle(pCtrlClicked->hwnd,
-                                                       pCtrlClicked->idProcess);
-                    if (hsw)
+                    HSWITCH hsw;
+                    if (hsw = WinQuerySwitchHandle(pCtrlClicked->swctl.hwnd,
+                                                   pCtrlClicked->swctl.idProcess))
                     {
                         // first check if the thing is hidden V0.9.12 (2001-05-12) [umoeller]
                         if (swp.fl & SWP_HIDE)
                             // yes: show V0.9.12 (2001-05-12) [umoeller]
-                            WinSetWindowPos(pCtrlClicked->hwnd,
+                            WinSetWindowPos(pCtrlClicked->swctl.hwnd,
                                             0, 0, 0, 0, 0,
                                             SWP_SHOW);
 
@@ -2022,7 +2060,7 @@ VOID WwgtButton1Down(HWND hwnd,
                         {
                             // OK, now we have the program active, but it's
                             // probably in the background...
-                            WinSetWindowPos(pCtrlClicked->hwnd,
+                            WinSetWindowPos(pCtrlClicked->swctl.hwnd,
                                             HWND_TOP,
                                             0, 0, 0, 0,
                                             SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
@@ -2036,7 +2074,7 @@ VOID WwgtButton1Down(HWND hwnd,
                     // see if it's active
                     HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
-                    if (hwndActive == pCtrlClicked->hwnd)
+                    if (hwndActive == pCtrlClicked->swctl.hwnd)
                     {
                         // window is active:
                         // try minimize...
@@ -2046,7 +2084,7 @@ VOID WwgtButton1Down(HWND hwnd,
                         // if the window actually supports that (usually
                         // the PM frame class ignores this if the window
                         // doesn't have the minimize button).
-                        if (WinPostMsg(pCtrlClicked->hwnd,
+                        if (WinPostMsg(pCtrlClicked->swctl.hwnd,
                                        WM_SYSCOMMAND,
                                        (MPARAM)SC_MINIMIZE,
                                        MPFROM2SHORT(CMDSRC_OTHER, TRUE)))
@@ -2054,17 +2092,17 @@ VOID WwgtButton1Down(HWND hwnd,
                     }
                     else
                         // not minimized, not active:
-                        if (WinSetActiveWindow(HWND_DESKTOP, pCtrlClicked->hwnd))
+                        if (WinSetActiveWindow(HWND_DESKTOP, pCtrlClicked->swctl.hwnd))
                             fRedrawActive = TRUE;
                 }
             }
 
             if (fRedrawActive)
             {
-                HPS hps = WinGetPS(hwnd);
-                if (hps)
+                HPS hps;
+                if (hps = WinGetPS(hwnd))
                 {
-                    PSWCNTRL    pOldActive = pPrivate->pCtrlActive;
+                    PWINLISTENTRY pOldActive = pPrivate->pCtrlActive;
                     pgpihSwitchToRGB(hps);
 
                     // store new active ctrl
@@ -2076,14 +2114,14 @@ VOID WwgtButton1Down(HWND hwnd,
                                     hps,
                                     &rclSubclient,
                                     pOldActive,         // old active
-                                    pCtrlClicked->hwnd,     // active wnd
+                                    pCtrlClicked->swctl.hwnd,     // active wnd
                                     NULL);
 
                     DrawOneCtrl(pPrivate,
                                 hps,
                                 &rclSubclient,
                                 pCtrlClicked,       // new active
-                                pCtrlClicked->hwnd,     // active wnd
+                                pCtrlClicked->swctl.hwnd,     // active wnd
                                 NULL);
 
                     WinReleasePS(hps);
@@ -2116,7 +2154,7 @@ BOOL IsEnabled(HWND hwndMenu, USHORT usItem)
             brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2127,23 +2165,22 @@ BOOL IsEnabled(HWND hwndMenu, USHORT usItem)
 
 VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
 {
-    PSZ apszMenuItems[] =
+    static const ULONG aulMenuItems[] =
             {
-                "~Restore",     // 1000
-                "~Move",        // 1001
-                "~Size",        // 1002
-                "Mi~nimize",    // 1003
-                "Ma~ximize",    // 1004
-                "~Hide",        // 1005
-                "",             // separator
-                "~Close",       // 1007
-                "",             // separator
-                "~Kill process ", // 1009
-                ""              // separator
+                ID_CRSI_WINLIST_RESTORE, // "~Restore",     // 1000
+                ID_CRSI_WINLIST_MOVE, // "~Move",        // 1001
+                ID_CRSI_WINLIST_SIZE, // "~Size",        // 1002
+                ID_CRSI_WINLIST_MINIMIZE, // "Mi~nimize",    // 1003
+                ID_CRSI_WINLIST_MAXIMIZE, // "Ma~ximize",    // 1004
+                ID_CRSI_WINLIST_HIDE, // "~Hide",        // 1005
+                0, // "",             // separator
+                ID_XSSI_CLOSE, //  "~Close",       // 1007
+                0, // "",             // separator
+                ID_CRSI_WINLIST_KILL1, // "~Kill process ", // 1009
+                0, // ""              // separator
             };
 
-    pPrivate->hwndContextMenuHacked = WinCreateMenu(HWND_DESKTOP, NULL);
-    if (pPrivate->hwndContextMenuHacked)
+    if (pPrivate->hwndContextMenuHacked = WinCreateMenu(HWND_DESKTOP, NULL))
     {
         // insert window-related menu items from above array
         MENUITEM mi = {0};
@@ -2153,20 +2190,24 @@ VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
         mi.afStyle = MIS_TEXT;
 
         for (s = 0;
-             s < sizeof(apszMenuItems) / sizeof(apszMenuItems[0]);
+             s < sizeof(aulMenuItems) / sizeof(aulMenuItems[0]);
              s++)
         {
+            PCSZ pcsz = "";
             mi.id = 1000 + s;
-            if (apszMenuItems[s][0] == '\0')
+            if (!aulMenuItems[s])
                 // separator:
                 mi.afStyle = MIS_SEPARATOR;
             else
+            {
                 mi.afStyle = MIS_TEXT;
+                pcsz = pcmnGetString(aulMenuItems[s]);
+            }
 
             src = SHORT1FROMMR(WinSendMsg(pPrivate->hwndContextMenuHacked,
                                           MM_INSERTITEM,
                                           (MPARAM)&mi,
-                                          (MPARAM)apszMenuItems[s]));
+                                          (MPARAM)pcsz));
         }
 
         // now copy the old context menu as submenu;
@@ -2175,7 +2216,7 @@ VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
         // the window list is empty, and PMMERGE crashes then
         pwinhMergeIntoSubMenu(pPrivate->hwndContextMenuHacked,
                               MIT_END,
-                              "Window list widget",
+                              pcmnGetString(ID_CRSI_WINLIST_WIDGET), // "Window list widget",
                               2000,
                               pPrivate->pWidget->hwndContextMenu);
     }
@@ -2203,10 +2244,10 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
     {
         if (pWidget->hwndContextMenu)
         {
-            POINTL  ptlScreen,
-                    ptlWidget;
-            RECTL   rclSubclient;
-            PSWCNTRL pCtlUnderMouse = NULL;
+            POINTL          ptlScreen,
+                            ptlWidget;
+            RECTL           rclSubclient;
+            PWINLISTENTRY   pCtlUnderMouse = NULL;
 
             WinQueryPointerPos(HWND_DESKTOP, &ptlScreen);
             // convert to widget coords
@@ -2224,28 +2265,26 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
             } // if (!pPrivate->fContextMenuHacked)
 
             GetPaintableRect(pPrivate, &rclSubclient);
-            pCtlUnderMouse = FindCtrlFromPoint(pPrivate,
-                                               &ptlWidget,
-                                               &rclSubclient);
             pPrivate->hwndContextMenuShowing = NULLHANDLE;
-            if (pCtlUnderMouse)
-            {
-                // draw source emphasis
-                // ULONG ulStyle;
-                HWND hwndSysMenu;
-                BOOL fEnableRestore = FALSE,
-                     fEnableMove = FALSE,
-                     fEnableSize = FALSE,
-                     fEnableMinimize = FALSE,
-                     fEnableMaximize = FALSE,
-                     fEnableHide = FALSE,
-                     fEnableKill = FALSE;
-                // PPIB ppib;
-                // PTIB ptib;
-                CHAR szKillText[60] = "~Kill process";
 
-                HPS hps = WinGetPS(hwnd);
-                if (hps)
+            // did user click on window list button?
+            if (pCtlUnderMouse = FindCtrlFromPoint(pPrivate,
+                                                   &ptlWidget,
+                                                   &rclSubclient))
+            {
+                // yes: draw source emphasis
+                HWND    hwndSysMenu;
+                BOOL    fEnableRestore = FALSE,
+                        fEnableMove = FALSE,
+                        fEnableSize = FALSE,
+                        fEnableMinimize = FALSE,
+                        fEnableMaximize = FALSE,
+                        fEnableHide = FALSE,
+                        fEnableKill = FALSE;
+                CHAR    szKillText[200] = "?";
+
+                HPS hps;
+                if (hps = WinGetPS(hwnd))
                 {
                     pgpihSwitchToRGB(hps);
                     pPrivate->pCtrlSourceEmphasis = pCtlUnderMouse;
@@ -2272,13 +2311,13 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 //    which always has the same ID (FID_MINMAX), and we don't
                 //    know what it looks like.
                 // -- In general, the system menu has the correct items
-                //    enabled (SC_MINIMIZE and SC_MAXIMIZE). Howver, these
+                //    enabled (SC_MINIMIZE and SC_MAXIMIZE). However, these
                 //    items are only refreshed when the sysmenu is made
                 //    visible... so we have to query QWL_STYLE as well.
-                hwndSysMenu = WinWindowFromID(pCtlUnderMouse->hwnd, FID_SYSMENU);
-                if (hwndSysMenu)
+                if (hwndSysMenu = WinWindowFromID(pCtlUnderMouse->swctl.hwnd,
+                                                  FID_SYSMENU))
                 {
-                    ULONG ulStyle = WinQueryWindowULong(pCtlUnderMouse->hwnd,
+                    ULONG ulStyle = WinQueryWindowULong(pCtlUnderMouse->swctl.hwnd,
                                                         QWL_STYLE);
                     if (    (ulStyle & (WS_MINIMIZED | WS_MAXIMIZED))
                          || ((ulStyle & WS_VISIBLE) == 0)
@@ -2292,7 +2331,6 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         fEnableMinimize = IsEnabled(hwndSysMenu, SC_MINIMIZE);
                     if ((ulStyle & WS_MAXIMIZED) == 0)
                         fEnableMaximize = IsEnabled(hwndSysMenu, SC_MAXIMIZE);
-
                     if ((ulStyle & WS_VISIBLE))
                         fEnableHide     = IsEnabled(hwndSysMenu, SC_HIDE);
                 }
@@ -2317,14 +2355,18 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                   fEnableHide);
 
                 // enable "kill process" only if this is not the WPS
-                if (pCtlUnderMouse->idProcess != pdoshMyPID())
+                if (pCtlUnderMouse->swctl.idProcess != pdoshMyPID())
                 {
                     // not WPS:
                     fEnableKill = TRUE;
                     pdrv_sprintf(szKillText,
-                            "~Kill process (PID 0x%lX)",
-                            pCtlUnderMouse->idProcess);
+                                 pcmnGetString(ID_CRSI_WINLIST_KILL2),
+                                    // "~Kill process (PID 0x%lX)",
+                                 pCtlUnderMouse->swctl.idProcess);
                 }
+                else
+                    strcpy(szKillText,
+                           pcmnGetString(ID_CRSI_WINLIST_KILL1));
 
                 WinSetMenuItemText(pPrivate->hwndContextMenuHacked,
                                    1009,
@@ -2354,7 +2396,7 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
         } // if (pWidget->hwndContextMenu)
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2366,25 +2408,23 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
         BOOL fCallDefault = TRUE;
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        PWINLISTPRIVATE pPrivate;
+        if (    (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+             && (pPrivate->hwndContextMenuShowing)
+             && (pPrivate->hwndContextMenuShowing == (HWND)mp2)
+           )
         {
-            if (pPrivate->hwndContextMenuShowing)
-                // we're showing our private context menu:
-                if (pPrivate->hwndContextMenuShowing == (HWND)mp2)
-                {
-                    // this menu is ending:
-                    fCallDefault = FALSE;
-                    pPrivate->hwndContextMenuShowing = NULLHANDLE;
-                    pPrivate->pCtrlSourceEmphasis = NULL;
-                    // remove source emphasis... the win list might have
-                    // changed in between, so just repaint all
-                    WinInvalidateRect(hwnd, NULL, FALSE);
-                }
+            // this menu is ending:
+            fCallDefault = FALSE;
+            pPrivate->hwndContextMenuShowing = NULLHANDLE;
+            pPrivate->pCtrlSourceEmphasis = NULL;
+            // remove source emphasis... the win list might have
+            // changed in between, so just repaint all
+            WinInvalidateRect(hwnd, NULL, FALSE);
         }
 
         if (fCallDefault)
@@ -2400,12 +2440,12 @@ VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
         BOOL fCallDefault = TRUE;
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        PWINLISTPRIVATE pPrivate;
+        if (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
         {
             USHORT usCmd = (USHORT)mp1;
             if (    (usCmd >= 1000)
@@ -2460,12 +2500,12 @@ VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                         case 1009:
                             DosKillProcess(DKP_PROCESS,
-                                           pPrivate->pCtrlMenu->idProcess);
+                                           pPrivate->pCtrlMenu->swctl.idProcess);
                         break;
                     }
 
                     if (usSysCommand)
-                        WinPostMsg(pPrivate->pCtrlMenu->hwnd,
+                        WinPostMsg(pPrivate->pCtrlMenu->swctl.hwnd,
                                    WM_SYSCOMMAND,
                                    (MPARAM)usSysCommand,
                                    MPFROM2SHORT(CMDSRC_OTHER,
@@ -2571,15 +2611,20 @@ MRESULT WwgtDestroy(HWND hwnd)
          && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
        )
     {
-        if (pPrivate->ulTimerID)
+        /* if (pPrivate->ulTimerID)
             ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
                            hwnd,
-                           pPrivate->ulTimerID);
+                           pPrivate->ulTimerID); */
+
+        // stop winlist watch V0.9.19 (2002-05-28) [umoeller]
+        pkrnSendDaemonMsg(XDM_ADDWINLISTWATCH,
+                          (MPARAM)hwnd,
+                          (MPARAM)-1);
 
         if (pPrivate->hwndContextMenuHacked)
             WinDestroyWindow(pPrivate->hwndContextMenuHacked);
 
-        plstClear(&pPrivate->llSwitchEntries);      // auto-free
+        plstClear(&pPrivate->llWinList);      // auto-free
 
         WwgtClearSetup(&pPrivate->Setup);
 
@@ -2591,7 +2636,7 @@ MRESULT WwgtDestroy(HWND hwnd)
         mrc = pWidget->pfnwpDefWidgetProc(hwnd, WM_DESTROY, 0, 0);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2663,8 +2708,19 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          *      update timer --> check for updates.
          */
 
-        case WM_TIMER:
+        /* case WM_TIMER:
             WwgtTimer(hwnd, mp1, mp2);
+        break; */
+
+        /*
+         *@@ WLM_WINDOWCHANGE:
+         *
+         *@@added V0.9.19 (2002-05-28) [umoeller]
+         */
+
+        case WLM_WINDOWCHANGE:
+        case WLM_ICONCHANGE:
+            WwgtWindowChange(hwnd, msg, mp1, mp2);
         break;
 
         /*
@@ -2733,7 +2789,7 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

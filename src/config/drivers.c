@@ -1210,7 +1210,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

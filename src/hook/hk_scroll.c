@@ -271,7 +271,7 @@ BOOL WMMouseMove_MB3ScrollLineWise(PSCROLLDATA pScrollData,   // in: scroll data
                                     SB_ENDSCROLL)))
             brc = TRUE;
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -549,7 +549,7 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
         } // end if (mrThumbRange)
     } // end if (lScrollBarSizePels)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -719,7 +719,7 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -793,7 +793,7 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
                        0);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1075,5 +1075,5 @@ BOOL HandleMB3Msgs(PQMSG pqmsg,
         break;
     }
 
-    return (brc);
+    return brc;
 }

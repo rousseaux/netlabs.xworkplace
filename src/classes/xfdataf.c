@@ -167,7 +167,7 @@ SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -356,7 +356,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
         brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
                                                             ulReserved);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -624,7 +624,7 @@ BOOL _System xdf_wpModifyMenu(XFldDataFile *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 #endif

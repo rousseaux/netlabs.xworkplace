@@ -635,6 +635,6 @@ SOM_Scope BOOL  SOMLINK xmsM_wpclsQuerySettingsPageSize(M_XWPMouse *somSelf,
             pSizl->cy = lCompCY;
     }
 
-    return (brc);
+    return brc;
 }
 

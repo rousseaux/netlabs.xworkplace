@@ -343,7 +343,7 @@ SOM_Scope BOOL  SOMLINK xwlist_wpMenuItemSelected(XWPClassList *somSelf,
                                                                 hwndFrame,
                                                                 ulMenuId);
 
-    return (brc);
+    return brc;
 }
 
 /*

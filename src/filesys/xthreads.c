@@ -271,7 +271,7 @@ BOOL xthrLockAwakeObjectsList(VOID)
         brc = !WinRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
             // WinRequestMutexSem works even if the thread has no message queue
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -691,7 +691,7 @@ BOOL xthrPostWorkerMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                    msg, mp1, mp2);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -715,7 +715,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1055,7 +1055,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
     } // end switch
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1617,7 +1617,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
     G_CurFileThreadMsg = 0;
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2012,7 +2012,7 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2274,7 +2274,7 @@ BOOL xthrStartThreads(VOID)
         krnUnlockGlobals();
     }
 
-    return (brc);
+    return brc;
 }
 
 

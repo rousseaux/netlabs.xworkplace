@@ -536,7 +536,7 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
         _wpSaveDeferred(pSettingsTemp->somSelf);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -567,7 +567,7 @@ BOOL ctrDisplayHelp(PCXCENTERGLOBALS pGlobals,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1162,7 +1162,7 @@ static BOOL DwgtRender(HWND hwnd,
                 _wpReleaseObjectMutexSem(Lock.pObject);
         } // end if (pXCenterData)
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1313,7 +1313,7 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

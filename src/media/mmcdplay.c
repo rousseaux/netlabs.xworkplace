@@ -219,7 +219,7 @@ static MRESULT ButtonCreate(HWND hwnd)
     else
         mrc = (MPARAM)TRUE;
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -565,7 +565,7 @@ static MRESULT EXPENTRY fnwpFlatButton(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -667,7 +667,7 @@ static MRESULT CDCreate(HWND hwnd,
         pWinData->ulSeconds = pPlayer->ulSecondsInTrack;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1115,7 +1115,7 @@ static MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPA
     }
     CATCH(excpt1) {} END_CATCH();
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1161,7 +1161,7 @@ static MRESULT EXPENTRY fnwpCDPlayerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

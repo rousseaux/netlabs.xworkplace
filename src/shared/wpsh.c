@@ -449,7 +449,7 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
         SOMFree(somidMethod);
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -488,7 +488,7 @@ APIRET wpshStore(WPObject *somSelf,
                                                &arc))
                 memcpy(*ppszTarget, pcszSource, ulLength + 1);
             else
-                return (arc);
+                return arc;
         }
         else
             *ppszTarget = NULL;
@@ -558,7 +558,7 @@ BOOL wpshCheckObject(WPObject *pObject)
         } END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -707,7 +707,7 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -982,7 +982,7 @@ BOOL wpshCloseAllViews(WPObject *pObject)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1199,7 +1199,7 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
  +          HOBJECT hobjBeingDragged = NULLHANDLE;
  +          MRESULT mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)mp2,
  +                                                  &hobjBeingDragged);
- +          return (mrc);
+ +          return mrc;
  *
  *      If a valid object has been dragged over the cnr,
  *      *phObject will be set to the object handle. Otherwise
@@ -1450,7 +1450,7 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
                            0);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2245,7 +2245,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
         }
     }
 
-    return (brc);
+    return brc;
 } */
 
 /*
@@ -2278,7 +2278,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
 
     DosExitMustComplete(&pLock->ulNesting);
 
-    return (brc);
+    return brc;
 } */
 
 /* ******************************************************************

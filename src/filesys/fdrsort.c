@@ -514,7 +514,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -700,7 +700,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1245,7 +1245,7 @@ MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwn
                          ulSort);
         mrc = (MPARAM)TRUE;
     }
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1522,7 +1522,7 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
                           fForce);
         mrc = (MPARAM)TRUE;
     }
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

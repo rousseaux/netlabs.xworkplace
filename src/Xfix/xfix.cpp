@@ -1548,7 +1548,7 @@ MRESULT EXPENTRY fnwpSubclassedObjIDsFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
             mrc = G_fnwpObjIDsFrameOrig(hwndFrame, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1795,7 +1795,7 @@ MRESULT EXPENTRY fnwpSubclassedMainCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPAR
             mrc = G_pfnwpCnrOrig(hwndCnr, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2682,7 +2682,7 @@ ULONG RemoveHandles(HWND hwndCnr,
 
     } // if (pszFolderPoses)
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -3056,7 +3056,7 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -3580,7 +3580,7 @@ MRESULT FrameWMControl(HWND hwndFrame,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -3714,7 +3714,7 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
             mrc = G_fnwpMainFrameOrig(hwndFrame, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

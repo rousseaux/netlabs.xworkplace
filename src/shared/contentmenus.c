@@ -430,7 +430,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
         mrc = 0;
     } END_CATCH();
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1273,7 +1273,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
 
     mrc = MRFROMSHORT(poi->rclItem.yTop); //(MPARAM)poi->rclItem.yTop;
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1438,7 +1438,7 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
         brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 

@@ -401,7 +401,7 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

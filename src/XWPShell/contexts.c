@@ -101,7 +101,7 @@ APIRET scxtInit(VOID)
     else
         arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -125,7 +125,7 @@ APIRET LockContexts(VOID)
     arc = DosRequestMutexSem(G_hmtxContexts,
                              SEM_INDEFINITE_WAIT);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -225,7 +225,7 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
     if (fLocked)
         UnlockContexts();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -267,7 +267,7 @@ APIRET scxtDeleteSecurityContext(ULONG ulPID)
     if (fLocked)
         UnlockContexts();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -308,7 +308,7 @@ APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext)
     if (fLocked)
         UnlockContexts();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -388,7 +388,7 @@ APIRET scxtEnumSecurityContexts(HXSUBJECT hsubjUser,
     if (fLocked)
         UnlockContexts();
 
-    return (arc);
+    return arc;
 }
 
 /*

@@ -478,7 +478,7 @@ static APIRET GetProcessorCount(PULONG pcProcessors)
         doshPerfClose(&pPerfData);
     }
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -593,7 +593,7 @@ static MRESULT EXPENTRY ctl_fnwpSubclassedColorRect(HWND hwndStatic, ULONG msg, 
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1155,7 +1155,7 @@ static MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 
     pPrivate->szTooltipText[0] = '\0';
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1247,7 +1247,7 @@ static BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2120,7 +2120,7 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 

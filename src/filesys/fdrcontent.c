@@ -583,7 +583,7 @@ BOOL fdrGetNotifySem(ULONG ulTimeout)
             brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -681,7 +681,7 @@ BOOL fdrResolveContentPtrs(WPFolder *somSelf)
     else
         brc = TRUE;
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -898,7 +898,7 @@ static BOOL HackContentPointers(WPFolder *somSelf,
             _wpReleaseObjectMutexSem(pObject);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1017,7 +1017,7 @@ BOOL fdrAddToContent(WPFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1114,7 +1114,7 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
         } // end if (strcmp(pszOldRealName, szNewUpperRealName))
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1171,7 +1171,7 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
                "tree funcs failed for %s",
                _wpQueryTitle(pObject));
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1250,7 +1250,7 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1466,7 +1466,7 @@ BOOL fdrNukeContents(WPFolder *pFolder)
     if (fFolderLocked)
         fdrReleaseFolderMutexSem(pFolder);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1564,7 +1564,7 @@ BOOL fdrRegisterAwakeRootFolder(WPFolder *somSelf)
     if (fLocked)
         UnlockRootFolders();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1605,7 +1605,7 @@ BOOL fdrRemoveAwakeRootFolder(WPFolder *somSelf)
     if (fLocked)
         UnlockRootFolders();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2343,7 +2343,7 @@ BOOL fdrCheckIfPopulated(WPFolder *somSelf,
         // already populated:
         brc = TRUE;
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -2426,7 +2426,7 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
             _wpReleaseObjectMutexSem(Lock.pObject);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

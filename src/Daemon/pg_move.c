@@ -63,15 +63,15 @@ PFNWP   G_pfnwpStaticOriginal = NULL;
  *      which all windows should be moved. As a result,
  *      with respect to the current desktop:
  *
- *      --  positive lDeltaX moves the current desktop to
+ *      --  positive lXDelta moves the current desktop to
  *          the left;
  *
- *      --  negative lDeltaX moves the current desktop to
+ *      --  negative lXDelta moves the current desktop to
  *          the right;
  *
- *      --  positive lDeltaY moves the current desktop down;
+ *      --  positive lYDelta moves the current desktop down;
  *
- *      --  negative lDeltaY moves the current desktop up.
+ *      --  negative lYDelta moves the current desktop up.
  *
  *      Returns TRUE if the move was successful.
  *
@@ -146,11 +146,6 @@ BOOL MoveCurrentDesktop(HAB hab,
         HWND    *pahwndNoMoveWithOwner = NULL;
         ULONG   cNoMoveWithOwner = 0;
 
-        // refresh all windows which might still have the "dirty" flag
-        // set... if we don't do this, we get sticky windows that aren't
-        // supposed to be sticky
-        pgrRefreshDirties();
-
         if (pgrLockWinlist())
         {
             // allocate an array of SWP entries for moving all windows
@@ -185,7 +180,7 @@ BOOL MoveCurrentDesktop(HAB hab,
 
                     PPAGERWININFO pEntryThis = (PPAGERWININFO)pNode->pItemData;
 
-                    if (!WinIsWindow(hab, pEntryThis->hwnd))
+                    if (!WinIsWindow(hab, pEntryThis->swctl.hwnd))
                         // window no longer valid:
                         // remove from the list NOW
                         lstRemoveNode(&G_llWinInfos, pNode);
@@ -194,19 +189,19 @@ BOOL MoveCurrentDesktop(HAB hab,
                         BOOL fRefreshThis = FALSE;
 
                         if (     (!strcmp(pEntryThis->szClassName, "#1")
-                              && (!(WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
+                              && (!(WinQueryWindowULong(pEntryThis->swctl.hwnd, QWL_STYLE)
                                             & FS_NOMOVEWITHOWNER))
                                  )
                            )
                         {
-                            pahwndNoMoveWithOwner[cNoMoveWithOwner++] = pEntryThis->hwnd;
-                            WinSetWindowBits(pEntryThis->hwnd,
+                            pahwndNoMoveWithOwner[cNoMoveWithOwner++] = pEntryThis->swctl.hwnd;
+                            WinSetWindowBits(pEntryThis->swctl.hwnd,
                                              QWL_STYLE,
                                              FS_NOMOVEWITHOWNER,
                                              FS_NOMOVEWITHOWNER);
                         }
 
-                        WinQueryWindowPos(pEntryThis->hwnd, &pEntryThis->swp);
+                        WinQueryWindowPos(pEntryThis->swctl.hwnd, &pEntryThis->swp);
 
                         // fix outdated minimize/maximize/hide flags
                         if (    (pEntryThis->bWindowType == WINDOW_MINIMIZE)
@@ -256,10 +251,11 @@ BOOL MoveCurrentDesktop(HAB hab,
                                   || (    (pEntryThis->bWindowType == WINDOW_NORMAL)
                                        && (!(pEntryThis->swp.fl & SWP_HIDE))
                                      )
-                                  || (    (pEntryThis->bWindowType == WINDOW_DIRTY)
+                                  || (    (pEntryThis->bWindowType == WINDOW_NIL)
                                        && (!(pEntryThis->swp.fl & SWP_HIDE))
-                                       && (WinQueryWindowULong(pEntryThis->hwnd,
-                                                               QWL_STYLE) & WS_VISIBLE)
+                                       && (WinQueryWindowULong(pEntryThis->swctl.hwnd,
+                                                               QWL_STYLE)
+                                                   & WS_VISIBLE)
                                      )
                                 )
                            )
@@ -276,7 +272,7 @@ BOOL MoveCurrentDesktop(HAB hab,
                             // we have queried the window pos above
                             memcpy(pswpNewThis, &pEntryThis->swp, sizeof(SWP));
 
-                            pswpNewThis->hwnd = pEntryThis->hwnd;
+                            pswpNewThis->hwnd = pEntryThis->swctl.hwnd;
                             // add the delta for moving
                             pswpNewThis->x += lXDelta;
                             pswpNewThis->y += lYDelta;
@@ -346,22 +342,16 @@ BOOL MoveCurrentDesktop(HAB hab,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
  *@@ fnwpMoveThread:
  *      window procedure for the object window on the
  *      XPager "Move" thread (fntMoveThread).
- *      This receives PGOM_* messages and processes them.
- *      The object window handle is available in
- *      G_pHookData->hwndPagerMoveThread.
  *
- *      This has been rewritten completely with V0.9.4
- *      in order to get rid of the old DosReadQueue
- *      stuff which apparently wasn't working. I've tried
- *      using an object window instead, and it seems to
- *      be doing OK.
+ *      This only receives the PGRM_MOVEBYDELTA
+ *      message when the current desktop is to be moved.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
  *@@changed V0.9.7 (2000-12-04) [umoeller]: now preventing sticky windows from switching
@@ -422,7 +412,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
     }
     CATCH(excpt1) {} END_CATCH();
 
-    return (mrc);
+    return mrc;
 }
 
 /*

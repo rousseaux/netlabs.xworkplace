@@ -81,22 +81,41 @@
 
     typedef struct _PAGERWININFO
     {
-        HWND        hwnd;               // window handle
-        BYTE        bWindowType;
-            // one of:
-            #define WINDOW_NORMAL       1
-            #define WINDOW_PAGER        2   // some XPager window, always sticky
-            #define WINDOW_WPSDESKTOP   3   // WPS desktop, always sticky
-            #define WINDOW_STICKY       4   // window is on sticky list
-            #define WINDOW_MINIMIZE     5   // window is minimized, treat as sticky
-            #define WINDOW_MAXIMIZE     6   // window is maximized
-            #define WINDOW_DIRTY        7   // window in indeterminate state
+        HSWITCH     hsw;                // switch entry or NULLHANDLE
 
-        CHAR        szSwtitle[MAXNAMEL+4];
+        SWCNTRL     swctl;              // switch list entry
+                        // HWND hwnd
+                        // HWND hwndIcon
+                        // HPROGRAM hprog
+                        // PID idProcess
+                        // ULONG idSession
+                        // ULONG uchVisibility
+                        // ULONG fbJump
+                        // CHAR szSwTitle[MAXNAMEL+4]
+                        // ULONG bProgType
+
+        HPOINTER    hptr;
+
+        BYTE        bWindowType;
+            // the following types are treated as "normal"
+            // windows and moved around by the pager
+            #define WINDOW_NORMAL       1
+            #define WINDOW_MAXIMIZE     2   // window is maximized
+            // the following styles are treated as special
+            // and are left alone by the pager (always sticky)
+            #define WINDOW_MINIMIZE     3   // window is minimized, treat as sticky
+            #define WINDOW_XWPDAEMON    4   // probably XPager or scroll window,
+                                            // ignore (sticky)
+            #define WINDOW_WPSDESKTOP   5   // WPS desktop, always sticky
+            #define WINDOW_STICKY       6   // window is on sticky list
+            #define WINDOW_NIL          7   // "not in list" == not in switch list,
+                                            // or hidden maybe --> sticky
+
         CHAR        szClassName[30];
-        USHORT      pid;
-        USHORT      tid;
-        SWP         swp;
+        ULONG       tid;
+
+        SWP         swp;                // last known window pos
+
     } PAGERWININFO, *PPAGERWININFO;
 
     #pragma pack()
@@ -118,18 +137,27 @@
 
     BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo);
 
-    VOID pgrCreateWinInfo(HWND hwnd);
+    BOOL pgrCreateWinInfo(HWND hwnd);
 
     VOID pgrBuildWinlist(VOID);
 
     VOID pgrFreeWinInfo(HWND hwnd);
 
-    VOID pgrMarkDirty(HWND hwnd);
-
-    BOOL pgrRefreshDirties(VOID);
+    BOOL pgrRefresh(HWND hwnd);
 
     BOOL pgrIsSticky(HWND hwnd,
                      PCSZ pcszSwtitle);
+
+    BOOL pgrIconChange(HWND hwnd,
+                       HPOINTER hptr);
+
+    #ifdef INCL_WINSWITCHLIST
+    PSWBLOCK pgrQueryWinList(ULONG pid);
+    #endif
+
+    #ifdef THREADS_HEADER_INCLUDED
+        VOID _Optlink fntWinlistThread(PTHREADINFO pti);
+    #endif
 
     /* ******************************************************************
      *

@@ -292,7 +292,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
                          szFullFile);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

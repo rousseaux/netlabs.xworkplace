@@ -165,7 +165,7 @@ APIRET subjInit(VOID)
     else
         arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -189,7 +189,7 @@ APIRET LockSubjects(VOID)
     arc = DosRequestMutexSem(G_hmtxSubjects,
                              SEM_INDEFINITE_WAIT);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -411,7 +411,7 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
     if (fLocked)
         UnlockSubjects();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -448,7 +448,7 @@ APIRET subjDeleteSubject(LHANDLE hSubject)
     if (fLocked)
         UnlockSubjects();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -490,7 +490,7 @@ APIRET subjQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo)   // in/out: subject i
     if (fLocked)
         UnlockSubjects();
 
-    return (arc);
+    return arc;
 }
 
 

@@ -489,7 +489,7 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
             mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

@@ -681,7 +681,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2)
             mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
         break;
     }
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -736,7 +736,7 @@ MRESULT MwgtCreate(HWND hwnd,
                                          hwnd,
                                          1,
                                          1500);
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -792,7 +792,7 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1133,7 +1133,7 @@ MRESULT EXPENTRY fnwpHealthWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /*

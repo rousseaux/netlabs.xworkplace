@@ -1301,7 +1301,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1686,7 +1686,7 @@ BOOL setLogoMessages(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (brc);
+    return brc;
 }
 
 #endif
@@ -2626,7 +2626,7 @@ BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -3376,7 +3376,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
         pso2++;
     }
 
-    return (brc);
+    return brc;
 }
 
 #ifndef __NOXWPSETUP__
@@ -3565,7 +3565,7 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
             }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

@@ -289,7 +289,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
         i++;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -444,7 +444,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -906,7 +906,7 @@ static MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
         default:
             mrc = OldEditProc(hwndEdit, msg, mp1, mp2);
     }
-    return (mrc);
+    return mrc;
 }
 
 static const XWPSETTING G_HotkeysBackup[] =
@@ -1200,7 +1200,7 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

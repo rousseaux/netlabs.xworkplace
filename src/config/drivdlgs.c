@@ -537,7 +537,7 @@ BOOL drvConfigSupported(PDRIVERSPEC pSpec)
     if (fLocked)
         UnlockPlugins();
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -584,7 +584,7 @@ static BOOL ShowDriverDlg(HWND hwndOwner,
         WinDestroyWindow(hwndDlg);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -890,7 +890,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1064,7 +1064,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2875,5 +2875,5 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }

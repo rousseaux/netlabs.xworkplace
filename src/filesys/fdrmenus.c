@@ -942,7 +942,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
                                ulAttr);
         }
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1067,7 +1067,7 @@ static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1346,7 +1346,7 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
         brc = FALSE;
     } */
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2732,7 +2732,7 @@ static BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "wpQueryProgDetails failed.");
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2843,7 +2843,7 @@ static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
     } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
     // else none of our variable menu items: brc still false
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3143,7 +3143,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
     {
     } END_CATCH();
 
-    return (brc);
+    return brc;
     // this flag is FALSE by default; it signals to the caller (which
     // is wpMenuItemSelected of either XFolder or XFldDisk) whether the
     // parent method still needs to be called. If TRUE, we have processed
@@ -4089,7 +4089,7 @@ static MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

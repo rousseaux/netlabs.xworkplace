@@ -111,7 +111,7 @@ APIRET slogInit(VOID)
     else
         arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -135,7 +135,7 @@ APIRET LockLoggedOn(VOID)
     arc = DosRequestMutexSem(G_hmtxLoggedOn,
                              SEM_INDEFINITE_WAIT);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -232,7 +232,7 @@ APIRET RegisterLoggedOn(PCXWPLOGGEDON pcNewUser,
     if (fLocked)
         UnlockLoggedOn();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -284,7 +284,7 @@ APIRET DeregisterLoggedOn(PXWPLOGGEDON pUser)
     if (fLocked)
         UnlockLoggedOn();
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -419,7 +419,7 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,     // in/out: user info
 
     _Pmpf((__FUNCTION__ ": leaving, returning %d", arc));
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -457,7 +457,7 @@ APIRET slogLogOff(XWPSECID uid)
             arc = subjDeleteSubject(LogOff.hsubjGroup);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -489,5 +489,5 @@ APIRET slogQueryLocalUser(PXWPLOGGEDON pLoggedOnLocal)
     if (fLocked)
         UnlockLoggedOn();
 
-    return (arc);
+    return arc;
 }

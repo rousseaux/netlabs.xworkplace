@@ -449,7 +449,7 @@ MRESULT EXPENTRY fnwpConfigJFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 SLDCDATA    SliderCData = {
@@ -761,7 +761,7 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
         WinDestroyWindow(hwndDlg);
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -976,7 +976,7 @@ MRESULT EXPENTRY fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1019,7 +1019,7 @@ BOOL EXPENTRY ShowCDFSDlg(HWND hwndOwner,
         WinDestroyWindow(hwndDlg);
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************

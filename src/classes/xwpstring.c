@@ -373,7 +373,7 @@ static MRESULT xwstrStringItemChanged(PNOTEBOOKPAGE pnbp,
     if (fSave)
         _wpSaveDeferred(pnbp->inbp.somSelf);
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -438,7 +438,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpSetString(XWPString *somSelf,
 
     ntbUpdateVisiblePage(somSelf, SP_XWPSTRING);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -669,7 +669,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -960,7 +960,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
         } END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -991,7 +991,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSaveState(XWPString *somSelf)
 
     _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 3, _fConfirm);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1025,7 +1025,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpRestoreState(XWPString *somSelf,
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPString, 3, &ul))
         _fConfirm = (BOOL)ul;
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1076,7 +1076,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1114,7 +1114,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemSelected(XWPString *somSelf,
                                                              hwndFrame,
                                                              ulMenuId);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1136,7 +1136,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
     else
         brc = XWPString_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
                                                                  MenuId);
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1278,7 +1278,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpAddSettingsPages(XWPString *somSelf,
     if (brc)
         _xwpAddXWPStringPages(somSelf, hwndNotebook);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1430,7 +1430,7 @@ SOM_Scope MRESULT  SOMLINK xwstr_wpDrop(XWPString *somSelf,
         DrgFreeDraginfo(pdrgInfo);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

@@ -642,7 +642,7 @@ MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1352,7 +1352,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
         } // end switch
     } // end if (psbd)
 
-    return (mrc);
+    return mrc;
 }
 
 /********************************************************************
@@ -2521,6 +2521,64 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 }
 
 /*
+ *@@ ReplaceKeyWithDouble:
+ *      replaces the given key with the given
+ *      "double" value, using the current
+ *      country settings.
+ *
+ *      pcszKey is assumed to contain the first
+ *      two characters of a three-character code,
+ *      where the third character specifies the
+ *      format to use (see GetDivisor).
+ *
+ *@@added V0.9.19 (2002-06-02) [umoeller]
+ */
+
+static VOID ReplaceKeyWithDouble(XSTRING *pstrText,
+                                 PCSZ pcszKey,
+                                 double dValue,
+                                 PCOUNTRYSETTINGS pcs)
+{
+    CHAR        szTemp[300];
+    PSZ         p = pstrText->psz;
+
+    while (p = strstr(p, pcszKey))
+    {
+        // offset where we found this:
+        ULONG   ulFoundOfs = (p - pstrText->psz),
+                cReplace,
+                ulDivisor;
+
+        // get divisor from third mnemonic char
+        ulDivisor = GetDivisor(*(p + 2),
+                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                  // ulDivisor is 0 if none of these
+                               &cReplace);  // out: chars to replace
+
+        // get the value and format it
+        FormatDoubleValue(szTemp,
+                          ulDivisor,
+                          dValue,
+                          pcs);                 // country settings
+
+        // now replace: since we have found the string
+        // already, we can safely use xstrrpl directly
+        xstrrpl(pstrText,
+                // ofs of first char to replace:
+                ulFoundOfs,
+                // chars to replace:
+                cReplace,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
+
+        // now adjust search pointer; pstrText might have been
+        // reallocated, so search on in new buffer from here
+        p = pstrText->psz + ulFoundOfs;  // szTemp could have been anything
+    }
+}
+
+/*
  *@@ stbComposeText:
  *      this is the main entry point to the status bar
  *      logic which gets called by the status bar wnd
@@ -2563,6 +2621,7 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
  *@@changed V0.9.11 (2001-04-22) [umoeller]: merged three cnr record loops into one (speed)
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed tree view bug introduced on 2001-04-22
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed overflow with > 4 GB selected files, more cleanup
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -2613,10 +2672,12 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     XSTRING     strText;
 
     ULONG       cVisibleRecords = 0,
-                cSelectedRecords = 0,
-                cbSelected = 0,
-                cbTotal = 0,
-                ulDivisor,
+                cSelectedRecords = 0;
+    // made these doubles to avoid overflows
+    // V0.9.19 (2002-06-02) [umoeller]
+    double      cbSelected = 0,
+                cbTotal = 0;
+    ULONG       ulDivisor,
                 cReplace;
     USHORT      cmd;
     WPObject    *pobj = NULL,
@@ -2627,12 +2688,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
     // get country settings from "Country" object
     PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
-    CHAR        // cThousands = pcs->cThousands,
-                szTemp[300];
-
-    // pre-resolve class pointers for speed V0.9.11 (2001-04-22) [umoeller]
-    /* SOMClass    *pclsWPShadow = _WPShadow,
-                *pclsWPFileSystem = _WPFileSystem; */
+    CHAR        szTemp[300];
 
     xstrInit(&strText, 300);
 
@@ -2834,147 +2890,29 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 strlen(szTemp));
     }
 
-    // the following are for free space on drive
+    // free space on drive
+    ReplaceKeyWithDouble(&strText,
+                         "\tf",
+                         wpshQueryDiskFreeFromFolder(somSelf),
+                         pcs);
 
-    // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
-    p = strText.psz;
-    while (p = strstr(p, "\tf"))
-    {
-        // offset where we found this:
-        ULONG   ulFoundOfs = (p - strText.psz);
-        // get divisor from third mnemonic char
-        ulDivisor = GetDivisor(*(p + 2),
-                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
-                                  // ulDivisor is 0 if none of these
-                               &cReplace);  // out: chars to replace
+    // total disk size
+    ReplaceKeyWithDouble(&strText,
+                         "\tz",
+                         wpshQueryDiskSizeFromFolder(somSelf),
+                         pcs);
 
-        // get the value and format it
-        FormatDoubleValue(szTemp,
-                          ulDivisor,
-                          wpshQueryDiskFreeFromFolder(somSelf),
-                          pcs);                 // country settings
+    // SELECTED size
+    ReplaceKeyWithDouble(&strText,
+                         "\ts",
+                         cbSelected,
+                         pcs);
 
-        // now replace: since we have found the string
-        // already, we can safely use xstrrpl directly
-        xstrrpl(&strText,
-                // ofs of first char to replace:
-                ulFoundOfs,
-                // chars to replace:
-                cReplace,
-                // replacement string:
-                szTemp,
-                strlen(szTemp));
-
-        // now adjust search pointer; pstrText might have been
-        // reallocated, so search on in new buffer from here
-        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
-    }
-
-    // total disk size, added V0.9.11 (2001-04-22) [umoeller]
-    p = strText.psz;
-    while (p = strstr(p, "\tz"))
-    {
-        // offset where we found this:
-        ULONG   ulFoundOfs = (p - strText.psz);
-        // get divisor from third mnemonic char
-        ulDivisor = GetDivisor(*(p + 2),
-                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
-                                  // ulDivisor is 0 if none of these
-                               &cReplace);  // out: chars to replace
-
-        // get the value and format it
-        FormatDoubleValue(szTemp,
-                          ulDivisor,
-                          wpshQueryDiskSizeFromFolder(somSelf),
-                          pcs);                 // country settings
-
-        // now replace: since we have found the string
-        // already, we can safely use xstrrpl directly
-        xstrrpl(&strText,
-                // ofs of first char to replace:
-                ulFoundOfs,
-                // chars to replace:
-                cReplace,
-                // replacement string:
-                szTemp,
-                strlen(szTemp));
-
-        // now adjust search pointer; pstrText might have been
-        // reallocated, so search on in new buffer from here
-        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
-    }
-
-    // the following are for SELECTED size
-
-    // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
-    p = strText.psz;
-    while (p = strstr(p, "\ts"))
-    {
-        // offset where we found this:
-        ULONG   ulFoundOfs = (p - strText.psz);
-        // get divisor from third mnemonic char
-        ulDivisor = GetDivisor(*(p + 2),
-                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
-                                  // ulDivisor is 0 if none of these
-                               &cReplace);  // out: chars to replace
-
-        // get the value and format it
-        FormatDoubleValue(szTemp,
-                          ulDivisor,
-                          (double)cbSelected,
-                          pcs);                 // country settings
-
-        // now replace: since we have found the string
-        // already, we can safely use xstrrpl directly
-        xstrrpl(&strText,
-                // ofs of first char to replace:
-                ulFoundOfs,
-                // chars to replace:
-                cReplace,
-                // replacement string:
-                szTemp,
-                strlen(szTemp));
-
-        // now adjust search pointer; pstrText might have been
-        // reallocated, so search on in new buffer from here
-        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
-    }
-
-    // the following are for TOTAL folder size
-
-    // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
-    p = strText.psz;
-    while (p = strstr(p, "\tS"))
-    {
-        // offset where we found this:
-        ULONG   ulFoundOfs = (p - strText.psz);
-        // get divisor from third mnemonic char
-        ulDivisor = GetDivisor(*(p + 2),
-                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
-                                  // ulDivisor is 0 if none of these
-                               &cReplace);  // out: chars to replace
-
-        // get the value and format it
-        FormatDoubleValue(szTemp,
-                          ulDivisor,
-                          (double)cbTotal,
-                          pcs);                 // country settings
-
-        // now replace: since we have found the string
-        // already, we can safely use xstrrpl directly
-        xstrrpl(&strText,
-                // ofs of first char to replace:
-                ulFoundOfs,
-                // chars to replace:
-                cReplace,
-                // replacement string:
-                szTemp,
-                strlen(szTemp));
-
-        // now adjust search pointer; pstrText might have been
-        // reallocated, so search on in new buffer from here
-        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
-    }
+    // TOTAL folder size
+    ReplaceKeyWithDouble(&strText,
+                         "\tS",
+                         cbTotal,
+                         pcs);
 
     // dump icon position in debug mode
     #ifdef DEBUG_STATUSBARS
@@ -3172,7 +3110,7 @@ static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
     WinSetWindowText((HWND)mphwndInfo, szInfo);
 
-    return (mrc);
+    return mrc;
 }
 
 #endif
@@ -3430,7 +3368,7 @@ MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
                              SP_XFOLDER_FLDR);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #ifndef __NOCFGSTATUSBARS__
@@ -4140,7 +4078,7 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
                           MPNULL);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #endif // XWPLITE

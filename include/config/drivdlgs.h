@@ -118,4 +118,9 @@ char* APIENTRY drv_strtok(char *string1, PCSZ string2);
 typedef char* APIENTRY DRV_STRTOK(char *string1, PCSZ string2);
 typedef DRV_STRTOK *PDRV_STRTOK;
 
+char* drv_strstr(const char *string1, const char *string2);
+typedef char* DRV_STRSTR(const char *string1, const char *string2);
+typedef DRV_STRSTR *PDRV_STRSTR;
+
+
 

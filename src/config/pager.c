@@ -739,7 +739,7 @@ static MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                            ulPgmgChangedFlags);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1066,7 +1066,7 @@ static MRESULT PagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
         pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1960,7 +1960,7 @@ static MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2311,7 +2311,7 @@ static MRESULT EXPENTRY fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPA
             mrc = G_pfnwpOrigStatic(hwndStatic, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #define COLORBOX_HEIGHT 12
@@ -2615,7 +2615,7 @@ static MRESULT PagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

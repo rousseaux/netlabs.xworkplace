@@ -418,7 +418,7 @@ BOOL objSetup(WPObject *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -850,7 +850,7 @@ APIRET objCreateObjectScript(WPObject *pObject,          // in: object to start 
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -1819,7 +1819,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #define DETAILS_WIDTH       200
@@ -2156,7 +2156,7 @@ static BOOL LockObjectsList(VOID)
         brc = !WinRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT);
             // WinRequestMutexSem works even if the thread has no message queue
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2225,7 +2225,7 @@ static BOOL WriteObjectsList(POBJECTLIST pll,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2355,7 +2355,7 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
     if (pszHandles)
         free(pszHandles);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2498,7 +2498,7 @@ BOOL objAddToList(WPObject *somSelf,
         fSemOwned = FALSE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2686,7 +2686,7 @@ static BOOL LockHandlesCache(VOID)
         brc = !WinRequestMutexSem(G_hmtxHandlesCache, SEM_INDEFINITE_WAIT);
             // WinRequestMutexSem works even if the thread has no message queue
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2913,7 +2913,7 @@ static BOOL LockDirtyList(VOID)
         brc = !WinRequestMutexSem(G_hmtxDirtyList, SEM_INDEFINITE_WAIT);
             // WinRequestMutexSem works even if the thread has no message queue
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3013,7 +3013,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
     if (fLocked)
         UnlockDirtyList();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3080,7 +3080,7 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
     if (fLocked)
         UnlockDirtyList();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3271,7 +3271,7 @@ BOOL objQueryObjectHotkey(WPObject *somSelf,
         hifFreeObjectHotkeys(pHotkeys);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3462,7 +3462,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
         _Pmpf(("Leaving xwpSetObjectHotkey"));
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3527,7 +3527,7 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
         ntbUpdateVisiblePage(NULL,      // any somSelf
                              SP_KEYB_OBJHOTKEYS);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************

@@ -730,7 +730,7 @@ static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -924,7 +924,7 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
               && (!fExit)
             );
 
-    return (brc);
+    return brc;
 }
 
 /*

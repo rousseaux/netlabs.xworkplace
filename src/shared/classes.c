@@ -1001,7 +1001,7 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
-    return (mrc);
+    return mrc;
 }
 
 /*

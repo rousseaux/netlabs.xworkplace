@@ -921,7 +921,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -997,7 +997,7 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
             } // end for
         } // end if
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1116,7 +1116,7 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
         WinSetWindowText(hwndFrame, _wpQueryTitle(somSelf));
         brc = FALSE;
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1170,7 +1170,7 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
 
     ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1254,7 +1254,7 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     if (fFolderLocked)
         fdrReleaseFolderMutexSem(pFolder);
 
-    return (brc);
+    return brc;
 }
 
 #ifndef __NOSNAPTOGRID__
@@ -1384,7 +1384,7 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
         } // end if (hwndCnr)
     } // end if (hwndFrame)
 
-    return (brc);
+    return brc;
 }
 
 #endif
@@ -1711,7 +1711,7 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
         WinDestroyWindow(hwndDlg);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #define BUTTON_WIDTH        75
@@ -1985,7 +1985,7 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

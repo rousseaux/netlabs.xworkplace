@@ -2265,6 +2265,16 @@
 #define ID_XSSI_OBJDET_APPHANDLE        6277
 #define ID_XSSI_OBJDET_MENUID           6278
 
+#define ID_CRSI_WINLIST_WIDGET          6279
+#define ID_CRSI_WINLIST_RESTORE         6280
+#define ID_CRSI_WINLIST_MOVE            6281
+#define ID_CRSI_WINLIST_SIZE            6282
+#define ID_CRSI_WINLIST_MINIMIZE        6283
+#define ID_CRSI_WINLIST_MAXIMIZE        6284
+#define ID_CRSI_WINLIST_HIDE            6285
+#define ID_CRSI_WINLIST_KILL1           6286
+#define ID_CRSI_WINLIST_KILL2           6287
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000

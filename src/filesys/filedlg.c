@@ -652,7 +652,7 @@ static BOOL IsObjectInCnr(WPObject *pObject,
     if (fLocked)
         _wpReleaseObjectMutexSem(pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -946,7 +946,7 @@ static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 
     _Pmpf((__FUNCTION__ ": exiting"));
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1380,7 +1380,7 @@ static MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1673,7 +1673,7 @@ static MPARAM MainControlCreate(HWND hwnd,
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2477,7 +2477,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2658,7 +2658,7 @@ static MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPA
                                    psfv,
                                    psfv->pfnwpOriginal);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2800,7 +2800,7 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
                                    psfv,
                                    psfv->pfnwpOriginal);
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

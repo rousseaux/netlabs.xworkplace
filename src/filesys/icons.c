@@ -402,7 +402,7 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
     if (fLocked)
         krnUnlock();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -539,7 +539,7 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
 
     doshClose(&pxf);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -638,7 +638,7 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
             arc = ERROR_NO_DATA;
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -726,7 +726,7 @@ APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
         fsysFreeFindBuffer(&peaop);
     }
 
-    return (arc);
+    return arc;
 }
 
 #pragma pack(1)
@@ -1162,7 +1162,7 @@ static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
         } // end else if (pbWinAndMask + cbEachMaskSrc > pbBuffer + cbBuffer)
     } // end if if (cbBitmapSrc)
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1447,7 +1447,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
             arc = ERROR_NO_DATA;
     }
 
-    return (arc);
+    return arc;
 }
 
 typedef unsigned short  WORD;
@@ -1644,7 +1644,7 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
     _Pmpf((__FUNCTION__": returning %d", arc));
 #endif
 
-    return (arc);
+    return arc;
 }
 
 #define MAKEINTRESOURCEW(i) (LPWSTR)((DWORD)((WORD)(i)))
@@ -1670,7 +1670,7 @@ APIRET LoadResData(PPEHEADER pPEHeader,
     /* PBYTE           idata,
                     igdata; */
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1926,7 +1926,7 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
 
     arc = ERROR_NO_DATA;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2136,7 +2136,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
         _Pmpf((__FUNCTION__ ": returning %d", arc));
 #endif
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -2553,7 +2553,7 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
     _Pmpf((__FUNCTION__ ": returning %d", arc));
 #endif
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2613,7 +2613,7 @@ APIRET icoCopyIconFromObject(WPObject *somSelf,       // in: target
     else
         arc = ERROR_FILE_NOT_FOUND;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2677,7 +2677,7 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
 #endif
             WinDestroyPointer(hptrClass);
 
-        return (brc);
+        return brc;
     }
 
     // caller wants regular icon checked:
@@ -3347,7 +3347,7 @@ static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
             mrc = pData->pfnwpIconOriginal(hwndStatic, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -4068,7 +4068,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
         _wpSaveDeferred(pnbp->inbp.somSelf);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

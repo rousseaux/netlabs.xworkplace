@@ -743,7 +743,7 @@ SOM_Scope BOOL  SOMLINK xwpM_wpclsQuerySettingsPageSize(M_XFldWPS *somSelf,
             // the notebook buttons to the bottom
             pSizl->cy -= WARP4_NOTEBOOK_OFFSET;
     }
-    return (brc);
+    return brc;
 }
 
 /*

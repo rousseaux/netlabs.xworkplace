@@ -532,7 +532,7 @@ static BOOL SetSubwidgetSize(HWND hwnd,            // tray widget
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -847,7 +847,7 @@ static MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
                (MPARAM)ulSwitchTo,      // 0 if just created, otherwise the saved one
                0);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -942,7 +942,7 @@ static BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2177,7 +2177,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 

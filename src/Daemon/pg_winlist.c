@@ -19,7 +19,9 @@
  *      GNU General Public License for more details.
  */
 
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -30,14 +32,19 @@
 #define INCL_GPIBITMAPS                 // needed for helpers\shapewin.h
 #include <os2.h>
 
+#include <stdio.h>
+#include <setjmp.h>
+
 #define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"                      // code generation and debugging options
 
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\regexp.h"             // extended regular expressions
 #include "helpers\shapewin.h"           // shaped windows;
                                         // only needed for the window class names
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\threads.h"
 
 #include "xwpapi.h"                     // public XWorkplace definitions
 
@@ -86,7 +93,7 @@ APIRET pgrInit(VOID)
     lstInit(&G_llWinInfos, TRUE);
             // V0.9.7 (2001-01-21) [umoeller]
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -98,7 +105,7 @@ APIRET pgrInit(VOID)
 
 BOOL pgrLockWinlist(VOID)
 {
-    return (!WinRequestMutexSem(G_hmtxWinInfos, TIMEOUT_HMTX_WINLIST));
+    return !WinRequestMutexSem(G_hmtxWinInfos, TIMEOUT_HMTX_WINLIST);
         // WinRequestMutexSem works even if the thread has no message queue
 }
 
@@ -139,7 +146,7 @@ PPAGERWININFO pgrFindWinInfo(HWND hwndThis,         // in: window to find
     while (pNode)
     {
         PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
-        if (pWinInfo->hwnd == hwndThis)
+        if (pWinInfo->swctl.hwnd == hwndThis)
         {
             pReturn = pWinInfo;
             break;
@@ -151,7 +158,7 @@ PPAGERWININFO pgrFindWinInfo(HWND hwndThis,         // in: window to find
     if (ppListNode)
         *ppListNode = pNode;
 
-    return (pReturn);
+    return pReturn;
 }
 
 /*
@@ -171,6 +178,54 @@ static VOID ClearWinlist(VOID)
     // so this will clear the WININFO structs as well
     lstClear(&G_llWinInfos);
 }
+
+/* ******************************************************************
+ *
+ *   Debugging
+ *
+ ********************************************************************/
+
+#ifdef __DEBUG__
+
+static VOID DumpOneWindow(PCSZ pcszPrefix,
+                          PPAGERWININFO pEntryThis)
+{
+    _Pmpf(("%s hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
+           pcszPrefix,
+           pEntryThis->swctl.hwnd,
+           pEntryThis->swctl.szSwtitle,
+           pEntryThis->szClassName,
+           pEntryThis->swctl.idProcess,
+           pEntryThis->swctl.idProcess,
+           pEntryThis->bWindowType));
+}
+
+/*
+ *@@ DumpAllWindows:
+ *
+ */
+
+static VOID DumpAllWindows(VOID)
+{
+    if (pgrLockWinlist())
+    {
+        ULONG ul = 0;
+        PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
+        while (pNode)
+        {
+            PPAGERWININFO pEntryThis = (PPAGERWININFO)pNode->pItemData;
+            CHAR szPrefix[100];
+            sprintf(szPrefix, "Dump %d:", ul++);
+            DumpOneWindow(szPrefix, pEntryThis);
+
+            pNode = pNode->pNext;
+        }
+
+        pgrUnlockWinlist();
+    }
+}
+
+#endif
 
 /* ******************************************************************
  *
@@ -209,8 +264,9 @@ static VOID ClearWinlist(VOID)
  *
  *      Preconditions:
  *
- *      --  On input, pWinInfo->hwnd must be set to the
- *          window to be examined.
+ *      --  On input, pWinInfo->swctl.hwnd must be set to
+ *          the window to be examined. All other fields
+ *          are ignored and reset here.
  *
  *      --  If pWinInfo is one of the items on the global
  *          linked list, the caller must lock the list
@@ -226,20 +282,19 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
 {
     BOOL    brc = FALSE;
 
-    HWND    hwnd = pWinInfo->hwnd;
+    HWND    hwnd = pWinInfo->swctl.hwnd;
     ULONG   pid, tid;
 
     memset(pWinInfo, 0, sizeof(PAGERWININFO));
 
     if (    (WinIsWindow(G_habDaemon, hwnd))
-         && (WinQueryWindowProcess(hwnd, &pid, &tid))
+         && (WinQueryWindowProcess(hwnd,
+                                   &pWinInfo->swctl.idProcess,
+                                   &pWinInfo->tid))
        )
     {
-        pWinInfo->hwnd = hwnd;
-        pWinInfo->pid = pid;
-        pWinInfo->tid = tid;
+        pWinInfo->swctl.hwnd = hwnd;
 
-        // get PM winclass and create a copy string
         WinQueryClassName(hwnd,
                           sizeof(pWinInfo->szClassName),
                           pWinInfo->szClassName);
@@ -248,11 +303,11 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
 
         brc = TRUE;     // can be changed again
 
-        if (pWinInfo->pid)
+        if (pWinInfo->swctl.idProcess)
         {
-            if (pWinInfo->pid == G_pidDaemon)
+            if (pWinInfo->swctl.idProcess == G_pidDaemon)
                 // belongs to XPager:
-                pWinInfo->bWindowType = WINDOW_PAGER;
+                pWinInfo->bWindowType = WINDOW_XWPDAEMON;
             else if (hwnd == G_pHookData->hwndWPSDesktop)
                 // WPS Desktop window:
                 pWinInfo->bWindowType = WINDOW_WPSDESKTOP;
@@ -278,54 +333,62 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
                 {
                     brc = FALSE;
                 }
-                else
+            }
+
+            if (brc)
+            {
+                switch (pWinInfo->bWindowType)
                 {
-                    HSWITCH hswitch;
-                    ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
-
-                    if (    (!(hswitch = WinQuerySwitchHandle(hwnd, 0)))
-                            // V0.9.15 (2001-09-14) [umoeller]:
-                            // _always_ check for visibility, and
-                            // if the window isn't visible, don't
-                            // mark it as normal
-                            // (this helps VX-REXX apps, which can
-                            // solidly lock XPager with their hidden
-                            // frame in the background, upon which
-                            // WinSetMultWindowPos fails)
-                         || (!(ulStyle & WS_VISIBLE))
-                         || (pWinInfo->swp.fl & SWP_HIDE)
-                         || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
-                       )
-                        pWinInfo->bWindowType = WINDOW_DIRTY;
-                    else
+                    case 0:     // not found yet:
+                    case WINDOW_XWPDAEMON:
+                    case WINDOW_WPSDESKTOP:
                     {
-                        SWCNTRL     swctl;
-
-                        // window is in tasklist:
-                        WinQuerySwitchEntry(hswitch, &swctl);
-
-                        memcpy(pWinInfo->szSwtitle,
-                               swctl.szSwtitle,
-                               sizeof(pWinInfo->szSwtitle));
-
-                        // the minimize attribute prevails the "sticky" attribute,
-                        // "sticky" prevails maximize, and maximize prevails normal
-                        // V0.9.18 (2002-02-21) [lafaix]
-                        if (pWinInfo->swp.fl & SWP_MINIMIZE)
-                            pWinInfo->bWindowType = WINDOW_MINIMIZE;
-                        else if (pgrIsSticky(hwnd, swctl.szSwtitle))
-                            pWinInfo->bWindowType = WINDOW_STICKY;
-                        else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
-                            pWinInfo->bWindowType = WINDOW_MAXIMIZE;
+                        ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
+                        if (    (!(pWinInfo->hsw = WinQuerySwitchHandle(hwnd, 0)))
+                                // V0.9.15 (2001-09-14) [umoeller]:
+                                // _always_ check for visibility, and
+                                // if the window isn't visible, don't
+                                // mark it as normal
+                                // (this helps VX-REXX apps, which can
+                                // solidly lock XPager with their hidden
+                                // frame in the background, upon which
+                                // WinSetMultWindowPos fails)
+                             || (!(ulStyle & WS_VISIBLE))
+                             || (pWinInfo->swp.fl & SWP_HIDE)
+                             || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
+                           )
+                        {
+                            if (!pWinInfo->bWindowType)
+                                pWinInfo->bWindowType = WINDOW_NIL;
+                        }
                         else
-                            pWinInfo->bWindowType = WINDOW_NORMAL;
+                        {
+                            // window is in tasklist:
+                            WinQuerySwitchEntry(pWinInfo->hsw,
+                                                &pWinInfo->swctl);
+
+                            if (!pWinInfo->bWindowType)
+                            {
+                                // the minimize attribute prevails the "sticky" attribute,
+                                // "sticky" prevails maximize, and maximize prevails normal
+                                // V0.9.18 (2002-02-21) [lafaix]
+                                if (pWinInfo->swp.fl & SWP_MINIMIZE)
+                                    pWinInfo->bWindowType = WINDOW_MINIMIZE;
+                                else if (pgrIsSticky(hwnd, pWinInfo->swctl.szSwtitle))
+                                    pWinInfo->bWindowType = WINDOW_STICKY;
+                                else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
+                                    pWinInfo->bWindowType = WINDOW_MAXIMIZE;
+                                else
+                                    pWinInfo->bWindowType = WINDOW_NORMAL;
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -334,31 +397,45 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
  *
  *      Called upon PGRM_WINDOWCHANGED in fnwpXPagerClient.
  *
+ *      Returns what pgrGetWinInfo returned.
+ *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten
  */
 
-VOID pgrCreateWinInfo(HWND hwnd)
+BOOL pgrCreateWinInfo(HWND hwnd)
 {
-    if (pgrLockWinlist())
+    BOOL brc = FALSE;
+
+    PAGERWININFO WinInfoTemp;
+    WinInfoTemp.swctl.hwnd = hwnd;
+    if (pgrGetWinInfo(&WinInfoTemp))
     {
-        // check if we have an entry for this window already
-        PPAGERWININFO pWinInfo = pgrFindWinInfo(hwnd, NULL);
-
-        if (!pWinInfo)
+        if (pgrLockWinlist())
         {
-            // not yet in list: create a new one
-            pWinInfo = NEW(PAGERWININFO);
-            ZERO(pWinInfo);
-            pWinInfo->hwnd = hwnd;
-            lstAppendItem(&G_llWinInfos, pWinInfo);
+            PPAGERWININFO pWinInfo;
+
+            // check if we have an entry for this window already
+            if (!(pWinInfo = pgrFindWinInfo(hwnd, NULL)))
+            {
+                // not yet in list: create a new one
+                pWinInfo = NEW(PAGERWININFO);
+                ZERO(pWinInfo);
+                pWinInfo->swctl.hwnd = hwnd;
+                lstAppendItem(&G_llWinInfos, pWinInfo);
+            }
+            // else already present: refresh that one then
+
+            memcpy(pWinInfo, &WinInfoTemp, sizeof(PAGERWININFO));
+
+            brc = TRUE;
+
+            pgrUnlockWinlist();
         }
-        // else already present: refresh that one then
-
-        pgrGetWinInfo(pWinInfo);
-
-        pgrUnlockWinlist();
     }
+
+    return brc;
 }
 
 /*
@@ -390,10 +467,10 @@ VOID pgrBuildWinlist(VOID)
             // allocate the PSZ's in that struct, which we can
             // then copy
             PAGERWININFO WinInfoTemp;
-            WinInfoTemp.hwnd = hwndTemp;
+            WinInfoTemp.swctl.hwnd = hwndTemp;
             if (pgrGetWinInfo(&WinInfoTemp))
             {
-                // window found and strings allocated maybe:
+                // window found:
                 // append this thing to the list
 
                 PPAGERWININFO pNew;
@@ -447,109 +524,32 @@ VOID pgrFreeWinInfo(HWND hwnd)
 
 /*
  *@@ pgrMarkDirty:
- *      marks a window as "dirty" in our window list
- *      so that it will be refreshed on the next
- *      repaint, since the pager control window
- *      refreshes all dirty windows.
+ *      attempts to refresh a window in our window
+ *      list if it's already present. Will not add
+ *      it as a new window though.
  *
- *      Called upon PGRM_WINDOWCHANGED in fnwpXPagerClient.
- *
- *@@added V0.9.7 (2001-01-15) [dk]
- *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
+ *@@added V0.9.19 (2002-06-02) [umoeller]
  */
 
-VOID pgrMarkDirty(HWND hwnd)
+BOOL pgrRefresh(HWND hwnd)
 {
+    BOOL brc = FALSE;
     if (pgrLockWinlist())
     {
         // check if we have an entry for this window already
         PPAGERWININFO    pWinInfo;
         if (pWinInfo = pgrFindWinInfo(hwnd,
-                                       NULL))
-            // we have an entry:
-            // mark it as dirty
-            pWinInfo->bWindowType = WINDOW_DIRTY;
-
-        pgrUnlockWinlist();
-    }
-}
-
-/*
- *@@ pgrRefreshDirties:
- *      refreshes all windows which have the WINDOW_DIRTY
- *      flag set.
- *
- *      Returns TRUE if the window list has changed.
- *
- *@@added V0.9.2 (2000-02-21) [umoeller]
- *@@changed V0.9.7 (2001-01-17) [dk]: this scanned, but never updated. Fixed.
- *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
- *@@changed V0.9.12 (2001-05-31) [umoeller]: removed temp delete list
- *@@changed V0.9.18 (2002-02-20) [lafaix]: this never returned TRUE
- */
-
-BOOL pgrRefreshDirties(VOID)
-{
-    BOOL    brc = FALSE;
-
-    if (pgrLockWinlist())
-    {
-        // LINKLIST    llDeferredDelete;
-        PLISTNODE   pNode;
-
-        pNode = lstQueryFirstNode(&G_llWinInfos);
-        while (pNode)
+                                      NULL))
         {
-            // get next node NOW because we can delete pNode here
-            // V0.9.12 (2001-05-31) [umoeller]
-            PLISTNODE pNext = pNode->pNext;
-
-            PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
-            if (pWinInfo->bWindowType == WINDOW_DIRTY)
-            {
-                // window needs refresh:
-                // well, refresh then... this clears strings
-                // in the wininfo and only allocates new strings
-                // if TRUE is returned
-                PAGERWININFO WinInfoTemp;
-                WinInfoTemp.hwnd = pWinInfo->hwnd;
-                if (!pgrGetWinInfo(&WinInfoTemp))
-                {
-                    // window is no longer valid:
-                    // remove it from the list then
-                    // (defer this, since we're iterating over the list)
-                    lstRemoveNode(&G_llWinInfos, pNode);
-                            // V0.9.12 (2001-05-31) [umoeller]
-                    // report "changed"
-                    brc = TRUE;
-                }
-                else
-                {
-                    // window is still valid:
-                    // check if it has changed
-                    if (    (pWinInfo->bWindowType != WinInfoTemp.bWindowType)
-                         || (memcmp(&pWinInfo->swp, &WinInfoTemp.swp, sizeof(SWP)))
-                         || (strcmp(pWinInfo->szSwtitle, WinInfoTemp.szSwtitle))
-                       )
-                    {
-                        // window changed:
-                        // copy new wininfo over that; we have new strings
-                        // in the new wininfo
-                        memcpy(pWinInfo, &WinInfoTemp, sizeof(WinInfoTemp));
-
-                        // report "changed"
-                        brc = TRUE;
-                    }
-                }
-            } // end if (pWinInfo->bWindowType == WINDOW_DIRTY)
-
-            pNode = pNext;
-        } // end while (pNode)
+            // we have an entry:
+            pgrGetWinInfo(pWinInfo);
+            brc = TRUE;
+        }
 
         pgrUnlockWinlist();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -570,7 +570,7 @@ BOOL pgrRefreshDirties(VOID)
 BOOL pgrIsSticky(HWND hwnd,
                  PCSZ pcszSwtitle)
 {
-    HWND hwndClient;
+    HWND    hwndClient;
 
     // check for system window list
     if (    (G_pHookData)
@@ -685,6 +685,346 @@ BOOL pgrIsSticky(HWND hwnd,
     }
 
     return FALSE;
+}
+
+/*
+ *@@ pgrIconChange:
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+BOOL pgrIconChange(HWND hwnd,
+                   HPOINTER hptr)
+{
+    BOOL brc = FALSE;
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = pgrLockWinlist())
+        {
+            PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
+            while (pNode)
+            {
+                // get next node NOW because we can delete pNode here
+                // V0.9.12 (2001-05-31) [umoeller]
+                PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
+
+                if (pWinInfo->swctl.hwnd == hwnd)
+                {
+                    // check icons only if the switch list item
+                    // is visible in the first place; otherwise,
+                    // with some windows (e.g. mozilla), we fire
+                    // out the "icon change" message before the
+                    // xcenter winlist gets a chance of adding
+                    // the switch list item to its private list
+                    // because it suppresses entries without
+                    // SWL_VISIBLE
+                    if (    (pWinInfo->swctl.uchVisibility & SWL_VISIBLE)
+                         && (pWinInfo->hptr != hptr)
+                       )
+                    {
+                        pWinInfo->hptr = hptr;
+                        brc = TRUE;
+                    }
+                    break;
+                }
+
+                pNode = pNode->pNext;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+    {
+        pgrUnlockWinlist();
+        fLocked = FALSE;
+    }
+
+    return brc;
+}
+
+/*
+ *@@ pgrQueryWinList:
+ *      implementation for XDM_QUERYWINLIST.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+PSWBLOCK pgrQueryWinList(ULONG pid)
+{
+    BOOL brc = FALSE;
+    BOOL fLocked = FALSE;
+    PSWBLOCK pSwblockReturn = NULL,
+             pSwblock;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = pgrLockWinlist())
+        {
+            PLISTNODE pNode;
+            ULONG cWindows, cbSwblock;
+            if (    (cWindows = lstCountItems(&G_llWinInfos))
+                 && (cbSwblock = (cWindows * sizeof(SWENTRY)) + sizeof(HSWITCH))
+                 && (!DosAllocSharedMem((PVOID*)&pSwblock,
+                                        NULL,
+                                        cbSwblock,
+                                        PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE))
+               )
+            {
+                ULONG ul = 0;
+                pSwblock->cswentry = cWindows;
+                pNode = lstQueryFirstNode(&G_llWinInfos);
+                while (pNode)
+                {
+                    PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
+
+                    // return switch handle
+                    pSwblock->aswentry[ul].hswitch = pWinInfo->hsw;
+
+                    // return SWCNTRL
+                    memcpy(&pSwblock->aswentry[ul].swctl,
+                           &pWinInfo->swctl,
+                           sizeof(SWCNTRL));
+
+                    // override hwndIcon with the frame icon if we
+                    // queried one in the background thread
+                    pSwblock->aswentry[ul].swctl.hwndIcon = pWinInfo->hptr;
+
+                    pNode = pNode->pNext;
+                    ++ul;
+                }
+
+                if (!DosGiveSharedMem(pSwblock,
+                                      pid,
+                                      PAG_READ | PAG_WRITE))
+                {
+                    pSwblockReturn = pSwblock;
+                }
+
+                DosFreeMem(pSwblock);
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+    {
+        pgrUnlockWinlist();
+        fLocked = FALSE;
+    }
+
+    return pSwblockReturn;
+}
+
+/*
+ *@@ CheckWindow:
+ *      checks one window from the system switchlist
+ *      against our private list.
+ *
+ *      We only hold the winlist mutex (for the private
+ *      list) locked for a very short time in order not
+ *      to block the system since we might send msgs
+ *      from here.
+ *
+ *      This fires XDM_WINDOWCHANGE to the daemon object
+ *      window if the window changed compared to our
+ *      list.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+VOID CheckWindow(HAB hab,
+                 PSWCNTRL pCtrlThis)
+{
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = pgrLockWinlist())
+        {
+            // check if the entry is in the list already...
+
+            // 1) rule out obvious non-windows
+            if (    (pCtrlThis->hwnd)
+                 && WinIsWindow(hab, pCtrlThis->hwnd)
+                 // don't monitor invisible switch list entries here
+                 // or we'll bomb the clients with entries for the
+                 // first PMSHELL.EXE and the like
+                 && (pCtrlThis->uchVisibility & SWL_VISIBLE)
+               )
+            {
+                PPAGERWININFO pInfo;
+                PLISTNODE pNode;
+
+                if (!(pInfo = pgrFindWinInfo(pCtrlThis->hwnd,
+                                             (PVOID*)&pNode)))
+                {
+                    // window is not in list: add it then
+                    #ifdef __DEBUG__
+                        CHAR szClass[30];
+                        WinQueryClassName(pCtrlThis->hwnd, sizeof(szClass), szClass);
+                        _Pmpf((__FUNCTION__ ": hwnd 0x%lX is not in list (%s, %s)",
+                               pCtrlThis->hwnd,
+                            pCtrlThis->szSwtitle,
+                            szClass));
+                    #endif
+
+                    WinPostMsg(G_pHookData->hwndDaemonObject,
+                               XDM_WINDOWCHANGE,
+                               (MPARAM)pCtrlThis->hwnd,
+                               (MPARAM)WM_CREATE);
+                }
+                else
+                {
+                    HWND        hwnd;
+                    HPOINTER    hptrOld,
+                                hptrNew;
+                    // OK, this list node is still in the switchlist:
+                    // check if all the data is still valid
+                    if (strcmp(pCtrlThis->szSwtitle, pInfo->swctl.szSwtitle))
+                    {
+                        // session title changed:
+                        _Pmpf((__FUNCTION__ ": title changed hwnd 0x%lX (%s, %s)",
+                               pCtrlThis->hwnd,
+                               pCtrlThis->szSwtitle,
+                               pInfo->szClassName));
+
+                        memcpy(pInfo->swctl.szSwtitle,
+                               pCtrlThis->szSwtitle,
+                               sizeof(pCtrlThis->szSwtitle));
+                        WinPostMsg(G_pHookData->hwndDaemonObject,
+                                   XDM_WINDOWCHANGE,
+                                   (MPARAM)pCtrlThis->hwnd,
+                                   (MPARAM)WM_SETWINDOWPARAMS);
+                    }
+
+                    hwnd = pCtrlThis->hwnd;
+                    hptrOld = pInfo->hptr;
+
+                    // WinSendMsg below can block so unlock the list now
+                    pgrUnlockWinlist();
+                    fLocked = FALSE;
+
+                    // check icon
+                    hptrNew = (HPOINTER)WinSendMsg(hwnd,
+                                                   WM_QUERYICON,
+                                                   0,
+                                                   0);
+                    if (hptrNew != hptrOld)
+                    {
+                        // icon changed:
+                        _Pmpf((__FUNCTION__ ": icon changed hwnd 0x%lX",
+                               pCtrlThis->hwnd));
+
+                        WinPostMsg(G_pHookData->hwndDaemonObject,
+                                   XDM_ICONCHANGE,
+                                   (MPARAM)hwnd,
+                                   (MPARAM)hptrNew);
+                    }
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+    {
+        pgrUnlockWinlist();
+        fLocked = FALSE;
+    }
+}
+
+/*
+ *@@ fntWinlistThread:
+ *      window list thread started when the first
+ *      XDM_ADDWINLISTWATCH comes in.
+ *
+ *      This scans the system switch list and updates
+ *      our private window list in the background,
+ *      making sure that everything is always up
+ *      to date. This is required to get the icons
+ *      right, since sending WM_QUERYICON to a
+ *      frame can block with misbehaving apps like
+ *      PMMail.
+ *
+ *@@added V0.9.19 (2002-05-28) [umoeller]
+ */
+
+VOID _Optlink fntWinlistThread(PTHREADINFO pti)
+{
+    while (!pti->fExit)
+    {
+        ULONG   cItems,
+                cbSwblock;
+        PSWBLOCK pSwBlock;
+        BOOL fLocked = FALSE;
+
+        if (    (cItems = WinQuerySwitchList(pti->hab, NULL, 0))
+             && (cbSwblock = (cItems * sizeof(SWENTRY)) + sizeof(HSWITCH))
+             && (pSwBlock = (PSWBLOCK)malloc(cbSwblock))
+           )
+        {
+            if (cItems = WinQuerySwitchList(pti->hab, pSwBlock, cbSwblock))
+            {
+                // run through all switch list entries
+                ULONG ul;
+                for (ul = 0;
+                     ul < pSwBlock->cswentry;
+                     ++ul)
+                {
+                    // and compare each entry with our private list
+                    CheckWindow(pti->hab,
+                                &pSwBlock->aswentry[ul].swctl);
+                }
+            }
+
+            free(pSwBlock);
+        }
+
+        if (pti->fExit)
+            break;
+
+        // now clean out non-existent windows
+        TRY_LOUD(excpt1)
+        {
+            if (fLocked = pgrLockWinlist())
+            {
+                PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
+                while (pNode)
+                {
+                    PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
+                    if (!WinIsWindow(pti->hab,
+                                     pWinInfo->swctl.hwnd))
+                    WinPostMsg(G_pHookData->hwndDaemonObject,
+                               XDM_WINDOWCHANGE,
+                               (MPARAM)pWinInfo->swctl.hwnd,
+                               (MPARAM)WM_DESTROY);
+
+                    pNode = pNode->pNext;
+                }
+            }
+        }
+        CATCH(excpt1)
+        {
+        } END_CATCH();
+
+        if (fLocked)
+        {
+            pgrUnlockWinlist();
+            fLocked = FALSE;
+        }
+
+
+        DosSleep(500);
+    }
 }
 
 

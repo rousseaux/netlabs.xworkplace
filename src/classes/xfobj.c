@@ -173,7 +173,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpDestroyStorage(XFldObject *somSelf)
                                              "wpDestroyObject"))
         brc = _wpDestroyObject(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -315,7 +315,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
             memcpy(pctimeDeleted, &_ctimeDeleted, sizeof(CTIME));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -482,7 +482,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetListNotify(XFldObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -538,7 +538,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -614,7 +614,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -650,7 +650,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1252,7 +1252,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
         brc = objSetup(somSelf,
                        pszSetupString);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1398,7 +1398,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
     else
         brc = XFldObject_parent_WPObject_wpFree(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1708,7 +1708,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1919,7 +1919,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
                     (PBYTE)&_ctimeDeleted, sizeof(CTIME));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1986,7 +1986,7 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
     else
         _cdateDeleted.year = 0;         // V0.9.16 (2001-12-06) [umoeller]
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2045,7 +2045,7 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreData(XFldObject *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2306,7 +2306,7 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
         brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
                                                             hwndFrame,
                                                             ulMenuId);
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2826,6 +2826,6 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsSetIconData(M_XFldObject *somSelf,
         brc = M_XFldObject_parent_M_WPObject_wpclsSetIconData(somSelf,
                                                               pIconInfo);
 
-    return (brc);
+    return brc;
 }
 

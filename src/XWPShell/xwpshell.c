@@ -587,7 +587,7 @@ APIRET SetNewUserProfile(HAB hab,                   // in: XWPSHELL anchor block
         if (pEnv2)
             free(pEnv2);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -658,7 +658,7 @@ APIRET StartUserShell(VOID)
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -759,7 +759,7 @@ APIRET LocalLogon(VOID)
 
     _Pmpf((__FUNCTION__ ": leaving, returning %d", arc));
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -838,7 +838,7 @@ APIRET CreateBaseSecurityContexts(VOID)
         prc16FreeInfo(p16Info);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -893,7 +893,7 @@ APIRET CleanupSecurityContexts(VOID)
         prc16FreeInfo(p16Info);
     }
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -948,7 +948,7 @@ APIRET AuthorizeFileOnly(PXWPSECURITYCONTEXT pContext,
 
     pSecIOShared->arc = arcAuthorized;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -986,7 +986,7 @@ APIRET AuthorizeLoaderOpen(PXWPSECURITYCONTEXT pContext,
 
     pSecIOShared->arc = arcAuthorized;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1024,7 +1024,7 @@ APIRET AuthorizeExecPgm(PXWPSECURITYCONTEXT pContext,
 
     pSecIOShared->arc = arcAuthorized;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1179,7 +1179,7 @@ APIRET AuthorizeOpenPre(PXWPSECURITYCONTEXT pContext,
 
     pSecIOShared->arc = arcAuthorized;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1244,7 +1244,7 @@ APIRET AuthorizeMovePre(PXWPSECURITYCONTEXT pContext,
 
     pSecIOShared->arc = arcAuthorized;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1285,7 +1285,7 @@ APIRET AuthorizeFindFirst(PXWPSECURITYCONTEXT pContext,
 
     pSecIOShared->arc = arcAuthorized;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1515,7 +1515,7 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1671,7 +1671,7 @@ APIRET InitDaemon(VOID)
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1800,7 +1800,7 @@ APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
         break;
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2020,7 +2020,7 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

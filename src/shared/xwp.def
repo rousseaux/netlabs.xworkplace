@@ -72,6 +72,7 @@ EXPORTS
     drv_memicmp
     drv_sprintf
     drv_strtok
+    drv_strstr
     dskQueryInfo
     gpihBox
     gpihCreateBitmap
@@ -83,10 +84,13 @@ EXPORTS
     gpihFindPresFont
     gpihManipulateRGB
     gpihMatchFont
+    gpihMediumRGB
     gpihSetPointSize
     gpihSplitPresFont
     gpihSwitchToRGB
     krnQueryDaemonObject
+    krnPostDaemonMsg
+    krnSendDaemonMsg
     lstAppendItem
     lstClear
     lstCountItems

@@ -1669,7 +1669,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
-    return (mrc);
+    return mrc;
 }
 
 /*

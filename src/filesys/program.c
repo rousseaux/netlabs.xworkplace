@@ -519,7 +519,7 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -895,7 +895,7 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -1104,7 +1104,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
     if (pobjLocked)
         _wpReleaseObjectMutexSem(pobjLocked);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1196,7 +1196,7 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
     if (fSemOwned)
         UnlockRunning();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1259,7 +1259,7 @@ BOOL progRunningAppDestroyed(WPObject *pobjEmphasis)    // in: destroyed object
     if (fSemOwned)
         UnlockRunning();
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1328,7 +1328,7 @@ static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
         WinDestroyWindow(hwndDlg);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1574,7 +1574,7 @@ static BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
         break;  // case '*': (second character)
     } // end switch (*(p+1))
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1780,7 +1780,7 @@ BOOL progSetupArgs(PCSZ pcszParams,
         // cancelled or error:
         xstrClear(pstrParams);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2158,7 +2158,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
 
     // _Pmpf((__FUNCTION__ ": leaving, rc = %d", arc));
 
-    return (arc);
+    return arc;
 }
 
 
@@ -3267,7 +3267,7 @@ BOOL XWPENTRY progResourcesMessage(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (brc);
+    return brc;
 }
 
 #endif // __NOMODULEPAGES__

@@ -171,7 +171,7 @@ SOM_Scope BOOL  SOMLINK xnw_wpPopulate(XWPNetwork *somSelf, ULONG ulReserved,
         _fAlreadyPopulated = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

@@ -261,7 +261,7 @@ static MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -301,7 +301,7 @@ static MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
             mrc = G_pfnwpFrameOrig(hwndFrame, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1240,7 +1240,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break;
     }
-    return (mrc);
+    return mrc;
 }
 
 #define ACL_WIDTH       200
@@ -1947,7 +1947,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break;
     }
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2999,7 +2999,7 @@ APIRET xsdFlushWPS2INI(VOID)
         DosCloseEventSem(hev);
     }
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -3939,7 +3939,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -5653,7 +5653,7 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

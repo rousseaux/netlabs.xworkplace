@@ -51,6 +51,11 @@
     #define TIMERID_MOVINGPTR           6
 #endif
 
+    // timer IDs for pager
+    #define TIMERID_PGR_ACTIVECHANGED   7
+    #define TIMERID_PGR_FLASH           8
+    #define TIMERID_PGR_REFRESHDIRTIES  9
+
     /* ******************************************************************
      *
      *   Structures
@@ -159,7 +164,9 @@
 
         PVOID       paEREs[MAX_STICKIES];
                 // compiled regular expressions for every SF_MATCHES
-                // that exists in PAGERCONFIG.aulStickyFlags
+                // that exists in PAGERCONFIG.aulStickyFlags;
+                // WARNING: malloc'd by daemon, so this cannot be
+                // used in the hook
                 // V0.9.19 (2002-04-17) [umoeller]
 
         HWND        hwndPagerClient;
@@ -249,7 +256,9 @@
         MPARAM      mpDelayedSlidingMenuMp1;
 
         // click watches V0.9.14 (2001-08-21) [umoeller]
-        BOOL        fClickWatches;
+        ULONG       cClickWatches,
+        // winlist watches V0.9.19 (2002-05-28) [umoeller]
+                    cWinlistWatches;
 
         // object hotkeys: if this flag is set, hotkeys are
         // temporarily disabled; this gets set when the
@@ -272,12 +281,11 @@
 #ifndef __NOPAGER__
     #define PGRM_POSITIONFRAME      (WM_USER + 301)
     #define PGRM_REFRESHCLIENT      (WM_USER + 302)
-    #define PGRM_WINDOWCHANGED      (WM_USER + 303)
-    #define PGRM_ACTIVECHANGED      (WM_USER + 304)
-    #define PGRM_REFRESHDIRTIES     (WM_USER + 305)
-    #define PGRM_WRAPAROUND         (WM_USER + 306)
-    #define PGRM_PAGERHOTKEY        (WM_USER + 307)
-    #define PGRM_MOVEBYDELTA        (WM_USER + 308)
+    #define PGRM_WINDOWCHANGE       (WM_USER + 303)
+    #define PGRM_ICONCHANGE         (WM_USER + 304)
+    #define PGRM_WRAPAROUND         (WM_USER + 305)
+    #define PGRM_PAGERHOTKEY        (WM_USER + 306)
+    #define PGRM_MOVEBYDELTA        (WM_USER + 307)
 #endif
 
     /* ******************************************************************

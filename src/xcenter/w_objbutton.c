@@ -802,7 +802,7 @@ static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
         pWidget->ulHelpPanelID = ID_XSH_WIDGET_OBJBUTTON_MAIN;
 
     // return 0 for success
-    return (mrc);
+    return mrc;
 }
 
 static VOID OwgtButton1Down(HWND hwnd,
@@ -947,7 +947,7 @@ static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         } // switch (usID)
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1779,7 +1779,7 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
             mrc = ctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 // #define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"     this is in centerp.h
@@ -1862,7 +1862,7 @@ static MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
     }
 
     // and return the drop flags
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2216,7 +2216,7 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 

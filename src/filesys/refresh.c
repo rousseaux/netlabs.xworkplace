@@ -1249,7 +1249,7 @@ static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
     if (fSemOwned)
         fdrReleaseNotifySem();
 
-    return (mrc);
+    return mrc;
 }
 
 /*

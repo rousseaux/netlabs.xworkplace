@@ -753,7 +753,7 @@ MRESULT WgtCreate(HWND hwnd,
 
     pWidget->ulHelpPanelID = ID_XSH_WIDGET_DISKFREE_WC;
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -837,7 +837,7 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     } // end if (pPrivate)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1428,7 +1428,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
             mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

@@ -151,7 +151,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -189,7 +189,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFile(XWPFontObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -221,7 +221,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFamily(XWPFontObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -264,7 +264,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFamily(XWPFontObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -327,7 +327,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -459,7 +459,7 @@ SOM_Scope BOOL  SOMLINK fono_wpSetupOnce(XWPFontObject *somSelf,
     }
     // otherwise defaults to 0 (NO_ERROR)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -562,7 +562,7 @@ SOM_Scope BOOL  SOMLINK fono_wpModifyPopupMenu(XWPFontObject *somSelf,
         brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*

@@ -606,7 +606,7 @@ MRESULT TwgtCreate(HWND hwnd,
 
     pPrivate->szTooltipText[0] = '\0';
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -675,7 +675,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         } // end if (pPrivate)
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1512,7 +1512,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

@@ -551,7 +551,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
             mrc = WinDefDlgProc(hwndProgress, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

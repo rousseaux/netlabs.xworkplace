@@ -196,7 +196,7 @@ BOOL hifEnableHook(BOOL fEnable)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 #endif
@@ -229,7 +229,7 @@ BOOL hifXWPHookReady(VOID)
             if (cmnQuerySetting(sfXWPHook))
 #endif
                 brc = TRUE;
-    return (brc);
+    return brc;
 }
 
 /*
@@ -291,7 +291,7 @@ BOOL hifEnableXPager(BOOL fEnable)
     }
 #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -352,7 +352,7 @@ BOOL hifHookConfigChanged(PVOID pvdc)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -387,7 +387,7 @@ BOOL hifObjectHotkeysEnabled(VOID)
         if (HookConfig.__fGlobalHotkeys)
             brc = TRUE;
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -494,7 +494,7 @@ BOOL hifSetObjectHotkeys(PVOID pvHotkeys,   // in: ptr to array of GLOBALHOTKEY 
                                0, 0);
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -575,7 +575,7 @@ BOOL hifSetFunctionKeys(PFUNCTIONKEY paFunctionKeys, // in: function keys array
                                0, 0);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -623,7 +623,7 @@ BOOL hifAppendFunctionKey(PFUNCTIONKEY pNewKey)
     if (paFunctionKeys)
         free(paFunctionKeys);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -694,7 +694,7 @@ BOOL hifDeleteFunctionKey(PFUNCTIONKEY paFunctionKeys,// in: array of function k
                                  *pcFunctionKeys);
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1074,7 +1074,7 @@ MRESULT hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1182,7 +1182,7 @@ MRESULT EXPENTRY hif_fnwpSubclassedFuncKeyEF(HWND hwndEdit,
             mrc = G_pfnwpEntryFieldOrig(hwndEdit, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1220,7 +1220,7 @@ MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1617,7 +1617,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2052,7 +2052,7 @@ MRESULT hifMouseMappings2ItemChanged(PNOTEBOOKPAGE pnbp,
     if (fSave)
         hifHookConfigChanged(pdc);
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2502,7 +2502,7 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
     if (fSave)
         hifHookConfigChanged(pdc);
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2768,7 +2768,7 @@ MRESULT hifMouseMovement2ItemChanged(PNOTEBOOKPAGE pnbp,
     if (fSave)
         hifHookConfigChanged(pdc);
 
-    return (mrc);
+    return mrc;
 }
 
 #endif
@@ -3300,7 +3300,7 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
     if (fSave)
         hifHookConfigChanged(pdc);
 
-    return (mrc);
+    return mrc;
 }
 
 

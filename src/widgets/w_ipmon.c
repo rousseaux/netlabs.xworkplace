@@ -12,8 +12,9 @@
  *      This file is very similar to the other widgets,
  *      especially the "Pulse", except that the data input
  *      is different, obviously. It is however in a separate
- *      DLL so we don't force people to have TCP/IP installed
- *      to run XWorkplace.
+ *      DLL so we don't force people to have networking
+ *      installed to run XWorkplace because we link against
+ *      SO32DLL.DLL.
  *
  *      I am not sure whether the linking requires a 32-bit
  *      version of TCP/IP to be installed. I hope not.
@@ -130,15 +131,15 @@
 
 typedef unsigned long   u_long;
 
-#pragma pack(1) /* force on doubleword boundary */
+#pragma pack(1)
 struct ifmib {
-  short ifNumber;  /* number of network interfaces */
+  short ifNumber;
   struct iftable {
-    short  ifIndex;        /* index of this interface */
-    char   ifDescr[45];    /* description             */
-    short  ifType;         /* type of the interface   */
-    short  ifMtu;          /* MTU of the interface   */
-    char   ifPhysAddr[6];  /* MTU of the interface   */
+    short  ifIndex;
+    char   ifDescr[45];
+    short  ifType;
+    short  ifMtu;
+    char   ifPhysAddr[6];
     short  ifOperStatus;
     u_long ifSpeed;
     u_long ifLastChange;
@@ -521,7 +522,8 @@ VOID TwgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0);
+        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWTEXT, 0);
+                // defaults to black
 
     // font:
     // we set the font presparam, which automatically
@@ -701,7 +703,7 @@ MRESULT TwgtCreate(HWND hwnd,
 
     pPrivate->szTooltipText[0] = '\0';
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -769,7 +771,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         } // end if (pPrivate)
     } // end if (pWidget)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1482,7 +1484,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

@@ -77,7 +77,7 @@ BOOL netPopulateFirstTime(XWPTrashCan *somSelf,
 {
     BOOL            brc = TRUE;     // fixed V0.9.7 (2001-01-17) [umoeller]
 
-    return (brc);
+    return brc;
 }
 
 

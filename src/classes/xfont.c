@@ -283,7 +283,7 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -383,7 +383,7 @@ SOM_Scope BOOL  SOMLINK fon_wpAddSettingsPages(XWPFontFolder *somSelf,
                                                            hwndNotebook);
     _xwpAddFontsPage(somSelf, hwndNotebook);
 
-    return (brc);
+    return brc;
 }
 
 

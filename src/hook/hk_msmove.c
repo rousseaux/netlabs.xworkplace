@@ -792,7 +792,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 #ifndef __NOMOVEMENT2FEATURES__
@@ -1091,7 +1091,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
         *pfRestartAutoHide = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 

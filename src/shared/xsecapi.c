@@ -147,7 +147,7 @@ APIRET CreateXWPShellCommand(ULONG ulCommand,               // in: command
             FreeXWPShellCommand(pCommand);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -200,7 +200,7 @@ APIRET SendXWPShellCommand(PXWPSHELLCOMMAND pCommand)
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -276,7 +276,7 @@ APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)       // out: currently lo
         FreeXWPShellCommand(pCommand);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -333,7 +333,7 @@ APIRET xsecQueryUsers(PULONG pcUsers,               // ou: array item count
         FreeXWPShellCommand(pCommand);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -390,7 +390,7 @@ APIRET xsecQueryGroups(PULONG pcGroups,
         FreeXWPShellCommand(pCommand);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -417,5 +417,5 @@ APIRET xsecQueryProcessOwner(ULONG ulPID,           // in: process ID
         FreeXWPShellCommand(pCommand);
     }
 
-    return (arc);
+    return arc;
 }

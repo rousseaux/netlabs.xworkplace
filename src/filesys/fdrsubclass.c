@@ -1265,7 +1265,7 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
         }
     } // end if (usCommand == WPMENUID_DELETE)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1861,7 +1861,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2066,7 +2066,7 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

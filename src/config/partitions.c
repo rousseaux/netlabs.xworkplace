@@ -539,7 +539,7 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
             mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

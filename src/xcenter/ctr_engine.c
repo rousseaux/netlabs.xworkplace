@@ -322,7 +322,7 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
         G_WinQueryDesktopWorkArea = NULL;
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -521,7 +521,7 @@ static BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
 
     } // end if (G_fWorkAreaSupported)
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -654,7 +654,7 @@ BOOL ctrIsXCenterView(HWND hwndFrame)
     if (fLocked)
         UnlockOpenViews();
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1975,7 +1975,7 @@ BOOL ctrpVerifyType(PDRAGITEM pdrgItem,
         free(pBuffer);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2277,7 +2277,7 @@ static BOOL CheckIfPresent(XCenter *somSelf,
             pNode = pNode->pNext;
         }
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3366,7 +3366,7 @@ static BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
         pNode = pNode->pNext;
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -3693,7 +3693,7 @@ static BOOL FrameTimer(HWND hwnd,
             brc = FALSE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3702,6 +3702,7 @@ static BOOL FrameTimer(HWND hwnd,
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
  *@@changed V0.9.19 (2002-05-23) [umoeller]: now destroying timers first
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: moved WinRemoveSwitchEntry here to fix zombies in switchlist
  */
 
 static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3719,6 +3720,13 @@ static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             // added V0.9.12 (2001-05-21) [umoeller]
             // moved destroy timer up
             // V0.9.19 (2002-05-23) [umoeller]
+
+    // destroy the switch entry
+    // moved this here otherwise this doesn't always
+    // get called
+    // V0.9.19 (2002-05-28) [umoeller]
+    if (pXCenterData->hsw)
+        WinRemoveSwitchEntry(pXCenterData->hsw);
 
     // last chance... update desktop workarea in case
     // this hasn't been done that. This has probably been
@@ -4174,7 +4182,7 @@ static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
         mrc = pXCenterData->pfnwpFrameOrig(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -4718,7 +4726,7 @@ static MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -4760,7 +4768,7 @@ static BOOL ClientSaveSetup(HWND hwndClient,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -5043,7 +5051,7 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
     }
     CATCH(excpt1) {} END_CATCH();
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -5202,7 +5210,7 @@ APIRET ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -5300,7 +5308,7 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -5367,7 +5375,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -5518,8 +5526,6 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
         if (fCreated)
         {
-            HSWITCH hsw2Remove = NULLHANDLE;
-
             // successful above:
             // protect the entire thread with the exception
             // handler while the XCenter is running
@@ -5580,8 +5586,8 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 // we are not a WC_FRAME so we have to take
                 // care of this manually in order to avoid
                 // zombie entries in the switchlist
-                hsw2Remove = WinQuerySwitchHandle(pGlobals->hwndFrame,
-                                                  doshMyPID());
+                pXCenterData->hsw = WinQuerySwitchHandle(pGlobals->hwndFrame,
+                                                         doshMyPID());
                         // V0.9.16 (2001-12-08) [umoeller]
 
                 // subclass the frame AGAIN (the WPS has subclassed it
@@ -5726,12 +5732,6 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 }
                 CATCH(excpt1) {} END_CATCH();
             }
-
-            // if the switch list entry still exists, remove it
-            // (see remarks above)
-            // V0.9.16 (2001-12-08) [umoeller]
-            if (hsw2Remove)
-                WinRemoveSwitchEntry(hsw2Remove);
 
         } // end if (fCreated)
 

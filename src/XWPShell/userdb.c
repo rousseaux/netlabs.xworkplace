@@ -168,7 +168,7 @@ APIRET LockUserDB(VOID)
     arc = DosRequestMutexSem(G_hmtxUserDB,
                              SEM_INDEFINITE_WAIT);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -308,7 +308,7 @@ APIRET CreateGroup(PXWPUSERDB pDB,
 
     _Pmpf((__FUNCTION__ ": returning %d", arc));
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -414,7 +414,7 @@ APIRET CreateUser(PXWPUSERDB pDB,
 
     _Pmpf((__FUNCTION__ ": returning %d", arc));
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -566,7 +566,7 @@ APIRET LoadDB(VOID)
 
     _Pmpf((__FUNCTION__ ": returning %d", arc));
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -600,7 +600,7 @@ APIRET sudbInit(VOID)
     else
         arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -689,7 +689,7 @@ APIRET sudbAuthenticateUser(PXWPUSERDBENTRY pUserInfo,   // in/out: user info
 
     _Pmpf((__FUNCTION__ ": leaving"));
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -731,7 +731,7 @@ APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo)
     if (fLocked)
         UnlockUserDB();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -816,7 +816,7 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
 
     _Pmpf((__FUNCTION__ ": leaving"));
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -889,6 +889,6 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
 
     _Pmpf((__FUNCTION__ ": leaving"));
 
-    return (arc);
+    return arc;
 }
 

@@ -555,7 +555,7 @@ MRESULT EXPENTRY fnwpCDPlayerObject(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

@@ -1022,6 +1022,16 @@ BEGIN
     ID_XSSI_OBJDET_APPSOPEN             "Geîffnete Anwendungen mit diesem Objekt"
     ID_XSSI_OBJDET_APPHANDLE            "Anwendungs-Handle (wahrscheinlich HAPP)"
     ID_XSSI_OBJDET_MENUID               "MenÅ-ID"
+
+    ID_CRSI_WINLIST_WIDGET              "Fensterlisten-Widget"
+    ID_CRSI_WINLIST_RESTORE             "~Restore"
+    ID_CRSI_WINLIST_MOVE                "~Move"
+    ID_CRSI_WINLIST_SIZE                "~Size"
+    ID_CRSI_WINLIST_MINIMIZE            "Mi~nimize"
+    ID_CRSI_WINLIST_MAXIMIZE            "Ma~ximize"
+    ID_CRSI_WINLIST_HIDE                "~Hide"
+    ID_CRSI_WINLIST_KILL1               "Kill process"
+    ID_CRSI_WINLIST_KILL2               "~Kill process (PID 0x%lX)"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

@@ -286,7 +286,7 @@ BOOL WgtControl(PXCENTERWIDGET pWidget,
         } // end switch (usNotifyCode)
     } // end if (usID == ID_XCENTER_CLIENT)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -420,7 +420,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

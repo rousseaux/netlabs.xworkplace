@@ -1026,7 +1026,7 @@ APIRET arcSwitchArchivingOn(BOOL fSwitchOn)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Got error %d");
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1070,7 +1070,7 @@ BOOL arcSetNumArchives(PCHAR pcArchives,        // in/out: number of archives
             *pcArchives = cArchives;
         }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1304,7 +1304,7 @@ BOOL arcCheckINIFiles(double* pdPercent,
         _Pmpf(("  Done checking INI files, returning %d", brc));
     #endif
 
-    return (brc);
+    return brc;
 }
 
 

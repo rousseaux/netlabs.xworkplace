@@ -257,7 +257,7 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -476,7 +476,7 @@ MRESULT dskDetailsItemChanged(PNOTEBOOKPAGE pnbp,
 
     }
 
-    return (mrc);
+    return mrc;
 }
 
 

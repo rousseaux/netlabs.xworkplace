@@ -256,7 +256,7 @@ BOOL fsysSetEASubject(WPFileSystem *somSelf, PCSZ psz)
             brc = (NO_ERROR == eaPathDeleteOne(szFilename, pcszEA));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -299,7 +299,7 @@ BOOL fsysSetEAComments(WPFileSystem *somSelf, PCSZ psz)
             brc = (NO_ERROR == eaPathDeleteOne(szFilename, pcszEA));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -342,7 +342,7 @@ BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, PCSZ psz)
             brc = (NO_ERROR == eaPathDeleteOne(szFilename, pcszEA));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -415,7 +415,7 @@ BOOL fsysRefreshFSInfo(WPFileSystem *somSelf,
                                pfb3,
                                TRUE);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -619,7 +619,7 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
         peaop2->oError              = 0;
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -1973,7 +1973,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 
     fsysFreeFindBuffer(&peaop);
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************

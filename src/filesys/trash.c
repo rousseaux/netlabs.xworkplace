@@ -1416,7 +1416,7 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
         _Pmpf(("              returning %d objects ", (*pulObjectCount)));
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1556,7 +1556,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
     if (fNeedSave)
         _wpSaveDeferred(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1752,7 +1752,7 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
     if (fNeedSave)
         _wpSaveDeferred(pTrashCan);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1859,7 +1859,7 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2086,7 +2086,7 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
     // in any case, free the list V0.9.7 (2001-01-13) [umoeller]
     lstFree(&pllDroppedObjects);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2201,7 +2201,7 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
         // destroy the object
         _wpFree(somSelf);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2271,7 +2271,7 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -2379,7 +2379,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
     if (fLocked)
         krnUnlock();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2399,7 +2399,7 @@ BOOL trshQueryDrivesSupport(PBYTE pabSupportedDrives)
         brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2636,7 +2636,7 @@ MRESULT trshTrashCanSettingsItemChanged(PNOTEBOOKPAGE pnbp,
         cmnSetSetting(sflTrashConfirmEmpty, fl);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -2766,7 +2766,7 @@ static BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supp
                                 abSupportedDrivesNew);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2915,7 +2915,7 @@ MRESULT trshTrashCanDrivesItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -3014,5 +3014,5 @@ MRESULT trshTrashCanIconItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }

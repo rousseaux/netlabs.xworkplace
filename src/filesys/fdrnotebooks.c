@@ -383,7 +383,7 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
                           (MPARAM)NULL, // update all, not just children
                           MPNULL);
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -506,7 +506,7 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #endif

@@ -361,7 +361,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
         if (fFolderLocked)
             fdrReleaseFolderWriteMutexSem(pMyFolder);
 
-        return (brc);
+        return brc;
     } // end if (cmnQuerySetting(sfTurboFolders))
 #endif
 */
@@ -469,7 +469,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
         if (fFolderLocked)
             fdrReleaseFolderWriteMutexSem(pMyFolder);
 
-        return (brc);
+        return brc;
     } // end if (cmnQuerySetting(sfTurboFolders))
 #endif
 
@@ -623,7 +623,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
                            (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
         }
 
-        return (brc);
+        return brc;
     }
 
     return (XWPFileSystem_parent_WPFileSystem_wpSetIconData(somSelf,

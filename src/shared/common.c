@@ -450,7 +450,7 @@ BOOL cmnQueryXWPBasePath(PSZ pszPath)
     if (brc)
         strcpy(pszPath, G_szXWPBasePath);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -527,7 +527,7 @@ BOOL cmnSetLanguageCode(PCSZ pcszLanguage)
     if (fLocked)
         krnUnlock();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -622,7 +622,7 @@ BOOL cmnDisplayHelp(WPObject *somSelf,
             cmnHelpNotFound(ulPanelID);
 
     }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1192,7 +1192,7 @@ static BOOL LockStrings(VOID)
     else
         brc = !WinRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -2039,7 +2039,7 @@ APIRET cmnGetStandardIcon(ULONG ulStdIcon,
     if (fLocked)
         UnlockIcons();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2079,7 +2079,7 @@ BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
     if (fLocked)
         UnlockIcons();
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -2303,7 +2303,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
     if (fLocked)
         krnUnlock();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3867,7 +3867,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
         } // end if (pSettingThis->pcszSetupString)
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -3937,7 +3937,7 @@ BOOL cmnSetupSave(WPObject *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4025,7 +4025,7 @@ BOOL cmnSetupRestore(WPObject *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4206,7 +4206,7 @@ BOOL cmnTrashCanReady(VOID)
             brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4325,7 +4325,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4345,7 +4345,7 @@ BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject)
         brc = _xwpDeleteIntoTrashCan(pDefaultTrashCan,
                                      pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4424,7 +4424,7 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
     // else: "Help" menu not found, but this can
     // happen in Warp 4 folder menu bars
 
-    return (brc);
+    return brc;
 }
 
 #endif
@@ -4657,7 +4657,7 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
                    )
                 )
            );
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4768,7 +4768,7 @@ BOOL cmnDescribeKey(PSZ pszBuf,
         _Pmpf(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
     #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -4846,7 +4846,7 @@ BOOL cmnRegisterView(WPObject *somSelf,
         free(pszViewTitle);
     }
 
-    return (brc);
+    return brc;
 }
 
 #ifndef __NOXSYSTEMSOUNDS__
@@ -4878,7 +4878,7 @@ BOOL cmnPlaySystemSound(USHORT usIndex)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 #endif
@@ -5366,7 +5366,7 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 #define RUNDLG_WIDTH        (4 * STD_BUTTON_WIDTH + 6 * COMMON_SPACING)
@@ -5868,7 +5868,7 @@ APIRET cmnGetMessageExt(PCSZ *pTable,     // in: replacement PSZ table or NULL
     if (fLocked)
         krnUnlock();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -6746,7 +6746,7 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

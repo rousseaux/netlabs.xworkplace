@@ -107,7 +107,7 @@ BOOL WMChar_FunctionKeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
 
     } // end if (usFlags & KC_SCANCODE)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -215,7 +215,7 @@ BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
         DosFreeMem(pGlobalHotkeysShared);
     } // end if DosGetNamedSharedMem
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -469,7 +469,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
     } // end if (!brc)       // message not swallowed yet
 #endif
 
-    return (brc);
+    return brc;
 }
 
 

@@ -457,7 +457,7 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpDestroyStorage(XWPProgramFile *somSelf)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Cannot resolve WPDataFile::wpDestroyObject.");
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -781,7 +781,7 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1092,7 +1092,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetAssociationType(XWPProgramFile *somSelf,
     ftypInvalidateCaches();
 #endif
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1289,7 +1289,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryProgDetails(XWPProgramFile *somSelf,
                                                                       pProgDetails,
                                                                       pulSize);
 
-    return (brc);
+    return brc;
 }
 
 /*

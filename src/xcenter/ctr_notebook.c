@@ -563,7 +563,7 @@ BOOL ctrpQuerySetup(XCenter *somSelf,
                                       pstrSetup));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1070,7 +1070,7 @@ BOOL ctrpSetup(XCenter *somSelf,
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1270,7 +1270,7 @@ BOOL ctrpSaveState(XCenter *somSelf)
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1350,7 +1350,7 @@ BOOL ctrpRestoreState(XCenter *somSelf)
         brc = FALSE;
     } END_CATCH();
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1456,7 +1456,7 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
         DosClose(hf);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1558,7 +1558,7 @@ APIRET ctrpReadFromFile(PCSZ pszSource,     // in: source file name
     if (pszBuff)
         free(pszBuff);
 
-    return (arc);
+    return arc;
 }
 
 
@@ -1962,7 +1962,7 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2362,7 +2362,7 @@ MRESULT ctrpView2ItemChanged(PNOTEBOOKPAGE pnbp,
         }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -2449,7 +2449,7 @@ static MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
 
             DrgFreeDragtransfer(pdt);
 
-            return (mrc);
+            return mrc;
         }
 
     /* ??? This part does not work.  DM_DISCARDOBJECT is only received
@@ -3149,7 +3149,7 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -3334,6 +3334,6 @@ MRESULT ctrpClassesItemChanged(PNOTEBOOKPAGE pnbp,
 {
     MRESULT     mrc = 0;
 
-    return (mrc);
+    return mrc;
 }
 

@@ -373,7 +373,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -508,7 +508,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
     if (fSave)
         _wpSaveDeferred(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -889,7 +889,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetup(XWPTrashCan *somSelf, PSZ pszSetupString)
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -978,7 +978,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
 
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1025,7 +1025,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
                                                              hwndFrame,
                                                              ulMenuId);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1232,7 +1232,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
     // _wpSaveDeferred(somSelf);
             // now in xwpSetCorrectTrashIcon
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1259,7 +1259,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRefresh(XWPTrashCan *somSelf,
 
     _xwpSetCorrectTrashIcon(somSelf, TRUE);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1294,7 +1294,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddToContent(XWPTrashCan *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1328,7 +1328,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1435,7 +1435,7 @@ SOM_Scope MRESULT  SOMLINK xtrc_wpDrop(XWPTrashCan *somSelf,
 
     mrc = trshMoveDropped2TrashCan(somSelf, pdrgInfo);
 
-    return (mrc);
+    return mrc;
 }
 
 /*

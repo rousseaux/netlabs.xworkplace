@@ -169,7 +169,7 @@ BOOL fhdlLockHandles(ULONG ulTimeout)
                                   ulTimeout)
                     == NO_ERROR);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -267,7 +267,7 @@ BOOL fhdlUnlockHandles(VOID)
 
     DosExitMustComplete(&ulNesting);
 
-    return (brc);
+    return brc;
 } */
 
 

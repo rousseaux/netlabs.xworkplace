@@ -419,7 +419,7 @@ APIRET saclInit(VOID)
     else
         arc = XWPSEC_NO_AUTHORITY;
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -443,7 +443,7 @@ APIRET LockACLs(VOID)
     arc = DosRequestMutexSem(G_hmtxACLs,
                              SEM_INDEFINITE_WAIT);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -683,7 +683,7 @@ APIRET LoadACLDatabase(PULONG pulLineWithError)
 
     *pulLineWithError = ulLineCount;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -773,7 +773,7 @@ VOID ConvertACLEntriesForSubject(TREE* pNode,       // in: current ACLDBENTRYNOD
                      FALSE);        // no duplicates
     }
 
-    // return (arc);
+    // return arc;
 }
 
 /*
@@ -790,7 +790,7 @@ APIRET FreeACLEntries(PACLSUBJECTNODE pNewNode)
 {
     APIRET arc = NO_ERROR;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -866,7 +866,7 @@ APIRET saclSubjectHandleCreated(PCXWPSUBJECTINFO pSubjectInfo)
     if (fLocked)
         UnlockACLs();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -890,7 +890,7 @@ APIRET saclSubjectHandleDeleted(HXSUBJECT hSubject)
     if (fLocked)
         UnlockACLs();
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -990,6 +990,6 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
         UnlockACLs();
 
     return (NO_ERROR);
-    // return (arc);
+    // return arc;
 }
 

@@ -366,6 +366,9 @@
             USEITEM             UseItem;            // use item; immediately followed by view item
             VIEWITEM            ViewItem;           // view item
 
+            HSWITCH             hsw;                // switch entry of XCenter pseudo-frame
+                                                    // V0.9.19 (2002-05-28) [umoeller]
+
             XCENTERGLOBALS      Globals;            // public data; a ptr to this is stored in
                                                     // each created XCENTERWIDGET
 

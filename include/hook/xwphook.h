@@ -507,6 +507,14 @@
 
     #define XDM_STARTAPP            (WM_USER + 424)
 
+    #define XDM_ADDWINLISTWATCH     (WM_USER + 425)
+
+    #define XDM_WINDOWCHANGE        (WM_USER + 426)
+
+    #define XDM_ICONCHANGE          (WM_USER + 427)
+
+    #define XDM_QUERYWINLIST        (WM_USER + 428)
+
 #endif
 
 

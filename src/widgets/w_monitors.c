@@ -871,7 +871,7 @@ MRESULT MwgtCreate(HWND hwnd,
                                               1,
                                               ulUpdateFreq);    // 1000, unless "power"
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -966,7 +966,7 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
         } // end switch (usID)
     } // end if (pPrivate)
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1429,7 +1429,7 @@ VOID MwgtPaint(HWND hwnd,
             {
                 // APM is OK:
                 PCSZ pcsz = NULL;
-                switch (pPrivate->pApm->ulBatteryStatus)
+                switch (pPrivate->pApm->bBatteryStatus)
                 {
                     case 0x00: pcsz = "High"; break;
                     case 0x01: pcsz = "Low"; break;
@@ -1442,14 +1442,14 @@ VOID MwgtPaint(HWND hwnd,
                 {
                     ULONG cxMiniIcon = pPrivate->pWidget->pGlobals->cxMiniIcon;
 
-                    pdrv_sprintf(szPaint, "%d%%", pPrivate->pApm->ulBatteryLife);
+                    pdrv_sprintf(szPaint, "%d%%", pPrivate->pApm->bBatteryLife);
 
                     WinDrawPointer(hps,
                                    0,
                                    (    (rclWin.yTop - rclWin.yBottom)
                                       - cxMiniIcon
                                    ) / 2,
-                                   (pPrivate->pApm->ulBatteryStatus == 3)
+                                   (pPrivate->pApm->fUsingAC)
                                         ? pPrivate->hptrAC
                                         : pPrivate->hptrBattery,
                                    DP_MINI);
@@ -2371,7 +2371,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************

@@ -1655,7 +1655,7 @@ BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl)
         lstClear(&pftl->llObjects);       // frees items automatically
         free(pftl);
     }
-    return (brc);
+    return brc;
 }
 
 

@@ -1719,7 +1719,7 @@ BOOL initRepairDesktopIfBroken(VOID)
         } while (fRepeat);
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1814,7 +1814,7 @@ static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

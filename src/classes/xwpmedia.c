@@ -1122,7 +1122,7 @@ SOM_Scope BOOL  SOMLINK xwmm_wpAddSettingsPages(XWPMedia *somSelf,
     if (brc)
         _xwpAddXWPMediaPages(somSelf, hwndNotebook);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************

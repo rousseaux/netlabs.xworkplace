@@ -267,7 +267,7 @@ APIRET fonGetFontDescription(HAB hab,
             arc = ERROR_BAD_FORMAT;
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -448,7 +448,7 @@ APIRET fonInstallFont(HAB hab,
     else
         arc = ERROR_INVALID_PARAMETER;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -533,7 +533,7 @@ APIRET fonDeInstallFont(HAB hab,
         }
     }
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -704,7 +704,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
                   THRF_PMMSGQUEUE | THRF_WAIT,
                   (ULONG)pFontThreadData);
 
-    return (brc);
+    return brc;
 } */
 
 /*
@@ -856,7 +856,7 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
     // in any case, free the list
     lstFree(&pllDroppedObjects);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -907,7 +907,7 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -975,7 +975,7 @@ MRESULT fonSampleTextItemChanged(PNOTEBOOKPAGE pnbp,
             }
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /* ******************************************************************
@@ -1090,7 +1090,7 @@ BOOL fonMenuItemSelected(XWPFontObject *somSelf,
             _xwpclsSetFontSampleHints(_XWPFontObject,
                                       ulNewFlags);
         }
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1115,7 +1115,7 @@ BOOL fonMenuItemHelpSelected(XWPFontObject *somSelf,
         brc = TRUE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
@@ -1514,7 +1514,7 @@ static MRESULT HandleContextMenu(WPObject *somSelf,            // in: object wit
         break;
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1544,7 +1544,7 @@ static MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1
             mrc = pWinData->pfnwpFrameOriginal(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1736,7 +1736,7 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     }
 
-    return (mrc);
+    return mrc;
 }
 
 /*

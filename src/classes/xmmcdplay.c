@@ -166,7 +166,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPlay(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -210,7 +210,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDTogglePlay(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -245,7 +245,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPause(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -271,7 +271,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDStop(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -342,7 +342,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDNextTrack(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -385,7 +385,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPrevTrack(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -416,7 +416,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDEject(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -608,7 +608,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
         _Pmpf(("Returning %d", brc));
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -645,7 +645,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSaveState(XMMCDPlayer *somSelf)
                     _lcolForeground);
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -691,7 +691,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpRestoreState(XMMCDPlayer *somSelf,
             _lcolForeground = ul;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -742,7 +742,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpModifyPopupMenu(XMMCDPlayer *somSelf,
        _fShowingOpenViewMenu = FALSE;
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -858,7 +858,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpAddSettingsPages(XMMCDPlayer *somSelf,
     if (brc)
         _xwpAddXMMCDPlayerPages(somSelf, hwndNotebook);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************

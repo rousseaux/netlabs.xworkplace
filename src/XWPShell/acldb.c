@@ -309,7 +309,7 @@ APIRET saclInit(VOID)
     else
         arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
-    return (arc);
+    return arc;
 }
 
 /* ******************************************************************
@@ -333,7 +333,7 @@ APIRET LockACLs(VOID)
     arc = DosRequestMutexSem(G_hmtxACLs,
                              SEM_INDEFINITE_WAIT);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -568,7 +568,7 @@ APIRET CreateACLDBEntry(ULONG ulType,
                 pNewEntry->ulUnixAccessRights)); */
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -702,7 +702,7 @@ APIRET LoadACLDatabase(PULONG pulLineWithError)
 
     *pulLineWithError = ulLineCount;
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -888,6 +888,6 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
 
     _Pmpf(("        returning arc %d", arc));
 
-    return (arc);
+    return arc;
 }
 

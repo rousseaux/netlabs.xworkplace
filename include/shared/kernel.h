@@ -348,6 +348,12 @@
     HAPP krnStartDaemon(VOID);
 
     BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef BOOL KRNPOSTDAEMONMSG(ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef KRNPOSTDAEMONMSG *PKRNPOSTDAEMONMSG;
+
+    MRESULT krnSendDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef MRESULT KRNSENDDAEMONMSG(ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef KRNSENDDAEMONMSG *PKRNSENDDAEMONMSG;
 
     /* ******************************************************************
      *

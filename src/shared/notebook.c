@@ -694,7 +694,7 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
         }
     } // end if (szClassName[0] == '#')
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1136,7 +1136,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
     if (!fProcessed)
         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1412,7 +1412,7 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
     else
         mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
 
-    return (mrc);
+    return mrc;
 }
 
 /*
@@ -1828,7 +1828,7 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
         free(paNew);
     }
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -2061,7 +2061,7 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf,
             }
         }
     }
-    return (brc);
+    return brc;
 } */
 
 

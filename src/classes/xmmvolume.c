@@ -257,7 +257,7 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
         }
     }
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -292,7 +292,7 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,
         brc = XMMVolume_parent_WPAbstract_wpMenuItemSelected(somSelf,
                                                              hwndFrame,
                                                              ulMenuId);
-    return (brc);
+    return brc;
 }
 
 /*
@@ -425,7 +425,7 @@ SOM_Scope BOOL  SOMLINK vol_wpAddSettingsPages(XMMVolume *somSelf,
     if (brc)
         _xwpAddXMMVolumePages(somSelf, hwndNotebook);
 
-    return (brc);
+    return brc;
 }
 
 /* ******************************************************************
