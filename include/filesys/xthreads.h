@@ -76,6 +76,8 @@
     #define WOM_UPDATEALLSTATUSBARS     (WM_USER+133)
     #define WOM_QUICKOPEN               (WM_USER+135)
 
+    #define WOM_STOREGLOBALSETTINGS     (WM_USER+136)
+
     /********************************************************************
      *                                                                  *
      *   Speedy thread messages (QM_xxx)                                *
@@ -87,6 +89,8 @@
     // #define QM_PLAYSYSTEMSOUND          (WM_USER+142)
 
     #define QM_DESTROYLOGO              (WM_USER+143)
+
+    #define QM_TREEVIEWAUTOSCROLL       (WM_USER+144)
 
     /********************************************************************
      *                                                                  *
@@ -117,10 +121,6 @@
     #define FIM_STARTUPFOLDERDONE       (WM_USER+133)
 
     #define FIM_PROCESSTASKLIST         (WM_USER+201)
-
-    #define FIM_STOREGLOBALSETTINGS     (WM_USER+202)
-
-    #define FIM_TREEVIEWAUTOSCROLL      (WM_USER+203)
 
     #define FIM_REFRESH                 (WM_USER+204)
 

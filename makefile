@@ -234,8 +234,11 @@ startshut:
     @cd ..\..
 
 hook:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\Daemon
+    @cd src\Daemon
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @echo $(MAKEDIR)\makefile: Going for subdir src\hook
-    @cd src\hook
+    @cd ..\hook
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
@@ -344,16 +347,16 @@ $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
 !endif
 
 # update DEF file if buildlevel has changed
-src\hook\xwpdaemn.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\hook\$(@B).def include\bldlevel.h "XWorkplace PM Daemon"
+src\Daemon\xwpdaemn.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd src\Daemon\$(@B).def include\bldlevel.h "XWorkplace PM Daemon"
 
 # create import library from XWPHOOK.DLL
 bin\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
         implib /nologo bin\$(@B).lib $(MODULESDIR)\$(@B).dll
 
-$(MODULESDIR)\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exe_mt\$(@B).res
+$(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exe_mt\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\hook\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
         $(RC) ..\exe_mt\$(@B).res $(@B).exe
 !ifndef DEBUG

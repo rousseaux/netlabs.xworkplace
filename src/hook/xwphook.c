@@ -2603,87 +2603,40 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          *****************************************************************/
 
         /*
-         * WM_BUTTON3UP:
-         *      needed for MB3 double-clicks on minimized windows.
-         *
-         *      Contributed for V0.9.4 by Lars Erdmann.
-         */
-
-        case WM_BUTTON3UP:
-            // MB3 click conversion enabled?
-            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
-            {
-                // is window under mouse minimized?
-                SWP swp;
-                WinQueryWindowPos(hwnd,&swp);
-                if (swp.fl & SWP_MINIMIZE)
-                {
-                    // yes:
-                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                    WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
-                    WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                }
-                // brc = FALSE;   // pass on to next hook in chain (if any)
-                // you HAVE TO return FALSE so that the OS
-                // can translate a sequence of WM_BUTTON3DOWN
-                // WM_BUTTON3UP to WM_BUTTON3CLICK
-            }
-        break;
-
-        /*
-         * WM_BUTTON3CLICK:
-         *      convert MB3 single-clicks to MB1 double-clicks.
-         *
-         *      Contributed for V0.9.4 by Lars Erdmann.
-         */
-
-        case WM_BUTTON3CLICK:
-            // MB3 click conversion enabled?
-            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
-            {
-                // if we would post a WM_BUTTON1DOWN message to the titlebar,
-                // it would not receive WM_BUTTON1DBLCLK, WM_OPEN, WM_BUTTON1UP
-                // for some strange reason (I think it has something to do with
-                // the window tracking that is initiated when WM_BUTTON1DOWN
-                // is posted to the titlebar, because it does not make sense
-                // to prepare any window tracking when we really want to maximize
-                // or restore the window, we just skip this);
-                // for all other windows, pass this on
-                if (WinQueryWindowUShort(hwnd, QWS_ID) != FID_TITLEBAR)
-                {
-                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                }
-                WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
-                WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
-                WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
-                WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-            }
-            // brc = FALSE;   // pass on to next hook in chain (if any)
-        break;
-
-        /*
          * WM_BUTTON3MOTIONSTART:
          *      start MB3 scrolling. This prepares the hook
          *      data for tracking mouse movements in WM_MOUSEMOVE
          *      so that the window under the mouse will be scrolled.
          *
+         *      Changed this from WM_BUTTON3DOWN with V0.9.4 to avoid
+         *      the Netscape and PMMail hangs. However, this message
+         *      is never received in VIO windows, so for those, we'll
+         *      still have to use WM_BUTTON3DOWN.
+         *
          *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
          */
 
         case WM_BUTTON3MOTIONSTART: // mouse button 3 was pressed down
-        {
             // MB3-scroll enabled?
             if (G_HookData.HookConfig.fMB3Scroll)
-            {
                 // yes:
                 // make sure that the mouse is not currently captured
                 if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
+                    // OK:
+                    goto BEGIN_MB3_SCROLL;
+        break;
+
+        case WM_BUTTON3DOWN:
+        {
+            CHAR szClassName[200];
+            if (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
+            {
+                // VIO window?
+                if (strcmp(szClassName, "Shield") == 0)
                 {
+                    // yes:
                     // prepare MB3 scrolling for WM_MOUSEMOVE later:
+                    BEGIN_MB3_SCROLL:
 
                     // set window that we're currently scrolling
                     // (this enables scroll processing during WM_MOUSEMOVE)
@@ -2718,10 +2671,13 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          * WM_BUTTON3MOTIONEND:
          *      stop MB3 scrolling.
          *
+         *      Also needed for MB3 double-clicks on minimized windows.
+         *
          *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
+         *      Contributed for V0.9.4 by Lars Erdmann.
          */
 
-        case WM_BUTTON3MOTIONEND: // mouse button 3 has been released
+        case WM_BUTTON3UP: // mouse button 3 has been released
         {
             if (    (G_HookData.HookConfig.fMB3Scroll)
                  && (G_HookData.hwndCurrentlyScrolling)
@@ -2730,9 +2686,63 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 StopMB3Scrolling(TRUE);     // success, post msgs
 
                 // swallow msg
-                brc = TRUE;
-            } // end if (HookData.fCurrentlyMB3Scrolling)
+                // brc = TRUE;
+            }
+
+            // MB3 click conversion enabled?
+            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
+            {
+                // is window under mouse minimized?
+                SWP swp;
+                WinQueryWindowPos(hwnd,&swp);
+                if (swp.fl & SWP_MINIMIZE)
+                {
+                    // yes:
+                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                    WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
+                    WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                }
+                // brc = FALSE;   // pass on to next hook in chain (if any)
+                // you HAVE TO return FALSE so that the OS
+                // can translate a sequence of WM_BUTTON3DOWN
+                // WM_BUTTON3UP to WM_BUTTON3CLICK
+            }
         break; }
+
+        /*
+         * WM_BUTTON3CLICK:
+         *      convert MB3 single-clicks to MB1 double-clicks.
+         *
+         *      Contributed for V0.9.4 by Lars Erdmann.
+         */
+
+        case WM_BUTTON3CLICK:
+            // MB3 click conversion enabled?
+            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
+            {
+                // if we would post a WM_BUTTON1DOWN message to the titlebar,
+                // it would not receive WM_BUTTON1DBLCLK, WM_OPEN, WM_BUTTON1UP
+                // for some strange reason (I think it has something to do with
+                // the window tracking that is initiated when WM_BUTTON1DOWN
+                // is posted to the titlebar, because it does not make sense
+                // to prepare any window tracking when we really want to maximize
+                // or restore the window, we just skip this);
+                // for all other windows, pass this on
+                if (WinQueryWindowUShort(hwnd, QWS_ID) != FID_TITLEBAR)
+                {
+                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                }
+                WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
+                WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
+                WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
+                WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+            }
+            // brc = FALSE;   // pass on to next hook in chain (if any)
+        break;
 
         /*
          * WM_CHORD:

@@ -1,14 +1,7 @@
 
-src\hook has code related to the XWorkplace PM hook.
-This is linked into several modules:
+src\hook has the code for the XWorkplace PM hook,
+which is compiled and linked into XWPHOOK.DLL.
 
-XWPHOOK.DLL contains the actual hook code. Its source
-code is in xwphook.c only.
-
-XWPDAEMN.EXE is the XWorkplace Daemon, which installs
-and configures the hook by dynamically linking to
-XWPHOOK.DLL. This also has the PageMage window code.
-Its source code is in the xwpdaemn.c and pgmg*.c
-files.
-
+The hook is controlled by the XWorkplace daemon
+(XWPDAEMN.EXE), whose sources are in src\Daemon.
 

@@ -975,6 +975,31 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
         break; }
 
+        /*
+         *@@ WOM_STOREGLOBALSETTINGS:
+         *      writes the GLOBALSETTINGS structure back to
+         *      OS2.INI. This gets posted from cmnStoreGlobalSettings.
+         *
+         *      Parameters: none.
+         *
+         *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Worker thread from File thread
+         */
+
+        case WOM_STOREGLOBALSETTINGS:
+        {
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+            if (pGlobalSettings)
+            {
+                PrfWriteProfileData(HINI_USERPROFILE,
+                                    INIAPP_XWORKPLACE, INIKEY_GLOBALSETTINGS,
+                                    pGlobalSettings, sizeof(GLOBALSETTINGS));
+            }
+            else
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to lock GLOBALSETTINGS.");
+            cmnUnlockGlobalSettings();
+        break; }
+
         #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop
             CRASH;
@@ -1646,62 +1671,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         /*
-         *@@ FIM_TREEVIEWAUTOSCROLL:
-         *     this msg is posted mainly by fdr_fnwpSubclassedFolderFrame
-         *     (subclassed folder windows) after the "plus" sign has
-         *     been clicked on (WM_CONTROL for containers with
-         *     CN_EXPANDTREE notification).
-         *
-         *      Parameters:
-         *          HWND mp1:    frame wnd handle
-         *          PMINIRECORDCORE mp2:
-         *                       the expanded minirecordcore
-         */
-
-        case FIM_TREEVIEWAUTOSCROLL:
-        {
-            WPObject    *pFolder = OBJECT_FROM_PREC((PMINIRECORDCORE)mp2);
-
-            if (wpshCheckObject(pFolder))
-            {
-                while (_somIsA(pFolder, _WPShadow))
-                    pFolder = _wpQueryShadowedObject(pFolder, TRUE);
-
-                if (!_somIsA(pFolder, _WPFolder)) // check only folders, avoid disks
-                    break;
-
-                // now check if the folder whose "plus" sign has been
-                // clicked on is already populated: if so, the WPS seems
-                // to insert the objects directly (i.e. in the Workplace
-                // thread), if not, the objects are inserted by some
-                // background populate thread, which we have no control
-                // over...
-                if ( (_wpQueryFldrFlags(pFolder) & FOI_POPULATEDWITHFOLDERS) == 0)
-                {
-                    // NOT fully populated: sleep a while, then post
-                    // the same msg again, until the "populated" folder
-                    // flag has been set
-                    DosSleep(100);
-                    xthrPostFileMsg(FIM_TREEVIEWAUTOSCROLL, mp1, mp2);
-                }
-                else
-                {
-                    // otherwise: scroll the tree view properly
-                    HWND                hwndCnr = WinWindowFromID((HWND)mp1, 0x8008);
-                    PMINIRECORDCORE     preccLastChild;
-                    preccLastChild = WinSendMsg(hwndCnr, CM_QUERYRECORD,
-                                                mp2,   // PMINIRECORDCORE
-                                                MPFROM2SHORT(CMA_LASTCHILD,
-                                                             CMA_ITEMORDER));
-                    cnrhScrollToRecord(hwndCnr,
-                                       (PRECORDCORE)preccLastChild,
-                                       CMA_TEXT,
-                                       TRUE);
-                }
-            }
-        break; }
-
-        /*
          *@@ FIM_PROCESSTASKLIST:
          *      this processes a file-task-list created
          *      using fopsCreateFileTaskList. This message
@@ -1724,29 +1693,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         case FIM_PROCESSTASKLIST:
             fopsFileThreadProcessing((HFILETASKLIST)mp1);
         break;
-
-        /*
-         *@@ FIM_STOREGLOBALSETTINGS:
-         *      writes the GLOBALSETTINGS structure back to
-         *      OS2.INI. This gets posted from cmnStoreGlobalSettings.
-         *
-         *      Parameters: none.
-         */
-
-        case FIM_STOREGLOBALSETTINGS:
-        {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-            if (pGlobalSettings)
-            {
-                PrfWriteProfileData(HINI_USERPROFILE,
-                                    INIAPP_XWORKPLACE, INIKEY_GLOBALSETTINGS,
-                                    pGlobalSettings, sizeof(GLOBALSETTINGS));
-            }
-            else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Unable to lock GLOBALSETTINGS.");
-            cmnUnlockGlobalSettings();
-        break; }
 
         /*
          *@@ FIM_REFRESH:
@@ -2182,6 +2128,63 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
         break; }
 
+        /*
+         *@@ QM_TREEVIEWAUTOSCROLL:
+         *     this msg is posted mainly by fdr_fnwpSubclassedFolderFrame
+         *     (subclassed folder windows) after the "plus" sign has
+         *     been clicked on (WM_CONTROL for containers with
+         *     CN_EXPANDTREE notification).
+         *
+         *      Parameters:
+         *          HWND mp1:    frame wnd handle
+         *          PMINIRECORDCORE mp2:
+         *                       the expanded minirecordcore
+         *
+         *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Speedy thread from File thread
+         */
+
+        case QM_TREEVIEWAUTOSCROLL:
+        {
+            WPObject    *pFolder = OBJECT_FROM_PREC((PMINIRECORDCORE)mp2);
+
+            if (wpshCheckObject(pFolder))
+            {
+                while (_somIsA(pFolder, _WPShadow))
+                    pFolder = _wpQueryShadowedObject(pFolder, TRUE);
+
+                if (!_somIsA(pFolder, _WPFolder)) // check only folders, avoid disks
+                    break;
+
+                // now check if the folder whose "plus" sign has been
+                // clicked on is already populated: if so, the WPS seems
+                // to insert the objects directly (i.e. in the Workplace
+                // thread), if not, the objects are inserted by some
+                // background populate thread, which we have no control
+                // over...
+                if ( (_wpQueryFldrFlags(pFolder) & FOI_POPULATEDWITHFOLDERS) == 0)
+                {
+                    // NOT fully populated: sleep a while, then post
+                    // the same msg again, until the "populated" folder
+                    // flag has been set
+                    DosSleep(100);
+                    xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL, mp1, mp2);
+                }
+                else
+                {
+                    // otherwise: scroll the tree view properly
+                    HWND                hwndCnr = WinWindowFromID((HWND)mp1, 0x8008);
+                    PMINIRECORDCORE     preccLastChild;
+                    preccLastChild = WinSendMsg(hwndCnr, CM_QUERYRECORD,
+                                                mp2,   // PMINIRECORDCORE
+                                                MPFROM2SHORT(CMA_LASTCHILD,
+                                                             CMA_ITEMORDER));
+                    cnrhScrollToRecord(hwndCnr,
+                                       (PRECORDCORE)preccLastChild,
+                                       CMA_TEXT,
+                                       TRUE);
+                }
+            }
+        break; }
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);

@@ -1828,11 +1828,13 @@ VOID cmnUnlockGlobalSettings(VOID)
  *@@ cmnStoreGlobalSettings:
  *      stores the current Global Settings back into the INI files;
  *      returns TRUE if successful.
+ *
+ *@@changed V0.9.4 (2000-06-16) [umoeller]: now using Worker thread instead of File thread
  */
 
 BOOL cmnStoreGlobalSettings(VOID)
 {
-    xthrPostFileMsg(FIM_STOREGLOBALSETTINGS, 0, 0);
+    xthrPostWorkerMsg(WOM_STOREGLOBALSETTINGS, 0, 0);
     return (TRUE);
 }
 

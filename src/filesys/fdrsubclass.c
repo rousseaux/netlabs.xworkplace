@@ -1572,9 +1572,9 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
                             if (pGlobalSettings->TreeViewAutoScroll)
-                                xthrPostFileMsg(FIM_TREEVIEWAUTOSCROLL,
-                                                (MPARAM)hwndFrame,
-                                                mp2); // PMINIRECORDCORE
+                                xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL,
+                                                  (MPARAM)hwndFrame,
+                                                  mp2); // PMINIRECORDCORE
                         break; }
 
                         default:
