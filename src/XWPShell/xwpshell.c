@@ -43,9 +43,10 @@
  *      To implement XWPSec, I have reviewed the concepts of Linux,
  *      SES, and OS/2 LAN Server (Warp Server for e-Business).
  *      See subjects.c, users.c, and userdb.c for a discussion of
- *      security concepts which came out of this review. As a summary,
- *      XWPSec follows the SES security models, with a few
- *      simplifications. To make things more sufficient, user IDs
+ *      security concepts which came out of this review.
+ *
+ *      As a summary, XWPSec follows the SES security models, with a
+ *      few simplifications. To make things more sufficient, user IDs
  *      and group IDs have been added (like Linux uid and gid) to
  *      allow looking up data based on numbers instead of names.
  *

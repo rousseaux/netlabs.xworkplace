@@ -92,21 +92,21 @@
 <USER
     NAME="root"
     USERID=0
-    PASS="Geddy#"
+    PASS="pass"
     GROUPID=0
 >root</USER>
 
 <USER
     NAME="ulli"
     USERID=1
-    PASS="Geddy#"
+    PASS="pass"
     GROUPID=2
 >Ulrich M”ller</USER>
 
 <USER
     NAME="special"
     USERID=2
-    PASS="Geddy#"
+    PASS="pass"
     GROUPID=3
 >Ulrich M”ller</USER>
 
