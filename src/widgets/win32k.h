@@ -284,7 +284,7 @@ typedef struct _k32SystemMemInfo
 
     /* Other paging info */
     BOOL        fPagingSwapEnabled;     /* Paging: TRUE when swapping is enabled, else false. (PGSwapEnabled) */
-    ULONG       cPagingPageFaults;      /* Paging: Number of pagefaults which has occured since boot. (pgcPageFaults) */
+    ULONG       cPagingPageFaults;      /* Paging: Number of pagefaults which have occurred since boot. (pgcPageFaults) */
     ULONG       cPagingPageFaultsActive;/* Paging: Number of pagefaults currently being processed. (pgcPageFaultsActive) */
     ULONG       cPagingPhysPages;       /* Paging: Count of physical pages. (hope this is correct) (pgPhysPages) */
     ULONG       ulPagingPhysMax;        /* Paging: Top of physical memory (physical page number) (pgPhysMax) */

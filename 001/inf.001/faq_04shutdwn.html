@@ -51,7 +51,7 @@ INI keys which <I>do</I> contain data. I was finally able to track this down to 
 with pretty large INI files. I suspect that basically the problem sits in PM itself,
 since the <CODE>WinGetLastError</CODE> API
 frequently returns <CODE>PMERR_MEMORY_ALLOCATION_ERR</CODE>, which is cooly described
-in the PM reference with "An error occured during memory management.".
+in the PM reference with "An error occurred during memory management.".
 I believe that with large INI files, PM runs out of shared memory, which is used for
 INI file management. The limit above which the errors start to occur is dependent on
 how much shared memory is already used on the respective machine, but it's usually

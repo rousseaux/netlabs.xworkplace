@@ -104,7 +104,7 @@
         ULONG           ulMS;           // for ager; milliseconds counter value
                                         // when notification was received
 
-        WPFolder        *pFolder;       // folder where change occured
+        WPFolder        *pFolder;       // folder where change occurred
 
         PSZ             pShortName;     // ptr into CNInfo.szName to where short name starts
 
