@@ -47,7 +47,11 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR   // added V1.0.4 (2005-03-27) [chennecke]
 #define INCL_WININPUT
+#define INCL_WINDIALOGS      // added V1.0.4 (2005-03-27) [chennecke]
+#define INCL_WINSTATICS      // added V1.0.4 (2005-03-27) [chennecke]
+#define INCL_WINBUTTONS      // added V1.0.4 (2005-03-27) [chennecke]
 #define INCL_WINPOINTERS
 #define INCL_WINPROGRAMLIST
 #define INCL_WINSWITCHLIST
@@ -82,10 +86,12 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers, added V1.0.4 (2005-03-27) [chennecke]
 #include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\standards.h"          // some standard macros, added V1.0.4 (2005-03-27) [chennecke]
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
@@ -95,6 +101,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes, added V1.0.4 (2005-03-27) [chennecke]
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "config\cfgsys.h"              // XFldSystem CONFIG.SYS pages implementation
@@ -110,6 +117,9 @@
  *   Private definitions
  *
  ********************************************************************/
+
+/* added V1.0.4 (2005-03-27) [chennecke]: added settings dialog function */
+VOID EXPENTRY TwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 /*
  *@@ SNAPSHOT:
@@ -182,7 +192,8 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
                                        // widget class name displayed to user
                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
             WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
-            NULL        // no settings dlg
+            TwgtShowSettingsDlg         // with settings dlg
+                                        // changed V1.0.4 (2005-03-27) [chennecke]
         },
     };
 
@@ -216,6 +227,9 @@ PCMNGETSTRING pcmnGetString = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 
+// added V1.0.4 (2005-03-27) [chennecke]
+PCTLMAKECOLORRECT pctlMakeColorRect = NULL;
+
 PCTRDEFWIDGETPROC pctrDefWidgetProc = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
@@ -241,6 +255,10 @@ PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 
+// added V1.0.4 (2005-03-27) [chennecke]
+PDLGHCREATEDLG pdlghCreateDlg = NULL;
+PWINHCENTERWINDOW pwinhCenterWindow = NULL;
+
 PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
@@ -252,6 +270,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+        "ctlMakeColorRect", (PFN*)&pctlMakeColorRect,          // added V1.0.4 (2005-03-27) [chennecke]
         "ctrDefWidgetProc", (PFN*)&pctrDefWidgetProc,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
@@ -271,6 +290,11 @@ static const RESOLVEFUNCTION G_aImports[] =
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
+
+        // added V1.0.4 (2005-03-27) [chennecke]
+        "dlghCreateDlg", (PFN*)&pdlghCreateDlg,
+        "winhCenterWindow", (PFN*)&pwinhCenterWindow,
+
         "xstrcat", (PFN*)&pxstrcat,
         "xstrClear", (PFN*)&pxstrClear,
         "xstrInit", (PFN*)&pxstrInit
@@ -343,6 +367,9 @@ typedef struct _WIDGETPRIVATE
 
     BOOL            fUpdateGraph;
 
+    BOOL            fRecreateFullBitmap;      // TRUE if the complete graph bitmap has to be recreated
+                                              // added V1.0.4 (2005-03-27) [chennecke]
+
     ULONG           cyNeeded;       // returned for XN_QUERYSIZE... this is initialized
                                     // to 10, but probably changed later if we need
                                     // more space
@@ -367,9 +394,12 @@ typedef struct _WIDGETPRIVATE
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
+
 /* ******************************************************************
  *
- *   Widget settings dialog
+ *   Widget setup management
+ *
+ * changed V1.0.4 (2005-03-27) [chennecke]: changed title from "settings dialog"
  *
  ********************************************************************/
 
@@ -410,6 +440,7 @@ VOID TwgtFreeSetup(PMONITORSETUP pSetup)
  *      out. We do not clean up previous data here.
  *
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed potential memory leak
+ *@@changed V1.0.4 (2005-03-27) [chennecke]: added processing of setup strings for graph colors
  */
 
 VOID TwgtScanSetup(PCSZ pcszSetupString,
@@ -460,10 +491,49 @@ VOID TwgtScanSetup(PCSZ pcszSetupString,
     else
         pSetup->pszFont = strdup("4.System VIO");
 
-    pSetup->lcolSwapFree = RGBCOL_RED;
-    pSetup->lcolSwap = RGBCOL_DARKPINK;
-    pSetup->lcolPhysInUse = RGBCOL_DARKBLUE;
-    pSetup->lcolPhysFree = RGBCOL_DARKGREEN;
+    // graph color free physical memory
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "PHYSFREECOL"))
+    {
+        pSetup->lcolPhysFree = pctrParseColorString(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        // default color:
+        pSetup->lcolPhysFree = RGBCOL_DARKGREEN;
+
+    // graph color used physical memory
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "PHYSINUSECOL"))
+    {
+        pSetup->lcolPhysInUse = pctrParseColorString(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        // default color:
+        pSetup->lcolPhysInUse = RGBCOL_DARKBLUE;
+
+    // graph color used swapper size (or just swapper size if Win32k.sys not loaded)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "SWAPCOL"))
+    {
+        pSetup->lcolSwap = pctrParseColorString(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        // default color:
+        pSetup->lcolSwap = RGBCOL_DARKPINK;
+
+    // graph color used physical memory
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "SWAPFREECOL"))
+    {
+        pSetup->lcolSwapFree = pctrParseColorString(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        // default color:
+        pSetup->lcolSwapFree = RGBCOL_RED;
 }
 
 /*
@@ -471,14 +541,16 @@ VOID TwgtScanSetup(PCSZ pcszSetupString,
  *      composes a new setup string.
  *      The caller must invoke xstrClear on the
  *      string after use.
+ *
+ *@@changed V1.0.4 (2005-03-27) [chennecke]: added setup strings for graph colors
  */
 
 VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
                    PMONITORSETUP pSetup)
 {
-    CHAR    szTemp[100];
+    CHAR    szTemp[200];
     // PSZ     psz = 0;
-    pxstrInit(pstrSetup, 100);
+    pxstrInit(pstrSetup, 200);
 
     pdrv_sprintf(szTemp, "WIDTH=%d;",
             pSetup->cx);
@@ -499,7 +571,25 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
+
+    pdrv_sprintf(szTemp, "PHYSFREECOL=%06lX;",
+            pSetup->lcolPhysFree);
+    pxstrcat(pstrSetup, szTemp, 0);
+
+    pdrv_sprintf(szTemp, "PHYSINUSECOL=%06lX;",
+            pSetup->lcolPhysInUse);
+    pxstrcat(pstrSetup, szTemp, 0);
+
+    pdrv_sprintf(szTemp, "SWAPCOL=%06lX;",
+            pSetup->lcolSwap);
+    pxstrcat(pstrSetup, szTemp, 0);
+
+    pdrv_sprintf(szTemp, "SWAPFREECOL=%06lX;",
+            pSetup->lcolSwapFree);
+    pxstrcat(pstrSetup, szTemp, 0);
+
 }
+
 
 /* ******************************************************************
  *
@@ -507,7 +597,242 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  *
  ********************************************************************/
 
-// None currently.
+// added V1.0.4 (2005-03-27) [chennecke]
+#define INDEX_BACKGROUND        1000
+#define INDEX_PHYSFREE          1002
+#define INDEX_PHYSINUSE         1003
+#define INDEX_SWAP              1004
+#define INDEX_SWAPFREE          1005
+
+/*
+ *@@ SubclassAndSetColor:
+ *
+ *@@added V1.0.4 (2005-03-27) [chennecke]
+ */
+
+STATIC VOID SubclassAndSetColor(HWND hwndDlg,
+                                ULONG ulID,
+                                PCSZ pcszTitle,
+                                LONG lColor,
+                                LONG lBackColor)
+{
+    HWND hwnd;
+    if (hwnd = WinWindowFromID(hwndDlg, ulID))
+    {
+        WinSetWindowText(hwnd,
+                         (PSZ)pcszTitle);
+        WinSetPresParam(hwnd,
+                        PP_BACKGROUNDCOLOR,
+                        sizeof(LONG),
+                        &lColor);
+        if (ulID == 1000 + INDEX_BACKGROUND)
+            WinSetPresParam(hwnd,
+                            PP_FOREGROUNDCOLOR,
+                            sizeof(LONG),
+                            &lBackColor);
+
+        pctlMakeColorRect(hwnd);
+    }
+}
+
+/*
+ *@@ GetColor:
+ *
+ *@@added V1.0.4 (2005-03-27) [chennecke]
+ */
+
+STATIC LONG GetColor(HWND hwndDlg,
+                     ULONG ulID)
+{
+    return (pwinhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
+                                PP_BACKGROUNDCOLOR,
+                                FALSE,
+                                SYSCLR_DIALOGBACKGROUND));
+}
+
+#define COLOR_WIDTH     60
+#define COLOR_HEIGHT    16
+
+static CONTROLDEF
+    SentinelOKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+    SentinelCancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+
+    PhysicalGroup = CONTROLDEF_GROUP(
+                              NULL,
+                              -1,
+                              -1,
+                              -1),
+
+    PhysicalFreeColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_PHYSFREE,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+
+    PhysicalInUseColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_PHYSINUSE,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+
+
+    SwapperFileGroup = CONTROLDEF_GROUP(
+                                 NULL,
+                                 -1,
+                                 -1,
+                                 -1),
+
+    SwapperColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_SWAP,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+    SwapperFreeColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_SWAPFREE,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+
+    OthersGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
+
+    BackgroundColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_BACKGROUND,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT);
+
+static const DLGHITEM
+    dlgSentinel[] =
+    {
+        START_TABLE,
+            START_ROW(ROW_VALIGN_TOP),
+                START_GROUP_TABLE(&PhysicalGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&PhysicalFreeColor),
+                    START_ROW(0),
+                        CONTROL_DEF(&PhysicalInUseColor),
+                END_TABLE,
+                START_GROUP_TABLE(&SwapperFileGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&SwapperFreeColor),
+                    START_ROW(0),
+                        CONTROL_DEF(&SwapperColor),
+                END_TABLE,
+                START_GROUP_TABLE(&OthersGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&BackgroundColor),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&SentinelOKButton),
+                CONTROL_DEF(&SentinelCancelButton),
+        END_TABLE
+    };
+
+/*
+ *@@ TwgtShowSettingsDlg:
+ *
+ *@@added V1.0.4 (2005-03-27) [chennecke]
+ */
+
+VOID EXPENTRY TwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+{
+    HWND hwndDlg = NULLHANDLE;
+    APIRET arc;
+
+    ULONG       ul;
+
+    PhysicalGroup.pcszText = pcmnGetString(ID_CRSI_SWGT_PHYS);
+    SwapperFileGroup.pcszText = pcmnGetString(ID_CRSI_SWGT_SWAPFILE);
+    OthersGroup.pcszText = pcmnGetString(ID_CRSI_PWGT_OTHERCOLORS);
+
+    SentinelOKButton.pcszText = pcmnGetString(DID_OK);
+    SentinelCancelButton.pcszText = pcmnGetString(DID_CANCEL);
+
+    if (!(arc = pdlghCreateDlg(&hwndDlg,
+                               pData->hwndOwner,
+                               FCF_FIXED_DLG,
+                               WinDefDlgProc,
+                               pcmnGetString(ID_CRSI_WIDGET_SENTINEL),
+                               dlgSentinel,
+                               ARRAYITEMCOUNT(dlgSentinel),
+                               NULL,
+                               pcmnQueryDefaultFont())))
+    {
+        // go scan the setup string
+        MONITORSETUP  Setup;
+        TwgtScanSetup(pData->pcszSetupString,
+                      &Setup);
+
+        // for each color control, set the background color
+        // according to the settings
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_PHYSFREE,
+                            pcmnGetString(ID_CRSI_SWGT_PHYSFREE),
+                            Setup.lcolPhysFree,
+                            Setup.lcolBackground);
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_PHYSINUSE,
+                            pcmnGetString(ID_CRSI_SWGT_PHYSINUSE),
+                            Setup.lcolPhysInUse,
+                            Setup.lcolBackground);
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_SWAP,
+                            pcmnGetString(ID_CRSI_SWGT_SWAP),
+                            Setup.lcolSwap,
+                            Setup.lcolBackground);
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_SWAPFREE,
+                            pcmnGetString(ID_CRSI_SWGT_SWAPFREE),
+                            Setup.lcolSwapFree,
+                            Setup.lcolBackground);
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_BACKGROUND,
+                            pcmnGetString(ID_CRSI_PWGT_BACKGROUNDCOLOR),
+                            Setup.lcolBackground,
+                            Setup.lcolForeground);
+
+        // go!
+        pwinhCenterWindow(hwndDlg);
+        if (DID_OK == WinProcessDlg(hwndDlg))
+        {
+            XSTRING strSetup;
+
+            // get the colors back from the controls
+            Setup.lcolPhysFree = GetColor(hwndDlg,
+                                          1000 + INDEX_PHYSFREE);
+
+            Setup.lcolPhysInUse = GetColor(hwndDlg,
+                                           1000 + INDEX_PHYSINUSE);
+
+            Setup.lcolSwap = GetColor(hwndDlg,
+                                      1000 + INDEX_SWAP);
+
+            Setup.lcolSwapFree = GetColor(hwndDlg,
+                                          1000 + INDEX_SWAPFREE);
+
+            Setup.lcolBackground = GetColor(hwndDlg,
+                                            1000 + INDEX_BACKGROUND);
+
+            TwgtSaveSetup(&strSetup,
+                          &Setup);
+
+            pData->pctrSetSetupString(pData->hSettings,
+                                      strSetup.psz);
+            pxstrClear(&strSetup);
+        }
+
+        WinDestroyWindow(hwndDlg);
+    }
+}
 
 /* ******************************************************************
  *
@@ -649,6 +974,8 @@ STATIC VOID TwgtDestroy(HWND hwnd)
 /*
  *@@ TwgtControl:
  *      implementation for WM_CONTROL.
+ *
+ *@@changed V1.0.4 (2005-03-27) [chennecke]: added processing for XN_SETUPCHANGED
  */
 
 BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -682,6 +1009,26 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = pPrivate->cyNeeded;
                                     // initially 10, possibly raised later
                         brc = TRUE;
+                    }
+                    break;
+
+                    /*
+                     * XN_SETUPCHANGED:
+                     *      XCenter has a new setup string for
+                     *      us in mp2.
+                     */
+
+                    case XN_SETUPCHANGED:
+                    {
+                        const char *pcszNewSetupString = (const char*)mp2;
+
+                        // reinitialize the setup data
+                        TwgtFreeSetup(&pPrivate->Setup);
+                        TwgtScanSetup(pcszNewSetupString,
+                                      &pPrivate->Setup);
+
+                        pPrivate->fRecreateFullBitmap = TRUE;
+                        WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                     }
                     break;
                 }
@@ -799,6 +1146,8 @@ VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
  *      Preconditions:
  *      --  pPrivate->hbmGraph must be selected into
  *          pPrivate->hpsMem.
+ *
+ *@@changed V1.0.4 (2005-03-27) [chennecke]: added checking for forced recreation of full graph bitmap
  */
 
 VOID TwgtUpdateGraph(HWND hwnd,
@@ -861,7 +1210,8 @@ VOID TwgtUpdateGraph(HWND hwnd,
                     ulMaxMemKB = ulThis;
             }
 
-            if (ulMaxMemKB != pPrivate->ulMaxMemKBLast)
+            // added condition for changed setup string V1.0.4 (2005-03-27) [chennecke]
+            if ((ulMaxMemKB != pPrivate->ulMaxMemKBLast) || (pPrivate->fRecreateFullBitmap))
             {
                 // scaling has changed (or first call):
                 // well, then we need to repaint the entire
@@ -893,6 +1243,8 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
                 // store this for next time
                 pPrivate->ulMaxMemKBLast = ulMaxMemKB;
+                // reset indicator for recreation of full bitmap V1.0.4 (2005-03-27) [chennecke]
+                pPrivate->fRecreateFullBitmap = FALSE;
             }
             else
             {
