@@ -56,8 +56,8 @@ OBJS = \
        $(OUTPUTDIR)\anwani.obj \
        $(OUTPUTDIR)\anwcur.obj \
 !endif
-       $(OUTPUTDIR)\xdebug.obj \
-       $(OUTPUTDIR)\xdebug_folder.obj \
+#       $(OUTPUTDIR)\xdebug.obj \
+#       $(OUTPUTDIR)\xdebug_folder.obj \
        $(OUTPUTDIR)\xcenter.obj \
        $(OUTPUTDIR)\xclslist.obj \
        $(OUTPUTDIR)\xfdataf.obj \

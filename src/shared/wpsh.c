@@ -88,6 +88,7 @@
 #include <wpdisk.h>
 #include <wpshadow.h>
 
+#include "shared\common.h"
 #include "shared\wpsh.h"
 
 /*
@@ -390,7 +391,7 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
         somTD_WPFolder_wpQueryContent rslv_wpQueryContent
                 = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
 
-        if (wpshCheckIfPopulated(somSelf))
+        if (wpshCheckIfPopulated(somSelf, FALSE))
             brc = TRUE;
 
         for (   pObject = rslv_wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
@@ -411,24 +412,40 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
 
 /*
  *@@ wpshCheckIfPopulated:
- *      this populates a folder if it's not fully populated yet.
+ *      this populates a folder if it's not populated yet.
  *      Saves you from querying the full path and all that.
+ *
+ *      If (fFoldersOnly == FALSE), this populates the folder
+ *      with subfolders only if this hasn't been done yet.
+ *
+ *      If (fFoldersOnly == TRUE), this fully populates the
+ *      folder if this hasn't been done yet.
+ *
  *      Returns TRUE if the folder was successfully populated
  *      or if the folder was already fully populated.
  *      Returns FALSE if wpPopulate failed.
  *
  *@@changed V0.9.4 (2000-08-03) [umoeller]: changed return code
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  */
 
-BOOL wpshCheckIfPopulated(WPFolder *somSelf)
+BOOL wpshCheckIfPopulated(WPFolder *somSelf,
+                          BOOL fFoldersOnly)
 {
     BOOL        brc = FALSE;
     CHAR        szRealName[CCHMAXPATH];
 
-    if ((_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL) == 0)
+    ULONG       ulPopulateFlag = (fFoldersOnly)
+                                    ? FOI_POPULATEDWITHFOLDERS
+                                    : FOI_POPULATEDWITHALL;
+
+    if ((_wpQueryFldrFlags(somSelf) & ulPopulateFlag) != ulPopulateFlag)
     {
         _wpQueryFilename(somSelf, szRealName, TRUE);
-        brc = _wpPopulate(somSelf, 0, szRealName, FALSE);
+        brc = _wpPopulate(somSelf,
+                          0,
+                          szRealName,
+                          fFoldersOnly);
     }
     else
         // already populated:
@@ -1757,4 +1774,121 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
         else
             _Pmpf(("    pTaskRec is NULL"));
     }
+
 #endif
+
+/* ******************************************************************
+ *
+ *   Additional WPFolder method prototypes
+ *
+ ********************************************************************/
+
+/*
+ *@@ wpshRequestFolderMutexSem:
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
+                                ULONG ulTimeout)
+{
+    ULONG ulrc = -1;
+
+    xfTD_wpRequestFolderMutexSem _wpRequestFolderMutexSem
+            = (xfTD_wpRequestFolderMutexSem)somResolveByName(somSelf,
+                                                             "wpRequestFolderMutexSem");
+    if (!_wpRequestFolderMutexSem)
+        CMN_LOG(("Unable to resolve method."));
+    else
+        ulrc = _wpRequestFolderMutexSem(somSelf, ulTimeout);
+
+    return (ulrc);
+}
+
+/*
+ *@@ wpshReleaseFolderMutexSem:
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf)
+{
+    ULONG ulrc = -1;
+
+    xfTD_wpReleaseFolderMutexSem _wpReleaseFolderMutexSem
+            = (xfTD_wpReleaseFolderMutexSem)somResolveByName(somSelf,
+                                                             "wpReleaseFolderMutexSem");
+    if (!_wpReleaseFolderMutexSem)
+        CMN_LOG(("Unable to resolve method."));
+    else
+        ulrc = _wpReleaseFolderMutexSem(somSelf);
+
+    return (ulrc);
+}
+
+/*
+ *@@ wpshFlushNotifications:
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+ULONG wpshFlushNotifications(WPFolder *somSelf)
+{
+    ULONG ulrc = 0;
+
+    xfTD_wpFlushNotifications _wpFlushNotifications
+        = (xfTD_wpFlushNotifications)somResolveByName(somSelf,
+                                                      "wpFlushNotifications");
+    if (!_wpFlushNotifications)
+        CMN_LOG(("Unable to resolve method."));
+    else
+        _wpFlushNotifications(somSelf);
+
+    return (ulrc);
+}
+
+/*
+ *@@ wpshGetNotifySem:
+ *      calls M_WPFolder::wpclsGetNotifySem to lock out
+ *      the WPS auto-refresh-folder threads.
+ *
+ *      Note that this requests a system-wide lock.
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+BOOL wpshGetNotifySem(ULONG ulTimeout)
+{
+    BOOL brc = FALSE;
+    M_WPFolder *pWPFolder = _WPFolder;
+
+    xfTD_wpclsGetNotifySem _wpclsGetNotifySem
+            = (xfTD_wpclsGetNotifySem)somResolveByName(pWPFolder,
+                                                       "wpclsGetNotifySem");
+    if (!_wpclsGetNotifySem)
+        CMN_LOG(("Unable to resolve method pointer."));
+    else
+        brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
+
+    return (brc);
+}
+
+/*
+ *@@ wpshReleaseNotifySem:
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+VOID wpshReleaseNotifySem(VOID)
+{
+    M_WPFolder *pWPFolder = _WPFolder;
+
+    xfTD_wpclsReleaseNotifySem _wpclsReleaseNotifySem
+            = (xfTD_wpclsReleaseNotifySem)somResolveByName(pWPFolder,
+                                                           "wpclsReleaseNotifySem");
+    if (!_wpclsReleaseNotifySem)
+        CMN_LOG(("Unable to resolve method pointer."));
+    else
+        _wpclsReleaseNotifySem(pWPFolder);
+}
+

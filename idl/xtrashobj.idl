@@ -50,8 +50,7 @@ interface XWPTrashObject : WPTransient
     BOOL xwpSetRelatedObject(in WPObject pObject);
     WPObject xwpQueryRelatedObject();
     PSZ xwpQueryRelatedPath();
-    VOID xwpSetExpandedObjectData(in PVOID pvData,
-                                  in ULONG ulNewSize,
+    VOID xwpSetExpandedObjectSize(in ULONG ulNewSize,
                                   in XWPTrashCan pTrashCan);
     ULONG xwpQueryRelatedSize();
     ULONG xwpValidateTrashObject();
@@ -64,7 +63,7 @@ interface XWPTrashObject : WPTransient
             xwpSetRelatedObject,
             xwpQueryRelatedObject,
             xwpQueryRelatedPath,
-            xwpSetExpandedObjectData,
+            xwpSetExpandedObjectSize,
             xwpQueryRelatedSize,
             xwpValidateTrashObject,
             xwpRestoreFromTrashCan;
@@ -101,8 +100,6 @@ interface XWPTrashObject : WPTransient
 
     CHAR     szTotalSize[30];   // string with total size; initially, this
                                 // is set to "calculating"
-
-    PVOID    pvExpandedObject;  // points to a EXPANDEDOBJECT (fileops.h)
 
     /*
      * WPTransient methods overridden by XWPTrashObject:

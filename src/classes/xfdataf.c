@@ -314,6 +314,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                                    iPosition, ulMenuType,
                                    ulView, ulReserved);
 
+#ifdef __EXTASSOCS__
         if ((brc) && (fExtAssocs))
         {
             // extended assocs have been enabled:
@@ -365,6 +366,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                 break; }
             }
         }
+#endif // EXTASSOCS
     }
 
     return (brc);

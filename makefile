@@ -314,8 +314,8 @@ nls:
 
 link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
-      $(XWPRUNNING)\bin\xwpdaemn.exe \
-      $(XWPRUNNING)\bin\xdebug.dll
+      $(XWPRUNNING)\bin\xwpdaemn.exe
+#      $(XWPRUNNING)\bin\xdebug.dll
 
 # Finally, define rules for linking the target DLLs and EXEs
 # This uses the $OBJS and $HLPOBJS macros defined at the top.

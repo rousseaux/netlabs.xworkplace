@@ -464,9 +464,12 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             {
                                 // success: store object ptr in dlg data
                                 pddd->pvUser = pIniFile;
-                                _wpSetStyle(pIniFile,
-                                            _wpQueryStyle(pIniFile)
-                                                | OBJSTYLE_NODELETE
+                                // set object flags...
+                                _wpModifyStyle(pIniFile,
+                                               OBJSTYLE_NODELETE
+                                                | OBJSTYLE_NORENAME
+                                                | OBJSTYLE_NOMOVE,
+                                               OBJSTYLE_NODELETE
                                                 | OBJSTYLE_NORENAME
                                                 | OBJSTYLE_NOMOVE);
                             }

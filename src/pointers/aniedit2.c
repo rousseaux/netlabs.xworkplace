@@ -319,7 +319,7 @@ APIRET GetCommandlineParms
             else
             {
                 *pszThisValue = 0;
-                *pszThisValue++;
+                (*pszThisValue)++;
             }
 
             // upcase the parm name; no use of c-runtime so we can use subsystem lib !

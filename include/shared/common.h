@@ -1226,6 +1226,8 @@
                 const char *pcszFormat,
                 ...);
 
+    #define CMN_LOG(str) cmnLog(__FILE__, __LINE__, __FUNCTION__, str)
+
     /* ******************************************************************
      *
      *   XWorkplace National Language Support (NLS)

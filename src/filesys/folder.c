@@ -925,12 +925,13 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
             = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
     // populate folder
-    wpshCheckIfPopulated(pFolder);
+    wpshCheckIfPopulated(pFolder,
+                         FALSE);        // full populate
 
     TRY_LOUD(excpt1, NULL)
     {
         // lock folder contents
-        fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
+        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
 
         // count objects
         for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
@@ -967,7 +968,7 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     } END_CATCH();
 
     if (fFolderLocked)
-        _wpReleaseObjectMutexSem(pFolder);
+        wpshReleaseFolderMutexSem(pFolder);
 
     return (brc);
 }

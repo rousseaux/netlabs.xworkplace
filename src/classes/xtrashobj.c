@@ -162,6 +162,11 @@ CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
  *      trash object is being initialized (from
  *      XWPTrashObject::wpSetup) and should not be
  *      called manually.
+ *
+ *      Preconditions: the related object should be
+ *      locked.
+ *
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: fixed icon
  */
 
 SOM_Scope BOOL  SOMLINK xtro_xwpSetRelatedObject(XWPTrashObject *somSelf,
@@ -179,9 +184,12 @@ SOM_Scope BOOL  SOMLINK xtro_xwpSetRelatedObject(XWPTrashObject *somSelf,
         _wpSetTitle(somSelf, _wpQueryTitle(pObject));
         // and icon
         _wpSetIcon(somSelf, _wpQueryIcon(pObject));
-        // and make sure this icon is not destroyed
-        _wpSetStyle(somSelf,
-                    _wpQueryStyle(somSelf) & ~OBJSTYLE_CUSTOMICON);
+
+        // _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
+        /* _wpSetStyle(somSelf,
+                    _wpQueryStyle(somSelf) & ~OBJSTYLE_CUSTOMICON); */
+            // NEVER CALL ANY OF THESE, this messes up the icon
+
         // set size of related object to 0 initially;
         // this is properly calculated on the File thread
         // later
@@ -274,7 +282,7 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
 }
 
 /*
- *@@ xwpSetExpandedObjectData:
+ *@@ xwpSetExpandedObjectSize:
  *      this gets called on the File thread when
  *      the total size of an object has been
  *      calculated (possibly including subfolders).
@@ -283,13 +291,11 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  *      the trash can's data by calling
  *      XWPTrashCan::xwpAddObjectSize.
  *
- *      pvData is really an EXPANDEDOBJECT structure.
- *
  *@@added V0.9.2 (2000-02-28) [umoeller]
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: no longer storing data statically, func renamed
  */
 
-SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectData(XWPTrashObject *somSelf,
-                                                      PVOID pvData,
+SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
                                                       ULONG ulNewSize,
                                                       XWPTrashCan* pTrashCan)
 {
@@ -298,7 +304,6 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectData(XWPTrashObject *somSelf,
 
     // ### lock the object before doing this...
 
-    _pvExpandedObject = pvData;
     _ulTotalSize = ulNewSize;
 
     // update string for details view, which has been
@@ -441,7 +446,6 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
     _pRelatedObject = NULL;
     _pszSourcePath = NULL;
     strcpy(_szTotalSize, pNLSStrings->pszCalculating);
-    _pvExpandedObject = 0;
 
     XWPTrashObject_parent_WPTransient_wpInitData(somSelf);
 }

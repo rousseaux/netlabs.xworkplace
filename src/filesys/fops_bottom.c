@@ -137,11 +137,11 @@ typedef struct _FILETASKLIST
     ULONG       ulOperation;    // operation; see fopsCreateFileTaskList.
 
     WPFolder    *pSourceFolder; // source folder for the operation; this gets locked
-    BOOL        fSourceLocked;  // TRUE if wpRequestObjectMutexSem has been invoked
+    BOOL        fSourceLocked;  // TRUE if wpRequestFolderMutexSem has been invoked
                                 // on pSourceFolder
 
     WPFolder    *pTargetFolder; // target folder for the operation
-    BOOL        fTargetLocked;  // TRUE if wpRequestObjectMutexSem has been invoked
+    BOOL        fTargetLocked;  // TRUE if wpRequestFolderMutexSem has been invoked
                                 // on pTargetFolder
 
     POINTL      ptlTarget;      // target coordinates in pTargetFolder
@@ -176,7 +176,7 @@ typedef struct _FILETASKLIST
  *      -- pass the task to the File thread using fopsStartTask,
  *         OR delete the list using fopsDeleteFileTaskList.
  *
- *      WARNING: This function requests the object mutex semaphore
+ *      WARNING: This function requests the folder mutex semaphore
  *      for pSourceFolder. You must add objects to the returned
  *      task list (using fopsAddFileTask) as quickly as possible.
  *
@@ -239,7 +239,7 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
 
     if (pSourceFolder)
     {
-        fSourceLocked = !_wpRequestObjectMutexSem(pSourceFolder, 5000);
+        fSourceLocked = !wpshRequestFolderMutexSem(pSourceFolder, 5000);
         if (fSourceLocked)
             fProceed = TRUE;
     }
@@ -264,14 +264,14 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
 
     // error
     if (fSourceLocked)
-        _wpReleaseObjectMutexSem(pSourceFolder);
+        wpshReleaseFolderMutexSem(pSourceFolder);
 
     return (NULLHANDLE);
 }
 
 /*
  *@@ fopsValidateObjOperation:
- *      returns 0 (FOPSERR_OK) only if ulOperation is valid
+ *      returns 0 (NO_ERROR) only if ulOperation is valid
  *      on pObject.
  *      Part of the bottom layer of the XWorkplace file
  *      operations engine.
@@ -310,7 +310,7 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
                                     // The ptr can only be NULL if pfnErrorCallback is
                                     // also NULL.
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
     BOOL    fPromptUser = TRUE;
 
     // error checking
@@ -340,11 +340,11 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
         break;
     }
 
-    if (frc != FOPSERR_OK)
+    if (frc != NO_ERROR)
         if ((pfnErrorCallback) && (fPromptUser))
             // prompt user:
             // this can recover
-            frc = (pfnErrorCallback)(ulOperation, pObject, frc, pulIgnoreSubsequent);
+            frc = pfnErrorCallback(ulOperation, pObject, frc, pulIgnoreSubsequent);
         // else: return error code
 
     return (frc);
@@ -378,7 +378,7 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
 FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
                             WPObject *pObject)
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     frc = fopsValidateObjOperation(pftl->ulOperation,
@@ -386,7 +386,7 @@ FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handl
                                    pObject,
                                    &pftl->ulIgnoreSubsequent);
 
-    if (frc == FOPSERR_OK)
+    if (frc == NO_ERROR)
         // proceed:
         if (lstAppendItem(&pftl->llObjects, pObject) == NULL)
             // error:
@@ -421,7 +421,7 @@ FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handl
  *
  *         There's no way to get the return code of the
  *         actual file processing in asynchronous mode.
- *         This function will return 0 (FOPSERR_OK) if
+ *         This function will return 0 (NO_ERROR) if
  *         the task has started, even if it will later fail
  *         on the File thread.
  *
@@ -452,7 +452,7 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
     // can start working
     if (pftl->fSourceLocked)
     {
-        _wpReleaseObjectMutexSem(pftl->pSourceFolder);
+        wpshReleaseFolderMutexSem(pftl->pSourceFolder);
         pftl->fSourceLocked = FALSE;
     }
 
@@ -540,6 +540,12 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
 
 /*
  *@@ fopsCallProgressCallback:
+ *      this gets called from fopsFileThreadProcessing
+ *      every time the progress callback needs an update.
+ *
+ *      This is slightly complex. See fileops.h for the
+ *      various FOPSUPD_* flags which can come in here.
+ *
  *      Part of the bottom layer of the XWorkplace file
  *      operations engine.
  *
@@ -550,28 +556,20 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
 
 FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
                                  ULONG flChanged,
-                                 BOOL fUpdateProgress,
                                  FOPSUPDATE *pfu)   // in: update structure in fopsFileThreadProcessing;
-                                                    // NULL means done
+                                                    // NULL means done altogether
 {
-    FOPSRET frc = FOPSERR_OK;
-    BOOL    fFirstCall = ((pfu->flProgress & FOPSPROG_FIRSTCALL) != 0);
+    FOPSRET frc = NO_ERROR;
 
     // store changed flags
     pfu->flChanged = flChanged;
-
-    // set "progress changed" flag
-    if (fUpdateProgress)
-        pfu->flProgress |= FOPSPROG_UPDATE_PROGRESS;
-    else
-        pfu->flProgress &= ~FOPSPROG_UPDATE_PROGRESS;
 
     // set source and target folders
     // depending on operation
     switch (pftl->ulOperation)
     {
         case XFT_MOVE2TRASHCAN:
-            if (fFirstCall)
+            if (pfu->fFirstCall)
             {
                 // update source and target;
                 // the target has been set to the trash can before
@@ -582,7 +580,7 @@ FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
         break;
 
         case XFT_RESTOREFROMTRASHCAN:
-            if (fFirstCall)
+            if (pfu->fFirstCall)
                 // source is trash can, which is needed only for
                 // the first call
                 pfu->flChanged |= FOPSUPD_SOURCEFOLDER_CHANGED;
@@ -592,7 +590,7 @@ FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
         break;
 
         case XFT_TRUEDELETE:
-            if (fFirstCall)
+            if (pfu->fFirstCall)
                 // update source on first call; there is
                 // no target folder
                 pfu->flChanged |= FOPSUPD_SOURCEFOLDER_CHANGED;
@@ -601,15 +599,254 @@ FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
     }
 
     if (pftl->pfnProgressCallback)
-        if (!((pftl->pfnProgressCallback)(pfu,
-                                          pftl->ulUser)))
+        if (!(pftl->pfnProgressCallback(pfu,
+                                        pftl->ulUser)))
             // FALSE means abort:
             frc = FOPSERR_CANCELLEDBYUSER;
 
     if (pfu)
         // unset first-call flag, which
         // was initially set
-        pfu->flProgress &= ~FOPSPROG_FIRSTCALL;
+        pfu->fFirstCall = FALSE;
+
+    return (frc);
+}
+
+/*
+ *@@ fopsFileThreadFixNonDeletable:
+ *      called during "true delete" processing when
+ *      an object is encountered which is non-deletable.
+ *
+ *      It is the responsibility of this function to
+ *      prompt the user about what to do and fix the
+ *      object to be deletable, if the user wants this.
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
+                                      WPObject *pSubObjThis, // in: obj to fix
+                                      PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
+{
+    FOPSRET frc = NO_ERROR;
+
+    if (_somIsA(pSubObjThis, _WPFileSystem))
+    {
+        if ( 0 == ((*pulIgnoreSubsequent) & FOPS_ISQ_DELETE_READONLY) )
+            // first error, or user has not selected
+            // to abort subsequent:
+            frc = FOPSERR_DELETE_READONLY;      // non-fatal
+        else
+            // user has chosen to ignore subsequent:
+            // this will call wpSetAttr below
+            frc = NO_ERROR;
+            _Pmpf(("      frc = %d", frc));
+    }
+    else
+        frc = FOPSERR_DELETE_NOT_DELETABLE; // fatal
+
+    if (frc != NO_ERROR)
+        if (pftl->pfnErrorCallback)
+        {
+            // prompt user:
+            // this can recover, but should have
+            // changed the problem (read-only)
+            _Pmpf(("      calling error callback"));
+            frc = pftl->pfnErrorCallback(pftl->ulOperation,
+                                         pSubObjThis,
+                                         frc,
+                                         pulIgnoreSubsequent);
+        }
+
+    if (frc == NO_ERROR)
+        if (_somIsA(pSubObjThis, _WPFileSystem))
+            if (!_wpSetAttr(pSubObjThis, FILE_NORMAL))
+                frc = FOPSERR_WPSETATTR_FAILED;
+
+    return (frc);
+}
+
+/*
+ *@@ fopsFileThreadSneakyDeleteFolderContents:
+ *      this gets called from fopsFileThreadTrueDelete before
+ *      an instance of WPFolder actually gets deleted.
+ *
+ *      Starting with V0.9.6, we no longer fully populate
+ *      folders in order to do the entire processing via
+ *      WPS projects. Instead, we only populate folders
+ *      with subfolders and delete files using Dos* functions,
+ *      which is much faster and puts less stress on the WPS
+ *      object management which runs into trouble otherwise.
+ *
+ *      This function must delete all dormant files in the
+ *      specified folder, but not the folder itself.
+ *
+ *      Preconditions:
+ *
+ *      1)  Subfolders of the folder have already been deleted.
+ *
+ *      2)  Files in the folder which were already awake have
+ *          already been deleted using _wpFree.
+ *
+ *      So there should be only dormant files left, which we
+ *      can safely delete using Dos* functions.
+ *
+ *@@added V0.9.6 (2000-25-25) [umoeller]
+ */
+
+FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
+                                                 FOPSUPDATE *pfu,
+                                    // in: update structure in fopsFileThreadProcessing
+                                                 WPObject **ppObject,
+                                    // in: folder whose contents are to be deleted,
+                                    // out: failing object if error
+                                                 WPFolder *pMainFolder,
+                                    // in: main folder of which *ppObject is a subobject
+                                    // somehow
+                                                 PULONG pulIgnoreSubsequent,
+                                    // in: ignore subsequent errors of the same type
+                                                 ULONG ulProgressScalarFirst,
+                                                 ULONG cSubObjects,
+                                                 PULONG pulSubObjectThis)
+{
+    FOPSRET     frc = NO_ERROR;
+    WPFolder    *pFolder = *ppObject;
+    CHAR        szFolderPath[CCHMAXPATH] = "";
+    CHAR        szMainFolderPath[CCHMAXPATH] = "";
+    HDIR        hdirFindHandle = HDIR_CREATE;
+
+    BOOL    fFolderSemOwned = FALSE;
+
+    TRY_LOUD(excpt1, NULL)
+    {
+
+        fFolderSemOwned = !wpshRequestFolderMutexSem(pFolder, 5000);
+        if (!fFolderSemOwned)
+            frc = FOPSERR_REQUESTFOLDERMUTEX_FAILED;
+        else
+        {
+            if (    (!_wpQueryFilename(pFolder, szFolderPath, TRUE))
+                 || (!_wpQueryFilename(pMainFolder, szMainFolderPath, TRUE))
+               )
+                frc = FOPSERR_WPQUERYFILENAME_FAILED;
+            else
+            {
+                ULONG           ulMainFolderPathLen = strlen(szMainFolderPath);
+                M_WPFileSystem  *pWPFileSystem = _WPFileSystem;
+
+                CHAR            szSearchMask[CCHMAXPATH];
+                FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
+                ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
+                ULONG           ulFindCount = 1;  // look for 1 file at a time
+
+                _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s",
+                            szFolderPath));
+
+                // now go find...
+                sprintf(szSearchMask, "%s\\*", szFolderPath);
+                frc = DosFindFirst(szSearchMask,
+                                   &hdirFindHandle,
+                                   // find everything except directories
+                                   FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                                   &ffb3,
+                                   cbFFB3,
+                                   &ulFindCount,
+                                   FIL_STANDARD);
+                // and start looping...
+                while (frc == NO_ERROR)
+                {
+                    // alright... we got the file's name in ffb3.achName
+                    CHAR    szFullPath[2*CCHMAXPATH];
+                    sprintf(szFullPath, "%s\\%s", szFolderPath, ffb3.achName);
+
+                    _Pmpf(("    got file %s", szFullPath));
+
+                    // call callback for subobject;
+                    // as the path, get the full path name of the file
+                    // minus the full path of the main folder we are
+                    // working on
+                    pfu->pszSubObject = szFullPath + ulMainFolderPathLen + 1;
+                    // calc new sub-progress: this is the value we first
+                    // had before working on the subobjects (which
+                    // is a multiple of 100) plus a sub-progress between
+                    // 0 and 100 for the subobjects
+                    pfu->ulProgressScalar = ulProgressScalarFirst
+                                            + (((*pulSubObjectThis) * 100 )
+                                                 / cSubObjects);
+                    frc = fopsCallProgressCallback(pftl,
+                                                   FOPSUPD_SUBOBJECT_CHANGED
+                                                    | FOPSPROG_UPDATE_PROGRESS,
+                                                   pfu);
+
+                    if (frc == NO_ERROR)
+                    {
+                        // no error, not cancelled:
+                        // check file's attributes
+                        if (ffb3.attrFile & (FILE_SYSTEM | FILE_READONLY))
+                        {
+                            // system or read-only file:
+                            // prompt!!
+
+                            // 1) awake object
+                            WPFileSystem *pFSObj = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                                             szFullPath);
+                            _Pmpf(("        is readonly"));
+                            if (!pFSObj)
+                                frc = FOPSERR_INVALID_OBJECT;
+                            else
+                            {
+                                _Pmpf(("        calling fopsFileThreadFixNonDeletable"));
+                                frc = fopsFileThreadFixNonDeletable(pftl,
+                                                                    pFSObj,
+                                                                    pulIgnoreSubsequent);
+                            }
+
+                            if (frc == NO_ERROR)
+                            {
+                                // either no problem or problem fixed:
+                                if (!_wpFree(pFSObj))
+                                {
+                                    frc = FOPSERR_WPFREE_FAILED;
+                                    *ppObject = pFSObj;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // sneaky delete!!
+                            frc = DosDelete(szFullPath);
+                            _Pmpf(("    deleted file %s --> %d", szFullPath, frc));
+                        }
+                    }
+
+                    if (frc == NO_ERROR)
+                    {
+                        ulFindCount = 1;
+                        frc = DosFindNext(hdirFindHandle,
+                                          &ffb3,
+                                          cbFFB3,
+                                          &ulFindCount);
+
+                        // raise object count for progress...
+                        (*pulSubObjectThis)++;
+                    }
+                } // while (arc == NO_ERROR)
+
+                if (frc == ERROR_NO_MORE_FILES)
+                    frc = NO_ERROR;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        frc = FOPSERR_FILE_THREAD_CRASHED;
+    } END_CATCH();
+
+    if (hdirFindHandle != HDIR_CREATE)
+        DosFindClose(hdirFindHandle);
+
+    if (fFolderSemOwned)
+        wpshReleaseFolderMutexSem(pFolder);
 
     return (frc);
 }
@@ -622,7 +859,9 @@ FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
  *      operations engine.
  *
  *      This checks if pObject is a folder and will
- *      recurse, if necessary.
+ *      call fopsFileThreadSneakyDeleteFolderContents,
+ *      if necessary.
+ *
  *      This finally allows cancelling a "delete"
  *      operation when a subfolder is currently
  *      processed.
@@ -630,6 +869,7 @@ FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
  *@@added V0.9.3 (2000-04-27) [umoeller]
  *@@changed V0.9.3 (2000-04-30) [umoeller]: reworked progress reports
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added ulIgnoreSubsequent to ignore further errors
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: largely rewritten to support sneaky delete (much faster)
  */
 
 FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -638,143 +878,191 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                                         // out: failing object if error
                                  PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     // list of WPObject* pointers
-    LINKLIST llObjects;
-    lstInit(&llObjects,
+    LINKLIST llSubObjects;
+    lstInit(&llSubObjects,
              FALSE);    // no free, we have WPObject* pointers
 
-    // say "collecting objects"
-    // pfu->pSourceObject = *ppObject;      // callback has already been called
-                                            // for this one
-    frc = fopsCallProgressCallback(pftl,
-                                   FOPSUPD_EXPANDING_SOURCEOBJECT_1ST,
-                                   FALSE,    // update progress
-                                   pfu);
-
-    if (frc == FOPSERR_OK)
+    // another exception handler to allow for cleanup
+    TRY_LOUD(excpt1, NULL)
     {
-        // build list of all objects to be deleted;
-        // this can take a loooong time
-        ULONG ulSubObjectsCount = 0;
-        frc = fopsExpandObjectFlat(&llObjects,
-                                   *ppObject,
-                                   &ulSubObjectsCount);
-                // now ulSubObjectsCount has the no. of objects
+        // say "collecting objects"
+        pfu->pSourceObject = *ppObject;      // callback has already been called
+                                             // for this one
 
-        if (frc == FOPSERR_OK)
-            // "done collecting objects"
-            frc = fopsCallProgressCallback(pftl,
-                                           FOPSUPD_EXPANDING_SOURCEOBJECT_DONE,
-                                           FALSE,    // update progress
-                                           pfu);
+        frc = fopsCallProgressCallback(pftl,
+                                       FOPSUPD_EXPANDING_SOURCEOBJECT_1ST,
+                                       pfu);
 
-        if (    (frc == FOPSERR_OK)
-             && (ulSubObjectsCount) // avoid division by zero below
-           )
+        if (frc == NO_ERROR)
         {
-            ULONG ulSubObjectThis = 0,
-                  // save progress scalar
-                  ulProgressScalarFirst = pfu->ulProgressScalar;
+            // build list of all objects to be deleted,
+            // but populate folders only...
+            // this will give us all objects in the
+            // folders which are already awake before
+            // the folder itself.
+            ULONG   cSubObjects = 0,
+                    cSubObjectsTemp = 0,
+                    cSubDormantFilesTemp = 0;
+            frc = fopsExpandObjectFlat(&llSubObjects,
+                                       *ppObject,
+                                       TRUE,        // populate folders only
+                                       &cSubObjectsTemp,
+                                       &cSubDormantFilesTemp);
+                    // now cSubObjectsTemp has the no. of awake objects,
+                    // cSubDormantFilesTemp has the no. of dormant files
 
-            // all sub-objects collected:
-            // go thru the whole list and start deleting.
-            // Note that folder contents come before the
-            // folder ("bottom-up" directory list).
-            PLISTNODE pNode = lstQueryFirstNode(&llObjects);
-            while (pNode)
+            // So we need to do the following:
+
+            // 1) If the object is a non-folder, delete it.
+            //    It is some object in a folder which was already
+            //    awake.
+            // 2) If we encounter a folder, do a "sneaky delete"
+            //    of all files in the folder (to avoid the WPS
+            //    popups for read-only files) and then delete
+            //    the folder object.
+
+            if (frc != NO_ERROR)
+                _Pmpf((__FUNCTION__ ": fopsExpandObjectFlat returned %d", frc));
+            else
             {
-                WPObject *pObjThis = (WPObject*)pNode->pItemData;
+                _Pmpf((__FUNCTION__ ": fopsExpandObjectFlat got %d + %d objects",
+                            cSubObjectsTemp, cSubDormantFilesTemp));
 
-                // call callback for subobject
-                pfu->pSubObject = pObjThis;
-                // calc new sub-progress: this is the value we first
-                // had before working on the subobjects (which
-                // is a multiple of 100) plus a sub-progress between
-                // 0 and 100 for the subobjects
-                pfu->ulProgressScalar = ulProgressScalarFirst
-                                        + ((ulSubObjectThis * 100 )
-                                             / ulSubObjectsCount);
+                // say "done collecting objects"
                 frc = fopsCallProgressCallback(pftl,
-                                               FOPSUPD_SUBOBJECT_CHANGED,
-                                               TRUE, // update progress
+                                               FOPSUPD_EXPANDING_SOURCEOBJECT_DONE,
                                                pfu);
-                if (frc)
-                {
-                    // error or cancelled:
-                    *ppObject = pObjThis;
-                    break;
-                }
-
-                if (!_wpIsDeleteable(pObjThis))
-                {
-                    BOOL fIsFileSystem = _somIsA(pObjThis, _WPFileSystem);
-                    if (fIsFileSystem)
-                    {
-                        if (    (*pulIgnoreSubsequent & FOPS_ISQ_DELETE_READONLY)
-                             == 0)
-                            // first error, or user has not selected
-                            // to abort subsequent:
-                            frc = FOPSERR_DELETE_READONLY;      // non-fatal
-                        else
-                            // user has chosen to ignore subsequent:
-                            // this will call wpSetAttr below
-                            frc = NO_ERROR;
-                    }
-                    else
-                        frc = FOPSERR_DELETE_NOT_DELETABLE; // fatal
-
-                    if (frc != NO_ERROR)
-                        if (pftl->pfnErrorCallback)
-                            // prompt user:
-                            // this can recover, but should have
-                            // changed the problem (read-only)
-                            frc = (pftl->pfnErrorCallback)(pftl->ulOperation,
-                                                           pObjThis,
-                                                           frc,
-                                                           pulIgnoreSubsequent);
-                    if (frc == NO_ERROR)
-                        if (fIsFileSystem)
-                            _wpSetAttr(pObjThis, FILE_NORMAL);
-
-                }
-
-                if (frc == FOPSERR_OK)
-                {
-                    // either no problem or problem fixed:
-                    if (!_wpFree(pObjThis))
-                    {
-                        frc = FOPSERR_WPFREE_FAILED;
-                        *ppObject = pObjThis;
-                        break;
-                    }
-                }
-                else
-                {
-                    // error:
-                    *ppObject = pObjThis;
-                    break;
-                }
-
-                pNode = pNode->pNext;
-                ulSubObjectThis++;
-            } // end while (pNode)
-
-            // done with subobjects: report NULL subobject
-            if (frc == FOPSERR_OK)
-            {
-                pfu->pSubObject = NULL;
-                frc = fopsCallProgressCallback(pftl,
-                                               FOPSUPD_SUBOBJECT_CHANGED,
-                                               FALSE, // no update progress
-                                               pfu);
+                // calc total count for progress
+                cSubObjects = cSubObjectsTemp + cSubDormantFilesTemp;
             }
-        } // end if (    (frc == FOPSERR_OK)
-    } // end if (frc == FOPSERR_OK)
 
-    lstClear(&llObjects);
+            if (    (frc == NO_ERROR)
+                 && (cSubObjects) // avoid division by zero below
+               )
+            {
+                ULONG ulSubObjectThis = 0,
+                      // save progress scalar
+                      ulProgressScalarFirst = pfu->ulProgressScalar;
+
+                // all sub-objects collected:
+                // go thru the whole list and start deleting.
+                // Note that folder contents which are already awake
+                // come before the containing folder ("bottom-up" directory list).
+                PLISTNODE pNode = lstQueryFirstNode(&llSubObjects);
+                while ((pNode) && (frc == NO_ERROR))
+                {
+                    // get object to delete...
+                    WPObject *pSubObjThis = (WPObject*)pNode->pItemData;
+
+                    // now check if we have a folder...
+                    // if so, we need some special processing
+                    if (_somIsA(pSubObjThis, _WPFolder))
+                    {
+                        // folder:
+                        // do sneaky delete of dormant folder contents
+                        // (awake folder contents have already been freed
+                        // because these came before the folder on the
+                        // subobjects list)
+                        WPObject *pobj2 = pSubObjThis;
+                        _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
+                        frc = fopsFileThreadSneakyDeleteFolderContents(pftl,
+                                                                       pfu,
+                                                                       &pobj2,
+                                                                       *ppObject,
+                                                                        // main folder; this must be
+                                                                        // a folder, because we have a subobject
+                                                                       pulIgnoreSubsequent,
+                                                                       ulProgressScalarFirst,
+                                                                       cSubObjects,
+                                                                       &ulSubObjectThis);
+                        if (frc != NO_ERROR)
+                            *ppObject = pobj2;
+
+                        // force the WPS to flush all pending
+                        // auto-refresh information for this folder...
+                        // these have all piled up for the sneaky stuff
+                        // above and will cause some internal overflow
+                        // if we don't give the WPS a chance to process them!
+                        wpshFlushNotifications(pSubObjThis);
+                    }
+
+                    if (frc == NO_ERROR)
+                    {
+                        _Pmpf(("Real-delete object %s", _wpQueryTitle(pSubObjThis) ));
+
+                        // delete the object: we get here for any instantiated
+                        // WPS object which must be deleted, that is
+                        // -- for any awake WPS object in any subfolder (before the folder)
+                        // -- for any folder after its contents have been deleted
+                        //    (either sneakily or by a previous wpFree)
+
+                        // call callback for subobject
+                        pfu->pszSubObject = _wpQueryTitle(pSubObjThis);
+                        // calc new sub-progress: this is the value we first
+                        // had before working on the subobjects (which
+                        // is a multiple of 100) plus a sub-progress between
+                        // 0 and 100 for the subobjects
+                        pfu->ulProgressScalar = ulProgressScalarFirst
+                                                + ((ulSubObjectThis * 100 )
+                                                     / cSubObjects);
+                        frc = fopsCallProgressCallback(pftl,
+                                                       FOPSUPD_SUBOBJECT_CHANGED
+                                                        | FOPSPROG_UPDATE_PROGRESS,
+                                                       pfu);
+                        if (frc)
+                        {
+                            // error or cancelled:
+                            *ppObject = pSubObjThis;
+                            break;
+                        }
+
+                        if (!_wpIsDeleteable(pSubObjThis))
+                            // not deletable: prompt user about
+                            // what to do with this
+                            frc = fopsFileThreadFixNonDeletable(pftl,
+                                                                pSubObjThis,
+                                                                pulIgnoreSubsequent);
+
+                        if (frc == NO_ERROR)
+                        {
+                            // either no problem or problem fixed:
+                            if (!_wpFree(pSubObjThis))
+                            {
+                                frc = FOPSERR_WPFREE_FAILED;
+                                *ppObject = pSubObjThis;
+                                break;
+                            }
+                        }
+                        else
+                            // error:
+                            *ppObject = pSubObjThis;
+                    }
+
+                    pNode = pNode->pNext;
+                    ulSubObjectThis++;
+                } // end while ((pNode) && (frc == NO_ERROR))
+
+                // done with subobjects: report NULL subobject
+                if (frc == NO_ERROR)
+                {
+                    pfu->pszSubObject = NULL;
+                    frc = fopsCallProgressCallback(pftl,
+                                                   FOPSUPD_SUBOBJECT_CHANGED,
+                                                   pfu);
+                }
+            } // end if (    (frc == NO_ERROR)
+        } // end if (frc == NO_ERROR)
+    }
+    CATCH(excpt1)
+    {
+        frc = FOPSERR_FILE_THREAD_CRASHED;
+    } END_CATCH();
+
+    lstClear(&llSubObjects);
 
     return (frc);
 }
@@ -805,7 +1093,7 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                               HWND hwndNotify)      // in: if != NULLHANDLE, post this
                                                     // window a T1M_FOPS_TASK_DONE msg
 {
-    BOOL frc = FOPSERR_OK;
+    BOOL frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     #ifdef DEBUG_TRASHCAN
@@ -858,7 +1146,7 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
             fu.ulOperation = pftl->ulOperation;
             fu.pSourceFolder = pftl->pSourceFolder;
             fu.pTargetFolder = pftl->pTargetFolder;
-            fu.flProgress = FOPSPROG_FIRSTCALL;   // unset by CallProgressCallback after first call
+            fu.fFirstCall = TRUE;  // unset by CallProgressCallback after first call
             fu.ulProgressScalar = 0;
             fu.ulProgressMax = lstCountItems(&pftl->llObjects) * 100;
 
@@ -892,8 +1180,8 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                     {
                         fu.pSourceObject = pObjectThis;
                         frc = fopsCallProgressCallback(pftl,
-                                                       FOPSUPD_SOURCEOBJECT_CHANGED,
-                                                       TRUE, // update progress
+                                                       FOPSUPD_SOURCEOBJECT_CHANGED
+                                                        | FOPSPROG_UPDATE_PROGRESS,
                                                        &fu);
                         if (frc)
                             // error or cancelled:
@@ -963,13 +1251,14 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                      */
 
                     case XFT_POPULATE:
-                        if (!wpshCheckIfPopulated(pObjectThis))
+                        if (!wpshCheckIfPopulated(pObjectThis,
+                                                  FALSE))   // full populate
                             frc = FOPSERR_POPULATE_FAILED;
                     break;
                 }
 
-                /* #ifdef __DEBUG__
-                    if (frc != FOPSERR_OK)
+                #ifdef __DEBUG__
+                    if (frc != NO_ERROR)
                     {
                         CHAR szMsg[3000];
                         PSZ pszTitle = "?";
@@ -979,11 +1268,12 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                                 "Error %d with object %s",
                                 frc,
                                 pszTitle);
-                        winhDebugBox(NULLHANDLE,
-                                 "XWorkplace File thread",
-                                 szMsg);
+                        WinMessageBox(HWND_DESKTOP, NULLHANDLE,
+                                      szMsg,
+                                      "XWorkplace File thread",
+                                      0, MB_OK | MB_ICONEXCLAMATION | MB_MOVEABLE);
                     }
-                #endif */
+                #endif
 
                 pNode = pNode->pNext;
                 ulCurrentObject++;
@@ -991,10 +1281,8 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
             } // end while (pNode)
 
             // call progress callback to say "done"
-            fu.flProgress = FOPSPROG_LASTCALL_DONE;
             fopsCallProgressCallback(pftl,
-                                     0,         // no update flags, just "done"
-                                     TRUE,      // update progress
+                                     FOPSPROG_DONEWITHALL | FOPSPROG_UPDATE_PROGRESS,
                                      &fu);      // NULL means done
         } // end if (pftl)
 
@@ -1050,12 +1338,12 @@ BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl)
     {
         if (pftl->fTargetLocked)
         {
-            _wpReleaseObjectMutexSem(pftl->pTargetFolder);
+            wpshReleaseFolderMutexSem(pftl->pTargetFolder);
             pftl->fTargetLocked = FALSE;
         }
         if (pftl->fSourceLocked)
         {
-            _wpReleaseObjectMutexSem(pftl->pSourceFolder);
+            wpshReleaseFolderMutexSem(pftl->pSourceFolder);
             pftl->fSourceLocked = FALSE;
         }
         lstClear(&pftl->llObjects);       // frees items automatically

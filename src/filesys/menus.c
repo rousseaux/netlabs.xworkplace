@@ -714,7 +714,7 @@ VOID mnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     {
         WPObject        *pObject, *pObject2;
 
-        fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
+        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
         if (fFolderLocked)
         {
             ULONG   ulTotalObjectsAdded = 0;
@@ -798,7 +798,7 @@ VOID mnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     CATCH(excpt1) { } END_CATCH();
 
     if (fFolderLocked)
-        _wpReleaseObjectMutexSem(pFolder);
+        wpshReleaseFolderMutexSem(pFolder);
 
     // now sort the lists alphabetically
     lstQuickSort(pllFolders,
@@ -1012,7 +1012,8 @@ VOID mnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder cont
             if (pFolder)
             {
                 // populate
-                wpshCheckIfPopulated(pFolder);
+                wpshCheckIfPopulated(pFolder,
+                                     FALSE);    // full populate
 
                 if (_wpQueryContent(pFolder, NULL, QC_FIRST))
                 {

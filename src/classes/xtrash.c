@@ -329,7 +329,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
  *@@ xwpAddObjectSize:
  *      adds the specified size to the total size of all
  *      objects in the trash can and updates the status bar.
- *      Gets called by XWPTrashObject::xwpSetExpandedObjectData.
+ *      Gets called by XWPTrashObject::xwpSetExpandedObjectSize.
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added object mutex
@@ -426,14 +426,21 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
 
                 if (hptr)
                 {
+                    brc = _wpSetIcon(somSelf, hptr);
+
+                    // make sure this icon is not destroyed;
+                    // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
+                    // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
+                    _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
+
                     // do not automatically destroy icon, because
                     // we'll need it again; if we don't set this,
                     // the WPS will automatically destroy the old
                     // icon, which is still needed by us...
-                    _wpSetStyle(somSelf,
-                                _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON);
+                    /* _wpSetStyle(somSelf,
+                                _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON); */
                                         // OBJSTYLE_CUSTOMICON doesn't work!!
-                    brc = _wpSetIcon(somSelf, hptr);
+                    // _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
                 }
                 _fFilledIconSet = fTrashFilled;
             }

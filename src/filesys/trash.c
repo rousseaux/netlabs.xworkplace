@@ -236,8 +236,15 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
  *      Instead, delete the related object, which will automatically
  *      destroy the trash object thru XFldObject::wpUnInitData.
  *
+ *      Postconditions:
+ *
+ *      The related object is locked by this function to make sure
+ *      it is never made dormant because the trash object will
+ *      access it frequently, e.g. for the icon.
+ *
  *@@changed V0.9.1 (2000-01-31) [umoeller]: this used to be M_XWPTrashObject::xwpclsCreateTrashObject
  *@@changed V0.9.3 (2000-04-09) [umoeller]: only folders are calculated on File thread now
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: now locking the related object
  */
 
 XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
@@ -259,6 +266,8 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
                     _wpQueryTitle(pTrashCan)));
         #endif
 
+        _wpLockObject(pRelatedObject);
+
         // create setup string; we pass the related object
         // as an address string directly. Looks ugly, but
         // it's the only way the trash object can know about
@@ -277,7 +286,7 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
                                         // same title as related object
                                  szSetupString, // setup string
                                  pTrashCan, // where to create the object
-                                 TRUE);  // lock
+                                 TRUE);  // lock trash object too
     }
 
     return (pTrashObject);
@@ -294,6 +303,9 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
  *      as the return value of wpSetupOnce to abort object
  *      creation.
  *
+ *      Preconditions: Whoever uses RELATEDOBJECT must lock
+ *      the object before using this.
+ *
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
@@ -303,7 +315,8 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
     CHAR    szRelatedAddress[100];
     ULONG   cbRelatedAddress = sizeof(szRelatedAddress);
 
-    // parse "RELATEDOBJECT="
+    // parse "RELATEDOBJECT="; this has the SOM object pointer
+    // in hexadecimal
     if (_wpScanSetupString(somSelf,
                            pszSetupString,
                            "RELATEDOBJECT",
@@ -366,10 +379,11 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
  *         is not a folder, because then querying the size is
  *         fast.
  *
- *      This invokes XWPTrashObject::xwpSetExpandedObjectData
+ *      This invokes XWPTrashObject::xwpSetExpandedObjectSize
  *      on the trash object.
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: now doing a much faster object count
  */
 
 VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
@@ -381,11 +395,15 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
         // create structured file list for this object;
         // if this is a folder, this can possibly take a
         // long time
-        PEXPANDEDOBJECT pSOI = fopsExpandObjectDeep(pRelatedObject);
-        _xwpSetExpandedObjectData(pTrashObject,
-                                  pSOI,
-                                  pSOI->ulSizeThis,
-                                  pTrashCan);
+        PEXPANDEDOBJECT pSOI = fopsExpandObjectDeep(pRelatedObject,
+                                                    TRUE);  // folders only
+        if (pSOI)
+        {
+            _xwpSetExpandedObjectSize(pTrashObject,
+                                      pSOI->ulSizeThis,
+                                      pTrashCan);
+            fopsFreeExpandedObject(pSOI);
+        }
     }
 
     _xwpTrashCanBusy(pTrashCan,
@@ -445,13 +463,14 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
     TRY_LOUD(excpt1, NULL)
     {
         // populate
-        if (wpshCheckIfPopulated(pTrashDir))
+        if (wpshCheckIfPopulated(pTrashDir,
+                                 FALSE))        // full populate
         {
             // populated:
 
             // request semaphore for that trash dir
             // to protect the contents list
-            fTrashDirSemOwned = !_wpRequestObjectMutexSem(pTrashDir, 4000);
+            fTrashDirSemOwned = !wpshRequestFolderMutexSem(pTrashDir, 4000);
             if (fTrashDirSemOwned)
             {
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
@@ -556,7 +575,7 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
 
     if (fTrashDirSemOwned)
     {
-        _wpReleaseObjectMutexSem(pTrashDir);
+        wpshReleaseFolderMutexSem(pTrashDir);
         fTrashDirSemOwned = FALSE;
     }
 
@@ -1094,7 +1113,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
                                                  NULL, // no callback
                                                  pObjDragged,
                                                  NULL)
-                            != FOPSERR_OK)
+                            != NO_ERROR)
                     {
                         // no:
                         usDrop = DOR_NEVERDROP;
@@ -1172,13 +1191,13 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                 {
                     // no errors so far:
                     // add item to list
-                    FOPSRET frc = FOPSERR_OK;
+                    FOPSRET frc = NO_ERROR;
                     frc = fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
                                                    NULL, // no callback
                                                    pObjectDropped,
                                                    NULL);
 
-                    if (frc == FOPSERR_OK)
+                    if (frc == NO_ERROR)
                     {
                         lstAppendItem(pllDroppedObjects,
                                       pObjectDropped);
@@ -1258,7 +1277,7 @@ BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
                        != MBID_YES)
                 frc = FOPSERR_CANCELLEDBYUSER;
 
-        if (frc == FOPSERR_OK)
+        if (frc == NO_ERROR)
         {
             // make sure the trash objects are up-to-date
             PLINKLIST   pllTrashObjects;
@@ -1355,11 +1374,6 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
 VOID trshUninitTrashObject(XWPTrashObject *somSelf)
 {
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
-    if (_pvExpandedObject)
-    {
-        fopsFreeExpandedObject((PEXPANDEDOBJECT)_pvExpandedObject);
-        _pvExpandedObject = 0;
-    }
 }
 
 /* ******************************************************************

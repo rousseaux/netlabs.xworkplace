@@ -27,7 +27,7 @@
  *          --  the top layer (see fops_top.c).
  *
  *          The framework uses the special FOPSRET error return type,
- *          which is FOPSERR_OK (0) if no error occured.
+ *          which is NO_ERROR (0) if no error occured.
  *
  *      This file is ALL new with V0.9.0.
  *
@@ -126,6 +126,108 @@
  ********************************************************************/
 
 /*
+ *@@ fopsLoopSneaky:
+ *      goes thru the contents of pFolder and
+ *      adds the size of all non-instantiated
+ *      files using Dos* functions. This operates
+ *      on pFolder only and does not recurse into
+ *      subfolders.
+ *
+ *      This ignores all subfolders in *pFolder.
+ *
+ *      This _raises_ the size of the contents
+ *      specified with pulSizeContents by the
+ *      size of all files found.
+ *
+ *      Preconditions: The caller should have locked
+ *      pFolder before calling this to make sure the
+ *      contents are not modified while we are working
+ *      here.
+ *
+ *@@added V0.9.6 (2000-10-25) [umoeller]
+ */
+
+FOPSRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
+                       PULONG pulFilesCount,    // out: no. of dormant files found (raised!)
+                       PULONG pulSizeContents)  // out: total size of dormant files found (raised!)
+{
+    FOPSRET       frc = NO_ERROR;
+
+    CHAR    szFolderPath[CCHMAXPATH];
+
+    // if we have a "folders only" populate, we
+    // need to go thru the contents of the folder
+    // and for all DOS files which have not been
+    // added yet, we need to add the file size...
+    // V0.9.6 (2000-10-25) [umoeller]
+
+    // get folder name
+    if (!_wpQueryFilename(pFolder, szFolderPath, TRUE))
+        frc = FOPSERR_WPQUERYFILENAME_FAILED;
+    else
+    {
+        M_WPFileSystem  *pWPFileSystem = _WPFileSystem;
+
+        CHAR            szSearchMask[CCHMAXPATH];
+        HDIR            hdirFindHandle = HDIR_CREATE;
+        FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
+        ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
+        ULONG           ulFindCount = 1;  // look for 1 file at a time
+
+        _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s",
+                    szFolderPath));
+
+        // now go find...
+        sprintf(szSearchMask, "%s\\*", szFolderPath);
+        frc = DosFindFirst(szSearchMask,
+                           &hdirFindHandle,
+                           // find everything except directories
+                           FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                           &ffb3,
+                           cbFFB3,
+                           &ulFindCount,
+                           FIL_STANDARD);
+        // and start looping...
+        while (frc == NO_ERROR)
+        {
+            // alright... we got the file's name in ffb3.achName
+            CHAR    szFullPath[2*CCHMAXPATH];
+            sprintf(szFullPath, "%s\\%s", szFolderPath, ffb3.achName);
+
+            // _Pmpf(("    got file %s", szFullPath));
+
+            if (!_wpclsQueryAwakeObject(pWPFileSystem,
+                                        szFullPath))
+            {
+                // object not awake yet: this means that
+                // the object was not added to the list above...
+                // add the file's size
+                // _Pmpf(("        not already instantiated"));
+                (*pulFilesCount)++;
+                *pulSizeContents += ffb3.cbFile;
+            }
+            /* else
+            {
+                _Pmpf(("        --> already instantiated"));
+            } */
+
+            ulFindCount = 1;
+            frc = DosFindNext(hdirFindHandle,
+                              &ffb3,
+                              cbFFB3,
+                              &ulFindCount);
+        } // while (arc == NO_ERROR)
+
+        if (frc == ERROR_NO_MORE_FILES)
+            frc = NO_ERROR;
+
+        DosFindClose(hdirFindHandle);
+    }
+
+    return (frc);
+}
+
+/*
  *@@ fopsFolder2ExpandedList:
  *      creates a LINKLIST of EXPANDEDOBJECT items
  *      for the given folder's contents.
@@ -141,10 +243,12 @@
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  */
 
 PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
-                                  PULONG pulSizeContents) // out: size of all objects on list
+                                  PULONG pulSizeContents, // out: size of all objects on list
+                                  BOOL fFoldersOnly)
 {
     PLINKLIST   pll = lstCreate(FALSE);       // do not free the items
     ULONG       ulSizeContents = 0;
@@ -158,36 +262,53 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
     // lock folder for querying content
     TRY_LOUD(excpt1, NULL)
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
-        if (fFolderLocked)
+        // populate (either fully or with folders only)
+        if (wpshCheckIfPopulated(pFolder,
+                                 fFoldersOnly))
         {
-            WPObject *pObject;
-
-            // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                    = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
-            wpshCheckIfPopulated(pFolder);
-
-            // now collect all objects in folder
-            for (pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
-                 pObject;
-                 pObject = rslv_wpQueryContent(pFolder, pObject, QC_Next))
+            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
+            if (fFolderLocked)
             {
-                PEXPANDEDOBJECT fSOI = NULL;
+                WPObject *pObject;
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("creating SOI for \"%s\" in folder \"%d\"",
-                            _wpQueryTitle(pObject),
-                            _wpQueryTitle(pFolder) ));
-                #endif
+                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
-                // create a list item for this object;
-                // if pObject is a folder, that function will
-                // call ourselves again...
-                fSOI = fopsExpandObjectDeep(pObject);
-                ulSizeContents += fSOI->ulSizeThis;
-                lstAppendItem(pll, fSOI);
+                // now collect all objects in folder;
+                // -- if we have a full populate, we add all objects
+                //    to the list;
+                // -- if we have a "folders only" populate, we add
+                //    all objects we have (which is at least all the
+                //    folders, but can contain additional objects)
+                for (pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+                     pObject;
+                     pObject = rslv_wpQueryContent(pFolder, pObject, QC_Next))
+                {
+                    PEXPANDEDOBJECT fSOI = NULL;
+
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("creating SOI for \"%s\" in folder \"%d\"",
+                                _wpQueryTitle(pObject),
+                                _wpQueryTitle(pFolder) ));
+                    #endif
+
+                    // create a list item for this object;
+                    // if pObject is a folder, that function will
+                    // call ourselves again...
+                    fSOI = fopsExpandObjectDeep(pObject,
+                                                fFoldersOnly);
+                    ulSizeContents += fSOI->ulSizeThis;
+                    lstAppendItem(pll, fSOI);
+                }
+
+                if (fFoldersOnly)
+                {
+                    ULONG ulFilesCount = 0;
+                    fopsLoopSneaky(pFolder,
+                                   &ulFilesCount,       // not needed
+                                   &ulSizeContents);
+                }
             }
         }
     }
@@ -195,7 +316,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     if (fFolderLocked)
     {
-        _wpReleaseObjectMutexSem(pFolder);
+        wpshReleaseFolderMutexSem(pFolder);
         fFolderLocked = FALSE;
     }
 
@@ -213,8 +334,20 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
  *      the folder contains subfolders), by calling
  *      fopsFolder2ExpandedList.
  *
- *      Call fopsFreeExpandedObject to free the item returned
- *      by this function.
+ *      --  If (fFoldersOnly == FALSE), this does a full
+ *          populate on folder which was encountered.
+ *          This can take a long time and for many subfolders
+ *          can even hang the entire WPS.
+ *
+ *      --  If (fFoldersOnly == TRUE), this populates
+ *          folders with subfolders only. Still, we add
+ *          all objects which have been instantiated
+ *          on the folder contents list already, but
+ *          calculate the folder size using Dos* functions
+ *          only.
+ *
+ *      Call fopsFreeExpandedObject to free the item
+ *      returned by this function.
  *
  *      This function is useful for having a uniform
  *      interface which represents an object and all
@@ -225,9 +358,11 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
  *      subfolders (if applicable).
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  */
 
-PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject)
+PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
+                                     BOOL fFoldersOnly)
 {
     PEXPANDEDOBJECT pSOI = NULL;
     if (wpshCheckObject(pObject))
@@ -244,10 +379,11 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject)
             if (_somIsA(pObject, _WPFolder))
             {
                 // object is a folder:
-                // fill list
+                // fill list (this calls us again for every object found)
                 pSOI->pllContentsSFL = fopsFolder2ExpandedList(pObject,
-                                                      &pSOI->ulSizeThis);
-                                                        // out: size of files on list
+                                                               &pSOI->ulSizeThis,
+                                                                // out: size of files on list
+                                                               fFoldersOnly);
             }
             else
             {
@@ -328,45 +464,74 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
  *      this creates a simple linked list containing
  *      the objects, so the hierarchy is lost.
  *
- *      After the call, pllObjects contains all the
- *      plain WPObject* pointers, so the list should
- *      have been created with lstCreate(FALSE) in
- *      order not to invoke free() on it.
+ *      This operates in two modes:
  *
- *      If folders are found, contained objects are
- *      appended to the list before the folder itself.
- *      Otherwise, objects are returned in the order
- *      in which wpQueryContent returns them, which
- *      is dependent on the underlying file system.
- *      and should not be relied upon.
+ *      --  If (fFoldersOnly == FALSE), this does a
+ *          full populate.
  *
- *      For example, see the following folder/file hierarchy:
+ *          After the call, pllObjects contains all the
+ *          plain WPObject* pointers, so the list should
+ *          have been created with lstCreate(FALSE) in
+ *          order not to invoke free() on it.
+ *
+ *          If folders are found, contained objects are
+ *          appended to the list before the folder itself.
+ *          Otherwise, objects are returned in the order
+ *          in which wpQueryContent returns them, which
+ *          is dependent on the underlying file system.
+ *          and should not be relied upon.
+ *
+ *          For example, see the following folder/file hierarchy:
  +
- +          folder1
- +             +--- folder2
- +             |      +---- text1.txt
- +             |      +---- text2.txt
- +             +--- text3.txt
+ +              folder1
+ +                 +--- folder2
+ +                 |      +---- text1.txt
+ +                 |      +---- text2.txt
+ +                 +--- text3.txt
  *
- *      If fopsExpandObjectFlat(folder1) is invoked,
- *      you get the following order in the list:
+ *          If fopsExpandObjectFlat(folder1) is invoked,
+ *          you get the following order in the list:
  *
- +      text1.txt, text2.txt, folder2, text3.txt, folder1.
+ +          text1.txt, text2.txt, folder2, text3.txt, folder1.
  *
- *      pllObjects is not cleared by this function,
+ *          In this mode, pulDormantFilesCount is ignored because
+ *          all files are awakened by this function.
+ *
+ *      --  If (fFoldersOnly == TRUE), this populates
+ *          subfolders with folders only. As a result, on
+ *          the list, you will receive all folders. Before
+ *          the subfolder, you _may_ get regular objects
+ *          with have already been awakened, but this might
+ *          not be the case.
+ *
+ *          In this mode, pulObjectCount contains only the
+ *          object count of awake objects (folders which
+ *          have been awakened plus other objects which
+ *          were already awake). In addition, pulDormantFilesCount
+ *          receives the no. of dormant files encountered.
+ *
+ *          Again, contained (and awake) objects are
+ *          appended to the list before the folder itself.
+ *
+ *      pllObjects is never cleared by this function,
  *      so you can call this several times with the
- *      same list.
+ *      same list. If you call this only once, make
+ *      sure pllObjects is empty before calling.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  */
 
-FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to
+FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (plain WPObject* pointers)
                              WPObject *pObject,     // in: object to start with
-                             PULONG pulObjectCount) // out: objects count on list;
+                             BOOL fFoldersOnly,
+                             PULONG pulObjectCount, // out: objects count on list;
+                                                    // the ULONG must be set to 0 before calling this!
+                             PULONG pulDormantFilesCount) // out: count of dormant files;
                                                     // the ULONG must be set to 0 before calling this!
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
 
     if (_somIsA(pObject, _WPFolder))
     {
@@ -376,52 +541,80 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to
 
         TRY_LOUD(excpt1, NULL)
         {
-            fFolderLocked = !_wpRequestObjectMutexSem(pObject, 5000);
-            if (fFolderLocked)
-            {
-                WPObject *pSubObject;
-
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(pObject, WPFolder, wpQueryContent);
-
-                wpshCheckIfPopulated(pObject);
-
-                // now collect all objects in folder
-                for (pSubObject = rslv_wpQueryContent(pObject, NULL, QC_FIRST);
-                     pSubObject;
-                     pSubObject = rslv_wpQueryContent(pObject, pSubObject, QC_Next))
-                {
-                    // recurse!
-                    // this will add pSubObject to pllObjects
-                    frc = fopsExpandObjectFlat(pllObjects,
-                                               pSubObject,
-                                               pulObjectCount);
-                    if (frc != FOPSERR_OK)
-                        // error:
-                        break;
-                } // end for
-            }
+            if (!wpshCheckIfPopulated(pObject,
+                                     fFoldersOnly))
+                frc = FOPSERR_POPULATE_FAILED;
             else
-                frc = FOPSERR_LOCK_FAILED;
+            {
+                fFolderLocked = !wpshRequestFolderMutexSem(pObject, 5000);
+                if (fFolderLocked)
+                {
+                    WPObject *pSubObject;
 
+                    // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                    somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                            = SOM_Resolve(pObject, WPFolder, wpQueryContent);
+
+                    // now collect all objects in folder;
+                    // -- if we have a full populate, we add all objects
+                    //    to the list;
+                    // -- if we have a "folders only" populate, we add
+                    //    all objects we have (which is at least all the
+                    //    folders, but can contain additional objects)
+                    for (pSubObject = rslv_wpQueryContent(pObject, NULL, QC_FIRST);
+                         pSubObject;
+                         pSubObject = rslv_wpQueryContent(pObject, pSubObject, QC_Next))
+                    {
+                        // recurse!
+                        // this will add pSubObject to pllObjects
+                        frc = fopsExpandObjectFlat(pllObjects,
+                                                   pSubObject,
+                                                   fFoldersOnly,
+                                                   pulObjectCount,
+                                                   pulDormantFilesCount);
+                        if (frc != NO_ERROR)
+                            // error:
+                            break;
+                    } // end for
+
+                    if (frc == NO_ERROR)
+                        if (fFoldersOnly)
+                        {
+                            ULONG ulSizeContents = 0;       // not used
+                            _Pmpf((__FUNCTION__ ": calling fopsLoopSneaky; count pre: %d",
+                                                 *pulDormantFilesCount));
+                            frc = fopsLoopSneaky(pObject,
+                                                 pulDormantFilesCount,
+                                                 &ulSizeContents);
+                            _Pmpf(("    count post: %d",
+                                                 *pulDormantFilesCount));
+                        }
+                }
+                else
+                    frc = FOPSERR_LOCK_FAILED;
+            }
         }
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
         {
-            _wpReleaseObjectMutexSem(pObject);
+            wpshReleaseFolderMutexSem(pObject);
             fFolderLocked = FALSE;
         }
-    }
+    } // end if (_somIsA(pObject, _WPFolder))
 
     // append this object to the list;
     // since we have recursed first, the folder
     // contents come before the folder in the list
-    _Pmpf(("Appending %s", _wpQueryTitle(pObject) ));
-    lstAppendItem(pllObjects, pObject);
-    if (pulObjectCount)
-        (*pulObjectCount)++;
+    if (frc == NO_ERROR)
+    {
+        _Pmpf((__FUNCTION__ ": appending %s", _wpQueryTitle(pObject) ));
+        lstAppendItem(pllObjects, pObject);
+        if (pulObjectCount)
+            (*pulObjectCount)++;
+    }
+    else
+        _Pmpf((__FUNCTION__ ": error %d for %s", _wpQueryTitle(pObject) ));
 
     return (frc);
 }
@@ -700,7 +893,7 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
         // (V0.84)
         TRY_LOUD(excpt1, NULL)
         {
-            fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
+            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
             if (fFolderLocked)
             {
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
@@ -733,7 +926,7 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
         } END_CATCH();
 
         if (fFolderLocked)
-            _wpReleaseObjectMutexSem(pFolder);
+            wpshReleaseFolderMutexSem(pFolder);
 
     } while (   (fFileExists)
               && (!fExit)

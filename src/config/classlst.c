@@ -481,6 +481,7 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfsys.c.
  *@@changed V0.9.0 [umoeller]: fixed small memory leak
+ *@@changed V0.9.6 (2000-10-25) [umoeller]: this didn't find words correctly, fixed
  */
 
 BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text file
@@ -494,14 +495,29 @@ BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text fi
     PSZ pszSrch2 = malloc(strlen(pszSrch0) + 4);
     if (pszSrch2)
     {
-        PSZ p1, p2;
+        PSZ     p1, p2;
+        BOOL    fFound = FALSE;
 
         strcpy(pszSrch2, "\r\n");
         strcat(pszSrch2, pszSrch0);
 
-        p1 = strstr(pszBuf, pszSrch2);
-        if (p1)
+        // find word V0.9.6 (2000-10-25) [umoeller]
+        p1 = pszBuf;
+        while ((p1) && (!fFound))
         {
+            p1 = strstr(p1, pszSrch2);
+            if (p1)
+                // item found:
+                if (*(p1 + strlen(pszSrch2)) == ' ')
+                    fFound = TRUE;
+                else
+                    // not a word: search on
+                    p1++;
+        }
+
+        if (fFound)
+        {
+            // found:
             p1 += 2; // skip \r\n
             p1 = strchr(p1, ' ');
             if (p1)

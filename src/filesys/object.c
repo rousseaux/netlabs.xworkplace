@@ -356,7 +356,11 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         ul = _wpQueryStyle(pObject);
         if (ul & OBJSTYLE_CUSTOMICON)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                               "Custom icon (destroy icon when object goes dormant)",
+                               "Custom icon (auto-destroy; style doesn't work)",
+                               CRA_RECORDREADONLY);
+        if (ul & OBJSTYLE_NOTDEFAULTICON)
+            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                               "Custom icon (auto-destroy; preferred over OBJSTYLE_CUSTOMICON)",
                                CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOCOPY)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no copy",

@@ -37,37 +37,46 @@
      *                                                                  *
      ********************************************************************/
 
-    #define FOPSERR_OK                        0
-    #define FOPSERR_NOT_HANDLED_ABORT         1
-    #define FOPSERR_INVALID_OBJECT            2
-    #define FOPSERR_NO_OBJECTS_FOUND          3         // fatal
+    #define FOPSERR_FIRST_CODE 30000
+
+    #define FOPSERR_NOT_HANDLED_ABORT         (FOPSERR_FIRST_CODE + 1)
+    #define FOPSERR_INVALID_OBJECT            (FOPSERR_FIRST_CODE + 2)
+    #define FOPSERR_NO_OBJECTS_FOUND          (FOPSERR_FIRST_CODE + 3)
             // no objects found to process
-    #define FOPSERR_INTEGRITY_ABORT           4         // fatal
-    #define FOPSERR_FILE_THREAD_CRASHED       5
+    #define FOPSERR_INTEGRITY_ABORT           (FOPSERR_FIRST_CODE + 4)
+    #define FOPSERR_FILE_THREAD_CRASHED       (FOPSERR_FIRST_CODE + 5)
             // fopsFileThreadProcessing crashed
-    #define FOPSERR_CANCELLEDBYUSER           6
-    #define FOPSERR_MOVE2TRASH_READONLY       7         // non-fatal
+    #define FOPSERR_CANCELLEDBYUSER           (FOPSERR_FIRST_CODE + 6)
+    #define FOPSERR_MOVE2TRASH_READONLY       (FOPSERR_FIRST_CODE + 7)
             // moving WPFileSystem which has read-only:
             // this should prompt the user
-    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  8         // fatal
+    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  (FOPSERR_FIRST_CODE + 8)
             // moving non-deletable to trash can: this should abort
-    #define FOPSERR_DELETE_READONLY           9         // non-fatal
+    #define FOPSERR_DELETE_READONLY           (FOPSERR_FIRST_CODE + 9)
             // deleting WPFileSystem which has read-only flag;
             // this should prompt the user
-    #define FOPSERR_DELETE_NOT_DELETABLE      10        // fatal
+    #define FOPSERR_DELETE_NOT_DELETABLE      (FOPSERR_FIRST_CODE + 10)
             // deleting not-deletable; this should abort
-    #define FOPSERR_TRASHDRIVENOTSUPPORTED    11         // non-fatal
-    #define FOPSERR_WPFREE_FAILED             12        // fatal
-    #define FOPSERR_LOCK_FAILED               13        // fatal
+    #define FOPSERR_TRASHDRIVENOTSUPPORTED    (FOPSERR_FIRST_CODE + 11)
+    #define FOPSERR_WPFREE_FAILED             (FOPSERR_FIRST_CODE + 12)
+    #define FOPSERR_LOCK_FAILED               (FOPSERR_FIRST_CODE + 13)
             // requesting object mutex failed
-    #define FOPSERR_START_FAILED              14        // fatal
+    #define FOPSERR_START_FAILED              (FOPSERR_FIRST_CODE + 14)
             // fopsStartTask failed
-    #define FOPSERR_POPULATE_FOLDERS_ONLY     15        // fatal
+    #define FOPSERR_POPULATE_FOLDERS_ONLY     (FOPSERR_FIRST_CODE + 15)
             // fopsAddObjectToTask works on folders only with XFT_POPULATE
-    #define FOPSERR_POPULATE_FAILED           16
+    #define FOPSERR_POPULATE_FAILED           (FOPSERR_FIRST_CODE + 16)
             // wpPopulate failed on folder during XFT_POPULATE
+    #define FOPSERR_WPQUERYFILENAME_FAILED    (FOPSERR_FIRST_CODE + 17)
+            // wpQueryFilename failed
+    #define FOPSERR_WPSETATTR_FAILED          (FOPSERR_FIRST_CODE + 18)
+            // wpSetAttr failed
+    #define FOPSERR_GETNOTIFYSEM_FAILED       (FOPSERR_FIRST_CODE + 19)
+            // wpshGetNotifySem failed
+    #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 20)
+            // wpshRequestFolderSem failed
 
-    typedef unsigned char FOPSRET;
+    typedef unsigned long FOPSRET;
 
     /* ******************************************************************
      *                                                                  *
@@ -102,13 +111,16 @@
                     // on pllContentsSFL and sub-lists
         } EXPANDEDOBJECT, *PEXPANDEDOBJECT;
 
-        PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject);
+        PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
+                                             BOOL fFoldersOnly);
 
         VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI);
 
         FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,
                                      WPObject *pObject,
-                                     PULONG pulObjectCount);
+                                     BOOL fFoldersOnly,
+                                     PULONG pulObjectCount,
+                                     PULONG pulDormantFilesCount);
     #endif
 
     /********************************************************************
@@ -149,29 +161,28 @@
     // #define FOPSUPD_SUBOBJECT               3
 
     // to reduce flicker, the fields which have changed:
-    #define FOPSUPD_SOURCEFOLDER_CHANGED        0x0010
-    #define FOPSUPD_TARGETFOLDER_CHANGED        0x0020
+    #define FOPSUPD_SOURCEFOLDER_CHANGED        0x00000010
+    #define FOPSUPD_TARGETFOLDER_CHANGED        0x00000020
 
-    #define FOPSUPD_SOURCEOBJECT_CHANGED        0x0100
+    #define FOPSUPD_SOURCEOBJECT_CHANGED        0x00000100
                 // pSourceObject changed
-    #define FOPSUPD_SUBOBJECT_CHANGED           0x0200
-                // pSubObject changed; this can be NULL if the
+    #define FOPSUPD_SUBOBJECT_CHANGED           0x00000200
+                // pszSubObject changed; this can be NULL if the
                 // subobjects have been processed and we're going
                 // for the next source object
 
-    #define FOPSUPD_EXPANDING_SOURCEOBJECT_1ST  0x1000
+    #define FOPSUPD_EXPANDING_SOURCEOBJECT_1ST  0x00001000
                 // pSourceObject is currently being expanded;
                 // only set after the first call for pSourceObject
                 // without any other flags being set; after this,
                 // several FOPSUPD_SUBOBJECT_CHANGED calls come in
-    #define FOPSUPD_EXPANDING_SOURCEOBJECT_DONE 0x2000
+    #define FOPSUPD_EXPANDING_SOURCEOBJECT_DONE 0x00002000
                 // done expanding pSourceObject
 
-    // flags for FOPSUPDATE.flProgress:
-    #define FOPSPROG_FIRSTCALL                  0x0001
-    #define FOPSPROG_LASTCALL_DONE              0x0002
-    #define FOPSPROG_UPDATE_PROGRESS            0x1000
+    #define FOPSPROG_UPDATE_PROGRESS            0x10000000
                 // progress fields have changed: update progress bar
+    #define FOPSPROG_DONEWITHALL                0x20000000
+                // done with all!
 
     /*
      *@@ FOPSUPDATE:
@@ -186,16 +197,29 @@
     {
         ULONG       ulOperation;        // operation, as specified with fopsCreateFileTaskList
 
-        WPFolder    *pSourceFolder;     // source folder; see fopsCreateFileTaskList
-        WPFolder    *pTargetFolder;     // source folder; see fopsCreateFileTaskList
+        WPFolder    *pSourceFolder;
+                        // source folder (see fopsCreateFileTaskList).
+                        // This is only valid if FOPSUPD_SOURCEFOLDER_CHANGED
+                        // is set in the update flags.
+        WPFolder    *pTargetFolder;
+                        // target folder (see fopsCreateFileTaskList).
+                        // This is only valid if FOPSUPD_TARGETFOLDER_CHANGED
+                        // is set in the update flags.
 
+        BOOL        fFirstCall;
         ULONG       flChanged;
-        ULONG       flProgress;
 
         WPObject    *pSourceObject;
                         // current source object being worked on
-        WPObject    *pSubObject;
-                        // for some operations,
+                        // ("real" object on which the operation was invoked).
+                        // This is only valid if FOPSUPD_SOURCEOBJECT_CHANGED
+                        // is set in the update flags.
+        PSZ         pszSubObject;
+                        // if pSourceObject is a folder, this contains a
+                        // description (usually a file name) of a subobject
+                        // that is being worked on.
+                        // This is only valid if FOPSUPD_SUBOBJECT_CHANGED
+                        // is set in the update flags.
 
         ULONG       ulProgressScalar;
                         // a scalar signalling the total progress of the operation;
@@ -254,7 +278,7 @@
      *@@ FNFOPSERRORCALLBACK:
      *      error callback if problems are encountered
      *      during file processing. If this function
-     *      returns FOPSERR_OK, processing continues.
+     *      returns NO_ERROR, processing continues.
      *      For every other return value, processing
      *      will be aborted, and the return value
      *      will be passed upwards to the caller.

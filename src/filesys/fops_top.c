@@ -185,7 +185,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
                                           PULONG pulIgnoreSubsequent)
                                                             // out: ignore subsequent errors of the same type
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
     CHAR    szMsg[1000];
     PSZ     apsz[5] = {0};
     ULONG   cpsz = 0,
@@ -212,7 +212,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             flFlags = MB_YES_YES2ALL_NO | MB_DEFBUTTON3;
             apsz[0] = _wpQueryTitle(pObject);
             cpsz = 1;
-                // if we return FOPSERR_OK after this,
+                // if we return NO_ERROR after this,
                 // the fileops engine unlocks the file
             ulIgnoreFlag = FOPS_ISQ_DELETE_READONLY;
         break;
@@ -237,12 +237,12 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
         if (    (ulrc == MBID_OK)
              || (ulrc == MBID_YES)
            )
-            return (FOPSERR_OK);
+            return (NO_ERROR);
         else if (ulrc == MBID_YES2ALL)
         {
             // "yes to all":
             *pulIgnoreSubsequent |= ulIgnoreFlag;
-            return (FOPSERR_OK);
+            return (NO_ERROR);
         }
     }
 
@@ -309,7 +309,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
             mrc = (MRESULT)TRUE;
 
             if (pfu)
-                if ((pfu->flProgress & FOPSPROG_LASTCALL_DONE) == 0)
+                if ((pfu->flChanged & FOPSPROG_DONEWITHALL) == 0)
                 {
                     CHAR    szTargetFolder[CCHMAXPATH] = "";
                     PSZ     pszTargetFolder = NULL;
@@ -354,9 +354,9 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
 
                     if (pfu->flChanged & FOPSUPD_SUBOBJECT_CHANGED)
                     {
-                        if (pfu->pSubObject)
+                        if (pfu->pszSubObject)
                             // can be null!
-                            pszSubObject = _wpQueryTitle(pfu->pSubObject);
+                            pszSubObject = pfu->pszSubObject;
                         else
                             // clear:
                             pszSubObject = "";
@@ -373,7 +373,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                                           ID_XSDI_SUBOBJECT,
                                           pszSubObject);
                     // update status bar?
-                    if (pfu->flProgress & FOPSPROG_UPDATE_PROGRESS)
+                    if (pfu->flChanged & FOPSPROG_UPDATE_PROGRESS)
                         WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
                                    WM_UPDATEPROGRESSBAR,
                                    (MPARAM)pfu->ulProgressScalar,
@@ -575,7 +575,7 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *
  *      If pConfirm is NULL, no confirmations are displayed.
  *
- *      This returns FOPSERR_OK if the task was successfully started
+ *      This returns NO_ERROR if the task was successfully started
  *      or some other error code if not.
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
@@ -597,7 +597,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                              HWND hwndCnr,            // in: container to get more source objects from
                              PFOPSCONFIRM pConfirm)   // in: confirmations or NULL
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
 
     WPObject *pObject = pSourceObject;
 
@@ -642,7 +642,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
 
                 frc2 = fopsAddObjectToTask(hftl,
                                            pAddObject);
-                if (frc2 == FOPSERR_OK)
+                if (frc2 == NO_ERROR)
                 {
                     // raise objects count
                     cObjects++;
@@ -668,7 +668,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
             // no objects and no other error reported:
             frc = FOPSERR_NO_OBJECTS_FOUND;
 
-        if (frc == FOPSERR_OK)
+        if (frc == NO_ERROR)
         {
             // confirmations?
 
@@ -701,9 +701,9 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                             != MBID_YES)
                     frc = FOPSERR_CANCELLEDBYUSER;
             }
-        } // end if (frc == FOPSERR_OK)
+        } // end if (frc == NO_ERROR)
 
-        if (frc != FOPSERR_OK)
+        if (frc != NO_ERROR)
         {
             // cancel or no success: clean up
             fopsDeleteFileTaskList(hftl);
@@ -750,7 +750,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                               WPFolder *pTargetFolder,
                               PLINKLIST pllObjects)      // in: list with WPObject* pointers
 {
-    FOPSRET frc = FOPSERR_OK;
+    FOPSRET frc = NO_ERROR;
 
     // allocate progress window data structure
     // this is passed to fopsCreateFileTaskList as ulUser
@@ -796,7 +796,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                 #ifdef DEBUG_TRASHCAN
                     _Pmpf(("        got FOPSRET %d for that", frc2));
                 #endif
-                if (frc2 != FOPSERR_OK)
+                if (frc2 != NO_ERROR)
                 {
                     frc = frc2;
                     break;
@@ -812,7 +812,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
             // no objects:
             frc = FOPSERR_NO_OBJECTS_FOUND;
 
-        if (frc != FOPSERR_OK)
+        if (frc != NO_ERROR)
         {
             // cancel or no success: clean up
             fopsDeleteFileTaskList(hftl);
@@ -1085,12 +1085,12 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
     else
         frc = FOPSERR_INTEGRITY_ABORT;
 
-    if (frc == FOPSERR_OK)
+    if (frc == NO_ERROR)
         // *** go!!!
         frc = fopsStartTask(hftl,
                             hab);
 
-    if (frc != FOPSERR_OK)
+    if (frc != NO_ERROR)
     {
         // cancel or no success: clean up
         fopsDeleteFileTaskList(hftl);

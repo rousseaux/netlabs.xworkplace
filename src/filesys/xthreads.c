@@ -315,7 +315,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *      (see fntWorkerThread below).
  *
  *@@changed V0.9.0 [umoeller]: moved some features to File thread
- *@@changed V0.9.0: adjust WOM_PROCESSORDEREDCONTENT for new XFolder: [umoeller]:xwpBeginEnumContent functions
+ *@@changed V0.9.0 [umoeller]: adjust WOM_PROCESSORDEREDCONTENT for new XFolder::xwpBeginEnumContent functions
  *@@changed V0.9.0 [umoeller]: removed WM_INVALIDATEORDEREDCONTENT
  *@@changed V0.9.0 [umoeller]: WOM_ADDAWAKEOBJECT is now storing plain WPObject pointers (no more OBJECTLISTITEM)
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
@@ -475,7 +475,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         // first call: initialize structure
                         // pKernelGlobals->ulWorkerFunc2 = 5010;
                         pPCI->ulObjectMax = 0;
-                        wpshCheckIfPopulated(pFolder);
+                        wpshCheckIfPopulated(pFolder,
+                                             FALSE);        // full populate
                         // now count objects
                         for (   pPCI->pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                                 (pPCI->pObject);

@@ -114,7 +114,7 @@ int utilSemRequest(PULONG pulMutex,
         _disable();
     }
     if (rc == NO_ERROR)
-        *pulMutex++;
+        (*pulMutex)++;
     _enable();
 
     return (rc);

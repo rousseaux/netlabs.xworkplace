@@ -2284,14 +2284,14 @@ VOID AddSyslevelsForDir(HWND hwndCnr,
     sprintf(szSearchMask, "%sSYSLEVEL.*", szCurDir);
 
     // now go for the first directory entry in our directory (szCurrentDir):
-    rc = DosFindFirst( szSearchMask,
-                       &hdirFindHandle,
-                       // find eeeeverything
-                       FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
-                       &ffb3,
-                       cbFFB3,
-                       &ulFindCount,
-                       FIL_STANDARD);
+    rc = DosFindFirst(szSearchMask,
+                      &hdirFindHandle,
+                      // find eeeeverything
+                      FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                      &ffb3,
+                      cbFFB3,
+                      &ulFindCount,
+                      FIL_STANDARD);
 
     // and start looping
     while (rc == NO_ERROR)

@@ -405,4 +405,10 @@ Car 1 Sample WPS class from OS/2 Developer's Toolkit.
 Carpp 1 Sample WPS class from OS/2 Developer's Toolkit.
 ObjectUtility 1 Sample WPS class from OS/2 Developer's Toolkit.
 TSObjAdv 1 (Object Desktop) "Object Advisor" class.
+RWMonitor 4 (OS/2 V3) Undocumented class used by the WPS to serialize access to folder resources. Note that this is not derived from WPObject.
+ClassAssociationManager 4 (OS/2 V4) Undocumented class used by the WPS to organize classes for "Become" support. Note that this is not derived from WPObject.
+WPDev 4 Undocumented class, apparently used by the WPS to organize printers. Note that this is not derived from WPObject.
+WPLm 4 Undocumented class, apparently used by the WPS to organize printers. Note that this is not derived from WPObject.
+WPLm 4 Undocumented class, apparently used by the WPS to organize printers. Note that this is not derived from WPObject.
+WPQueue 4 Undocumented class, apparently used by the WPS to organize printer queues. Note that this is not derived from WPObject.
 

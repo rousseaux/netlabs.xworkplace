@@ -53,7 +53,8 @@
     #ifdef SOM_WPFolder_h
         BOOL wpshPopulateTree(WPFolder *somSelf);
 
-        BOOL wpshCheckIfPopulated(WPFolder *somSelf);
+        BOOL wpshCheckIfPopulated(WPFolder *somSelf,
+                                  BOOL fFoldersOnly);
 
         double wpshQueryDiskFreeFromFolder(WPFolder *somSelf);
 
@@ -222,6 +223,56 @@
     #ifdef SOM_WPFolder_h
 
     /*
+     * xfTP_wpRequestFolderMutexSem:
+     *      prototype for WPFolder::wpRequestFolderMutexSem.
+     *
+     *      In addition to the regular object mutex, each folder
+     *      has associated with it a second mutex to protect the
+     *      folder contents. While this semaphore is held, one
+     *      can be sure that no objects are removed from or added
+     *      to a folder from some other WPS thread.
+     *      You should always request this semaphore before using
+     *      wpQueryContent and such things.
+     *
+     *      This semaphore is mentioned in the Warp 4 toolkit docs
+     *      for wpRequestObjectMutexSem, but never prototyped.
+     *
+     *      This returns 0 if the semaphore was successfully obtained.
+     */
+
+    typedef ULONG _System xfTP_wpRequestFolderMutexSem(WPFolder *somSelf,
+                                                       ULONG ulTimeout);
+    typedef xfTP_wpRequestFolderMutexSem *xfTD_wpRequestFolderMutexSem;
+
+    /*
+     * xfTP_wpReleaseFolderMutexSem:
+     *      prototype for WPFolder::wpReleaseFolderMutexSem.
+     *
+     *      This is the reverse to WPFolder::wpRequestFolderMutexSem.
+     */
+
+    typedef ULONG _System xfTP_wpReleaseFolderMutexSem(WPFolder *somSelf);
+    typedef xfTP_wpReleaseFolderMutexSem *xfTD_wpReleaseFolderMutexSem;
+
+    // wrappers
+    ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
+                                    ULONG ulTimeout);
+    ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf);
+
+    /*
+     * xfTP_wpFlushNotifications:
+     *      prototype for WPFolder::wpFlushNotifications.
+     *
+     *      See the Warp 4 Toolkit documentation for details.
+     */
+
+    typedef BOOL _System xfTP_wpFlushNotifications(WPFolder *somSelf);
+    typedef xfTP_wpFlushNotifications *xfTD_wpFlushNotifications;
+
+    // wrapper
+    ULONG wpshFlushNotifications(WPFolder *somSelf);
+
+    /*
      * xfTP_wpclsGetNotifySem:
      *      prototype for M_WPFolder::wpclsGetNotifySem.
      *
@@ -238,7 +289,7 @@
     typedef xfTP_wpclsGetNotifySem *xfTD_wpclsGetNotifySem;
 
     /*
-     * M_WPFolder:
+     * xfTP_wpclsReleaseNotifySem:
      *      prototype for M_WPFolder::wpclsReleaseNotifySem.
      *
      *      This is the reverse to xfTP_wpclsGetNotifySem.
@@ -246,6 +297,10 @@
 
     typedef VOID _System xfTP_wpclsReleaseNotifySem(M_WPFolder *somSelf);
     typedef xfTP_wpclsReleaseNotifySem *xfTD_wpclsReleaseNotifySem;
+
+    // wrappers
+    BOOL wpshGetNotifySem(ULONG ulTimeout);
+    VOID wpshReleaseNotifySem(VOID);
 
     #endif // SOM_WPFolder_h
 

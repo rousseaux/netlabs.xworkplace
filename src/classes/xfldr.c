@@ -497,14 +497,15 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 
         memset(pec, 0, sizeof(ENUMCONTENT));
 
-        wpshCheckIfPopulated(somSelf);
+        wpshCheckIfPopulated(somSelf,
+                             FALSE);        // full populate
 
         // build new list for ORDEREDLISTITEMs:
         pec->pllOrderedContent = lstCreate(TRUE);       // auto-free list items
 
         TRY_LOUD(excpt1, NULL)
         {
-            fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+            fFolderLocked = !wpshRequestFolderMutexSem(somSelf, 5000);
             if (fFolderLocked)
             {
                 // get the folder's content as the WPS delivers it.
@@ -569,7 +570,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
-            _wpReleaseObjectMutexSem(somSelf);
+            wpshReleaseFolderMutexSem(somSelf);
 
         if (!fItemsFound)
         {

@@ -593,8 +593,12 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
 
     // some icon from /ICONS found: set it
     _wpSetIcon(somSelf, hptr);
-    // remove the "custom icon" style flag
-    _wpSetStyle(somSelf, _wpQueryStyle(somSelf) &~ OBJSTYLE_CUSTOMICON);
+    // make sure this icon is not destroyed;
+    // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
+    // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
+    _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
+    // _wpModifyStyle(somSelf, OBJSTYLE_CUSTOMICON, 0);
+    // _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
 
     #ifdef DEBUG_ASSOCS
         _Pmpf(("End of xfpgmf_wpSetProgIcon"));
