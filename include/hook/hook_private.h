@@ -161,6 +161,11 @@
         // this gets loaded from OS2.INI also
         PAGERCONFIG XPagerConfig;
 
+        PVOID       paEREs[MAX_STICKIES];
+                // compiled regular expressions for every SF_MATCHES
+                // that exists in PAGERCONFIG.aulStickyFlags
+                // V0.9.19 (2002-04-17) [umoeller]
+
         HWND        hwndXPagerClient;
                 // XPager client window, created by pgmcCreateMainControlWnd
         HWND        hwndXPagerFrame;

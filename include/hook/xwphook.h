@@ -42,11 +42,30 @@
 
     // do not change the following, or this will break
     // binary compatibility of the XPager OS2.INI data
-    #define MAX_STICKYS         64
+    #define MAX_STICKIES        64
     // #define MAX_WINDOWS         256
     #define PGMG_TEXTLEN        30
 
 #ifndef __NOPAGER__
+
+    // flags for PAGERCONFIG.ulMiniDisplayFlags
+    #define MDF_INCLUDESECONDARY 0x00000001L
+    #define MDF_INCLUDESTICKY    0x00000002L
+
+    // flags for PAGERCONFIG.aulStickyFlags
+    #define SF_CONTAINS          0x00000000L // default
+    #define SF_BEGINSWITH        0x00000001L
+    #define SF_ENDSWITH          0x00000002L
+    #define SF_EQUALS            0x00000004L
+    #define SF_MATCHES           0x00000008L        // V0.9.19 (2002-04-17) [umoeller]
+    #define SF_OPERATOR_MASK     0x0000FFFFL
+
+    #define SF_INCLUDE           0x00000000L // default
+    #define SF_EXCLUDE           0x00010000L
+    #define SF_CRITERIA_MASK     0x00010000L
+
+    #define SF_TITLE             0x00000000L // default
+    #define SF_ATTRIBUTE_MASK    0xFFFE0000L
 
     /*
      *@@ PAGERCONFIG:
@@ -93,10 +112,10 @@
                 // if TRUE, windows are restored when XPager is exited
 
         /* Sticky */
-        CHAR         aszSticky[MAX_STICKYS][PGMG_TEXTLEN];
+        CHAR         aszSticky[MAX_STICKIES][PGMG_TEXTLEN];
         SHORT        usStickyTextNum;
-        HWND         hwndSticky2[MAX_STICKYS];
-        SHORT        usSticky2Num;
+        ULONG        aulStickyFlags[MAX_STICKIES]; // SF_*
+        SHORT        usUnused1;
 
         /*  Colors */
         LONG         lcNormal;
@@ -110,11 +129,11 @@
         LONG         lcTxtNormalApp;
         LONG         lcTxtCurrentApp;
 
-        /* Panning */
-        BOOL         bPanAtTop;             // @@@ Martin, we can't comment this
-        BOOL         bPanAtBottom;          // out, because this is stored in binary
-        BOOL         bPanAtLeft;            // in OS2.INI.
-        BOOL         bPanAtRight;
+        /* Extra options */
+        ULONG        ulMiniDisplayFlags; // MDF_*
+        BOOL         bUnused1;
+        BOOL         bUnused2;
+        BOOL         bUnused3;
         BOOL         bWrapAround;
 
         /* Keyboard */

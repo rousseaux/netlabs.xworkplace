@@ -36,33 +36,9 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,
-                                                  ULONG flFlags);
-
-        MRESULT XWPENTRY pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
-                                               ULONG ulItemID, USHORT usNotifyCode,
-                                               ULONG ulExtra);
-
-        VOID XWPENTRY pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,
-                                                 ULONG flFlags);
-
-        MRESULT XWPENTRY pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
-                                              ULONG ulItemID, USHORT usNotifyCode,
-                                              ULONG ulExtra);
-
-        VOID XWPENTRY pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,
-                                                 ULONG flFlags);
-
-        MRESULT XWPENTRY pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
-                                              ULONG ulItemID, USHORT usNotifyCode,
-                                              ULONG ulExtra);
-
-        VOID XWPENTRY pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,
-                                                 ULONG flFlags);
-
-        MRESULT XWPENTRY pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
-                                              ULONG ulItemID, USHORT usNotifyCode,
-                                              ULONG ulExtra);
+        ULONG pgmiInsertPagerPages(WPObject *somSelf,
+                                   HWND hwndDlg,
+                                   HMODULE savehmod);
     #else
         #error "shared\notebook.h needs to be included before including pager.h".
     #endif

@@ -1065,6 +1065,8 @@
         #define LOAD_STRING     ((PCSZ)-1)
 
         extern const CONTROLDEF
+                          G_OKButton,
+                          G_CancelButton,
                           G_UndoButton,
                           G_DefaultButton,
                           G_HelpButton,
@@ -1463,6 +1465,12 @@
                                        ULONG ulTable,
                                        ULONG ulMessage,
                                        ULONG flStyle);
+
+    ULONG XWPENTRY cmnErrorMsgBox(HWND hwndOwner,
+                                  APIRET arc,
+                                  ULONG ulMsg,
+                                  ULONG flFlags,
+                                  BOOL fShowExplanation);
 
     ULONG XWPENTRY cmnDosErrorMsgBox(HWND hwndOwner,
                                      PSZ pszReplString,

@@ -77,6 +77,12 @@
                         (the "Skip" button in the status window).
 */
 
+/* ******************************************************************
+ *
+ *   Version info
+ *
+ ********************************************************************/
+
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
@@ -90,7 +96,12 @@
 // which XFolder will accept
 #define MINIMUM_NLS_VERSION    "0.9.19"
 
-// icons / bitmaps
+/* ******************************************************************
+ *
+ *   Bitmap and icon IDs
+ *
+ ********************************************************************/
+
 #define ID_ICON1               100
 #define ID_ICON2               101
 #define ID_ICONDLG             102
@@ -169,9 +180,11 @@
 // #define ID_ICON_TRAY           180
 #define ID_BITMAP_TRAY         180          // replaced V0.9.16 (2001-10-28) [umoeller]
 
-/******************************************
- * generics                        < 100  *
- ******************************************/
+/* ******************************************************************
+ *
+ *   Generic dialog IDs < 100
+ *
+ ********************************************************************/
 
 /* notebook buttons; these must be < 100
    so that they can be moved for Warp 4
@@ -186,6 +199,12 @@
 #define DID_TOOLTIP            91           // always used for tooltip controls, V0.9.0
 #define DID_DETAILS            90           // V0.9.16 (2001-10-15) [umoeller]
 #define DID_CLOSE              89
+#define DID_YES                88
+#define DID_YES2ALL            87
+#define DID_NO                 86
+#define DID_ABORT              85
+#define DID_RETRY              84
+#define DID_IGNORE             83
 
 /* DID_OK and DID_CANCEL are def'd somewhere in os2.h */
 
@@ -200,9 +219,11 @@
 
 #define DID_BROWSE             101
 
-/******************************************
- *  "real" dialogs                >= 200  *
- ******************************************/
+/* ******************************************************************
+ *
+ *   Miscellaneous dialogs >= 200
+ *
+ ********************************************************************/
 
 // for product info
 // #define ID_XFD_PRODINFO                 200      // removed V0.9.16 (2001-11-10) [umoeller]
@@ -212,12 +233,14 @@
 #define ID_XSDI_INFO_STRING             203
 
 // "Select by name" dlg items
-#define ID_XFD_SELECTSOME               210
+#define ID_XFDI_SELECTSOME_TITLE        210      // V0.9.19 (2002-04-17) [umoeller]
 #define ID_XFDI_SOME_ENTRYFIELD         211
 #define ID_XFDI_SOME_SELECT             212
 #define ID_XFDI_SOME_DESELECT           213
 #define ID_XFDI_SOME_SELECTALL          214
 #define ID_XFDI_SOME_DESELECTALL        215
+#define ID_XFDI_SOME_INTROTXT           216
+#define ID_XFDI_SOME_REGEXP_CP          217
 
 // generic dlg text removed V0.9.18 (2002-02-06) [umoeller]
 // #define ID_XFD_GENERICDLG               220
@@ -324,9 +347,14 @@
 #define ID_XFDI_PANIC_DISABLECHECKDESKTOP   420    // V0.9.17 (2002-02-05) [umoeller]
 #endif
 
-/******************************************
- * "Workplace Shell" (XFldWPS)     >= 500 *
- ******************************************/
+#define ID_XSD_STARTUPFOLDER        442     // "Startup" page in XFldStartup;
+                                            // new with V0.9.0
+
+/* ******************************************************************
+ *
+ *   XFldWPS                        >= 500
+ *
+ ********************************************************************/
 
 // "Remove menu items" page
 #define ID_XSD_SET2REMOVEMENUS          510
@@ -482,9 +510,11 @@
 #define ID_XSDI_FDRVIEW_TREE            663
 #define ID_XSDI_FDRVIEW_DETAILS         664
 
-/******************************************
- * Instance settings notebooks     >=700  *
- ******************************************/
+/* ******************************************************************
+ *
+ *   Instance settings notebooks        >= 700
+ *
+ ********************************************************************/
 
 // XFolder page in folder notebook
 // (also uses some ID's def'd above)
@@ -604,9 +634,11 @@
 #define ID_XSDI_DETAILS_SETUPSTR_GROUP  883
 #define ID_XSDI_DETAILS_SETUPSTR_EF     884
 
-/******************************************
- * XWPSound (V0.9.0)              >= 1000  *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPSound                           >= 1000
+ *
+ ********************************************************************/
 
 #define ID_XSD_XWPSOUND                 1000    // new "Sounds" page (XWPSound, V0.9.0)
 #define ID_XSD_NEWSOUNDSCHEME           1001    // "New Sound Scheme" dlg, V0.9.0
@@ -622,9 +654,11 @@
 #define ID_XSDI_SOUND_COMMONVOLUME      1010
 #define ID_XSDI_SOUND_VOLUMELEVER       1011
 
-/******************************************
- * XWPSetup (V0.9.0)             >= 1100   *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPSetup                           >= 1100
+ *
+ ********************************************************************/
 
 // XWPSetup info page (V0.9.0)
 // all IDs changed V0.9.9 (2001-03-07) [umoeller]
@@ -746,55 +780,11 @@
 #define ID_XCD_CLASSES_REPLACEMENTS     1281
 #define ID_XCD_CLASSES_NEW              1282
 
-/******************************************
- * XWPScreen ("Screen", XPager) >= 1400 *
- ******************************************/
-
-#define ID_SCD_PAGER_GENERAL         1400
-#define ID_SCDI_PGMG1_X_SLIDER          1401
-#define ID_SCDI_PGMG1_X_TEXT2           1402
-#define ID_SCDI_PGMG1_Y_SLIDER          1403
-#define ID_SCDI_PGMG1_Y_TEXT2           1404
-// 1405 to 1414 moved to ID_SCD_PAGER_WINDOW
-#define ID_SCDI_PGMG1_ARROWHOTKEYS      1415
-#define ID_SCDI_PGMG1_HOTKEYS_CTRL      1416
-#define ID_SCDI_PGMG1_HOTKEYS_SHIFT     1417
-#define ID_SCDI_PGMG1_HOTKEYS_ALT       1418
-#define ID_SCDI_PGMG1_WRAPAROUND        1419
-#define ID_SCDI_PGMG1_VALUESET          1420
-
-#define ID_SCD_PAGER_COLORS          1430
-#define ID_SCDI_PGMG2_DTP_INACTIVE      1431
-#define ID_SCDI_PGMG2_DTP_ACTIVE        1432
-#define ID_SCDI_PGMG2_DTP_BORDER        1433
-#define ID_SCDI_PGMG2_WIN_INACTIVE      1434
-#define ID_SCDI_PGMG2_WIN_ACTIVE        1435
-#define ID_SCDI_PGMG2_WIN_BORDER        1436
-#define ID_SCDI_PGMG2_TXT_INACTIVE      1437
-#define ID_SCDI_PGMG2_TXT_ACTIVE        1438
-
-#define ID_SCD_PAGER_STICKY          1450
-#define ID_SCDI_PGMG_STICKY_CNR         1451
-
-#define ID_SCD_PAGER_NEWSTICKY       1460
-#define ID_SCD_PAGER_COMBO_STICKIES  1461
-
-#define ID_SCD_PAGER_WINDOW          1470
-#define ID_SCDI_PGMG1_SHOWWINDOWS       1471
-#define ID_SCDI_PGMG1_SHOWWINTITLES     1472
-#define ID_SCDI_PGMG1_CLICK2ACTIVATE    1473
-#define ID_SCDI_PGMG1_TITLEBAR          1474
-#define ID_SCDI_PGMG1_PRESERVEPROPS     1475
-#define ID_SCDI_PGMG1_STAYONTOP         1476
-#define ID_SCDI_PGMG1_FLASHTOTOP        1477
-#define ID_SCDI_PGMG1_FLASH_TXT1        1478
-#define ID_SCDI_PGMG1_FLASH_SPIN        1479
-#define ID_SCDI_PGMG1_FLASH_TXT2        1480
-
-
-/******************************************
- * XFldSystem ("OS/2 Kernel")    >= 1500  *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XFldSystem                         >= 1500
+ *
+ ********************************************************************/
 
 #define ID_OSD_SETTINGS_KERNEL1         1500
 #define ID_OSD_SETTINGS_KERNEL2         1501
@@ -955,9 +945,11 @@
 // #define ID_OSD_SETTINGS_SYSLEVEL            1900
 // #define ID_OSDI_SYSLEVEL_CNR                1901
 
-/******************************************
- * XWPClassList (V0.9.0)                   *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPClassList                       >= 2000
+ *
+ ********************************************************************/
 
 // class list dialog (left part of split view)
 #define ID_XLD_CLASSLIST                2000
@@ -997,12 +989,11 @@
 #define ID_XLDI_SHOWSOMOBJECT           2031    // corresponds to IDL instance setting
 #define ID_XLDI_SHOWMETHODS             2032    // corresponds to IDL instance setting
 
-/******************************************
- * XFldDesktop                    >=2100  *
- ******************************************/
-
-#define ID_XSD_STARTUPFOLDER        442     // "Startup" page in XFldStartup;
-                                            // new with V0.9.0
+/* ******************************************************************
+ *
+ *   XFldDesktop                        >= 2100
+ *
+ ********************************************************************/
 
 // "Menu items" page (V0.9.0)
 // #define ID_XSD_DTP_MENUITEMS            2100     // removed V0.9.16 (2002-01-09) [umoeller]
@@ -1123,9 +1114,11 @@
 
 #define ID_SDDI_CANDESKTOPALTF4         2229        // V0.9.16 (2002-01-04) [umoeller]
 
-/******************************************
- * XWPTrashCan (V0.9.0)                   *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPTrashCan                            >= 3000
+ *
+ ********************************************************************/
 
 // #define ID_XTD_SETTINGS                 3000     // removed V0.9.19 (2002-04-14) [umoeller]
 // #define ID_XTDI_DELETE                  3001
@@ -1145,10 +1138,11 @@
 #define ID_XTD_ICONPAGE                 3030
 #define ID_XTDI_ICON_TITLEMLE           3031
 
-
-/******************************************
- * XWPKeyboard (V0.9.0)          >= 3200   *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPKeyboard                            >= 3200
+ *
+ ********************************************************************/
 
 // #define ID_XSD_KEYB_OBJHOTKEYS          3200
 // #define ID_XSDI_HOTK_CNR                3201
@@ -1162,9 +1156,11 @@
 // #define ID_XSDI_FUNCK_MODIFIER          3233
             // removed V0.9.12 (2001-05-17) [umoeller]
 
-/******************************************
- * XWPMouse    (V0.9.0)          >= 3400   *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPMouse                               >= 3400
+ *
+ ********************************************************************/
 
 // #define ID_XSD_MOUSE_MOVEMENT           3400     // V0.9.16 (2001-12-06) [umoeller]
 #ifndef __NOSLIDINGFOCUS__
@@ -1234,11 +1230,14 @@
 #define ID_XSDI_MOUSE_AUTOMOVE_SLIDER   3479
 #define ID_XSDI_MOUSE_AUTOMOVE_TXT2     3480
 #define ID_XSDI_MOUSE_AUTOMOVE_ANIMATE  3481
+#define ID_XSDI_MOUSE_AUTOMOVE_CENTER   3482    // added V0.9.19 (2002-04-11) [lafaix]
 #endif
 
-/******************************************
- * XCenter (V0.9.7)         >= 3600       *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XCenter                            >= 3600
+ *
+ ********************************************************************/
 
 #define ID_CRD_SETTINGS_VIEW            3600
 #define ID_CRDI_VIEW_TOPOFSCREEN        3601
@@ -1283,9 +1282,11 @@
 
 #define ID_CRD_DISKFREEWGT_SETTINGS     3720
 
-/******************************************
- * XWPString (V0.9.3)       >= 3800       *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPString                          >= 3800
+ *
+ ********************************************************************/
 
 #define ID_XSD_XWPSTRING_PAGE           3800
 #define ID_XSD_XWPSTRING_STRING_MLE     3801
@@ -1293,17 +1294,20 @@
 #define ID_XSD_XWPSTRING_OBJ_CLEAR      3803
 #define ID_XSD_XWPSTRING_CONFIRM        3804
 
-
-/******************************************
- * XWPFont V0.9.9           >= 3900
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPFont                            >= 3900
+ *
+ ********************************************************************/
 
 #define ID_FND_SAMPLETEXT               3900
 #define ID_FNDI_SAMPLETEXT_MLE          3901
 
-/******************************************
- * XWPAdmin V0.9.11         >= 4000
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPAdmin                           >= 4000
+ *
+ ********************************************************************/
 
 // all IDs changed V0.9.19 (2002-04-02) [umoeller]
 #define ID_AMDI_USER_LOCAL_GROUP        4000
@@ -1316,9 +1320,11 @@
 #define ID_AMDI_USER_GROUPID_TXT        4007
 #define ID_AMDI_USER_GROUPID_DATA       4008
 
-/******************************************
- *          Shutdown defs                 *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XShutdown                          >= 4100
+ *
+ ********************************************************************/
 
 #define ID_SDICON                       4100   // shutdown icon
 
@@ -1373,212 +1379,95 @@
 // #define ID_SDMI_BEGINCLOSINGITEMS       4408     removed V0.9.12 (2001-04-29) [umoeller]
 // #define ID_SDMI_CLEANUPANDQUIT          4409     removed V0.9.9 (2001-04-04) [umoeller]
 
-/******************************************
- *          Menu IDs                      *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPScreen                          >= 4500
+ *
+ ********************************************************************/
 
-// generic help menu item in various menus
-#define ID_XFMI_HELP                    (WPMENUID_USER+1000) // added V0.9.0
+/* All IDs were raised from >= 1400 to >= 4500 with
+   V0.9.19 (2002-04-17) [umoeller] because we were
+   running out of IDs in the old range.  */
 
-// context menu in "WPS Classes" container;
-// all the identifiers have changed with V0.9.0
-#define ID_XLM_CLASS_SEL                (WPMENUID_USER+1001)
-// #define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002)
-#define ID_XLMI_REGISTER                (WPMENUID_USER+1003)
-#define ID_XLMI_DEREGISTER              (WPMENUID_USER+1004)
-#define ID_XLMI_REPLACE                 (WPMENUID_USER+1005)
-#define ID_XLMI_UNREPLACE               (WPMENUID_USER+1006)
-#define ID_XLMI_CREATEOBJECT            (WPMENUID_USER+1007)
-#define ID_XLM_METHOD_SEL               (WPMENUID_USER+1010)
-#define ID_XLM_METHOD_NOSEL             (WPMENUID_USER+1011)
-#define ID_XLM_METHOD_SORT              (WPMENUID_USER+1012)
-#define ID_XLMI_METHOD_SORT_INDEX       (WPMENUID_USER+1013)
-#define ID_XLMI_METHOD_SORT_NAME        (WPMENUID_USER+1014)
-#define ID_XLMI_METHOD_SORT_INTRO       (WPMENUID_USER+1015)
-#define ID_XLMI_METHOD_SORT_OVERRIDE    (WPMENUID_USER+1016)
-#define ID_XLMI_REFRESH_VIEW            (WPMENUID_USER+1017) // V0.9.6 (2000-11-12) [umoeller]
+#ifndef __NOPAGER__
+    #define ID_SCD_PAGER_GENERAL            4500
+    #define ID_SCDI_PGMG1_X_SLIDER          4501
+    #define ID_SCDI_PGMG1_X_TEXT2           4502
+    #define ID_SCDI_PGMG1_Y_SLIDER          4503
+    #define ID_SCDI_PGMG1_Y_TEXT2           4504
+    // 1405 to 1414 moved to ID_SCD_PAGER_WINDOW
+    #define ID_SCDI_PGMG1_ARROWHOTKEYS      4515
+    #define ID_SCDI_PGMG1_HOTKEYS_CTRL      4516
+    #define ID_SCDI_PGMG1_HOTKEYS_SHIFT     4517
+    #define ID_SCDI_PGMG1_HOTKEYS_ALT       4518
+    #define ID_SCDI_PGMG1_WRAPAROUND        4519
+    #define ID_SCDI_PGMG1_VALUESET          4520
 
-// "File types" container
-#define ID_XSM_FILETYPES_SEL            (WPMENUID_USER+1020)
-#define ID_XSM_FILETYPES_NOSEL          (WPMENUID_USER+1021)
-#define ID_XSMI_FILETYPES_DELETE        (WPMENUID_USER+1022)
-#define ID_XSMI_FILETYPES_NEW           (WPMENUID_USER+1023)
-#define ID_XSMI_FILETYPES_PICKUP        (WPMENUID_USER+1024)
-#define ID_XSMI_FILETYPES_DROP          (WPMENUID_USER+1025)
-#define ID_XSMI_FILETYPES_CANCELDRAG    (WPMENUID_USER+1026)
-#define ID_XSMI_FILETYPES_EXPORT        (WPMENUID_USER+1027)
-#define ID_XSMI_FILETYPES_IMPORT        (WPMENUID_USER+1028)
+    #define ID_SCD_PAGER_COLORS             4530
+    #define ID_SCDI_PGMG2_DTP_INACTIVE      4531
+    #define ID_SCDI_PGMG2_DTP_ACTIVE        4532
+    #define ID_SCDI_PGMG2_DTP_BORDER        4533
+    #define ID_SCDI_PGMG2_WIN_INACTIVE      4534
+    #define ID_SCDI_PGMG2_WIN_ACTIVE        4535
+    #define ID_SCDI_PGMG2_WIN_BORDER        4536
+    #define ID_SCDI_PGMG2_TXT_INACTIVE      4537
+    #define ID_SCDI_PGMG2_TXT_ACTIVE        4538
 
-// "Filters" container on "File types" page
-#define ID_XSM_FILEFILTER_SEL           (WPMENUID_USER+1030)
-#define ID_XSM_FILEFILTER_NOSEL         (WPMENUID_USER+1031)
-#define ID_XSMI_FILEFILTER_DELETE       (WPMENUID_USER+1035)
-#define ID_XSMI_FILEFILTER_NEW          (WPMENUID_USER+1036)
-#define ID_XSMI_FILEFILTER_IMPORTWPS    (WPMENUID_USER+1037)
+    // added V0.9.19 (2002-04-17) [umoeller]
+    #define ID_SCDI_STICKY_GROUP            4550
+    #define ID_SCDI_STICKY_CNR              4551
+    #define ID_SCDI_STICKY_ADD              4552
+    #define ID_SCDI_STICKY_EDIT             4553
+    #define ID_SCDI_STICKY_REMOVE           4554
 
-// "Associations" container on "File types" page
-#define ID_XSM_FILEASSOC_SEL            (WPMENUID_USER+1040)
-#define ID_XSM_FILEASSOC_NOSEL          (WPMENUID_USER+1041)
-#define ID_XSMI_FILEASSOC_DELETE        (WPMENUID_USER+1042)
-#define ID_XSMI_FILEASSOC_SETTINGS      (WPMENUID_USER+1043)
-#define ID_XSMI_FILEASSOC_OPENFDR       (WPMENUID_USER+1044)
+    #define ID_SCDI_STICKY_INCLUDE          4560
+    #define ID_SCDI_STICKY_EXCLUDE          4561
+    #define ID_SCDI_STICKY_CONTAINS         4562
+    #define ID_SCDI_STICKY_BEGINSWITH       4563
+    #define ID_SCDI_STICKY_ENDSWITH         4564
+    #define ID_SCDI_STICKY_EQUALS           4565
+    #define ID_SCDI_STICKY_MATCHES          4566
+    #define ID_SCDI_STICKY_TITLEATTRIBUTE   4567
+    #define ID_SCDI_STICKY_CRITERIA         4568
+    #define ID_SCDI_STICKY_ATTRIBUTE        4569
+    #define ID_SCDI_STICKY_OPERATOR         4570
+    #define ID_SCDI_STICKY_VALUE            4571
+    #define ID_SCDI_STICKY_ADDTITLE         4572
+    #define ID_SCDI_STICKY_EDITTITLE        4573
 
-// "Objects" menus on XWPSetup "Objects" page
-#define ID_XSM_OBJECTS_SYSTEM           (WPMENUID_USER+1050)
-#define ID_XSM_OBJECTS_XWORKPLACE       (WPMENUID_USER+1051)
+    #define ID_SCDI_STICKY_CRITERIAGROUP    4580
+    #define ID_SCDI_STICKY_ATTRIBUTE_DROP   4581
+    #define ID_SCDI_STICKY_OPERATOR_DROP    4582
+    #define ID_SCDI_STICKY_VALUE_DROP       4583
+    #define ID_SCDI_STICKY_MATCHINGGROUP    4584
+    #define ID_SCDI_STICKY_RADIO_INCLUDE    4585
+    #define ID_SCDI_STICKY_RADIO_EXCLUDE    4586
 
-// "Driver" menus on XFldSystem "Drivers" page
-#define ID_XSM_DRIVERS_SEL              (WPMENUID_USER+1100)
-#define ID_XSM_DRIVERS_NOSEL            (WPMENUID_USER+1101)
-#define ID_XSMI_DRIVERS_CMDREFHELP      (WPMENUID_USER+1102)
+    // removed V0.9.19 (2002-04-15) [lafaix]
+    //#define ID_SCD_PAGER_NEWSTICKY       1460
+    //#define ID_SCD_PAGER_COMBO_STICKIES  1461
 
-// "Hotkey" menus on XWPKeyboard "Hotkeys" page
-#define ID_XSM_HOTKEYS_SEL              (WPMENUID_USER+1120)
-#define ID_XSMI_HOTKEYS_PROPERTIES      (WPMENUID_USER+1121)
-#define ID_XSMI_HOTKEYS_OPENFOLDER      (WPMENUID_USER+1122)
-#define ID_XSMI_HOTKEYS_REMOVE          (WPMENUID_USER+1123)
+    #define ID_SCD_PAGER_WINDOW             4600
+    #define ID_SCDI_PGMG1_SHOWWINDOWS       4601
+    #define ID_SCDI_PGMG1_SHOWWINTITLES     4602
+    #define ID_SCDI_PGMG1_CLICK2ACTIVATE    4603
+    #define ID_SCDI_PGMG1_TITLEBAR          4604
+    #define ID_SCDI_PGMG1_PRESERVEPROPS     4605
+    #define ID_SCDI_PGMG1_STAYONTOP         4606
+    #define ID_SCDI_PGMG1_FLASHTOTOP        4607
+    #define ID_SCDI_PGMG1_FLASH_TXT1        4608
+    #define ID_SCDI_PGMG1_FLASH_SPIN        4609
+    #define ID_SCDI_PGMG1_FLASH_TXT2        4610
+    #define ID_SCDI_PGMG1_SHOWSECONDARY     4611    // added V0.9.19 (2002-04-11) [lafaix]
+    #define ID_SCDI_PGMG1_SHOWSTICKY        4612    // added V0.9.19 (2002-04-11) [lafaix]
 
-// "Function keys" menus on XWPKeyboard "Function keys" page
-// V0.9.3 (2000-04-18) [umoeller]
-#define ID_XSM_FUNCTIONKEYS_SEL         (WPMENUID_USER+1130)
-#define ID_XSMI_FUNCK_EDIT              (WPMENUID_USER+1131)
-#define ID_XSMI_FUNCK_DELETE            (WPMENUID_USER+1132)
+#endif
 
-#define ID_XSM_FUNCTIONKEYS_NOSEL       (WPMENUID_USER+1133)
-#define ID_XSMI_FUNCK_NEW               (WPMENUID_USER+1134)
-
-// "Sticky windows" context menus on XWPScreen "XPager Sticky" page
-// V0.9.4 (2000-07-10) [umoeller]
-#define ID_XSM_STICKY_NOSEL             (WPMENUID_USER+1140)
-#define ID_XSMI_STICKY_NEW              (WPMENUID_USER+1141)
-
-#define ID_XSM_STICKY_SEL               (WPMENUID_USER+1142)
-#define ID_XSMI_STICKY_DELETE           (WPMENUID_USER+1143)
-
-/* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
-/* changed all IDs to above WPMENUID_USER (0x6500) because
-   otherwise we cause conflicts with the WPS menu IDs
-   V0.9.11 (2001-04-25) [umoeller] */
-#define ID_CRM_XCENTERBUTTON            (WPMENUID_USER+1144)
-// menu items; these only need to be unique within the menu
-#define ID_CRMI_SEP1                    0x7f00
-#define ID_CRMI_SEP2                    0x7f01
-#define ID_CRMI_SUSPEND                 0x7f02
-#define ID_CRMI_LOGOFF                  0x7f03
-#define ID_CRMI_RESTARTWPS              0x7f04
-#define ID_CRMI_SHUTDOWN                0x7f05
-#define ID_CRMI_RUN                     0x7f06
-
-#define ID_CRM_WIDGET                   0x7f07
-#define ID_CRMI_PROPERTIES              0x7f08
-#define ID_CRMI_HELP                    0x7f09
-#define ID_CRMI_REMOVEWGT               0x7f0a
-
-#define ID_CRMI_LOCKUPNOW               0x7f0b
-
-#define ID_CRMI_ADDTRAY                 0x7f0c
-#define ID_CRMI_RENAMETRAY              0x7f0d
-#define ID_CRMI_REMOVETRAY              0x7f0e
-
-#define ID_CRMI_SEP0                    0x7f0f
-#define ID_CRMI_WIDGETCLASSNAME         0x7f10
-
-#define ID_CRMI_SEP3                    0x7f11      // added V0.9.19 (2002-04-02) [umoeller]
-#define ID_CRMI_SEP4                    0x7f12      // added V0.9.19 (2002-04-02) [umoeller]
-
-#define ID_CRMI_CLOSE_XCENTER           0x7f13      // added V0.9.19 (2002-04-14) [umoeller]
-
-#define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
-
-#define ID_XSM_PAGERCTXTMENU            220
-
-// The following menu ID's (with _OFS_ in their names)
-// are _variable_ menu ID's: XFolder will add the value
-// on the "XFolder Internals" page ("menu item id offset")
-// to them to avoid ID conflicts. This value is stored
-// internally in the GlobalSettings structure.
-#define ID_XFMI_OFS_SEPARATOR           (WPMENUID_USER+1)
-#define ID_XFMI_OFS_PRODINFO            (WPMENUID_USER+2)
-#define ID_XFMI_OFS_REFRESH             (WPMENUID_USER+3)
-#define ID_XFMI_OFS_SNAPTOGRID          (WPMENUID_USER+4)
-#define ID_XFMI_OFS_OPENPARENT          (WPMENUID_USER+5)
-#define ID_XFMI_OFS_OPENPARENTANDCLOSE  (WPMENUID_USER+6)
-#define ID_XFMI_OFS_CLOSE               (WPMENUID_USER+7)
-#define ID_XFM_OFS_SHUTDOWNMENU         (WPMENUID_USER+9)       // new with V0.9.0
-// #define ID_XFMI_OFS_XSHUTDOWN           (WPMENUID_USER+10)      // new with V0.9.0
-                                                    // removed V0.9.3 (2000-04-26) [umoeller]
-#define ID_XFMI_OFS_OS2_SHUTDOWN        (WPMENUID_USER+10)      // new with V0.9.3 (2000-04-26) [umoeller]
-#define ID_XFMI_OFS_RESTARTWPS          (WPMENUID_USER+11)
-
-#define ID_XFMI_OFS_FLDRCONTENT         (WPMENUID_USER+12)
-#define ID_XFMI_OFS_DUMMY               (WPMENUID_USER+13)
-#define ID_XFMI_OFS_COPYFILENAME_MENU   (WPMENUID_USER+14)      // menu item
-#define ID_XFMI_OFS_COPYFILENAME_SHORT  (WPMENUID_USER+15)      // folder hotkeys
-#define ID_XFMI_OFS_COPYFILENAME_FULL   (WPMENUID_USER+16)      // folder hotkyes
-#define ID_XFMI_OFS_BORED               (WPMENUID_USER+17)
-#define ID_XFMI_OFS_SELECTSOME          (WPMENUID_USER+18)
-#define ID_XFMI_OFS_PROCESSCONTENT      (WPMENUID_USER+19)
-
-#define ID_XFMI_OFS_CONTEXTMENU         (WPMENUID_USER+20)
-
-#define ID_XFMI_OFS_SORTBYCLASS         (WPMENUID_USER+21)
-#define ID_XFMI_OFS_SORTBYEXT           (WPMENUID_USER+27)
-#define ID_XFMI_OFS_SORTFOLDERSFIRST    (WPMENUID_USER+28)
-#define ID_XFMI_OFS_ALWAYSSORT          (WPMENUID_USER+29)
-
-#define ID_XFM_OFS_ATTRIBUTES           (WPMENUID_USER+31)
-#define ID_XFMI_OFS_ATTR_ARCHIVED       (WPMENUID_USER+32)
-#define ID_XFMI_OFS_ATTR_SYSTEM         (WPMENUID_USER+33)
-#define ID_XFMI_OFS_ATTR_HIDDEN         (WPMENUID_USER+34)
-#define ID_XFMI_OFS_ATTR_READONLY       (WPMENUID_USER+35)
-
-#define ID_XFM_OFS_WARP3FLDRVIEW        (WPMENUID_USER+36)
-#define ID_XFMI_OFS_SMALLICONS          (WPMENUID_USER+37)
-#define ID_XFMI_OFS_FLOWED              (WPMENUID_USER+38)
-#define ID_XFMI_OFS_NONFLOWED           (WPMENUID_USER+39)
-#define ID_XFMI_OFS_NOGRID              (WPMENUID_USER+40)
-
-#define ID_XFMI_OFS_WARP4MENUBAR        (WPMENUID_USER+41)  // added V0.9.0
-#define ID_XFMI_OFS_SHOWSTATUSBAR       (WPMENUID_USER+42)
-
-// new view item in "Open" submenu... this is used for XWPClassList, Partitions,
-// XCenter, XWPFontObject, ...
-#define ID_XFMI_OFS_XWPVIEW             (WPMENUID_USER+43)
-
-// Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-#define ID_XFMI_OFS_TRASHEMPTY          (WPMENUID_USER+44)
-#define ID_XFMI_OFS_TRASHRESTORE        (WPMENUID_USER+45)
-#define ID_XFMI_OFS_TRASHDESTROY        (WPMENUID_USER+46)
-
-// "Deinstall" menu item in XWPFontObject V0.9.7 (2001-01-13) [umoeller]
-#define ID_XFMI_OFS_FONT_DEINSTALL      (WPMENUID_USER+47)
-
-// "Default document" item in WPFolder "Open" and WPDataFile main context menu V0.9.4 (2000-06-09) [umoeller]
-#define ID_XFMI_OFS_FDRDEFAULTDOC       (WPMENUID_USER+48)
-
-// "Logoff" menu item in XFldDesktop V0.9.5 (2000-08-10) [umoeller]
-#define ID_XFMI_OFS_LOGOFF              (WPMENUID_USER+50)
-
-// extended "close" menu V0.9.12 (2001-05-22) [umoeller]
-#define ID_XFMI_OFS_CLOSESUBMENU        (WPMENUID_USER+51)      // submenu
-// "this view" has regular WPMENUID_CLOSE id
-#define ID_XFMI_OFS_CLOSEALLTHISFDR     (WPMENUID_USER+52)      // "close all of this fdr"
-#define ID_XFMI_OFS_CLOSEALLSUBFDRS     (WPMENUID_USER+53)      // "close all subfdrs"
-
-// "Run" menu item in XFolder/XFldDisk V0.9.14 (2001-08-07) [pr]
-#define ID_XFMI_OFS_RUN                 (WPMENUID_USER+54)
-
-// this is the value used for variable menu items, i.e.
-// those inserted according to the config folder and by
-// the "folder content" functions; XFolder will use this
-// value (i.e. WPMENUID_USER + "menu item id offset"
-// + FIRST_VARIABLE) and increment it until 0x8000 is reached
-#define FIRST_VARIABLE                  60      // raised V0.9.4 (2000-06-10) [umoeller]
-#define ID_XFMI_OFS_VARIABLE            (WPMENUID_USER+FIRST_VARIABLE)
-
-/******************************************
- *          String IDs                    *
- ******************************************/
+/* ******************************************************************
+ *
+ *   String IDs I                           >= 5000
+ *
+ ********************************************************************/
 
 // XFolder uses the following ID's for language-
 // dependent strings. These correspond to the
@@ -1593,6 +1482,10 @@
 // work if the IDs don't have following numbers.
 
 // Note: All string IDs have been raised with V0.9.0.
+
+// More string IDs (part II) are above 7000 because
+// unfortunately I didn't reserve enough space when
+// declaring the XWPSetup feature strings as >= 6000.
 
 #define ID_XSS_MAIN               5000
 #define ID_XSSI_NOTDEFINED        5001
@@ -1778,17 +1671,18 @@
 // #define ID_XSSI_DLG_CONFIRMCONFIGSYS2   4001
 
 // "Yes", "no", etc.
-#define ID_XSSI_DLG_UNDO                5797        // V0.9.13 (2001-06-27) [umoeller]
-#define ID_XSSI_DLG_DEFAULT             5798        // V0.9.13 (2001-06-27) [umoeller]
-#define ID_XSSI_DLG_HELP                5799        // V0.9.13 (2001-06-27) [umoeller]
-#define ID_XSSI_DLG_YES                 5800
-#define ID_XSSI_DLG_YES2ALL             5801
-#define ID_XSSI_DLG_NO                  5802
-#define ID_XSSI_DLG_OK                  5803
-#define ID_XSSI_DLG_CANCEL              5804
-#define ID_XSSI_DLG_ABORT               5805
-#define ID_XSSI_DLG_RETRY               5806
-#define ID_XSSI_DLG_IGNORE              5807
+// all removed again V0.9.19 (2002-04-17) [umoeller]
+// #define ID_XSSI_DLG_UNDO                5797
+// #define ID_XSSI_DLG_DEFAULT             5798
+// #define ID_XSSI_DLG_HELP                5799
+// #define ID_XSSI_DLG_YES                 5800
+// #define ID_XSSI_DLG_YES2ALL             5801
+// #define ID_XSSI_DLG_NO                  5802
+// #define ID_XSSI_DLG_OK                  5803
+// #define ID_XSSI_DLG_CANCEL              5804
+// #define ID_XSSI_DLG_ABORT               5805
+// #define ID_XSSI_DLG_RETRY               5806
+// #define ID_XSSI_DLG_IGNORE              5807
 
 // "status bars" page
 #define ID_XSSI_SB_CLASSMNEMONICS       5808
@@ -1992,9 +1886,11 @@
 // sigh... more new strings below, after the features page...
 // not enough room here
 
-/******************************************
- *  Features on XWPSetup "Features" page  *
- ******************************************/
+/* ******************************************************************
+ *
+ *   XWPSetup features                  >= 6000
+ *
+ ********************************************************************/
 
 // The following identifiers are used BOTH
 // for loading string resources and for
@@ -2086,9 +1982,11 @@
 #define ID_XCSI_PAGER                6054
 #endif
 
-/******************************************
- *  Still more string IDs                 *
- ******************************************/
+/* ******************************************************************
+ *
+ *   String IDs II                      >= 6098
+ *
+ ********************************************************************/
 
 #define ID_XSSI_STYLEPAGE               6098
 #define ID_XSSI_CLASSESPAGE             6099
@@ -2248,10 +2146,12 @@
 
 #define ID_CRSI_OWGT_BITMAPFILE         6226
 
-/******************************************
- *  string IDs for status bar mnemonics
- *  (all new with V0.9.14)
- ******************************************/
+/* ******************************************************************
+ *
+ *   String IDs for status bar mnemonics        >= 7000
+ *   (all new with V0.9.14)
+ *
+ ********************************************************************/
 
 #define ID_XSSI_SBMNC_1             7000         // "in bytes"
 #define ID_XSSI_SBMNC_2             7001         // "in kBytes"
@@ -2287,9 +2187,11 @@
 #define ID_XSSI_SBMNC_510           7031         // "parameter list"
 #define ID_XSSI_SBMNC_520           7032         // "working directory"
 
-/******************************************
- *          Treesize                      *
- ******************************************/
+/* ******************************************************************
+ *
+ *   Treesize                           >= 10000
+ *
+ ********************************************************************/
 
 #define ID_TSD_MAIN                     10001
 #define ID_TSDI_CNR                     10002
@@ -2317,9 +2219,11 @@
 
 #define ID_TS_ICON                      10021
 
-/******************************************
- *          NetscapeDDE                   *
- ******************************************/
+/* ******************************************************************
+ *
+ *   Treesize                           >= 10100
+ *
+ ********************************************************************/
 
 // #define ID_NDD_EXPLAIN                  10100        // removed V0.9.16 (2001-10-02) [umoeller]
 // #define ID_NDD_QUERYSTART               10101        // removed V0.9.19 (2002-04-02) [umoeller]
@@ -2329,9 +2233,219 @@
 
 #define ID_ND_ICON                      10110
 
-/********************************************
- * Animated mouse pointers       >= 0x6000  *
- ********************************************/
+/* ******************************************************************
+ *
+ *   Menu items
+ *
+ ********************************************************************/
+
+// generic help menu item in various menus
+#define ID_XFMI_HELP                    (WPMENUID_USER+1000) // added V0.9.0
+
+// context menu in "WPS Classes" container;
+// all the identifiers have changed with V0.9.0
+#define ID_XLM_CLASS_SEL                (WPMENUID_USER+1001)
+// #define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002)
+#define ID_XLMI_REGISTER                (WPMENUID_USER+1003)
+#define ID_XLMI_DEREGISTER              (WPMENUID_USER+1004)
+#define ID_XLMI_REPLACE                 (WPMENUID_USER+1005)
+#define ID_XLMI_UNREPLACE               (WPMENUID_USER+1006)
+#define ID_XLMI_CREATEOBJECT            (WPMENUID_USER+1007)
+#define ID_XLM_METHOD_SEL               (WPMENUID_USER+1010)
+#define ID_XLM_METHOD_NOSEL             (WPMENUID_USER+1011)
+#define ID_XLM_METHOD_SORT              (WPMENUID_USER+1012)
+#define ID_XLMI_METHOD_SORT_INDEX       (WPMENUID_USER+1013)
+#define ID_XLMI_METHOD_SORT_NAME        (WPMENUID_USER+1014)
+#define ID_XLMI_METHOD_SORT_INTRO       (WPMENUID_USER+1015)
+#define ID_XLMI_METHOD_SORT_OVERRIDE    (WPMENUID_USER+1016)
+#define ID_XLMI_REFRESH_VIEW            (WPMENUID_USER+1017) // V0.9.6 (2000-11-12) [umoeller]
+
+// "File types" container
+#define ID_XSM_FILETYPES_SEL            (WPMENUID_USER+1020)
+#define ID_XSM_FILETYPES_NOSEL          (WPMENUID_USER+1021)
+#define ID_XSMI_FILETYPES_DELETE        (WPMENUID_USER+1022)
+#define ID_XSMI_FILETYPES_NEW           (WPMENUID_USER+1023)
+#define ID_XSMI_FILETYPES_PICKUP        (WPMENUID_USER+1024)
+#define ID_XSMI_FILETYPES_DROP          (WPMENUID_USER+1025)
+#define ID_XSMI_FILETYPES_CANCELDRAG    (WPMENUID_USER+1026)
+#define ID_XSMI_FILETYPES_EXPORT        (WPMENUID_USER+1027)
+#define ID_XSMI_FILETYPES_IMPORT        (WPMENUID_USER+1028)
+
+// "Filters" container on "File types" page
+#define ID_XSM_FILEFILTER_SEL           (WPMENUID_USER+1030)
+#define ID_XSM_FILEFILTER_NOSEL         (WPMENUID_USER+1031)
+#define ID_XSMI_FILEFILTER_DELETE       (WPMENUID_USER+1035)
+#define ID_XSMI_FILEFILTER_NEW          (WPMENUID_USER+1036)
+#define ID_XSMI_FILEFILTER_IMPORTWPS    (WPMENUID_USER+1037)
+
+// "Associations" container on "File types" page
+#define ID_XSM_FILEASSOC_SEL            (WPMENUID_USER+1040)
+#define ID_XSM_FILEASSOC_NOSEL          (WPMENUID_USER+1041)
+#define ID_XSMI_FILEASSOC_DELETE        (WPMENUID_USER+1042)
+#define ID_XSMI_FILEASSOC_SETTINGS      (WPMENUID_USER+1043)
+#define ID_XSMI_FILEASSOC_OPENFDR       (WPMENUID_USER+1044)
+
+// "Objects" menus on XWPSetup "Objects" page
+#define ID_XSM_OBJECTS_SYSTEM           (WPMENUID_USER+1050)
+#define ID_XSM_OBJECTS_XWORKPLACE       (WPMENUID_USER+1051)
+
+// "Driver" menus on XFldSystem "Drivers" page
+#define ID_XSM_DRIVERS_SEL              (WPMENUID_USER+1100)
+#define ID_XSM_DRIVERS_NOSEL            (WPMENUID_USER+1101)
+#define ID_XSMI_DRIVERS_CMDREFHELP      (WPMENUID_USER+1102)
+
+// "Hotkey" menus on XWPKeyboard "Hotkeys" page
+#define ID_XSM_HOTKEYS_SEL              (WPMENUID_USER+1120)
+#define ID_XSMI_HOTKEYS_PROPERTIES      (WPMENUID_USER+1121)
+#define ID_XSMI_HOTKEYS_OPENFOLDER      (WPMENUID_USER+1122)
+#define ID_XSMI_HOTKEYS_REMOVE          (WPMENUID_USER+1123)
+
+// "Function keys" menus on XWPKeyboard "Function keys" page
+// V0.9.3 (2000-04-18) [umoeller]
+#define ID_XSM_FUNCTIONKEYS_SEL         (WPMENUID_USER+1130)
+#define ID_XSMI_FUNCK_EDIT              (WPMENUID_USER+1131)
+#define ID_XSMI_FUNCK_DELETE            (WPMENUID_USER+1132)
+
+#define ID_XSM_FUNCTIONKEYS_NOSEL       (WPMENUID_USER+1133)
+#define ID_XSMI_FUNCK_NEW               (WPMENUID_USER+1134)
+
+// "Sticky windows" context menus on XWPScreen "XPager Sticky" page
+// V0.9.4 (2000-07-10) [umoeller]
+#define ID_XSM_STICKY_NOSEL             (WPMENUID_USER+1140)
+#define ID_XSMI_STICKY_NEW              (WPMENUID_USER+1141)
+
+#define ID_XSM_STICKY_SEL               (WPMENUID_USER+1142)
+#define ID_XSMI_STICKY_DELETE           (WPMENUID_USER+1143)
+
+/* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
+/* changed all IDs to above WPMENUID_USER (0x6500) because
+   otherwise we cause conflicts with the WPS menu IDs
+   V0.9.11 (2001-04-25) [umoeller] */
+#define ID_CRM_XCENTERBUTTON            (WPMENUID_USER+1144)
+// menu items; these only need to be unique within the menu
+#define ID_CRMI_SEP1                    0x7f00
+#define ID_CRMI_SEP2                    0x7f01
+#define ID_CRMI_SUSPEND                 0x7f02
+#define ID_CRMI_LOGOFF                  0x7f03
+#define ID_CRMI_RESTARTWPS              0x7f04
+#define ID_CRMI_SHUTDOWN                0x7f05
+#define ID_CRMI_RUN                     0x7f06
+
+#define ID_CRM_WIDGET                   0x7f07
+#define ID_CRMI_PROPERTIES              0x7f08
+#define ID_CRMI_HELP                    0x7f09
+#define ID_CRMI_REMOVEWGT               0x7f0a
+
+#define ID_CRMI_LOCKUPNOW               0x7f0b
+
+#define ID_CRMI_ADDTRAY                 0x7f0c
+#define ID_CRMI_RENAMETRAY              0x7f0d
+#define ID_CRMI_REMOVETRAY              0x7f0e
+
+#define ID_CRMI_SEP0                    0x7f0f
+#define ID_CRMI_WIDGETCLASSNAME         0x7f10
+
+#define ID_CRMI_SEP3                    0x7f11      // added V0.9.19 (2002-04-02) [umoeller]
+#define ID_CRMI_SEP4                    0x7f12      // added V0.9.19 (2002-04-02) [umoeller]
+
+#define ID_CRMI_CLOSE_XCENTER           0x7f13      // added V0.9.19 (2002-04-14) [umoeller]
+
+#define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
+
+#define ID_XSMI_STICKY_EDIT             (WPMENUID_USER+1146) // added V0.9.19 (2002-04-15) [lafaix]
+#define ID_XSMI_STICKY_DELETEALL        (WPMENUID_USER+1147)
+
+#define ID_XSM_PAGERCTXTMENU            220
+
+// The following menu ID's (with _OFS_ in their names)
+// are _variable_ menu ID's: XFolder will add the value
+// on the "XFolder Internals" page ("menu item id offset")
+// to them to avoid ID conflicts. This value is stored
+// internally in the GlobalSettings structure.
+#define ID_XFMI_OFS_SEPARATOR           (WPMENUID_USER+1)
+#define ID_XFMI_OFS_PRODINFO            (WPMENUID_USER+2)
+#define ID_XFMI_OFS_REFRESH             (WPMENUID_USER+3)
+#define ID_XFMI_OFS_SNAPTOGRID          (WPMENUID_USER+4)
+#define ID_XFMI_OFS_OPENPARENT          (WPMENUID_USER+5)
+#define ID_XFMI_OFS_OPENPARENTANDCLOSE  (WPMENUID_USER+6)
+#define ID_XFMI_OFS_CLOSE               (WPMENUID_USER+7)
+#define ID_XFM_OFS_SHUTDOWNMENU         (WPMENUID_USER+9)       // new with V0.9.0
+// #define ID_XFMI_OFS_XSHUTDOWN           (WPMENUID_USER+10)      // new with V0.9.0
+                                                    // removed V0.9.3 (2000-04-26) [umoeller]
+#define ID_XFMI_OFS_OS2_SHUTDOWN        (WPMENUID_USER+10)      // new with V0.9.3 (2000-04-26) [umoeller]
+#define ID_XFMI_OFS_RESTARTWPS          (WPMENUID_USER+11)
+
+#define ID_XFMI_OFS_FLDRCONTENT         (WPMENUID_USER+12)
+#define ID_XFMI_OFS_DUMMY               (WPMENUID_USER+13)
+#define ID_XFMI_OFS_COPYFILENAME_MENU   (WPMENUID_USER+14)      // menu item
+#define ID_XFMI_OFS_COPYFILENAME_SHORT  (WPMENUID_USER+15)      // folder hotkeys
+#define ID_XFMI_OFS_COPYFILENAME_FULL   (WPMENUID_USER+16)      // folder hotkyes
+#define ID_XFMI_OFS_BORED               (WPMENUID_USER+17)
+#define ID_XFMI_OFS_SELECTSOME          (WPMENUID_USER+18)
+#define ID_XFMI_OFS_PROCESSCONTENT      (WPMENUID_USER+19)
+
+#define ID_XFMI_OFS_CONTEXTMENU         (WPMENUID_USER+20)
+
+#define ID_XFMI_OFS_SORTBYCLASS         (WPMENUID_USER+21)
+#define ID_XFMI_OFS_SORTBYEXT           (WPMENUID_USER+27)
+#define ID_XFMI_OFS_SORTFOLDERSFIRST    (WPMENUID_USER+28)
+#define ID_XFMI_OFS_ALWAYSSORT          (WPMENUID_USER+29)
+
+#define ID_XFM_OFS_ATTRIBUTES           (WPMENUID_USER+31)
+#define ID_XFMI_OFS_ATTR_ARCHIVED       (WPMENUID_USER+32)
+#define ID_XFMI_OFS_ATTR_SYSTEM         (WPMENUID_USER+33)
+#define ID_XFMI_OFS_ATTR_HIDDEN         (WPMENUID_USER+34)
+#define ID_XFMI_OFS_ATTR_READONLY       (WPMENUID_USER+35)
+
+#define ID_XFM_OFS_WARP3FLDRVIEW        (WPMENUID_USER+36)
+#define ID_XFMI_OFS_SMALLICONS          (WPMENUID_USER+37)
+#define ID_XFMI_OFS_FLOWED              (WPMENUID_USER+38)
+#define ID_XFMI_OFS_NONFLOWED           (WPMENUID_USER+39)
+#define ID_XFMI_OFS_NOGRID              (WPMENUID_USER+40)
+
+#define ID_XFMI_OFS_WARP4MENUBAR        (WPMENUID_USER+41)  // added V0.9.0
+#define ID_XFMI_OFS_SHOWSTATUSBAR       (WPMENUID_USER+42)
+
+// new view item in "Open" submenu... this is used for XWPClassList, Partitions,
+// XCenter, XWPFontObject, ...
+#define ID_XFMI_OFS_XWPVIEW             (WPMENUID_USER+43)
+
+// Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
+#define ID_XFMI_OFS_TRASHEMPTY          (WPMENUID_USER+44)
+#define ID_XFMI_OFS_TRASHRESTORE        (WPMENUID_USER+45)
+#define ID_XFMI_OFS_TRASHDESTROY        (WPMENUID_USER+46)
+
+// "Deinstall" menu item in XWPFontObject V0.9.7 (2001-01-13) [umoeller]
+#define ID_XFMI_OFS_FONT_DEINSTALL      (WPMENUID_USER+47)
+
+// "Default document" item in WPFolder "Open" and WPDataFile main context menu V0.9.4 (2000-06-09) [umoeller]
+#define ID_XFMI_OFS_FDRDEFAULTDOC       (WPMENUID_USER+48)
+
+// "Logoff" menu item in XFldDesktop V0.9.5 (2000-08-10) [umoeller]
+#define ID_XFMI_OFS_LOGOFF              (WPMENUID_USER+50)
+
+// extended "close" menu V0.9.12 (2001-05-22) [umoeller]
+#define ID_XFMI_OFS_CLOSESUBMENU        (WPMENUID_USER+51)      // submenu
+// "this view" has regular WPMENUID_CLOSE id
+#define ID_XFMI_OFS_CLOSEALLTHISFDR     (WPMENUID_USER+52)      // "close all of this fdr"
+#define ID_XFMI_OFS_CLOSEALLSUBFDRS     (WPMENUID_USER+53)      // "close all subfdrs"
+
+// "Run" menu item in XFolder/XFldDisk V0.9.14 (2001-08-07) [pr]
+#define ID_XFMI_OFS_RUN                 (WPMENUID_USER+54)
+
+// this is the value used for variable menu items, i.e.
+// those inserted according to the config folder and by
+// the "folder content" functions; XFolder will use this
+// value (i.e. WPMENUID_USER + "menu item id offset"
+// + FIRST_VARIABLE) and increment it until 0x8000 is reached
+#define FIRST_VARIABLE                  60      // raised V0.9.4 (2000-06-10) [umoeller]
+#define ID_XFMI_OFS_VARIABLE            (WPMENUID_USER+FIRST_VARIABLE)
+
+/* ******************************************************************
+ *
+ *   Animated mouse pointers            >= 0x6000 (24576)
+ *
+ ********************************************************************/
 
 // --- diverse res ids
 
