@@ -78,6 +78,10 @@ nor awake shadows properly. Fixed.
 <P><LI>Common: Fixed global variables which caused many dialogs to fail after
 NLS change. Also localized a few more hard-coded strings.
 
+<P><LI>Common: If NLS DLL cannot be found, &xwp; will automatically
+fall back to English NLS now. Of course this doesn't work if English
+is broken, but then &xwp; is hosed anyway.
+
 <P><LI>Common: Lots of rework on dialog manager to fix display oddities on
 resolutions lower than 1024x768. Hopefully this didn't break anything.
 
@@ -102,6 +106,11 @@ classes that shouldn't have any.
 Fixed.
 
 <P><LI>Folders: Details views weren't refresh properly during refresh. Fixed.
+
+<P><LI>Folders: Turbo folders had a few situations where real name
+changes weren't picked up properly, leading to duplicate or misnamed
+objects. Among other things, this could affect objects when the
+"Title clash" dialog popped up. Fixed.
 
 <P><LI>Folder content menus: Text wasn't centered vertically with icons, fixed.
 Thanks Martin Lafaix.

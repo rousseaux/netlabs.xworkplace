@@ -298,11 +298,24 @@ SOM_Scope void  SOMLINK xctr_xwpFreeWidgetsBuf(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-SOM_Scope APIRET SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
-                                              PSZ pszWidgetClass,
-                                              PSZ pszSetupString,
-                                              ULONG ulTrayWidgetIndex,
-                                              ULONG ulTrayIndex,
+
+/*
+ * SOM_Scope APIRET SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
+ *                                               PSZ pszWidgetClass,
+ *                                               PSZ pszSetupString,
+ *                                               ULONG ulTrayWidgetIndex,
+ *                                               ULONG ulTrayIndex,
+ *                                               ULONG ulWidgetIndex)
+ */
+
+/*
+ * The prototype for xctr_xwpCreateWidget was replaced by the following prototype:
+ */
+SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf, 
+                                              PSZ pszWidgetClass, 
+                                              PSZ pszSetupString, 
+                                              ULONG ulTrayWidgetIndex, 
+                                              ULONG ulTrayIndex, 
                                               ULONG ulWidgetIndex)
 {
     APIRET      arc = NO_ERROR;
@@ -455,9 +468,19 @@ SOM_Scope APIRET SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-SOM_Scope APIRET  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
-                                             ULONG ulTrayWidgetIndex,
-                                             PSZ pszTrayName)
+
+/*
+ * SOM_Scope APIRET  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
+ *                                              ULONG ulTrayWidgetIndex,
+ *                                              PSZ pszTrayName)
+ */
+
+/*
+ * The prototype for xctr_xwpCreateTray was replaced by the following prototype:
+ */
+SOM_Scope ULONG  SOMLINK xctr_xwpCreateTray(XCenter *somSelf, 
+                                            ULONG ulTrayWidgetIndex, 
+                                            PSZ pszTrayName)
 {
     APIRET      arc = NO_ERROR;
     BOOL        fLocked = FALSE;
@@ -530,10 +553,21 @@ SOM_Scope APIRET  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-SOM_Scope APIRET  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
-                                             ULONG ulTrayWidgetIndex,
-                                             ULONG ulTrayIndex,
-                                             PSZ pszNewTrayName)
+
+/*
+ * SOM_Scope APIRET  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
+ *                                              ULONG ulTrayWidgetIndex,
+ *                                              ULONG ulTrayIndex,
+ *                                              PSZ pszNewTrayName)
+ */
+
+/*
+ * The prototype for xctr_xwpRenameTray was replaced by the following prototype:
+ */
+SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf, 
+                                            ULONG ulTrayWidgetIndex, 
+                                            ULONG ulTrayIndex, 
+                                            PSZ pszNewTrayName)
 {
     APIRET      arc = NO_ERROR;
     BOOL        fLocked = FALSE;

@@ -49,18 +49,18 @@ interface XCenter : WPAbstract
     VOID xwpFreeWidgetsBuf(in PVOID pBuf,
                            in ULONG ulCount);
 
-    APIRET xwpCreateWidget(in PSZ pszWidgetClass,
-                           in PSZ pszSetupString,
-                           in ULONG ulTrayWidgetIndex,
-                           in ULONG ulTrayIndex,
-                           in ULONG ulWidgetIndex);
+    ULONG xwpCreateWidget(in PSZ pszWidgetClass,
+                          in PSZ pszSetupString,
+                          in ULONG ulTrayWidgetIndex,
+                          in ULONG ulTrayIndex,
+                          in ULONG ulWidgetIndex);
 
-    APIRET xwpCreateTray(in ULONG ulTrayWidgetIndex,
-                         in PSZ pszTrayName);
+    ULONG xwpCreateTray(in ULONG ulTrayWidgetIndex,
+                        in PSZ pszTrayName);
 
-    APIRET xwpRenameTray(in ULONG ulTrayWidgetIndex,
-                         in ULONG ulTrayIndex,
-                         in PSZ pszNewTrayName);
+    ULONG xwpRenameTray(in ULONG ulTrayWidgetIndex,
+                        in ULONG ulTrayIndex,
+                        in PSZ pszNewTrayName);
 
     BOOL xwpRemoveWidget(in ULONG ulIndex);
 

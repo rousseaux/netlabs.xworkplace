@@ -1418,7 +1418,6 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                         // folders and readonly files
                         // V0.9.19 (2002-05-01) [umoeller]
                         ulIgnoreSubsequent = FOPS_ISQ_FLAGS_EMPTYTRASH;
-                        DosBeep(1000, 100);
                     }
                 break;
             }
