@@ -2768,6 +2768,190 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  ********************************************************************/
 
 /*
+ *@@ TreeFrameControl:
+ *      implementation for WM_CONTROL for FID_CLIENT
+ *      in fnwpSubclassedTreeFrame.
+ *
+ *      Set *pfCallDefault to TRUE if you want the
+ *      parent window proc to be called.
+ *
+ *@@added V0.9.21 (2002-08-26) [umoeller]
+ */
+
+MRESULT TreeFrameControl(HWND hwndFrame,
+                         MPARAM mp1,
+                         MPARAM mp2,
+                         PBOOL pfCallDefault)
+{
+    MRESULT mrc = 0;
+    HWND                hwndMainControl;
+    PFDRSPLITVIEW       psv;
+    PMINIRECORDCORE     prec;
+
+    switch (SHORT2FROMMP(mp1))
+    {
+        /*
+         * CN_EMPHASIS:
+         *      selection changed:
+         */
+
+        case CN_EMPHASIS:
+        {
+            PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
+
+            if (    (pnre->pRecord)
+                 && (pnre->fEmphasisMask & CRA_SELECTED)
+                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                 && (prec->flRecordAttr & CRA_SELECTED)
+                 && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 // notifications not disabled?
+                 && (psv->fFileDlgReady)
+               )
+            {
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("CN_EMPHASIS %s",
+                        prec->pszIcon));
+                #endif
+
+                // record changed?
+                if (prec != psv->precFolderContentsShowing)
+                {
+                    // then go refresh the files container
+                    fdrPostFillFolder(psv,
+                                      prec,
+                                      FFL_SETBACKGROUND);
+                }
+
+                if (psv->hwndStatusBar)
+                {
+                    #ifdef DEBUG_POPULATESPLITVIEW
+                        _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                psfv->hwndStatusBar ));
+                    #endif
+
+                    // have the status bar updated and make
+                    // sure the status bar retrieves its info
+                    // from the _left_ cnr
+                    WinPostMsg(psv->hwndStatusBar,
+                               STBM_UPDATESTATUSBAR,
+                               (MPARAM)psv->hwndTreeCnr,
+                               MPNULL);
+                }
+            }
+        }
+        break;
+
+        /*
+         * CN_EXPANDTREE:
+         *      user clicked on "+" sign next to
+         *      tree item; expand that, but start
+         *      "add first child" thread again
+         */
+
+        case CN_EXPANDTREE:
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 // notifications not disabled?
+                 && (psv->fFileDlgReady)
+                 && (prec = (PMINIRECORDCORE)mp2)
+               )
+            {
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("CN_EXPANDTREE %s",
+                        prec->pszIcon));
+                #endif
+
+                fdrPostFillFolder(psv,
+                                  prec,
+                                  FFL_FOLDERSONLY | FFL_EXPAND);
+
+                // and call default because xfolder
+                // handles auto-scroll
+                *pfCallDefault = TRUE;
+            }
+        break;
+
+        /*
+         * CN_ENTER:
+         *      intercept this so that we won't open
+         *      a folder view.
+         *
+         *      Before this, we should have gotten
+         *      CN_EMPHASIS so the files list has
+         *      been updated already.
+         *
+         *      Instead, check whether the record has
+         *      been expanded or collapsed and do
+         *      the reverse.
+         */
+
+        case CN_ENTER:
+        {
+            PNOTIFYRECORDENTER pnre;
+
+            if (    (pnre = (PNOTIFYRECORDENTER)mp2)
+                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                            // can be null for whitespace!
+               )
+            {
+                ULONG ulmsg = CM_EXPANDTREE;
+                if (prec->flRecordAttr & CRA_EXPANDED)
+                    ulmsg = CM_COLLAPSETREE;
+
+                WinPostMsg(pnre->hwndCnr,
+                           ulmsg,
+                           (MPARAM)prec,
+                           0);
+            }
+        }
+        break;
+
+        /*
+         * CN_CONTEXTMENU:
+         *      we need to intercept this for context menus
+         *      on whitespace, because the WPS won't do it.
+         *      We pass all other cases on because the WPS
+         *      does do things correctly for object menus.
+         */
+
+        case CN_CONTEXTMENU:
+        {
+            *pfCallDefault = TRUE;
+
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 && (!mp2)      // whitespace:
+                    // display the menu for the root folder
+               )
+            {
+                POINTL  ptl;
+                WinQueryPointerPos(HWND_DESKTOP, &ptl);
+                // convert to cnr coordinates
+                WinMapWindowPoints(HWND_DESKTOP,        // from
+                                   psv->hwndTreeCnr,   // to
+                                   &ptl,
+                                   1);
+                _wpDisplayMenu(psv->pRootFolder,
+                               psv->hwndTreeFrame, // owner
+                               psv->hwndTreeCnr,   // parent
+                               &ptl,
+                               MENU_OPENVIEWPOPUP,
+                               0);
+
+                *pfCallDefault = FALSE;
+            }
+        }
+        break;
+
+        default:
+            *pfCallDefault = TRUE;
+    }
+
+    return mrc;
+}
+
+/*
  *@@ fnwpSubclassedTreeFrame:
  *      subclassed frame window on the right for the
  *      "Files" container. This has the files cnr
@@ -2790,172 +2974,13 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
     switch (msg)
     {
         case WM_CONTROL:
-        {
             if (SHORT1FROMMP(mp1) == FID_CLIENT)     // that's the container
-            {
-                switch (SHORT2FROMMP(mp1))
-                {
-                    /*
-                     * CN_EMPHASIS:
-                     *      selection changed:
-                     */
-
-                    case CN_EMPHASIS:
-                    {
-                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
-
-                        if (    (pnre->pRecord)
-                             && (pnre->fEmphasisMask & CRA_SELECTED)
-                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                             && (prec->flRecordAttr & CRA_SELECTED)
-                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                             // notifications not disabled?
-                             && (psv->fFileDlgReady)
-                           )
-                        {
-                            #ifdef DEBUG_POPULATESPLITVIEW
-                                _PmpfF(("CN_EMPHASIS %s",
-                                    prec->pszIcon));
-                            #endif
-
-                            // record changed?
-                            if (prec != psv->precFolderContentsShowing)
-                            {
-                                // then go refresh the files container
-                                fdrPostFillFolder(psv,
-                                                  prec,
-                                                  FFL_SETBACKGROUND);
-                            }
-
-                            if (psv->hwndStatusBar)
-                            {
-                                #ifdef DEBUG_POPULATESPLITVIEW
-                                    _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
-                                            psfv->hwndStatusBar ));
-                                #endif
-
-                                // have the status bar updated and make
-                                // sure the status bar retrieves its info
-                                // from the _left_ cnr
-                                WinPostMsg(psv->hwndStatusBar,
-                                           STBM_UPDATESTATUSBAR,
-                                           (MPARAM)psv->hwndTreeCnr,
-                                           MPNULL);
-                            }
-                        }
-                    }
-                    break;
-
-                    /*
-                     * CN_EXPANDTREE:
-                     *      user clicked on "+" sign next to
-                     *      tree item; expand that, but start
-                     *      "add first child" thread again
-                     */
-
-                    case CN_EXPANDTREE:
-                        if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                             // notifications not disabled?
-                             && (psv->fFileDlgReady)
-                             && (prec = (PMINIRECORDCORE)mp2)
-                           )
-                        {
-                            #ifdef DEBUG_POPULATESPLITVIEW
-                                _PmpfF(("CN_EXPANDTREE %s",
-                                    prec->pszIcon));
-                            #endif
-
-                            fdrPostFillFolder(psv,
-                                              prec,
-                                              FFL_FOLDERSONLY | FFL_EXPAND);
-
-                            // and call default because xfolder
-                            // handles auto-scroll
-                            fCallDefault = TRUE;
-                        }
-                    break;
-
-                    /*
-                     * CN_ENTER:
-                     *      intercept this so that we won't open
-                     *      a folder view.
-                     *
-                     *      Before this, we should have gotten
-                     *      CN_EMPHASIS so the files list has
-                     *      been updated already.
-                     *
-                     *      Instead, check whether the record has
-                     *      been expanded or collapsed and do
-                     *      the reverse.
-                     */
-
-                    case CN_ENTER:
-                    {
-                        PNOTIFYRECORDENTER pnre;
-
-                        if (    (pnre = (PNOTIFYRECORDENTER)mp2)
-                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                                        // can be null for whitespace!
-                           )
-                        {
-                            ULONG ulmsg = CM_EXPANDTREE;
-                            if (prec->flRecordAttr & CRA_EXPANDED)
-                                ulmsg = CM_COLLAPSETREE;
-
-                            WinPostMsg(pnre->hwndCnr,
-                                       ulmsg,
-                                       (MPARAM)prec,
-                                       0);
-                        }
-                    }
-                    break;
-
-                    /*
-                     * CN_CONTEXTMENU:
-                     *      we need to intercept this for context menus
-                     *      on whitespace, because the WPS won't do it.
-                     *      We pass all other cases on because the WPS
-                     *      does do things correctly for object menus.
-                     */
-
-                    case CN_CONTEXTMENU:
-                    {
-                        fCallDefault = TRUE;
-
-                        if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                             && (!mp2)      // whitespace:
-                                // display the menu for the root folder
-                           )
-                        {
-                            POINTL  ptl;
-                            WinQueryPointerPos(HWND_DESKTOP, &ptl);
-                            // convert to cnr coordinates
-                            WinMapWindowPoints(HWND_DESKTOP,        // from
-                                               psv->hwndTreeCnr,   // to
-                                               &ptl,
-                                               1);
-                            _wpDisplayMenu(psv->pRootFolder,
-                                           psv->hwndTreeFrame, // owner
-                                           psv->hwndTreeCnr,   // parent
-                                           &ptl,
-                                           MENU_OPENVIEWPOPUP,
-                                           0);
-
-                            fCallDefault = FALSE;
-                        }
-                    }
-                    break;
-
-                    default:
-                        fCallDefault = TRUE;
-                }
-            }
+                mrc = TreeFrameControl(hwndFrame,
+                                       mp1,
+                                       mp2,
+                                       &fCallDefault);
             else
                 fCallDefault = TRUE;
-        }
         break;
 
         case WM_SYSCOMMAND:
@@ -3029,7 +3054,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
 /*
  *@@ FilesFrameControl:
  *      implementation for WM_CONTROL for FID_CLIENT
- *      in
+ *      in fnwpSubclassedFilesFrame.
  *
  *      Set *pfCallDefault to TRUE if you want the
  *      parent window proc to be called.

@@ -22,7 +22,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.

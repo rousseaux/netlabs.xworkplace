@@ -17,7 +17,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # This is the language code for the language that the NLS DLL
 # will support. Change this to a different language code, and
