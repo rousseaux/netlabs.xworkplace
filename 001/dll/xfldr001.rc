@@ -1648,6 +1648,7 @@ BEGIN
     ID_SCDI_PGR1_HOTKEYS_SHIFT          "~Shift"
     ID_SCDI_PGR1_HOTKEYS_ALT            "A~lt"
     ID_SCDI_PGR1_WRAPAROUND             "Wrap at borders"
+    ID_SCDI_PGR1_WINDOWS_KEYS           "~Use windows keys for left & right"
     ID_SCDI_PGR2_DISABLED_INFO          "Virtual desktops are currently disabled. Enable them on the first &pgr; settings page to access these settings."
 
     /* strings formerly in ID_XSD_AUTOCLOSE */

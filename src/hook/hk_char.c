@@ -464,6 +464,23 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                         brc = TRUE;
                     }
 
+                 if (    !brc
+                     &&  ((usFlags & (KC_ALT | KC_CTRL | KC_SHIFT)) == 0)
+                     &&  (G_HookData.PagerConfig.flPager & PGRFL_WINDOWS_KEYS)
+                     &&  (    (usFlags & KC_VIRTUALKEY) == 0
+                         &&  (   (usch == 0xEC00 /* left */)
+                              || (usch == 0xED00 /* right */))
+                         )
+                     )
+                     {
+                         // cursor keys:
+                         WinPostMsg(G_HookData.hwndPagerClient,
+                                    PGRM_PAGERHOTKEY,
+                                    (MPARAM)(usch == 0xEC00 ? 0x63 : 0x64),
+                                    0);
+                         // swallow
+                         brc = TRUE;
+                     }
             }
         }
     } // end if (!brc)       // message not swallowed yet

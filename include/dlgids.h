@@ -1580,6 +1580,7 @@
     #define ID_SCDI_PGR1_WRAPAROUND        4519
     #define ID_SCDI_PGR1_VALUESET          4520
     #define ID_SCDI_PGR1_FOLLOWFOCUS       4521     // V0.9.19 (2002-06-02) [umoeller]
+    #define ID_SCDI_PGR1_WINDOWS_KEYS      4522     // V1.0.3 (2004-10-14) [bird]
 
     // #define ID_SCD_PAGER_COLORS             4530     // removed V0.9.19 (2002-05-07) [umoeller]
     #define ID_SCDI_PGR2_DISABLED_INFO     4529     // added V0.9.19 (2002-05-28) [umoeller]

@@ -136,6 +136,8 @@
 
                 #define PGRMASK_PAGE3 ( PGRFL_ADDSTICKYTOGGLE )
                 #define PGRFL_PAGE3_DEFAULTS        0
+                #define PGRFL_WINDOWS_KEYS          0x00010000
+                // V1.0.3 (2004-10-14) [bird]: Use windows keys for left / right
 
         ULONG       ulFlashDelay;
                 // "flash" delay in milliseconds, if PGRFL_FLASHTOTOP

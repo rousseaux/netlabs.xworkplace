@@ -348,6 +348,7 @@ static const CONTROLDEF
     Pgr1HotkeysCtrlCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_CTRL),
     Pgr1HotkeysShiftCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_SHIFT),
     Pgr1HotkeysAltCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_ALT),
+    Pgr1WindowsKeysCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_WINDOWS_KEYS),
     Pgr1WraparoundCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_WRAPAROUND);
 
 static const DLGHITEM G_dlgPagerGeneral[] =
@@ -379,6 +380,8 @@ static const DLGHITEM G_dlgPagerGeneral[] =
                 CONTROL_DEF(&Pgr1HotkeysCtrlCB),
                 CONTROL_DEF(&Pgr1HotkeysShiftCB),
                 CONTROL_DEF(&Pgr1HotkeysAltCB),
+            START_ROW(0),
+                CONTROL_DEF(&Pgr1WindowsKeysCB),
             START_ROW(0),
                 CONTROL_DEF(&Pgr1WraparoundCB),
             START_ROW(0),       // notebook buttons (will be moved)
@@ -492,6 +495,8 @@ STATIC VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               !!(pPagerCfg->flKeyShift & KC_SHIFT));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_HOTKEYS_ALT,
                               !!(pPagerCfg->flKeyShift & KC_ALT));
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_WINDOWS_KEYS, // V1.0.3 (2004-10-14) [bird]
+                             !!(pPagerCfg->flPager & PGRFL_WINDOWS_KEYS));
 
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_WRAPAROUND,
                               !!(pPagerCfg->flPager & PGRFL_WRAPAROUND));
@@ -512,6 +517,7 @@ STATIC VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
                 ID_SCDI_PGR1_FOLLOWFOCUS,
                 ID_SCDI_PGR1_ARROWHOTKEYS,
+                ID_SCDI_PGR1_WINDOWS_KEYS,
                 ID_SCDI_PGR1_WRAPAROUND
             },
         aulIDsHotkeys[] =
@@ -651,6 +657,16 @@ STATIC MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                 pPagerCfg->flPager |= PGRFL_HOTKEYS;
             else
                 pPagerCfg->flPager &= ~PGRFL_HOTKEYS;
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        break;
+
+        // V1.0.3 (2004-10-14) [bird]
+        case ID_SCDI_PGR1_WINDOWS_KEYS:
+            LoadPagerConfig(pnbp->pUser);
+            if (ulExtra)
+                pPagerCfg->flPager |= PGRFL_WINDOWS_KEYS;
+            else
+                pPagerCfg->flPager &= ~PGRFL_WINDOWS_KEYS;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break;
 
