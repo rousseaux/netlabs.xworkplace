@@ -43,6 +43,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -4357,7 +4359,7 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgramFile
                                  HWND hwndNotebook)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
 
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -4365,7 +4367,7 @@ ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgra
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszAssociationsPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_PGM_ASSOCIATIONS);  // pszAssociationsPage
     pcnbp->ulDlgID = ID_XSD_DATAF_TYPES;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGM_ASSOCIATIONS;
     pcnbp->ulPageID = SP_PGMFILE_ASSOCS;

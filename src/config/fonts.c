@@ -22,6 +22,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -987,7 +989,7 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
 {
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     MENUITEM mi;
     // get handle to the "Open" submenu in the
     // the popup menu
@@ -1000,7 +1002,7 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
         // which we add items to now
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                           pNLSStrings->pszFontSampleView,
+                           cmnGetString(ID_XSSI_FONTSAMPLEVIEW),  // pszFontSampleView
                            MIS_TEXT, 0);
     }
 
@@ -1011,7 +1013,7 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
     // add "Deinstall..."
     winhInsertMenuItem(hwndMenu, MIT_END,
                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FONT_DEINSTALL),
-                       pNLSStrings->pszFontDeinstall,
+                       cmnGetString(ID_XSSI_FONTDEINSTALL),  // pszFontDeinstall
                        MIS_TEXT, 0);
 
     if (_fShowingOpenViewMenu)
@@ -1797,7 +1799,7 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                                // out: client window
                 if (hwndNewView)
                 {
-                    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                     // store win data in QWL_USER of the frame too
                     WinSetWindowPtr(hwndNewView, QWL_USER, pData);
 
@@ -1817,7 +1819,7 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
                     _wpRegisterView(somSelf,
                                     hwndNewView,
-                                    pNLSStrings->pszFontSampleView); // @@todo
+                                    cmnGetString(ID_XSSI_FONTSAMPLEVIEW)) ; // @@todo // pszFontSampleView
 
                     winhRestoreWindowPos(hwndNewView,
                                          HINI_USER,

@@ -47,6 +47,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -96,6 +98,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 
 #include "media\media.h"                // XWorkplace multimedia support
@@ -1275,88 +1278,92 @@ ULONG aulDeviceTypes[] =
 
 const char* GetDeviceTypeName(ULONG ulDeviceType)
 {
-    const char *prc = "Unknown";
-    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    ULONG   ulStringID = 0;
+    // const char *prc = "Unknown";
+
     switch (ulDeviceType)
     {
         case MCI_DEVTYPE_VIDEOTAPE:
-            prc = pNLSStrings->pszDevTypeVideotape;
+            ulStringID = ID_MMSI_DEVTYPE_VIDEOTAPE;  // pszDevTypeVideotape
         break;
 
         case MCI_DEVTYPE_VIDEODISC:
-            prc = pNLSStrings->pszDevTypeVideodisc;
+            ulStringID = ID_MMSI_DEVTYPE_VIDEODISC;  // pszDevTypeVideodisc
         break;
 
         case MCI_DEVTYPE_CD_AUDIO:
-            prc = pNLSStrings->pszDevTypeCDAudio;
+            ulStringID = ID_MMSI_DEVTYPE_CD_AUDIO;  // pszDevTypeCDAudio
         break;
 
         case MCI_DEVTYPE_DAT:
-            prc = pNLSStrings->pszDevTypeDAT;
+            ulStringID = ID_MMSI_DEVTYPE_DAT;  // pszDevTypeDAT
         break;
 
         case MCI_DEVTYPE_AUDIO_TAPE:
-            prc = pNLSStrings->pszDevTypeAudioTape;
+            ulStringID = ID_MMSI_DEVTYPE_AUDIO_TAPE;  // pszDevTypeAudioTape
         break;
 
         case MCI_DEVTYPE_OTHER:
-            prc = pNLSStrings->pszDevTypeOther;
+            ulStringID = ID_MMSI_DEVTYPE_OTHER;  // pszDevTypeOther
         break;
 
         case MCI_DEVTYPE_WAVEFORM_AUDIO:
-            prc = pNLSStrings->pszDevTypeWaveformAudio;
+            ulStringID = ID_MMSI_DEVTYPE_WAVEFORM_AUDIO;  // pszDevTypeWaveformAudio
         break;
 
         case MCI_DEVTYPE_SEQUENCER:
-            prc = pNLSStrings->pszDevTypeSequencer;
+            ulStringID = ID_MMSI_DEVTYPE_SEQUENCER;  // pszDevTypeSequencer
         break;
 
         case MCI_DEVTYPE_AUDIO_AMPMIX:
-            prc = pNLSStrings->pszDevTypeAudioAmpmix;
+            ulStringID = ID_MMSI_DEVTYPE_AUDIO_AMPMIX;  // pszDevTypeAudioAmpmix
         break;
 
         case MCI_DEVTYPE_OVERLAY:
-            prc = pNLSStrings->pszDevTypeOverlay;
+            ulStringID = ID_MMSI_DEVTYPE_OVERLAY;  // pszDevTypeOverlay
         break;
 
         case MCI_DEVTYPE_ANIMATION:
-            prc = pNLSStrings->pszDevTypeAnimation;
+            ulStringID = ID_MMSI_DEVTYPE_ANIMATION;  // pszDevTypeAnimation
         break;
 
         case MCI_DEVTYPE_DIGITAL_VIDEO:
-            prc = pNLSStrings->pszDevTypeDigitalVideo;
+            ulStringID = ID_MMSI_DEVTYPE_DIGITAL_VIDEO;  // pszDevTypeDigitalVideo
         break;
 
         case MCI_DEVTYPE_SPEAKER:
-            prc = pNLSStrings->pszDevTypeSpeaker;
+            ulStringID = ID_MMSI_DEVTYPE_SPEAKER;  // pszDevTypeSpeaker
         break;
 
         case MCI_DEVTYPE_HEADPHONE:
-            prc = pNLSStrings->pszDevTypeHeadphone;
+            ulStringID = ID_MMSI_DEVTYPE_HEADPHONE;  // pszDevTypeHeadphone
         break;
 
         case MCI_DEVTYPE_MICROPHONE:
-            prc = pNLSStrings->pszDevTypeMicrophone;
+            ulStringID = ID_MMSI_DEVTYPE_MICROPHONE;  // pszDevTypeMicrophone
         break;
 
         case MCI_DEVTYPE_MONITOR:
-            prc = pNLSStrings->pszDevTypeMonitor;
+            ulStringID = ID_MMSI_DEVTYPE_MONITOR;  // pszDevTypeMonitor
         break;
 
         case MCI_DEVTYPE_CDXA:
-            prc = pNLSStrings->pszDevTypeCDXA;
+            ulStringID = ID_MMSI_DEVTYPE_CDXA;  // pszDevTypeCDXA
         break;
 
         case MCI_DEVTYPE_FILTER:
-            prc = pNLSStrings->pszDevTypeFilter;
+            ulStringID = ID_MMSI_DEVTYPE_FILTER;  // pszDevTypeFilter
         break;
 
         case MCI_DEVTYPE_TTS:
-            prc = pNLSStrings->pszDevTypeTTS;
+            ulStringID = ID_MMSI_DEVTYPE_TTS;  // pszDevTypeTTS
         break;
     }
 
-    return (prc);
+    if (ulStringID)
+        return (cmnGetString(ulStringID));
+
+    return ("Unknown");
 }
 
 /*

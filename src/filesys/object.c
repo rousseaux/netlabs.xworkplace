@@ -160,6 +160,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -1174,6 +1176,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
                         _Pmpf(("  now %d objs on list", G_ulDirtyListItemsCount ));
                     }
                     else
+                        // already on list:
                         _Pmpf((__FUNCTION__ ": DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
 
                     // note that we do not need an object list flag
@@ -1181,7 +1184,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
                     // wpSaveImmediate on "dirty" objects during
                     // wpMakeDormant processing; as a result,
                     // objRemoveFromDirtyList will also get called
-                    // automatically
+                    // automatically when the object goes dormant
                 }
             }
         }
@@ -1279,7 +1282,8 @@ ULONG objQueryDirtyObjectsCount(VOID)
 /*
  *@@ objSaveAllDirtyObjects:
  *      invokes the specified callback on all objects on
- *      the "dirty" list.
+ *      the "dirty" list. Starting with V0.9.9, this is
+ *      used during XShutdown to save all dirty objects.
  *
  *      The callback must have the following prototype:
  *
@@ -1306,11 +1310,13 @@ ULONG objQueryDirtyObjectsCount(VOID)
  *      WARNING: Do not play around with threads in the callback.
  *      The "dirty" list is locked while the callback is running,
  *      so only the callback thread may invoke wpSaveImmediate.
+ *      Keep in mind that WinSendMsg can cause a thread switch.
  *
  *      Returns the no. of objects for which the callback
  *      returned TRUE.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.9 (2001-04-05) [umoeller]: now using treeBuildArray
  */
 
 ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback function
@@ -1328,46 +1334,38 @@ ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback
             // from our XFldObject::wpSaveImmediate override, we cannot
             // simply run through the "dirty" tree and go for treeNext,
             // since the tree will be rebalanced with every save...
-            // build a linked list from the tree FIRST and then run
-            // through the list
-            TREE        *pTreeNode;
-            PLISTNODE   pListNode;
-            WPObject    *pobj;
-            // save object count first because this might change
-            // during processing
+            // build an array instead and run the callback on the array.
+
             ULONG       cObjects = G_ulDirtyListItemsCount;
-            ULONG       ulThis = 0;
-
-            LINKLIST    ll;
-            lstInit(&ll, FALSE);
-
-            pTreeNode = treeFirst(G_DirtyList);
-            while (pTreeNode)
+            TREE        **papNodes = treeBuildArray(G_DirtyList, // V0.9.9 (2001-04-05) [umoeller]
+                                                    &cObjects);
+            if (papNodes)
             {
-                lstAppendItem(&ll,
-                              pTreeNode);
+                if (cObjects == G_ulDirtyListItemsCount)
+                {
+                    ULONG   ul;
+                    for (ul = 0;
+                         ul < cObjects;
+                         ul++)
+                    {
+                        TREE        *pNode = papNodes[ul];
+                        WPObject    *pobj = (WPObject*)pNode->id;
 
-                pTreeNode = treeNext(pTreeNode);
+                        if (pCallback(pobj,
+                                      ul,
+                                      cObjects,
+                                      pvUserForCallback))
+                                // if this calls wpSaveImmediate, this might kill
+                                // the tree node thru objRemoveFromDirtyList!
+                            ulrc++;
+                    }
+                }
+                else
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Tree node count mismatch.");
+
+                free(papNodes);
             }
-
-            // now run thru the list
-            FOR_ALL_NODES(&ll, pListNode)
-            {
-                pTreeNode = (TREE*)pListNode->pItemData;
-                pobj = (WPObject*)pTreeNode->id;
-
-                if (pCallback(pobj,
-                              ulThis,
-                              cObjects,
-                              pvUserForCallback))
-                        // if this calls wpSaveImmediate, this might kill
-                        // the tree node thru objRemoveFromDirtyList!
-                    ulrc++;
-
-                ulThis++;
-            }
-
-            lstClear(&ll);
         }
     }
     CATCH(excpt1) { } END_CATCH();
@@ -2142,45 +2140,6 @@ VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
 }
 
 /*
- *@@ cmnIsValidHotkey:
- *
- *@@added V0.9.4 (2000-08-03) [umoeller]
- */
-
-BOOL cmnIsValidHotkey(USHORT usFlags,
-                      USHORT usKeyCode)
-{
-    BOOL brc
-        = (
-                // must be a virtual key
-                (  (  ((usFlags & KC_VIRTUALKEY) != 0)
-                // or Ctrl or Alt must be pressed
-                   || ((usFlags & KC_CTRL) != 0)
-                   || ((usFlags & KC_ALT) != 0)
-                // or one of the Win95 keys must be pressed
-                   || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                       && (     (usKeyCode == 0xEC00)
-                            ||  (usKeyCode == 0xED00)
-                            ||  (usKeyCode == 0xEE00)
-                          )
-                   )
-                )
-                // OK:
-                // filter out lone modifier keys
-                && (    ((usFlags & KC_VIRTUALKEY) == 0)
-                     || (   (usKeyCode != VK_SHIFT)     // shift
-                         && (usKeyCode != VK_CTRL)     // ctrl
-                         && (usKeyCode != VK_ALT)     // alt
-                // and filter out the tab key too
-                         && (usKeyCode != VK_TAB)     // tab
-                        )
-                   )
-                )
-           );
-    return (brc);
-}
-
-/*
  * obj_fnwpSettingsObjDetails:
  *      notebook dlg func for XFldObject "Details" page.
  *      Here's a trick how to interface the corresponding
@@ -2311,10 +2270,13 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                 }
                 else
                     cmnDescribeKey(szKeyName, usFlags, usKeyCode);
+
+                // set entry field
                 WinSetWindowText(hwndEntryField, szKeyName);
             }
             else
-                WinSetWindowText(hwndEntryField, (cmnQueryNLSStrings())->pszNotDefined);
+                WinSetWindowText(hwndEntryField, cmnGetString(ID_XSSI_NOTDEFINED));
+                            // (cmnQueryNLSStrings())->pszNotDefined);
 
             // object setup string
             // if (pGlobalSettings->fAllowQuerySetupString)
@@ -2492,6 +2454,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         PHOTKEYNOTIFY   phkn = (PHOTKEYNOTIFY)mp2;
                         BOOL            fStore = FALSE;
                         USHORT          usFlags = phkn->usFlags;
+
                         // check if maybe this is a function key
                         // V0.9.3 (2000-04-19) [umoeller]
                         PFUNCTIONKEY pFuncKey = hifFindFunctionKey(pWinData->paFuncKeys,
@@ -2514,24 +2477,52 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         else
                         {
                             // no function key:
-                            // have this key combo checked if this thing
-                            // makes up a valid hotkey just yet:
-                            // if KC_VIRTUALKEY is down,
-                            // we must filter out the sole CTRL, ALT, and
-                            // SHIFT keys, because these are valid only
-                            // when pressed with some other key. By doing
-                            // this, we do get a display in the entry field
-                            // if only, say, Ctrl is down, but we won't
-                            // store this.
-                            if (cmnIsValidHotkey(phkn->usFlags,
-                                                 phkn->usKeyCode))
+
+                            // check if this is one of the mnemonics of
+                            // the "Set" or "Clear" buttons; we better
+                            // not store those, or the user won't be
+                            // able to use this page with the keyboard
+
+                            if (    (    (phkn->usFlags & KC_VIRTUALKEY)
+                                      && (    (phkn->usvk == VK_TAB)
+                                           || (phkn->usvk == VK_BACKTAB)
+                                         )
+                                    )
+                                 || (    ((usFlags & (KC_CTRL | KC_SHIFT | KC_ALT)) == KC_ALT)
+                                      && (   (WinSendMsg(WinWindowFromID(hwndDlg,
+                                                                         ID_XSDI_DTL_SET),
+                                                         WM_MATCHMNEMONIC,
+                                                         (MPARAM)phkn->usch,
+                                                         0))
+                                          || (WinSendMsg(WinWindowFromID(hwndDlg,
+                                                                         ID_XSDI_DTL_CLEAR),
+                                                         WM_MATCHMNEMONIC,
+                                                         (MPARAM)phkn->usch,
+                                                         0))
+                                         )
+                                    )
+                               )
+                                // pass those to owner
+                                flReturn = HEFL_FORWARD2OWNER;
+                            else
                             {
-                                // valid hotkey:
-                                cmnDescribeKey(phkn->szDescription,
-                                               phkn->usFlags,
-                                               phkn->usKeyCode);
-                                flReturn = HEFL_SETTEXT;
-                                fStore = TRUE;
+                                // have this key combo checked if this thing
+                                // makes up a valid hotkey just yet:
+                                // if KC_VIRTUALKEY is down,
+                                // we must filter out the sole CTRL, ALT, and
+                                // SHIFT keys, because these are valid only
+                                // when pressed with some other key
+                                if (cmnIsValidHotkey(phkn->usFlags,
+                                                     phkn->usKeyCode))
+                                {
+                                    // valid hotkey:
+                                    cmnDescribeKey(phkn->szDescription,
+                                                   phkn->usFlags,
+                                                   phkn->usKeyCode);
+                                    flReturn = HEFL_SETTEXT;
+
+                                    fStore = TRUE;
+                                }
                             }
                         }
 
@@ -2550,7 +2541,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                             // and have entry field display that (comctl.c)
                         }
-                        else
+                        /* else
                         {
                             // invalid:
                             // delete the object's hotkey
@@ -2559,7 +2550,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             strcpy(phkn->szDescription,
                                    (cmnQueryNLSStrings())->pszNotDefined);
                             flReturn = HEFL_SETTEXT;
-                        }
+                        } */
 
                         mrc = (MPARAM)flReturn;
                     }
@@ -2602,18 +2593,22 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                  */
 
                 case ID_XSDI_DTL_SET:
-                    // remove hotkey
+                {
+                    CHAR    szDescription[100];
+                    // set hotkey
                     _xwpSetObjectHotkey(pWinData->somSelf,
                                         pWinData->usFlags,
                                         pWinData->ucScanCode,
                                         pWinData->usKeyCode);
                     WinEnableControl(hwndDlg, ID_XSDI_DTL_SET, FALSE);
-                    /* _xwpSetObjectHotkey(pWinData->somSelf,
-                                        0, 0, 0);   // remove flags
+
+                    cmnDescribeKey(szDescription,
+                                   pWinData->usFlags,
+                                   pWinData->usKeyCode);
                     WinSetWindowText(WinWindowFromID(hwndDlg,
                                                      ID_XSDI_DTL_HOTKEY),
-                                     (cmnQueryNLSStrings())->pszNotDefined); */
-                break;
+                                     szDescription);
+                break; }
 
                 /*
                  * ID_XSDI_DTL_CLEAR:
@@ -2626,7 +2621,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                        0, 0, 0);   // remove flags
                     WinSetWindowText(WinWindowFromID(hwndDlg,
                                                      ID_XSDI_DTL_HOTKEY),
-                                     (cmnQueryNLSStrings())->pszNotDefined);
+                                     cmnGetString(ID_XSSI_NOTDEFINED)); // (cmnQueryNLSStrings())->pszNotDefined);
                 break;
             }
         break; // end of WM_COMMAND

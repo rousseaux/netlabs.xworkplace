@@ -27,6 +27,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -370,7 +372,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     HWND            hwndMenuInsert = hwndMenu;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     // position of original "Shutdown" menu item in context menu
     SHORT   sOrigShutdownPos = (SHORT)WinSendMsg(hwndMenu,
@@ -412,7 +414,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                     // submenu position: after existing "Shutdown" item
                                     sOrigShutdownPos + 1,
                                     pGlobalSettings->VarMenuOffset + ID_XFM_OFS_SHUTDOWNMENU,
-                                    pNLSStrings->pszShutdown,
+                                    cmnGetString(ID_SDSI_SHUTDOWN),  // pszShutdown
                                     MIS_TEXT,
                                     // add "shutdown" menu item with original WPMENUID_SHUTDOWN;
                                     // this is intercepted in dtpMenuItemSelected to initiate
@@ -430,7 +432,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                    pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OS2_SHUTDOWN,
                                                // WPMENUID_SHUTDOWN,
                                                // changed V0.9.3 (2000-04-26) [umoeller]
-                                   pNLSStrings->pszDefaultShutdown, // "Default OS/2 shutdown...",
+                                   cmnGetString(ID_XSSI_DEFAULTSHUTDOWN),  // "Default OS/2 shutdown...", // pszDefaultShutdown
                                    MIS_TEXT,
                                    // disable if Shutdown is currently running
                                    ulShutdownAttr);
@@ -455,7 +457,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
                            sOrigShutdownPos,  // either MIT_END or position of "Shutdown" item
                            pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_RESTARTWPS,
-                           pNLSStrings->pszRestartWPS,
+                           cmnGetString(ID_SDSI_RESTARTWPS),  // pszRestartWPS
                            MIS_TEXT,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
@@ -475,7 +477,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
                            sOrigShutdownPos,  // either MIT_END or position of "Shutdown" item
                            pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_LOGOFF,
-                           pNLSStrings->pszXSDLogoff,
+                           cmnGetString(ID_XSSI_XSD_LOGOFF),  // pszXSDLogoff
                            MIS_TEXT,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);

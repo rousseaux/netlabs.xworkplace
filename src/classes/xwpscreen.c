@@ -47,6 +47,8 @@
 #define XWPScreen_Class_Source
 #define M_XWPScreen_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -101,6 +103,7 @@
  *@@added V0.9.3 (2000-04-09) [umoeller]
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added a new 'pagemage window' page
  *@@changed V0.9.9 (2001-03-27) [umoeller]: moved "Corners" from XWPMouse to XWPScreen
+ *@@changed V0.9.9 (2001-04-04) [lafaix]: renamed to "Screen borders" page
  */
 
 SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
@@ -117,7 +120,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PCREATENOTEBOOKPAGE pcnbp;
         HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         // moved this here from "Mouse" V0.9.9 (2001-03-27) [umoeller]
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -127,7 +130,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XSD_MOUSE_CORNERS;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszMouseHookPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_SCREENBORDERSPAGE);  // pszScreenBordersPage
         // pcnbp->fEnumerate = TRUE;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_CORNERS;
         pcnbp->ulPageID = SP_MOUSE_CORNERS;
@@ -385,11 +388,11 @@ SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
 
 SOM_Scope PSZ  SOMLINK xwpscrM_wpclsQueryTitle(M_XWPScreen *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
     M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQueryTitle");
 
-    return (pNLSStrings->pszXWPScreenTitle);
+    return (cmnGetString(ID_XSSI_XWPSCREENTITLE)) ; // pszXWPScreenTitle
 }
 
 /*

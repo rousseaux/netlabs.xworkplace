@@ -778,6 +778,9 @@ BEGIN
     ID_XSSI_MB3_DBLCLICK                "Double click"
     ID_XSSI_MB3_NOCONVERSION            "No conversion"
     ID_XSSI_MB3_PUSHTOBOTTOM            "Push to bottom"
+
+    /* new screen borders page title V0.9.9 (2001-04-04) [lafaix] */
+    ID_XSSI_SCREENBORDERSPAGE           "Screen borders"
 END
 
 /* Treesize definitions; added V0.9.0 */

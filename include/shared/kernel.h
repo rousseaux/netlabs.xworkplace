@@ -59,6 +59,9 @@
      *
      ********************************************************************/
 
+    // anchor block of WPS thread 1 (queried in krnInitializeXWorkplace)
+    extern HAB          G_habThread1;
+
     #ifdef SOM_WPObject_h
 
         // startup flags for KERNELGLOBALS.ulStartupFlags

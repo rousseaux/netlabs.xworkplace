@@ -47,6 +47,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -391,8 +393,8 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     if (pfu->flChanged & FOPSUPD_EXPANDING_SOURCEOBJECT_1ST)
                     {
                         // expanding source objects list:
-                        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-                        pszSubObject = pNLSStrings->pszPopulating;
+                        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                        pszSubObject = cmnGetString(ID_XSSI_POPULATING);  // pszPopulating
                                             // "Collecting objects..."
                     }
 
@@ -524,7 +526,7 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
 {
     FOPSRET frc = NO_ERROR;
     PSZ pszTitle = "unknown task";
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     // load progress dialog
     ppwd->hwndProgress = WinLoadDlg(HWND_DESKTOP,        // parent
@@ -544,19 +546,19 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
     switch (ulOperation)
     {
         case XFT_MOVE2TRASHCAN:
-            pszTitle = pNLSStrings->pszFopsMove2TrashCan;
+            pszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);  // pszFopsMove2TrashCan
         break;
 
         case XFT_RESTOREFROMTRASHCAN:
-            pszTitle = pNLSStrings->pszFopsRestoreFromTrashCan;
+            pszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);  // pszFopsRestoreFromTrashCan
         break;
 
         case XFT_TRUEDELETE:
-            pszTitle = pNLSStrings->pszFopsTrueDelete;
+            pszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);  // pszFopsTrueDelete
         break;
 
         case XFT_INSTALLFONTS:
-            pszTitle = pNLSStrings->pszInstallingFonts; // "Installing fonts...";
+            pszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);  // "Installing fonts..."; // pszInstallingFonts
         break;
     }
 

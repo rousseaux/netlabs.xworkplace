@@ -39,6 +39,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -97,6 +99,7 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -139,7 +142,7 @@ static HMODULE         G_hmodRes = NULLHANDLE;
 
 // NLS
 static HMODULE         G_hmodNLS = NULLHANDLE;
-static NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
+// static NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
 static GLOBALSETTINGS  *G_pGlobalSettings = NULL;
 
 static HMODULE         G_hmodIconsDLL = NULLHANDLE;
@@ -611,6 +614,279 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
 
 /* ******************************************************************
  *
+ *   NLS strings
+ *
+ ********************************************************************/
+
+/*
+ *@@ cmnLoadString:
+ *      pretty similar to WinLoadString, but allocates
+ *      necessary memory as well. *ppsz is a pointer
+ *      to a PSZ; if this PSZ is != NULL, whatever it
+ *      points to will be free()d, so you should set this
+ *      to NULL if you initially call this function.
+ *      This is used at WPS startup and when XFolder's
+ *      language is changed later to load all the strings
+ *      from a NLS DLL (cmnQueryNLSModuleHandle).
+ *
+ *@@changed V0.9.0 [umoeller]: "string not found" is now re-allocated using strdup (avoids crashes)
+ *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
+ *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
+ */
+
+void cmnLoadString(HAB habDesktop,
+                   HMODULE hmodResource,
+                   ULONG ulID,
+                   PSZ *ppsz)
+{
+    CHAR    szBuf[500] = "";
+    if (*ppsz)
+        free(*ppsz);
+    if (WinLoadString(habDesktop, hmodResource, ulID , sizeof(szBuf), szBuf))
+        *ppsz = strdup(szBuf);
+    else
+    {
+        sprintf(szBuf, "cmnLoadString error: string resource %d not found in module 0x%lX",
+                       ulID, hmodResource);
+        *ppsz = strdup(szBuf); // V0.9.0
+    }
+}
+
+HMTX        G_hmtxStringsCache = NULLHANDLE;
+TREE        *G_StringsCache;
+ULONG       G_cStringsInCache = 0;
+
+/*
+ *@@ LockStrings:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL LockStrings(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxStringsCache == NULLHANDLE)
+    {
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxStringsCache,
+                                 0,
+                                 TRUE);
+        treeInit(&G_StringsCache);
+        G_cStringsInCache = 0;
+    }
+    else
+        brc = !DosRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockStrings:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID UnlockStrings(VOID)
+{
+    DosReleaseMutexSem(G_hmtxStringsCache);
+}
+
+/*
+ *@@ STRINGTREENODE:
+ *      internal string node structure for cmnGetString.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+typedef struct _STRINGTREENODE
+{
+    TREE        Tree;               // tree node (src\helpers\tree.c)
+    PSZ         pszLoaded;          // string that was loaded; malloc()'ed
+} STRINGTREENODE, *PSTRINGTREENODE;
+
+/*
+ *@@ cmnGetString:
+ *      returns an XWorkplace NLS string.
+ *
+ *      On input, specify one of the ID_XSSI_* identifiers
+ *      specified in dlgids.h.
+ *
+ *      This function completely replaces the NLSSTRINGS array
+ *      which was present in all XFolder and XWorkplace versions
+ *      up to V0.9.9. This function has the following advantages:
+ *
+ *      -- Memory is only consumed for strings that are actually
+ *         used. The NLSSTRINGS array had become terribly big,
+ *         and lots of strings were loaded that were never used.
+ *
+ *      -- The memory buffer holding the string is probably close
+ *         to the rest of the heap data that the caller allocated,
+ *         so this might lead to less memory page fragmentation.
+ *
+ *      -- WPS bootup should be a bit faster because we don't have
+ *         to load a thousand strings at startup.
+ *
+ *      -- To add a new NLS string, before this mechanism existed,
+ *         three files had to be changed (and kept in sync): common.h
+ *         to add a field to the NLSSTRINGS structure, dlgids.h to
+ *         add the string ID, and xfldrXXX.rc to add the resource.
+ *         With the new mechanism, there's no need to change common.h
+ *         any more, so the danger of forgetting something is a bit
+ *         reduced. Anyway, fewer recompiles are needed (maybe),
+ *         and sending in patches to the code is a bit easier.
+ *
+ *      The way this works is that the function maintains a
+ *      fast cache of string IDs and only loads the string
+ *      resources on demand from the XWorkplace NLS DLL. If
+ *      a string ID is queried for the first time, the string
+ *      is loaded. Otherwise the cached copy is returned.
+ *
+ *      There is a slight overhead to this function compared to
+ *      simply getting a static string from an array, because
+ *      the cache needs to be searched for the string ID. However,
+ *      this uses a binary tree (balanced according to string IDs)
+ *      internally, so this is quite fast still.
+ *
+ *      This never releases the strings again, unless the
+ *      NLS DLL is reloaded (see cmnQueryNLSModuleHandle).
+ *
+ *      This never returns NULL. Even if loading the string failed,
+ *      a string is returned; in that case, it's a meaningful error
+ *      message specifying the ID that failed.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+PSZ cmnGetString(ULONG ulStringID)
+{
+    BOOL    fLocked = FALSE;
+    PSZ     pszReturn = "Error";
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockStrings())
+        {
+            PSTRINGTREENODE pNode;
+
+            if (pNode = (PSTRINGTREENODE)treeFindEQID(&G_StringsCache,
+                                                      ulStringID))
+                // already loaded:
+                pszReturn = pNode->pszLoaded;
+            else
+            {
+                // not loaded: load now
+                pNode = NEW(STRINGTREENODE);
+                if (!pNode)
+                    pszReturn = "malloc() failed.";
+                else
+                {
+                    if (!G_hmodNLS)
+                        // NLS DLL not loaded yet:
+                        cmnQueryNLSModuleHandle(FALSE);
+
+                    pNode->Tree.id = ulStringID;
+                    pNode->pszLoaded = NULL;
+                        // otherwise cmnLoadString frees the string
+                    cmnLoadString(G_habThread1,     // kernel.c
+                                  G_hmodNLS,
+                                  ulStringID,
+                                  &pNode->pszLoaded);
+                    treeInsertID(&G_StringsCache,
+                                 (TREE*)pNode,
+                                 FALSE);            // no duplicates
+                    pszReturn = pNode->pszLoaded;
+                }
+            }
+        }
+        else
+            // we must always return a string, never NULL
+            return ("Cannot get strings lock.");
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockStrings();
+
+    return (pszReturn);
+}
+
+/*
+ *@@ UnloadAllStrings:
+ *      removes all loaded strings from memory.
+ *      Called by cmnQueryNLSModuleHandle when the
+ *      module handle has changed.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID UnloadAllStrings(VOID)
+{
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockStrings())
+        {
+            // to delete all nodes, build a temporary
+            // array of all string node pointers;
+            // we don't want to rebalance the tree
+            // for each node
+            ULONG           cNodes = G_cStringsInCache;
+            PSTRINGTREENODE *papNodes
+                = (PSTRINGTREENODE*)treeBuildArray(G_StringsCache,
+                                                   &cNodes);
+            if (papNodes)
+            {
+                if (cNodes == G_cStringsInCache)
+                {
+                    // delete all nodes in array
+                    ULONG ul;
+                    PSTRINGTREENODE pNode;
+                    for (ul = 0;
+                         ul < cNodes;
+                         ul++)
+                    {
+                        pNode = papNodes[ul];
+                        if (pNode->pszLoaded)
+                            free(pNode->pszLoaded);
+                        free(pNode);
+                    }
+                }
+                else
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Node count mismatch.");
+
+                free(papNodes);
+            }
+
+            // reset the tree to "empty"
+            treeInit(&G_StringsCache);
+            G_cStringsInCache = 0;
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockStrings();
+}
+
+/*
+ * G_aStringIDs:
+ *      array of LOADSTRING structures specifying the
+ *      NLS strings to be loaded at startup.
+ *
+ *      This array has been removed again... we now have
+ *      the new cmnGetString function V0.9.9 (2001-04-04) [umoeller].
+ *      If you need to look up the old id -> psz pairs,
+ *      look at src\shared\OldStringIDs.txt.
+ *
+ *added V0.9.9 (2001-03-07) [umoeller]
+ *removed again V0.9.9 (2001-04-04) [umoeller]
+ */
+
+/* ******************************************************************
+ *
  *   XWorkplace National Language Support (NLS)
  *
  ********************************************************************/
@@ -1003,728 +1279,6 @@ PSZ cmnQueryBootLogoFile(VOID)
 }
 
 /*
- *@@ cmnLoadString:
- *      pretty similar to WinLoadString, but allocates
- *      necessary memory as well. *ppsz is a pointer
- *      to a PSZ; if this PSZ is != NULL, whatever it
- *      points to will be free()d, so you should set this
- *      to NULL if you initially call this function.
- *      This is used at WPS startup and when XFolder's
- *      language is changed later to load all the strings
- *      from a NLS DLL (cmnQueryNLSModuleHandle).
- *
- *@@changed V0.9.0 [umoeller]: "string not found" is now re-allocated using strdup (avoids crashes)
- *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
- *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
- */
-
-void cmnLoadString(HAB habDesktop,
-                   HMODULE hmodResource,
-                   ULONG ulID,
-                   PSZ *ppsz)
-{
-    CHAR    szBuf[500] = "";
-    if (*ppsz)
-        free(*ppsz);
-    if (WinLoadString(habDesktop, hmodResource, ulID , sizeof(szBuf), szBuf))
-        *ppsz = strdup(szBuf);
-    else
-    {
-        sprintf(szBuf, "cmnLoadString error: string resource %d not found in module 0x%lX",
-                       ulID, hmodResource);
-        *ppsz = strdup(szBuf); // V0.9.0
-    }
-}
-
-/*
- *@@ LOADSTRING:
- *
- *@@added V0.9.9 (2001-03-07) [umoeller]
- */
-
-typedef struct _LOADSTRING
-{
-    ULONG       ulID;
-    ULONG       ulOffset;
-} LOADSTRING, *PLOADSTRING;
-
-/*
- *@@ G_aStringIDs:
- *      array of LOADSTRING structures specifying the
- *      NLS strings to be loaded at startup.
- *
- *      This replaces the awful spaghetti that used
- *      to call cmnLoadString for each single item.
- *
- *@@added V0.9.9 (2001-03-07) [umoeller]
- */
-
-static LOADSTRING G_aStringIDs[] =
-    {
-        ID_XSSI_NOTDEFINED,
-                FIELDOFFSET(NLSSTRINGS, pszNotDefined),
-        ID_XSSI_PRODUCTINFO,
-                FIELDOFFSET(NLSSTRINGS, pszProductInfo),
-        ID_XSSI_REFRESHNOW,
-                FIELDOFFSET(NLSSTRINGS, pszRefreshNow),
-        ID_XSSI_SNAPTOGRID,
-                FIELDOFFSET(NLSSTRINGS, pszSnapToGrid),
-
-        ID_XSSI_FLDRCONTENT,
-                FIELDOFFSET(NLSSTRINGS, pszFldrContent),
-        ID_XSSI_COPYFILENAME,
-                FIELDOFFSET(NLSSTRINGS, pszCopyFilename),
-        ID_XSSI_BORED,
-                FIELDOFFSET(NLSSTRINGS, pszBored),
-        ID_XSSI_FLDREMPTY,
-                FIELDOFFSET(NLSSTRINGS, pszFldrEmpty),
-        ID_XSSI_SELECTSOME,
-                FIELDOFFSET(NLSSTRINGS, pszSelectSome),
-
-        ID_XFSI_QUICKSTATUS,
-                FIELDOFFSET(NLSSTRINGS, pszQuickStatus),
-
-        ID_XSSI_SV_NAME,
-                FIELDOFFSET(NLSSTRINGS, pszSortByName),
-        ID_XSSI_SV_TYPE,
-                FIELDOFFSET(NLSSTRINGS, pszSortByType),
-        ID_XSSI_SV_CLASS,
-                FIELDOFFSET(NLSSTRINGS, pszSortByClass),
-        ID_XSSI_SV_REALNAME,
-                FIELDOFFSET(NLSSTRINGS, pszSortByRealName),
-        ID_XSSI_SV_SIZE,
-                FIELDOFFSET(NLSSTRINGS, pszSortBySize),
-        ID_XSSI_SV_WRITEDATE,
-                FIELDOFFSET(NLSSTRINGS, pszSortByWriteDate),
-        ID_XSSI_SV_ACCESSDATE,
-                FIELDOFFSET(NLSSTRINGS, pszSortByAccessDate),
-        ID_XSSI_SV_CREATIONDATE,
-                FIELDOFFSET(NLSSTRINGS, pszSortByCreationDate),
-        ID_XSSI_SV_EXT,
-                FIELDOFFSET(NLSSTRINGS, pszSortByExt),
-        ID_XSSI_SV_FOLDERSFIRST,
-                FIELDOFFSET(NLSSTRINGS, pszSortFoldersFirst),
-
-        ID_XSSI_KEY_CTRL,
-                FIELDOFFSET(NLSSTRINGS, pszCtrl),
-        ID_XSSI_KEY_Alt,
-                FIELDOFFSET(NLSSTRINGS, pszAlt),
-        ID_XSSI_KEY_SHIFT,
-                FIELDOFFSET(NLSSTRINGS, pszShift),
-
-        ID_XSSI_KEY_BACKSPACE,
-                FIELDOFFSET(NLSSTRINGS, pszBackspace),
-        ID_XSSI_KEY_TAB,
-                FIELDOFFSET(NLSSTRINGS, pszTab),
-        ID_XSSI_KEY_BACKTABTAB,
-                FIELDOFFSET(NLSSTRINGS, pszBacktab),
-        ID_XSSI_KEY_ENTER,
-                FIELDOFFSET(NLSSTRINGS, pszEnter),
-        ID_XSSI_KEY_ESC,
-                FIELDOFFSET(NLSSTRINGS, pszEsc),
-        ID_XSSI_KEY_SPACE,
-                FIELDOFFSET(NLSSTRINGS, pszSpace),
-        ID_XSSI_KEY_PAGEUP,
-                FIELDOFFSET(NLSSTRINGS, pszPageup),
-        ID_XSSI_KEY_PAGEDOWN,
-                FIELDOFFSET(NLSSTRINGS, pszPagedown),
-        ID_XSSI_KEY_END,
-                FIELDOFFSET(NLSSTRINGS, pszEnd),
-        ID_XSSI_KEY_HOME,
-                FIELDOFFSET(NLSSTRINGS, pszHome),
-        ID_XSSI_KEY_LEFT,
-                FIELDOFFSET(NLSSTRINGS, pszLeft),
-        ID_XSSI_KEY_UP,
-                FIELDOFFSET(NLSSTRINGS, pszUp),
-        ID_XSSI_KEY_RIGHT,
-                FIELDOFFSET(NLSSTRINGS, pszRight),
-        ID_XSSI_KEY_DOWN,
-                FIELDOFFSET(NLSSTRINGS, pszDown),
-        ID_XSSI_KEY_PRINTSCRN,
-                FIELDOFFSET(NLSSTRINGS, pszPrintscrn),
-        ID_XSSI_KEY_INSERT,
-                FIELDOFFSET(NLSSTRINGS, pszInsert),
-        ID_XSSI_KEY_DELETE,
-                FIELDOFFSET(NLSSTRINGS, pszDelete),
-        ID_XSSI_KEY_SCRLLOCK,
-                FIELDOFFSET(NLSSTRINGS, pszScrlLock),
-        ID_XSSI_KEY_NUMLOCK,
-                FIELDOFFSET(NLSSTRINGS, pszNumLock),
-
-        ID_XSSI_KEY_WINLEFT,
-                FIELDOFFSET(NLSSTRINGS, pszWinLeft),
-        ID_XSSI_KEY_WINRIGHT,
-                FIELDOFFSET(NLSSTRINGS, pszWinRight),
-        ID_XSSI_KEY_WINMENU,
-                FIELDOFFSET(NLSSTRINGS, pszWinMenu),
-
-        ID_SDSI_FLUSHING,
-                FIELDOFFSET(NLSSTRINGS, pszSDFlushing),
-        ID_SDSI_CAD,
-                FIELDOFFSET(NLSSTRINGS, pszSDCAD),
-        ID_SDSI_REBOOTING,
-                FIELDOFFSET(NLSSTRINGS, pszSDRebooting),
-        ID_SDSI_CLOSING,
-                FIELDOFFSET(NLSSTRINGS, pszSDClosing),
-        ID_SDSI_SHUTDOWN,
-                FIELDOFFSET(NLSSTRINGS, pszShutdown),
-        ID_SDSI_RESTARTWPS,
-                FIELDOFFSET(NLSSTRINGS, pszRestartWPS),
-        ID_SDSI_RESTARTINGWPS,
-                FIELDOFFSET(NLSSTRINGS, pszSDRestartingWPS),
-        ID_SDSI_SAVINGDESKTOP,
-                FIELDOFFSET(NLSSTRINGS, pszSDSavingDesktop),
-        ID_SDSI_SAVINGPROFILES,
-                FIELDOFFSET(NLSSTRINGS, pszSDSavingProfiles),
-
-        ID_SDSI_STARTING,
-                FIELDOFFSET(NLSSTRINGS, pszStarting),
-
-        ID_XSSI_POPULATING,
-                FIELDOFFSET(NLSSTRINGS, pszPopulating),
-
-        ID_XSSI_1GENERIC,
-                FIELDOFFSET(NLSSTRINGS, psz1Generic),
-        ID_XSSI_2REMOVEITEMS,
-                FIELDOFFSET(NLSSTRINGS, psz2RemoveItems),
-        ID_XSSI_25ADDITEMS,
-                FIELDOFFSET(NLSSTRINGS, psz25AddItems),
-        ID_XSSI_26CONFIGITEMS,
-                FIELDOFFSET(NLSSTRINGS, psz26ConfigFolderMenus),
-        ID_XSSI_27STATUSBAR,
-                FIELDOFFSET(NLSSTRINGS, psz27StatusBar),
-        ID_XSSI_3SNAPTOGRID,
-                FIELDOFFSET(NLSSTRINGS, psz3SnapToGrid),
-        ID_XSSI_4ACCELERATORS,
-                FIELDOFFSET(NLSSTRINGS, psz4Accelerators),
-        ID_XSSI_5INTERNALS,
-                FIELDOFFSET(NLSSTRINGS, psz5Internals),
-        ID_XSSI_FILEOPS,
-                FIELDOFFSET(NLSSTRINGS, pszFileOps),
-
-        ID_XSSI_SORT,
-                FIELDOFFSET(NLSSTRINGS, pszSort),
-        ID_XSSI_SV_ALWAYSSORT,
-                FIELDOFFSET(NLSSTRINGS, pszAlwaysSort),
-
-        ID_XSSI_INTERNALS,
-                FIELDOFFSET(NLSSTRINGS, pszInternals),
-
-        ID_XSSI_XWPSTATUS,
-                FIELDOFFSET(NLSSTRINGS, pszXWPStatus),
-        ID_XSSI_FEATURES,
-                FIELDOFFSET(NLSSTRINGS, pszFeatures),
-        ID_XSSI_PARANOIA,
-                FIELDOFFSET(NLSSTRINGS, pszParanoia),
-        ID_XSSI_OBJECTS,
-                FIELDOFFSET(NLSSTRINGS, pszObjects),
-        ID_XSSI_FILEPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszFilePage),
-        ID_XSSI_DETAILSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszDetailsPage),
-        ID_XSSI_XSHUTDOWNPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszXShutdownPage),
-        ID_XSSI_STARTUPPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszStartupPage),
-        ID_XSSI_DTPMENUPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszDtpMenuPage),
-        ID_XSSI_FILETYPESPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszFileTypesPage),
-        ID_XSSI_SOUNDSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszSoundsPage),
-        ID_XSSI_VIEWPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszViewPage),
-        ID_XSSI_ARCHIVESPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszArchivesPage),
-        ID_XSSI_PGMFILE_MODULE,
-                FIELDOFFSET(NLSSTRINGS, pszModulePage),
-        ID_XSSI_OBJECTHOTKEYSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszObjectHotkeysPage),
-        ID_XSSI_FUNCTIONKEYSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszFunctionKeysPage),
-        ID_XSSI_MOUSEHOOKPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszMouseHookPage),
-        ID_XSSI_MAPPINGSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszMappingsPage),
-
-        ID_XSSI_SB_CLASSMNEMONICS,
-                FIELDOFFSET(NLSSTRINGS, pszSBClassMnemonics),
-        ID_XSSI_SB_CLASSNOTSUPPORTED,
-                FIELDOFFSET(NLSSTRINGS, pszSBClassNotSupported),
-
-        ID_XSSI_WPSCLASSES,
-                FIELDOFFSET(NLSSTRINGS, pszWpsClasses),
-        ID_XSSI_WPSCLASSLOADED,
-                FIELDOFFSET(NLSSTRINGS, pszWpsClassLoaded),
-        ID_XSSI_WPSCLASSLOADINGFAILED,
-                FIELDOFFSET(NLSSTRINGS, pszWpsClassLoadingFailed),
-        ID_XSSI_WPSCLASSREPLACEDBY,
-                FIELDOFFSET(NLSSTRINGS, pszWpsClassReplacedBy),
-        ID_XSSI_WPSCLASSORPHANS,
-                FIELDOFFSET(NLSSTRINGS, pszWpsClassOrphans),
-        ID_XSSI_WPSCLASSORPHANSINFO,
-                FIELDOFFSET(NLSSTRINGS, pszWpsClassOrphansInfo),
-
-        ID_XSSI_SCHEDULER,
-                FIELDOFFSET(NLSSTRINGS, pszScheduler),
-        ID_XSSI_MEMORY,
-                FIELDOFFSET(NLSSTRINGS, pszMemory),
-        ID_XSSI_ERRORS,
-                FIELDOFFSET(NLSSTRINGS, pszErrors),
-        ID_XSSI_WPS,
-                FIELDOFFSET(NLSSTRINGS, pszWPS),
-        ID_XSSI_SYSPATHS,
-                FIELDOFFSET(NLSSTRINGS, pszSysPaths),
-        ID_XSSI_DRIVERS,
-                FIELDOFFSET(NLSSTRINGS, pszDrivers),
-        ID_XSSI_DRIVERCATEGORIES,
-                FIELDOFFSET(NLSSTRINGS, pszDriverCategories),
-
-        ID_XSSI_PROCESSCONTENT,
-                FIELDOFFSET(NLSSTRINGS, pszProcessContent),
-
-        ID_XFSI_SETTINGS,
-                FIELDOFFSET(NLSSTRINGS, pszSettings),
-        ID_XFSI_SETTINGSNOTEBOOK,
-                FIELDOFFSET(NLSSTRINGS, pszSettingsNotebook),
-        ID_XFSI_ATTRIBUTES,
-                FIELDOFFSET(NLSSTRINGS, pszAttributes),
-        ID_XFSI_ATTR_ARCHIVE,
-                FIELDOFFSET(NLSSTRINGS, pszAttrArchive),
-        ID_XFSI_ATTR_SYSTEM,
-                FIELDOFFSET(NLSSTRINGS, pszAttrSystem),
-        ID_XFSI_ATTR_HIDDEN,
-                FIELDOFFSET(NLSSTRINGS, pszAttrHidden),
-        ID_XFSI_ATTR_READONLY,
-                FIELDOFFSET(NLSSTRINGS, pszAttrReadOnly),
-
-        ID_XFSI_FLDRSETTINGS,
-                FIELDOFFSET(NLSSTRINGS, pszWarp3FldrView),
-        ID_XFSI_SMALLICONS,
-                FIELDOFFSET(NLSSTRINGS, pszSmallIcons  ),
-        ID_XFSI_FLOWED,
-                FIELDOFFSET(NLSSTRINGS, pszFlowed),
-        ID_XFSI_NONFLOWED,
-                FIELDOFFSET(NLSSTRINGS, pszNonFlowed),
-        ID_XFSI_NOGRID,
-                FIELDOFFSET(NLSSTRINGS, pszNoGrid),
-
-    // the following are new with V0.9.0
-        ID_XFSI_WARP4MENUBAR,
-                FIELDOFFSET(NLSSTRINGS, pszWarp4MenuBar),
-        ID_XFSI_SHOWSTATUSBAR,
-                FIELDOFFSET(NLSSTRINGS, pszShowStatusBar),
-
-    // "WPS Class List" (XWPClassList, new with V0.9.0)
-        ID_XFSI_OPENCLASSLIST,
-                FIELDOFFSET(NLSSTRINGS, pszOpenClassList),
-        ID_XFSI_XWPCLASSLIST,
-                FIELDOFFSET(NLSSTRINGS, pszXWPClassList),
-        ID_XFSI_REGISTERCLASS,
-                FIELDOFFSET(NLSSTRINGS, pszRegisterClass),
-
-        ID_XSSI_SOUNDSCHEMENONE,
-                FIELDOFFSET(NLSSTRINGS, pszSoundSchemeNone),
-        ID_XSSI_ITEMSSELECTED,
-                FIELDOFFSET(NLSSTRINGS, pszItemsSelected),
-
-    // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-        ID_XTSI_TRASHEMPTY,
-                FIELDOFFSET(NLSSTRINGS, pszTrashEmpty),
-        ID_XTSI_TRASHRESTORE,
-                FIELDOFFSET(NLSSTRINGS, pszTrashRestore),
-        ID_XTSI_TRASHDESTROY,
-                FIELDOFFSET(NLSSTRINGS, pszTrashDestroy),
-        ID_XTSI_TRASHCAN,
-                FIELDOFFSET(NLSSTRINGS, pszTrashCan),
-        ID_XTSI_TRASHOBJECT,
-                FIELDOFFSET(NLSSTRINGS, pszTrashObject),
-        ID_XTSI_TRASHSETTINGSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszTrashSettingsPage),
-        ID_XTSI_TRASHDRIVESPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszTrashDrivesPage),
-        ID_XTSI_ORIGFOLDER,
-                FIELDOFFSET(NLSSTRINGS, pszOrigFolder),
-        ID_XTSI_DELDATE,
-                FIELDOFFSET(NLSSTRINGS, pszDelDate),
-        ID_XTSI_DELTIME,
-                FIELDOFFSET(NLSSTRINGS, pszDelTime),
-        ID_XTSI_SIZE,
-                FIELDOFFSET(NLSSTRINGS, pszSize),
-        ID_XTSI_ORIGCLASS,
-                FIELDOFFSET(NLSSTRINGS, pszOrigClass),
-
-    // trash can status bar strings; V0.9.1 (2000-02-04) [umoeller]
-        ID_XTSI_STB_POPULATING,
-                FIELDOFFSET(NLSSTRINGS, pszStbPopulating),
-        ID_XTSI_STB_OBJCOUNT,
-                FIELDOFFSET(NLSSTRINGS, pszStbObjCount),
-
-    // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-        ID_XSSI_HOTKEY_TITLE,
-                FIELDOFFSET(NLSSTRINGS, pszHotkeyTitle),
-        ID_XSSI_HOTKEY_FOLDER,
-                FIELDOFFSET(NLSSTRINGS, pszHotkeyFolder),
-        ID_XSSI_HOTKEY_HANDLE,
-                FIELDOFFSET(NLSSTRINGS, pszHotkeyHandle),
-        ID_XSSI_HOTKEY_HOTKEY,
-                FIELDOFFSET(NLSSTRINGS, pszHotkeyHotkey),
-
-    // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-        ID_XSSI_CLSLIST_INDEX,
-                FIELDOFFSET(NLSSTRINGS, pszClsListIndex),
-        ID_XSSI_CLSLIST_METHOD,
-                FIELDOFFSET(NLSSTRINGS, pszClsListMethod),
-        ID_XSSI_CLSLIST_ADDRESS,
-                FIELDOFFSET(NLSSTRINGS, pszClsListAddress),
-        ID_XSSI_CLSLIST_CLASS,
-                FIELDOFFSET(NLSSTRINGS, pszClsListClass),
-        ID_XSSI_CLSLIST_OVERRIDDENBY,
-                FIELDOFFSET(NLSSTRINGS, pszClsListOverriddenBy),
-
-                // "Special functions" on XWPMouse "Movement" page
-        ID_XSSI_SPECIAL_WINDOWLIST,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialWindowList),
-        ID_XSSI_SPECIAL_DESKTOPPOPUP,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialDesktopPopup),
-
-    // default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
-        ID_XSSI_XWPSCREENTITLE,
-                FIELDOFFSET(NLSSTRINGS, pszXWPScreenTitle),
-
-    // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
-        ID_XSSI_OPENPARTITIONS,
-                FIELDOFFSET(NLSSTRINGS, pszOpenPartitions),
-
-    // "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
-        ID_XSSI_SYSLEVELPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszSyslevelPage),
-
-        ID_XTSI_CALCULATING,
-                FIELDOFFSET(NLSSTRINGS, pszCalculating),
-
-        ID_MMSI_DEVICETYPE,
-                FIELDOFFSET(NLSSTRINGS, pszDeviceType),
-        ID_MMSI_DEVICEINDEX,
-                FIELDOFFSET(NLSSTRINGS, pszDeviceIndex),
-        ID_MMSI_DEVICEINFO,
-                FIELDOFFSET(NLSSTRINGS, pszDeviceInfo),
-
-        ID_MMSI_TYPE_IMAGE,
-                FIELDOFFSET(NLSSTRINGS, pszTypeImage),
-        ID_MMSI_TYPE_AUDIO,
-                FIELDOFFSET(NLSSTRINGS, pszTypeAudio),
-        ID_MMSI_TYPE_MIDI,
-                FIELDOFFSET(NLSSTRINGS, pszTypeMIDI),
-        ID_MMSI_TYPE_COMPOUND,
-                FIELDOFFSET(NLSSTRINGS, pszTypeCompound),
-        ID_MMSI_TYPE_OTHER,
-                FIELDOFFSET(NLSSTRINGS, pszTypeOther),
-        ID_MMSI_TYPE_UNKNOWN,
-                FIELDOFFSET(NLSSTRINGS, pszTypeUnknown),
-        ID_MMSI_TYPE_VIDEO,
-                FIELDOFFSET(NLSSTRINGS, pszTypeVideo),
-        ID_MMSI_TYPE_ANIMATION,
-                FIELDOFFSET(NLSSTRINGS, pszTypeAnimation),
-        ID_MMSI_TYPE_MOVIE,
-                FIELDOFFSET(NLSSTRINGS, pszTypeMovie),
-
-        ID_MMSI_TYPE_STORAGE,
-                FIELDOFFSET(NLSSTRINGS, pszTypeStorage),
-        ID_MMSI_TYPE_FILE,
-                FIELDOFFSET(NLSSTRINGS, pszTypeFile),
-        ID_MMSI_TYPE_DATA,
-                FIELDOFFSET(NLSSTRINGS, pszTypeData),
-
-        ID_MMSI_DEVTYPE_VIDEOTAPE,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeVideotape),
-        ID_MMSI_DEVTYPE_VIDEODISC,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeVideodisc),
-        ID_MMSI_DEVTYPE_CD_AUDIO,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeCDAudio),
-        ID_MMSI_DEVTYPE_DAT,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeDAT),
-        ID_MMSI_DEVTYPE_AUDIO_TAPE,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeAudioTape),
-        ID_MMSI_DEVTYPE_OTHER,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeOther),
-        ID_MMSI_DEVTYPE_WAVEFORM_AUDIO,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeWaveformAudio),
-        ID_MMSI_DEVTYPE_SEQUENCER,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeSequencer),
-        ID_MMSI_DEVTYPE_AUDIO_AMPMIX,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeAudioAmpmix),
-        ID_MMSI_DEVTYPE_OVERLAY,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeOverlay),
-        ID_MMSI_DEVTYPE_ANIMATION,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeAnimation),
-        ID_MMSI_DEVTYPE_DIGITAL_VIDEO,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeDigitalVideo),
-        ID_MMSI_DEVTYPE_SPEAKER,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeSpeaker),
-        ID_MMSI_DEVTYPE_HEADPHONE,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeHeadphone),
-        ID_MMSI_DEVTYPE_MICROPHONE,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeMicrophone),
-        ID_MMSI_DEVTYPE_MONITOR,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeMonitor),
-        ID_MMSI_DEVTYPE_CDXA,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeCDXA),
-        ID_MMSI_DEVTYPE_FILTER,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeFilter),
-        ID_MMSI_DEVTYPE_TTS,
-                FIELDOFFSET(NLSSTRINGS, pszDevTypeTTS),
-
-        ID_MMSI_COLMN_FOURCC,
-                FIELDOFFSET(NLSSTRINGS, pszColmnFourCC),
-        ID_MMSI_COLMN_NAME,
-                FIELDOFFSET(NLSSTRINGS, pszColmnName),
-        ID_MMSI_COLMN_IOPROC_TYPE,
-                FIELDOFFSET(NLSSTRINGS, pszColmnIOProcType),
-        ID_MMSI_COLMN_MEDIA_TYPE,
-                FIELDOFFSET(NLSSTRINGS, pszColmnMediaType),
-        ID_MMSI_COLMN_EXTENSION,
-                FIELDOFFSET(NLSSTRINGS, pszColmnExtension),
-        ID_MMSI_COLMN_DLL,
-                FIELDOFFSET(NLSSTRINGS, pszColmnDLL),
-        ID_MMSI_COLMN_PROCEDURE,
-                FIELDOFFSET(NLSSTRINGS, pszColmnProcedure),
-
-        ID_MMSI_PAGETITLE_DEVICES,
-                FIELDOFFSET(NLSSTRINGS, pszPagetitleDevices),
-        ID_MMSI_PAGETITLE_IOPROCS,
-                FIELDOFFSET(NLSSTRINGS, pszPagetitleIOProcs),
-        ID_MMSI_PAGETITLE_CODECS,
-                FIELDOFFSET(NLSSTRINGS, pszPagetitleCodecs),
-
-        ID_XSSI_PAGETITLE_PAGEMAGE,
-                FIELDOFFSET(NLSSTRINGS, pszPagetitlePageMage),
-
-        ID_XSSI_XWPSTRING_PAGE,
-                FIELDOFFSET(NLSSTRINGS, pszXWPStringPage),
-        ID_XSSI_XWPSTRING_OPENMENU,
-                FIELDOFFSET(NLSSTRINGS, pszXWPStringOpenMenu),
-
-        ID_XSSI_COLMN_SYSL_COMPONENT,
-                FIELDOFFSET(NLSSTRINGS, pszSyslevelComponent),
-        ID_XSSI_COLMN_SYSL_FILE,
-                FIELDOFFSET(NLSSTRINGS, pszSyslevelFile),
-        ID_XSSI_COLMN_SYSL_VERSION,
-                FIELDOFFSET(NLSSTRINGS, pszSyslevelVersion),
-        ID_XSSI_COLMN_SYSL_LEVEL,
-                FIELDOFFSET(NLSSTRINGS, pszSyslevelLevel),
-        ID_XSSI_COLMN_SYSL_PREVIOUS,
-                FIELDOFFSET(NLSSTRINGS, pszSyslevelPrevious),
-
-        ID_XSSI_DRIVERS_VERSION,
-                FIELDOFFSET(NLSSTRINGS, pszDriversVersion),
-        ID_XSSI_DRIVERS_VENDOR,
-                FIELDOFFSET(NLSSTRINGS, pszDriversVendor),
-
-        ID_XSSI_FUNCKEY_DESCRIPTION,
-                FIELDOFFSET(NLSSTRINGS, pszFuncKeyDescription),
-        ID_XSSI_FUNCKEY_SCANCODE,
-                FIELDOFFSET(NLSSTRINGS, pszFuncKeyScanCode),
-        ID_XSSI_FUNCKEY_MODIFIER,
-                FIELDOFFSET(NLSSTRINGS, pszFuncKeyModifier),
-
-    // default documents V0.9.4 (2000-06-09) [umoeller]
-        ID_XSSI_DATAFILEDEFAULTDOC,
-                FIELDOFFSET(NLSSTRINGS, pszDataFileDefaultDoc),
-        ID_XSSI_FDRDEFAULTDOC,
-                FIELDOFFSET(NLSSTRINGS, pszFdrDefaultDoc),
-
-    // XCenter V0.9.4 (2000-06-10) [umoeller]
-        ID_XSSI_XCENTERPAGE1,
-                FIELDOFFSET(NLSSTRINGS, pszXCenterPage1),
-
-    // file operations V0.9.4 (2000-07-27) [umoeller]
-        ID_XSSI_FOPS_MOVE2TRASHCAN,
-                FIELDOFFSET(NLSSTRINGS, pszFopsMove2TrashCan),
-        ID_XSSI_FOPS_RESTOREFROMTRASHCAN,
-                FIELDOFFSET(NLSSTRINGS, pszFopsRestoreFromTrashCan),
-        ID_XSSI_FOPS_TRUEDELETE,
-                FIELDOFFSET(NLSSTRINGS, pszFopsTrueDelete),
-        ID_XSSI_FOPS_EMPTYINGTRASHCAN,
-                FIELDOFFSET(NLSSTRINGS, pszFopsEmptyingTrashCan),
-
-        ID_XSSI_ICONPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszIconPage),
-
-    // INI save methods V0.9.5 (2000-08-16) [umoeller]
-        ID_XSSI_XSD_SAVEINIS_NEW,
-                FIELDOFFSET(NLSSTRINGS, pszXSDSaveInisNew),
-        ID_XSSI_XSD_SAVEINIS_OLD,
-                FIELDOFFSET(NLSSTRINGS, pszXSDSaveInisOld),
-        ID_XSSI_XSD_SAVEINIS_NONE,
-                FIELDOFFSET(NLSSTRINGS, pszXSDSaveInisNone),
-
-    // logoff V0.9.5 (2000-09-28) [umoeller]
-        ID_XSSI_XSD_LOGOFF,
-                FIELDOFFSET(NLSSTRINGS, pszXSDLogoff),
-        ID_XSSI_XSD_CONFIRMLOGOFFMSG,
-                FIELDOFFSET(NLSSTRINGS, pszXSDConfirmLogoffMsg),
-
-    // "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
-        ID_XSSI_BYTE,
-                FIELDOFFSET(NLSSTRINGS, pszByte),
-        ID_XSSI_BYTES,
-                FIELDOFFSET(NLSSTRINGS, pszBytes),
-
-    // (2000-12-14) [lafaix] Resources page name
-        ID_XSSI_PGMFILE_RESOURCES,
-                FIELDOFFSET(NLSSTRINGS, pszResourcesPage),
-
-    // title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller]
-        ID_XSSI_PGM_ASSOCIATIONS,
-                FIELDOFFSET(NLSSTRINGS, pszAssociationsPage),
-
-    // miscellaneous new strings with V0.9.9 (2001-03-07) [umoeller]
-        ID_XSSI_STYLEPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszStylePage),
-        ID_XSSI_CLASSESPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszClassesPage),
-        ID_XSSI_WIDGETSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszWidgetsPage),
-        ID_XSSI_ADDWIDGET,
-                FIELDOFFSET(NLSSTRINGS, pszAddWidget),
-        ID_XSSI_WIDGETCLASS,
-                FIELDOFFSET(NLSSTRINGS, pszWidgetClass),
-        ID_XSSI_WIDGETSETUP,
-                FIELDOFFSET(NLSSTRINGS, pszWidgetSetup),
-
-        ID_XSSI_FONTFOLDER,
-                FIELDOFFSET(NLSSTRINGS, pszFontFolder),
-        ID_XSSI_FONTFILE,
-                FIELDOFFSET(NLSSTRINGS, pszFontFile),
-        ID_XSSI_FONTFAMILY,
-                FIELDOFFSET(NLSSTRINGS, pszFontFamily),
-        ID_XSSI_FONTERRORS,
-                FIELDOFFSET(NLSSTRINGS, pszFontErrors),
-        ID_XSSI_FONTOBJECT,
-                FIELDOFFSET(NLSSTRINGS, pszFontObject),
-        ID_XSSI_CDPLAYERVIEW,
-                FIELDOFFSET(NLSSTRINGS, pszCDPlayerView),
-        ID_XSSI_CDPLAYER,
-                FIELDOFFSET(NLSSTRINGS, pszCDPlayer),
-        ID_XSSI_VOLUMEVIEW,
-                FIELDOFFSET(NLSSTRINGS, pszVolumeView),
-        ID_XSSI_VOLUME,
-                FIELDOFFSET(NLSSTRINGS, pszVolume),
-        ID_XSSI_ADMINISTRATOR,
-                FIELDOFFSET(NLSSTRINGS, pszAdministrator),
-        ID_XSSI_THREADSPAGE,
-                FIELDOFFSET(NLSSTRINGS, pszThreadsPage),
-
-        ID_XSSI_CLSLISTTOKEN,
-                FIELDOFFSET(NLSSTRINGS, pszClsListToken),
-
-        ID_XSSI_DRIVERVERSION,
-                FIELDOFFSET(NLSSTRINGS, pszDriverVersion),
-        ID_XSSI_DRIVERVENDOR,
-                FIELDOFFSET(NLSSTRINGS, pszDriverVendor),
-
-        ID_XSSI_FONTSAMPLEVIEW,
-                FIELDOFFSET(NLSSTRINGS, pszFontSampleView),
-        ID_XSSI_FONTDEINSTALL,
-                FIELDOFFSET(NLSSTRINGS, pszFontDeinstall),
-
-        ID_XSSI_KEYDESCRIPTION,
-                FIELDOFFSET(NLSSTRINGS, pszKeyDescription),
-        ID_XSSI_SCANCODE,
-                FIELDOFFSET(NLSSTRINGS, pszScanCode),
-        ID_XSSI_MODIFIER,
-                FIELDOFFSET(NLSSTRINGS, pszModifier),
-
-        ID_XSSI_DEFAULTSHUTDOWN,
-                FIELDOFFSET(NLSSTRINGS, pszDefaultShutdown),
-        ID_XSSI_INSTALLINGFONTS,
-                FIELDOFFSET(NLSSTRINGS, pszInstallingFonts),
-
-        ID_XSSI_PARAMETERS,
-                FIELDOFFSET(NLSSTRINGS, pszParameters),
-        ID_XSSI_CLOSE,
-                FIELDOFFSET(NLSSTRINGS, pszClose),
-
-        ID_XSSI_DROPPED1,
-                FIELDOFFSET(NLSSTRINGS, pszDropped1),
-        ID_XSSI_DROPPED2,
-                FIELDOFFSET(NLSSTRINGS, pszDropped2),
-
-        ID_XSSI_THREADSTHREAD,
-                FIELDOFFSET(NLSSTRINGS, pszThreadsThread),
-        ID_XSSI_THREADSTID,
-                FIELDOFFSET(NLSSTRINGS, pszThreadsTID),
-        ID_XSSI_THREADSPRIORITY,
-                FIELDOFFSET(NLSSTRINGS, pszThreadsPriority),
-        ID_XSSI_THREADSGROUPTITLE,
-                FIELDOFFSET(NLSSTRINGS, pszThreadsGroupTitle),
-
-        ID_XSSI_ARCRESTORED,
-                FIELDOFFSET(NLSSTRINGS, pszArcRestored),
-        ID_XSSI_ARCDAYSPASSED,
-                FIELDOFFSET(NLSSTRINGS, pszArcDaysPassed),
-        ID_XSSI_ARCDAYSLIMIT,
-                FIELDOFFSET(NLSSTRINGS, pszArcDaysLimit),
-        ID_XSSI_ARCINICHECKING,
-                FIELDOFFSET(NLSSTRINGS, pszArcINIChecking),
-        ID_XSSI_ARCINICHANGED,
-                FIELDOFFSET(NLSSTRINGS, pszArcINIChanged),
-        ID_XSSI_ARCINILIMIT,
-                FIELDOFFSET(NLSSTRINGS, pszArcINILimit),
-        ID_XSSI_ARCENABLED,
-                FIELDOFFSET(NLSSTRINGS, pszArcEnabled),
-        ID_XSSI_ARCNOTNECC,
-                FIELDOFFSET(NLSSTRINGS, pszArcNotNecc),
-
-    // new Module subpages V0.9.9 (2001-03-11) [lafaix]
-        ID_XSSI_PGMFILE_MODULE1,
-                FIELDOFFSET(NLSSTRINGS, pszModule1Page),
-        ID_XSSI_PGMFILE_MODULE2,
-                FIELDOFFSET(NLSSTRINGS, pszModule2Page),
-
-    // miscellaneous new columns headers V0.9.9 (2001-03-11) [lafaix]
-        ID_XSSI_COLMN_MODULENAME,
-                FIELDOFFSET(NLSSTRINGS, pszColmnModuleName),
-        ID_XSSI_COLMN_EXPORTORDINAL,
-                FIELDOFFSET(NLSSTRINGS, pszColmnExportOrdinal),
-        ID_XSSI_COLMN_EXPORTTYPE,
-                FIELDOFFSET(NLSSTRINGS, pszColmnExportType),
-        ID_XSSI_COLMN_EXPORTNAME,
-                FIELDOFFSET(NLSSTRINGS, pszColmnExportName),
-        ID_XSSI_COLMN_RESOURCEICON,
-                FIELDOFFSET(NLSSTRINGS, pszColmnResourceIcon),
-        ID_XSSI_COLMN_RESOURCEID,
-                FIELDOFFSET(NLSSTRINGS, pszColmnResourceID),
-        ID_XSSI_COLMN_RESOURCETYPE,
-                FIELDOFFSET(NLSSTRINGS, pszColmnResourceType),
-        ID_XSSI_COLMN_RESOURCESIZE,
-                FIELDOFFSET(NLSSTRINGS, pszColmnResourceSize),
-        ID_XSSI_COLMN_RESOURCEFLAGS,
-                FIELDOFFSET(NLSSTRINGS, pszColmnResourceFlags),
-
-    // new special functions on XWPMouse "Movement" page V0.9.9 (2001-03-11) [lafaix]
-        ID_XSSI_SPECIAL_PAGEMAGEUP,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageUp),
-        ID_XSSI_SPECIAL_PAGEMAGERIGHT,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageRight),
-        ID_XSSI_SPECIAL_PAGEMAGEDOWN,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageDown),
-        ID_XSSI_SPECIAL_PAGEMAGELEFT,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageLeft),
-
-    // new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller]
-        ID_XSSI_MB3_AUTOSCROLL,
-                FIELDOFFSET(NLSSTRINGS, pszMB3AutoScroll),       // "AutoScroll"
-        ID_XSSI_MB3_DBLCLICK,
-                FIELDOFFSET(NLSSTRINGS, pszMB3DblClick),         // "Double click"
-        ID_XSSI_MB3_NOCONVERSION,
-                FIELDOFFSET(NLSSTRINGS, pszMB3NoConversion),     // "No conversion"
-        ID_XSSI_MB3_PUSHTOBOTTOM,
-                FIELDOFFSET(NLSSTRINGS, pszMB3PushToBottom)
-    };
-
-/*
  *@@ cmnQueryNLSModuleHandle:
  *      returns the module handle of the language-dependent XFolder
  *      National Language Support DLL (XFLDRxxx.DLL).
@@ -1740,8 +1294,7 @@ static LOADSTRING G_aStringIDs[] =
  *             XFolder's language in the "Workplace Shell" object.
  *
  *      If the DLL is (re)loaded, this function also initializes
- *      all language-dependent XWorkplace components such as the NLSSTRINGS
- *      structure, which can always be accessed using cmnQueryNLSStrings.
+ *      all language-dependent XWorkplace components.
  *      This function also checks for whether the NLS DLL has a
  *      decent version level to support this XFolder version.
  *
@@ -1802,7 +1355,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             {
                 // module loaded alright!
                 // hmodLoaded has the new module handle
-                HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
+                HAB habDesktop = G_habThread1;
 
                 if (fEnforceReload)
                 {
@@ -1899,27 +1452,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                 fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
                 if (fLocked)
                 {
-                    NLSSTRINGS *pNLSStrings = (NLSSTRINGS*)cmnQueryNLSStrings();
-                                            // this allocates and initializes the array
-                    ULONG ul;
-                    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-
-                    // set global handle
                     G_hmodNLS = hmodLoaded;
-                    // load all the new NLS strings
-
-                    for (ul = 0;
-                         ul < ARRAYITEMCOUNT(G_aStringIDs);
-                         ul++)
-                    {
-                        PLOADSTRING pThis = &G_aStringIDs[ul];
-                        cmnLoadString(habDesktop,
-                                      G_hmodNLS,
-                                      pThis->ulID,
-                                      (PSZ*)(((PBYTE)&pNLSStrings->pszNotDefined) + pThis->ulOffset));
-                    }
-
-                    krnUnlock();
                 }
             }
             CATCH(excpt1) { } END_CATCH();
@@ -1928,6 +1461,11 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                 krnUnlock();
 
             DosExitMustComplete(&ulNesting);
+
+            // free all NLS strings we ever used;
+            // they will be dynamically re-loaded
+            // with the new NLS module
+            UnloadAllStrings();
 
             if (hmodOld)
                 // after all this, unload the old resource module
@@ -1945,15 +1483,16 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 }
 
 /*
- *@@ cmnQueryNLSStrings:
+ *cmnQueryNLSStrings:
  *      returns pointer to global NLSSTRINGS structure which contains
  *      all the language-dependent XFolder strings from the resource
  *      files.
  *
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *removed V0.9.9 (2001-04-04) [umoeller]
  */
 
-PNLSSTRINGS cmnQueryNLSStrings(VOID)
+/* PNLSSTRINGS cmnQueryNLSStrings(VOID)
 {
     BOOL fLocked = FALSE;
     ULONG ulNesting;
@@ -2017,6 +1556,48 @@ CHAR cmnQueryThousandsSeparator(VOID)
 }
 
 /*
+ *@@ cmnIsValidHotkey:
+ *      returns TRUE if the specified key combo can
+ *      be used as a hotkey without endangering the
+ *      system.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+BOOL cmnIsValidHotkey(USHORT usFlags,
+                      USHORT usKeyCode)
+{
+    BOOL brc
+        = (
+                // must be a virtual key
+                (  (  ((usFlags & KC_VIRTUALKEY) != 0)
+                // or Ctrl or Alt must be pressed
+                   || ((usFlags & KC_CTRL) != 0)
+                   || ((usFlags & KC_ALT) != 0)
+                // or one of the Win95 keys must be pressed
+                   || (   ((usFlags & KC_VIRTUALKEY) == 0)
+                       && (     (usKeyCode == 0xEC00)
+                            ||  (usKeyCode == 0xED00)
+                            ||  (usKeyCode == 0xEE00)
+                          )
+                   )
+                )
+                // OK:
+                // filter out lone modifier keys
+                && (    ((usFlags & KC_VIRTUALKEY) == 0)
+                     || (   (usKeyCode != VK_SHIFT)     // shift
+                         && (usKeyCode != VK_CTRL)     // ctrl
+                         && (usKeyCode != VK_ALT)     // alt
+                // and filter out the tab key too
+                         && (usKeyCode != VK_TAB)     // tab
+                        )
+                   )
+                )
+           );
+    return (brc);
+}
+
+/*
  *@@ cmnDescribeKey:
  *      this stores a description of a certain
  *      key into pszBuf, using the NLS DLL strings.
@@ -2032,40 +1613,40 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 {
     BOOL brc = TRUE;
 
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     *pszBuf = 0;
     if (usFlags & KC_CTRL)
-        strcpy(pszBuf, pNLSStrings->pszCtrl);
+        strcpy(pszBuf, cmnGetString(ID_XSSI_KEY_CTRL)) ; // pszCtrl
     if (usFlags & KC_SHIFT)
-        strcat(pszBuf, pNLSStrings->pszShift);
+        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SHIFT)) ; // pszShift
     if (usFlags & KC_ALT)
-        strcat(pszBuf, pNLSStrings->pszAlt);
+        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_Alt)) ; // pszAlt
 
     if (usFlags & KC_VIRTUALKEY)
     {
         switch (usKeyCode)
         {
-            case VK_BACKSPACE: strcat(pszBuf, pNLSStrings->pszBackspace); break;
-            case VK_TAB: strcat(pszBuf, pNLSStrings->pszTab); break;
-            case VK_BACKTAB: strcat(pszBuf, pNLSStrings->pszBacktab); break;
-            case VK_NEWLINE: strcat(pszBuf, pNLSStrings->pszEnter); break;
-            case VK_ESC: strcat(pszBuf, pNLSStrings->pszEsc); break;
-            case VK_SPACE: strcat(pszBuf, pNLSStrings->pszSpace); break;
-            case VK_PAGEUP: strcat(pszBuf, pNLSStrings->pszPageup); break;
-            case VK_PAGEDOWN: strcat(pszBuf, pNLSStrings->pszPagedown); break;
-            case VK_END: strcat(pszBuf, pNLSStrings->pszEnd); break;
-            case VK_HOME: strcat(pszBuf, pNLSStrings->pszHome); break;
-            case VK_LEFT: strcat(pszBuf, pNLSStrings->pszLeft); break;
-            case VK_UP: strcat(pszBuf, pNLSStrings->pszUp); break;
-            case VK_RIGHT: strcat(pszBuf, pNLSStrings->pszRight); break;
-            case VK_DOWN: strcat(pszBuf, pNLSStrings->pszDown); break;
-            case VK_PRINTSCRN: strcat(pszBuf, pNLSStrings->pszPrintscrn); break;
-            case VK_INSERT: strcat(pszBuf, pNLSStrings->pszInsert); break;
-            case VK_DELETE: strcat(pszBuf, pNLSStrings->pszDelete); break;
-            case VK_SCRLLOCK: strcat(pszBuf, pNLSStrings->pszScrlLock); break;
-            case VK_NUMLOCK: strcat(pszBuf, pNLSStrings->pszNumLock); break;
-            case VK_ENTER: strcat(pszBuf, pNLSStrings->pszEnter); break;
+            case VK_BACKSPACE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_BACKSPACE)) ; break; // pszBackspace
+            case VK_TAB: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_TAB)) ; break; // pszTab
+            case VK_BACKTAB: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_BACKTABTAB)) ; break; // pszBacktab
+            case VK_NEWLINE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_ENTER)) ; break; // pszEnter
+            case VK_ESC: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_ESC)) ; break; // pszEsc
+            case VK_SPACE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SPACE)) ; break; // pszSpace
+            case VK_PAGEUP: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_PAGEUP)) ; break; // pszPageup
+            case VK_PAGEDOWN: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_PAGEDOWN)) ; break; // pszPagedown
+            case VK_END: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_END)) ; break; // pszEnd
+            case VK_HOME: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_HOME)) ; break; // pszHome
+            case VK_LEFT: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_LEFT)) ; break; // pszLeft
+            case VK_UP: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_UP)) ; break; // pszUp
+            case VK_RIGHT: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_RIGHT)) ; break; // pszRight
+            case VK_DOWN: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_DOWN)) ; break; // pszDown
+            case VK_PRINTSCRN: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_PRINTSCRN)) ; break; // pszPrintscrn
+            case VK_INSERT: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_INSERT)) ; break; // pszInsert
+            case VK_DELETE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_DELETE)) ; break; // pszDelete
+            case VK_SCRLLOCK: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SCRLLOCK)) ; break; // pszScrlLock
+            case VK_NUMLOCK: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_NUMLOCK)) ; break; // pszNumLock
+            case VK_ENTER: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_ENTER)) ; break; // pszEnter
             case VK_F1: strcat(pszBuf, "F1"); break;
             case VK_F2: strcat(pszBuf, "F2"); break;
             case VK_F3: strcat(pszBuf, "F3"); break;
@@ -2097,9 +1678,9 @@ BOOL cmnDescribeKey(PSZ pszBuf,
     {
         switch (usKeyCode)
         {
-            case 0xEC00: strcat(pszBuf, pNLSStrings->pszWinLeft); break;
-            case 0xED00: strcat(pszBuf, pNLSStrings->pszWinRight); break;
-            case 0xEE00: strcat(pszBuf, pNLSStrings->pszWinMenu); break;
+            case 0xEC00: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_WINLEFT)) ; break; // pszWinLeft
+            case 0xED00: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_WINRIGHT)) ; break; // pszWinRight
+            case 0xEE00: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_WINMENU)) ; break; // pszWinMenu
             default:
             {
                 CHAR szTemp[2];
@@ -2121,6 +1702,52 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 }
 
 /*
+ *@@ cmnAddProductInfoMenuItem:
+ *      adds the XWP product info menu item to the menu.
+ *
+ *@@added V0.9.9 (2001-04-05) [umoeller]
+ */
+
+BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" submenu
+{
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    if ((pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0)
+    {
+        MENUITEM mi;
+
+        #ifdef DEBUG_MENUS
+            _Pmpf(("  Inserting 'Product info'"));
+        #endif
+        // get handle to the WPObject's "Help" submenu in the
+        // the folder's popup menu
+        if (WinSendMsg(hwndMenu,
+                       MM_QUERYITEM,
+                       MPFROM2SHORT(WPMENUID_HELP,
+                                    TRUE),
+                       (MPARAM)&mi))
+        {
+            // mi.hwndSubMenu now contains "Help" submenu handle,
+            // which we add items to now
+            winhInsertMenuSeparator(mi.hwndSubMenu,
+                                    MIT_END,
+                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+            winhInsertMenuItem(mi.hwndSubMenu,
+                               MIT_END,
+                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
+                               cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
+                               MIS_TEXT, 0);
+            brc = TRUE;
+        }
+        // else: "Help" menu not found, but this can
+        // happen in Warp 4 folder menu bars
+    }
+
+    return (brc);
+}
+
+/*
  *@@ cmnAddCloseMenuItem:
  *      adds a "Close" menu item to the given menu.
  *
@@ -2129,7 +1756,7 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 
 VOID cmnAddCloseMenuItem(HWND hwndMenu)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     // add "Close" menu item
     winhInsertMenuSeparator(hwndMenu,
                             MIT_END,
@@ -2137,7 +1764,7 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
     winhInsertMenuItem(hwndMenu,
                        MIT_END,
                        WPMENUID_CLOSE,
-                       pNLSStrings->pszClose, // "~Close",
+                       cmnGetString(ID_XSSI_CLOSE),  // "~Close", // pszClose
                        MIS_TEXT, 0);
 }
 
@@ -2655,8 +2282,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             G_pGlobalSettings->fAniMouse = 0;
             G_pGlobalSettings->fEnableXWPHook = 0;
-            // global hotkeys @@todo V0.9.4 (2000-06-05) [umoeller]
-            G_pGlobalSettings->fEnablePageMage = 0; // @@todo V0.9.4 (2000-06-05) [umoeller]
+            G_pGlobalSettings->fEnablePageMage = 0;
 
             G_pGlobalSettings->fReplaceArchiving = 0;
             G_pGlobalSettings->fRestartWPS = 0;

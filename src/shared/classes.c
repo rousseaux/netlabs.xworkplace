@@ -44,6 +44,8 @@
  *      valid SOM method table. If so, then methods can be invoked on <obj>.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h

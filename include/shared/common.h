@@ -948,9 +948,11 @@
      *
      *      Use cmnQueryNLSStrings to get access to this
      *      structure.
+     *
+     *      The entire structure has been removed with V0.9.9 (2001-04-04) [umoeller].
      */
 
-    typedef struct _NLSSTRINGS
+    /* typedef struct _NLSSTRINGS
     {
         PSZ     pszNotDefined,
                 pszProductInfo,
@@ -1333,10 +1335,13 @@
                 pszMB3AutoScroll,       // "AutoScroll"
                 pszMB3DblClick,         // "Double click"
                 pszMB3NoConversion,     // "No conversion"
-                pszMB3PushToBottom;     // "Push to bottom"
+                pszMB3PushToBottom,     // "Push to bottom"
+
+    // new screen borders page name V0.9.9 (2001-04-04) [lafaix]
+                pszScreenBordersPage;   // "Screen borders"
     } NLSSTRINGS;
 
-    typedef const NLSSTRINGS* PNLSSTRINGS;
+    typedef const NLSSTRINGS* PNLSSTRINGS; */
 
     #ifdef SOM_WPObject_h
 
@@ -1447,13 +1452,11 @@
 
     PSZ cmnQueryBootLogoFile(VOID);
 
-    void cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
-
     HMODULE XWPENTRY cmnQueryNLSModuleHandle(BOOL fEnforceReload);
     typedef HMODULE XWPENTRY CMNQUERYNLSMODULEHANDLE(BOOL fEnforceReload);
     typedef CMNQUERYNLSMODULEHANDLE *PCMNQUERYNLSMODULEHANDLE;
 
-    PNLSSTRINGS cmnQueryNLSStrings(VOID);
+    // PNLSSTRINGS cmnQueryNLSStrings(VOID);        removed V0.9.9 (2001-04-04) [umoeller]
 
     #ifdef PRFH_HEADER_INCLUDED
     PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload);
@@ -1461,11 +1464,26 @@
 
     CHAR cmnQueryThousandsSeparator(VOID);
 
+    BOOL cmnIsValidHotkey(USHORT usFlags,
+                          USHORT usKeyCode);
+
     BOOL cmnDescribeKey(PSZ pszBuf,
                         USHORT usFlags,
                         USHORT usKeyCode);
 
+    BOOL cmnAddProductInfoMenuItem(HWND hwndMenu);
+
     VOID cmnAddCloseMenuItem(HWND hwndMenu);
+
+    /* ******************************************************************
+     *
+     *   NLS strings
+     *
+     ********************************************************************/
+
+    void cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
+
+    PSZ cmnGetString(ULONG ulStringID);
 
     /********************************************************************
      *

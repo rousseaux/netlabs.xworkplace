@@ -50,6 +50,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -144,22 +146,26 @@
  ********************************************************************/
 
 // global lock semaphore for krnLock etc.
-static HMTX                G_hmtxCommonLock = NULLHANDLE;
+static HMTX             G_hmtxCommonLock = NULLHANDLE;
 
 // "Quick open" dlg status (thread-1 object wnd)
-static ULONG               G_ulQuickOpenNow = 0,
-                           G_ulQuickOpenMax = 0;
-static HWND                G_hwndQuickStatus = NULLHANDLE;
-static BOOL                G_fQuickOpenCancelled = FALSE;
+static ULONG            G_ulQuickOpenNow = 0,
+                        G_ulQuickOpenMax = 0;
+static HWND             G_hwndQuickStatus = NULLHANDLE;
+static BOOL             G_fQuickOpenCancelled = FALSE;
 
 // flags passed with mp1 of XDM_PAGEMAGECONFIG
-static ULONG               G_PageMageConfigFlags = 0;
+static ULONG            G_PageMageConfigFlags = 0;
 
 // global structure with data needed across threads
 // (see kernel.h)
-static KERNELGLOBALS       G_KernelGlobals = {0};
+static KERNELGLOBALS    G_KernelGlobals = {0};
 
-static THREADINFO          G_tiSentinel = {0};
+static THREADINFO       G_tiSentinel = {0};
+
+// anchor block of WPS thread 1 (queried in krnInitializeXWorkplace);
+// this is exported thru kernel.h and never changed again
+HAB                     G_habThread1 = NULLHANDLE;
 
 // resize information for ID_XFD_CONTAINERPAGE, which is used
 // by many settings pages
@@ -1247,14 +1253,14 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                             // if we have any quick-open folders: go
                             if (pGlobalSettings->ShowStartupProgress)
                             {
-                                PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                                 G_hwndQuickStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
                                                                fnwpQuickOpenDlg,
                                                                cmnQueryNLSModuleHandle(FALSE),
                                                                ID_XFD_STARTUPSTATUS,
                                                                NULL);
                                 WinSetWindowText(G_hwndQuickStatus,
-                                                 pNLSStrings->pszQuickStatus);
+                                                 cmnGetString(ID_XFSI_QUICKSTATUS)) ; // pszQuickStatus
 
                                 winhRestoreWindowPos(G_hwndQuickStatus,
                                                      HINI_USER,
@@ -1847,7 +1853,7 @@ MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mp1, MPARAM
             strcpy(szTemp, _wpQueryTitle((WPObject*)ulObject));
             strhBeautifyTitle(szTemp);
             sprintf(szStarting2,
-                    (cmnQueryNLSStrings())->pszStarting,
+                    cmnGetString(ID_SDSI_STARTING), // ->pszStarting,
                     szTemp);
             WinSetDlgItemText(hwndStatus, ID_SDDI_STATUS, szStarting2);
         }
@@ -2726,6 +2732,9 @@ VOID krnInitializeXWorkplace(VOID)
             fprintf(DumpFile,
                     "XWorkplace thread-1 object window created, HWND 0x%lX\n",
                     G_KernelGlobals.hwndThread1Object);
+
+        // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
+        G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
 
         // create API object window V0.9.9 (2001-03-23) [umoeller]
         WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),

@@ -53,6 +53,8 @@
          beginning at offset 0x06, 200 bytes long)
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -542,7 +544,7 @@ BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
 BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                             ULONG ulMsg)            // in: msg to post to hwndNotify
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     BOOL    fBackup = FALSE,
             fDisableArchiving = FALSE;
 
@@ -581,7 +583,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
         if (fWasJustRestored)
         {
-            xstrcpy(&strMsg, pNLSStrings->pszArcRestored, 0);
+            xstrcpy(&strMsg, cmnGetString(ID_XSSI_ARCRESTORED),  0); // pszArcRestored
             xstrcatc(&strMsg, '\n');
             fBackup = FALSE;
             fDisableArchiving = TRUE;
@@ -645,12 +647,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     if (G_ArcSettings.fShowStatus)
                     {
                         sprintf(szTemp,
-                                pNLSStrings->pszArcDaysPassed, // "%d days passed since last backup."
+                                cmnGetString(ID_XSSI_ARCDAYSPASSED),  // "%d days passed since last backup." // pszArcDaysPassed
                                 lDaysPassed);
                         xstrcpy(&strMsg, szTemp, 0);
                         xstrcatc(&strMsg, '\n');
                         sprintf(szTemp,
-                                pNLSStrings->pszArcDaysLimit, // "Limit: %d days."
+                                cmnGetString(ID_XSSI_ARCDAYSLIMIT),  // "Limit: %d days." // pszArcDaysLimit
                                 G_ArcSettings.ulEveryDays);
                         xstrcat(&strMsg, szTemp, 0);
                         xstrcatc(&strMsg, '\n');
@@ -666,7 +668,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     {
                         sprintf(szTemp,
                                 "%s\n",
-                                pNLSStrings->pszArcINIChecking);
+                                cmnGetString(ID_XSSI_ARCINICHECKING)) ; // pszArcINIChecking
                         WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
                                           szTemp);
                         WinShowWindow(hwndStatus, TRUE);
@@ -682,12 +684,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     if (G_ArcSettings.fShowStatus)
                     {
                         sprintf(szTemp,
-                                pNLSStrings->pszArcINIChanged, // "INI files changed %f %%",
+                                cmnGetString(ID_XSSI_ARCINICHANGED),  // "INI files changed %f %%", // pszArcINIChanged
                                 dMaxDifferencePercent);
                         xstrcpy(&strMsg, szTemp, 0);
                         xstrcatc(&strMsg, '\n');
                         sprintf(szTemp,
-                                pNLSStrings->pszArcINILimit, // "Limit: %f %%."
+                                cmnGetString(ID_XSSI_ARCINILIMIT),  // "Limit: %f %%." // pszArcINILimit
                                 G_ArcSettings.dIniFilesPercent);
                         xstrcat(&strMsg, szTemp, 0);
                         xstrcatc(&strMsg, '\n');
@@ -706,12 +708,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     // save "last app" etc. data so we won't get this twice
                     arcSaveSettings();
                     xstrcat(&strMsg,
-                            pNLSStrings->pszArcEnabled, // "WPS archiving enabled",
+                            cmnGetString(ID_XSSI_ARCENABLED),  // "WPS archiving enabled", // pszArcEnabled
                             0);
                 }
                 else
                     xstrcat(&strMsg,
-                            pNLSStrings->pszArcNotNecc, // "WPS archiving not necessary",
+                            cmnGetString(ID_XSSI_ARCNOTNECC),  // "WPS archiving not necessary", // pszArcNotNecc
                             0);
 
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, strMsg.psz);

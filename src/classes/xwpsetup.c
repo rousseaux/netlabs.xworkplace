@@ -55,6 +55,8 @@
 #define XWPSetup_Class_Source
 #define M_XWPSetup_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -134,7 +136,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
 {
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_xwpAddXWPSetupPages");
@@ -146,7 +148,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszParanoia;
+    pcnbp->pszName = cmnGetString(ID_XSSI_PARANOIA);  // pszParanoia
     pcnbp->ulDlgID = ID_XCD_PARANOIA;
     pcnbp->usFirstControlID = ID_XCDI_VARMENUOFFSET;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
@@ -162,7 +164,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszObjects;
+    pcnbp->pszName = cmnGetString(ID_XSSI_OBJECTS);  // pszObjects
     pcnbp->ulDlgID = ID_XCD_OBJECTS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_OBJECTS;
     pcnbp->ulPageID = SP_SETUP_OBJECTS;
@@ -177,7 +179,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszThreadsPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_THREADSPAGE);  // pszThreadsPage
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_THREADS;
     pcnbp->ulPageID = SP_SETUP_THREADS;
@@ -193,7 +195,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszXWPStatus;
+    pcnbp->pszName = cmnGetString(ID_XSSI_XWPSTATUS);  // pszXWPStatus
     pcnbp->ulDlgID = ID_XCD_STATUS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_INFO;
     pcnbp->ulPageID = SP_SETUP_INFO;
@@ -211,7 +213,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszFeatures;
+    pcnbp->pszName = cmnGetString(ID_XSSI_FEATURES);  // pszFeatures
     pcnbp->ulDlgID = ID_XCD_FEATURES;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
     pcnbp->ulPageID = SP_SETUP_FEATURES;

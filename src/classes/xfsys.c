@@ -55,6 +55,8 @@
 #define xfsys_Class_Source
 #define M_xfsys_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -118,7 +120,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     PAGEINFO        pi;
     HMODULE         savehmod;
     // CHAR            szXFolderVersion[100];
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     // PSZ pszHelpLibrary = cmnQueryHelpLibrary();
 
     // XFldSystemData *somThis = XFldSystemGetData(somSelf);
@@ -136,7 +138,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbInitPage    = cfgConfigInitPage;
     pcnbp->pfncbItemChanged = cfgConfigItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszErrors;
+    pcnbp->pszName = cmnGetString(ID_XSSI_ERRORS);  // pszErrors
     pcnbp->ulDlgID = ID_OSD_SETTINGS_ERRORS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_ERRORS;
     // give this page a unique ID, which is
@@ -153,7 +155,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbInitPage    = cfgConfigInitPage;
     pcnbp->pfncbItemChanged = cfgConfigItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszWPS;
+    pcnbp->pszName = cmnGetString(ID_XSSI_WPS);  // pszWPS
     pcnbp->ulDlgID = ID_OSD_SETTINGS_WPS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_WPS;
     // give this page a unique ID (common.h), which
@@ -170,7 +172,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbInitPage    = cfgConfigInitPage;
     pcnbp->pfncbItemChanged = cfgConfigItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszSysPaths;
+    pcnbp->pszName = cmnGetString(ID_XSSI_SYSPATHS);  // pszSysPaths
     pcnbp->ulDlgID = ID_OSD_SETTINGS_SYSPATHS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSPATHS;
     // give this page a unique ID (common.h), which
@@ -202,7 +204,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszDrivers;
+    pcnbp->pszName = cmnGetString(ID_XSSI_DRIVERS);  // pszDrivers
     pcnbp->ulDlgID = ID_OSD_SETTINGS_DRIVERS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DRIVERS;
     pcnbp->ulPageID = SP_DRIVERS;
@@ -221,7 +223,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbInitPage    = cfgConfigInitPage;
     pcnbp->pfncbItemChanged = cfgConfigItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszMemory;
+    pcnbp->pszName = cmnGetString(ID_XSSI_MEMORY);  // pszMemory
     pcnbp->ulDlgID = ID_OSD_SETTINGS_KERNEL2;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL2;
     // give this page a unique ID (common.h), which
@@ -241,7 +243,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbInitPage    = cfgConfigInitPage;
     pcnbp->pfncbItemChanged = cfgConfigItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszScheduler;
+    pcnbp->pszName = cmnGetString(ID_XSSI_SCHEDULER);  // pszScheduler
     pcnbp->ulDlgID = ID_OSD_SETTINGS_KERNEL1;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL1;
     // give this page a unique ID (common.h), which
@@ -258,7 +260,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
-    pcnbp->pszName = pNLSStrings->pszSyslevelPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_SYSLEVELPAGE);  // pszSyslevelPage
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSLEVEL;
     pcnbp->usPageStyleFlags = BKA_MAJOR;

@@ -45,6 +45,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -679,7 +681,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         APIRET      arc = NO_ERROR;
         HWND        hwndINICombo = NULLHANDLE;
         ULONG       ul;
@@ -723,9 +725,9 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             PSZ psz = 0;
             switch (ul)
             {
-                case 0: psz = pNLSStrings->pszXSDSaveInisNew; break;
-                case 1: psz = pNLSStrings->pszXSDSaveInisOld; break;
-                case 2: psz = pNLSStrings->pszXSDSaveInisNone; break;
+                case 0: psz = cmnGetString(ID_XSSI_XSD_SAVEINIS_NEW);  break; // pszXSDSaveInisNew
+                case 1: psz = cmnGetString(ID_XSSI_XSD_SAVEINIS_OLD);  break; // pszXSDSaveInisOld
+                case 2: psz = cmnGetString(ID_XSSI_XSD_SAVEINIS_NONE);  break; // pszXSDSaveInisNone
             }
             WinInsertLboxItem(hwndINICombo,
                               ul,
@@ -1466,7 +1468,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
     if (psdParms->ulRestartWPS == 2)
     {
         // logoff:
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         psdParms->optWPSCloseWindows = TRUE;
         psdParms->optWPSReuseStartupFolder = TRUE;
         WinEnableControl(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
@@ -1474,7 +1476,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
         // replace confirmation text
         WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
-                          pNLSStrings->pszXSDConfirmLogoffMsg);
+                          cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
     }
 
     winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
@@ -2510,7 +2512,7 @@ typedef struct _SHUTDOWNDATA
 
     HAB             habShutdownThread;
     HMQ             hmqShutdownThread;
-    PNLSSTRINGS     pNLSStrings;
+    // PNLSSTRINGS     pNLSStrings;
     HMODULE         hmodResource;
 
     HWND            hwndProgressBar;        // progress bar in status window
@@ -3267,7 +3269,7 @@ VOID xsdUpdateClosingStatus(HWND hwndShutdownStatus,
 {
     CHAR szTitle[300];
     strcpy(szTitle,
-           (cmnQueryNLSStrings())->pszSDClosing);
+           cmnGetString(ID_SDSI_CLOSING)); // (cmnQueryNLSStrings())->pszSDClosing);
     strcat(szTitle, " \"");
     strcat(szTitle, pcszProgTitle);
     strcat(szTitle, "\"...");
@@ -3454,7 +3456,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
     xsdGetShutdownConsts(&pShutdownData->SDConsts);
 
     // set some global data for all the following
-    pShutdownData->pNLSStrings = cmnQueryNLSStrings();
+    // pShutdownData->pNLSStrings = cmnQueryNLSStrings();
     pShutdownData->hmodResource = cmnQueryNLSModuleHandle(FALSE);
 
     if (pShutdownData->habShutdownThread = WinInitialize(0))
@@ -3767,10 +3769,16 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                                    __FUNCTION__ ": Found open WarpCenter USEITEM, closing...\n");
 
                             _wpClose(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
-
-                            winhSleep(300);
                         }
                     }
+
+                    // set progress bar to the max
+                    WinSendMsg(pShutdownData->hwndProgressBar,
+                               WM_UPDATEPROGRESSBAR,
+                               (MPARAM)1,
+                               (MPARAM)1);
+
+                    winhSleep(300);
 
                     // now we need a blank screen so that it looks
                     // as if we had closed all windows, even if we
@@ -3792,7 +3800,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                     cObjectsToSave = objQueryDirtyObjectsCount();
 
                     sprintf(szTitle,
-                            cmnQueryNLSStrings()->pszSDSavingDesktop,
+                            cmnGetString(ID_SDSI_SAVINGDESKTOP), // cmnQueryNLSStrings()->pszSDSavingDesktop,
                                 // "Saving xxx awake WPS objects..."
                             cObjectsToSave);
                     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
@@ -3839,7 +3847,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
 
                         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
                                           ID_SDDI_STATUS,
-                                          (cmnQueryNLSStrings())->pszSDRestartingWPS);
+                                          cmnGetString(ID_SDSI_RESTARTINGWPS)); // (cmnQueryNLSStrings())->pszSDRestartingWPS);
 
                         // reuse startup folder?
                         krnSetProcessStartupFolder(pShutdownData->sdParams.optWPSReuseStartupFolder);
@@ -4090,7 +4098,7 @@ MRESULT EXPENTRY fncbShutdown(HWND hwndStatus,
     {
         WinSetActiveWindow(HWND_DESKTOP, hwndStatus);
         sprintf(szStarting2,
-                (cmnQueryNLSStrings())->pszStarting,
+                cmnGetString(ID_SDSI_STARTING), // (cmnQueryNLSStrings())->pszStarting,
                 _wpQueryTitle((WPObject*)ulObject));
         WinSetDlgItemText(hwndStatus, ID_SDDI_STATUS, szStarting2);
 
@@ -4537,7 +4545,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         {
                             APIRET arc = NO_ERROR;
                             WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                                              pShutdownData->pNLSStrings->pszFopsEmptyingTrashCan);
+                                              cmnGetString(ID_XSSI_FOPS_EMPTYINGTRASHCAN)) ; // pszFopsEmptyingTrashCan
                             xsdLog(pShutdownData->ShutdownLogFile, "    Emptying trash can...\n");
 
                             arc = cmnEmptyDefTrashCan(pShutdownData->habShutdownThread, // synchr.
@@ -4586,11 +4594,16 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 case ID_SDMI_BEGINCLOSINGITEMS:
                 beginclosingitems:
                 {
-                    // SHUTDOWNCONSTS  SDConsts;
                     // this is posted after processing of the shutdown
                     // folder; shutdown actually begins now with closing
                     // all windows
                     xsdLog(pShutdownData->ShutdownLogFile, "  ID_SDMI_BEGINCLOSINGITEMS, hwnd: 0x%lX\n", hwndFrame);
+
+                    // set progress bar to the left
+                    WinSendMsg(pShutdownData->hwndProgressBar,
+                               WM_UPDATEPROGRESSBAR,
+                               (MPARAM)0,
+                               (MPARAM)1);
 
                     // close open WarpCenter first, if desired
                     // V0.9.7 (2000-12-08) [umoeller]
@@ -4818,7 +4831,8 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                         WinSendMsg(pShutdownData->hwndProgressBar,
                                    WM_UPDATEPROGRESSBAR,
-                                   (MPARAM)ulNow, (MPARAM)ulMax);
+                                   (MPARAM)ulNow,
+                                   (MPARAM)(ulMax + 1));        // add one extra for desktop
                         pShutdownData->ulLastItemCount = (ulItemCount);
                     }
 
@@ -4999,7 +5013,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 
     // enforce saving of INIs
     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                      pShutdownData->pNLSStrings->pszSDSavingProfiles);
+                      cmnGetString(ID_SDSI_SAVINGPROFILES)) ; // pszSDSavingProfiles
 
     switch (pGlobalSettings->bSaveINIS)
     {
@@ -5051,7 +5065,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     // always say "releasing filesystems"
     WinShowPointer(HWND_DESKTOP, FALSE);
     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                      pShutdownData->pNLSStrings->pszSDFlushing);
+                      cmnGetString(ID_SDSI_FLUSHING)) ; // pszSDFlushing
 
     // here comes the settings-dependent part:
     // depending on what we are to do after shutdown,
@@ -5220,7 +5234,7 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData,
     if (!pShutdownData->sdParams.optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
     {
         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                          pShutdownData->pNLSStrings->pszSDRebooting);
+                          cmnGetString(ID_SDSI_REBOOTING)) ; // pszSDRebooting
         DosSleep(500);
     }
 
@@ -5262,7 +5276,7 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData,
     else
     {
         sprintf(szTemp,
-                pShutdownData->pNLSStrings->pszStarting,
+                cmnGetString(ID_SDSI_STARTING),  // pszStarting
                 pShutdownData->sdParams.szRebootCommand);
         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
                           szTemp);

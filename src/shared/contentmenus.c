@@ -95,6 +95,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -622,7 +624,8 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
                                             ? MIS_OWNERDRAW
                                             : 0),
                                         (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
-                                        (cmnQueryNLSStrings())->pszFldrEmpty,
+                                        cmnGetString(ID_XSSI_FLDREMPTY),
+                                            // (cmnQueryNLSStrings())->pszFldrEmpty,
                                         MIS_TEXT,
                                         MIA_DISABLED))
      {
@@ -903,11 +906,11 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     {
         // yes: add a message saying so
         CHAR    szMsgItem[300];
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuSeparator(hwndMenu, MIT_END,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
         sprintf(szMsgItem,
-                pNLSStrings->pszDropped1, // "... %d objects dropped,",
+                cmnGetString(ID_XSSI_DROPPED1),  // "... %d objects dropped,", // pszDropped1
                 ulObjectsLeftOut);
 
         winhInsertMenuItem(hwndMenu,
@@ -919,7 +922,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
-                           pNLSStrings->pszDropped2, // "open folder to see them",
+                           cmnGetString(ID_XSSI_DROPPED2),  // "open folder to see them", // pszDropped2
                            MIS_TEXT,
                            MIA_DISABLED);
     }

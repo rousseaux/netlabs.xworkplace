@@ -36,6 +36,8 @@
 #define XWPWinAni_Class_Source
 #define M_XWPWinAni_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h

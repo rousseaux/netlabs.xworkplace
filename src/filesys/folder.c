@@ -27,6 +27,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -114,9 +116,188 @@
 
 /* ******************************************************************
  *
- *   Query setup strings
+ *   Setup strings
  *
  ********************************************************************/
+
+/*
+ *@@ fdrSetup:
+ *      implementation for XFolder::wpSetup.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL fdrSetup(WPFolder *somSelf,
+              const char *pszSetupString)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+
+    BOOL        rc = TRUE,
+                fChanged = FALSE;       // instance data changed
+    CHAR        szValue[CCHMAXPATH + 1];
+    ULONG       cbValue;
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "SNAPTOGRID", szValue, &cbValue))
+    {
+        rc = TRUE;
+        fChanged = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _bSnapToGridInstance = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _bSnapToGridInstance = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            _bSnapToGridInstance = 2;
+        else if (strnicmp(szValue, "EXEC", 4) == 0)
+        {
+            fdrSnapToGrid(somSelf, FALSE);
+            fChanged = FALSE;
+        }
+        else
+        {
+            fChanged = FALSE;
+            rc = FALSE;
+        }
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "FULLPATH", szValue, &cbValue))
+    {
+        fChanged = TRUE;
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _bFullPathInstance = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _bFullPathInstance = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            _bFullPathInstance = 2;
+
+        fdrUpdateAllFrameWndTitles(somSelf);
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "ACCELERATORS", szValue, &cbValue))
+    {
+        fChanged = TRUE;
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _bFolderHotkeysInstance = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _bFolderHotkeysInstance = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            _bFolderHotkeysInstance = 2;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "FAVORITEFOLDER", szValue, &cbValue))
+    {
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _xwpMakeFavoriteFolder(somSelf, FALSE);
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _xwpMakeFavoriteFolder(somSelf, TRUE);
+        // fChanged = TRUE;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "QUICKOPEN", szValue, &cbValue))
+    {
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _xwpSetQuickOpen(somSelf, FALSE);
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _xwpSetQuickOpen(somSelf, TRUE);
+        else if (strnicmp(szValue, "IMMEDIATE", 3) == 0)  // V0.9.6 (2000-10-16) [umoeller]
+            fdrQuickOpen(somSelf,
+                         NULL);     // no callback
+    }
+
+    if (somSelf != cmnQueryActiveDesktop())
+    {
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                               "STATUSBAR", szValue, &cbValue))
+        {
+            rc = TRUE;
+            if (strnicmp(szValue, "NO", 2) == 0)
+                _bStatusBarInstance = STATUSBAR_OFF;
+            else if (strnicmp(szValue, "YES", 3) == 0)
+                _bStatusBarInstance = STATUSBAR_ON;
+            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+                _bStatusBarInstance = STATUSBAR_DEFAULT;
+        }
+        xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
+                          (MPARAM)1,  // show/hide flag
+                          MPNULL);
+        fChanged = TRUE;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "ALWAYSSORT", szValue, &cbValue))
+    {
+        USHORT      usDefaultSort, usAlwaysSort;
+
+        rc = TRUE;
+        _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
+
+        if (strnicmp(szValue, "NO", 2) == 0)
+            usAlwaysSort = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            usAlwaysSort = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            usAlwaysSort = SET_DEFAULT;
+        _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
+        // fChanged = TRUE;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "DEFAULTSORT", szValue, &cbValue))
+    {
+        USHORT      usDefaultSort = 0,
+                    usAlwaysSort = 0;
+        LONG lValue;
+
+        rc = TRUE;
+        _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
+
+        sscanf(szValue, "%d", &lValue);
+        if ( (lValue >=0) && (lValue <= SV_LAST) )
+            usDefaultSort = lValue;
+        else
+            usDefaultSort = SET_DEFAULT;
+        _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
+        // fChanged = TRUE;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "SORTNOW", szValue, &cbValue))
+    {
+        USHORT usSort;
+        LONG lValue;
+
+        sscanf(szValue, "%d", &lValue);
+        if ( (lValue >=0) && (lValue <= SV_LAST) )
+            usSort = lValue;
+        else
+            usSort = SET_DEFAULT;
+
+        fdrForEachOpenInstanceView(somSelf,
+                                   usSort,
+                                   fdrSortAllViews);
+    }
+
+    if (fChanged)
+        _wpSaveDeferred(somSelf);
+
+    return (rc);
+}
 
 /*
  *@@ fdrQuerySetup:
@@ -617,6 +798,62 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     } END_CATCH();
 
     return (ulReturn);
+}
+
+/* ******************************************************************
+ *
+ *   Object Scripts
+ *
+ ********************************************************************/
+
+/*
+ *@@ fdrCreateObjectScript:
+ *      creates an object package.
+ *
+ *      pllObjects is expected to contain plain WPObject*
+ *      pointers of all objects to put into the package.
+ *
+ *      pcszRexxFile must be the fully qualified path name
+ *      of the REXX .CMD file to be created.
+ *
+ *      flCreate can be any combination of:
+ *
+ *      --  SCRFL_RECURSE: recurse into subfolders.
+ *
+ *      --  SCRFL_REPLACE: if pcszRexxFile exists, it is
+ *          replaced. Otherwise it is appended to.
+ *
+ *          No matter if this flag is set, the script file
+ *          is always created if it doesn't exist.
+ *
+ *      This returns an OS/2 error code.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+APIRET fdrCreateObjectScript(PLINKLIST pllObjects,       // in: object list
+                             const char *pcszRexxFile,   // in: file name of output REXX file
+                             WPFolder *pFolderForFiles,  // in: if != NULL, icons etc. are put here
+                             ULONG flCreate)             // in: flags
+{
+    APIRET arc = NO_ERROR;
+
+    if (!pllObjects || !pcszRexxFile)
+        arc = ERROR_INVALID_PARAMETER;
+    else
+    {
+        FILE *RexxFile = fopen(pcszRexxFile,
+                               "w");            // replace @@@
+
+        if (!RexxFile)
+            arc = ERROR_CANNOT_MAKE;
+        else
+        {
+
+        }
+    }
+
+    return (NO_ERROR);
 }
 
 /* ******************************************************************
@@ -1450,7 +1687,8 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
             else if (psli2->hwndStatusBar
                         = WinCreateWindow(psli2->hwndFrame,        // parent
                                           WC_STATIC,              // wnd class
-                                          (cmnQueryNLSStrings())->pszPopulating, // title
+                                          cmnGetString(ID_XSSI_POPULATING),
+                                            // (cmnQueryNLSStrings())->pszPopulating, // title
                                           (SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
                                               | DT_ERASERECT
                                               | WS_VISIBLE | WS_CLIPSIBLINGS),

@@ -36,6 +36,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -621,7 +623,7 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
        )
     {
         CHAR        szDescription[100];
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         BOOL        fIsFolder = _somIsA(somSelf, _WPFolder),
                     fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
 
@@ -633,7 +635,7 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
             // delete
             winhAppend2MenuItemText(hwndMenu,
                                     WPMENUID_DELETE,
-                                    pNLSStrings->pszDelete,
+                                    cmnGetString(ID_XSSI_KEY_DELETE),  // pszDelete
                                     TRUE);
 
             // open settings
@@ -699,6 +701,19 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
     } // end if (pGlobalSettings->fShowHotkeysInMenus)
 }
 
+typedef struct _SUBCLHOTKEYEF
+{
+    PFNWP       pfnwpOrig;
+
+    HWND        hwndSet,
+                hwndClear;
+
+    USHORT      usFlags;        // in: as in WM_CHAR
+    USHORT      usKeyCode;      // in: if KC_VIRTUAL is set, this has usKeyCode;
+                                //     otherwise usCharCode
+
+} SUBCLHOTKEYEF, *PSUBCLHOTKEYEF;
+
 /*
  *@@ fnwpFolderHotkeyEntryField:
  *      this is the window proc for the subclassed entry
@@ -710,13 +725,16 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
  *      page.
  *
  *@@changed V0.9.0 [umoeller]: renamed from fnwpHotkeyEntryField
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: added "set" support
  */
 
 MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     // get original wnd proc; this was stored in the
     // window words in xfwps.c
-    PFNWP       OldEditProc = (PFNWP)WinQueryWindowULong(hwndEdit, QWL_USER);
+    PSUBCLHOTKEYEF pshef = (PSUBCLHOTKEYEF)WinQueryWindowPtr(hwndEdit, QWL_USER);
+
+    PFNWP OldEditProc = pshef->pfnwpOrig;
 
     MRESULT mrc = (MPARAM)FALSE; // WM_CHAR not-processed flag
 
@@ -730,70 +748,81 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
             USHORT usch       = SHORT1FROMMP(mp2);
             USHORT usvk       = SHORT2FROMMP(mp2);
 
-            if (    ((usFlags & KC_KEYUP) == 0)
-                &&  (     ((usFlags & KC_VIRTUALKEY) != 0)
-                       || ((usFlags & KC_CTRL) != 0)
-                       || ((usFlags & KC_ALT) != 0)
-                       || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                           && (     (usch == 0xEC00)
-                                ||  (usch == 0xED00)
-                                ||  (usch == 0xEE00)
-                              )
-                          )
-                    )
-               )
+            if ((usFlags & KC_KEYUP) == 0)
             {
-                PXFLDHOTKEY pHotkeyFound = NULL;
-
-                usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
-                if (usFlags & KC_VIRTUALKEY)
-                    usKeyCode = usvk;
-                else
-                    usKeyCode = usch;
-
-                pHotkeyFound = FindHotkeyFromLBSel(WinQueryWindow(hwndEdit, QW_PARENT),
-                                             &usCommand);
-
-                if (pHotkeyFound == NULL)
+                if (    (    (usFlags & KC_VIRTUALKEY)
+                          && (    (usvk == VK_TAB)
+                               || (usvk == VK_BACKTAB)
+                             )
+                        )
+                     || (    ((usFlags & (KC_CTRL | KC_SHIFT | KC_ALT)) == KC_ALT)
+                          && (   (WinSendMsg(pshef->hwndSet,
+                                             WM_MATCHMNEMONIC,
+                                             (MPARAM)usch,
+                                             0))
+                              || (WinSendMsg(pshef->hwndClear,
+                                             WM_MATCHMNEMONIC,
+                                             (MPARAM)usch,
+                                             0))
+                             )
+                        )
+                   )
                 {
-                    // no hotkey defined yet: append a new one
-                    pHotkeyFound = fdrQueryFldrHotkeys();
-
-                    // go to the end of the list
-                    while (pHotkeyFound->usCommand)
-                        pHotkeyFound++;
-
-                    pHotkeyFound->usCommand = usCommand;
-                    // set a new list terminator
-                    (*(pHotkeyFound+1)).usCommand = 0;
-
+                    // pass those to owner
+                    WinPostMsg(WinQueryWindow(hwndEdit, QW_OWNER),
+                               msg,
+                               mp1,
+                               mp2);
                 }
-
-                if ((ULONG)pHotkeyFound != -1)
+                /*
+                else if (     ((usFlags & KC_VIRTUALKEY) != 0)
+                           || ((usFlags & KC_CTRL) != 0)
+                           || ((usFlags & KC_ALT) != 0)
+                           || (   ((usFlags & KC_VIRTUALKEY) == 0)
+                               && (     (usch == 0xEC00)
+                                    ||  (usch == 0xED00)
+                                    ||  (usch == 0xEE00)
+                                  )
+                              )
+                        )
+                */
+                else
                 {
-                    // no error: set hotkey data
-                    CHAR szKeyName[200];
-                    pHotkeyFound->usFlags      = usFlags;
-                    pHotkeyFound->usKeyCode    = usKeyCode;
+                    usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
+                    if (usFlags & KC_VIRTUALKEY)
+                        usKeyCode = usvk;
+                    else
+                        usKeyCode = usch;
 
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX", usFlags, usKeyCode));
-                    #endif
+                    if (cmnIsValidHotkey(usFlags,
+                                         usKeyCode))
+                    {
+                        // looks like a valid hotkey:
+                        CHAR    szKeyName[100];
 
-                    // show description
-                    cmnDescribeKey(szKeyName, usFlags, usKeyCode);
-                    WinSetWindowText(hwndEdit, szKeyName);
-                    WinEnableControl(WinQueryWindow(hwndEdit, QW_PARENT),
-                                     ID_XSDI_CLEARACCEL,
-                                     TRUE);
+                        pshef->usFlags = usFlags;
+                        pshef->usKeyCode = usKeyCode;
 
-                    // save hotkeys to INIs
-                    fdrStoreFldrHotkeys();
+                        cmnDescribeKey(szKeyName, usFlags, usKeyCode);
+                        WinSetWindowText(hwndEdit, szKeyName);
 
-                    mrc = (MPARAM)TRUE; // WM_CHAR processed flag;
+                        WinEnableWindow(pshef->hwndSet, TRUE);
+                    }
+                    else
+                        WinEnableWindow(pshef->hwndSet, FALSE);
+
+                    WinEnableWindow(pshef->hwndClear, TRUE);
                 }
             }
+
+            mrc = (MPARAM)TRUE;     // processed
+
         break; }
+
+        case WM_DESTROY:
+            free(pshef);
+            mrc = OldEditProc(hwndEdit, msg, mp1, mp2);
+        break;
 
         default:
             mrc = OldEditProc(hwndEdit, msg, mp1, mp2);
@@ -825,7 +854,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         HAB     hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
         HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
-        PFNWP   OldEditProc;
+        PSUBCLHOTKEYEF pshef;
 
         if (pcnbp->pUser == NULL)
         {
@@ -858,8 +887,16 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             }
         }
 
-        OldEditProc = WinSubclassWindow(hwndEditField, fnwpFolderHotkeyEntryField);
-        WinSetWindowULong(hwndEditField, QWL_USER, (ULONG)OldEditProc);
+        pshef = (PSUBCLHOTKEYEF)malloc(sizeof(SUBCLHOTKEYEF));
+        if (pshef)
+        {
+            memset(pshef, 0, sizeof(*pshef));
+            WinSetWindowPtr(hwndEditField, QWL_USER, pshef);
+            pshef->pfnwpOrig = WinSubclassWindow(hwndEditField, fnwpFolderHotkeyEntryField);
+
+            pshef->hwndSet = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL);
+            pshef->hwndClear = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL);
+        }
     }
 
     if (flFlags & CBI_SET)
@@ -902,6 +939,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: added "Set" button
  */
 
 MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -945,10 +983,12 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // not found: set to "not defined"
                     strcpy(szKeyName,
-                        (cmnQueryNLSStrings())->pszNotDefined);
+                           cmnGetString(ID_XSSI_NOTDEFINED));
 
                     WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 }
+
+                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
 
                 // set edit field to description text
                 WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
@@ -959,9 +999,62 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
         break;
 
-        // we need not handle the entry field, because the
-        // subclassed window procedure for that is smart
-        // enough to update the hotkeys data itself
+        // we need not handle the entry field, because we
+        // have subclassed the window procedure
+
+        /*
+         * ID_XSDI_SETACCEL:
+         *      "set" button. Copy flags from entry field.
+         *
+         *      The "Set" button is only enabled if the
+         *      entry field has considered the hotkey good.
+         */
+
+        case ID_XSDI_SETACCEL:
+        {
+            HWND hwndEdit = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
+            PXFLDHOTKEY pHotkeyFound = NULL;
+            USHORT usCommand;
+            pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndDlgPage,
+                                               &usCommand);
+
+            if (pHotkeyFound == NULL)
+            {
+                // no hotkey defined yet: append a new one
+                pHotkeyFound = fdrQueryFldrHotkeys();
+
+                // go to the end of the list
+                while (pHotkeyFound->usCommand)
+                    pHotkeyFound++;
+
+                pHotkeyFound->usCommand = usCommand;
+                // set a new list terminator
+                (*(pHotkeyFound + 1)).usCommand = 0;
+            }
+
+            if ((ULONG)pHotkeyFound != -1)
+            {
+                // no error: set hotkey data
+                CHAR szKeyName[200];
+                PSUBCLHOTKEYEF pshef = (PSUBCLHOTKEYEF)WinQueryWindowPtr(hwndEdit, QWL_USER);
+
+                pHotkeyFound->usFlags      = pshef->usFlags;
+                pHotkeyFound->usKeyCode    = pshef->usKeyCode;
+
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX", usFlags, usKeyCode));
+                #endif
+
+                // show description
+                cmnDescribeKey(szKeyName, pshef->usFlags, pshef->usKeyCode);
+                WinSetWindowText(hwndEdit, szKeyName);
+                WinEnableWindow(pshef->hwndSet, FALSE);
+                WinEnableWindow(pshef->hwndClear, TRUE);
+
+                // save hotkeys to INIs
+                fdrStoreFldrHotkeys();
+            }
+        break; }
 
         case ID_XSDI_CLEARACCEL:
         {
@@ -986,7 +1079,8 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
 
                 WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
-                            (cmnQueryNLSStrings())->pszNotDefined);
+                                  cmnGetString(ID_XSSI_NOTDEFINED));
+                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
                 WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 fdrStoreFldrHotkeys();
             }

@@ -28,6 +28,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -586,7 +588,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
     PSZ             pszConfigSys = NULL;
     PDRIVERRECORD   preccRoot = 0;
                     // precc = 0;
-    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     // set wait pointer; this is handled by notebook.c
@@ -607,7 +609,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
                       NULL,  // parent
                       (PRECORDCORE)preccRoot,
                       TRUE, // invalidate
-                      pNLSStrings->pszDriverCategories,
+                      cmnGetString(ID_XSSI_DRIVERCATEGORIES),  // pszDriverCategories
                       CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
                       1);
 
@@ -843,7 +845,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     XSTRING strText2MLE;
                     BOOL fEnable = FALSE,
                          fAcceptsParams = FALSE;
-                    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
                     xstrInit(&strText2MLE, 200);
 
@@ -869,13 +871,13 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             {
                                 // driver description
                                 xstrcat(&strText2MLE,
-                                        pNLSStrings->pszDriverVersion, 0);
+                                        cmnGetString(ID_XSSI_DRIVERVERSION),  0); // pszDriverVersion
                                 xstrcat(&strText2MLE,
                                          precc->szVersion, 0);
 
                                 xstrcatc(&strText2MLE, '\n');
                                 xstrcat(&strText2MLE,
-                                        pNLSStrings->pszDriverVendor, 0);
+                                        cmnGetString(ID_XSSI_DRIVERVENDOR),  0); // pszDriverVendor
                                 xstrcat(&strText2MLE,
                                          precc->szVendor, 0);
                                 xstrcatc(&strText2MLE, 'n');

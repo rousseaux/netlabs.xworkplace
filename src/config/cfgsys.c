@@ -37,6 +37,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -1209,7 +1211,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             ULONG   ulSelCount = 0;
             ULONG   ulLastSel = LIT_FIRST;
             CHAR    szTemp[300];
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
             do {
                 // find out how many items are selected
@@ -1225,7 +1227,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 ulSelCount++;
             } while (TRUE);
 
-            sprintf(szTemp, pNLSStrings->pszItemsSelected, ulSelCount);
+            sprintf(szTemp, cmnGetString(ID_XSSI_ITEMSSELECTED),  ulSelCount); // pszItemsSelected
             WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_PATHINFOTXT, szTemp);
 
             switch (ulSelCount)
@@ -2564,33 +2566,33 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
         int             i = 0;
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszSyslevelPage);
+                          cmnGetString(ID_XSSI_SYSLEVELPAGE)) ; // pszSyslevelPage
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszComponent);
-        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelComponent;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_SYSL_COMPONENT);  // pszSyslevelComponent
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszFile);
-        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelFile;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_SYSL_FILE);  // pszSyslevelFile
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszVersion);
-        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelVersion;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_SYSL_VERSION);  // pszSyslevelVersion
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDCurrent);
-        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelLevel;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_SYSL_LEVEL);  // pszSyslevelLevel
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDPrevious);
-        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelPrevious;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_SYSL_PREVIOUS);  // pszSyslevelPrevious
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 

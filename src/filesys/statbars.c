@@ -59,6 +59,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -153,15 +155,18 @@ SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 PSZ stbVar1000Double(PSZ pszTarget,
                      double space,
-                     PNLSSTRINGS pNLSStrings,
                      CHAR cThousands)
 {
     if (space < 1000.0)
-        sprintf(pszTarget, "%.0f%s", space,
-                (ULONG)space == 1 ? pNLSStrings->pszByte : pNLSStrings->pszBytes);
+        sprintf(pszTarget,
+                "%.0f%s",
+                space,
+                cmnGetString( ((ULONG)space == 1)
+                                 ? ID_XSSI_BYTE
+                                 : ID_XSSI_BYTES));  // pszBytes
     else
         if (space < 10000.0)
-            strhVariableDouble(pszTarget, space, pNLSStrings->pszBytes, cThousands);
+            strhVariableDouble(pszTarget, space, cmnGetString(ID_XSSI_BYTES),  cThousands); // pszBytes
         else
         {
             space /= 1000;
@@ -188,15 +193,18 @@ PSZ stbVar1000Double(PSZ pszTarget,
 
 PSZ stbVar1024Double(PSZ pszTarget,
                      double space,
-                     PNLSSTRINGS pNLSStrings,
                      CHAR cThousands)
 {
     if (space < 1000.0)
-        sprintf(pszTarget, "%.0f%s", space,
-                (ULONG) space == 1 ? pNLSStrings->pszByte : pNLSStrings->pszBytes);
+        sprintf(pszTarget,
+                "%.0f%s",
+                space,
+                cmnGetString(   (ULONG)(space == 1)
+                                  ? ID_XSSI_BYTE
+                                  : ID_XSSI_BYTES));  // pszBytes
     else
         if (space < 10240.0)
-            strhVariableDouble(pszTarget, space, pNLSStrings->pszBytes, cThousands);
+            strhVariableDouble(pszTarget, space, cmnGetString(ID_XSSI_BYTES),  cThousands); // pszBytes
         else
         {
             space /= 1024;
@@ -545,7 +553,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
     PSZ         p;
 
     PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     /*
      * WPUrl:
@@ -754,7 +762,6 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             else
                 stbVar1000Double(szTemp,
                                  dbl,
-                                 pNLSStrings,
                                  pcs->cThousands);
             xstrFindReplaceC(pstrText, &ulOfs, "\tfa", szTemp);
             ulrc++;
@@ -777,7 +784,6 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             else
                 stbVar1024Double(szTemp,
                                  dbl,
-                                 pNLSStrings,
                                  pcs->cThousands);
             xstrFindReplaceC(pstrText, &ulOfs, "\tfA", szTemp);
             ulrc++;
@@ -912,7 +918,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
-            stbVar1000Double(szTemp, ulEASize, pNLSStrings, pcs->cThousands);
+            stbVar1000Double(szTemp, ulEASize, pcs->cThousands);
             xstrFindReplaceC(pstrText, &ulOfs, "\tEa", szTemp);
             ulrc++;
         }
@@ -921,7 +927,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
-            stbVar1024Double(szTemp, ulEASize, pNLSStrings, pcs->cThousands);
+            stbVar1024Double(szTemp, ulEASize, pcs->cThousands);
             xstrFindReplaceC(pstrText, &ulOfs, "\tEA", szTemp);
             ulrc++;
         }
@@ -1150,7 +1156,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     PSZ         p;
     CHAR        *p2;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PRECORDCORE pRecCore;
 
     // get thousands separator from "Country" object
@@ -1376,7 +1382,6 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         ULONG ulOfs = 0;
         stbVar1000Double(szTemp,
                          wpshQueryDiskFreeFromFolder(somSelf),
-                         pNLSStrings,
                          cThousands);
         xstrFindReplaceC(&strText, &ulOfs, "\tfa", szTemp);
     }
@@ -1386,7 +1391,6 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         ULONG ulOfs = 0;
         stbVar1024Double(szTemp,
                          wpshQueryDiskFreeFromFolder(somSelf),
-                         pNLSStrings,
                          cThousands);
         xstrFindReplaceC(&strText, &ulOfs, "\tfA", szTemp);
     }
@@ -1432,14 +1436,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     if (p = strstr(strText.psz, "\tsa"))
     {
         ULONG ulOfs = 0;
-        stbVar1000Double(szTemp, (double) ulSizeSelected, pNLSStrings, cThousands);
+        stbVar1000Double(szTemp, (double) ulSizeSelected, cThousands);
         xstrFindReplaceC(&strText, &ulOfs, "\tsa", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tsA"))
     {
         ULONG ulOfs = 0;
-        stbVar1024Double(szTemp, (double) ulSizeSelected, pNLSStrings, cThousands);
+        stbVar1024Double(szTemp, (double) ulSizeSelected, cThousands);
         xstrFindReplaceC(&strText, &ulOfs, "\tsA", szTemp);
     }
     // end V0.9.6
@@ -1484,14 +1488,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     if (p = strstr(strText.psz, "\tSa"))
     {
         ULONG ulOfs = 0;
-        stbVar1000Double(szTemp, (double) ulSizeTotal, pNLSStrings, cThousands);
+        stbVar1000Double(szTemp, (double) ulSizeTotal, cThousands);
         xstrFindReplaceC(&strText, &ulOfs, "\tSa", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tSA"))
     {
         ULONG ulOfs = 0;
-        stbVar1024Double(szTemp, (double) ulSizeTotal, pNLSStrings, cThousands);
+        stbVar1024Double(szTemp, (double) ulSizeTotal, cThousands);
         xstrFindReplaceC(&strText, &ulOfs, "\tSA", szTemp);
     }
     // end V0.9.6
@@ -1531,7 +1535,7 @@ somId                   somidClassSelected;
 typedef struct _STATUSBARSELECTCLASS
 {
     HWND            hwndOKButton;
-    PNLSSTRINGS     pNLSStrings;
+    // PNLSSTRINGS     pNLSStrings;
 } STATUSBARSELECTCLASS, *PSTATUSBARSELECTCLASS;
 
 /*
@@ -1641,13 +1645,15 @@ MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
     if (pwps->pRecord->flRecordAttr & CRA_INUSE)
     {
-        sprintf(szInfo, "%s\n%s",
-                        (psbsc->pNLSStrings)->pszSBClassMnemonics,
-                        stbQueryClassMnemonics(pwps->pClassObject));
+        sprintf(szInfo,
+                "%s\n%s",
+                cmnGetString(ID_XSSI_SB_CLASSMNEMONICS),
+                stbQueryClassMnemonics(pwps->pClassObject));
         mrc = (MPARAM)TRUE;
-    } else
+    }
+    else
         strcpy(szInfo,
-               psbsc->pNLSStrings->pszSBClassNotSupported);
+               cmnGetString(ID_XSSI_SB_CLASSNOTSUPPORTED));  // pszSBClassNotSupported
 
     WinSetWindowText((HWND)mphwndInfo, szInfo);
 
@@ -2076,7 +2082,6 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             scd.pfnwpClassSelected = fncbWPSStatusBarClassSelected;
             // the folllowing data will be passed to the callbacks
             // so the callback can display NLS messages
-            sbsc.pNLSStrings = cmnQueryNLSStrings();
             scd.ulUserClassSelected = (ULONG)&sbsc;
 
             scd.pszHelpLibrary = cmnQueryHelpLibrary();

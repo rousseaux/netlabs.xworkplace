@@ -38,6 +38,7 @@ Changes for V0.9.9
     -- ID_FND_SAMPLETEXT added.
     -- ID_SCD_PAGEMAGE_GENERAL changed.
     -- ID_XSD_STARTUPFOLDER changed.
+    -- ID_XSD_SET4ACCELS changed.
 
 
 Changes for V0.9.7

@@ -30,6 +30,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -1244,10 +1246,10 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                 {
                     // frame and client successfully created:
                     XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
-                    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+                    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
                     CHAR            szIniKey[100];
-                    PSZ             pszViewTitle = strdup(pNLSStrings->pszCDPlayerView),
+                    PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_CDPLAYERVIEW)) , // pszCDPlayerView
                                     p = NULL;
 
                     // subclass frame

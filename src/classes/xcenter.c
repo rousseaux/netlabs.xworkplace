@@ -44,6 +44,8 @@
 #define XCenter_Class_Source
 #define M_XCenter_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -139,7 +141,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
                                                  HWND hwndNotebook)
 {
     PCREATENOTEBOOKPAGE pcnbp;
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_xwpAddXCenterPages");
@@ -151,7 +153,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszWidgetsPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_WIDGETSPAGE);  // pszWidgetsPage
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_WIDGETS;
     pcnbp->ulPageID = SP_XCENTER_WIDGETS;
@@ -168,7 +170,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszClassesPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_CLASSESPAGE);  // pszClassesPage
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_CLASSES;
     pcnbp->ulPageID = SP_XCENTER_CLASSES;
@@ -186,7 +188,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszStylePage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_STYLEPAGE);  // pszStylePage
     pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW2;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW2;
     pcnbp->ulPageID = SP_XCENTER_VIEW2;
@@ -202,7 +204,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszViewPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_VIEWPAGE);  // pszViewPage
     pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW1;
     pcnbp->ulPageID = SP_XCENTER_VIEW1;

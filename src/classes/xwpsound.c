@@ -64,6 +64,8 @@
 #define XWPSound_Class_Source
 #define M_XWPSound_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -123,7 +125,7 @@ SOM_Scope ULONG  SOMLINK xsnd_xwpAddXWPSoundPages(XWPSound *somSelf,
                                                   HWND hwndNotebook)
 {
     PCREATENOTEBOOKPAGE pcnbp;
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPSoundData *somThis = XWPSoundGetData(somSelf); */
     XWPSoundMethodDebug("XWPSound","xsnd_xfAddXWPSoundPages");
@@ -135,7 +137,7 @@ SOM_Scope ULONG  SOMLINK xsnd_xwpAddXWPSoundPages(XWPSound *somSelf,
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszSoundsPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_SOUNDSPAGE);  // pszSoundsPage
     pcnbp->ulDlgID = ID_XSD_XWPSOUND;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES + 2;
     pcnbp->ulPageID = SP_SOUNDS;

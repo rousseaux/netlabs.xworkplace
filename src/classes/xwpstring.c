@@ -58,6 +58,8 @@
 #define XWPString_Class_Source
 #define M_XWPString_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -521,7 +523,7 @@ SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
                                                     HWND hwndNotebook)
 {
     PCREATENOTEBOOKPAGE pcnbp;
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPStringData *somThis = XWPStringGetData(somSelf); */
     XWPStringMethodDebug("XWPString","xwstr_xwpAddXWPStringPages");
@@ -533,7 +535,7 @@ SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszXWPStringPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_XWPSTRING_PAGE);  // pszXWPStringPage
     pcnbp->ulDlgID = ID_XSD_XWPSTRING_PAGE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING_PAGE;
     pcnbp->ulPageID = SP_XWPSTRING;
@@ -929,10 +931,10 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
                 // mi.hwndSubMenu now contains "Open" submenu handle,
                 // which we add items to now
                 PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                                   pNLSStrings->pszXWPStringOpenMenu,
+                                   cmnGetString(ID_XSSI_XWPSTRING_OPENMENU),  // pszXWPStringOpenMenu
                                    MIS_TEXT, 0);
             }
         }

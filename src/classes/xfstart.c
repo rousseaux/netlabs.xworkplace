@@ -57,6 +57,8 @@
 #define XFldStartup_Class_Source
 #define M_XFldStartup_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -139,7 +141,7 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
                                                       HWND hwndDlg)
 {
     PCREATENOTEBOOKPAGE pcnbp;
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_xwpAddXFldStartupPage");
@@ -150,7 +152,7 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszStartupPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_STARTUPPAGE);  // pszStartupPage
     pcnbp->ulDlgID = ID_XSD_STARTUPFOLDER;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XFLDSTARTUP;
     pcnbp->ulPageID = SP_STARTUPFOLDER;
@@ -364,7 +366,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
 {
     BOOL rc;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpModifyPopupMenu");
 
@@ -379,7 +381,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
     winhInsertMenuItem(hwndMenu,
             MIT_END,
             (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PROCESSCONTENT),
-            pNLSStrings->pszProcessContent,
+            cmnGetString(ID_XSSI_PROCESSCONTENT),  // pszProcessContent
             MIS_TEXT, 0);
 
     return (rc);

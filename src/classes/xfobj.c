@@ -53,6 +53,8 @@
 #define XFldObject_Class_Source
 #define M_XFldObject_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -201,7 +203,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
     pi.usPageStyleFlags    = BKA_STATUSTEXTON | BKA_MAJOR;   // major tab;
     pi.usPageInsertFlags   = BKA_FIRST;
     pi.usSettingsFlags     = 0; // don't enumerate in status line
-    pi.pszName             = cmnQueryNLSStrings()->pszInternals;
+    pi.pszName             = cmnGetString(ID_XSSI_INTERNALS);
 
     pi.pszHelpLibraryName  = (PSZ)pszHelpLibrary;
     pi.idDefaultHelpPanel  = ID_XSH_SETTINGS_OBJINTERNALS;
@@ -1125,7 +1127,8 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
  *@@ wpSaveImmediate:
  *      this WPObject method allocates some memory and then
  *      invokes the object's wpSaveState so that the object's
- *      instance data will be saved synchronously.
+ *      instance data will be saved synchronously. The
+ *      WPObject implementation calls wpSaveState eventually.
  *
  *      This can get called in three situations:
  *
@@ -1133,7 +1136,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
  *          _now_, e.g. because some critical data has changed.
  *
  *      --  Deferred as a result of WPObject::wpSaveDeferred,
- *          if the object has aged enough.
+ *          if the object has aged enough. This method will
+ *          then run on the WPS-internal ager thread (see
+ *          XFldObject::wpSaveDeferred).
  *
  *      --  Automatically during WPObject::wpMakeDormant if
  *          the object has a deferred save pending.
@@ -1147,7 +1152,8 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
  *      them call the WPObject parent... except WPAbstract,
  *      apparently, which only sometimes calls the parent
  *      for some reason. Never mind, we still know that the
- *      object has been touched, so we have it on the list.
+ *      object has been touched, so we have it on the list
+ *      for XShutdown. Saving twice won't hurt.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */

@@ -63,6 +63,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -73,7 +75,7 @@
  *  6)  dlgids.h, headers in shared\ (as needed)
  *  7)  headers in implementation dirs (e.g. filesys\, as needed)
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
-ew */
+ */
 
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS

@@ -31,6 +31,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -4662,7 +4664,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
         {
             // mi.hwndSubMenu now contains "Open" submenu handle,
             // which we add items to now
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
                                "XCenter",
@@ -4673,7 +4675,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
         {
             // context menu for open XCenter client:
             HWND            hwndWidgetsSubmenu = NULLHANDLE;
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PLISTNODE       pClassNode;
             ULONG           ulIndex = 0;
 
@@ -4685,7 +4687,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
             hwndWidgetsSubmenu =  winhInsertSubmenu(hwndMenu,
                                                     MIT_END,
                                                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR),
-                                                    pNLSStrings->pszAddWidget, // "~Add widget",
+                                                    cmnGetString(ID_XSSI_ADDWIDGET),  // "~Add widget", // pszAddWidget
                                                     MIS_TEXT,
                                                     0, NULL, 0, 0);
 

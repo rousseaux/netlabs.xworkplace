@@ -54,6 +54,8 @@
 #define xfwps_Class_Source
 #define M_xfwps_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -118,7 +120,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     // PSZ pszHelpLibrary = cmnQueryHelpLibrary();
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddXFldWPSPages");
@@ -133,7 +135,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszSort;
+        pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
         // mark this page as "global", because both
         // the instance settings notebook and the
@@ -155,7 +157,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XSD_SET4ACCELS;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->psz4Accelerators;
+        pcnbp->pszName = cmnGetString(ID_XSSI_4ACCELERATORS);  // psz4Accelerators
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1+5;
         pcnbp->ulPageID = SP_4ACCELERATORS;
         pcnbp->pfncbInitPage    = fdrHotkeysInitPage;
@@ -172,7 +174,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->psz3SnapToGrid;
+        pcnbp->pszName = cmnGetString(ID_XSSI_3SNAPTOGRID);  // psz3SnapToGrid
         pcnbp->ulDlgID = ID_XSD_SET3SNAPTOGRID;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1+4;
         pcnbp->ulPageID = SP_3SNAPTOGRID;
@@ -197,7 +199,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MINOR;
         pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = pNLSStrings->psz27StatusBar;
+        pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
         pcnbp->ulDlgID = ID_XSD_SET28STATUSBARS2;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SB2;
         pcnbp->ulPageID = SP_28STATUSBAR2;
@@ -213,7 +215,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = pNLSStrings->psz27StatusBar;
+        pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
         pcnbp->ulDlgID = ID_XSD_SET27STATUSBARS;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1+3;
         pcnbp->ulPageID = SP_27STATUSBAR;
@@ -229,7 +231,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = pNLSStrings->psz27StatusBar;
+        pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR); psz27StatusBar
         pcnbp->ulDlgID = ID_XSD_SET27STATUSBARS;
         ntbInsertPage(pcnbp); */
     }
@@ -245,7 +247,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszViewPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_VIEWPAGE);  // pszViewPage
     pcnbp->ulDlgID = ID_XSD_FOLDERVIEWS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
     pcnbp->ulPageID = SP_1GENERIC;
@@ -264,7 +266,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MINOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->psz2RemoveItems;
+    pcnbp->pszName = cmnGetString(ID_XSSI_2REMOVEITEMS);  // psz2RemoveItems
     pcnbp->ulDlgID = ID_XSD_SET2REMOVEMENUS;
     pcnbp->usFirstControlID = ID_XSDI_FIND;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
@@ -282,7 +284,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MINOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->psz26ConfigFolderMenus;
+    pcnbp->pszName = cmnGetString(ID_XSSI_26CONFIGITEMS);  // psz26ConfigFolderMenus
     pcnbp->ulDlgID = ID_XSD_SET26CONFIGMENUS;
     pcnbp->usFirstControlID = ID_XSDI_CASCADE;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
@@ -300,7 +302,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->psz25AddItems;
+    pcnbp->pszName = cmnGetString(ID_XSSI_25ADDITEMS);  // psz25AddItems
     pcnbp->ulDlgID = ID_XSD_SET25ADDMENUS;
     pcnbp->usFirstControlID = ID_XSDI_FILEATTRIBS;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
@@ -322,7 +324,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFileTypesPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
         pcnbp->ulDlgID = ID_XSD_FILETYPES;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES;
         pcnbp->ulPageID = SP_FILETYPES;

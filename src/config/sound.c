@@ -33,6 +33,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -336,9 +338,9 @@ VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
         // with the CBID_EDIT ID).
         HWND hwndDropDownEntryField = WinWindowFromID(pspd->hwndSchemesDropDown,
                                                       CBID_EDIT); // pmwin.h
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-        WinSetWindowText(hwndDropDownEntryField, pNLSStrings->pszSoundSchemeNone);
+        WinSetWindowText(hwndDropDownEntryField, cmnGetString(ID_XSSI_SOUNDSCHEMENONE)) ; // pszSoundSchemeNone
                     // "<none>");
 
         // delete current scheme in OS2.INI

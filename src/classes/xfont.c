@@ -36,6 +36,8 @@
 #define XWPFontFolder_Class_Source
 #define M_XWPFontFolder_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -103,7 +105,7 @@ SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
                                              HWND hwndDlg)
 {
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpAddFontsPage");
@@ -116,7 +118,7 @@ SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
     pcnbp->ulDlgID = ID_FND_SAMPLETEXT;
     pcnbp->ulPageID = SP_FONT_SAMPLETEXT;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszFontSampleView;
+    pcnbp->pszName = cmnGetString(ID_XSSI_FONTSAMPLEVIEW);  // pszFontSampleView
     pcnbp->ulDefaultHelpPanel  = ID_XSH_FONTFOLDER_TEXT;
     pcnbp->pfncbInitPage    = fonSampleTextInitPage;
     pcnbp->pfncbItemChanged = fonSampleTextItemChanged;
@@ -516,12 +518,12 @@ SOM_Scope void  SOMLINK fonM_wpclsUnInitData(M_XWPFontFolder *somSelf)
 
 SOM_Scope PSZ  SOMLINK fonM_wpclsQueryTitle(M_XWPFontFolder *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPFontFolderData *somThis = M_XWPFontFolderGetData(somSelf); */
     M_XWPFontFolderMethodDebug("M_XWPFontFolder","fonM_wpclsQueryTitle");
 
     // return (M_XWPFontFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
-    return (pNLSStrings->pszFontFolder);
+    return (cmnGetString(ID_XSSI_FONTFOLDER)) ; // pszFontFolder
 }
 
 /*

@@ -44,6 +44,8 @@
 #define XMMVolume_Class_Source
 #define M_XMMVolume_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -253,10 +255,10 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
             // mi.hwndSubMenu now contains "Open" submenu handle,
             // which we add items to now
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                               pNLSStrings->pszVolumeView,
+                               cmnGetString(ID_XSSI_VOLUMEVIEW),  // pszVolumeView
                                MIS_TEXT, 0);
         }
     }
@@ -488,11 +490,11 @@ SOM_Scope ULONG  SOMLINK volM_wpclsQueryStyle(M_XMMVolume *somSelf)
 
 SOM_Scope PSZ  SOMLINK volM_wpclsQueryTitle(M_XMMVolume *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
     M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryTitle");
 
-    return (pNLSStrings->pszVolume);
+    return (cmnGetString(ID_XSSI_VOLUME)) ; // pszVolume
 }
 
 /*

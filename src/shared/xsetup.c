@@ -26,6 +26,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -424,7 +426,6 @@ static USHORT G_usClassesToolIDs[] =
         ID_XCDI_XWPCLS_XWPMEDIA,
 
         // new items with V0.9.7
-        ID_XCDI_XWPCLS_XWPMEDIA,
         ID_XCDI_XWPCLS_XCENTER,
 
         DID_OK,
@@ -1365,6 +1366,20 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
  ********************************************************************/
 
 /*
+ *@@ XWPFEATURESDATA:
+ *      window data structure for XWPSetup "Features" page.
+ *
+ *@@added V0.9.9 (2001-04-05) [pr]
+ */
+
+typedef struct _XWPFEATURESDATA
+{
+    GLOBALSETTINGS      GlobalSettings;
+    BOOL                bObjectHotkeys;
+    BOOL                bReplaceRefresh;
+} XWPFEATURESDATA, *PXWPFEATURESDATA;
+
+/*
  *@@ setFeaturesInitPage:
  *      notebook callback function (notebook.c) for the
  *      XWPSetup "Features" page.
@@ -1373,6 +1388,7 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: added global hotkeys flag
  *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
+ *@@changed V0.9.9 (2001-04-05) [pr]: fix undo
  */
 
 VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1395,12 +1411,15 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         if (pcnbp->pUser == NULL)
         {
+            PXWPFEATURESDATA pFeaturesData;
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pcnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
+            memcpy(&pFeaturesData->GlobalSettings, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pFeaturesData->bObjectHotkeys = hifObjectHotkeysEnabled();
+            pFeaturesData->bReplaceRefresh = krnReplaceRefreshEnabled();
         }
 
         if (!ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
@@ -1633,39 +1652,40 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.7 (2001-01-22) [umoeller]: now enabling "object" page with hotkeys automatically
  *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  *@@changed V0.9.9 (2001-03-27) [umoeller]: adjusted for notebook.c change with CHECKBOXRECORDCORE notifications
+ *@@changed V0.9.9 (2001-04-05) [pr]: fixed very broken Undo, Default, Setup Classes
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
+    // lock global settings to get write access;
+    // WARNING: do not show any dialogs when reacting to
+    // controls BEFORE these are not unlocked!!!
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+
+    BOOL fSave = TRUE;
+
+    // flags for delayed dialog showing (after unlocking)
+    BOOL fShowHookInstalled = FALSE,
+         fShowHookDeinstalled = FALSE,
+         fShowClassesSetup = FALSE,
+         fShowWarnXShutdown = FALSE,
+         fUpdateMouseMovementPage = FALSE,
+         fShowRefreshEnabled = FALSE,
+         fShowRefreshDisabled = FALSE,
+         fShowExtAssocsWarning = FALSE;
+    signed char cAskSoundsInstallMsg = -1,  // 1 = installed, 0 = deinstalled
+                cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
+
+    ULONG ulUpdateFlags = 0;
+            // if set to != 0, this will run the INIT callback with
+            // the specified CBI_* flags
+
     if (    (ulItemID == ID_XCDI_CONTAINER)
          && (usNotifyCode == CN_RECORDCHECKED)
        )
     {
-        // lock global settings to get write access;
-        // WARNING: do not show any dialogs when reacting to
-        // controls BEFORE these are not unlocked!!!
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-
-        BOOL fSave = TRUE;
-
-        // flags for delayed dialog showing (after unlocking)
-        BOOL fShowHookInstalled = FALSE,
-             fShowHookDeinstalled = FALSE,
-             fShowClassesSetup = FALSE,
-             fShowWarnXShutdown = FALSE,
-             fUpdateMouseMovementPage = FALSE,
-             fShowRefreshEnabled = FALSE,
-             fShowRefreshDisabled = FALSE,
-             fShowExtAssocsWarning = FALSE;
-        signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
-                    cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
-
-        ULONG ulUpdateFlags = 0;
-                // if set to != 0, this will run the INIT callback with
-                // the specified CBI_* flags
-
         PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)ulExtra;
 
         switch (precc->ulItemID)
@@ -1711,7 +1731,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // yes: set msg for "ask for sound install"
                     // at the bottom when the global semaphores
                     // are unlocked
-                    cAskSoundsInstallMsg = (precc->usCheckState);
+                    cAskSoundsInstallMsg = precc->usCheckState;
             break;
 
             case ID_XCSI_ANIMOUSE:
@@ -1749,6 +1769,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XCSI_GLOBALHOTKEYS:
                 hifEnableObjectHotkeys(precc->usCheckState);
+/*                 if (precc->usCheckState)
+                    pGlobalSettings->AddObjectPage = TRUE; @@@ paul, this doesn't work */
                 pGlobalSettings->AddObjectPage = precc->usCheckState;
                                 // V0.9.7 (2001-01-22) [umoeller]
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
@@ -1827,148 +1849,170 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     fShowRefreshDisabled = TRUE;
             break;
 
-            /*
-             * ID_XCDI_SETUP:
-             *      "Classes" button
-             */
-
-            case ID_XCDI_SETUP:
-                fShowClassesSetup = TRUE;
-                fSave = FALSE;
-            break;
-
-            case DID_UNDO:
-            {
-                // "Undo" button: get pointer to backed-up Global Settings
-                PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
-
-                // and restore the settings for this page
-                pGlobalSettings->fReplaceIcons = pGSBackup->fReplaceIcons;
-                pGlobalSettings->fResizeSettingsPages = pGSBackup->fResizeSettingsPages;
-                pGlobalSettings->AddObjectPage = pGSBackup->AddObjectPage;
-                pGlobalSettings->fReplaceFilePage = pGSBackup->fReplaceFilePage;
-                pGlobalSettings->fXSystemSounds = pGSBackup->fXSystemSounds;
-
-                pGlobalSettings->fEnableStatusBars = pGSBackup->fEnableStatusBars;
-                pGlobalSettings->fEnableSnap2Grid = pGSBackup->fEnableSnap2Grid;
-                pGlobalSettings->fEnableFolderHotkeys = pGSBackup->fEnableFolderHotkeys;
-                pGlobalSettings->ExtFolderSort = pGSBackup->ExtFolderSort;
-                // pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
-
-                pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
-                pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
-                // global hotkeys... @@todo V0.9.4 (2000-06-05) [umoeller]
-                // pagemage... @@todo V0.9.4 (2000-06-05) [umoeller]
-
-                pGlobalSettings->fReplaceArchiving = pGSBackup->fReplaceArchiving;
-                pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
-                pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
-
-                pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
-                pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
-    #ifdef __REPLHANDLES__
-                pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
-    #endif
-                pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
-                pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
-                // trash can @@todo V0.9.4 (2000-06-05) [umoeller]
-                pGlobalSettings->fReplaceTrueDelete = pGSBackup->fReplaceTrueDelete;
-
-                // update the display by calling the INIT callback
-                ulUpdateFlags = CBI_SET | CBI_ENABLE;
-            break; }
-
-            case DID_DEFAULT:
-            {
-                // set the default settings for this settings page
-                // (this is in common.c because it's also used at
-                // WPS startup)
-                cmnSetDefaultSettings(pcnbp->ulPageID);
-                // update the display by calling the INIT callback
-                ulUpdateFlags = CBI_SET | CBI_ENABLE;
-            break; }
-
-            default:
+            default:            // includes "Classes" button
                 fSave = FALSE;
         }
-
-        // now unlock the global settings for the following
-        // stuff; otherwise we block other threads
-        cmnUnlockGlobalSettings();
-
-        if (fSave)
-            // settings need to be saved:
-            cmnStoreGlobalSettings();
-
-        if (fShowClassesSetup)
-        {
-            // "classes" dialog to be shown (classes button):
-            HWND hwndClassesDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                             pcnbp->hwndFrame,  // owner
-                                             fnwpXWorkplaceClasses,
-                                             cmnQueryNLSModuleHandle(FALSE),
-                                             ID_XCD_XWPINSTALLEDCLASSES,
-                                             NULL);
-            winhCenterWindow(hwndClassesDlg);
-            WinProcessDlg(hwndClassesDlg);
-            WinDestroyWindow(hwndClassesDlg);
-        }
-        else if (fShowHookInstalled)
-            // "hook installed" msg
-            cmnMessageBoxMsg(pcnbp->hwndFrame,
-                             148, 157, MB_OK);
-        else if (fShowHookDeinstalled)
-            // "hook deinstalled" msg
-            cmnMessageBoxMsg(pcnbp->hwndFrame,
-                             148, 158, MB_OK);
-        else if (fShowWarnXShutdown)
-            cmnMessageBoxMsg(pcnbp->hwndFrame,
-                             148,       // "XWorkplace Setup"
-                             190,
-                             MB_OK);
-        else if (cAskSoundsInstallMsg != -1)
-        {
-            if (cmnMessageBoxMsg(pcnbp->hwndFrame,
-                                 148,       // "XWorkplace Setup"
-                                 (cAskSoundsInstallMsg)
-                                    ? 166   // "install?"
-                                    : 167,  // "de-install?"
-                                 MB_YESNO)
-                    == MBID_YES)
-            {
-                sndInstallAddtlSounds(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
-                                      precc->usCheckState);
-            }
-        }
-        else if (cEnableTrashCan != -1)
-        {
-            cmnEnableTrashCan(pcnbp->hwndFrame,
-                               precc->usCheckState);
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        }
-        else if (fShowRefreshEnabled)
-            // "enabled, warning, unstable" msg
-            cmnMessageBoxMsg(pcnbp->hwndFrame,
-                             148, 212, MB_OK);
-        else if (fShowRefreshDisabled)
-            // "must restart wps" msg
-            cmnMessageBoxMsg(pcnbp->hwndFrame,
-                             148, 207, MB_OK);
-        else if (fShowExtAssocsWarning)
-            // "warning: assocs gone" msg
-            cmnMessageBoxMsg(pcnbp->hwndFrame,
-                             148, 208, MB_OK);
-
-        if (ulUpdateFlags)
-            pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);
-
-        if (fUpdateMouseMovementPage)
-            // update "Mouse movement" page
-            ntbUpdateVisiblePage(NULL,
-                                 SP_MOUSE_MOVEMENT);
-
     } // end if (ulItemID == ID_XCDI_CONTAINER)
 
+    switch(ulItemID)
+    {
+        /*
+         * ID_XCDI_SETUP:
+         *      "Classes" button
+         */
+
+        case ID_XCDI_SETUP:
+            fShowClassesSetup = TRUE;
+            fSave = FALSE;
+        break;
+
+        case DID_UNDO:
+        {
+            // "Undo" button: get pointer to backed-up Global Settings
+            PXWPFEATURESDATA pFeaturesData = (PXWPFEATURESDATA) pcnbp->pUser;
+            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS) &pFeaturesData->GlobalSettings;
+
+            // and restore the settings for this page
+            pGlobalSettings->fReplaceIcons = pGSBackup->fReplaceIcons;
+            pGlobalSettings->fResizeSettingsPages = pGSBackup->fResizeSettingsPages;
+            pGlobalSettings->AddObjectPage = pGSBackup->AddObjectPage;
+            pGlobalSettings->fReplaceFilePage = pGSBackup->fReplaceFilePage;
+            pGlobalSettings->fXSystemSounds = pGSBackup->fXSystemSounds;
+
+            pGlobalSettings->fEnableStatusBars = pGSBackup->fEnableStatusBars;
+            pGlobalSettings->fEnableSnap2Grid = pGSBackup->fEnableSnap2Grid;
+            pGlobalSettings->fEnableFolderHotkeys = pGSBackup->fEnableFolderHotkeys;
+            pGlobalSettings->ExtFolderSort = pGSBackup->ExtFolderSort;
+            // pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
+
+            pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
+
+            if (hifEnableHook(pGSBackup->fEnableXWPHook) == pGSBackup->fEnableXWPHook)
+                pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
+
+            hifEnableObjectHotkeys(pFeaturesData->bObjectHotkeys);
+            if (pFeaturesData->bObjectHotkeys)
+                pGlobalSettings->AddObjectPage = TRUE;
+
+            if (hifEnablePageMage(pGSBackup->fEnablePageMage) == pGSBackup->fEnablePageMage)
+            {
+                pGlobalSettings->fEnablePageMage = pGSBackup->fEnablePageMage;
+                // update "Mouse movement" page
+                fUpdateMouseMovementPage = TRUE;
+            }
+
+            pGlobalSettings->fReplaceArchiving = pGSBackup->fReplaceArchiving;
+            pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
+            pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
+
+            pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
+            pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
+    #ifdef __REPLHANDLES__
+            pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
+    #endif
+            pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
+            pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
+            cEnableTrashCan = pGSBackup->fTrashDelete;
+            pGlobalSettings->fReplaceTrueDelete = pGSBackup->fReplaceTrueDelete;
+            krnEnableReplaceRefresh(pFeaturesData->bReplaceRefresh);
+            // update the display by calling the INIT callback
+            ulUpdateFlags = CBI_SET | CBI_ENABLE;
+        break; }
+
+        case DID_DEFAULT:
+        {
+            // set the default settings for this settings page
+            // (this is in common.c because it's also used at WPS startup)
+            cmnSetDefaultSettings(pcnbp->ulPageID);
+            hifEnableHook(pGlobalSettings->fEnableXWPHook);
+            hifEnableObjectHotkeys(0);
+            if (hifEnablePageMage(pGlobalSettings->fEnablePageMage) == pGlobalSettings->fEnablePageMage)
+            {
+                // update "Mouse movement" page
+                fUpdateMouseMovementPage = TRUE;
+            }
+
+            cEnableTrashCan = pGlobalSettings->fTrashDelete;
+            krnEnableReplaceRefresh(0);
+            // update the display by calling the INIT callback
+            ulUpdateFlags = CBI_SET | CBI_ENABLE;
+        break; }
+    }
+
+    // now unlock the global settings for the following
+    // stuff; otherwise we block other threads
+    cmnUnlockGlobalSettings();
+
+    if (fSave)
+        // settings need to be saved:
+        cmnStoreGlobalSettings();
+
+    if (fShowClassesSetup)
+    {
+        // "classes" dialog to be shown (classes button):
+        HWND hwndClassesDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+                                         pcnbp->hwndFrame,  // owner
+                                         fnwpXWorkplaceClasses,
+                                         cmnQueryNLSModuleHandle(FALSE),
+                                         ID_XCD_XWPINSTALLEDCLASSES,
+                                         NULL);
+        winhCenterWindow(hwndClassesDlg);
+        WinProcessDlg(hwndClassesDlg);
+        WinDestroyWindow(hwndClassesDlg);
+    }
+    else if (fShowHookInstalled)
+        // "hook installed" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 157, MB_OK);
+    else if (fShowHookDeinstalled)
+        // "hook deinstalled" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 158, MB_OK);
+    else if (fShowWarnXShutdown)
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148,       // "XWorkplace Setup"
+                         190,
+                         MB_OK);
+    else if (cAskSoundsInstallMsg != -1)
+    {
+        if (cmnMessageBoxMsg(pcnbp->hwndFrame,
+                             148,       // "XWorkplace Setup"
+                             (cAskSoundsInstallMsg)
+                                ? 166   // "install?"
+                                : 167,  // "de-install?"
+                             MB_YESNO)
+                == MBID_YES)
+        {
+            sndInstallAddtlSounds(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                                  cAskSoundsInstallMsg);
+        }
+    }
+    else if (cEnableTrashCan != -1)
+    {
+        cmnEnableTrashCan(pcnbp->hwndFrame,
+                          cEnableTrashCan);
+        ulUpdateFlags = CBI_SET | CBI_ENABLE;
+    }
+    else if (fShowRefreshEnabled)
+        // "enabled, warning, unstable" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 212, MB_OK);
+    else if (fShowRefreshDisabled)
+        // "must restart wps" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 207, MB_OK);
+    else if (fShowExtAssocsWarning)
+        // "warning: assocs gone" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 208, MB_OK);
+
+    if (ulUpdateFlags)
+        pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);
+
+    if (fUpdateMouseMovementPage)
+        // update "Mouse movement" page
+        ntbUpdateVisiblePage(NULL,
+                             SP_MOUSE_MOVEMENT);
     return (0);
 }
 
@@ -2151,24 +2195,24 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(THREADRECORD, pszThreadName);
-        xfi[i].pszColumnTitle = pNLSStrings->pszThreadsThread; // "Thread";
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_THREADSTHREAD);  // "Thread"; // pszThreadsThread
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(THREADRECORD, pszTID);
-        xfi[i].pszColumnTitle = pNLSStrings->pszThreadsTID; // "TID";
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_THREADSTID);  // "TID"; // pszThreadsTID
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(THREADRECORD, pszPriority);
-        xfi[i].pszColumnTitle = pNLSStrings->pszThreadsPriority; // "Priority";
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_THREADSPRIORITY);  // "Priority"; // pszThreadsPriority
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -2187,7 +2231,7 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszThreadsGroupTitle); // "XWorkplace threads")
+                          cmnGetString(ID_XSSI_THREADSGROUPTITLE)) ; // "XWorkplace threads") // pszThreadsGroupTitle
     }
 
     if (flFlags & (CBI_SET | CBI_SHOW))

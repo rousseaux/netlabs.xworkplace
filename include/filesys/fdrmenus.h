@@ -70,8 +70,7 @@
 
     VOID mnuModifySortMenu(WPFolder *somSelf,
                            HWND hwndMenu,
-                           PCGLOBALSETTINGS pGlobalSettings,
-                           PNLSSTRINGS pNLSStrings);
+                           PCGLOBALSETTINGS pGlobalSettings);
 
     BOOL mnuInsertFldrViewItems(WPFolder *somSelf,
                                 HWND hwndViewSubmenu,

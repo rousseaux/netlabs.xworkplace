@@ -30,6 +30,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -76,6 +78,7 @@
 #include "xmmvolume.ih"
 
 // XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 
 #include "media\media.h"                // XWorkplace multimedia support
@@ -196,9 +199,9 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                                                                  fnwpSubclVolumeFrame);
                 if (pWinData->pfnwpFrameOriginal)
                 {
-                    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+                    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
-                    PSZ             pszViewTitle = strdup(pNLSStrings->pszVolumeView),
+                    PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_VOLUMEVIEW)),
                                     p = NULL;
 
                     // now position the frame and the client:

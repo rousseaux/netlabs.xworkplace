@@ -934,8 +934,6 @@ BEGIN
                         34, 44, 112, 12
         PUSHBUTTON      "Recreate Configuration Folder...",
                         ID_XCD_OBJECTS_CONFIGFOLDER, 16, 30, 146, 12
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
         PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
     END
 END
@@ -1082,8 +1080,8 @@ BEGIN
             FS_DLGBORDER | FS_BORDER | FS_SCREENALIGN | WS_VISIBLE,
             FCF_TITLEBAR
     BEGIN
-        LTEXT           "Creating objects, please wait...", -1,
-                        25, 0, 215, 15, DT_VCENTER | DT_WORDBREAK
+        LTEXT           "Creating objects, please wait...", -1, 25, 0, 215,
+                        15, DT_VCENTER | DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ICON            ID_ICONDLG, -1, 0, 0, 20, 16, WS_GROUP
     END
@@ -2391,33 +2389,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_SET4ACCELS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET4ACCELS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Folder hotkeys", -1, 5, 25, 175, 135, DT_MNEMONIC |
-                        NOT WS_GROUP
-        AUTOCHECKBOX    "~Enable", ID_XSDI_ACCELERATORS, 10, 144, 118, 8
-        AUTOCHECKBOX    "~Show hotkeys in menus", ID_XSDI_SHOWINMENUS, 10,
-                        136, 118, 8
-        LTEXT           "Configurable ~menu items", -1, 10, 124, 140, 8,
-                        DT_MNEMONIC | NOT WS_GROUP
-        LISTBOX         ID_XSDI_LISTBOX, 10, 46, 165, 78, LS_OWNERDRAW |
-                        LS_NOADJUSTPOS | LS_HORZSCROLL
-        LTEXT           "~Hotkey:", ID_XSDI_DESCRIPTION_TX1, 10, 32, 35, 8,
-                        DT_MNEMONIC | NOT WS_GROUP | WS_DISABLED
-        ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 52, 32, 66, 8, ES_MARGIN |
-                        WS_DISABLED
-        PUSHBUTTON      "~Clear", ID_XSDI_CLEARACCEL, 125, 30, 50, 12,
-                        WS_DISABLED
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP |
-                        BS_NOPOINTERFOCUS
-    END
-END
-
 DLGTEMPLATE ID_XSD_SETTINGS_FLDR1 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SETTINGS_FLDR1, 0, 0, 224, 180, NOT FS_DLGBORDER |
@@ -2933,5 +2904,34 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_SET4ACCELS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_SET4ACCELS, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Folder hotkeys", -1, 5, 25, 175, 135, DT_MNEMONIC |
+                        NOT WS_GROUP
+        AUTOCHECKBOX    "~Enable", ID_XSDI_ACCELERATORS, 10, 144, 118, 8
+        AUTOCHECKBOX    "Sho~w hotkeys in menus", ID_XSDI_SHOWINMENUS, 10,
+                        136, 118, 8
+        LTEXT           "Configurable ~menu items", -1, 10, 124, 140, 8,
+                        DT_MNEMONIC | NOT WS_GROUP
+        LISTBOX         ID_XSDI_LISTBOX, 10, 46, 165, 78, LS_OWNERDRAW |
+                        LS_NOADJUSTPOS | LS_HORZSCROLL
+        LTEXT           "H~otkey:", ID_XSDI_DESCRIPTION_TX1, 10, 30, 26, 12,
+                        DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP |
+                        WS_DISABLED
+        ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 42, 32, 66, 8, ES_MARGIN |
+                        WS_DISABLED
+        PUSHBUTTON      "~Set", ID_XSDI_SETACCEL, 114, 30, 30, 12, WS_DISABLED
+        PUSHBUTTON      "~Clear", ID_XSDI_CLEARACCEL, 146, 30, 30, 12,
+                        WS_DISABLED
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP |
+                        BS_NOPOINTERFOCUS
     END
 END

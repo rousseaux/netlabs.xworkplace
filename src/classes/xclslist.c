@@ -116,6 +116,8 @@
 #define XWPClassList_Class_Source
 #define M_XWPClassList_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -185,14 +187,14 @@ SOM_Scope ULONG  SOMLINK xwlist_xwpAddXWPClassListPages(XWPClassList *somSelf,
 {
     CHAR    szTitle[200];
     PCREATENOTEBOOKPAGE pcnbp;
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PSZ     p;
 
     /* XWPClassListData *somThis = XWPClassListGetData(somSelf); */
     XWPClassListMethodDebug("XWPClassList","xwlist_xwpAddXWPClassListPages");
 
     // remove accelerator char
-    strcpy(szTitle, pNLSStrings->pszOpenClassList);
+    strcpy(szTitle, cmnGetString(ID_XFSI_OPENCLASSLIST)) ; // pszOpenClassList
     p = strchr(szTitle, '~');
     if (p)
         strcpy(p, p+1);
@@ -553,11 +555,11 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryStyle(M_XWPClassList *somSelf)
 
 SOM_Scope PSZ  SOMLINK xwlistM_wpclsQueryTitle(M_XWPClassList *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPClassListData *somThis = M_XWPClassListGetData(somSelf); */
     M_XWPClassListMethodDebug("M_XWPClassList","xwlistM_wpclsQueryTitle");
 
-    return (pNLSStrings->pszXWPClassList);
+    return (cmnGetString(ID_XFSI_XWPCLASSLIST)) ; // pszXWPClassList
 }
 
 /*

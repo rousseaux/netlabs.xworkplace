@@ -63,6 +63,8 @@
 #define XFldDataFile_Class_Source
 #define M_XFldDataFile_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -691,7 +693,7 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
 
     if (pGlobalSettings->fExtAssocs)
     {
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -703,7 +705,7 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
         pcnbp->pampControlFlags = G_pampDatafileTypesPage;
         pcnbp->cControlFlags = G_cDatafileTypesPage;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFileTypesPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
         pcnbp->ulDefaultHelpPanel  = ID_XSH_DATAFILE_TYPES;
         pcnbp->pfncbInitPage    = ftypDatafileTypesInitPage;
         pcnbp->pfncbItemChanged = ftypDatafileTypesItemChanged;

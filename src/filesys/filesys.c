@@ -29,6 +29,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -907,7 +909,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
 {
     // page 2
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
@@ -915,7 +917,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
     pcnbp->ulPageID = SP_FILE2;
-    pcnbp->pszName = pNLSStrings->pszFilePage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
     pcnbp->fEnumerate = TRUE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
 
@@ -933,7 +935,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
     pcnbp->ulPageID = SP_FILE1;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszFilePage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
     pcnbp->fEnumerate = TRUE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
 
@@ -1234,15 +1236,15 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         XFIELDINFO xfi[2];
         PFIELDINFO pfi = NULL;
         int        i = 0;
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszModule1Page);
+                          cmnGetString(ID_XSSI_PGMFILE_MODULE1)) ; // pszModule1Page
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(IMPORTEDMODULERECORD, pcszModuleName);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnModuleName;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_MODULENAME);  // pszColmnModuleName
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -1375,7 +1377,7 @@ void _Optlink fntInsertFunctions(PTHREADINFO pti)
 
                     PEXPORTEDFUNCTIONRECORD preccFirst
                         = (PEXPORTEDFUNCTIONRECORD)cnrhAllocRecords(hwndCnr,
-                                                                    sizeof(IMPORTEDMODULERECORD),
+                                                                    sizeof(EXPORTEDFUNCTIONRECORD),
                                                                     cFunctions);
                                 // the container gives us a linked list of
                                 // records here, whose head we store in preccFirst
@@ -1453,25 +1455,25 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         XFIELDINFO xfi[4];
         PFIELDINFO pfi = NULL;
         int        i = 0;
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszModule2Page);
+                          cmnGetString(ID_XSSI_PGMFILE_MODULE2)) ; // pszModule2Page
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, ulFunctionOrdinal);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportOrdinal;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_EXPORTORDINAL);  // pszColmnExportOrdinal
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pcszFunctionType);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportType;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_EXPORTTYPE);  // pszColmnExportType
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pcszFunctionName);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportName;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_EXPORTNAME);  // pszColmnExportName
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -1772,37 +1774,37 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         XFIELDINFO xfi[6];
         PFIELDINFO pfi = NULL;
         int        i = 0;
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszResourcesPage);
+                          cmnGetString(ID_XSSI_PGMFILE_RESOURCES)) ; // pszResourcesPage
 
         // set up cnr details view
 /* !!! not yet implemented [lafaix]
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszDeviceType);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceIcon;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCEICON); // pszColmnResourceIcon
         xfi[i].ulDataType = CFA_BITMAPORICON;
         xfi[i++].ulOrientation = CFA_LEFT;
 */
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceID);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceID;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCEID);  // pszColmnResourceID
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pcszResourceType);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceType;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCETYPE);  // pszColmnResourceType
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceSize);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceSize;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCESIZE);  // pszColmnResourceSize
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pcszResourceFlag);
-        xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceFlags;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCEFLAGS);  // pszColmnResourceFlags
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 

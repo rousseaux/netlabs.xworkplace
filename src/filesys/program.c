@@ -33,6 +33,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -501,9 +503,9 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
                               NULL);            // pCreateParams
     if (hwndDlg)
     {
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         HWND hwndEntryField = WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD);
-        WinSetWindowText(hwndDlg, pNLSStrings->pszParameters);
+        WinSetWindowText(hwndDlg, cmnGetString(ID_XSSI_PARAMETERS)) ; // pszParameters
         WinSetDlgItemText(hwndDlg,
                           ID_XSDI_FT_TITLE,
                           pstrPrompt->psz);

@@ -43,6 +43,8 @@
 #define XWPAdmin_Class_Source
 #define M_XWPAdmin_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -252,11 +254,11 @@ SOM_Scope ULONG  SOMLINK admM_wpclsQueryStyle(M_XWPAdmin *somSelf)
 
 SOM_Scope PSZ  SOMLINK admM_wpclsQueryTitle(M_XWPAdmin *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryTitle");
 
-    return (pNLSStrings->pszAdministrator);
+    return (cmnGetString(ID_XSSI_ADMINISTRATOR)) ; // pszAdministrator
 }
 
 /*

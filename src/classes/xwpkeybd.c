@@ -47,6 +47,8 @@
 #define XWPKeyboard_Class_Source
 #define M_XWPKeyboard_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -100,7 +102,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
@@ -117,7 +119,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszObjectHotkeysPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_OBJECTHOTKEYSPAGE);  // pszObjectHotkeysPage
         pcnbp->ulDefaultHelpPanel  = ID_XSH_KEYB_OBJHOTKEYS;
         pcnbp->ulPageID = SP_KEYB_OBJHOTKEYS;
         pcnbp->pampControlFlags = G_pampGenericCnrPage;
@@ -145,7 +147,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
@@ -161,7 +163,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFunctionKeysPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_FUNCTIONKEYSPAGE);  // pszFunctionKeysPage
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FUNCTIONKEYS;
         pcnbp->ulPageID = SP_KEYB_FUNCTIONKEYS;
         pcnbp->pampControlFlags = G_pampGenericCnrPage;

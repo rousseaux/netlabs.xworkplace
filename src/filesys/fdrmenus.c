@@ -77,6 +77,8 @@
  *
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -235,12 +237,13 @@ VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,  // in: cmnQueryG
  *      "Sort" menu, but the one of the parent menu, i.e.
  *      the context menu itself or the "View" menu in
  *      menu bars.
+ *
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: removed NLSSTRINGS ptr
  */
 
 VOID mnuModifySortMenu(WPFolder *somSelf,
                        HWND hwndMenu,               // parent of "Sort" menu
-                       PCGLOBALSETTINGS pGlobalSettings,    // cmnQueryGlobalSettings
-                       PNLSSTRINGS pNLSStrings)     // cmnQueryNLSStrings
+                       PCGLOBALSETTINGS pGlobalSettings)    // cmnQueryGlobalSettings
 {
     XFolderData *somThis = XFolderGetData(somSelf);
 
@@ -264,15 +267,15 @@ VOID mnuModifySortMenu(WPFolder *somSelf,
                 // insert the new XFolder sort criteria
                 winhInsertMenuItem(hwndSortMenu, 2, // after "type"
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS),
-                                   pNLSStrings->pszSortByClass,
+                                   cmnGetString(ID_XSSI_SV_CLASS), // pszSortByClass */
                                    MIS_TEXT, 0);
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT),
-                                   pNLSStrings->pszSortByExt,
+                                   cmnGetString(ID_XSSI_SV_EXT), // pszSortByExt */
                                    MIS_TEXT, 0);
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST),
-                                   pNLSStrings->pszSortFoldersFirst,
+                                   cmnGetString(ID_XSSI_SV_FOLDERSFIRST), // pszSortFoldersFirst */
                                    MIS_TEXT, 0);
 
                 winhInsertMenuSeparator(hwndSortMenu, MIT_END,
@@ -281,7 +284,7 @@ VOID mnuModifySortMenu(WPFolder *somSelf,
                 // insert "Always sort"
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ALWAYSSORT),
-                                   pNLSStrings->pszAlwaysSort,
+                                   cmnGetString(ID_XSSI_SV_ALWAYSSORT), // pszAlwaysSort */
                                    MIS_TEXT,
                                    (ALWAYS_SORT)           // check item if "Always sort" is on
                                        ? (MIA_CHECKED)
@@ -344,7 +347,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     if (hwndCnr)
     {
         // we have a valid open view:
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
         ULONG       ulAttr = 0;
@@ -377,12 +380,12 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
                                                 MIT_END,
                                                 (pGlobalSettings->VarMenuOffset
                                                         + ID_XFM_OFS_WARP3FLDRVIEW),
-                                                pNLSStrings->pszWarp3FldrView,
+                                                cmnGetString(ID_XFSI_FLDRSETTINGS), // pszWarp3FldrView */
                                                     MIS_SUBMENU,
                                                 // item
                                                 (pGlobalSettings->VarMenuOffset
                                                         + ID_XFMI_OFS_SMALLICONS),
-                                                pNLSStrings->pszSmallIcons,
+                                                cmnGetString(ID_XFSI_SMALLICONS), // pszSmallIcons */
                                                 MIS_TEXT,
                                                 usIconsAttr);
         }
@@ -391,7 +394,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
                                MIT_END,
                                (pGlobalSettings->VarMenuOffset
                                     + ID_XFMI_OFS_SMALLICONS),
-                               pNLSStrings->pszSmallIcons,
+                               cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
                                MIS_TEXT,
                                usIconsAttr);
 
@@ -406,19 +409,19 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_NOGRID),
-                               pNLSStrings->pszNoGrid, MIS_TEXT,
+                               cmnGetString(ID_XFSI_NOGRID),  MIS_TEXT, // pszNoGrid
                                ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
                                     ? MIA_CHECKED
                                     : 0);
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FLOWED),
-                               pNLSStrings->pszFlowed, MIS_TEXT,
+                               cmnGetString(ID_XFSI_FLOWED),  MIS_TEXT, // pszFlowed
                                ((CnrInfo.flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME | CV_FLOW))
                                     ? MIA_CHECKED
                                     : 0);
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_NONFLOWED),
-                               pNLSStrings->pszNonFlowed, MIS_TEXT,
+                               cmnGetString(ID_XFSI_NONFLOWED),  MIS_TEXT, // pszNonFlowed
                                ((CnrInfo.flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME))
                                     ? MIA_CHECKED
                                     : 0);
@@ -437,7 +440,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         {
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_WARP4MENUBAR),
-                               pNLSStrings->pszWarp4MenuBar, MIS_TEXT,
+                               cmnGetString(ID_XFSI_WARP4MENUBAR),  MIS_TEXT, // pszWarp4MenuBar
                                (_xwpQueryMenuBarVisibility(somSelf))
                                    ? MIA_CHECKED
                                    : 0);
@@ -473,7 +476,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
             winhInsertMenuItem(hwndViewSubmenu,
                                MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SHOWSTATUSBAR),
-                               pNLSStrings->pszShowStatusBar,
+                               cmnGetString(ID_XFSI_SHOWSTATUSBAR),  // pszShowStatusBar
                                MIS_TEXT,
                                ulAttr);
         }
@@ -678,7 +681,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
                                                   pcli->szTitle,
                                                   MIS_TEXT,
                                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_BORED),
-                                                  (cmnQueryNLSStrings())->pszBored,
+                                                  cmnGetString(ID_XSSI_BORED), // (cmnQueryNLSStrings())->pszBored,
                                                   MIS_TEXT,
                                                   0);
                 cmnuAppendMi2List(pcli->pObject, OC_FOLDER);
@@ -929,7 +932,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
     BOOL                rc = TRUE;
     MENUITEM            mi;
 
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // set the global variable for whether Warp 4 is running
@@ -979,7 +982,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     // which we add items to now
                     winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                                       pNLSStrings->pszOpenPartitions,
+                                       cmnGetString(ID_XSSI_OPENPARTITIONS),  // pszOpenPartitions
                                        MIS_TEXT, 0);
                 }
             }
@@ -1002,7 +1005,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                         CHAR szDefDoc[2*CCHMAXPATH];
                         sprintf(szDefDoc,
                                 "%s \"%s\"",
-                                pNLSStrings->pszFdrDefaultDoc,
+                                cmnGetString(ID_XSSI_FDRDEFAULTDOC),  // pszFdrDefaultDoc
                                 _wpQueryTitle(pDefDoc));
                         // mi.hwndSubMenu now contains "Open" submenu handle;
                         winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
@@ -1044,31 +1047,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
              *
              */
 
-            // add product info item to the help menu, if the "Help"
-            // menu has not been removed
-            if ((pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0)
-            {
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("  Inserting 'Product info'"));
-                #endif
-                // get handle to the WPObject's "Help" submenu in the
-                // the folder's popup menu
-                if (WinSendMsg(hwndMenu,
-                               MM_QUERYITEM,
-                               MPFROM2SHORT(WPMENUID_HELP, TRUE),
-                               (MPARAM)&mi))
-                {
-                    // mi.hwndSubMenu now contains "Help" submenu handle,
-                    // which we add items to now
-                    winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END, (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-                    winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
-                                       pNLSStrings->pszProductInfo,
-                                       MIS_TEXT, 0);
-                }
-                // else: "Help" menu not found, but this can
-                // happen in Warp 4 folder menu bars
-            }
+            cmnAddProductInfoMenuItem(hwndMenu);
 
             // work on the "View" submenu; do the following only
             // if the "View" menu has not been removed (Warp 4)
@@ -1127,7 +1106,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                         winhInsertMenuItem(mi.hwndSubMenu,
                                            sPos,
                                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SELECTSOME),
-                                           pNLSStrings->pszSelectSome,
+                                           cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
                                            MIS_TEXT, 0);
                         if (G_fIsWarp4)
                             winhInsertMenuSeparator(mi.hwndSubMenu, sPos+1,
@@ -1177,8 +1156,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             // needed for folder menu _bars_
             mnuModifySortMenu(somSelf,
                               hwndMenu,
-                              pGlobalSettings,
-                              pNLSStrings);
+                              pGlobalSettings);
 
             if (pGlobalSettings->AddCopyFilenameItem)
             {
@@ -1189,7 +1167,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 winhInsertMenuItem(hwndMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset
                                             + ID_XFMI_OFS_COPYFILENAME_MENU),
-                                   (pNLSStrings)->pszCopyFilename,
+                                   cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
                                    0, 0);
             }
 
@@ -1205,7 +1183,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 if (pGlobalSettings->MoveRefreshNow)
                     winhInsertMenuItem(hwndMenu, MIT_END,
                             (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_REFRESH),
-                            pNLSStrings->pszRefreshNow,
+                            cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
                             MIS_TEXT, 0);
 
                 // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
@@ -1225,7 +1203,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                 // insert "Snap to grid" only for open icon views
                                 winhInsertMenuItem(hwndMenu, MIT_END,
                                         (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID),
-                                        pNLSStrings->pszSnapToGrid,
+                                        cmnGetString(ID_XSSI_SNAPTOGRID),  // pszSnapToGrid
                                         MIS_TEXT, 0);
                             }
                         }
@@ -1265,7 +1243,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     WinSendMsg(hwndMenu,
                                MM_REMOVEITEM,
                                MPFROM2SHORT(cmnuPrepareContentSubmenu(somSelf, hwndMenu,
-                                                                      pNLSStrings->pszFldrContent,
+                                                                      cmnGetString(ID_XSSI_FLDRCONTENT),  // pszFldrContent
                                                                       MIT_END,
                                                                       FALSE), // no owner draw
                                             FALSE),
@@ -1279,7 +1257,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     if (!_xwpIsFavoriteFolder(somSelf))
                         // somself is not in favorites list: add "Folder content"
                         cmnuPrepareContentSubmenu(somSelf, hwndMenu,
-                                pNLSStrings->pszFldrContent,
+                                cmnGetString(ID_XSSI_FLDRCONTENT),  // pszFldrContent
                                 MIT_END,
                                 FALSE); // no owner draw in main context menu
                 }
@@ -1349,7 +1327,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                                 ULONG iPosition)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     /* if (pGlobalSettings->fExtAssocs)
     {
@@ -1427,40 +1405,35 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
         // insert submenu
         hwndAttrSubmenu = winhInsertSubmenu(hwndMenu, MIT_END,
                     (pGlobalSettings->VarMenuOffset + ID_XFM_OFS_ATTRIBUTES),
-                            pNLSStrings->pszAttributes, 0,
+                            cmnGetString(ID_XFSI_ATTRIBUTES),  0, // pszAttributes
         // "archived" item, checked or not according to file-system attributes
                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_ARCHIVED),
-                            pNLSStrings->pszAttrArchive, MIS_TEXT,
+                            cmnGetString(ID_XFSI_ATTR_ARCHIVE),  MIS_TEXT, // pszAttrArchive
                                 ((ulAttr & FILE_ARCHIVED) ? MIA_CHECKED : 0));
         // "read-only" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu, MIT_END,
                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_READONLY),
-                            pNLSStrings->pszAttrReadOnly, MIS_TEXT,
+                            cmnGetString(ID_XFSI_ATTR_READONLY),  MIS_TEXT, // pszAttrReadOnly
                                 ((ulAttr & FILE_READONLY) ? MIA_CHECKED : 0));
         // "system" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu, MIT_END,
                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_SYSTEM),
-                            pNLSStrings->pszAttrSystem, MIS_TEXT,
+                            cmnGetString(ID_XFSI_ATTR_SYSTEM),  MIS_TEXT, // pszAttrSystem
                                 ((ulAttr & FILE_SYSTEM) ? MIA_CHECKED : 0));
         // "hidden" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu, MIT_END,
                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_HIDDEN),
-                            pNLSStrings->pszAttrHidden, MIS_TEXT,
+                            cmnGetString(ID_XFSI_ATTR_HIDDEN),  MIS_TEXT, // pszAttrHidden
                                 ((ulAttr & FILE_HIDDEN) ? MIA_CHECKED : 0));
     }
 
     // insert "Copy filename" for data files
     // (the XFolder class does this also)
     if (pGlobalSettings->AddCopyFilenameItem)
-    {
-        /* winhInsertMenuSeparator(hwndMenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR)); */
-
         winhInsertMenuItem(hwndMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_COPYFILENAME_MENU),
-                           (pNLSStrings)->pszCopyFilename,
+                           cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
                            0, 0);
-    }
 
     // insert "Default document" if enabled
     if (pGlobalSettings->fFdrDefaultDoc)
@@ -1472,7 +1445,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 
         winhInsertMenuItem(hwndMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC),
-                           (pNLSStrings)->pszDataFileDefaultDoc,
+                           cmnGetString(ID_XSSI_DATAFILEDEFAULTDOC), // (pNLSStrings)->pszDataFileDefaultDoc,
                            MIS_TEXT,
                            flAttr);
     }

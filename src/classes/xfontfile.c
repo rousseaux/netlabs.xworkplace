@@ -35,6 +35,8 @@
 #define XWPFontFile_Class_Source
 #define M_XWPFontFile_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -254,11 +256,11 @@ SOM_Scope BOOL  SOMLINK fonfM_wpclsCreateDefaultTemplates(M_XWPFontFile *somSelf
 
 SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryTitle(M_XWPFontFile *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryTitle");
 
-    return (pNLSStrings->pszFontFile);
+    return (cmnGetString(ID_XSSI_FONTFILE)) ; // pszFontFile
 }
 
 /*

@@ -28,6 +28,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -622,7 +624,7 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                      ULONG flFlags)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
                     ID_XSDI_SORTLISTBOX);
@@ -655,16 +657,16 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_INIT)
     {
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByName);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByType);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByClass);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByRealName);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortBySize);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByWriteDate);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByAccessDate);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByCreationDate);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortByExt);
-        WinInsertLboxItem(hwndListbox, LIT_END, pNLSStrings->pszSortFoldersFirst);
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_NAME)) ; // pszSortByName
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_TYPE)) ; // pszSortByType
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_CLASS)) ; // pszSortByClass
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_REALNAME)) ; // pszSortByRealName
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_SIZE)) ; // pszSortBySize
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_WRITEDATE)) ; // pszSortByWriteDate
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_ACCESSDATE)) ; // pszSortByAccessDate
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_CREATIONDATE)) ; // pszSortByCreationDate
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_EXT)) ; // pszSortByExt
+        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_FOLDERSFIRST)) ; // pszSortFoldersFirst
     }
 
     if (somThis)

@@ -17,8 +17,12 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
+--  fix xfix
+
 --  xcenter:
     stays visible with lockup screen and stay-on-top.
+
+--  winlist: left to right.
 
 --  when I shut down (extended
     shutdown) while a print job is in the queue (forgotten, printer turned

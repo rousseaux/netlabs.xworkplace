@@ -22,6 +22,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -429,7 +431,7 @@ VOID TwgtScanSetup(const char *pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->pszFont = strdup("2.System VIO");
+        pSetup->pszFont = strdup("4.System VIO");
     // else: leave this field null
 
     pSetup->lcolSwapFree = RGBCOL_RED;
@@ -565,6 +567,8 @@ MRESULT TwgtCreate(HWND hwnd,
     // convert to KB
     pPrivate->ulTotPhysMemKB = (pPrivate->ulTotPhysMemKB + 512) / 1024;
 
+    // initialize win32k.sys; if this returns NO_ERROR,
+    // we'll use that driver, otherwise not
     pPrivate->arcWin32K = libWin32kInit();
 
     // start update timer
@@ -943,8 +947,6 @@ VOID TwgtPaint2(HWND hwnd,
             = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
 
         LONG    y = 1;
-
-        // #define MEGABYTE (1024*1024)    // what was that number again?
 
         DrawNumber(hps,
                    y,

@@ -61,6 +61,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -769,7 +771,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                 // we need to check the last selected
                 // menu item, which was stored in the psfv
                 // structure by WM_MENUSELECT (below).
-                PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
                 switch (psfv->ulLastSelMenuItem)
                 {
@@ -789,7 +791,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                                            sPos+1,
                                            (pGlobalSettings->VarMenuOffset
                                                    + ID_XFMI_OFS_SELECTSOME),
-                                           pNLSStrings->pszSelectSome,
+                                           cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
                                            MIS_TEXT, 0);
                     break; }
 
@@ -803,8 +805,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         // do it for context menus also
                         mnuModifySortMenu(psfv->somSelf,
                                           hwndMenuMsg,
-                                          pGlobalSettings,
-                                          pNLSStrings);
+                                          pGlobalSettings);
                         cnrhQueryCnrInfo(psfv->hwndCnr, &CnrInfo);
                         // and now insert the "folder view" items
                         winhInsertMenuSeparator(hwndMenuMsg,
@@ -836,7 +837,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         winhInsertMenuItem(hwndMenuMsg, MIT_END,
                                            (pGlobalSettings->VarMenuOffset
                                                    + ID_XFMI_OFS_PRODINFO),
-                                           pNLSStrings->pszProductInfo,
+                                           cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                                            MIS_TEXT, 0);
                     break;
 

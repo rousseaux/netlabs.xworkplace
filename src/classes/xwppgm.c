@@ -40,6 +40,8 @@
 #define XWPProgram_Class_Source
 #define M_XWPProgram_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h

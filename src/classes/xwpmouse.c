@@ -47,6 +47,8 @@
 #define XWPMouse_Class_Source
 #define M_XWPMouse_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -113,7 +115,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
     ULONG               ulrc = 0;
 
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
@@ -131,7 +133,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XSD_MOUSE_MOVEMENT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszMouseHookPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
         // pcnbp->fEnumerate = TRUE;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT;
         pcnbp->ulPageID = SP_MOUSE_MOVEMENT;
@@ -160,7 +162,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
     ULONG               ulrc = 0;
 
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
@@ -177,7 +179,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         pcnbp->ulDlgID = ID_XSD_MOUSEMAPPINGS2;
         pcnbp->usPageStyleFlags = BKA_MINOR;
         pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = pNLSStrings->pszMappingsPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_MAPPINGSPAGE);  // pszMappingsPage
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
         pcnbp->ulPageID = SP_MOUSE_MAPPINGS2;
         pcnbp->pfncbInitPage    = hifMouseMappings2InitPage;

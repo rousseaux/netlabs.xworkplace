@@ -332,6 +332,7 @@
 #define ID_XSDI_DESCRIPTION_TX1         564     // text
 #define ID_XSDI_CLEARACCEL              565
 #define ID_XSDI_SHOWINMENUS             566     // V0.9.2 (2000-03-08) [umoeller]
+#define ID_XSDI_SETACCEL                567     // V0.9.9 (2001-04-04) [umoeller]
 
 // "status bars" page 1
 #define ID_XSD_SET27STATUSBARS          570
@@ -484,30 +485,41 @@
 
 // XWPSetup info page (V0.9.0)
 // all IDs changed V0.9.9 (2001-03-07) [umoeller]
+// NOOOO... these IDs must NEVER be changed, or the
+// whole system will blow up if the NLS DLL is changed
+// to an outdated version... going back to old codes
+// V0.9.9 (2001-04-04) [umoeller]
 #define ID_XCD_STATUS                   1100
 #define ID_XCDI_INFO_KERNEL_RELEASE     1101
-#define ID_XCDI_INFO_AWAKEOBJECTS       1102
-#define ID_XCDI_INFO_WPSTHREADS         1103
-#define ID_XCDI_INFO_WPSRESTARTS        1104
-#define ID_XCDI_INFO_SOUNDSTATUS        1105
-#define ID_XCDI_INFO_HOOKSTATUS         1106
-#define ID_XCDI_INFO_LANGUAGE           1107
-#define ID_XCDI_INFO_NLS_RELEASE        1108
-#define ID_XCDI_INFO_NLS_AUTHOR         1109
-#define ID_XCDI_INFO_KERNEL_GROUP       1111
-#define ID_XCDI_INFO_KERNEL_RELEASE_TXT 1112
-#define ID_XCDI_INFO_AWAKEOBJECTS_TXT   1113
-#define ID_XCDI_INFO_WPSTHREADS_TXT     1114
-#define ID_XCDI_INFO_WPSRESTARTS_TXT    1115
-#define ID_XCDI_INFO_SOUNDSTATUS_TXT    1116
-#define ID_XCDI_INFO_HOOKSTATUS_TXT     1117
-#define ID_XCDI_INFO_LANGUAGE_GROUP     1119
-#define ID_XCDI_INFO_LANGUAGE_TXT       1120
-#define ID_XCDI_INFO_NLS_RELEASE_TXT    1121
-#define ID_XCDI_INFO_NLS_AUTHOR_TXT     1122
+// #define ID_XCDI_INFO_KERNEL_BUILD       1102     removed V0.9.2 (2000-02-20) [umoeller]
+// #define ID_XCDI_INFO_KERNEL_LOCALE      1103
+#define ID_XCDI_INFO_AWAKEOBJECTS       1103
+#define ID_XCDI_INFO_WPSTHREADS         1104
+#define ID_XCDI_INFO_WPSRESTARTS        1105
+// #define ID_XCDI_INFO_WORKERSTATUS       1106     removed V0.9.9 (2001-03-07)
+// #define ID_XCDI_INFO_FILESTATUS         1107     removed V0.9.9 (2001-03-07)
+// #define ID_XCDI_INFO_QUICKSTATUS        1108     removed V0.9.9 (2001-03-07)
+#define ID_XCDI_INFO_SOUNDSTATUS        1109
+#define ID_XCDI_INFO_HOOKSTATUS         1110
+#define ID_XCDI_INFO_LANGUAGE           1111
+#define ID_XCDI_INFO_NLS_RELEASE        1112
+#define ID_XCDI_INFO_NLS_AUTHOR         1113
+
+// 1120 is occupied below... we can't change that V0.9.9 (2001-04-04) [umoeller]
+#define ID_XCDI_INFO_KERNEL_GROUP       1121
+#define ID_XCDI_INFO_KERNEL_RELEASE_TXT 1122
+#define ID_XCDI_INFO_AWAKEOBJECTS_TXT   1123
+#define ID_XCDI_INFO_WPSTHREADS_TXT     1124
+#define ID_XCDI_INFO_WPSRESTARTS_TXT    1125
+#define ID_XCDI_INFO_SOUNDSTATUS_TXT    1126
+#define ID_XCDI_INFO_HOOKSTATUS_TXT     1127
+#define ID_XCDI_INFO_LANGUAGE_GROUP     1129
+#define ID_XCDI_INFO_LANGUAGE_TXT       1130
+#define ID_XCDI_INFO_NLS_RELEASE_TXT    1131
+#define ID_XCDI_INFO_NLS_AUTHOR_TXT     1132
 
 // XWPSetup "Features" page (V0.9.0)
-#define ID_XCD_FEATURES                 1130        // raised V0.9.9 (2001-03-07) [umoeller]
+#define ID_XCD_FEATURES                 1120
 #define ID_XCDI_CONTAINER               1140
 #define ID_XCDI_SETUP                   1141
 
@@ -1826,6 +1838,8 @@
 #define ID_XSSI_MB3_DBLCLICK            6162           // "Double click"
 #define ID_XSSI_MB3_NOCONVERSION        6163           // "MB3 click"
 #define ID_XSSI_MB3_PUSHTOBOTTOM        6164           // "Push to bottom"
+
+#define ID_XSSI_SCREENBORDERSPAGE       6165           // "Screen borders"
 
 /******************************************
  *          Treesize                      *

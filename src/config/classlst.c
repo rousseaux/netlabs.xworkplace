@@ -43,6 +43,8 @@
  *      valid SOM method table. If so, then methods can be invoked on <obj>.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -667,7 +669,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
     PWPSLISTITEM    pwps = pClientData->pscd->preccSelection->pwps;
     CHAR            szInfo[1000] = "",
                     szInfo2[256] = "";
-    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     CleanupMethodsInfo(pClientData);
         // @@todo this still causes memory leaks when the methods thread is running
@@ -726,7 +728,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
                 strcpy(szInfo2, "?");
         }
         else
-            strcpy(szInfo2, pNLSStrings->pszWpsClassLoadingFailed);
+            strcpy(szInfo2, cmnGetString(ID_XSSI_WPSCLASSLOADINGFAILED)) ; // pszWpsClassLoadingFailed
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, szInfo2);
 
         // class information
@@ -774,7 +776,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
     {
         // if (pwps == NULL), the "Orphans" item has been
         // selected: give info for this
-        strcpy(szInfo, pNLSStrings->pszWpsClassOrphansInfo);
+        strcpy(szInfo, cmnGetString(ID_XSSI_WPSCLASSORPHANSINFO)) ; // pszWpsClassOrphansInfo
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, "");
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, "");
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY, "");
@@ -1183,7 +1185,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
         {
             // frame window successfully created:
             SPLITBARCDATA   sbcd;
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
             HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
             HAB             hab = WinQueryAnchorBlock(hwndClient);
@@ -1721,7 +1723,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
             {
                 CHAR szClassInfoFile[CCHMAXPATH];
                 // ULONG ulCopied;
-                PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
                 HPOINTER hptrOld = winhSetWaitPointer();
 
@@ -1759,7 +1761,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
 
                 // add orphans; this is done by setting the title
                 // for the "Orphans" recc tree
-                pscd->pszOrphans = pNLSStrings->pszWpsClassOrphans;
+                pscd->pszOrphans = cmnGetString(ID_XSSI_WPSCLASSORPHANS);  // pszWpsClassOrphans
 
                 // finally, fill container with WPS data (classlst.c)
                 pscd->pwpsc = clsWpsClasses2Cnr(pscd->hwndCnr,
@@ -2452,7 +2454,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
         case WM_INITDLG:
         {
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             XFIELDINFO      xfi[7];
             PFIELDINFO      pfi = NULL;
             HWND            hwndCnr = WinWindowFromID(hwndDlg, ID_XLDI_CNR);
@@ -2476,32 +2478,32 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
             // set up cnr details view
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, ulMethodIndex);
-            xfi[i].pszColumnTitle = pNLSStrings->pszClsListIndex;
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_CLSLIST_INDEX);  // pszClsListIndex
             xfi[i].ulDataType = CFA_ULONG;
             xfi[i++].ulOrientation = CFA_RIGHT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
-            xfi[i].pszColumnTitle = pNLSStrings->pszClsListMethod;
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_CLSLIST_METHOD);  // pszClsListMethod
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszToken);
-            xfi[i].pszColumnTitle = pNLSStrings->pszClsListToken;
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_CLSLISTTOKEN);  // pszClsListToken
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszMethodProc);
-            xfi[i].pszColumnTitle = pNLSStrings->pszClsListAddress;
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_CLSLIST_ADDRESS);  // pszClsListAddress
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszIntroducedBy);
-            xfi[i].pszColumnTitle = pNLSStrings->pszClsListClass;
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_CLSLIST_CLASS);  // pszClsListClass
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszOverriddenBy2);
-            xfi[i].pszColumnTitle = pNLSStrings->pszClsListOverriddenBy;
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_CLSLIST_OVERRIDDENBY);  // pszClsListOverriddenBy
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -2972,10 +2974,10 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                           pNLSStrings->pszOpenClassList,
+                           cmnGetString(ID_XFSI_OPENCLASSLIST),  // pszOpenClassList
                            MIS_TEXT, 0);
         // insert "register class" only if this is
         // for an open class list view
@@ -2985,12 +2987,12 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
             winhInsertMenuItem(hwndMenu, MIT_END,
                                ID_XLMI_REGISTER, // is above WPMENUID_USER
-                               pNLSStrings->pszRegisterClass,
+                               cmnGetString(ID_XFSI_REGISTERCLASS),  // pszRegisterClass
                                MIS_TEXT, 0);
             // "Refresh" V0.9.6 (2000-11-12) [umoeller]
             winhInsertMenuItem(hwndMenu, MIT_END,
                                ID_XLMI_REFRESH_VIEW,
-                               pNLSStrings->pszRefreshNow,
+                               cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
                                MIS_TEXT, 0);
             _fMenuCnrWhitespace = FALSE;
         }
@@ -3201,9 +3203,9 @@ HWND cllCreateClassListView(WPObject *somSelf,
 
         if (hwndFrame)
         {
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             // view title: we remove "~" later
-            PSZ             pszViewTitle = strdup(pNLSStrings->pszOpenClassList),
+            PSZ             pszViewTitle = strdup(cmnGetString(ID_XFSI_OPENCLASSLIST)) , // pszOpenClassList
                             p = NULL;
 
             // get client data window pointer; this has been allocated

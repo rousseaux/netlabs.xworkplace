@@ -51,6 +51,8 @@
 #define XFldProgramFile_Class_Source
 #define M_XFldProgramFile_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -127,7 +129,7 @@ static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
                                                     HWND hwndNotebook)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
@@ -138,7 +140,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszResourcesPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_RESOURCES);  // pszResourcesPage
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_RESOURCES;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
     pcnbp->ulPageID = SP_PROG_RESOURCES;
@@ -165,7 +167,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
                                                  HWND hwndNotebook)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
 
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
@@ -177,7 +179,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MINOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszModule2Page;
+    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_MODULE2);  // pszModule2Page
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE2;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE2;
     pcnbp->ulPageID = SP_PROG_DETAILS2;
@@ -194,7 +196,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MINOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszModule1Page;
+    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_MODULE1);  // pszModule1Page
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE1;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE1;
     pcnbp->ulPageID = SP_PROG_DETAILS1;
@@ -211,7 +213,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszModulePage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_MODULE);  // pszModulePage
     pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
     pcnbp->ulPageID = SP_PROG_DETAILS;

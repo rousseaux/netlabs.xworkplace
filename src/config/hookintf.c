@@ -38,6 +38,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -824,12 +826,12 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         PFIELDINFO      pfi = NULL;
         int             i = 0;
         HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         SWP             swpCnr;
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszObjectHotkeysPage);
+                          cmnGetString(ID_XSSI_OBJECTHOTKEYSPAGE)) ; // pszObjectHotkeysPage
 
         // recreate container at the same position as
         // the container in the dlg resources;
@@ -861,22 +863,22 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         xfi[i++].ulOrientation = CFA_CENTER;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
-        xfi[i].pszColumnTitle = pNLSStrings->pszHotkeyTitle;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_HOTKEY_TITLE);  // pszHotkeyTitle
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pszFolderPath);
-        xfi[i].pszColumnTitle = pNLSStrings->pszHotkeyFolder;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_HOTKEY_FOLDER);  // pszHotkeyFolder
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pszHandle);
-        xfi[i].pszColumnTitle = pNLSStrings->pszHotkeyHandle;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_HOTKEY_HANDLE);  // pszHotkeyHandle
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pszHotkey);
-        xfi[i].pszColumnTitle = pNLSStrings->pszHotkeyHotkey;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_HOTKEY_HOTKEY);  // pszHotkeyHotkey
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -1261,11 +1263,11 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         PFIELDINFO      pfi = NULL;
         int             i = 0;
         HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          pNLSStrings->pszFunctionKeysPage);
+                          cmnGetString(ID_XSSI_FUNCTIONKEYSPAGE)) ; // pszFunctionKeysPage
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, ulIndex);
@@ -1274,17 +1276,17 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszDescription);
-        xfi[i].pszColumnTitle = pNLSStrings->pszKeyDescription;
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_KEYDESCRIPTION);  // pszKeyDescription
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszScanCode);
-        xfi[i].pszColumnTitle = pNLSStrings->pszScanCode; // "Hardware scan code";
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_SCANCODE);  // "Hardware scan code"; // pszScanCode
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszModifier);
-        xfi[i].pszColumnTitle = pNLSStrings->pszModifier; // "Modifier";
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_MODIFIER);  // "Modifier"; // pszModifier
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_CENTER;
 
@@ -1600,7 +1602,7 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
 {
     if (flFlags & CBI_INIT)
     {
-        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage,
                                         ID_XSDI_MOUSE_MB3CLICK_DROP);
         if (pcnbp->pUser == 0)
@@ -1621,10 +1623,10 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         }
 
         // set MB3 mappings combo
-        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3AutoScroll);
-        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3DblClick);
-        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3NoConversion);
-        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3PushToBottom);
+        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_AUTOSCROLL)) ; // pszMB3AutoScroll
+        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_DBLCLICK)) ; // pszMB3DblClick
+        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_NOCONVERSION)) ; // pszMB3NoConversion
+        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_PUSHTOBOTTOM)) ; // pszMB3PushToBottom
 
         // set up sliders
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
@@ -2303,20 +2305,20 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
         // fill drop-down box
         {
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             // ULONG   ul;
             HWND    hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_DROP);
 
-            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialWindowList);
-            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialDesktopPopup);
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_WINDOWLIST)) ; // pszSpecialWindowList
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_DESKTOPPOPUP)) ; // pszSpecialDesktopPopup
             WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
 
             // V0.9.9 (2001-01-25) [lafaix] (clockwise)
-            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageUp);
-            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageRight);
-            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageDown);
-            WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialPageMageLeft);
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEUP)) ; // pszSpecialPageMageUp
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGERIGHT)) ; // pszSpecialPageMageRight
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEDOWN)) ; // pszSpecialPageMageDown
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGELEFT)) ; // pszSpecialPageMageLeft
         }
 
         // set up container

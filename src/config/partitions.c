@@ -24,6 +24,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -332,7 +334,7 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
         case WM_CREATE:
         {
             // frame window successfully created:
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
             PCREATESTRUCT   pCreateStruct = (PCREATESTRUCT)mp2;
             HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
@@ -345,7 +347,7 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
             PSZ             p = 0;
 
             // V0.9.5 (2000-09-20) [pr] remove accelerator char
-            strcpy(szTitle, pNLSStrings->pszOpenPartitions);
+            strcpy(szTitle, cmnGetString(ID_XSSI_OPENPARTITIONS)) ; // pszOpenPartitions
             p = strchr(szTitle, '~');
             if (p)
                 strcpy(p, p+1);

@@ -135,6 +135,7 @@ $(OUTPUTDIR)\mmhelp.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
         $(HLPINC)\stringh.h $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+    $(INC)\dlgids.h \
     $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\media.h
 
@@ -148,6 +149,7 @@ $(OUTPUTDIR)\mmvolume.obj: \
     $(INC)\setup.h \
     $(HLPINC)\except.h $(HLPINC)\winh.h \
     $(INC)\classes\xmmvolume.ih \
+    $(INC)\dlgids.h \
     $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\media.h
 

@@ -94,6 +94,8 @@
 #define XWPTrashCan_Class_Source
 #define M_XWPTrashCan_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -206,7 +208,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
 {
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
 
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
 
@@ -218,7 +220,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
     pcnbp->ulDlgID = ID_XTD_SETTINGS;
     pcnbp->ulPageID = SP_TRASHCAN_SETTINGS;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszTrashSettingsPage;
+    pcnbp->pszName = cmnGetString(ID_XTSI_TRASHSETTINGSPAGE);  // pszTrashSettingsPage
     pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
 
     pcnbp->pfncbInitPage    = trshTrashCanSettingsInitPage;
@@ -238,7 +240,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
                                                        HWND hwndDlg)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
 
@@ -251,7 +253,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
     pcnbp->ulDlgID = ID_XTD_DRIVES;
     pcnbp->ulPageID = SP_TRASHCAN_DRIVES;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszTrashDrivesPage;
+    pcnbp->pszName = cmnGetString(ID_XTSI_TRASHDRIVESPAGE);  // pszTrashDrivesPage
     pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_DRIVES;
 
     pcnbp->pfncbInitPage    = trshTrashCanDrivesInitPage;
@@ -270,7 +272,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
                                                         HWND hwndDlg)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
 
@@ -283,7 +285,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
     pcnbp->ulDlgID = ID_XTD_ICONPAGE;
     pcnbp->ulPageID = SP_TRASHCAN_ICON;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszIconPage;
+    pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);  // pszIconPage
     pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_ICON;
 
     pcnbp->pfncbInitPage    = trshTrashCanIconInitPage;
@@ -588,14 +590,14 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
                                                 HWND hwndCnr)
 {
     CHAR        szText[1000] = "";
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpUpdateStatusBar");
 
     if (_cDrivePopulating)
         // populating drive:
         sprintf(szText,
-                pNLSStrings->pszStbPopulating,  // "Populating drive %c:",
+                cmnGetString(ID_XTSI_STB_POPULATING),   // "Populating drive %c:", // pszStbPopulating
                 _cDrivePopulating);
     else
     {
@@ -605,7 +607,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
         CHAR    cThousands = cmnQueryThousandsSeparator();
         // not populating:
         sprintf(szText,
-                pNLSStrings->pszStbObjCount, // "Total size of all objects: %s bytes",
+                cmnGetString(ID_XTSI_STB_OBJCOUNT),  // "Total size of all objects: %s bytes", // pszStbObjCount
                 strhThousandsDouble(szNum1, _ulTrashObjectCount, cThousands),
                 strhThousandsDouble(szNum2, _dSizeOfAllObjects, cThousands));
     }
@@ -865,7 +867,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
        )
     {
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         CHAR        szEmptyItem[200];
         ULONG       ulAttr = 0;
 
@@ -877,7 +879,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
         // "empty trash can"
-        strcpy(szEmptyItem, pNLSStrings->pszTrashEmpty);
+        strcpy(szEmptyItem, cmnGetString(ID_XTSI_TRASHEMPTY)) ; // pszTrashEmpty
         if (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
             // confirm empty on:
             strcat(szEmptyItem, "...");
@@ -1653,11 +1655,11 @@ SOM_Scope void  SOMLINK xtrcM_wpclsUnInitData(M_XWPTrashCan *somSelf)
 
 SOM_Scope PSZ  SOMLINK xtrcM_wpclsQueryTitle(M_XWPTrashCan *somSelf)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryTitle");
 
-    return (pNLSStrings->pszTrashCan);
+    return (cmnGetString(ID_XTSI_TRASHCAN)) ; // pszTrashCan
 }
 
 /*

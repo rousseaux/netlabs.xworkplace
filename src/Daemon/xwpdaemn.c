@@ -544,11 +544,14 @@ BOOL dmnStartPageMage(VOID)
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  *@@changed V0.9.3 (2000-04-25) [umoeller]: adjusted for new T1M_PAGEMAGECLOSED
+ *@@changed V0.9.9 (2001-04-05) [pr]: fixed trap
  */
 
 VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGECLOSED (TRUE) to the kernel
 {
-    if (G_pHookData->hwndPageMageFrame)
+    if (   G_pHookData
+        && G_pHookData->hwndPageMageFrame
+       )
     {
         // PageMage running:
         ULONG   ulRequest;
@@ -1173,11 +1176,12 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
  *
  *@@changed V0.9.3 (2000-04-12) [umoeller]: added exception handling
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed sliding focus bug
+ *@@changed V0.9.9 (2001-04-05) [pr]: fixed trap if hook data was NULL
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    MRESULT mrc;
+    MRESULT mrc = 0;
 
     // window to be activated (sliding focus)
     static HWND     S_hwndUnderMouse = NULLHANDLE;
@@ -1218,7 +1222,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 else
                     DeinstallHook();
 
-                mrc = (MPARAM)(G_pXwpGlobalShared->fAllHooksInstalled);
+                mrc = (MRESULT)(G_pXwpGlobalShared->fAllHooksInstalled);
             break;
 
             /*
@@ -1267,7 +1271,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_HOOKCONFIG:
                 // _Pmpf(("fnwpDaemonObject: got XDM_HOOKCONFIG"));
                 // load config from OS2.INI
-                mrc = (MPARAM)LoadHookConfig(TRUE,      // hook
+                mrc = (MRESULT)LoadHookConfig(TRUE,     // hook
                                              FALSE);    // PageMage
 
             break;
@@ -1293,7 +1297,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 else
                     dmnKillPageMage(FALSE); // no notify
 
-                mrc = (MPARAM)(G_pHookData->hwndPageMageFrame != NULLHANDLE);
+                if (G_pHookData)
+                    mrc = (MRESULT)(G_pHookData->hwndPageMageFrame != NULLHANDLE);
             break;
 
             /*
@@ -1319,7 +1324,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_PAGEMAGECONFIG:
                 // _Pmpf(("fnwpDaemonObject: got XDM_PAGEMAGECONFIG"));
                 // load config from OS2.INI
-                mrc = (MPARAM)pgmsLoadSettings((ULONG)mp1);
+                mrc = (MRESULT)pgmsLoadSettings((ULONG)mp1);
             break;
 // #endif
 

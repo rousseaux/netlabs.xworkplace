@@ -86,9 +86,12 @@
 
     /* ******************************************************************
      *
-     *   Query setup strings
+     *   Setup strings
      *
      ********************************************************************/
+
+    BOOL fdrSetup(WPFolder *somSelf,
+                  const char *pszSetupString);
 
     ULONG fdrQuerySetup(WPObject *somSelf,
                         PSZ pszSetupString,

@@ -51,6 +51,8 @@
 #define XFldDisk_Class_Source
 #define M_XFldDisk_Class_Source
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -129,7 +131,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
     if (pGlobalSettings->fReplaceFilePage)
     {
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
         pcnbp->somSelf = somSelf;
@@ -138,7 +140,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
         pcnbp->ulDlgID = ID_XSD_DISK_DETAILS;
         pcnbp->ulPageID = SP_DISK_DETAILS;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszDetailsPage;
+        pcnbp->pszName = cmnGetString(ID_XSSI_DETAILSPAGE);  // pszDetailsPage
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
 
         pcnbp->pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;

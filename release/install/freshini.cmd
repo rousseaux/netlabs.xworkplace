@@ -61,6 +61,7 @@ rc = RegisterClass("XWPSound");
 rc = RegisterClass("XWPString");
 rc = RegisterClass("XWPMouse");
 rc = RegisterClass("XWPKeyboard");
+rc = RegisterClass("XWPProgram");           /* V0.9.9 */
 
 rc = ReplaceClass("WPFolder", "XFolder");
 rc = ReplaceClass("WPObject", "XFldObject");
@@ -71,6 +72,7 @@ rc = ReplaceClass("WPProgramFile", "XFldProgramFile");
 rc = ReplaceClass("WPSound", "XWPSound");
 rc = ReplaceClass("WPMouse", "XWPMouse");
 rc = ReplaceClass("WPKeyboard", "XWPKeyboard");
+rc = ReplaceClass("WPProgram", "XWPProgram");       /* V0.9.9 */
 
 rc = RegisterClass("XFldSystem");
 rc = RegisterClass("XFldWPS");

@@ -49,6 +49,8 @@
  *      GNU General Public License for more details.
  */
 
+#pragma strings(readonly)
+
 /*
  *  Suggested #include order:
  *  1)  os2.h
@@ -2123,8 +2125,18 @@ ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf)
  *      if an exception occurs or the current thread gets
  *      terminated while the mutex is held.
  *
+ *      This uses excHandlerLoud (src/helpers/excpt.c)
+ *      as the exception handler, so you get all the bells
+ *      and whistles (literally) of the standard XWorkplace
+ *      trap logs.
+ *
  *      Returns TRUE only if the exception handler was
  *      installed _and_ the object is now locked.
+ *
+ *      Returns FALSE either if the lock failed, or an
+ *      exception occured in the protected block (which
+ *      results in the handler jumping back into the middle
+ *      of this function, which then decides to return FALSE).
  *
  *      You must ALWAYS call wpshUnlockObject afterwards, as
  *      shown below, or you will definitely get hangs and
@@ -2144,10 +2156,8 @@ ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf)
  +              // do protected processing
  +              ...
  +          }
- +          // else: lock failed;
- +          // also, if an exception occured, wpshLockObject is jumped back
- +          // in and returns FALSE then...
- +          // in any case, call "unlock object"
+ +          // else: lock failed, OR an exception occured:
+ +          // IN ANY CASE, call "unlock object"
  +          wpshUnlockObject(&Lock);
  *
  *@@added V0.9.7 (2000-12-08) [umoeller]
@@ -2180,8 +2190,8 @@ BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
             if (pLock->fLocked)
             {
                 // object was locked:
-                // store the object ptr in the extended exception registration record,
-                // which gets passed to wpshOnKill
+                // store the object ptr in the extended exception registration record
+                // so we can unlock later
                 pLock->ExceptStruct.RegRec2.pvUser = somSelf;
                 // only then return TRUE
                 brc = TRUE;
@@ -2216,6 +2226,7 @@ BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
          && (pLock->ExceptStruct.RegRec2.pvUser)        // has the object
        )
     {
+        // pvUser was set to somSelf of the locked object
         if (!_wpReleaseObjectMutexSem((WPObject*)pLock->ExceptStruct.RegRec2.pvUser))
         {
             pLock->ExceptStruct.RegRec2.pvUser = NULL;
