@@ -129,33 +129,33 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 #define WNDCLASS_WIDGET_MONITORS    "XWPCenterMonitorWidget"
 
-XCENTERWIDGETCLASS G_WidgetClasses[] =
-    {
-        {
-            WNDCLASS_WIDGET_MONITORS,
-            MWGT_CLOCK,
-            "Clock",
-            "Clock",
-            WGTF_UNIQUEPERXCENTER,
-            NULL        // no settings dlg
-        },
-        {
-            WNDCLASS_WIDGET_MONITORS,
-            MWGT_MEMORY,
-            "PhysMemory",
-            "Free physical memory",
-            WGTF_UNIQUEPERXCENTER,
-            NULL        // no settings dlg
-        },
-        /* {
-            WNDCLASS_WIDGET_MONITORS,
-            MWGT_SWAPPER,
-            "Swapper",
-            "Swapper size monitor",
-            WGTF_UNIQUEPERXCENTER,
-            NULL        // no settings dlg
-        } */
-    };
+static XCENTERWIDGETCLASS G_WidgetClasses[] =
+            {
+                {
+                    WNDCLASS_WIDGET_MONITORS,
+                    MWGT_CLOCK,
+                    "Clock",
+                    "Clock",
+                    WGTF_UNIQUEPERXCENTER,
+                    NULL        // no settings dlg
+                },
+                {
+                    WNDCLASS_WIDGET_MONITORS,
+                    MWGT_MEMORY,
+                    "PhysMemory",
+                    "Free physical memory",
+                    WGTF_UNIQUEPERXCENTER,
+                    NULL        // no settings dlg
+                },
+                /* {
+                    WNDCLASS_WIDGET_MONITORS,
+                    MWGT_SWAPPER,
+                    "Swapper",
+                    "Swapper size monitor",
+                    WGTF_UNIQUEPERXCENTER,
+                    NULL        // no settings dlg
+                } */
+            };
 
 /* ******************************************************************
  *

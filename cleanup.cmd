@@ -17,6 +17,7 @@ if yn = 'Y' then do
   call deletefiles 'bin\modules\*.dll'
   call deletefiles 'bin\modules\*.map'
   call deletefiles 'bin\modules\*.sym'
+  call deletefiles 'bin\widgets\*.obj'
 end
 
 /* LIB files */
@@ -34,7 +35,6 @@ if yn = 'Y' then do
   call deletefiles '001\inf.001\xfldr001.inf'
   call deletefiles '001\xwphelp\xfldr001.hlp'
   call deletefiles '049_de\inf.049\xfldr049.inf'
-  call deletefiles '049_de\help.049\xfldr049.hlp'
 end
 
 /* IPF source files */

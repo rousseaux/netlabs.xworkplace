@@ -51,6 +51,9 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xfdisk.h \
      $(OUTPUTDIR)\xfldr.h \
      $(OUTPUTDIR)\xfobj.h \
+     $(OUTPUTDIR)\xfont.h \
+     $(OUTPUTDIR)\xfontfile.h \
+     $(OUTPUTDIR)\xfontobj.h \
      $(OUTPUTDIR)\xfpgmf.h \
      $(OUTPUTDIR)\xfstart.h \
      $(OUTPUTDIR)\xfsys.h \
@@ -119,6 +122,12 @@ $(OUTPUTDIR)\xfdisk.h:           $(@B).idl
 $(OUTPUTDIR)\xfldr.h:            $(@B).idl
 
 $(OUTPUTDIR)\xfobj.h:            $(@B).idl
+
+$(OUTPUTDIR)\xfont.h:            $(@B).idl
+
+$(OUTPUTDIR)\xfontfile.h:        $(@B).idl
+
+$(OUTPUTDIR)\xfontobj.h:         $(@B).idl
 
 $(OUTPUTDIR)\xfpgmf.h:           $(@B).idl
 

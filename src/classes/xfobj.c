@@ -123,10 +123,10 @@
  ********************************************************************/
 
 // "XFldObject" key for wpRestoreData etc.
-const char* G_pcszXFldObject = "XFldObject";
+static const char* G_pcszXFldObject = "XFldObject";
 
 // global variable whether XWorkplace is initialized yet
-BOOL        G_fXWorkplaceInitialized = FALSE;
+static BOOL        G_fXWorkplaceInitialized = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -705,6 +705,65 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
 
     return (ulReturn);
 
+}
+
+/*
+ *@@ xwpSetNextObj:
+ *      wrapper around the undocumented WPObject method
+ *      "wpSetNextObj".
+ *
+ *      From my testing, wpSetNextObj stores the "next object"
+ *      in the object's internal instance data. This is either
+ *      NULL if the object is the last object in a folder, or
+ *      points to the next object (the one that comes after
+ *      somSelf in the folder).
+ *
+ *      These pointers are apparently maintained by
+ *      the WPFolder methods wpAddToContent and
+ *      wpDeleteFromContent.
+ *
+ *      This wrapper resolves the method pointer and calls
+ *      that method, since we have no access to WPObject's
+ *      internal instance data (and better not touch it in
+ *      the first place).
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfobj_xwpSetNextObj(XFldObject *somSelf,
+                                             WPObject* pobjNext)
+{
+    ULONG ulrc = 0;     // seems to be a BOOL
+    WPObject **ppObjNext = NULL;
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetNextObj");
+
+    ppObjNext = wpshGetNextObjPointer(somSelf);
+    if (ppObjNext)
+        *ppObjNext = pobjNext;
+
+    return (ulrc);
+}
+
+/*
+ *@@ xwpQueryNextObj:
+ *      the reverse to XFldObject::xwpSetNextObj.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xfobj_xwpQueryNextObj(XFldObject *somSelf)
+{
+    WPObject *pobj = NULL;
+    WPObject **ppObjNext = NULL;
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryNextObj");
+
+    ppObjNext = wpshGetNextObjPointer(somSelf);
+    if (ppObjNext)
+        pobj = *ppObjNext;
+
+    return (pobj);
 }
 
 /*

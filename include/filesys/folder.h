@@ -100,6 +100,10 @@
     BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
                                   PFNWP pfnwpCallback);
 
+    #ifdef SOM_WPFolder_h
+        VOID fdrUpdateStatusBars(WPFolder *pFolder);
+    #endif
+
     /* ******************************************************************
      *
      *   Full path in title
@@ -174,20 +178,7 @@
      *
      ********************************************************************/
 
-    MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView, ULONG ulActivate,
-                                          MPARAM mpView, MPARAM mpFolder);
-
-    MRESULT EXPENTRY fncbStatusBarPost(HWND hwndView, ULONG msg,
-                                       MPARAM mpView, MPARAM mpFolder);
-
-    /********************************************************************
-     *
-     *   Folder frame window subclassing
-     *
-     ********************************************************************/
-
     #ifdef SOM_WPFolder_h
-
         /*
          *@@ SUBCLASSEDFOLDERVIEW:
          *      linked list structure used with folder frame
@@ -246,34 +237,23 @@
                                             // WM_INITMENU and WM_COMMAND
         } SUBCLASSEDFOLDERVIEW, *PSUBCLASSEDFOLDERVIEW;
 
-        PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
-                                                    HWND hwndCnr,
-                                                    WPFolder *somSelf,
-                                                    WPObject *pRealObject);
+        HWND fdrCreateStatusBar(WPFolder *somSelf,
+                                PSUBCLASSEDFOLDERVIEW psli2,
+                                BOOL fShow);
+    #endif
 
-        PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,
-                                          PULONG pulIndex);
+    MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView, ULONG ulActivate,
+                                          MPARAM mpView, MPARAM mpFolder);
 
-        VOID fdrManipulateNewView(WPFolder *somSelf,
-                                  HWND hwndNewFrame,
-                                  ULONG ulView);
+    MRESULT EXPENTRY fncbStatusBarPost(HWND hwndView, ULONG msg,
+                                       MPARAM mpView, MPARAM mpFolder);
 
-        VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv);
+    #ifdef SOM_WPFolder_h
+        VOID fdrCallResolvedUpdateStatusBar(WPFolder *pFolder,
+                                            HWND hwndStatusBar,
+                                            HWND hwndCnr);
 
-        MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd,
-                                                       ULONG msg,
-                                                       MPARAM mp1,
-                                                       MPARAM mp2);
-
-        // Supplementary object window msgs (for each
-        // subclassed folder frame, xfldr.c)
-        #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)
-        #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
-
-        MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject,
-                                                   ULONG msg,
-                                                   MPARAM mp1,
-                                                   MPARAM mp2);
+        VOID fdrUpdateStatusBars(WPFolder *pFolder);
 
         /* ******************************************************************
          *
@@ -296,15 +276,46 @@
                                   const char *pcszIniKey);
         #endif
 
-        /* ******************************************************************
+        /********************************************************************
          *
-         *   Folder status bars
+         *   Folder frame window subclassing
          *
          ********************************************************************/
 
-        HWND fdrCreateStatusBar(WPFolder *somSelf,
-                                PSUBCLASSEDFOLDERVIEW psli2,
-                                BOOL fShow);
+        PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
+                                                    HWND hwndCnr,
+                                                    WPFolder *somSelf,
+                                                    WPObject *pRealObject);
+
+        PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,
+                                          PULONG pulIndex);
+
+        VOID fdrManipulateNewView(WPFolder *somSelf,
+                                  HWND hwndNewFrame,
+                                  ULONG ulView);
+
+        VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv);
+
+        BOOL fdrProcessObjectCommand(WPFolder *somSelf,
+                                     USHORT usCommand,
+                                     HWND hwndCnr,
+                                     WPObject* pFirstObject,
+                                     ULONG ulSelectionFlags);
+
+        MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd,
+                                                       ULONG msg,
+                                                       MPARAM mp1,
+                                                       MPARAM mp2);
+
+        // Supplementary object window msgs (for each
+        // subclassed folder frame, xfldr.c)
+        #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)
+        #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
+
+        MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject,
+                                                   ULONG msg,
+                                                   MPARAM mp1,
+                                                   MPARAM mp2);
 
     #endif
 
@@ -321,6 +332,26 @@
     MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     SHORT EXPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip);
+
+    /* ******************************************************************
+     *
+     *   Folder content management
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPFolder_h
+        BOOL fdrAddToContent(WPFolder *somSelf,
+                             WPObject *pObject);
+
+        WPObject* fdrQueryContent(WPFolder *somSelf,
+                                  WPObject *pobjFind,
+                                  ULONG ulOption);
+
+        WPObject** fdrQueryContentArray(WPFolder *pFolder,
+                                        PULONG pulItems);
+
+        BOOL fdrCnrInsertObject(WPObject *pObject);
+    #endif
 
     /* ******************************************************************
      *

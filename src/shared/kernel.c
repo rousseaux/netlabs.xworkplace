@@ -131,20 +131,20 @@
  ********************************************************************/
 
 // global lock semaphore for krnLock etc.
-HMTX                G_hmtxCommonLock = NULLHANDLE;
+static HMTX                G_hmtxCommonLock = NULLHANDLE;
 
 // "Quick open" dlg status (thread-1 object wnd)
-ULONG               G_ulQuickOpenNow = 0,
-                    G_ulQuickOpenMax = 0;
-HWND                G_hwndQuickStatus = NULLHANDLE;
-BOOL                G_fQuickOpenCancelled = FALSE;
+static ULONG               G_ulQuickOpenNow = 0,
+                           G_ulQuickOpenMax = 0;
+static HWND                G_hwndQuickStatus = NULLHANDLE;
+static BOOL                G_fQuickOpenCancelled = FALSE;
 
 // flags passed with mp1 of XDM_PAGEMAGECONFIG
-ULONG               G_PageMageConfigFlags = 0;
+static ULONG               G_PageMageConfigFlags = 0;
 
 // global structure with data needed across threads
 // (see kernel.h)
-KERNELGLOBALS       G_KernelGlobals = {0};
+static KERNELGLOBALS       G_KernelGlobals = {0};
 
 // resize information for ID_XFD_CONTAINERPAGE, which is used
 // by many settings pages

@@ -53,6 +53,7 @@ OBJS = $(OUTPUTDIR)\cfgsys.obj \
        $(OUTPUTDIR)\classlst.obj \
        $(OUTPUTDIR)\drivdlgs.obj \
        $(OUTPUTDIR)\drivers.obj \
+       $(OUTPUTDIR)\fonts.obj \
        $(OUTPUTDIR)\hookintf.obj \
        $(OUTPUTDIR)\pagemage.obj \
        $(OUTPUTDIR)\partitions.obj \
@@ -163,6 +164,16 @@ $(OUTPUTDIR)\drivers.obj: \
     $(INC)\shared\classes.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
     $(INC)\config\drivdlgs.h \
     $(@B).c $(MYOWNINC)\cfgsys.h
+
+$(OUTPUTDIR)\fonts.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
+        $(HLPINC)\prfh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+    $(INC)\classes\xfont.ih $(INC)\classes\xfontobj.ih $(INC)\classes\xfontfile.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\wpsh.h \
+    $(INC)\filesys\fileops.h $(INC)\filesys\folder.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\hookintf.obj: \
     $(INC)\setup.h \

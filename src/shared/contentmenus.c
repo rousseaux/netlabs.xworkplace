@@ -168,25 +168,25 @@
  *
  ********************************************************************/
 
-// counts for providing unique menu id's
+// counts for providing unique menu id's (exported)
 ULONG               G_ulVarItemCount = 0;    // number of inserted menu items
 SHORT               G_sNextMenuId = 0;      // next menu item ID to use
 
 // llContentMenuItems contains ONLY folder content menus
-LINKLIST            G_llContentMenuItems; // changed V0.9.0
+static LINKLIST            G_llContentMenuItems; // changed V0.9.0
 
 // linked lists / counts for variable context menu items
 // llVarMenuItems contains ALL variable items ever inserted
 // (i.e. config folder items AND folder content items)
-LINKLIST            G_llVarMenuItems;     // changed V0.9.0
+static LINKLIST            G_llVarMenuItems;     // changed V0.9.0
 
 // icon for drawing the little triangle in
 // folder content menus (subfolders)
-HPOINTER            G_hMenuArrowIcon = NULLHANDLE;
+static HPOINTER            G_hMenuArrowIcon = NULLHANDLE;
 
 // original wnd proc for folder content menus,
 // which we must subclass
-PFNWP               G_pfnwpFolderContentMenuOriginal = NULL;
+static PFNWP               G_pfnwpFolderContentMenuOriginal = NULL;
 
 // flags for fdr_fnwpSubclassedFolderFrame;
 // these are set by fdr_fnwpSubclFolderContentMenu.
@@ -198,12 +198,12 @@ PFNWP               G_pfnwpFolderContentMenuOriginal = NULL;
 #define CX_ARROW 21
 
 // global data for owner draw
-ULONG   G_ulMiniIconSize = 0;
-RECTL   G_rtlMenuItem;
-LONG    G_lHiliteBackground,
-        G_lBackground,
-        G_lHiliteText,
-        G_lText;
+static ULONG   G_ulMiniIconSize = 0;
+static RECTL   G_rtlMenuItem;
+static LONG    G_lHiliteBackground,
+               G_lBackground,
+               G_lHiliteText,
+               G_lText;
 
 /* ******************************************************************
  *

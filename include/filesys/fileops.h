@@ -75,7 +75,17 @@
             // wpshGetNotifySem failed
     #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 20)
             // wpshRequestFolderSem failed
-
+    #define FOPSERR_NOT_FONT_FILE             (FOPSERR_FIRST_CODE + 21)
+            // with XFT_INSTALLFONTS: non-XWPFontFile passed
+    #define FOPSERR_FONT_ALREADY_INSTALLED    (FOPSERR_FIRST_CODE + 22)
+            // with XFT_INSTALLFONTS: XWPFontFile is already installed
+    #define FOPSERR_NOT_FONT_OBJECT           (FOPSERR_FIRST_CODE + 23)
+            // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
+    #define FOPSERR_FONT_ALREADY_DELETED      (FOPSERR_FIRST_CODE + 24)
+            // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
+    #define FOPSERR_FONT_STILL_IN_USE         (FOPSERR_FIRST_CODE + 25)
+            // with XFT_DEINSTALLFONTS: font is still in use;
+            // this is only a warning, it will be gone after a reboot
     typedef unsigned long FOPSRET;
 
     /* ******************************************************************
@@ -150,6 +160,8 @@
     #define XFT_RESTOREFROMTRASHCAN 2
     #define XFT_TRUEDELETE          3
     #define XFT_POPULATE            4
+    #define XFT_INSTALLFONTS        5
+    #define XFT_DEINSTALLFONTS      6
 
     typedef PVOID HFILETASKLIST;
 
@@ -314,6 +326,7 @@
 
     #define FOPS_ISQ_MOVE2TRASH_READONLY    0x0001
     #define FOPS_ISQ_DELETE_READONLY        0x0002
+    #define FOPS_ISQ_FONTINSTALL            0x0004
 
     HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
                                          WPFolder *pSourceFolder,
@@ -333,7 +346,8 @@
     FOPSRET fopsStartTask(HFILETASKLIST hftl,
                           HAB hab);
 
-    VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
+    VOID fopsFileThreadProcessing(HAB hab,
+                                  HFILETASKLIST hftl,
                                   HWND hwndNotify);
 
     BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl);
@@ -404,6 +418,14 @@
 
     FOPSRET fopsStartPopulate(HAB hab,
                               WPFolder *pFolder);
+
+
+    FOPSRET fopsStartFontDeinstallFromCnr(HAB hab,
+                                          WPFolder *pFontFolderSource,
+                                          WPObject *pSourceObject,
+                                          ULONG ulSelection,
+                                          HWND hwndCnr,
+                                          BOOL fConfirm);
 #endif
 
 

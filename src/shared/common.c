@@ -121,33 +121,33 @@
  *                                                                  *
  ********************************************************************/
 
-CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
-CHAR            G_szMessageFile[CCHMAXPATH] = "";
+static CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
+static CHAR            G_szMessageFile[CCHMAXPATH] = "";
 
 // main module (XFLDR.DLL)
-char            G_szDLLFile[CCHMAXPATH];
-HMODULE         G_hmodDLL = NULLHANDLE;
+static char            G_szDLLFile[CCHMAXPATH];
+static HMODULE         G_hmodDLL = NULLHANDLE;
 
 // res module (XWPRES.DLL)
-HMODULE         G_hmodRes = NULLHANDLE;
+static HMODULE         G_hmodRes = NULLHANDLE;
 
 // NLS
-HMODULE         G_hmodNLS = NULLHANDLE;
-NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
-GLOBALSETTINGS  *G_pGlobalSettings = NULL;
+static HMODULE         G_hmodNLS = NULLHANDLE;
+static NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
+static GLOBALSETTINGS  *G_pGlobalSettings = NULL;
 
-HMODULE         G_hmodIconsDLL = NULLHANDLE;
-CHAR            G_szLanguageCode[20] = "";
+static HMODULE         G_hmodIconsDLL = NULLHANDLE;
+static CHAR            G_szLanguageCode[20] = "";
 
-COUNTRYSETTINGS G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
-BOOL            G_fCountrySettingsLoaded = FALSE;
+static COUNTRYSETTINGS G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
+static BOOL            G_fCountrySettingsLoaded = FALSE;
 
-ULONG           G_ulCurHelpPanel = 0;      // holds help panel for dialog
+static ULONG           G_ulCurHelpPanel = 0;      // holds help panel for dialog
 
-CHAR            G_szStatusBarFont[100];
-CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
-                G_szSBTextMultiSel[CCHMAXMNEMONICS];
-ULONG           G_ulStatusBarHeight;
+static CHAR            G_szStatusBarFont[100];
+static CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
+                       G_szSBTextMultiSel[CCHMAXMNEMONICS];
+static ULONG           G_ulStatusBarHeight;
 
 // Declare runtime prototypes, because there are no headers
 // for these:

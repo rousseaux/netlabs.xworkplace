@@ -94,9 +94,17 @@
 #include <wpcmdf.h>                     // WPCommandFile
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldProgramFile instance methods                 *
- *                                                                  *
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
+
+/* ******************************************************************
+ *
+ *   XFldProgramFile instance methods
+ *
  ********************************************************************/
 
 /*
@@ -267,9 +275,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
 
     // manually resolve parent method
     pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
-                                                            _XFldProgramFile,
-                                                            "xwpQuerySetup2");
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
+                                                         _somGetParent(_XFldProgramFile),
+                                                         "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
         // now call XFldObject method
@@ -759,9 +767,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpFilterPopupMenu(XFldProgramFile *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldProgramFile class methods                    *
- *                                                                  *
+ *
+ *   XFldProgramFile class methods
+ *
  ********************************************************************/
 
 /*
@@ -789,16 +797,17 @@ SOM_Scope void  SOMLINK xfpgmfM_wpclsInitData(M_XFldProgramFile *somSelf)
     }
 }
 
-CHAR szInstanceFilter[100];
-
 /*
  *@@ wpclsQueryInstanceFilter:
- *      this class method determines which file-system objects
- *      will be instances of WPProgramFile/XFldProgramFile
- *      by specifying a file title filter. To avoid the annoying
- *      behavior of OS/2 Warp 4 that some DLL's are instances
- *      of WPProgramFile and some are not, we make all DLL's
- *      instances of WPProgramFile by specifying "*.DLL" too.
+ *      this WPDataFile class method determines which file-system
+ *      objects will be instances of a certain class according
+ *      to a file filter.
+ *
+ *      To avoid the annoying behavior of OS/2 Warp 4 that some
+ *      DLL's are instances of WPProgramFile and some are not,
+ *      we make all DLL's instances of WPProgramFile by specifying
+ *      "*.DLL" too.
+ *
  *      This does not work using wpclsQueryInstance type,
  *      because the WPS seems to be using some default file
  *      type of "Executable", which is determined in some hidden
@@ -815,8 +824,7 @@ SOM_Scope PSZ  SOMLINK xfpgmfM_wpclsQueryInstanceFilter(M_XFldProgramFile *somSe
          && (pGlobalSettings->fReplaceIcons)
        )
     {
-        strcpy(szInstanceFilter, "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS");
-        return (szInstanceFilter);
+        return ((PSZ)G_pcszInstanceFilter);
     }
     else
         return (M_XFldProgramFile_parent_M_WPProgramFile_wpclsQueryInstanceFilter(somSelf));

@@ -1,0 +1,177 @@
+
+/*
+ * xfont.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *
+ *      --  XWPFontFolder: a subclass of WPFolder, which implements
+ *                       the XWorkplace Font Folder.
+ *
+ *      See src\classes\xfont.c for details.
+ *
+ *      Copyright (C) 2001 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpfolder.idl>         // this is SOM for WPFolder
+
+/*
+   CLASS: XWPFontFolder
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject [ = XFldObject ]
+               ÀÄÄ WPFileSystem
+                     ÀÄÄ WPFolder [ = XFolder ]
+                           ÀÄÄ XWPFontFolder
+*/
+
+interface M_XWPFontFolder;            // forward reference to metaclass
+
+interface XWPFontFolder : WPFolder
+{
+
+    /*
+     * New instance methods for XWPFontFolder:
+     *
+     */
+
+    ULONG xwpAddFontsPage(in HWND hwndDlg);
+
+    BOOL xwpProcessObjectCommand(in USHORT usCommand,
+                                 in HWND hwndCnr,
+                                 in WPObject pFirstObject,
+                                 in ULONG ulSelectionFlags);
+
+    BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+
+    attribute BOOL fFilledWithFonts;
+            // this is TRUE after the font folder has been filled
+            // with fonts on the first open
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder:
+            xwpAddFontsPage,
+            xwpUpdateStatusBar,
+            _get_fFilledWithFonts,
+            _set_fFilledWithFonts;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = fon_;
+    externalstem = fon;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfont;           //# specifies the filestem for sc-generated files
+    metaclass = M_XWPFontFolder;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XWPFontFolder:
+     *
+     */
+
+    ULONG   ulFontsCurrent;         // no. of font objects in the font folder;
+                                    // initialized to 0, updated by wpPopulate
+    ULONG   ulFontsMax;             // max. no. of fonts to be created
+                                    // (for status bar)
+
+    /*
+     * WPFolder methods overridden by XWPFontFolder:
+     *
+     */
+
+    wpInitData: override;
+    wpUnInitData: override;
+
+    wpQueryDefaultHelp: override;
+
+    wpOpen: override;
+    wpPopulate: override;
+
+    wpDragOver: override;
+    wpDrop: override;
+
+    wpAddSettingsPages: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XWPFontFolder : M_WPFolder
+{
+
+    /*
+     * New class methods for M_XWPFontFolder:
+     *
+     */
+
+    XWPFontFolder xwpclsQueryDefaultFontFolder();
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: xwpclsQueryDefaultFontFolder;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = fonM_;
+    externalstem = fonM;
+    functionprefix = fonM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfont;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal instance variables for M_XWPFontFolder:
+     *
+     */
+
+    /*
+     * M_WPFolder methods overridden by M_XWPFontFolder:
+     *
+     */
+
+    wpclsInitData: override;
+    wpclsUnInitData: override;
+    wpclsQueryTitle: override;
+    wpclsQueryStyle: override;
+
+    wpclsQueryIconData: override;
+    wpclsQueryIconDataN: override;
+
+  };
+#endif /* __SOMIDL__ */
+};
+
+

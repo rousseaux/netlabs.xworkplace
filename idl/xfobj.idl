@@ -93,6 +93,9 @@ interface XFldObject : WPObject
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
                          in ULONG cbSetupString);
 
+    ULONG xwpSetNextObj(in WPObject pobjNext);
+    WPObject xwpQueryNextObj();
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -108,7 +111,9 @@ interface XFldObject : WPObject
                   xwpSetListNotify,
                   xwpModifyListNotify,
                   xwpAddDestroyNotify,
-                  xwpRemoveDestroyNotify;
+                  xwpRemoveDestroyNotify,
+                  xwpSetNextObj,
+                  xwpQueryNextObj;
 
     //# Class Modifiers
     externalprefix = xfobj_;

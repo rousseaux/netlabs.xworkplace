@@ -111,14 +111,14 @@
 
 // root of linked list of opened notebook pages
 // (this holds NOTEBOOKPAGELISTITEM's)
-PLINKLIST       G_pllOpenPages = NULL;          // this is auto-free
+static PLINKLIST       G_pllOpenPages = NULL;          // this is auto-free
 
 // root of linked list of subclassed notebooks
 // (this holds
-PLINKLIST       G_pllSubclNotebooks = NULL;     // this is auto-free
+static PLINKLIST       G_pllSubclNotebooks = NULL;     // this is auto-free
 
 // mutex semaphore for both lists
-HMTX            G_hmtxNotebookLists = NULLHANDLE;
+static HMTX            G_hmtxNotebookLists = NULLHANDLE;
 
 MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
 
@@ -282,9 +282,9 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
                 {
                     if (!lstRemoveItem(G_pllOpenPages,
                                        pcnbp->pnbli))  // this is auto-free!
+                                // this free's the pnbli
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "lstRemoveItem returned FALSE.");
-                            // this free's the pnbli
                 }
                 else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,

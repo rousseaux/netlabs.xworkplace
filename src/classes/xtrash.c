@@ -127,6 +127,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\trash.h"              // trash can implementation
 
 // other SOM headers
@@ -134,20 +135,20 @@
 #include "xfobj.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // default trash can
-XWPTrashCan *G_pDefaultTrashCan = NULL;
+static XWPTrashCan *G_pDefaultTrashCan = NULL;
 
-BOOL        G_fDrivesInitialized = FALSE;
+static BOOL        G_fDrivesInitialized = FALSE;
 
 /* ******************************************************************
- *                                                                  *
- *   XWPTrashCan instance methods                                   *
- *                                                                  *
+ *
+ *   XWPTrashCan instance methods
+ *
  ********************************************************************/
 
 /*
@@ -341,7 +342,7 @@ SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
     {
         _dSizeOfAllObjects += ulNewSize;
         // update all visible status bars
-        trshUpdateStatusBars(somSelf);
+        fdrUpdateStatusBars(somSelf);
     }
 
     wpshUnlockObject(&Lock);
@@ -493,6 +494,37 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
                               hab,   // no anchor block, asynchronously
                               hwndConfirmOwner,
                               pulDeleted));
+}
+
+/*
+ *@@ xwpProcessObjectCommand:
+ *      this XFolder method processes WM_COMMAND messages
+ *      for objects in a container. For details refer to
+ *      XFolder::xwpProcessObjectCommand.
+ *
+ *      This is really a method override... but since SOM
+ *      IDL doesn't know that XWPTrashCan is in fact
+ *      derived from XFolder, we have to do it this way.
+ *
+ *      This replaces trash can subclassing now.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrc_xwpProcessObjectCommand(XWPTrashCan *somSelf,
+                                                     USHORT usCommand,
+                                                     HWND hwndCnr,
+                                                     WPObject* pFirstObject,
+                                                     ULONG ulSelectionFlags)
+{
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpProcessObjectCommand");
+
+    return (trshProcessObjectCommand(somSelf,
+                                     usCommand,
+                                     hwndCnr,
+                                     pFirstObject,
+                                     ulSelectionFlags));
 }
 
 /*
@@ -937,9 +969,11 @@ SOM_Scope BOOL  SOMLINK xtrc_wpQueryDefaultHelp(XWPTrashCan *somSelf,
  *      thread 1). However, if this results from WinOpenObject
  *      or an OPEN setup string, this will not be on thread 1.
  *
- *      We subclass the trash can folder frame.
+ *      We suppress the tree view here and do a hack for
+ *      settings view.
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
+ *@@changed V0.9.7 (2001-01-13) [umoeller]: removed trash can frame subclassing
  */
 
 SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
@@ -964,14 +998,14 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
                                                        hwndCnr,
                                                        ulView,
                                                        param);
-        if (    (ulView == OPEN_CONTENTS)
+        /* if (    (ulView == OPEN_CONTENTS)
              || (ulView == OPEN_DETAILS)
            )
         {
             trshSubclassTrashCanFrame(hwndFrame,
                                       somSelf,
                                       ulView);
-        }
+        } */
 
         _fOpeningSettings = FALSE;
     }
@@ -1038,7 +1072,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                 _ulTrashObjectCount = 0;
                 _dSizeOfAllObjects = 0;
 
-                trshPopulateFirstTime(somSelf, ulFldrFlags);
+                brc = trshPopulateFirstTime(somSelf, ulFldrFlags);
 
                 _fAlreadyPopulated = TRUE;
             }
@@ -1362,8 +1396,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetIcon(XWPTrashCan *somSelf,
 
 /*
  *@@ xwpclsQueryDefaultTrashCan:
- *            this returns the default trash can (with the object ID
- *            &lt;XWORKPLACE_TRASHCAN&gt;).
+ *      this returns the default trash can (with the object ID
+ *      &lt;XWORKPLACE_TRASHCAN&gt;).
  *
  *@@addded V0.9.1 (2000-01-31) [umoeller]
  */

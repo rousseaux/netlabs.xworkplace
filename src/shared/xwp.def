@@ -230,3 +230,23 @@ EXPORTS
    M_XMMCDPlayerClassData
    M_XMMCDPlayerNewClass
 
+   XWPFontFolderCClassData
+   XWPFontFolderClassData
+   XWPFontFolderNewClass
+   M_XWPFontFolderCClassData
+   M_XWPFontFolderClassData
+   M_XWPFontFolderNewClass
+
+   XWPFontFileCClassData
+   XWPFontFileClassData
+   XWPFontFileNewClass
+   M_XWPFontFileCClassData
+   M_XWPFontFileClassData
+   M_XWPFontFileNewClass
+
+   XWPFontObjectCClassData
+   XWPFontObjectClassData
+   XWPFontObjectNewClass
+   M_XWPFontObjectCClassData
+   M_XWPFontObjectClassData
+   M_XWPFontObjectNewClass

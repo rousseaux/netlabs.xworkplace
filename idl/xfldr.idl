@@ -222,12 +222,19 @@ interface XFolder : WPFolder
     BOOL xwpSetStatusBarVisibility(in ULONG ulVisibility, in BOOL fUpdate);
     ULONG xwpQueryStatusBarVisibility();
 
+    BOOL xwpProcessObjectCommand(in USHORT usCommand,
+                                 in HWND hwndCnr,
+                                 in WPObject pFirstObject,
+                                 in ULONG ulSelectionFlags);
+
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
                          in ULONG cbSetupString);
+
+    VOID xwpSetDisableCnrAdd(in BOOL fDisable);
 
 #ifdef __SOMIDL__
   implementation {
@@ -253,7 +260,9 @@ interface XFolder : WPFolder
         xwpEndEnumContent,
         xwpQuerySetup2,
         xwpSetDefaultDocument,
-        xwpQueryDefaultDocument;
+        xwpQueryDefaultDocument,
+        xwpSetDisableCnrAdd,
+        xwpProcessObjectCommand;
 
     /*
      * Class Modifiers:
@@ -346,6 +355,13 @@ interface XFolder : WPFolder
 
     PSZ             pszDefaultDocDeferred;      // holds file name from wpRestoreState
 
+    // folder contents
+    ULONG           cObjects;                   // folder's objects count, always valid
+    BOOL            fDisableAutoCnrAdd;
+    // pointers to original WPFolder object pointers
+    WPObject        *ppFirstObj;
+    WPObject        *ppLastObj;
+
     /*
      * WPFolder methods overridden by XFolder:
      *
@@ -395,6 +411,7 @@ interface XFolder : WPFolder
 
     wpAddToContent: override;
     wpDeleteFromContent: override;
+    wpQueryContent: override;
 
     wpStoreIconPosData: override;
 

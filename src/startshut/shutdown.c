@@ -131,27 +131,26 @@
  *                                                                  *
  ********************************************************************/
 
-HWND                G_hwndMain = NULLHANDLE,
-                    G_hwndShutdownStatus = NULLHANDLE;
+static HWND                G_hwndMain = NULLHANDLE,
+                           G_hwndShutdownStatus = NULLHANDLE;
                         // status window (always visible)
-PFNWP               G_SysWndProc;
-BOOL                G_fAllWindowsClosed = FALSE,
-                    G_fClosingApps = FALSE,
-                    G_fShutdownBegun = FALSE;
+static PFNWP               G_SysWndProc = NULL;
+static BOOL                G_fAllWindowsClosed = FALSE,
+                           G_fClosingApps = FALSE,
+                           G_fShutdownBegun = FALSE;
 
-PID                 G_pidWPS,
-                    G_pidPM;
-ULONG               G_sidWPS,
-                    G_sidPM;
+static PID                 G_pidWPS = 0,
+                           G_pidPM = 0;
+static ULONG               G_sidWPS = 0,
+                           G_sidPM = 0;
 
-ULONG               G_ulMaxItemCount,
-                    G_ulLastItemCount;
+static ULONG               G_ulMaxItemCount = 0,
+                           G_ulLastItemCount = 0;
 
-// HFILE               hfShutdownLog = NULLHANDLE;      // changed V0.9.0
-FILE*               G_fileShutdownLog = NULL;
+static FILE*               G_fileShutdownLog = NULL;
 
 // shutdown animation
-SHUTDOWNANIM        G_sdAnim;
+static SHUTDOWNANIM        G_sdAnim;
 
 /*
  *  here come the necessary definitions and functions
@@ -161,23 +160,23 @@ SHUTDOWNANIM        G_sdAnim;
  */
 
 // this is the global list of items to be closed (SHUTLISTITEMs)
-PLINKLIST           G_pllShutdown = NULL,
+static PLINKLIST           G_pllShutdown = NULL,
 // and the list of items that are to be skipped
-                    G_pllSkipped = NULL;
-HMTX                G_hmtxShutdown = NULLHANDLE,
-                    G_hmtxSkipped = NULLHANDLE;
-HEV                 G_hevUpdated = NULLHANDLE;
+                           G_pllSkipped = NULL;
+static HMTX                G_hmtxShutdown = NULLHANDLE,
+                           G_hmtxSkipped = NULLHANDLE;
+static HEV                 G_hevUpdated = NULLHANDLE;
 
 // temporary storage for closing VIOs
-HWND                G_hwndVioDlg = NULLHANDLE;
-CHAR                G_szVioTitle[1000] = "";
-SHUTLISTITEM        G_VioItem;
+static HWND                G_hwndVioDlg = NULLHANDLE;
+static CHAR                G_szVioTitle[1000] = "";
+static SHUTLISTITEM        G_VioItem;
 
 // global linked list of auto-close VIO windows (AUTOCLOSELISTITEM)
-PLINKLIST           G_pllAutoClose = NULL;
+static PLINKLIST           G_pllAutoClose = NULL;
 
-WPDesktop           *G_pActiveDesktop = NULL;
-HWND                G_hwndActiveDesktop = NULLHANDLE;
+static WPDesktop           *G_pActiveDesktop = NULL;
+static HWND                G_hwndActiveDesktop = NULLHANDLE;
 
 // forward declarations
 MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -812,6 +811,8 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                          ((fXShutdownOrWPSValid)
                          && (pKernelGlobals->pAwakeWarpCenter != NULL)));
+                                // ### this doesn't find the WarpCenter
+                                // if started thru CONFIG.SYS
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
@@ -3148,18 +3149,17 @@ void xsdUpdateListBox(PSHUTDOWNCONSTS pSDConsts,
  ********************************************************************/
 
 // shutdown parameters
-PSHUTDOWNPARAMS G_psdParams = NULL;
+static PSHUTDOWNPARAMS G_psdParams = NULL;
 
-HAB             G_habShutdownThread;
-HMQ             G_hmqShutdownThread;
-PNLSSTRINGS     G_pNLSStrings = NULL;
-HMODULE         G_hmodResource = NULLHANDLE;
-// CHAR            szLog[2000] = "";   // for XSHUTDWN.LOG  // removed V0.9.0
+static HAB             G_habShutdownThread;
+static HMQ             G_hmqShutdownThread;
+static PNLSSTRINGS     G_pNLSStrings = NULL;
+static HMODULE         G_hmodResource = NULLHANDLE;
 
 // flags for whether we're currently owning semaphores
-BOOL            G_fAwakeObjectsSemOwned = FALSE,
-                G_fShutdownSemOwned = FALSE,
-                G_fSkippedSemOwned = FALSE;
+static BOOL            G_fAwakeObjectsSemOwned = FALSE,
+                       G_fShutdownSemOwned = FALSE,
+                       G_fSkippedSemOwned = FALSE;
 
 /* ******************************************************************
  *                                                                  *

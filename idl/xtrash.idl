@@ -61,6 +61,11 @@ interface XWPTrashCan : WPFolder
                           in PULONG pulDeleted,
                           in HWND hwndConfirmOwner);
 
+    BOOL xwpProcessObjectCommand(in USHORT usCommand,
+                                 in HWND hwndCnr,
+                                 in WPObject pFirstObject,
+                                 in ULONG ulSelectionFlags);
+
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
 #ifdef __SOMIDL__

@@ -26,61 +26,13 @@ file containing the sources from which that version was compiled.
 <P>This is probably a good point to start since you don't have to understand how CVS
 is working.
 
+<!-- V0.9.7: updated the following -->
 <P><LI>If you want to always have the most current sources from the Netlabs CVS server,
-you will have to get to know CVS. The easiest way to do so is using the
-<B>Netlabs Open Source Archive Client (NOSAC).</B> This is a set of REXX scripts written by
-Christian Langanke which give you nice WPS objects to access the CVS server and contains
-lots of documentation as well.
+you will have to get to know the "Concurrent Versioning System" (CVS).
+In your XWorkplace installation directory, you will find a file called
+<CODE>cvs.txt</CODE> which explains in detail what you need to do.
 
-<P>Do the following:
-<OL><LI>Download CVS 1.10 from Hobbes. (Do not use 1.107, it doesn't work.)
-<LI>Go to <A HREF="http://www.netlabs.org/nosa">http://www.netlabs.org/nosa</A> to download
-NOSAC.
-<LI>Once you have installed NOSAC, update your local "open source archive list"
-and check out the XWorkplace sources.
-</OL>
-
-<P><LI>I personally prefer <B>using CVS from the command line.</B> If you have installed CVS, set
-the following environment variables:
-
-<PRE>    SET CVSROOT=:pserver:umoeller@www.netlabs.org:d:/netlabs.src/xworkplace
-</PRE>
-
-In addition, you need to set <CODE>HOME</CODE> to your home directory. If you don't have
-one yet (which is needed for many UNIX programs), create an empty directory somewhere
-and set <CODE>HOME</CODE> to that directory's full path. CVS needs this directory for
-creating some configuration files.
-
-<P>Next, create an empty directory which will form the root of all the CVS projects.
-This will also be used for downloading other Netlabs projects later.
-For example,
-create C:\CVS. Then set the <CODE>CVSROOT</CODE> environment variable to that directory,
-but use UNIX forward slashes, like this:
-
-<PRE>    SET CVSROOT=C:/CVS</PRE>
-
-<P>In that directory, create a directory called <CODE>xworkplace</CODE> which receives the
-XWorkplace sources.
-
-<P>Then you need a CVS password. If you have not
-been assigned your own CVS password yet, use <CODE>SET USER=GUEST</CODE>. Then type
-
-<PRE>    cvs login</PRE>
-
-and type <CODE>readonly</CODE> for your password.
-
-<P>To finally retrieve the sources, change to the directory created above (in this example:
-<CODE>C:\CVS\xworkplace</CODE>). Then type
-
-<PRE>   cvs checkout .</PRE>
-
-(mind the dot) to retrieve all the sources for the first time.
-If you want to update your sources later
-(after you have retrieved them for the first time), use <CODE>cvs update</CODE> instead.
-
-<P>If you would like to get write access to the XWorkplace sources for contributions,
-please drop a note to <CODE>xworkplace-dev@egroups.com</CODE>, and we'll give you a
-write-access password.
+<!-- V0.9.7: removed all the rest -->
 </OL>
 </BODY>
 </HTML>

@@ -101,7 +101,7 @@
  *
  ********************************************************************/
 
-const char *G_pszCDPlayer = "XMMCDPlayer";
+static const char *G_pszCDPlayer = "XMMCDPlayer";
 
 /* ******************************************************************
  *
@@ -739,7 +739,7 @@ SOM_Scope ULONG  SOMLINK cdp_wpQueryDefaultView(XMMCDPlayer *somSelf)
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST);
+    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -767,7 +767,7 @@ SOM_Scope HWND  SOMLINK cdp_wpOpen(XMMCDPlayer *somSelf, HWND hwndCnr,
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
         hwndNewView = xmmCreateCDPlayerView(somSelf, hwndCnr, ulView);
                                 // src/media/mmcdplay.c
     else

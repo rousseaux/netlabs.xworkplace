@@ -1,6 +1,6 @@
 
 /*
- *@@sourcefile xtrash.c:
+ *@@sourcefile xtrashobj.c:
  *      This file contains SOM code for the following XWorkplace classes:
  *
  *      --  XWPTrashObject: a subclass of WPTransient. One instance
@@ -116,9 +116,9 @@
 #include "xfobj.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Object details
+ *
  ********************************************************************/
 
 /*
@@ -139,18 +139,16 @@ typedef struct _XTRO_DETAILS
    CTIME   ctimeDeleted;        // deletion date
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
-// extra data fields for XWPTrashObject object details;
-// we add one field, which is the "Original path"
-// where the object was deleted from.
+// extra data fields for XWPTrashObject object details:
 #define XTRO_EXTRAFIELDS 5
-CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
-        // we add three fields
+        // we add five fields
+static CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
 // See XWPTrashObject::wpclsQueryDetailsInfo for details.
 
 /* ******************************************************************
- *                                                                  *
- *   XWPTrashObject instance methods                                *
- *                                                                  *
+ *
+ *   XWPTrashObject instance methods
+ *
  ********************************************************************/
 
 /*
@@ -883,9 +881,9 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDrop(XWPTrashObject *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPTrashObject class methods                                   *
- *                                                                  *
+ *
+ *   XWPTrashObject class methods
+ *
  ********************************************************************/
 
 /*
@@ -900,7 +898,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
 {
     PCLASSFIELDINFO pcfi;
     ULONG           i;
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
     M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_wpclsInitData");
@@ -1029,9 +1027,6 @@ SOM_Scope BOOL  SOMLINK xtroM_wpclsCreateDefaultTemplates(M_XWPTrashObject *somS
     return (TRUE);
     // means that the Templates folder should _not_ create templates
     // by itself; we pretend that we've done this
-
-    /* return (M_XWPTrashObject_parent_M_WPTransient_wpclsCreateDefaultTemplates(somSelf,
-                                                                              Folder)); */
 }
 
 /*
@@ -1049,7 +1044,7 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryDetailsInfo(M_XWPTrashObject *somSelf,
                                                      PCLASSFIELDINFO* ppClassFieldInfo,
                                                      PULONG pSize)
 {
-    ULONG ulParentColumns;
+    ULONG           ulParentColumns;
     PCLASSFIELDINFO pcfi;
     ULONG           i;
 

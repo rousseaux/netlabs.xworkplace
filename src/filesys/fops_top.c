@@ -169,8 +169,16 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *      -- While the File thread is processing the file task,
  *         this is called if an error occurs.
  *
+ *      Normally, this will return the same FOPSRET that was
+ *      passed in in frError. For certain FOPSRET codes, this may
+ *      return NO_ERROR, and the bottom layer will attempt to
+ *      fix the error. However, this usually only works for
+ *      things like "delete non-deletable" or something, which
+ *      can be resolved.
+ *
  *      This thing displays a confirmation box only for errors
  *      which apply to a single trash object.
+ *
  *      For other errors, the error code is simply returned to the
  *      caller, which in turn passes the error code to its caller(s).
  *
@@ -192,6 +200,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             ulMsg = 0,
             flFlags = 0;
     ULONG   ulIgnoreFlag = 0;
+    PSZ     pszTitle = _wpQueryTitle(pObject);
 
     switch (frError)
     {
@@ -200,7 +209,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             // on read-only WPFileSystems
             ulMsg = 179;
             flFlags = MB_YES_YES2ALL_NO | MB_DEFBUTTON3;
-            apsz[0] = _wpQueryTitle(pObject);
+            apsz[0] = pszTitle;
             cpsz = 1;
             ulIgnoreFlag = FOPS_ISQ_MOVE2TRASH_READONLY;
         break;
@@ -210,7 +219,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             // on read-only WPFileSystems
             ulMsg = 184;
             flFlags = MB_YES_YES2ALL_NO | MB_DEFBUTTON3;
-            apsz[0] = _wpQueryTitle(pObject);
+            apsz[0] = pszTitle;
             cpsz = 1;
                 // if we return NO_ERROR after this,
                 // the fileops engine unlocks the file
@@ -221,9 +230,44 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             // object not deleteable:
             ulMsg = 185;
             flFlags = MB_CANCEL;
-            apsz[0] = _wpQueryTitle(pObject);
+            apsz[0] = pszTitle;
             cpsz = 1;
         break;
+
+        default:
+            if (    (ulOperation == XFT_INSTALLFONTS)
+                 || (ulOperation == XFT_DEINSTALLFONTS)
+               )
+            {
+                // for "install fonts", we should report all errors...
+                // the user should know that something went wrong.
+
+                flFlags = MB_YES_YES2ALL_NO | MB_DEFBUTTON3;
+
+                switch (frError)
+                {
+                    case FOPSERR_FONT_ALREADY_INSTALLED:
+                        ulMsg = 201;
+                        apsz[0] = pszTitle;
+                        cpsz = 1;
+                    break;
+
+                    case FOPSERR_FONT_STILL_IN_USE:
+                        ulMsg = 204;
+                        apsz[0] = pszTitle;
+                        cpsz = 1;
+                    break;
+
+                    default:
+                        ulMsg = 200;
+                        sprintf(szMsg, "%d", frError);
+                        apsz[0] = szMsg;
+                        apsz[1] = pszTitle;
+                        cpsz = 2;
+                }
+
+                ulIgnoreFlag = FOPS_ISQ_FONTINSTALL;
+            }
     }
 
     if (flFlags)
@@ -509,6 +553,10 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
 
         case XFT_TRUEDELETE:
             pszTitle = pNLSStrings->pszFopsTrueDelete;
+        break;
+
+        case XFT_INSTALLFONTS:
+            pszTitle = "Installing fonts..."; // ###
         break;
     }
 
@@ -968,8 +1016,9 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
 
 /*
  *@@ fopsStartTrashRestoreFromCnr:
- *      this gets called from trsh_fnwpSubclassedTrashCanFrame
- *      if WM_COMMAND with ID_XFMI_OFS_TRASHRESTORE has been intercepted.
+ *      this gets called from trshProcessObjectCommand
+ *      if WM_COMMAND with ID_XFMI_OFS_TRASHRESTORE has
+ *      been intercepted.
  *
  *      Entry point to the top layer of the XWorkplace file
  *      operations engine.
@@ -1001,8 +1050,9 @@ FOPSRET fopsStartTrashRestoreFromCnr(HAB hab,                 // in: as with fop
 
 /*
  *@@ fopsStartTrashDestroyFromCnr:
- *      this gets called from trsh_fnwpSubclassedTrashCanFrame
- *      if WM_COMMAND with ID_XFMI_OFS_TRASHDESTROY has been intercepted.
+ *      this gets called from trshProcessObjectCommand
+ *      if WM_COMMAND with ID_XFMI_OFS_TRASHDESTROY has
+ *      been intercepted.
  *
  *      Entry point to the top layer of the XWorkplace file
  *      operations engine.
@@ -1099,3 +1149,50 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
 
     return (frc);
 }
+
+/*
+ *@@ fopsStartFontDeinstallFromCnr:
+ *      this gets called from fonProcessObjectCommand
+ *      if WM_COMMAND with ID_XFMI_OFS_FONT_DEINSTALL has
+ *      been intercepted.
+ *
+ *      Entry point to the top layer of the XWorkplace file
+ *      operations engine.
+ *
+ *      This calls fopsStartTaskFromCnr with the proper parameters
+ *      to start deinstalling the selected font objects on the File
+ *      thread.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+FOPSRET fopsStartFontDeinstallFromCnr(HAB hab,          // in: as with fopsStartTask
+                                      WPFolder *pFontFolderSource, // in: XWPFontFolder with font objects
+                                      WPObject *pSourceObject,  // in: first XWPFontObject
+                                      ULONG ulSelection,        // in: SEL_* flag
+                                      HWND hwndCnr,             // in: container to collect objects from
+                                      BOOL fConfirm)            // in: display confirmation?
+{
+    FOPSCONFIRM Confirm = {0};
+
+    if (fConfirm)
+    {
+        Confirm.hwndOwner = WinQueryWindow(hwndCnr, QW_PARENT);
+        Confirm.ulMsgSingle = 202;
+        Confirm.ulMsgMultiple = 203;
+    }
+
+    return (fopsStartTaskFromCnr(XFT_DEINSTALLFONTS,
+                                 hab,
+                                 pFontFolderSource,
+                                 NULL,             // no target folder
+                                 pSourceObject,
+                                 ulSelection,
+                                 FALSE,             // no related objects... don't work!
+                                 hwndCnr,
+                                 (fConfirm)
+                                    ? &Confirm
+                                    : NULL)
+            );
+}
+

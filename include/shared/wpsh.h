@@ -33,9 +33,9 @@
 #ifndef XWPS_HEADER_INCLUDED
     #define XWPS_HEADER_INCLUDED
 
-    PVOID wpshParentResolve(SOMObject *somSelf,
-                            SOMClass *pClass,
-                            const char *pcszMethodName);
+    PVOID wpshResolveFor(SOMObject *somSelf,
+                         SOMClass *pClass,
+                         const char *pcszMethodName);
 
     PVOID wpshParentNumResolve(SOMClass *pClass,
                                somMethodTabs parentMTab,
@@ -245,6 +245,74 @@
                                            ULONG,
                                            ULONG);
     typedef xfTP_wpModifyMenu *xfTD_wpModifyMenu;
+
+    /* ******************************************************************
+     *
+     *   Folder content hacks
+     *
+     ********************************************************************/
+
+    /*
+     *@@ xfTP_get_pobjNext:
+     *      prototype for WPObject::_get_pobjNext (note the
+     *      extra underscore).
+     *
+     *      Each WPObject apparently has a "pobjNext" member,
+     *      which points to the "next" object if that object
+     *      has been inserted in a folder. This is how the
+     *      WPFolder::wpQueryContent method works... it keeps
+     *      calling _get_pobjNext on the previous object.
+     *
+     *      Apparently, pobjNext is a SOM "attribute", which
+     *      is an instance variable for which SOM automatically
+     *      generates "get" methods so that they can be accessed.
+     *      The nice thing about this is that this also allows
+     *      us to get a direct pointer to the address of the
+     *      attribute (i.e. the instance variable).
+     *
+     *      See the SOM Programming guide for more about attributes.
+     *
+     *      As a consequence, calling _get_pobjNext gives us
+     *      the address of the "pobjNext" instance variable,
+     *      which is a WPObject pointer.
+     *
+     *      Note that WPFolder also defines the _get_FirstObj
+     *      and _get_LastObj attributes, which define the head
+     *      and the tail of the folder contents list.
+     *
+     *@@added V0.9.7 (2001-01-13) [umoeller]
+     */
+
+    typedef WPObject** _System xfTP_get_pobjNext(WPObject*);
+    typedef xfTP_get_pobjNext *xfTD_get_pobjNext;
+
+    /*
+     *@@ xfTP_get_FirstObj:
+     *      prototype for WPFolder::_get_FirstObj (note the
+     *      extra underscore).
+     *
+     *      See xfTP_get_pobjNext for explanations.
+     *
+     *@@added V0.9.7 (2001-01-13) [umoeller]
+     */
+
+    typedef WPObject** _System xfTP_get_FirstObj(WPFolder*);
+    typedef xfTP_get_FirstObj *xfTD_get_FirstObj;
+
+    /*
+     *@@ xfTP_get_LastObj:
+     *      prototype for WPFolder::_get_LastObj (note the
+     *      extra underscore).
+     *
+     *      See xfTP_get_pobjNext for explanations.
+     *
+     *@@added V0.9.7 (2001-01-13) [umoeller]
+     */
+
+    typedef WPObject** _System xfTP_get_LastObj(WPFolder*);
+    typedef xfTP_get_LastObj *xfTD_get_LastObj;
+
+    WPObject** wpshGetNextObjPointer(WPObject *somSelf);
 
     /* ******************************************************************
      *

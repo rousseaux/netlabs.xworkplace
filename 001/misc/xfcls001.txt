@@ -451,5 +451,8 @@ WPSysset 1 This class allows REXX access to other class's class object settings.
 PDR 0 Undocumented system class.
 QDR 0 Undocumented system class.
 
-
+XCenter 1 Well, XWorkplace's XCenter, obviously. This can be safely deinstalled.
+XWPFontFolder 1 This is the new XWorkplace "font folder". This requires that XWPFontObject and XWPFontFile also be installed.
+XWPFontObject 1 This represents installed fonts in the new XWorkplace "font folder" (XWPFontFolder). This requires that XWPFontFolder and XWPFontFile also be installed.
+XWPFontFile 1 This represents physical font files on the system. All data files which are considered fonts are automatically made instances of this class. This class is required for installing font files into the XWorkplace "font folder".
 

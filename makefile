@@ -83,8 +83,9 @@ MODULESDIR=bin\modules
 # created from the files in MAIN\.
 OBJS = \
 # code from classes\
-    bin\xcenter.obj bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
-    bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
+    bin\xcenter.obj bin\xfont.obj bin\xfontfile.obj bin\xfontobj.obj bin\xfobj.obj \
+    bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj bin\xfdisk.obj \
+    bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
     bin\xmmcdplay.obj bin\xmmvolume.obj \
     bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpfsys.obj \
     bin\xwpkeybd.obj bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
@@ -93,8 +94,8 @@ OBJS = \
     bin\center.obj bin\classes.obj bin\cnrsort.obj bin\common.obj bin\contentmenus.obj \
     bin\notebook.obj bin\kernel.obj bin\xsetup.obj bin\wpsh.obj \
 # code from config\
-    bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\hookintf.obj \
-    bin\pagemage.obj bin\partitions.obj bin\sound.obj \
+    bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\fonts.obj \
+    bin\hookintf.obj bin\pagemage.obj bin\partitions.obj bin\sound.obj \
 # code from filesys\
     bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fdrmenus.obj \
     bin\fhandles.obj bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
@@ -393,7 +394,7 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 src\shared\xwp.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace main WPS classes module"
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def makefile
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\shared\xwp.def @<<link.tmp
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
@@ -647,6 +648,7 @@ release: really_all
     $(COPY) $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
     $(COPY) BUGS $(XWPRELEASE_NLSDOC)
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
+    $(COPY) cvs.txt $(XWPRELEASE_MAIN)
 #
 # 2) bin
 #    a) kernel

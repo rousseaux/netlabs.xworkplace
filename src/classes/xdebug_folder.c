@@ -72,7 +72,7 @@
 
 #pragma hdrstop
 
-BOOL    G_fDebugFolderInit = FALSE;
+static BOOL    G_fDebugFolderInit = FALSE;
 
 /*
  * InstanceMethodDebug:

@@ -107,19 +107,19 @@
  *
  ********************************************************************/
 
-BOOL                    G_fXCenterClassRegistered = FALSE;
+static BOOL                    G_fXCenterClassRegistered = FALSE;
 
-COUNTRYSETTINGS         G_CountrySettings = {0};
+static COUNTRYSETTINGS         G_CountrySettings = {0};
 
 // array of classes created by ctrpLoadClasses
-PXCENTERWIDGETCLASS     G_paWidgetClasses = NULL;
-ULONG                   G_cWidgetClasses = 0;
+static PXCENTERWIDGETCLASS     G_paWidgetClasses = NULL;
+static ULONG                   G_cWidgetClasses = 0;
 // reference count (raised with each ctrpLoadClasses call)
-ULONG                   G_ulWidgetClassesRefCount = 0;
+static ULONG                   G_ulWidgetClassesRefCount = 0;
 
 // global array of plugin modules which were loaded
-LINKLIST                G_llModules;      // this contains plain HMODULEs as data
-BOOL                    G_fModulesInitialized = FALSE;
+static LINKLIST                G_llModules;      // this contains plain HMODULEs as data
+static BOOL                    G_fModulesInitialized = FALSE;
 
 /*
  * G_aBuiltInWidgets:
@@ -3266,7 +3266,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
 
             if (_ulWindowStyle & WS_TOPMOST)
                 xstrcat(&strTemp, "ALWAYSONTOP=YES;");
-            if ((_ulWindowStyle & WS_ANIMATE) == 0)
+            if ((_ulWindowStyle & WS_ANIMATE) != 0)
                 xstrcat(&strTemp, "ANIMATE=YES;");
             if (_ulAutoHide)
             {
@@ -3396,9 +3396,9 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
 
         // manually resolve parent method
         pfn_xwpQuerySetup2
-            = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
-                                                                _XCenter,
-                                                                "xwpQuerySetup2");
+            = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
+                                                             _somGetParent(_XCenter),
+                                                             "xwpQuerySetup2");
         if (pfn_xwpQuerySetup2)
         {
             // now call parent method
@@ -3448,7 +3448,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
             // which we add items to now
             PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER),
+                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
                                "XCenter",
                                MIS_TEXT, 0);
         }
@@ -3620,7 +3620,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                       _ulWindowStyle,   // frame style
                                       _wpQueryTitle(pXCenterData->somSelf),
                                       0,
-                                      WNDCLASS_XCENTER_CLIENT, // client class
+                                      WC_XCENTER_CLIENT, // client class
                                       WS_VISIBLE,       // client style
                                       0,
                                       pXCenterData,     // client control data
@@ -3843,7 +3843,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
         {
             // get window proc for WC_FRAME
             if (   (WinRegisterClass(hab,
-                                     WNDCLASS_XCENTER_CLIENT,
+                                     WC_XCENTER_CLIENT,
                                      fnwpXCenterMainClient,
                                      CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
                                      sizeof(PXCENTERWINDATA))) // additional bytes to reserve

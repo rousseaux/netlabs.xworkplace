@@ -86,6 +86,8 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
+#include "xfobj.ih"
+#include "xfdisk.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -106,24 +108,23 @@
 
 // #include <wpdesk.h>
 #include <wpshadow.h>           // WPShadow
-#include "xfdisk.h"
 #include <wprootf.h>
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // mutex semaphores for folder lists (favorite folders, quick-open)
 HMTX                G_hmtxFolderLists = NULLHANDLE;
 
 /* ******************************************************************
- *                                                                  *
- *   Query setup strings                                            *
- *                                                                  *
+ *
+ *   Query setup strings
+ *
  ********************************************************************/
 
 /*
@@ -628,9 +629,9 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Folder view helpers                                            *
- *                                                                  *
+ *
+ *   Folder view helpers
+ *
  ********************************************************************/
 
 /*
@@ -742,9 +743,9 @@ BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Full path in title                                             *
- *                                                                  *
+ *
+ *   Full path in title
+ *
  ********************************************************************/
 
 /*
@@ -977,9 +978,9 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Snap To Grid                                                   *
- *                                                                  *
+ *
+ *   Snap To Grid
+ *
  ********************************************************************/
 
 /*
@@ -1128,9 +1129,9 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Extended Folder Sort                                           *
- *                                                                  *
+ *
+ *   Extended Folder Sort
+ *
  ********************************************************************/
 
 /*
@@ -1395,10 +1396,267 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Status bars                                                    *
- *                                                                  *
+ *
+ *   Status bars
+ *
  ********************************************************************/
+
+/*
+ *@@ fdrCreateStatusBar:
+ *      depending on fShow, this creates or destroys the folder status
+ *      bar for a certain folder.
+ *
+ *      This gets called in the following situations:
+ *      a)   from fdrManipulateNewView, when a folder view is
+ *           created which needs a status bar;
+ *      b)   later if status bar visibility settings are changed
+ *           either for the folder or globally.
+ *
+ *      Parameters:
+ *      --  psfv:      pointer to SUBCLASSEDFOLDERVIEW structure of
+ *                     current folder frame; this contains the
+ *                     folder frame window handle
+ *      --  fShow:     create / destroy flag
+ *
+ *      This func returns the hwnd of the status bar or NULL if calling
+ *      the func was useless, because the status bar was already
+ *      (de)activated.
+ *
+ *      The status bar always has the ID 0x9001 so you can get the
+ *      status bar HWND later by calling
+ +          WinQueryWindow(hwndFrame, 0x9001)
+ *      If this returns NULLHANDLE, then there is no status bar.
+ *
+ *      Note that this does _not_ change the folder's visibility
+ *      settings, but only shows or hides the status bar "factually"
+ *      by reformatting the folder frame's PM windows.
+ *
+ *      This function _must_ be called only from the same thread
+ *      where the folder frame window is running (normally TID 1),
+ *      otherwise the WPS will crash or PM will hang.
+ *
+ *      Because of all this, call XFolder::xwpSetStatusBarVisibility
+ *      instead if you wish to change folder status bars. That method
+ *      will do the display also.
+ *
+ *@@changed V0.9.0 [umoeller]: this used to be an instance method (xfldr.c)
+ */
+
+HWND fdrCreateStatusBar(WPFolder *somSelf,
+                        PSUBCLASSEDFOLDERVIEW psli2,
+                        BOOL fShow)
+{
+    HWND hrc = NULLHANDLE;
+
+    CHAR    szFolderPosKey[50];
+    ULONG   ulIni;
+    ULONG   cbIni;
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+
+    #ifdef DEBUG_STATUSBARS
+        _Pmpf(("xfCreateStatusBar %d", fShow));
+    #endif
+
+    if (psli2)
+    {
+        if (fShow)
+        {
+            // show status bar
+
+            if (psli2->hwndStatusBar) // already activated: update only
+                WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+                // and quit
+            // else create status bar as a static control
+            // (which will be subclassed below)
+            else if (psli2->hwndStatusBar
+                        = WinCreateWindow(psli2->hwndFrame,        // parent
+                                          WC_STATIC,              // wnd class
+                                          (cmnQueryNLSStrings())->pszPopulating, // title
+                                          (SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
+                                              | DT_ERASERECT
+                                              | WS_VISIBLE | WS_CLIPSIBLINGS),
+                                          0L, 0L, -1L, -1L,
+                                          psli2->hwndFrame,        // owner
+                                          HWND_BOTTOM,
+                                          0x9001,                 // ID
+                                          (PVOID)NULL,
+                                          (PVOID)NULL))
+            {
+                BOOL    fInflate = FALSE;
+                SWP     swp;
+                const char* pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
+                ULONG   ulView = wpshQueryView(psli2->somSelf,
+                                               psli2->hwndFrame);
+
+                // set up window data (QWL_USER) for status bar
+                PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
+                psbd->somSelf    = somSelf;
+                psbd->psfv       = psli2;
+                psbd->habStatusBar = WinQueryAnchorBlock(psli2->hwndStatusBar);
+                psbd->idTimer    = 0;
+                psbd->fDontBroadcast = TRUE;
+                            // prevents broadcasting of WM_PRESPARAMSCHANGED
+                psbd->fFolderPopulated = FALSE;
+                            // suspends updating until folder is populated;
+                WinSetWindowULong(psli2->hwndStatusBar, QWL_USER, (ULONG)psbd);
+
+                // subclass static control to make it a status bar
+                psbd->pfnwpStatusBarOriginal = WinSubclassWindow(psli2->hwndStatusBar,
+                                                                 fdr_fnwpStatusBar);
+                WinSetPresParam(psli2->hwndStatusBar,
+                                PP_FONTNAMESIZE,
+                                (ULONG)strlen(pszStatusBarFont) + 1,
+                                (PVOID)pszStatusBarFont);
+
+                // now "inflate" the folder frame window if this is the first
+                // time that this folder view has been opened with a status bar;
+                // if we didn't do this, the folder frame would be too small
+                // for the status bar and scroll bars would appear. We store
+                // a flag in the folder's instance data for each different view
+                // that we've inflated the folder frame, so that this happens
+                // only once per view.
+
+                // From wpobject.h:
+                // #define VIEW_CONTENTS      0x00000001
+                // #define VIEW_SETTINGS      0x00000002
+                // #define VIEW_HELP          0x00000004
+                // #define VIEW_RUNNING       0x00000008
+                // #define VIEW_DETAILS       0x00000010
+                // #define VIEW_TREE          0x00000020
+
+                sprintf(szFolderPosKey, "%d@XFSB",
+                        _wpQueryHandle(psli2->pRealObject));
+
+                cbIni = sizeof(ulIni);
+                if (PrfQueryProfileData(HINI_USER,
+                                        WPINIAPP_FOLDERPOS,
+                                        szFolderPosKey,
+                                        &ulIni,
+                                        &cbIni) == FALSE)
+                    ulIni = 0;
+
+                if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                              : (ulView == OPEN_TREE) ? VIEW_TREE
+                              : VIEW_DETAILS
+                            ))
+                    fInflate = FALSE;
+                else
+                    fInflate = TRUE;
+
+                #ifdef DEBUG_STATUSBARS
+                    _Pmpf(("xfCreateStatusBar, fInflate: %d", fInflate));
+                #endif
+
+                // set a flag for the subclassed folder frame
+                // window proc that this folder view needs no additional scrolling
+                // (this is evaluated in WM_FORMATFRAME msgs)
+                psli2->fNeedCnrScroll = FALSE;
+
+                if (fInflate)
+                {
+                    // this view has not been inflated yet:
+                    // inflate now and set flag for this view
+
+                    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+                    WinQueryWindowPos(psli2->hwndFrame, &swp);
+                    // inflate folder frame
+                    WinSetWindowPos(psli2->hwndFrame, 0,
+                                    swp.x, (swp.y - ulStatusBarHeight),
+                                    swp.cx, (swp.cy + ulStatusBarHeight),
+                                    SWP_MOVE | SWP_SIZE);
+
+                    // mark this folder view as "inflated" in OS2.INI
+                    ulIni |= (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                               : (ulView == OPEN_TREE) ? VIEW_TREE
+                               : VIEW_DETAILS
+                             );
+                    PrfWriteProfileData(HINI_USER,
+                                        WPINIAPP_FOLDERPOS,
+                                        szFolderPosKey,
+                                        &ulIni,
+                                        sizeof(ulIni));
+                }
+                else
+                    // if the folder frame has been inflated already,
+                    // WM_FORMATFRAME _will_ have to scroll the container.
+                    // We do this for icon views only.
+                    if (ulView == OPEN_CONTENTS)
+                        psli2->fNeedCnrScroll = TRUE;
+
+                // _Pmpf(("  psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+
+                // enforce reformatting / repaint of frame window
+                WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
+
+                // update status bar contents
+                WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+
+                hrc = psli2->hwndStatusBar;
+            }
+        }
+        else
+        {
+            // hide status bar:
+            if (psli2->hwndStatusBar)
+            {
+                SWP     swp;
+                HWND    hwndStatus = psli2->hwndStatusBar;
+                BOOL    fDeflate = FALSE;
+                ULONG   ulView = wpshQueryView(psli2->somSelf,
+                                               psli2->hwndFrame);
+
+                psli2->hwndStatusBar = 0;
+                WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
+                WinDestroyWindow(hwndStatus);
+
+                // decrease the size of the frame window by the status bar height,
+                // if we did this before
+                sprintf(szFolderPosKey, "%d@XFSB",
+                        _wpQueryHandle(psli2->pRealObject));
+                cbIni = sizeof(ulIni);
+                if (PrfQueryProfileData(HINI_USER,
+                                        WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
+                                        szFolderPosKey,
+                                        &ulIni,
+                                        &cbIni) == FALSE)
+                    ulIni = 0;
+
+                if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                              : (ulView == OPEN_TREE) ? VIEW_TREE
+                              : VIEW_DETAILS
+                            ))
+                    fDeflate = TRUE;
+                else
+                    fDeflate = TRUE;
+
+                if (fDeflate)
+                {
+                    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+                    WinQueryWindowPos(psli2->hwndFrame, &swp);
+                    WinSetWindowPos(psli2->hwndFrame, 0,
+                                    swp.x, (swp.y + ulStatusBarHeight),
+                                    swp.cx, (swp.cy - ulStatusBarHeight),
+                                    SWP_MOVE | SWP_SIZE);
+
+                    ulIni &= ~(   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                                : (ulView == OPEN_TREE) ? VIEW_TREE
+                                : VIEW_DETAILS
+                              );
+                    PrfWriteProfileData(HINI_USER,
+                                        WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
+                                        szFolderPosKey,
+                                        &ulIni,
+                                        sizeof(ulIni));
+                }
+
+                hrc = psli2->hwndStatusBar;
+            }
+        }
+    }
+
+    return (hrc);
+}
 
 /*
  * fncbUpdateStatusBars:
@@ -1520,10 +1778,102 @@ MRESULT EXPENTRY fncbStatusBarPost(HWND hwndView,        // folder frame
     return ((MPARAM) TRUE);
 }
 
+/*
+ *@@ fdrCallResolvedUpdateStatusBar:
+ *      resolves XFolder::xwpUpdateStatusBar via name-lookup
+ *      resolution on pFolder and, if found, calls that method
+ *      implementation.
+ *
+ *      Always use this function instead of calling the method
+ *      directly... because that would probably lead to confusion.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+VOID fdrCallResolvedUpdateStatusBar(WPFolder *pFolder,
+                                    HWND hwndStatusBar,
+                                    HWND hwndCnr)
+{
+    BOOL fObjectInitialized = _wpIsObjectInitialized(pFolder);
+    XFolderData *somThis = XFolderGetData(pFolder);
+    somTD_XFolder_xwpUpdateStatusBar pfnResolvedUpdateStatusBar = NULL;
+
+    // do SOM name-lookup resolution for xwpUpdateStatusBar
+    // (which will per default find the XFolder method, V0.9.0)
+    // if we have not done that for this instance already;
+    // we store the method pointer in the instance data
+    // for speed
+    if (fObjectInitialized) // V0.9.3 (2000-04-29) [umoeller]
+        if (_pfnResolvedUpdateStatusBar)
+            // already resolved: get resolved address
+            // from instance data
+            pfnResolvedUpdateStatusBar
+                = (somTD_XFolder_xwpUpdateStatusBar)_pfnResolvedUpdateStatusBar;
+
+    if (!pfnResolvedUpdateStatusBar)
+    {
+        // not resolved yet:
+        pfnResolvedUpdateStatusBar
+                = (somTD_XFolder_xwpUpdateStatusBar)somResolveByName(
+                                          pFolder,
+                                          "xwpUpdateStatusBar");
+        if (fObjectInitialized)
+            // object initialized:
+            _pfnResolvedUpdateStatusBar = (PVOID)pfnResolvedUpdateStatusBar;
+    }
+
+    // finally, compose the text by calling
+    // the resolved method
+    if (pfnResolvedUpdateStatusBar)
+        pfnResolvedUpdateStatusBar(pFolder,
+                                   hwndStatusBar,
+                                   hwndCnr);
+    else
+        WinSetWindowText(hwndStatusBar,
+                         "*** error in name-lookup resolution");
+}
+
+/*
+ *@@ fdrUpdateStatusBars:
+ *      updates the status bars of all open views of the
+ *      specified folder.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+VOID fdrUpdateStatusBars(WPFolder *pFolder)
+{
+    if (_wpFindUseItem(pFolder, USAGE_OPENVIEW, NULL))
+    {
+        // folder has an open view;
+        // now we go search the open views of the folder and get the
+        // frame handle of the desired view (ulView)
+        PVIEWITEM   pViewItem;
+        for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+             pViewItem;
+             pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+        {
+            switch (pViewItem->view)
+            {
+                case OPEN_CONTENTS:
+                case OPEN_DETAILS:
+                case OPEN_TREE:
+                {
+                    HWND hwndStatusBar = WinWindowFromID(pViewItem->handle, 0x9001);
+                    if (hwndStatusBar)
+                        fdrCallResolvedUpdateStatusBar(pFolder,
+                                                       hwndStatusBar,
+                                                       wpshQueryCnrFromFrame(pViewItem->handle));
+                }
+            }
+        }
+    }
+}
+
 /* ******************************************************************
- *                                                                  *
- *   Folder linked lists                                            *
- *                                                                  *
+ *
+ *   Folder linked lists
+ *
  ********************************************************************/
 
 /*
@@ -1853,272 +2203,9 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Folder status bars                                             *
- *                                                                  *
- ********************************************************************/
-
-/*
- *@@ fdrCreateStatusBar:
- *      depending on fShow, this creates or destroys the folder status
- *      bar for a certain folder.
  *
- *      This gets called in the following situations:
- *      a)   from fdrManipulateNewView, when a folder view is
- *           created which needs a status bar;
- *      b)   later if status bar visibility settings are changed
- *           either for the folder or globally.
+ *   XFolder window procedures
  *
- *      Parameters:
- *      --  psfv:      pointer to SUBCLASSEDFOLDERVIEW structure of
- *                     current folder frame; this contains the
- *                     folder frame window handle
- *      --  fShow:     create / destroy flag
- *
- *      This func returns the hwnd of the status bar or NULL if calling
- *      the func was useless, because the status bar was already
- *      (de)activated.
- *
- *      The status bar always has the ID 0x9001 so you can get the
- *      status bar HWND later by calling
- +          WinQueryWindow(hwndFrame, 0x9001)
- *      If this returns NULLHANDLE, then there is no status bar.
- *
- *      Note that this does _not_ change the folder's visibility
- *      settings, but only shows or hides the status bar "factually"
- *      by reformatting the folder frame's PM windows.
- *
- *      This function _must_ be called only from the same thread
- *      where the folder frame window is running (normally TID 1),
- *      otherwise the WPS will crash or PM will hang.
- *
- *      Because of all this, call XFolder::xwpSetStatusBarVisibility
- *      instead if you wish to change folder status bars. That method
- *      will do the display also.
- *
- *@@changed V0.9.0 [umoeller]: this used to be an instance method (xfldr.c)
- */
-
-HWND fdrCreateStatusBar(WPFolder *somSelf,
-                        PSUBCLASSEDFOLDERVIEW psli2,
-                        BOOL fShow)
-{
-    HWND hrc = NULLHANDLE;
-
-    CHAR    szFolderPosKey[50];
-    ULONG   ulIni;
-    ULONG   cbIni;
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-
-    #ifdef DEBUG_STATUSBARS
-        _Pmpf(("xfCreateStatusBar %d", fShow));
-    #endif
-
-    if (psli2)
-    {
-        if (fShow)
-        {
-            // show status bar
-
-            if (psli2->hwndStatusBar) // already activated: update only
-                WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
-                // and quit
-            // else create status bar as a static control
-            // (which will be subclassed below)
-            else if (psli2->hwndStatusBar
-                        = WinCreateWindow(psli2->hwndFrame,        // parent
-                                          WC_STATIC,              // wnd class
-                                          (cmnQueryNLSStrings())->pszPopulating, // title
-                                          (SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
-                                              | DT_ERASERECT
-                                              | WS_VISIBLE | WS_CLIPSIBLINGS),
-                                          0L, 0L, -1L, -1L,
-                                          psli2->hwndFrame,        // owner
-                                          HWND_BOTTOM,
-                                          0x9001,                 // ID
-                                          (PVOID)NULL,
-                                          (PVOID)NULL))
-            {
-                BOOL    fInflate = FALSE;
-                SWP     swp;
-                const char* pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
-                ULONG   ulView = wpshQueryView(psli2->somSelf,
-                                               psli2->hwndFrame);
-
-                // set up window data (QWL_USER) for status bar
-                PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
-                psbd->somSelf    = somSelf;
-                psbd->psfv       = psli2;
-                psbd->habStatusBar = WinQueryAnchorBlock(psli2->hwndStatusBar);
-                psbd->idTimer    = 0;
-                psbd->fDontBroadcast = TRUE;
-                            // prevents broadcasting of WM_PRESPARAMSCHANGED
-                psbd->fFolderPopulated = FALSE;
-                            // suspends updating until folder is populated;
-                WinSetWindowULong(psli2->hwndStatusBar, QWL_USER, (ULONG)psbd);
-
-                // subclass static control to make it a status bar
-                psbd->pfnwpStatusBarOriginal = WinSubclassWindow(psli2->hwndStatusBar,
-                                                                 fdr_fnwpStatusBar);
-                WinSetPresParam(psli2->hwndStatusBar,
-                                PP_FONTNAMESIZE,
-                                (ULONG)strlen(pszStatusBarFont) + 1,
-                                (PVOID)pszStatusBarFont);
-
-                // now "inflate" the folder frame window if this is the first
-                // time that this folder view has been opened with a status bar;
-                // if we didn't do this, the folder frame would be too small
-                // for the status bar and scroll bars would appear. We store
-                // a flag in the folder's instance data for each different view
-                // that we've inflated the folder frame, so that this happens
-                // only once per view.
-
-                // From wpobject.h:
-                // #define VIEW_CONTENTS      0x00000001
-                // #define VIEW_SETTINGS      0x00000002
-                // #define VIEW_HELP          0x00000004
-                // #define VIEW_RUNNING       0x00000008
-                // #define VIEW_DETAILS       0x00000010
-                // #define VIEW_TREE          0x00000020
-
-                sprintf(szFolderPosKey, "%d@XFSB",
-                        _wpQueryHandle(psli2->pRealObject));
-
-                cbIni = sizeof(ulIni);
-                if (PrfQueryProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,
-                                        szFolderPosKey,
-                                        &ulIni,
-                                        &cbIni) == FALSE)
-                    ulIni = 0;
-
-                if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
-                              : (ulView == OPEN_TREE) ? VIEW_TREE
-                              : VIEW_DETAILS
-                            ))
-                    fInflate = FALSE;
-                else
-                    fInflate = TRUE;
-
-                #ifdef DEBUG_STATUSBARS
-                    _Pmpf(("xfCreateStatusBar, fInflate: %d", fInflate));
-                #endif
-
-                // set a flag for the subclassed folder frame
-                // window proc that this folder view needs no additional scrolling
-                // (this is evaluated in WM_FORMATFRAME msgs)
-                psli2->fNeedCnrScroll = FALSE;
-
-                if (fInflate)
-                {
-                    // this view has not been inflated yet:
-                    // inflate now and set flag for this view
-
-                    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
-                    WinQueryWindowPos(psli2->hwndFrame, &swp);
-                    // inflate folder frame
-                    WinSetWindowPos(psli2->hwndFrame, 0,
-                                    swp.x, (swp.y - ulStatusBarHeight),
-                                    swp.cx, (swp.cy + ulStatusBarHeight),
-                                    SWP_MOVE | SWP_SIZE);
-
-                    // mark this folder view as "inflated" in OS2.INI
-                    ulIni |= (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
-                               : (ulView == OPEN_TREE) ? VIEW_TREE
-                               : VIEW_DETAILS
-                             );
-                    PrfWriteProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,
-                                        szFolderPosKey,
-                                        &ulIni,
-                                        sizeof(ulIni));
-                }
-                else
-                    // if the folder frame has been inflated already,
-                    // WM_FORMATFRAME _will_ have to scroll the container.
-                    // We do this for icon views only.
-                    if (ulView == OPEN_CONTENTS)
-                        psli2->fNeedCnrScroll = TRUE;
-
-                // _Pmpf(("  psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
-
-                // enforce reformatting / repaint of frame window
-                WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
-
-                // update status bar contents
-                WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
-
-                hrc = psli2->hwndStatusBar;
-            }
-        }
-        else
-        {
-            // hide status bar:
-            if (psli2->hwndStatusBar)
-            {
-                SWP     swp;
-                HWND    hwndStatus = psli2->hwndStatusBar;
-                BOOL    fDeflate = FALSE;
-                ULONG   ulView = wpshQueryView(psli2->somSelf,
-                                               psli2->hwndFrame);
-
-                psli2->hwndStatusBar = 0;
-                WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
-                WinDestroyWindow(hwndStatus);
-
-                // decrease the size of the frame window by the status bar height,
-                // if we did this before
-                sprintf(szFolderPosKey, "%d@XFSB",
-                        _wpQueryHandle(psli2->pRealObject));
-                cbIni = sizeof(ulIni);
-                if (PrfQueryProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
-                                        szFolderPosKey,
-                                        &ulIni,
-                                        &cbIni) == FALSE)
-                    ulIni = 0;
-
-                if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
-                              : (ulView == OPEN_TREE) ? VIEW_TREE
-                              : VIEW_DETAILS
-                            ))
-                    fDeflate = TRUE;
-                else
-                    fDeflate = TRUE;
-
-                if (fDeflate)
-                {
-                    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
-                    WinQueryWindowPos(psli2->hwndFrame, &swp);
-                    WinSetWindowPos(psli2->hwndFrame, 0,
-                                    swp.x, (swp.y + ulStatusBarHeight),
-                                    swp.cx, (swp.cy - ulStatusBarHeight),
-                                    SWP_MOVE | SWP_SIZE);
-
-                    ulIni &= ~(   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
-                                : (ulView == OPEN_TREE) ? VIEW_TREE
-                                : VIEW_DETAILS
-                              );
-                    PrfWriteProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
-                                        szFolderPosKey,
-                                        &ulIni,
-                                        sizeof(ulIni));
-                }
-
-                hrc = psli2->hwndStatusBar;
-            }
-        }
-    }
-
-    return (hrc);
-}
-
-/* ******************************************************************
- *                                                                  *
- *   XFolder window procedures                                      *
- *                                                                  *
  ********************************************************************/
 
 /*
@@ -2183,9 +2270,6 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                 TRY_LOUD(excpt1)
                 {
                     XFolderData *somThis = XFolderGetData(psbd->somSelf);
-                    somTD_XFolder_xwpUpdateStatusBar pfnResolvedUpdateStatusBar = NULL;
-                    BOOL        fObjectInitialized
-                            = _wpIsObjectInitialized(psbd->somSelf); // V0.9.3 (2000-04-29) [umoeller]
 
                     // stop timer (it's just for one shot)
                     WinStopTimer(psbd->habStatusBar, // anchor block,
@@ -2239,39 +2323,9 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                     }
 
                     // OK:
-                    // do SOM name-lookup resolution for xwpUpdateStatusBar
-                    // (which will per default find the XFolder method, V0.9.0)
-                    // if we have not done that for this instance already;
-                    // we store the method pointer in the instance data
-                    // for speed
-                    if (fObjectInitialized) // V0.9.3 (2000-04-29) [umoeller]
-                        if (_pfnResolvedUpdateStatusBar)
-                            // already resolved: get resolved address
-                            // from instance data
-                            pfnResolvedUpdateStatusBar
-                                = (somTD_XFolder_xwpUpdateStatusBar)_pfnResolvedUpdateStatusBar;
-
-                    if (!pfnResolvedUpdateStatusBar)
-                    {
-                        // not resolved yet:
-                        pfnResolvedUpdateStatusBar
-                                = (somTD_XFolder_xwpUpdateStatusBar)somResolveByName(
-                                                          psbd->somSelf,
-                                                          "xwpUpdateStatusBar");
-                        if (fObjectInitialized)
-                            // object initialized:
-                            _pfnResolvedUpdateStatusBar = (PVOID)pfnResolvedUpdateStatusBar;
-                    }
-
-                    // finally, compose the text by calling
-                    // the resolved method
-                    if (pfnResolvedUpdateStatusBar)
-                        pfnResolvedUpdateStatusBar(psbd->somSelf,
+                    fdrCallResolvedUpdateStatusBar(psbd->somSelf,
                                                    hwndBar,
                                                    psbd->psfv->hwndCnr);
-                    else
-                        WinSetWindowText(hwndBar,
-                                         "*** error in name-lookup resolution");
                 }
                 CATCH(excpt1)
                 {
@@ -3039,4 +3093,346 @@ SHORT EXPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
     return (0);
 }
 
+/* ******************************************************************
+ *
+ *   Folder content management
+ *
+ ********************************************************************/
+
+/*
+ *@@ fdrResolveContentPtrs:
+ *      resolves the pointers to WPFolder's "first object"
+ *      and "last object" pointers. IBM was nice enough
+ *      to declare these instance variables as SOM attributes,
+ *      so there are exported attribute methods (_getFirstObj
+ *      and _getLastObj) which return exactly the addresses
+ *      of these two variables.
+ *
+ *      In order to avoid having to resolve these functions
+ *      for every access, we resolve them once and store
+ *      the addresses of the two attributes directly in
+ *      the XFolder instance variables (_ppFirstObj and
+ *      _ppLastObj). They will never change.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+BOOL fdrResolveContentPtrs(WPFolder *somSelf)
+{
+    BOOL brc = FALSE;
+    XFolderData *somThis = XFolderGetData(somSelf);
+    if ((!_ppFirstObj) || (!_ppLastObj))
+    {
+        // method ptrs
+        xfTD_get_FirstObj __getFirstObj = NULL;
+        xfTD_get_LastObj __getLastObj = NULL;
+
+        // first obj
+        __getFirstObj
+            = (xfTD_get_FirstObj)wpshResolveFor(somSelf,
+                                                _somGetClass(somSelf),
+                                                "_get_FirstObj");
+        if (__getFirstObj)
+            _ppFirstObj = __getFirstObj(somSelf);
+
+        // last obj
+        __getLastObj
+            = (xfTD_get_LastObj)wpshResolveFor(somSelf,
+                                               _somGetClass(somSelf),
+                                               "_get_LastObj");
+        if (__getLastObj)
+            _ppLastObj = __getLastObj(somSelf);
+
+        if ((_ppFirstObj) && (_ppLastObj))
+            // both succeeded:
+            brc = TRUE;
+    }
+    else
+        brc = TRUE;
+
+    return (brc);
+}
+
+/*
+ *@@ fdrAddToContent:
+ *      implementation for the XFolder::wpAddToContent override.
+ *
+ *      This is basically a rewrite of what WPFolder::wpAddToContent
+ *      does, according to my testing... except that this doesn't
+ *      insert the object into any container.
+ *
+ *      This code ONLY gets called if XFolder::xwpSetDisableCnrAdd
+ *      was called.
+ */
+
+BOOL fdrAddToContent(WPFolder *somSelf,
+                     WPObject *pObject)
+{
+    BOOL brc = FALSE;
+    WPSHLOCKSTRUCT Lock;
+    BOOL fFolderLocked = FALSE,
+         fSubObjectLocked = FALSE;
+
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        if (pObject)
+        {
+            fFolderLocked = !wpshRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+            if (fFolderLocked)
+            {
+                fSubObjectLocked = !_wpRequestObjectMutexSem(pObject, SEM_INDEFINITE_WAIT);
+                if (fSubObjectLocked)
+                {
+                    XFolderData *somThis = XFolderGetData(somSelf);
+
+                    // this strange thing gets called by the original
+                    // wpAddToContent... it's a flag which shows whether
+                    // the object is in any container at all. We want
+                    // to set this to TRUE.
+                    PULONG pulContainerFlag = _wpQueryContainerFlagPtr(pObject);
+                    if (!*pulContainerFlag)
+                       *pulContainerFlag = TRUE;
+
+                    _Pmpf((__FUNCTION__ ": adding %s to %d",
+                            _wpQueryTitle(pObject),
+                            _wpQueryTitle(somSelf) ));
+
+                    // set that object's "next object" to NULL
+                    _xwpSetNextObj(pObject, NULL);
+
+                    if (fdrResolveContentPtrs(somSelf))
+                    {
+                        // now check our contents...
+                        if (*_ppFirstObj)
+                        {
+                            // we had objects before:
+                            // store new object as next object for
+                            // previously last object
+                            WPObject **ppObjNext = wpshGetNextObjPointer(*_ppLastObj);
+                            if (ppObjNext)
+                                *ppObjNext = pObject;
+                            // store new object as new last object
+                            *_ppLastObj = pObject;
+                        }
+                        else
+                        {
+                            // no objects yet:
+                            *_ppFirstObj = pObject;
+                            *_ppLastObj = pObject;
+                        }
+
+                        // for each object that was added, lock
+                        // the folder...
+                        _wpLockObject(somSelf);
+
+                        brc = TRUE;
+                    }
+                }
+            }
+        }
+    }
+    wpshUnlockObject(&Lock);
+    if (fSubObjectLocked)
+        _wpReleaseObjectMutexSem(pObject);
+    if (fFolderLocked)
+        wpshReleaseFolderMutexSem(somSelf);
+
+    return (brc);
+}
+
+/*
+ *@@ fdrQueryContent:
+ *      implementation for the XFolder::wpQueryContent override.
+ *
+ *      NOTE: The caller must lock the folder contents BEFORE
+ *      the call. We can't this here because we can't guarantee
+ *      that the folder's content list will remain valid after
+ *      the call, unless the caller's processing is also protected.
+ *
+ *      The original implementation (WPFolder::wpQueryContent)
+ *      appears to call folder mutex methods. I have not done
+ *      this here. So far, it works.
+ *
+ *      This code ONLY gets called if XFolder::xwpSetDisableCnrAdd
+ *      was called.
+ */
+
+WPObject* fdrQueryContent(WPFolder *somSelf,
+                          WPObject *pobjFind,
+                          ULONG ulOption)
+{
+    WPObject *pobjReturn = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fdrResolveContentPtrs(somSelf))
+        {
+            XFolderData *somThis = XFolderGetData(somSelf);
+
+            switch (ulOption)
+            {
+                case QC_FIRST:
+                    // that's easy
+                    pobjReturn = *_ppFirstObj;
+                break;
+
+                case QC_NEXT:
+                    if (pobjFind)
+                    {
+                        WPObject **ppObjNext = wpshGetNextObjPointer(pobjFind);
+                        if (ppObjNext)
+                            pobjReturn = *ppObjNext;
+                    }
+                break;
+
+                case QC_LAST:
+                    pobjReturn = *_ppLastObj;
+                break;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        pobjReturn = NULL;
+    } END_CATCH();
+
+    return (pobjReturn);
+}
+
+/*
+ *@@ fdrQueryContentArray:
+ *      returns an array of WPObject* pointers representing
+ *      the folder contents.
+ *
+ *      Returns NULL if the folder is empty. Otherwise
+ *      *pulItems receives the array item count (NOT the
+ *      array size).
+ *
+ *      Use free() to release the memory allocated here.
+ *
+ *      NOTE: The caller must lock the folder contents BEFORE
+ *      the call. We can't this here because we can't guarantee
+ *      that the array will remain valid after the call, unless
+ *      the caller's processing is also protected.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+WPObject** fdrQueryContentArray(WPFolder *pFolder,
+                                PULONG pulItems)
+{
+    WPObject** paObjects = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+        XFolderData *somThis = XFolderGetData(pFolder);
+        if (_cObjects)
+        {
+            paObjects = (WPObject**)malloc(sizeof(WPObject*) * _cObjects);
+            if (paObjects)
+            {
+                WPObject **ppThis = paObjects;
+                WPObject *pObject;
+
+                ULONG ul = 0;
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
+                                                                        NULL,
+                                                                        "wpQueryContent");
+
+                for (   pObject = rslv_wpQueryContent(pFolder,
+                                                      NULL,
+                                                      QC_FIRST);
+                        pObject;
+                        pObject = rslv_wpQueryContent(pFolder,
+                                                      pObject,
+                                                      QC_NEXT)
+                    )
+                {
+                    *ppThis = pObject;
+
+                    ppThis++;
+                    ul++;
+
+                    if (ul >= _cObjects)
+                        // shouldn't happen, but we don't want to
+                        // crash the array
+                        break;
+                }
+
+                *pulItems = ul;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        if (paObjects)
+        {
+            free(paObjects);
+            paObjects = NULL;
+        }
+    } END_CATCH();
+
+    return (paObjects);
+}
+
+/*
+ *@@ fdrCnrInsertObject:
+ *      inserts an object into all currently open views,
+ *      wherever this may be.
+ *
+ *      As a precondition, the object must already
+ *      _reside_ in a folder. It is assumed that the
+ *      object only hasn't been inserted yet.
+ *
+ *      This inserts the object into:
+ *
+ *      --
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+BOOL fdrCnrInsertObject(WPObject *pObject)
+{
+    BOOL brc = FALSE;
+    if (pObject)
+    {
+        WPFolder *pFolder = _wpQueryFolder(pObject);
+        if (pFolder)
+        {
+            WPSHLOCKSTRUCT Lock;
+            if (wpshLockObject(&Lock, pFolder))
+            {
+                PVIEWITEM   pViewItem;
+                for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+                     pViewItem;
+                     pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+                {
+                    switch (pViewItem->view)
+                    {
+                        case OPEN_CONTENTS:
+                        case OPEN_TREE:
+                        case OPEN_DETAILS:
+                        {
+                            HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
+                            if (hwndCnr)
+                            {
+                                PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
+                                if (_wpCnrInsertObject(pObject,
+                                                       hwndCnr,
+                                                       pptlIcon,
+                                                       NULL,     // parent record
+                                                       NULL))     // RECORDINSERT, next pos.
+                                    brc = TRUE;
+                            }
+                        }
+                    }
+                }
+            }
+            wpshUnlockObject(&Lock);
+        }
+    }
+
+    return (brc);
+}
 

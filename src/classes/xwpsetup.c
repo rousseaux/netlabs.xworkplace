@@ -115,7 +115,7 @@
  *                                                                  *
  ********************************************************************/
 
-MPARAM G_ampFeaturesPage[] =
+static MPARAM G_ampFeaturesPage[] =
     {
         MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XCDI_CONTAINER, XAC_SIZEX | XAC_SIZEY)

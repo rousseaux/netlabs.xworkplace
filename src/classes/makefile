@@ -65,6 +65,9 @@ OBJS = \
        $(OUTPUTDIR)\xfdisk.obj \
        $(OUTPUTDIR)\xfldr.obj \
        $(OUTPUTDIR)\xfobj.obj \
+       $(OUTPUTDIR)\xfont.obj \
+       $(OUTPUTDIR)\xfontfile.obj \
+       $(OUTPUTDIR)\xfontobj.obj \
        $(OUTPUTDIR)\xfpgmf.obj \
        $(OUTPUTDIR)\xfstart.obj \
        $(OUTPUTDIR)\xfsys.obj \
@@ -240,12 +243,38 @@ $(OUTPUTDIR)\xfobj.obj: \
                 $(INC)\filesys\object.h $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\xfont.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\classes\xfontobj.ih $(INC)\classes\xfldr.ih \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\config\fonts.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\xfontfile.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\config\fonts.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\xfontobj.obj: \
+            $(INC)\setup.h \
+            $(HLPINC)\except.h \
+            $(INC)\dlgids.h \
+            $(INC)\classes\xfont.ih \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+                $(INC)\shared\wpsh.h \
+            $(INC)\config\fonts.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\xfpgmf.obj: \
             $(INC)\setup.h \
             $(HLPINC)\dosh.h \
             $(INC)\classes\xfobj.ih \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+                $(INC)\shared\wpsh.h \
             $(INC)\filesys\filesys.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
@@ -281,7 +310,7 @@ $(OUTPUTDIR)\xtrash.obj: \
             $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\trash.h \
+            $(INC)\filesys\folder.h $(INC)\filesys\trash.h \
             $(@B).c \
             $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
 

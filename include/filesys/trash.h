@@ -41,12 +41,10 @@
     #define XTRC_UNSUPPORTED        2
 
     /* ******************************************************************
-     *                                                                  *
-     *   Trash can populating                                           *
-     *                                                                  *
+     *
+     *   Trash can populating
+     *
      ********************************************************************/
-
-    VOID trshUpdateStatusBars(XWPTrashCan *somSelf);
 
     XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
                                           XWPTrashCan* pTrashCan,
@@ -69,9 +67,9 @@
     BOOL trshRefresh(XWPTrashCan *somSelf);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Trash can / trash object operations                            *
-     *                                                                  *
+     *
+     *   Trash can / trash object operations
+     *
      ********************************************************************/
 
     BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan,
@@ -93,10 +91,16 @@
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 
+    BOOL trshProcessObjectCommand(WPFolder *somSelf,
+                                  USHORT usCommand,
+                                  HWND hwndCnr,
+                                  WPObject* pFirstObject,
+                                  ULONG ulSelectionFlags);
+
     /* ******************************************************************
-     *                                                                  *
-     *   Trash can drives support                                       *
-     *                                                                  *
+     *
+     *   Trash can drives support
+     *
      ********************************************************************/
 
     BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives);
@@ -108,48 +112,9 @@
     BOOL trshIsOnSupportedDrive(WPObject *pObject);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Trash can frame subclassing                                    *
-     *                                                                  *
-     ********************************************************************/
-
-    /*
-     *@@ SUBCLASSEDTRASHFRAME:
      *
-     *@@added V0.9.1 (2000-01-31) [umoeller]
-     */
-
-    typedef struct _SUBCLASSEDTRASHFRAME
-    {
-        HWND            hwndFrame;
-        XWPTrashCan     *somSelf;
-        ULONG           ulView;
-        PFNWP           pfnwpOrig;
-
-        HWND            hwndCnr;
-
-        WPObject        *pSourceObject;
-        ULONG           ulSelection;
-    } SUBCLASSEDTRASHFRAME, *PSUBCLASSEDTRASHFRAME;
-
-    BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
-                                   XWPTrashCan *somSelf,
-                                   ULONG ulView);
-
-    PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,
-                                        PULONG pulIndex);
-
-    VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf);
-
-    MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
-                                                      ULONG msg,
-                                                      MPARAM mp1,
-                                                      MPARAM mp2);
-
-    /* ******************************************************************
-     *                                                                  *
-     *   XWPTrashCan notebook callbacks (notebook.c)                    *
-     *                                                                  *
+     *   XWPTrashCan notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

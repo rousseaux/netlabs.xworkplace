@@ -226,7 +226,7 @@ $(OUTPUTDIR)\folder.obj: \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h \
         $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
         $(HLPINC)\syssound.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
-    $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
+    $(INC)\classes\xfldr.ih $(INC)\classes\xfobj.ih $(INC)\classes\xfdisk.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\filesys\fileops.h $(INC)\filesys\filesys.h $(INC)\filesys\fdrmenus.h \
@@ -236,8 +236,10 @@ $(OUTPUTDIR)\folder.obj: \
 $(OUTPUTDIR)\fops_bottom.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-    $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xfont.ih $(INC)\classes\xfontfile.ih \
+        $(INC)\classes\xfontobj.ih $(INC)\classes\xtrash.ih $(INC)\classes\xtrashobj.ih \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\config\fonts.h \
     $(INC)\filesys\trash.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\fileops.h
 
@@ -289,7 +291,7 @@ $(OUTPUTDIR)\trash.obj: \
      $(INC)\classes\xtrash.ih $(INC)\classes\xtrashobj.ih $(INC)\classes\xfobj.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\shared\wpsh.h \
-     $(INC)\filesys\fileops.h $(INC)\filesys\xthreads.h   \
+     $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\xthreads.h   \
      $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xthreads.obj: \

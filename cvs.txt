@@ -84,19 +84,29 @@ Last updated December 12, 2000, Ulrich M”ller
     Set the current project environment. This is done via another
     environment variable, so for XWorkplace, set:
 
-        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xworkplace
+        CVSROOT=:pserver:guest@www.netlabs.org:e:/netlabs.cvs/xworkplace
 
     For WarpIN, use:
 
-        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/warpin
+        CVSROOT=:pserver:guest@www.netlabs.org:e:/netlabs.cvs/warpin
 
     For the "XWorkplace helpers", which are needed by both XWorkplace
     and WarpIN, use:
 
-        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xwphelpers
+        CVSROOT=:pserver:guest@www.netlabs.org:e:/netlabs.cvs/xwphelpers
 
     and so on. Currently, Netlabs holds over a dozen projects which
     can all be retrieved that way.
+
+    --> NOTE: The IP address of Netlabs has changed in December of 2000.
+        If CVS refuses to connect, in the above, replace "www.netlabs.org"
+        with "213.68.43.15", or add the following line to your HOSTS file
+        in \MPTN\ETC:
+
+            213.68.43.15          www.netlabs.org
+
+        The new IP address should be updated in the domain name servers
+        shortly.
 
     Create a local subdirectory in your CVS root directory with the
     same name (e.g. ("F:\cvs\xworkplace"). Change to that directory.

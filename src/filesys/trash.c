@@ -86,6 +86,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fileops.h"            // file operations implementation
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -117,41 +118,6 @@ BYTE G_abSupportedDrives[CB_SUPPORTED_DRIVES] = "";
  *   Trash object creation                                          *
  *                                                                  *
  ********************************************************************/
-
-/*
- *@@ trshUpdateStatusBars:
- *      updates the status bars of all currently
- *      open trash can views. Gets called several
- *      times while the trash can is being populated
- *      (trshPopulateFirstTime) or when objects are
- *      added or removed later.
- *
- *@@added V0.9.1 (2000-02-09) [umoeller]
- */
-
-VOID trshUpdateStatusBars(XWPTrashCan *somSelf)
-{
-    HWND        ahwndStatusBars[2] = { 0, 0 },
-                ahwndCnrs[2] = { 0, 0 },
-                hwndFrameThis;
-    ULONG       ulStatusBar = 0;
-
-    if (hwndFrameThis = wpshQueryFrameFromView(somSelf,
-                                               OPEN_CONTENTS))
-    {
-        _xwpUpdateStatusBar(somSelf,
-                            WinWindowFromID(hwndFrameThis, 0x9001),
-                            wpshQueryCnrFromFrame(hwndFrameThis));
-    }
-
-    if (hwndFrameThis = wpshQueryFrameFromView(somSelf,
-                                               OPEN_DETAILS))
-    {
-        _xwpUpdateStatusBar(somSelf,
-                            WinWindowFromID(hwndFrameThis, 0x9001),
-                            wpshQueryCnrFromFrame(hwndFrameThis));
-    }
-}
 
 /*
  *@@ trshCreateTrashObjectsList:
@@ -673,7 +639,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
 
                     // update status bars for open views
                     _cDrivePopulating = cDrive;
-                    trshUpdateStatusBars(somSelf);
+                    fdrUpdateStatusBars(somSelf);
 
                     // get "\trash" dir on that drive
                     sprintf(szTrashDir, "%c:\\Trash",
@@ -732,7 +698,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
     } CATCH(excpt1) { } END_CATCH();
 
     _cDrivePopulating = 0;
-    trshUpdateStatusBars(somSelf);
+    fdrUpdateStatusBars(somSelf);
     ulFldrFlags &= ~FOI_POPULATEINPROGRESS;
 
     _wpSetFldrFlags(somSelf, ulFldrFlags);
@@ -770,7 +736,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
     }
     lstFree(pllTrashObjects);
 
-    trshUpdateStatusBars(somSelf);
+    fdrUpdateStatusBars(somSelf);
 
     return (TRUE);
 }
@@ -1093,7 +1059,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
         // valid operation: set flag to drag OK first
         usDrop = DOR_DROP;
 
-        // valid operation:
+        // now go thru objects being dragged
         for (ulItemNow = 0;
              ulItemNow < pdrgInfo->cditem;
              ulItemNow++)
@@ -1167,6 +1133,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
  *      unless an error occurs.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.7 (2001-01-13) [umoeller]: fixed some weirdos, incl. a possible memory leak
  */
 
 MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
@@ -1189,12 +1156,12 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                              &drgItem,
                              ulItemNow))
         {
-            WPObject *pObjectDropped = NULL;
+            BOOL    fThisValid = FALSE;
+            WPObject *pobjDropped = NULL;
 
             if (wpshQueryDraggedObject(&drgItem,
-                                       &pObjectDropped))
+                                       &pobjDropped))
             {
-                BOOL    fReportSuccess = TRUE;
                 if (fStartTask)
                 {
                     // no errors so far:
@@ -1202,35 +1169,31 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                     FOPSRET frc = NO_ERROR;
                     frc = fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
                                                    NULL, // no callback
-                                                   pObjectDropped,
+                                                   pobjDropped,
                                                    NULL);
 
                     if (frc == NO_ERROR)
                     {
                         lstAppendItem(pllDroppedObjects,
-                                      pObjectDropped);
-                        pSourceFolder = _wpQueryFolder(pObjectDropped);
+                                      pobjDropped);
+                        pSourceFolder = _wpQueryFolder(pobjDropped);
                         fItemsAdded = TRUE;
-                    }
-                    else
-                    {
-                        fStartTask = FALSE;
-                        fReportSuccess = FALSE;
+                        fThisValid = TRUE;
                     }
                 }
-                else
-                    // errors occured already:
-                    fReportSuccess = FALSE;
-
-                // notify source of the success of
-                // this operation (target rendering)
-                WinSendMsg(drgItem.hwndItem,        // source
-                           DM_ENDCONVERSATION,
-                           (MPARAM)(drgItem.ulItemID),
-                           (MPARAM)((fReportSuccess)
-                             ? DMFL_TARGETSUCCESSFUL
-                             : DMFL_TARGETFAIL));
             }
+
+            // notify source of the success of
+            // this operation (target rendering)
+            WinSendMsg(drgItem.hwndItem,        // source
+                       DM_ENDCONVERSATION,
+                       (MPARAM)(drgItem.ulItemID),
+                       (MPARAM)((fThisValid)
+                         ? DMFL_TARGETSUCCESSFUL
+                         : DMFL_TARGETFAIL));
+
+            if (!fThisValid)
+                fStartTask = FALSE;
         }
     }
 
@@ -1245,7 +1208,6 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                               pSourceFolder,
                               NULL,             // target folder: not needed
                               pllDroppedObjects);
-        lstFree(pllDroppedObjects);
 
         mrc = (MRESULT)RC_DROP_DROPCOMPLETE;
                 // means: _all_ items have been processed,
@@ -1253,8 +1215,9 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                 // by the WPS for the next items, if any
 
     }
-    else
-        mrc = (MRESULT)RC_DROP_ERROR;
+
+    // in any case, free the list V0.9.7 (2001-01-13) [umoeller]
+    lstFree(pllDroppedObjects);
 
     return (mrc);
 }
@@ -1370,6 +1333,75 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
         _wpFree(somSelf);
 
     return (arc);
+}
+
+/*
+ *@@ trshProcessObjectCommand:
+ *      implementation for XWPTrashCan::xwpProcessObjectCommand.
+ *
+ *      This replaces trash can subclassing now.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+BOOL trshProcessObjectCommand(WPFolder *somSelf,
+                              USHORT usCommand,
+                              HWND hwndCnr,
+                              WPObject* pFirstObject,
+                              ULONG ulSelectionFlags)
+{
+    BOOL brc = TRUE;        // default: processed
+
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    LONG lMenuID2 = usCommand - pGlobalSettings->VarMenuOffset;
+
+    switch (lMenuID2)
+    {
+        case ID_XFMI_OFS_TRASHRESTORE:
+            fopsStartTrashRestoreFromCnr(NULLHANDLE,  // no anchor block, asynchronously
+                                         somSelf,  // source: trash can
+                                         NULL,           // target folder
+                                         pFirstObject, // first source object
+                                         ulSelectionFlags,
+                                         hwndCnr);
+        break;
+
+        case ID_XFMI_OFS_TRASHDESTROY:
+            fopsStartTrashDestroyFromCnr(NULLHANDLE,  // no anchor block, asynchronously
+                                         somSelf, // source: trash can
+                                         pFirstObject,
+                                         ulSelectionFlags,
+                                         hwndCnr,
+                                         // confirm:
+                                         (pGlobalSettings->ulTrashConfirmEmpty
+                                                & TRSHCONF_DESTROYOBJ)
+                                           != 0);
+        break;
+
+        default:
+        {
+            // other: call parent method to find out
+            // whether default processing should occur
+
+            // manually resolve parent method
+            somTD_XWPTrashCan_xwpProcessObjectCommand pxwpProcessObjectCommand
+                = (somTD_XWPTrashCan_xwpProcessObjectCommand)wpshResolveFor(
+                                                       somSelf,
+                                                       _somGetParent(_XWPTrashCan),
+                                                       "xwpProcessObjectCommand");
+            if (pxwpProcessObjectCommand)
+            {
+                // let parent method return TRUE or FALSE
+                brc = pxwpProcessObjectCommand(somSelf,
+                                               usCommand,
+                                               hwndCnr,
+                                               pFirstObject,
+                                               ulSelectionFlags);
+            }
+        }
+    }
+
+    return (brc);
 }
 
 /* ******************************************************************
@@ -1557,7 +1589,7 @@ HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
  *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
  */
 
-BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
+/* BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
                                XWPTrashCan *somSelf,
                                ULONG ulView)
 {
@@ -1624,7 +1656,7 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
     DosExitMustComplete(&ulNesting);
 
     return (brc);
-}
+} */
 
 /*
  *@@ trshQueryPSTF:
@@ -1634,7 +1666,7 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
  *@@added V0.9.1 (2000-01-31) [umoeller]
  */
 
-PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame to find
+/* PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame to find
                                     PULONG pulIndex)       // out: index in linked list if found
 {
     PLISTNODE           pNode = 0;
@@ -1686,7 +1718,7 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
     DosExitMustComplete(&ulNesting);
 
     return (psliFound);
-}
+} */
 
 /*
  *@@ trshRemovePSTF:
@@ -1696,7 +1728,7 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
  *@@added V0.9.1 (2000-01-31) [umoeller]
  */
 
-VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
+/* VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
 {
     BOOL fSemOwned = FALSE;
 
@@ -1722,7 +1754,7 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
     }
 
     DosExitMustComplete(&ulNesting);
-}
+} */
 
 /*
  *@@ trsh_fnwpSubclassedTrashCanFrame:
@@ -1737,7 +1769,7 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
  *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
  */
 
-MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
+/* MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
                                                   ULONG msg,
                                                   MPARAM mp1,
                                                   MPARAM mp2)
@@ -1776,51 +1808,11 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
                                                                     &pstf->ulSelection);
                 break;
 
-                /*
-                 * WM_COMMAND:
-                 *
-                 */
-
                 case WM_COMMAND:
                 {
                     USHORT usCommand = SHORT1FROMMP(mp1);
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                    LONG lMenuID2 = usCommand - pGlobalSettings->VarMenuOffset;
-
-                    switch (lMenuID2)
-                    {
-                        case ID_XFMI_OFS_TRASHRESTORE:
-                            fopsStartTrashRestoreFromCnr(NULLHANDLE,  // no anchor block, asynchronously
-                                                         pstf->somSelf,  // source: trash can
-                                                         NULL,           // target folder
-                                                         pstf->pSourceObject, // first source object
-                                                         pstf->ulSelection,
-                                                         pstf->hwndCnr);
-                        break;
-
-                        case ID_XFMI_OFS_TRASHDESTROY:
-                            fopsStartTrashDestroyFromCnr(NULLHANDLE,  // no anchor block, asynchronously
-                                                         pstf->somSelf, // source: trash can
-                                                         pstf->pSourceObject,
-                                                         pstf->ulSelection,
-                                                         pstf->hwndCnr,
-                                                         // confirm:
-                                                         (pGlobalSettings->ulTrashConfirmEmpty
-                                                                & TRSHCONF_DESTROYOBJ)
-                                                           != 0);
-                        break;
-
-                        default:
-                            // other: default handling
-                            fCallDefault = TRUE;
-                    }
                 break; }
 
-                /*
-                 * WM_DESTROY:
-                 *      upon this, we need to clean up our linked list
-                 *      of subclassed windows
-                 */
 
                 case WM_DESTROY:
                 {
@@ -1871,7 +1863,7 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
     }
 
     return (mrc);
-}
+} */
 
 /* ******************************************************************
  *                                                                  *

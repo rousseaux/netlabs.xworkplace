@@ -111,7 +111,7 @@
  *                                                                  *
  ********************************************************************/
 
-BOOL    G_DesktopPopulated = FALSE;
+static BOOL    G_DesktopPopulated = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -295,9 +295,9 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
 
     // manually resolve parent method
     pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
-                                                            _XFldDesktop,
-                                                            "xwpQuerySetup2");
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
+                                                         _somGetParent(_XFldDesktop),
+                                                         "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
         // now call parent method (probably XFolder)

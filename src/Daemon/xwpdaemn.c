@@ -832,12 +832,12 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     if (G_pHookData->HookConfig.fSlidingIgnoreXCenter)
     {
         // Is-XCenter check: the window must have an FID_CLIENT
-        // whose class name is WNDCLASS_XCENTER_CLIENT
+        // whose class name is WC_XCENTER_CLIENT
         if (hwndClient)
         {
             CHAR szClass[100];
             WinQueryClassName(hwndClient, sizeof(szClass), szClass);
-            if (strcmp(szClass, WNDCLASS_XCENTER_CLIENT) == 0)
+            if (strcmp(szClass, WC_XCENTER_CLIENT) == 0)
                 // target is XCenter:
                 return;
         }

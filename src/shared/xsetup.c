@@ -146,7 +146,7 @@ typedef struct _FEATURESITEM
  *added V0.9.1 (99-12-19) [umoeller]
  */
 
-FEATURESITEM G_FeatureItemsList[] =
+static FEATURESITEM G_FeatureItemsList[] =
         {
             // general features
             ID_XCSI_GENERALFEATURES, 0, 0, NULL,
@@ -193,7 +193,7 @@ FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
         };
 
-PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
+static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
 
 /*
  *@@ STANDARDOBJECT:
@@ -220,7 +220,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDLAST  214      // last object menu ID, inclusive
 
 // array of objects for "Standard WPS objects" menu button
-STANDARDOBJECT  G_WPSObjects[] = {
+static STANDARDOBJECT  G_WPSObjects[] = {
                                     "<WP_KEYB>", "WPKeyboard", "", 100, 0,
                                     "<WP_MOUSE>", "WPMouse", "", 101, 0,
                                     "<WP_CNTRY>", "WPCountry", "", 102, 0,
@@ -390,7 +390,7 @@ typedef struct _XWPCLASSES
 } XWPCLASSES, *PXWPCLASSES;
 
 // array of tools to be subclassed for tooltips
-USHORT G_usClassesToolIDs[] =
+static USHORT G_usClassesToolIDs[] =
     {
         ID_XCDI_XWPCLS_XFLDOBJECT,
         ID_XCDI_XWPCLS_XFOLDER,

@@ -99,21 +99,26 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
+#include "xfont.ih"
+#include "xfontfile.ih"
+#include "xfontobj.ih"
+#include "xtrash.ih"
+#include "xtrashobj.ih"
 
 // XWorkplace implementation headers
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
+
+#include "config\fonts.h"               // font folder implementation
 
 #include "filesys\fileops.h"            // file operations implementation
+#include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpfolder.h>
-#include "xtrash.h"
-#include "xtrashobj.h"
-#include "filesys\trash.h"              // trash can implementation
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /*
  *@@ FILETASKLIST:
@@ -231,9 +236,23 @@ typedef struct _FILETASKLIST
  *          without blocking the thread's message queue since
  *          fopsStartTask can avoid that.
  *
+ *      -- XFT_INSTALLFONTS: install font files as PM fonts.
+ *          pSourceFolder is ignored.
+ *          pTargetFolder must be the default font folder.
+ *          This expects font files (instances of XWPFontFile)
+ *          on the list.
+ *
+ *      -- XFT_DEINSTALLFONTS: deinstall font objects.
+ *          pSourceFolder should point to the XWPFontFolder containing
+ *          the font objects.
+ *          pTargetFolder is ignored.
+ *          This expects font _objects_ (instances of XWPFontObject)
+ *          on the list.
+ *
  *@@added V0.9.1 (2000-01-27) [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added XFT_POPULATE
+ *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
  */
 
 HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
@@ -347,6 +366,16 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
             if (!_somIsA(pObject, _WPFolder))
                 frc = FOPSERR_POPULATE_FOLDERS_ONLY;
         break;
+
+        case XFT_INSTALLFONTS:
+            if (!_somIsA(pObject, _XWPFontFile))
+                frc = FOPSERR_NOT_FONT_FILE;
+        break;
+
+        case XFT_DEINSTALLFONTS:
+            if (!_somIsA(pObject, _XWPFontObject))
+                frc = FOPSERR_NOT_FONT_OBJECT;
+        break;
     }
 
     if (frc != NO_ERROR)
@@ -397,7 +426,7 @@ FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handl
 
     if (frc == NO_ERROR)
         // proceed:
-        if (lstAppendItem(&pftl->llObjects, pObject) == NULL)
+        if (!lstAppendItem(&pftl->llObjects, pObject))
             // error:
             frc = FOPSERR_INTEGRITY_ABORT;
 
@@ -1081,6 +1110,67 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
 }
 
 /*
+ *@@ fopsFileThreadFontProcessing:
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+FOPSRET fopsFileThreadFontProcessing(HAB hab,
+                                     PFILETASKLIST pftl,
+                                     WPObject *pObjectThis,
+                                     PULONG pulIgnoreSubsequent)
+{
+    WPObject *pFree = NULL;
+    FOPSRET frc = FOPSERR_INTEGRITY_ABORT;
+
+    switch (pftl->ulOperation)
+    {
+        case XFT_INSTALLFONTS:
+            frc = fonInstallFont(hab,
+                                 pftl->pTargetFolder, // font folder
+                                 pObjectThis,    // font file
+                                 NULL);          // out: new obj
+                    // this returns proper APIRET or FOPSRET codes
+        break;
+
+        case XFT_DEINSTALLFONTS:
+            frc = fonDeInstallFont(hab,
+                                   pftl->pSourceFolder,
+                                   pObjectThis);     // font object
+                    // this returns proper APIRET or FOPSRET codes
+            if ((frc == NO_ERROR) || (frc == FOPSERR_FONT_STILL_IN_USE))
+                // in these two cases only, destroy the
+                // font object after we've called the error
+                // callback... it still needs the object!
+                pFree = pObjectThis;
+        break;
+    }
+
+    if (frc != NO_ERROR)
+    {
+        if ( 0 == ((*pulIgnoreSubsequent) & FOPS_ISQ_FONTINSTALL) )
+            // first error, or user has not selected
+            // to abort subsequent:
+            // now, these errors we should report;
+            // if the error callback returns NO_ERROR,
+            // we continue anyway
+            frc = pftl->pfnErrorCallback(pftl->ulOperation,
+                                         pObjectThis,
+                                         frc,
+                                         pulIgnoreSubsequent);
+        else
+            // user has chosen to ignore subsequent:
+            // just go on
+            frc = NO_ERROR;
+    }
+
+    if (pFree)
+        _wpFree(pFree);
+
+    return (frc);
+}
+
+/*
  *@@ fopsFileThreadProcessing:
  *      this actually performs the file operations
  *      on the objects which have been added to
@@ -1100,9 +1190,11 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
  *@@changed V0.9.3 (2000-04-26) [umoeller]: added "true delete" support
  *@@changed V0.9.3 (2000-04-30) [umoeller]: reworked progress reports
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added synchronous processing support
+ *@@changed V0.9.7 (2001-01-13) [umoeller]: added hab to prototype (needed for font install)
  */
 
-VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
+VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor block
+                              HFILETASKLIST hftl,
                               HWND hwndNotify)      // in: if != NULLHANDLE, post this
                                                     // window a T1M_FOPS_TASK_DONE msg
 {
@@ -1148,11 +1240,6 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                     #ifdef DEBUG_TRASHCAN
                         _Pmpf(("  target trash can is %s", _wpQueryTitle(pftl->pTargetFolder) ));
                     #endif
-                break; }
-
-                case XFT_TRUEDELETE:
-                {
-                    // true delete (destroy objects):
                 break; }
             }
 
@@ -1267,6 +1354,19 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                         if (!wpshCheckIfPopulated(pObjectThis,
                                                   FALSE))   // full populate
                             frc = FOPSERR_POPULATE_FAILED;
+                    break;
+
+                    /*
+                     * XFT_INSTALLFONTS:
+                     *
+                     */
+
+                    case XFT_INSTALLFONTS:
+                    case XFT_DEINSTALLFONTS:
+                        frc = fopsFileThreadFontProcessing(hab,
+                                                           pftl,
+                                                           pObjectThis,
+                                                           &ulIgnoreSubsequent);
                     break;
                 }
 

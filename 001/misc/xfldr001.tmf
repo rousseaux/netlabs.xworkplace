@@ -334,6 +334,22 @@ The "XWorkplace User Guide" contains all the information you will need... and if
 
 Have fun with XWorkplace!
 
+<--XFL0200-->: Error %1 occured installing the font file "%2".
+
+Do you wish to ignore this error and continue installing fonts?
+
+<--XFL0201-->: The font file "%1" is already installed.
+
+Do you wish to ignore this error and continue installing fonts?
+
+<--XFL0202-->: Are you sure you want to deinstall the font "%1"?
+
+<--XFL0203-->: You have selected %1 fonts to be deinstalled. Are you sure you want to do this?
+
+<--XFL0204-->: The font "%1" could not be unloaded at this point. An application might still be using it. However, after the next reboot it should be gone.
+
+Do you wish to ignore this error and continue removing fonts?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

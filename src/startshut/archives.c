@@ -112,11 +112,11 @@
  *                                                                  *
  ********************************************************************/
 
-WPSARCOSETTINGS     G_ArcSettings;
-DATETIME            G_dtLastArchived;
-BOOL                G_fSettingsLoaded = FALSE;
+static WPSARCOSETTINGS     G_ArcSettings;
+static DATETIME            G_dtLastArchived;
+static BOOL                G_fSettingsLoaded = FALSE;
 
-CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
+static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 
 #define ARC_FILE_OFFSET    0x000CF
 
@@ -128,7 +128,7 @@ CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 
 #define PERCENTAGES_COUNT 11
 // 8 PSZ's for percentage spinbutton
-PSZ     G_apszPercentages[PERCENTAGES_COUNT];
+static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
 
 /*
  * arcArchivesInitPage:

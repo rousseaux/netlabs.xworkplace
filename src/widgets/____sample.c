@@ -138,7 +138,7 @@ ew */
 
 #define WNDCLASS_WIDGET_SAMPLE "XWPCenterSampleWidget"
 
-XCENTERWIDGETCLASS G_WidgetClasses[]
+static XCENTERWIDGETCLASS G_WidgetClasses[]
     = {
         WNDCLASS_WIDGET_SAMPLE,     // PM window class name
         0,                          // additional flag, not used here

@@ -101,7 +101,7 @@
  *
  ********************************************************************/
 
-const char *G_pcszXCenter = "XCenter";
+static const char *G_pcszXCenter = "XCenter";
 
 /* ******************************************************************
  *
@@ -350,7 +350,7 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
     _ulDisplayStyle = XCS_BUTTON;
 
     _ulPriorityClass = PRTYC_REGULAR;
-    _lPriorityDelta = PRTYD_MINIMUM;
+    _lPriorityDelta = 0; // PRTYD_MINIMUM;
 
     _fHelpDisplayed = FALSE;
 
@@ -730,7 +730,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER);
+    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -762,7 +762,7 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
     XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER))
+    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
     {
         if (!_pvOpenView)
         {
@@ -827,7 +827,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
     XCenterMethodDebug("XCenter","xctr_wpSwitchTo");
 
     // check if we should switch to the existing XCenter view
-    if (View == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER))
+    if (View == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
     {
         // yes:
         PUSEITEM    pUseItem = NULL;

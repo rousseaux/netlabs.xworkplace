@@ -255,7 +255,7 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST),
+                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
                                "~Volume", // ###
                                MIS_TEXT, 0);
         }
@@ -280,7 +280,7 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpMenuItemSelected");
 
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
     {
         // "Open" --> "Volume":
         // wpViewObject will call wpOpen if a new view is necessary
@@ -353,7 +353,7 @@ SOM_Scope ULONG  SOMLINK vol_wpQueryDefaultView(XMMVolume *somSelf)
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST);
+    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -381,7 +381,7 @@ SOM_Scope HWND  SOMLINK vol_wpOpen(XMMVolume *somSelf, HWND hwndCnr,
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
         hwndNewView = xmmCreateVolumeView(somSelf, hwndCnr, ulView);
                                 // src/media/mmvolume.c
     else

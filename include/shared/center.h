@@ -35,7 +35,7 @@
      ********************************************************************/
 
     // PM window class name for XCenter client (needed by XWPDaemon)
-    #define WNDCLASS_XCENTER_CLIENT     "XWPCenterClient"
+    #define WC_XCENTER_CLIENT     "XWPCenterClient"
 
     // button types (src\xcenter\w_objbutton.c)
     #define BTF_OBJBUTTON       1

@@ -131,6 +131,10 @@
 #define ID_ICON_CDPREV         144
 #define ID_ICON_CDSTOP         145
 
+#define ID_ICONXWPFONTCLOSED   150
+#define ID_ICONXWPFONTOPEN     151
+#define ID_ICONXWPFONTOBJ      152
+
 /******************************************
  * generics                        < 100  *
  ******************************************/
@@ -1196,22 +1200,20 @@
 #define ID_XFMI_OFS_WARP4MENUBAR        (WPMENUID_USER+41)  // added V0.9.0
 #define ID_XFMI_OFS_SHOWSTATUSBAR       (WPMENUID_USER+42)
 
-// "WPS Class List" (XWPClassList, new with V0.9.0)
-#define ID_XFMI_OFS_OPENCLASSLIST       (WPMENUID_USER+43)
+// new view item in "Open" submenu... this is used for XWPClassList, Partitions,
+// XCenter, XWPFontObject, ...
+#define ID_XFMI_OFS_XWPVIEW             (WPMENUID_USER+43)
 
 // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
 #define ID_XFMI_OFS_TRASHEMPTY          (WPMENUID_USER+44)
 #define ID_XFMI_OFS_TRASHRESTORE        (WPMENUID_USER+45)
 #define ID_XFMI_OFS_TRASHDESTROY        (WPMENUID_USER+46)
 
-// "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
-#define ID_XFMI_OFS_OPENPARTITIONS      (WPMENUID_USER+47)
+// "Deinstall" menu item in XWPFontObject V0.9.7 (2001-01-13) [umoeller]
+#define ID_XFMI_OFS_FONT_DEINSTALL      (WPMENUID_USER+47)
 
 // "Default document" item in WPFolder "Open" and WPDataFile main context menu V0.9.4 (2000-06-09) [umoeller]
 #define ID_XFMI_OFS_FDRDEFAULTDOC       (WPMENUID_USER+48)
-
-// "XCenter" item in XCenter "Open" submenu
-#define ID_XFMI_OFS_XCENTER             (WPMENUID_USER+49)
 
 // "Logoff" menu item in XFldDesktop V0.9.5 (2000-08-10) [umoeller]
 #define ID_XFMI_OFS_LOGOFF              (WPMENUID_USER+50)

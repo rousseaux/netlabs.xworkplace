@@ -155,7 +155,10 @@
                                 fXWPMedia,
                                 fXMMVolume,     // V0.9.6 (2000-11-09) [umoeller]
                                 fXMMCDPlayer,   // V0.9.7 (2000-12-20) [umoeller]
-                                fXCenter;       // V0.9.7 (2000-12-20) [umoeller]
+                                fXCenter,       // V0.9.7 (2000-12-20) [umoeller]
+                                fXWPFontFile,   // V0.9.7 (2001-01-12) [umoeller]
+                                fXWPFontFolder, // V0.9.7 (2001-01-12) [umoeller]
+                                fXWPFontObject; // V0.9.7 (2001-01-12) [umoeller]
 
             /*
              * XWorkplace daemon

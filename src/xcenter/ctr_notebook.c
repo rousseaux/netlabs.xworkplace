@@ -419,8 +419,8 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 #define WIDGET_RMF_FORMAT   "DRF_XWPWIDGETRECORD"
 #define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ")x(" WIDGET_RMF_FORMAT ")"
 
-PWIDGETRECORD G_precDragged = NULL,
-              G_precAfter = NULL;
+static PWIDGETRECORD G_precDragged = NULL,
+                     G_precAfter = NULL;
 
 /*
  *@@ ctrpWidgetsItemChanged:

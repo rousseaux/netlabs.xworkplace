@@ -1763,7 +1763,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case FIM_PROCESSTASKLIST:
-            fopsFileThreadProcessing((HFILETASKLIST)mp1,
+            fopsFileThreadProcessing(WinQueryAnchorBlock(hwndObject),
+                                     (HFILETASKLIST)mp1,
                                      (HWND)mp2);
         break;
 

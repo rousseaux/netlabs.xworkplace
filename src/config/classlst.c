@@ -2980,7 +2980,7 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST),
+                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
                            pNLSStrings->pszOpenClassList,
                            MIS_TEXT, 0);
         // insert "register class" only if this is
@@ -3024,7 +3024,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
     {
         // "Open" --> "Class list":
         // wpViewObject will call wpOpen if a new view is necessary

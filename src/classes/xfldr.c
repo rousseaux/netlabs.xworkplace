@@ -161,15 +161,15 @@
  *                                                                  *
  ********************************************************************/
 
-XFolder             *G_pConfigFolder = NULL;
+static XFolder             *G_pConfigFolder = NULL;
 
 // "XFolder" key for wpRestoreData etc.
-const char*         G_pcszXFolder = "XFolder";
+static const char*         G_pcszXFolder = "XFolder";
 
 // roots of linked lists for favorite/quick-open folders
 // these hold CONTENTMENULISTITEM's
-PLINKLIST           G_pllFavoriteFolders = NULL,
-                    G_pllQuickOpenFolders = NULL;
+static PLINKLIST           G_pllFavoriteFolders = NULL,
+                           G_pllQuickOpenFolders = NULL;
 
 /* ******************************************************************
  *                                                                  *
@@ -1109,6 +1109,64 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
 }
 
 /*
+ *@@ xwpProcessObjectCommand:
+ *      this new XFolder instance method gets called when
+ *      XFolder's subclassed window procedure
+ *      (fdr_fnwpSubclassedFolderFrame) intercepts a WM_COMMAND
+ *      message. This gets called before the WPS gets a
+ *      chance to process that command, which will probably
+ *      result in a call to wpMenuItemSelected for each of
+ *      the affected objects in the container.
+ *
+ *      The purpose of this new message is to allow any folder
+ *      (e.g. a subclass of WPFolder) to intercept object
+ *      operations _before_ wpMenuItemSelected. While
+ *      wpMenuItemSelected is OK for doing things which only
+ *      affect a single object, it is not quite suitable
+ *      for collecting all selected objects and processing
+ *      them all at once. This is where overriding this method
+ *      helps.
+ *
+ *      If this returns TRUE, it is assumed that the command
+ *      was processed, and it is swallowed (i.e. not passed
+ *      on to the standard WPS processing). If you're not
+ *      interested in a command, you must return FALSE,
+ *      or you'll break all other menu items.
+ *
+ *      Parameters:
+ *
+ *      -- usCommand has the command message (e.g. WPMENUID_DELETE).
+ *
+ *      -- hwndCnr has the folder's container window where the
+ *         command originated from.
+ *
+ *      -- pFirstObject has the first of the selected objects.
+ *
+ *      -- ulSelectionFlags has information on the context why
+ *         pFirstObject was considered selected. You can use
+ *         wpshQueryNextSourceObject to get the others, if this
+ *         is indicated here.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpProcessObjectCommand(XFolder *somSelf,
+                                                   USHORT usCommand,
+                                                   HWND hwndCnr,
+                                                   WPObject* pFirstObject,
+                                                   ULONG ulSelectionFlags)
+{
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpProcessObjectCommand");
+
+    return (fdrProcessObjectCommand(somSelf,
+                                    usCommand,
+                                    hwndCnr,
+                                    pFirstObject,
+                                    ulSelectionFlags));
+}
+
+/*
  *@@ xwpUpdateStatusBar:
  *      this method gets called when the status bar needs updating.
  *
@@ -1239,9 +1297,9 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
 
     // manually resolve parent method
     pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
-                                                            _XFolder,
-                                                            "xwpQuerySetup2");
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
+                                                         _somGetParent(_XFolder),
+                                                         "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
         // now call parent method
@@ -1257,6 +1315,35 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
     }
 
     return (ulReturn);
+}
+
+/*
+ *@@ xwpSetDisableCnrAdd:
+ *      sets the "disable automatic cnr add" flag for this folder.
+ *
+ *      Normally, this flag is FALSE (resulting in the standard
+ *      WPS behavior for wpAddToContent). However, you may choose
+ *      to call this method with (fDisable == TRUE), which will
+ *      NOT automatically insert objects into the container when
+ *      the folder is populated.
+ *
+ *      After that, the behavior of XFolder::wpAddToContent is
+ *      modified.
+ *
+ *      NOTE: You must call this method during the processing
+ *      of the folder's wpInitData, or otherwise the folder
+ *      contents will become garbled.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xf_xwpSetDisableCnrAdd(XFolder *somSelf,
+                                               BOOL fDisable)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpSetDisableCnrAdd");
+
+    _fDisableAutoCnrAdd = fDisable;
 }
 
 /*
@@ -1308,6 +1395,13 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _pDefaultDocument = NULL; // V0.9.4 (2000-06-09) [umoeller]
     _pszDefaultDocDeferred = NULL; // V0.9.4 (2000-06-09) [umoeller]
+
+    _cObjects = 0;
+
+    _fDisableAutoCnrAdd = FALSE;
+
+    _ppFirstObj = NULL;
+    _ppLastObj = NULL;
 }
 
 /*
@@ -3039,10 +3133,26 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryFldrAttr(XFolder *somSelf,
 
 /*
  *@@ wpAddToContent:
- *      this method is overridden to intercept the
+ *      this WPFolder method is overridden to intercept the
  *      notification of the "Added an object to a folder"
  *      event for subclasses that define their own folder view.
- *      The parent must always be called.
+ *
+ *      From my testing, the standard WPFolder implementation
+ *      appears to call the undocumented WPObject method
+ *      wpSetNextObject to maintain the order of objects
+ *      in a folder. In addition, this inserts objects into
+ *      open container views.
+ *
+ *      We must replace this method completely to be able
+ *      to suppress the automatic adding of objects for
+ *      folders. For example, the trash can and the font
+ *      folder take a long time on open, and we don't want
+ *      each object to be added separately. Instead, we want
+ *      all objects to be added in one flush.
+ *
+ *      So... if XFolder::xwpSetDisableCnrAdd has been called
+ *      with the disable flag set, this method will instead
+ *      call fdrAddToContent.
  *
  *@@changed V0.9.6 (2000-10-26) [pr]: update status bars
  */
@@ -3050,9 +3160,9 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryFldrAttr(XFolder *somSelf,
 SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                                              WPObject* Object)
 {
-    BOOL rc;
+    BOOL brc = FALSE;
 
-    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpAddToContent");
 
     #ifdef DEBUG_SOMMETHODS
@@ -3061,13 +3171,26 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    rc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
+    if (_fDisableAutoCnrAdd)
+    {
+        // do not call the parent!!
+        // call our own implementation instead
+        brc = fdrAddToContent(somSelf, Object);
+    }
+    else
+    {
+        brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
+    }
+
+    if (brc)
+        _cObjects++;
+
     if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEINPROGRESS))
         fdrForEachOpenInstanceView(somSelf,
                                    STBM_UPDATESTATUSBAR,
                                    fncbStatusBarPost);
 
-    return (rc);
+    return (brc);
 }
 
 /*
@@ -3083,9 +3206,9 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
 SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
                                                WPObject* Object)
 {
-    BOOL rc;
+    BOOL brc = FALSE;
 
-    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpDeleteFromContent");
 
     #ifdef DEBUG_SOMMETHODS
@@ -3094,13 +3217,58 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    rc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
+    brc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
+
     if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEINPROGRESS))
         fdrForEachOpenInstanceView(somSelf,
                                    STBM_UPDATESTATUSBAR,
                                    fncbStatusBarPost);
 
-    return (rc);
+    if (brc)
+        _cObjects--;
+
+    return (brc);
+}
+
+/*
+ *@@ wpQueryContent:
+ *      this WPFolder method can be called to enumerate a
+ *      folder's contents.
+ *
+ *      This can be called in various ways:
+ *
+ *      --  If ulOption is QC_FIRST, the first object in the
+ *          folder is returned. "Object" is ignored.
+ *
+ *      --  If ulOption is QC_NEXT, the object after "Object"
+ *          is returned.
+ *
+ *      --  If ulOption is QC_LAST, the last object in the
+ *          folder is returned.
+ *
+ *      For folders that have the "no auto-add" flag set (see
+ *      XFolder::xwpSetDisableCnrAdd), we must override this
+ *      to make this still work.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xf_wpQueryContent(XFolder *somSelf,
+                                               WPObject* Object,
+                                               ULONG ulOption)
+{
+    WPObject *pobj = NULL;
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpQueryContent");
+
+    if (_fDisableAutoCnrAdd)
+        // do not call the parent!!
+        // call our own implementation instead
+        pobj = fdrQueryContent(somSelf, Object, ulOption);
+    else
+        pobj = XFolder_parent_WPFolder_wpQueryContent(somSelf, Object, ulOption);
+
+    return (pobj);
 }
 
 /*

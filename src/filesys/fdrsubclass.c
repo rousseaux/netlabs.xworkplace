@@ -991,12 +991,93 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
 }
 
 /*
+ *@@ fdrProcessObjectCommand:
+ *      implementation for XFolder::xwpProcessObjectCommand.
+ *      See remarks there.
+ *
+ *      Yes, it looks strange that ProcessFolderMsgs calls
+ *      xwpProcessObjectCommand, which in turn calls this
+ *      function... but this gives folder subclasses such
+ *      as the trash can a chance to override that method
+ *      to implement their own processing.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+BOOL fdrProcessObjectCommand(WPFolder *somSelf,
+                             USHORT usCommand,
+                             HWND hwndCnr,
+                             WPObject* pFirstObject,
+                             ULONG ulSelectionFlags)
+{
+    BOOL brc = FALSE;       // default: not processed, call parent
+
+    if (usCommand == WPMENUID_DELETE)
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        BOOL fCallXWPFops = FALSE;
+        BOOL fTrueDelete = FALSE;
+
+        if (pGlobalSettings->fTrashDelete)
+        {
+            // delete to trash can enabled:
+            if (doshQueryShiftState())
+                // shift pressed also:
+                fTrueDelete = TRUE;
+            else
+                // delete to trash can:
+                fCallXWPFops = TRUE;
+        }
+        else
+            // no delete to trash can:
+            // do a real delete
+            fTrueDelete = TRUE;
+
+        if (fTrueDelete)
+            // real delete:
+            // is real delete also replaced?
+            if (pGlobalSettings->fReplaceTrueDelete)
+                fCallXWPFops = TRUE;
+
+        if (fCallXWPFops)
+        {
+            // this is TRUE if
+            // -- delete to trash can is enabled and "regular" delete
+            //    has been selected -> move to trash can
+            // -- delete to trash can has been enabled, but Shift was pressed
+            //    --> "true" delete
+            // -- delete to trash can has been disabled, but regular delete
+            //    is replaced --> "true" delete
+
+            // collect objects from container and start deleting
+            FOPSRET frc = fopsStartDeleteFromCnr(NULLHANDLE,
+                                                    // no anchor block,
+                                                    // ansynchronously
+                                                 pFirstObject,
+                                                    // first source object
+                                                 ulSelectionFlags,
+                                                 hwndCnr,
+                                                 fTrueDelete);
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
+            #endif
+
+            // return "processed", skip default processing
+            brc = TRUE;
+        }
+    } // end if (usCommand == WPMENUID_DELETE)
+
+    return (brc);
+}
+
+/*
  *@@ ProcessFolderMsgs:
  *      actual folder view message processing. Called
  *      from fdr_fnwpSubclassedFolderFrame. See remarks
  *      there.
  *
  *@@added V0.9.3 (2000-04-08) [umoeller]
+ *@@changed V0.9.7 (2001-01-13) [umoeller]: introduced xwpProcessObjectCommand for WM_COMMAND
  */
 
 MRESULT ProcessFolderMsgs(HWND hwndFrame,
@@ -1308,6 +1389,9 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
              *      here instead, and wpMenuItemSelected never
              *      gets called.
              *
+             *      This now calls xwpProcessObjectCommand,
+             *      resolved by name.
+             *
              *      Note: WM_MENUEND comes in BEFORE WM_COMMAND.
              */
 
@@ -1315,62 +1399,24 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
             {
                 USHORT usCommand = SHORT1FROMMP(mp1);
 
-                if (usCommand == WPMENUID_DELETE)
-                {
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                    BOOL fCallXWPFops = FALSE;
-                    BOOL fTrueDelete = FALSE;
+                // resolve method by name
+                somTD_XFolder_xwpProcessObjectCommand pxwpProcessObjectCommand
+                    = (somTD_XFolder_xwpProcessObjectCommand)somResolveByName(
+                                          psfv->somSelf,
+                                          "xwpProcessObjectCommand");
 
-                    if (pGlobalSettings->fTrashDelete)
-                    {
-                        // delete to trash can enabled:
-                        if (doshQueryShiftState())
-                            // shift pressed also:
-                            fTrueDelete = TRUE;
-                        else
-                            // delete to trash can:
-                            fCallXWPFops = TRUE;
-                    }
-                    else
-                        // no delete to trash can:
-                        // do a real delete
-                        fTrueDelete = TRUE;
+                if (!pxwpProcessObjectCommand)
+                    fCallDefault = TRUE;
+                else
+                    if (!pxwpProcessObjectCommand(psfv->somSelf,
+                                                  usCommand,
+                                                  psfv->hwndCnr,
+                                                  psfv->pSourceObject,
+                                                  psfv->ulSelection))
+                        // not processed:
+                        fCallDefault = TRUE;
 
-                    if (fTrueDelete)
-                        // real delete:
-                        // is real delete also replaced?
-                        if (pGlobalSettings->fReplaceTrueDelete)
-                            fCallXWPFops = TRUE;
-
-                    if (fCallXWPFops)
-                    {
-                        // this is TRUE if
-                        // -- delete to trash can is enabled and "regular" delete
-                        //    has been selected -> move to trash can
-                        // -- delete to trash can has been enabled, but Shift was pressed
-                        //    --> "true" delete
-                        // -- delete to trash can has been disabled, but regular delete
-                        //    is replaced --> "true" delete
-
-                        // collect objects from container and start deleting
-                        FOPSRET frc = fopsStartDeleteFromCnr(NULLHANDLE,
-                                                                // no anchor block,
-                                                                // ansynchronously
-                                                             psfv->pSourceObject,
-                                                                // first source object
-                                                             psfv->ulSelection,
-                                                             psfv->hwndCnr,
-                                                             fTrueDelete);
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
-                        #endif
-
-                        psfv->pSourceObject = NULL;
-                        break;
-                    }
-                }
-
-                fCallDefault = TRUE;
+                psfv->pSourceObject = NULL;
             break; }
 
             /*

@@ -886,7 +886,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     // mi.hwndSubMenu now contains "Open" submenu handle,
                     // which we add items to now
                     winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENPARTITIONS),
+                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
                                        pNLSStrings->pszOpenPartitions,
                                        MIS_TEXT, 0);
                 }
@@ -1846,7 +1846,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  *  V0.9.2 (2000-02-29) [umoeller]
                  */
 
-                case ID_XFMI_OFS_OPENPARTITIONS:
+                case ID_XFMI_OFS_XWPVIEW:
                     partCreatePartitionsView(somSelf,
                                              ulMenuId);
                 break;
