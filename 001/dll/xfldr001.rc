@@ -730,7 +730,9 @@ BEGIN
     ID_XCSI_RESTARTWPS                  "Enable ""Restart Desktop"""
     ID_XCSI_XSHUTDOWN                   "Enable eXtended Shutdown"
 
-    ID_XCSI_CHECKDESKTOP                "Check desktop integrity"
+/* the following two items added with V0.9.18 (2001-10-25) [umoeller] */
+    ID_XCSI_CHECKDESKTOP                "Check Desktop integrity"
+    ID_XCSI_PREPOPULATEDESKTOP          "Pre-populate Desktop"
 
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
@@ -1080,7 +1082,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEREPLREFRESH    "Disable replacement folder auto-refresh"
     ID_XFDI_PANIC_DISABLETURBOFOLDERS   "Disable turbo folders"
     // this one is new with V0.9.16
-    ID_XFDI_PANIC_DISABLECHECKDESKTOP   "Disable check desktop on startup"
+    ID_XFDI_PANIC_DISABLECHECKDESKTOP   "Disable check Desktop on startup"
 
     /* strings formerly in ID_XSD_FOLDERVIEWS */
     ID_XSD_FOLDERVIEWGROUP              "Folder view settings"

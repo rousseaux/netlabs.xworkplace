@@ -2023,6 +2023,7 @@
 #endif
 #ifndef __NEVERCHECKDESKTOP__
 #define ID_XCSI_CHECKDESKTOP            6024
+#define ID_XCSI_PREPOPULATEDESKTOP      6025
 #endif
 
 #define ID_XCSI_FILEOPERATIONS          6040

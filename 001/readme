@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.17 README
+XWorkplace 0.9.18 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated February 4, 2002
+Last updated March 22, 2002
 
 
 0. CONTENTS OF THIS FILE
@@ -29,7 +29,7 @@ Last updated February 4, 2002
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.17.
+    Welcome to XWorkplace V0.9.18.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -46,13 +46,12 @@ Last updated February 4, 2002
     About this release
     ------------------
 
-    It's been a long while since the last public release
-    (V0.9.14 was released in August 2001), so naturally
-    lots of things have changed. V0.9.16 fixed _many_
-    bugs and added quite a few more features which I wrote
-    when I got tired of bugfixing. V0.9.17 is a small
-    maintenance release to fix some issues people had
-    with V0.9.16.
+    V0.9.18 again fixes a bunch of bugs that were introduced
+    with the major update V0.9.16. Most importantly, I hope
+    to have fixed the program object problems with settings
+    not being remembered and such. Also there are more fixes
+    to the Pulse widget and the XWorkplace pager (formerly
+    PageMage).
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

@@ -29,6 +29,143 @@
 
     /* ******************************************************************
      *
+     *   Object setup
+     *
+     ********************************************************************/
+
+    #pragma pack(1)                 // SOM packs structures, apparently
+
+    /*
+     *@@ IBMOBJECTDATA:
+     *      WPObject instance data structure,
+     *      as far as I have been able to
+     *      decode it. See XFldObject::wpInitData
+     *      where we get a pointer to this.
+     *
+     *      WARNING: This is the result of the
+     *      testing done on eComStation, i.e. the
+     *      MCP1 code level of the WPS. I have not
+     *      tested whether the struct ordering is
+     *      the same on all older versions of OS/2,
+     *      nor can I guarantee that the ordering will
+     *      stay the same in the future (even though
+     *      it is unlikely that anyone at IBM is
+     *      capable of changing this structure any
+     *      more in the first place).
+     *
+     *      The size of this structure (sizeof(IBMOBJECTDATA)
+     *      is 144 bytes, and _somGetInstanceSize(_WPObject)
+     *      returns
+     *
+     *      --  144 bytes on Warp 4 FP 15
+     *
+     *      --  144 bytes on eComStation (MCP1)
+     *
+     *@@added V0.9.18 (2002-03-23) [umoeller]
+     */
+
+    typedef struct _IBMOBJECTDATA
+    {
+        WPObject            *pobjNext;
+                                // next object in folder content chain;
+                                // this is a SOM attribute, so we can safely
+                                // get this using the som _get_pobjNext method
+                                // (see wpshGetNextObjPointer)
+        PMINIRECORDCORE     pRecord;
+                                // pointer to the object record; size is variable
+                                // depending on object data
+        ULONG               ulUnknown1;
+        ULONG               ulUnknown2;
+        WPObject            *pFolder;
+                                // object's folder
+        ULONG               aulUnknown1[13];
+        ULONG               cLocks;
+                                // current object lock count (wpLockObject,
+                                // wpUnlockObject); 0 if not locked
+        ULONG               aulUnknown2[4];
+        ULONG               ulDefaultView;
+                                // object's default view, if explicitly set
+                                // by user on the "Menu" page; if 0 (OPEN_DEFAULT),
+                                // wpclsQueryDefaultView is used instead
+        ULONG               ulHelpPanelId;
+                                // object's help panel ID, as returned by
+                                // wpQueryDefaultHelp; if 0, wpclsQueryDefaultHelp
+                                // is used instead, apparently
+        ULONG               ulUnknown3;
+        ULONG               flStyle;
+                                // object's style, as returned by wpQueryStyle,
+                                // if not overridden by subclasses; see wpobject.h
+                                // for valid object styles
+        ULONG               ulMinWindow;
+                                // minimized window behavior, as returned by
+                                // wpQueryMinWindow
+        ULONG               ulConcurrentView;
+                                // concurrent views behavior, as returned by
+                                // wpQueryConcurrentView; one of
+                                // CCVIEW_DEFAULT (0), CCVIEW_ON (1), CCVIEW_OFF (2)
+        ULONG               ulButtonAppearance;
+                                // button appearance, as returned by
+                                // wpQueryButtonAppearance; one of
+                                // HIDEBUTTON (1), MINBUTTON (2), DEFAULTBUTTON (3)
+        ULONG               ulMenuStyle;
+                                // menu style, as returned by wpQueryMenuStyle (Warp 4 only)
+        PSZ                 pszHelpLibrary;
+                                // help library, as returned by wpQueryDefaultHelp
+        PSZ                 pszObjectID;
+                                // object ID, if any, as returned by
+                                // wpQueryObjectID
+        ULONG               ulUnknown4;
+        ULONG               ulUnknown5;
+        ULONG               ulUnknown6;
+    } IBMOBJECTDATA, *PIBMOBJECTDATA;
+
+    #pragma pack()
+
+    #define OBJFL_WPFILESYSTEM              0x0001
+    #define OBJFL_WPFOLDER                  0x0002
+    #define OBJFL_WPSHADOW                  0x0004
+
+    #define OBJFL_INITIALIZED               0x1000
+
+    WPObject* objResolveIfShadow(WPObject *somSelf);
+
+    BOOL objIsAFolder(WPObject *somSelf);
+
+    BOOL objSetup(WPObject *somSelf,
+                  PSZ pszSetupString);
+
+    BOOL objQuerySetup(WPObject *somSelf,
+                        PVOID pstrSetup);
+
+    /* ******************************************************************
+     *
+     *   Object scripts
+     *
+     ********************************************************************/
+
+    #define SCRFL_RECURSE           0x0001
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+    #ifdef SOM_WPFolder_h
+
+        APIRET objCreateObjectScript(WPObject *pObject,
+                                     PCSZ pcszRexxFile,
+                                     WPFolder *pFolderForFiles,
+                                     ULONG flCreate);
+    #endif
+    #endif
+
+    /* ******************************************************************
+     *
+     *   Object details dialog
+     *
+     ********************************************************************/
+
+    VOID objShowObjectDetails(HWND hwndOwner,
+                              WPObject *pobj);
+
+    /* ******************************************************************
+     *
      *   Object creation/destruction
      *
      ********************************************************************/
@@ -167,39 +304,6 @@
 
     VOID objModifyPopupMenu(WPObject* somSelf,
                             HWND hwndMenu);
-
-    /* ******************************************************************
-     *
-     *   Object setup strings
-     *
-     ********************************************************************/
-
-    BOOL objSetup(WPObject *somSelf,
-                  PSZ pszSetupString);
-
-    BOOL objQuerySetup(WPObject *somSelf,
-                        PVOID pstrSetup);
-
-    #define SCRFL_RECURSE           0x0001
-
-    #ifdef LINKLIST_HEADER_INCLUDED
-    #ifdef SOM_WPFolder_h
-
-        APIRET objCreateObjectScript(WPObject *pObject,
-                                     PCSZ pcszRexxFile,
-                                     WPFolder *pFolderForFiles,
-                                     ULONG flCreate);
-    #endif
-    #endif
-
-    /* ******************************************************************
-     *
-     *   Object details dialog
-     *
-     ********************************************************************/
-
-    VOID objShowObjectDetails(HWND hwndOwner,
-                              WPObject *pobj);
 
 #endif
 

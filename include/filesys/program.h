@@ -29,7 +29,7 @@
 
     /* ******************************************************************
      *
-     *   Helpers
+     *   Program setup
      *
      ********************************************************************/
 
@@ -43,7 +43,7 @@
         #pragma pack(1)                 // SOM packs structures, apparently
 
         /*
-         *@@ WPPROGRAMPRIVATE:
+         *@@ IBMPROGRAMDATA:
          *      WPProgram instance data structure,
          *      as far as I have been able to
          *      decode it. See XWPProgram::wpInitData
@@ -56,12 +56,14 @@
          *      the same on older versions of OS/2, nor
          *      can I guarantee that the ordering will
          *      stay the same in the future (even though
-         *      IBM isn't changing the WPS any more).
+         *      it is unlikely that anyone at IBM is
+         *      capable of changing this structure any
+         *      more in the first place).
          *
          *@@added V0.9.18 (2002-03-16) [umoeller]
          */
 
-        typedef struct _WPPROGRAMPRIVATE
+        typedef struct _IBMPROGRAMDATA
         {
             PSZ     pszEnvironment;     // string array with the program's
                                         // environment (last string is terminated
@@ -71,9 +73,7 @@
 
             SWP     SWPInitial;         // SWPInitial as in PROGDETAILS
 
-            BYTE    abUnknown[10];
-            ULONG   ulUnknown1;
-            ULONG   ulUnknown2;
+            BYTE    abUnknown1[18];
 
             ULONG   ulExecutableHandle; // 16-bit file-system handle for
                                         // executable; 0xFFFF marks "*" (cmdline);
@@ -82,12 +82,12 @@
             ULONG   ulStartupDirHandle; // 16-bit file-system handle for
                                         // startup dir
 
-            ULONG   ulUnknown3;
+            ULONG   ulUnknown2;
 
             PROGTYPE ProgType;          // PROGTYPE as in PROGDETAILS
 
+            ULONG   ulUnknown3;
             ULONG   ulUnknown4;
-            ULONG   ulUnknown5;
 
             PSZ     pszExecutable;      // string executable, overrides
                                         // ulExecutableHandle if present; this is
@@ -100,7 +100,7 @@
             // there are many more fields following, whose
             // meaning is unknown to me
 
-        } WPPROGRAMPRIVATE, *PWPPROGRAMPRIVATE;
+        } IBMPROGRAMDATA, *PIBMPROGRAMDATA;
 
         #pragma pack()
 

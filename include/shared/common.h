@@ -441,12 +441,14 @@
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "WarpCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "XCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
+        DECLARE_CMN_STRING(ENTITY_PAGER, "XPager");
     #else
         DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "eComStation");
         DECLARE_CMN_STRING(ENTITY_OS2, "eComStation");
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "eComCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
+        DECLARE_CMN_STRING(ENTITY_PAGER, "ePager");
     #endif
 
     DECLARE_CMN_STRING(WC_WPFOLDERWINDOW, "wpFolder window");
@@ -791,6 +793,7 @@
 #endif
 #ifndef __NEVERCHECKDESKTOP__
         sfCheckDesktop,
+        sfPrePopulateDesktop,
 #endif
 #ifndef __NOSNAPTOGRID__
         sfSnap2Grid,

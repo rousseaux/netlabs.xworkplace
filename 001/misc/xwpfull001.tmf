@@ -98,10 +98,9 @@ Also, a "Hotkeys" page is added to the "Keyboard" settings object in your "Syste
 This item is unavailable if the &xwp; hook is not installed.
 Make sure that you also have the "Object page" setting in the "General features" group enabled, or you won't be able to configure hotkeys.
 This was added with &xwp; V0.9.1.
-<--FEATURES_6054-->: "PageMage" offers you virtual desktops. This means that &xwp; makes your current desktop one out of several, and you can switch between those.
-Enabling this will add a settings page to the new "Screen" settings object where you can fine-tune PageMage.
+<--FEATURES_6054-->: "&pgr;" offers you virtual desktops. This means that &xwp; makes your current desktop one out of several, and you can switch between those.
+Enabling this will add a settings page to the new "Screen" settings object where you can fine-tune &pgr;.
 This item is unavailable if the &xwp; hook is not installed.
-PageMage used to be separate program written by Carlos Ugarte and is now integrated into &xwp;.
 This was added with &xwp; V0.9.2.
 
 <--FEATURES_6021-->: This replaces the "Archives" page in the Desktop's settings notebook. If this is enabled, you can define precise conditions for whether the Workplace Shell should be backed up automatically -- instead of just being able to enable or disable archiving altogether.
@@ -118,9 +117,14 @@ This allows you to cancel shutdown while it's running, skip hung programs, and m
 This will add an "&xsd;" page to the Desktop's settings notebook which allows you to configure this feature.
 This was new with XFolder 0.60.
 See the &xwp; User Guide for details.
-<--FEATURES_6024-->: If "Check desktop integrity" is enabled, &xwp; will check the Desktop's integrity on every startup before the WPS can display the dull "Cannot find desktop" dialog, which isn't terribly helpful.
-If &xwp; finds problems with your desktop's integrity (like a broken file-system handles table, or a lost <WP_DESKTOP> object ID), it can try to repair those problems.
-You may try to disable this feature if &xwp; keeps reporting problems on startup and your desktop appears to work fine.
+;
+; the following two were added with V0.9.18
+;
+<--FEATURES_6024-->: If "Check Desktop integrity" is enabled, &xwp; will check the Desktop's integrity on every startup before the WPS can display the dull "Cannot find Desktop" dialog, which isn't terribly helpful.
+If &xwp; finds problems with your Desktop's integrity (like a broken file-system handles table, or a lost <WP_DESKTOP> object ID), it can try to repair those problems.
+You may try to disable this feature if &xwp; keeps reporting problems on startup and your Desktop appears to work fine.
+<--FEATURES_6025-->: If "Pre-populate Desktop" is checked, while the WPS is starting up, &xwp; will fully populate the Desktop before it is opened.
+This might fix Desktop hangs many people are experiencing when the Desktop contains many objects and the WPS gets confused with initializing them in the right order.
 
 <--FEATURES_6041-->: "Extended file associations" will make the WPS use file types only for associating programs with data files.
 Don't be shocked, file filters still exist. The difference is that files will be given automatic file types based on file filters, instead of associating programs based on filters directly.
@@ -244,7 +248,7 @@ This was added with &xwp; 0.9.0.
 
 <--XWPCLS_1267-->: "XWPScreen" implements the "Screen" settings object, which has all the
 screen-related pages from the old "System" object plus new &xwp; screen settings,
-such as PageMage configuration.
+such as &pgr; configuration.
 This was added with &xwp; 0.9.2.
 
 ;
@@ -270,7 +274,7 @@ This was added with &xwp; 0.9.4.
 ; the following was added with V0.9.7
 ;
 
-<--XWPCLS_1270-->: "XCenter" implements a new system bar at the top or the bottom of your desktop. This can be used as a &warpcenter; replacement, or even together with the &warpcenter;.
+<--XWPCLS_1270-->: "XCenter" implements a new system bar at the top or the bottom of your Desktop. This can be used as a &warpcenter; replacement, or even together with the &warpcenter;.
 
 
 ;

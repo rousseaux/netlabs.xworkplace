@@ -88,6 +88,8 @@
     #pragma alloc_text(FREQ_CODE1, treeCompareStrings)
 
     // object.c
+    #pragma alloc_text(FREQ_CODE1, objResolveIfShadow)
+    #pragma alloc_text(FREQ_CODE1, objIsAFolder)
     #pragma alloc_text(FREQ_CODE1, LockHandlesCache)
     #pragma alloc_text(FREQ_CODE1, UnlockHandlesCache)
     #pragma alloc_text(FREQ_CODE1, objFindObjFromHandle)
@@ -233,12 +235,18 @@
         // once, and you'll get no error message, so be warned.
             #define _PMPRINTF_
 
+/* general debugging */
+
         // The following replaces the SOMMethodDebug macros with
         // a PMPRINTF version. This leads to a LOT of output for
         // each SOM method called from all the XWorkplace files and
         // slows down the system _very_ much if the PMPRINTF output
         // wnd is open.
             // #define DEBUG_SOMMETHODS
+
+        // the following will printf language code queries and
+        // NLS DLL evaluation
+            // #define DEBUG_LANGCODES
 
         // the following will show a dumb message box when XWPSetup
         // is opened to check whether all classes have properly
@@ -249,47 +257,15 @@
         // exceptions, i.e. those handled by excHandlerQuiet
             // #define DEBUG_WRITEQUIETEXCPT
 
-        // The following printfs about folder context menus.
-            // #define DEBUG_CONTEXT
-
-        // the following allows debug mode for XShutdown, which
-        // will be enabled by holding down SHIFT while selecting
-        // "Shutdown..." from the desktop context menu. In addition,
-        // you'll get some PMPRINTF info and beeps
-            // #define DEBUG_SHUTDOWN
-
         // the following beeps when thread priorities change
             // #define DEBUG_PRIORITY
 
         // the following printf's each added awake object
             // #define DEBUG_AWAKEOBJECTS
 
-        // the following gives information on ordered folder content
-        // (sorting by .ICONPOS etc.)
-            // #define DEBUG_ORDEREDLIST
-
-        // the following displays internal status bar data
-            // #define DEBUG_STATUSBARS
-
         // the following will printf all kinds of settings
         // notebook information
             // #define DEBUG_SETTINGS
-
-        // the following will printf WM_CONTROL for WPS cnrs
-            // #define DEBUG_CNRCNTRL
-
-        // the following will printf wpAddToContent
-            // #define DEBUG_CNRCONTENT
-
-        // the following will printf lots of sort info
-            // #define DEBUG_SORT
-
-        // the following will printf language code queries and
-        // NLS DLL evaluation
-            // #define DEBUG_LANGCODES
-
-        // the following will printf folder/global hotkey info
-            // #define DEBUG_KEYS
 
         // the following displays XWorkplace memory usage in the
         // "Object internals" of the Desktop settings; this
@@ -301,18 +277,65 @@
         // the default heap
             // #define DEBUG_MEMORYBEEP
 
-        // the following displays a lot of infos about menu
-        // processing (msgs), esp. for folder content menus
-            // #define DEBUG_MENUS
+        // debug notebook.c callbacks
+            // #define DEBUG_NOTEBOOKS
+
+/* object handling */
+
+        // debug wpRestoreData and such
+        // WARNING: this produces LOTS of output
+            // #define DEBUG_RESTOREDATA
+
+        // debug icon replacements
+            #define DEBUG_ICONREPLACEMENTS
+
+/* startup, shutdown */
 
         // debug startup (folder, archives) processing
             // #define DEBUG_STARTUP
 
+        // the following allows debug mode for XShutdown, which
+        // will be enabled by holding down SHIFT while selecting
+        // "Shutdown..." from the desktop context menu. In addition,
+        // you'll get some PMPRINTF info and beeps
+            // #define DEBUG_SHUTDOWN
+
+/* folder debugging */
+
+        // The following printfs about folder context menus.
+            // #define DEBUG_CONTEXT
+
+        // the following gives information on ordered folder content
+        // (sorting by .ICONPOS etc.)
+            // #define DEBUG_ORDEREDLIST
+
+        // the following will printf WM_CONTROL for WPS cnrs
+            // #define DEBUG_CNRCNTRL
+
+        // the following will printf wpAddToContent
+            // #define DEBUG_CNRCONTENT
+
+        // the following displays internal status bar data
+            // #define DEBUG_STATUSBARS
+
+        // the following will printf lots of sort info
+            // #define DEBUG_SORT
+
+        // the following will printf folder/global hotkey info
+            // #define DEBUG_KEYS
+
+        // the following displays a lot of infos about menu
+        // processing (msgs), esp. for folder content menus
+            // #define DEBUG_MENUS
+
+        // the following debugs turbo folders and fast
+        // content trees
+            // #define DEBUG_TURBOFOLDERS
+
+/* file ops debugging */
+
         // debug title clash dialog
             // #define DEBUG_TITLECLASH
-
-        // debug new system sounds
-            // #define DEBUG_SOUNDS
 
         // debug data/program file associations/icons
             // #define DEBUG_ASSOCS
@@ -320,14 +343,17 @@
         // debug folder icon replacements
             // #define DEBUG_FLDRICONS
 
-        // debug wpRestoreData and such
-            // #define DEBUG_RESTOREDATA
-
-        // debug notebook.c callbacks
-            // #define DEBUG_NOTEBOOKS
-
         // debug trashcan
             // #define DEBUG_TRASHCAN
+
+/* program objects */
+        // debug program startup data
+            // #define DEBUG_PROGRAMSTART
+
+/* misc */
+
+        // debug new system sounds
+            // #define DEBUG_SOUNDS
 
         // debug Xtimers
             // #define DEBUG_XTIMERS
