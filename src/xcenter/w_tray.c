@@ -1189,6 +1189,7 @@ STATIC VOID YwgtButton1Down(PTRAYWIDGETPRIVATE pPrivate,
  *
  *@@added V0.9.14 (2001-08-07) [umoeller]
  *@@changed V0.9.19 (2002-04-25) [umoeller]: now allowing single-click for switching trays
+ *@@changed V1.0.2 (2003-08-10) [bvl]: Added a widget save after the switch, this will save the current active tray  @@fixes 10
  */
 
 STATIC VOID YwgtButton1Click(PTRAYWIDGETPRIVATE pPrivate,
@@ -1207,8 +1208,11 @@ STATIC VOID YwgtButton1Click(PTRAYWIDGETPRIVATE pPrivate,
         PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
         ULONG cTrays = lstCountItems(ppws->pllTraySettings);
         if (cTrays > 1)
+        {
             SwitchToTray(pPrivate,
                          ((pPrivate->Setup.pPrivateSetting->ulCurrentTray) + 1) % cTrays);
+            YwgtSaveSetupAndSend(pPrivate);
+        }
     }
 }
 

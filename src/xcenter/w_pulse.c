@@ -153,6 +153,7 @@ typedef struct _PULSESETUP
  *      fnwpPulseWidget and stored in XCENTERWIDGET.pUser.
  *
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added new fields for SMP support
+ *@@changed V1.0.2 (2003-08-09) [bvl]: changed szTooltipText to pszTooltipText so that at create the size will be calculated @@fixes 490
  */
 
 typedef struct _WIDGETPRIVATE
@@ -201,7 +202,8 @@ typedef struct _WIDGETPRIVATE
 
     BOOL            fTooltipShowing;    // TRUE only while tooltip is showing over
                                         // this widget
-    CHAR            szTooltipText[100]; // current tooltip text
+    //CHAR            szTooltipText[256]; // current tooltip text
+    PSZ             pszTooltipText; // current tooltip text
 
     BOOL            fCrashed;           // set to TRUE if the pulse crashed somewhere.
                                         // This will disable display then to avoid
@@ -989,6 +991,7 @@ STATIC VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
  *      implementation for WM_CREATE.
  *
  *@@changed V0.9.12 (2001-05-20) [umoeller]: now using second thread
+ *@@changed V1.0.2 (2003-08-10) [bvl]: Calculating the size off the tooltip based on the string resource size @@fixes 490
  */
 
 STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
@@ -1047,7 +1050,14 @@ STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 
     pPrivate->fUpdateGraph = TRUE;
 
-    pPrivate->szTooltipText[0] = '\0';
+    //pPrivate->szTooltipText[0] = '\0';
+    // [bvl] szTooltiptext is a pointer now. we calculate requiered buffer size on the fly now.. buffer has 20 extra bytes for expansion
+    /*_PmpfF(("size of text1: %d size of text2: %d, totals: %d",
+            strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP1)),
+            strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP2)),
+            strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP1)) + (pPrivate->cProcessors * strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP2))) + 20 ));*/
+
+    pPrivate->pszTooltipText = malloc(strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP1)) + (pPrivate->cProcessors * strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP2))) + 20 );
 
     return mrc;
 }
@@ -1124,7 +1134,8 @@ STATIC BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     case TTN_NEEDTEXT:
                     {
                         PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                        pttt->pszText = pPrivate->szTooltipText;
+                        //pttt->pszText = pPrivate->szTooltipText;
+                        pttt->pszText = pPrivate->pszTooltipText;
                         pttt->ulFormat = TTFMT_PSZ;
                     }
                     break;
@@ -1275,8 +1286,10 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
 
             // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
 
-            pszTooltipLoc = pPrivate->szTooltipText;
-            pszTooltipLoc += sprintf(pPrivate->szTooltipText,
+            //pszTooltipLoc = pPrivate->szTooltipText;
+            pszTooltipLoc = pPrivate->pszTooltipText;
+            //pszTooltipLoc += sprintf(pPrivate->szTooltipText,
+            pszTooltipLoc += sprintf(pPrivate->pszTooltipText,
                                      cmnGetString(ID_CRSI_PWGT_TOOLTIP1),
                                      // "CPU count: %d"            // bvl: show CPU count
                                      // "\nCPU 0 IRQ: %lu%c%lu%c",
@@ -1307,7 +1320,8 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
                 // refresh its display
                 WinSendMsg(pWidget->pGlobals->hwndTooltip,
                            TTM_UPDATETIPTEXT,
-                           (MPARAM)pPrivate->szTooltipText,
+                           //(MPARAM)pPrivate->szTooltipText,
+                           (MPARAM)pPrivate->pszTooltipText,
                            0);
         }
     }
@@ -1908,6 +1922,8 @@ STATIC VOID PwgtDestroy(HWND hwnd)
 
         // do not destroy pPrivate->hdcWin, it is
         // destroyed automatically
+        if (pPrivate->pszTooltipText)
+            free(pPrivate->pszTooltipText);
 
         free(pPrivate);
     } // end if (pWidget && pPrivate);
