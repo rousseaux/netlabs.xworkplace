@@ -2740,7 +2740,7 @@ SOM_Scope WPObject*  SOMLINK xo_xwpResolveIfLink(XFldObject *somSelf)
 
 SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 {
-    static SOMClass *s_pWPObject = NULL;
+    static SOMClass *s_pWPObject = NULL, *s_pWarpCenter = NULL;
 
     BOOL fAwakeSem = FALSE;
 
@@ -2838,7 +2838,17 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
     // here as well from Worker thread, this finally
     // allows us to catch the WarpCenter even if it's
     // started from config.sys
-    if (!strcmp(_somGetClassName(somSelf), G_pcszSmartCenter))
+    // V1.0.3 (2004-5-9) [pr]: Handle subclassed WarpCenter
+    if (!s_pWarpCenter)
+    {
+        somId centerID = somIdFromString((PSZ) G_pcszSmartCenter);
+
+        s_pWarpCenter = _somFindClass(SOMClassMgrObject, centerID, 0, 0);
+        SOMFree(centerID);
+    }
+
+    // if (!strcmp(_somGetClassName(somSelf), G_pcszSmartCenter))
+    if (_somIsA(somSelf, s_pWarpCenter))
         G_pAwakeWarpCenter = somSelf;
 
     // set the class flags
