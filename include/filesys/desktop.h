@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -67,18 +67,18 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY dtpMenuItemsInitPage(PNOTEBOOKPAGE pnbp,
                                            ULONG flFlags);
 
-        MRESULT XWPENTRY dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY dtpMenuItemsItemChanged(PNOTEBOOKPAGE pnbp,
                                         ULONG ulItemID,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra);
 
-        VOID XWPENTRY dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY dtpStartupInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 
-        MRESULT XWPENTRY dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);

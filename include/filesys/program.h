@@ -160,20 +160,20 @@
 
 #ifdef NOTEBOOK_HEADER_INCLUDED
 #ifndef __NOMODULEPAGES__
-        VOID XWPENTRY progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY progFileInitPage(PNOTEBOOKPAGE pnbp,
                                        ULONG flFlags);
 
-        VOID XWPENTRY progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY progResourcesInitPage(PNOTEBOOKPAGE pnbp,
                                             ULONG flFlags);
 
-        BOOL XWPENTRY progResourcesMessage(PCREATENOTEBOOKPAGE pcnbp,
+        BOOL XWPENTRY progResourcesMessage(PNOTEBOOKPAGE pnbp,
                                            ULONG msg, MPARAM mp1, MPARAM mp2,
                                            MRESULT *pmrc);
 
-        VOID XWPENTRY progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY progFile1InitPage(PNOTEBOOKPAGE pnbp,
                                         ULONG flFlags);
 
-        VOID XWPENTRY progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY progFile2InitPage(PNOTEBOOKPAGE pnbp,
                                         ULONG flFlags);
 #endif
 #endif

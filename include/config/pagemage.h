@@ -36,31 +36,31 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY pgmiPageMageGeneralInitPage(PNOTEBOOKPAGE pnbp,
                                                   ULONG flFlags);
 
-        MRESULT XWPENTRY pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                                                ULONG ulItemID, USHORT usNotifyCode,
                                                ULONG ulExtra);
 
-        VOID XWPENTRY pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY pgmiPageMageStickyInitPage(PNOTEBOOKPAGE pnbp,
                                                  ULONG flFlags);
 
-        MRESULT XWPENTRY pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageStickyItemChanged(PNOTEBOOKPAGE pnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
-        VOID XWPENTRY pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY pgmiPageMageColorsInitPage(PNOTEBOOKPAGE pnbp,
                                                  ULONG flFlags);
 
-        MRESULT XWPENTRY pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageColorsItemChanged(PNOTEBOOKPAGE pnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
-        VOID XWPENTRY pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY pgmiPageMageWindowInitPage(PNOTEBOOKPAGE pnbp,
                                                  ULONG flFlags);
 
-        MRESULT XWPENTRY pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageWindowItemChanged(PNOTEBOOKPAGE pnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
     #else

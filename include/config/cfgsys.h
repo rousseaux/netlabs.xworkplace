@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -33,32 +33,32 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                         ULONG flFlags);
 
-        MRESULT XWPENTRY cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                      ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
 
-        VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
+        VOID cfgConfigTimer(PNOTEBOOKPAGE pnbp,
                             ULONG ulTimer);
 
         extern MPARAM *G_pampDriversPage;
         extern ULONG G_cDriversPage;
 
-        VOID XWPENTRY cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY cfgDriversInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 
-        MRESULT XWPENTRY cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
 
-        VOID XWPENTRY cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cfgSyslevelItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);

@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -79,10 +79,10 @@
         extern MPARAM *G_pampFileTypesPage;
         extern ULONG G_cFileTypesPage;
 
-        VOID XWPENTRY ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,
                                             ULONG flFlags);
 
-        MRESULT XWPENTRY ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
@@ -98,10 +98,10 @@
         extern MPARAM *G_pampDatafileTypesPage;
         extern ULONG G_cDatafileTypesPage;
 
-        VOID XWPENTRY ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ftypDatafileTypesInitPage(PNOTEBOOKPAGE pnbp,
                                                 ULONG flFlags);
 
-        MRESULT XWPENTRY ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ftypDatafileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                              ULONG ulItemID,
                                              USHORT usNotifyCode,
                                              ULONG ulExtra);
@@ -115,10 +115,10 @@
         ULONG ftypInsertAssociationsPage(WPObject *somSelf,
                                          HWND hwndNotebook);
 
-        VOID XWPENTRY ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ftypAssociationsInitPage(PNOTEBOOKPAGE pnbp,
                                                ULONG flFlags);
 
-        MRESULT XWPENTRY ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
                                             ULONG ulItemID,
                                             USHORT usNotifyCode,
                                             ULONG ulExtra);

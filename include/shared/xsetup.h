@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -35,48 +35,48 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY setLogoInitPage(PNOTEBOOKPAGE pnbp,
                                       ULONG flFlags);
 
-        BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
+        BOOL setLogoMessages(PNOTEBOOKPAGE pnbp,
                              ULONG msg, MPARAM mp1, MPARAM mp2,
                              MRESULT *pmrc);
 
-        VOID XWPENTRY setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY setThreadsInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 
-        VOID XWPENTRY setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY setStatusInitPage(PNOTEBOOKPAGE pnbp,
                                         ULONG flFlags);
 
-        MRESULT XWPENTRY setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY setStatusItemChanged(PNOTEBOOKPAGE pnbp,
                                      ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra);
 
-        VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,
+        VOID setStatusTimer(PNOTEBOOKPAGE pnbp,
                             ULONG ulTimer);
 
-        VOID XWPENTRY setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY setFeaturesInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
 
-        BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
+        BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
                                  ULONG msg, MPARAM mp1, MPARAM mp2,
                                  MRESULT *pmrc);
 
-        VOID XWPENTRY setObjectsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY setObjectsInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 
-        MRESULT XWPENTRY setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra);
 
-        VOID XWPENTRY setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY setParanoiaInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
 

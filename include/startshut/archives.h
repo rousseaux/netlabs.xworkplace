@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Stefan Milcke,
+ *      Copyright (C) 1997-2002 Stefan Milcke,
  *                              Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -34,10 +34,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY arcArchivesInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);

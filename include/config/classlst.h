@@ -40,7 +40,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -84,10 +84,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY cllClassListInitPage(PNOTEBOOKPAGE pnbp,
                                            ULONG flFlags);
 
-        MRESULT XWPENTRY cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cllClassListItemChanged(PNOTEBOOKPAGE pnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);

@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -124,24 +124,24 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,
                                                    ULONG flFlags);
 
-        MRESULT XWPENTRY trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY trshTrashCanSettingsItemChanged(PNOTEBOOKPAGE pnbp,
                                                 ULONG ulItemID, USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
-        VOID XWPENTRY trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY trshTrashCanDrivesInitPage(PNOTEBOOKPAGE pnbp,
                                                  ULONG flFlags);
 
-        MRESULT XWPENTRY trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY trshTrashCanDrivesItemChanged(PNOTEBOOKPAGE pnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
-        VOID XWPENTRY trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY trshTrashCanIconInitPage(PNOTEBOOKPAGE pnbp,
                                                ULONG flFlags);
 
-        MRESULT XWPENTRY trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY trshTrashCanIconItemChanged(PNOTEBOOKPAGE pnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif

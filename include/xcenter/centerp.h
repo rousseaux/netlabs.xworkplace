@@ -754,31 +754,31 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
 
-        VOID XWPENTRY ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ctrpView1InitPage(PNOTEBOOKPAGE pnbp,
                                         ULONG flFlags);
 
-        MRESULT XWPENTRY ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
                                      ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra);
 
-        VOID XWPENTRY ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ctrpView2InitPage(PNOTEBOOKPAGE pnbp,
                                         ULONG flFlags);
 
-        MRESULT XWPENTRY ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ctrpView2ItemChanged(PNOTEBOOKPAGE pnbp,
                                      ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra);
 
-        VOID XWPENTRY ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ctrpWidgetsInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
 
-        VOID XWPENTRY ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY ctrpClassesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ctrpClassesItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
     #endif

@@ -20,7 +20,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -136,26 +136,26 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY mnuAddMenusInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
 
-        MRESULT XWPENTRY mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY mnuAddMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);
 
-        VOID XWPENTRY mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,
                                                    ULONG flFlags);
 
-        MRESULT XWPENTRY mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                                 ULONG ulItemID,
                                                 USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
-        VOID XWPENTRY mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY mnuRemoveMenusInitPage(PNOTEBOOKPAGE pnbp,
                                              ULONG flFlags);
 
-        MRESULT XWPENTRY mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY mnuRemoveMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                           ULONG ulItemID,
                                           USHORT usNotifyCode,
                                           ULONG ulExtra);

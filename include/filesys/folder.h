@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -624,10 +624,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY fdrViewInitPage(PNOTEBOOKPAGE pnbp,
                                       ULONG flFlags);
 
-        MRESULT XWPENTRY fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
                                    ULONG ulItemID, USHORT usNotifyCode,
                                    ULONG ulExtra);
 
@@ -638,10 +638,10 @@
      ********************************************************************/
 
 #ifndef __NOSNAPTOGRID__
-        VOID XWPENTRY fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY fdrGridInitPage(PNOTEBOOKPAGE pnbp,
                                       ULONG flFlags);
 
-        MRESULT XWPENTRY fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
                                    ULONG ulItemID,
                                    USHORT usNotifyCode,
                                    ULONG ulExtra);
@@ -654,17 +654,17 @@
      ********************************************************************/
 
 
-        VOID XWPENTRY fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 
-        MRESULT XWPENTRY fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrXFolderItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
 
-        VOID XWPENTRY fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp, ULONG flFlags);
+        VOID XWPENTRY fdrSortInitPage(PNOTEBOOKPAGE pnbp, ULONG flFlags);
 
-        MRESULT XWPENTRY fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                                    ULONG ulItemID,
                                    USHORT usNotifyCode,
                                    ULONG ulExtra);
@@ -675,10 +675,10 @@
      *
      ********************************************************************/
 
-        VOID XWPENTRY fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY fdrStartupFolderInitPage(PNOTEBOOKPAGE pnbp,
                                                ULONG flFlags);
 
-        MRESULT XWPENTRY fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
                         ULONG ulItemID, USHORT usNotifyCode,
                         ULONG ulExtra);
     #endif
@@ -733,10 +733,10 @@
                              HWND hwndMenu);
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 
-        MRESULT XWPENTRY fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);

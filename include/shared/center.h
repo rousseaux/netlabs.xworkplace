@@ -52,18 +52,6 @@
     #define BTF_OBJBUTTON       1
     #define BTF_XBUTTON         2
 
-    // position flags (XCENTERGLOBALS.ulPosition)
-    #define XCENTER_BOTTOM          0
-    #define XCENTER_TOP             1
-
-    // display style (XCENTERGLOBALS.flDisplayStyle)
-    #define XCS_FLATBUTTONS         0x0001
-    #define XCS_SUNKBORDERS         0x0002
-    #define XCS_SIZINGBARS          0x0004
-    #define XCS_ALL3DBORDERS        0x0008
-    #define XCS_SPACINGLINES        0x0010      // added V0.9.13 (2001-06-19) [umoeller]
-    #define XCS_NOHATCHINUSE        0x0020      // added V0.9.16 (2001-10-24) [umoeller]
-
     /*
      *@@ XCENTERGLOBALS:
      *      global data for a running XCenter instance.
@@ -135,17 +123,29 @@
                     // a widget may or may not want to consider these.
                     // Can be changed by the user while the XCenter is open.
                     // These flags can be any combination of the following:
+
+                    #define XCS_FLATBUTTONS         0x0001
                     // -- XCS_FLATBUTTONS: paint buttons flat. If not set,
                     //      paint them raised.
+
+                    #define XCS_SUNKBORDERS         0x0002
                     // -- XCS_SUNKBORDERS: paint static controls (e.g. CPU meter)
                     //      with a "sunk" 3D frame. If not set, do not.
+
+                    #define XCS_SIZINGBARS          0x0004
                     // -- XCS_SIZINGBARS: XCenter should automatically paint
                     //      sizing bars for sizeable widgets.
+
+                    #define XCS_ALL3DBORDERS        0x0008
                     // -- XCS_ALL3DBORDERS: XCenter should draw all four 3D
                     //      borders around itself. If not set, it will only
                     //      draw one border (the one towards the screen).
+
+                    #define XCS_SPACINGLINES        0x0010      // added V0.9.13 (2001-06-19) [umoeller]
                     // -- XCS_SPACINGLINES: XCenter should draw small 3D lines
                     //      between the widgets too (V0.9.13 (2001-06-19) [umoeller]).
+
+                    #define XCS_NOHATCHINUSE        0x0020      // added V0.9.16 (2001-10-24) [umoeller]
                     // -- XCS_NOHATCHINUSE: XCenter should not add hatching to
                     //      object widgets which represent open objects
                     //      (V0.9.16 (2001-10-24) [umoeller])
@@ -154,16 +154,17 @@
                     // XCenter position on screen, if a widget cares...
                     // can be changed by the user while the XCenter is open.
                     // This is _one_ of the following:
-                    // -- XCENTER_BOTTOM
-                    // -- XCENTER_TOP
+                    #define XCENTER_BOTTOM          0
+                    #define XCENTER_TOP             1
                     // Left and right are not yet supported.
 
         ULONG               ul3DBorderWidth;
-                    // 3D border width; can change
+                    // 3D border width; can be changed by user at any time
         ULONG               ulBorderSpacing;
-                    // border spacing (added to 3D border width); can change
+                    // border spacing (added to 3D border width);
+                    // can be changed by user at any time
         ULONG               ulWidgetSpacing;
-                    // spacing between widgets; can change;
+                    // spacing between widgets; can be changed by user at any time;
                     // if flDisplayStyle also has XCS_SPACINGLINES set,
                     // an extra 2 pixels will be added internally to this
                     // value
@@ -241,9 +242,9 @@
      *
      +              VOID EXPENTRY ShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
      *
-     *      2.  Store that function in the
-     *          XCENTERWIDGETCLASS.pShowSettingsDlg field for
-     *          your widget class.
+     *      2.  In the "init module" export, store that function
+     *          in the XCENTERWIDGETCLASS.pShowSettingsDlg field
+     *          for your widget class.
      *
      *          This will enable the "Properties" menu item
      *          for the widget.
@@ -322,17 +323,6 @@
 
     typedef VOID EXPENTRY WGTSHOWSETTINGSDLG(PWIDGETSETTINGSDLGDATA);
     typedef WGTSHOWSETTINGSDLG *PWGTSHOWSETTINGSDLG;
-
-    // widget class flags
-    #define WGTF_SIZEABLE               0x0001
-    #define WGTF_NOUSERCREATE           0x0002
-    #define WGTF_UNIQUEPERXCENTER       0x0004
-    #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
-    #define WGTF_TOOLTIP                0x0010
-    #define WGTF_TOOLTIP_AT_MOUSE      (0x0020 + 0x0010)
-    #define WGTF_TRANSPARENT            0x0040
-    #define WGTF_NONFOCUSTRAVERSABLE    0x0100
-    #define WGTF_TRAYABLE               0x0200
 
     /*
      *@@ XCENTERWIDGETCLASS:
@@ -413,6 +403,39 @@
      *         with V0.9.11 (2001-04-25) [umoeller] to avoid
      *         conflicts with the WPS menu item IDs, sorry.
      *
+     *      <B>Resource management</B>
+     *
+     *      You should always be aware that your widget is a PM
+     *      window in the WPS process. As a result, all resource
+     *      leaks that you produce in your widget code will affect
+     *      the entire WPS, and all crashes will too.
+     *
+     *      As a general rule, the XCenter will free all widget
+     *      resources that it has allocated itself (such as the
+     *      structures that were created for it). By contrast,
+     *      if you allocate something yourself, it is your
+     *      responsibility to free it. This applies especially
+     *      to XCENTERWIDGET.pUser, which is your general pointer
+     *      to store widget-specific things.
+     *
+     *      Of course the same rules apply to PM resources such
+     *      as icons, bitmaps, regions, memory PS's etc. You can
+     *      quickly bring down the WPS if you forget to free those.
+     *      Same thing if you start additional threads in your
+     *      widget code.
+     *
+     *      This is especially important because widget windows
+     *      can be created and destroyed without the widgets
+     *      cooperation. For example, if the widget is in a tray,
+     *      it will be created and destroyed when the current
+     *      tray changes. If you leak something in this situation,
+     *      this can quickly become a major problem.
+     *
+     *      I also recommend to use exception handling in your
+     *      widget code to properly clean up things if something
+     *      goes wrong. As said in center.c, do not use exit
+     *      lists because that will cause DLL unloading to fail.
+     *
      *      <B>Tooltip support</B>
      *
      *      If your widget class has the WGTF_TOOLTIP flag set,
@@ -432,20 +455,21 @@
      *      the WGTF_TRAYABLE flag is set in the XCENTERWIDGETCLASS),
      *      it must conform to a few extra rules:
      *
-     *      -- Trayable widgets cannot be sizeable or greedy.
+     *      -- Trayable widgets cannot be sizeable or greedy
+     *         because the tray widget itself is sizeable.
      *
      *      -- You must never assume that the parent window of
      *         your widget really is the XCenter client. It can
-     *         also be a tray widget.
+     *         also be a tray widget. Always use
+     *         WinQueryWindow(hwndWidget, QW_PARENT) to find your
+     *         parent window, which will properly give you either
+     *         the XCenter client or the tray widget.
      *
      *      -- If you use XCM_* messages, never post them to the
      *         XCenter client window (whose handle is available
      *         thru XCENTERGLOBALS). All XCM_* essages are understood
      *         by the tray widget also, and if your widget is in a tray,
      *         it must post them to the tray instead of the client.
-     *         As a result, always use WinQueryWindow(QW_PARENT),
-     *         which will properly give you either the XCenter
-     *         client or the tray widget.
      *
      *      -- Your widget must be prepared for being created or
      *         destroyed at times other than XCenter creation or
@@ -474,40 +498,54 @@
         const char      *pcszWidgetClass;
                 // internal widget class name; this is used to identify
                 // the class. This must be unique on the system and should
-                // not contain any spaces or special characters.
+                // not contain any spaces or special characters. Besides,
+                // since this must work with all codepages, use only
+                // ASCII characters <= 127, and use an English name
+                // always.
                 // A valid name would be "MySampleClass".
                 // This is stored internally in the XCenter data and is
                 // used whenever the XCenter is opened to create all the
                 // widgets from the respective widget classes. In other
                 // words, this is the class identifier and must never
-                // change between several releases of your plugin DLL,
-                // or otherwise widget creation will fail.
+                // change between several releases or different NLS versions
+                // of your plugin DLL, or otherwise widget creation will fail.
                 // Choose this name carefully.
 
         const char      *pcszClassTitle;
                 // explanatory widget class title, which is shown to the
                 // user in the "Add widget" popup menu. Example: "Sample widget".
+                // This is not used to identify the class internally and may
+                // change between releases and NLS versions. So you can set
+                // this to a language-specific string.
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:
 
+                #define WGTF_SIZEABLE               0x0001
                 // -- WGTF_SIZEABLE: widget window can be resized with
                 //    the mouse by the user. A sizing bar is automatically
                 //    painted by the XCenter engine then.
 
+                #define WGTF_NOUSERCREATE           0x0002
                 // -- WGTF_NOUSERCREATE: do not show this class in
                 //    the "add widget" menu, and do not allow creating
                 //    instances of this in the XCenter settings notebook.
                 //    This is used for the object button widget, which
-                //    can only be created through drag'n'drop.
+                //    can only be created through drag'n'drop. This flag
+                //    isn't terribly useful for plug-in DLLs because
+                //    without support in the XCenter engine the widget
+                //    could then not be created at all.
 
+                #define WGTF_UNIQUEPERXCENTER       0x0004
                 // -- WGTF_UNIQUEPERXCENTER: only one widget of this class
                 //    should be created per XCenter.
 
+                #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
                 // -- WGTF_UNIQUEGLOBAL: only one widget of this class
                 //    should be created in all XCenters on the system.
                 //    This implies WGTF_UNIQUEPERXCENTER.
 
+                #define WGTF_TOOLTIP                0x0010
                 // -- WGTF_TOOLTIP: if set, the widget has a tooltip
                 //    and will receive WM_CONTROL messages with the
                 //    TTN_NEEDTEXT, TTN_SHOW, or TTN_POP notification codes
@@ -515,11 +553,13 @@
                 //    The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
                 //    See XCENTERWIDGETCLASS for tooltip handling.
 
+                #define WGTF_TOOLTIP_AT_MOUSE      (0x0020 + 0x0010)
                 // -- WGTF_TOOLTIP_AT_MOUSE: like WGTF_TOOPTIP, but the
                 //    tooltip is not centered above the widget, but put
                 //    at the mouse position instead.
                 //    This implies WGTF_TOOLTIP.
 
+                #define WGTF_TRANSPARENT            0x0040
                 // -- WGTF_TRANSPARENT: some parts of the widget window
                 //    are transparent.  The widget will receive WM_CONTROL
                 //    messages with the XN_HITTEST notification code.
@@ -527,6 +567,10 @@
                 //    the action will be forwarded to its parent (the
                 //    XCenter client or a tray widget).
 
+                #define WGTF_NONFOCUSTRAVERSABLE    0x0100
+                //    Reserved for future use.
+
+                #define WGTF_TRAYABLE               0x0200
                 // -- WGTF_TRAYABLE: widget is "trayable", that is, it
                 //    supports being created inside a tray widget.
                 //    Note: Restrictions apply if you want your widget
@@ -729,7 +773,7 @@
     // All these are specified as both simple prototypes and
     // function pointer declarations so that widget classes
     // can import these functions from XFLDR.DLL in the init
-    // callback.
+    // export.
 
     PSZ APIENTRY ctrScanSetupString(PCSZ pcszSetupString,
                                     PCSZ pcszKeyword);
@@ -895,7 +939,7 @@
     #define XN_OBJECTDESTROYED          3
 
     /*
-     *@@ XN_QUERYSETUP:
+     * XN_QUERYSETUP:
      *      notification code for WM_CONTROL sent to a widget
      *      when the sender needs to know the widget's setup string.
      *
@@ -914,7 +958,7 @@
      *      The widget must return the minimum required size needed
      *      to store the setup string (even if mp2 is NULL).
      *
-     *@@added V0.9.9 (2001-03-01) [lafaix]
+     *added V0.9.9 (2001-03-01) [lafaix]
      */
 
     // #define XN_QUERYSETUP               4
@@ -980,7 +1024,7 @@
     #define XN_ENDANIMATE               6
 
     /*
-     *@@ XN_QUERYWIDGETCOUNT:
+     * XN_QUERYWIDGETCOUNT:
      *      notification code for WM_CONTROL sent from the XCenter
      *      to a widget when it needs to know how many elements a
      *      container-widget contains.
@@ -1002,14 +1046,14 @@
      *      ULONG.  Otherwise, the XCenter will assume some dumb default
      *      for the count.
      *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
-     *@@changed V0.9.9 (2001-03-11) [lafaix]: uses a PULONG to return the count.
+     *added V0.9.9 (2001-02-23) [lafaix]
+     *changed V0.9.9 (2001-03-11) [lafaix]: uses a PULONG to return the count.
      */
 
     // #define XN_QUERYWIDGETCOUNT         7
 
     /*
-     *@@ XN_QUERYWIDGET:
+     * XN_QUERYWIDGET:
      *      notification code for WM_CONTROL sent from the XCenter
      *      to a widget when it needs to know the widget present at
      *      a given position.
@@ -1026,7 +1070,7 @@
      *      Otherwise it must return a pointer to the corresponding
      *      XCENTERWIDGET structure.
      *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
+     *added V0.9.9 (2001-02-23) [lafaix]
      */
 
     // #define XN_QUERYWIDGET              8
@@ -1045,7 +1089,7 @@
     #define WGT_ERROR                   (-1)
 
     /*
-     *@@ XN_INSERTWIDGET:
+     * XN_INSERTWIDGET:
      *      notification code for WM_CONTROL sent from the XCenter
      *      to a widget when it needs to add a widget at a specified
      *      offset to a container-widget.
@@ -1063,13 +1107,13 @@
      *      Otherwise it must return the offset of the widget following
      *      the inserted one.
      *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
+     *added V0.9.9 (2001-02-23) [lafaix]
      */
 
     // #define XN_INSERTWIDGET             9
 
     /*
-     *@@ XN_DELETEWIDGET:
+     * XN_DELETEWIDGET:
      *      notification code for WM_CONTROL sent from the XCenter
      *      to a widget when it needs to remove a widget at a specified
      *      offset.
@@ -1084,7 +1128,7 @@
      *
      *      The widget must return the count of remaining widgets.
      *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
+     *added V0.9.9 (2001-02-23) [lafaix]
      */
 
     // #define XN_DELETEWIDGET             10
@@ -1196,7 +1240,11 @@
      *
      *      Note: _Post_, do not send this message.
      *      This causes excessive redraw of possibly
-     *      all widgets.
+     *      all widgets and will cause a flurry of
+     *      messages being sent back to your widget.
+     *
+     *      Restrictions: This doesn't work during WM_CREATE
+     *      of your widget.
      */
 
     #define XCM_SETWIDGETSIZE           WM_USER
@@ -1255,7 +1303,11 @@
      *
      *      Note: _Post_, do not send this message.
      *      This causes excessive redraw of possibly
-     *      all widgets.
+     *      all widgets and will cause a flurry of
+     *      messages being sent back to your widget.
+     *
+     *      Restrictions: This doesn't work during WM_CREATE
+     *      of your widget.
      */
 
     #define XCM_REFORMAT                (WM_USER + 1)

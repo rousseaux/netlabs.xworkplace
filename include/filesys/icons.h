@@ -69,13 +69,13 @@
         #define ICONFL_HOTKEY           0x0010
         #define ICONFL_DETAILS          0x0020
 
-        VOID icoFormatIconPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID icoFormatIconPage(PNOTEBOOKPAGE pnbp,
                                ULONG flFlags);
 
-        VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                                        ULONG flFlags);
 
-        MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                                              ULONG ulItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
     #endif

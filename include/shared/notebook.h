@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -40,18 +40,18 @@
     extern MPARAM *G_pampGenericCnrPage;
     extern ULONG G_cGenericCnrPage;
 
-    // forward-declare the CREATENOTEBOOKPAGE types, because
+    // forward-declare the NOTEBOOKPAGE types, because
     // these are needed by the function prototypes below
-    typedef struct _CREATENOTEBOOKPAGE *PCREATENOTEBOOKPAGE;
+    typedef struct _NOTEBOOKPAGE *PNOTEBOOKPAGE;
 
     // some callback function prototypes:
 
     // 1)  init-page callback
-    typedef VOID XWPENTRY FNCBACTION(PCREATENOTEBOOKPAGE, ULONG);
+    typedef VOID XWPENTRY FNCBACTION(PNOTEBOOKPAGE, ULONG);
     typedef FNCBACTION *PFNCBACTION;
 
     // 2)  item-changed callback
-    typedef MRESULT XWPENTRY FNCBITEMCHANGED(PCREATENOTEBOOKPAGE,
+    typedef MRESULT XWPENTRY FNCBITEMCHANGED(PNOTEBOOKPAGE,
                                       ULONG,    // ulItemID
                                             // V0.9.9 (2001-03-27) [umoeller]: turned USHORT into ULONG
                                       USHORT,   // usNotifyCode
@@ -59,7 +59,7 @@
     typedef FNCBITEMCHANGED *PFNCBITEMCHANGED;
 
     // 3)  message callback
-    typedef BOOL XWPENTRY FNCBMESSAGE(PCREATENOTEBOOKPAGE, ULONG, MPARAM, MPARAM, MRESULT*);
+    typedef BOOL XWPENTRY FNCBMESSAGE(PNOTEBOOKPAGE, ULONG, MPARAM, MPARAM, MRESULT*);
     typedef FNCBMESSAGE *PFNCBMESSAGE;
 
     /*
@@ -86,7 +86,7 @@
     #endif
 
     /*
-     *@@ CREATENOTEBOOKPAGE:
+     *@@ INSERTNOTEBOOKPAGE:
      *      this structure must be passed to ntbInsertPage
      *      and specifies lots of data according to which
      *      fnwpPageCommon will react.
@@ -100,9 +100,10 @@
      *
      *@@changed V0.9.0 [umoeller]: typedef was missing, thanks Rdiger Ihle
      *@@changed V0.9.4 (2000-07-11) [umoeller]: added fPassCnrHelp
+     *@@changed V0.9.18 (2002-02-23) [umoeller]: renamed from CREATENOTEBOOKPAGE, removed non-input data
      */
 
-    typedef struct _CREATENOTEBOOKPAGE
+    typedef struct _INSERTNOTEBOOKPAGE
     {
         // 1) REQUIRED input to ntbInsertPage
         HWND        hwndNotebook;   // hwnd of Notebook control; set this to the
@@ -112,7 +113,7 @@
                                     // set this to somSelf of _wpAddSettingsPages
         HMODULE     hmod;           // module of dlg resource
         ULONG       ulDlgID;        // ID of dlg resource (in hmod)
-        PSZ         pszName;        // title of page (in notebook tab)
+        PCSZ        pcszName;        // title of page (in notebook tab)
 
         // 2) OPTIONAL input to ntbInsertPage; all of these can be null
         ULONG       ulPageID;       // the page identifier, which should be set to
@@ -124,7 +125,7 @@
                                     // -- BKA_MINOR
                                     // BKA_STATUSTEXTON will always be added.
         BOOL        fEnumerate;     // if TRUE: add "page 1 of 3"-like thingies
-        PSZ         pszMinorName;   // if != NULL, subtitle to add to notebook context
+        PCSZ        pcszMinorName;  // if != NULL, subtitle to add to notebook context
                                     // menu V0.9.16 (2001-10-23) [umoeller]
                                     // (useful with fEnumerate)
         BOOL        fPassCnrHelp;   // if TRUE: CN_HELP is not intercepted, but sent
@@ -161,15 +162,6 @@
                                     // values.
                                     // V0.9.16 (2001-09-29) [umoeller]
 
-        PVOID       pUser,
-                    pUser2;         // user data; since you can access this structure
-                // from the "pcnbp" parameter which is always passed to the notebook
-                // callbacks, you can use this for backing up data for the "Undo" button
-                // in the INIT callback, or for whatever other data you might need.
-                // Simply allocate memory using malloc() and store it here.
-                // When the notebook page is destroyed, both pointers are checked and
-                // will automatically be free()'d if != NULL.
-
         // 3)  Here follow the callback functions. If any of these is NULL,
         //     it will not be called. As a result, you may selectively install
         //     callbacks, depending on how much functionality you need.
@@ -186,8 +178,8 @@
                 // See ntbInsertPage for details.
 
         PFNCBACTION pfncbTimer;
-                // optional callback function if CREATENOTEBOOKPAGE.ulTimer != 0;
-                // this callback gets called every CREATENOTEBOOKPAGE.ulTimer
+                // optional callback function if INSERTNOTEBOOKPAGE.ulTimer != 0;
+                // this callback gets called every INSERTNOTEBOOKPAGE.ulTimer
                 // milliseconds then.
 
         PFNCBMESSAGE pfncbMessage;
@@ -200,12 +192,33 @@
                 // (i.e. the "item changed" and "timer" callbacks).
                 //
                 // Parameters:
-                //     PCREATENOTEBOOKPAGE pcnbp notebook info struct
+                //     PNOTEBOOKPAGE pcnbp      notebook info struct
                 //     msg, mp1, mp2            usual message parameters.
                 //     MRESULT* pmrc            return value, if TRUE is returned.
                 //
                 // If the callback returns TRUE, *pmrc is returned from the
                 // common notebook page proc.
+
+    } INSERTNOTEBOOKPAGE, *PINSERTNOTEBOOKPAGE;
+
+    /*
+     *@@ NOTEBOOKPAGE:
+     *
+     *@@added V0.9.18 (2002-02-23) [umoeller]
+     */
+
+    typedef struct _NOTEBOOKPAGE
+    {
+        INSERTNOTEBOOKPAGE  inbp;
+
+        PVOID       pUser,
+                    pUser2;         // user data; since you can access this structure
+                // from the "pcnbp" parameter which is always passed to the notebook
+                // callbacks, you can use this for backing up data for the "Undo" button
+                // in the INIT callback, or for whatever other data you might need.
+                // Simply allocate memory using malloc() and store it here.
+                // When the notebook page is destroyed, both pointers are checked and
+                // will automatically be free()'d if != NULL.
 
         // 4) The following fields are not intended for _input_ to ntbInsertPage.
         //    Instead, these contain additional data which can be evaluated from
@@ -216,14 +229,14 @@
         BOOL        fPageVisible;     // TRUE if the page is currently visible
         HWND        hwndDlgPage;      // hwnd of dlg page in notebook; this
                                       // is especially useful to get control HWND's:
-                                      // use WinWindowFromID(pcnbp->hwndDlgPage, YOUR_ID).
+                                      // use WinWindowFromID(pnbp->hwndDlgPage, YOUR_ID).
         HWND        hwndFrame;        // frame window (to which hwndNotebook belongs);
                                       // use this as the owner for subdialogs to lock
                                       // the notebook
         HWND        hwndControl;      // this always has the current control window handle
                                       // when the "item changed" callback is called.
                                       // In the callback, this is equivalent to
-                                      // calling WinWindowFromID(pcnbp->hwndDlgPage, usControlID).
+                                      // calling WinWindowFromID(pnbp->hwndDlgPage, usControlID).
         HWND        hwndSourceCnr;    // see next
         PRECORDCORE preccSource;      // this can be set to a container record
                                       // core in hwndSourceCnr which will be removed
@@ -249,7 +262,8 @@
         PRECORDCORE preccExpanded;      // for tree-view auto scroll
         HWND        hwndExpandedCnr;    // for tree-view auto scroll
         PVOID       pxac;               // ptr to XADJUSTCTRLS if (pampControlFlags != NULL)
-    } CREATENOTEBOOKPAGE;
+
+    } NOTEBOOKPAGE;
 
     /*
      *@@ NOTEBOOKPAGELISTITEM:
@@ -259,10 +273,8 @@
 
     typedef struct _NOTEBOOKPAGELISTITEM
     {
-        // struct _NOTEBOOKPAGELISTITEM *pNext,
-           //                      *pPrevious;
         ULONG                   ulSize;
-        PCREATENOTEBOOKPAGE     pcnbp;
+        PNOTEBOOKPAGE           pnbp;
     } NOTEBOOKPAGELISTITEM, *PNOTEBOOKPAGELISTITEM;
 
     /*
@@ -285,7 +297,7 @@
      *                                                                  *
      ********************************************************************/
 
-    ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp);
+    ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp);
 
     #ifdef DIALOG_HEADER_INCLUDED
         APIRET ntbFormatPage(HWND hwndDlg,
@@ -293,7 +305,7 @@
                              ULONG cDlgItems);
     #endif
 
-    PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp);
+    PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp);
 
     ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID);
 

@@ -10,7 +10,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -164,18 +164,18 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
 
-        VOID XWPENTRY hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY hifKeybdHotkeysInitPage(PNOTEBOOKPAGE pnbp,
                                               ULONG flFlags);
 
-        MRESULT XWPENTRY hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                                            ULONG ulItemID,
                                            USHORT usNotifyCode,
                                            ULONG ulExtra);
 
-        VOID XWPENTRY hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY hifKeybdFunctionKeysInitPage(PNOTEBOOKPAGE pnbp,
                                                    ULONG flFlags);
 
-        MRESULT XWPENTRY hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifKeybdFunctionKeysItemChanged(PNOTEBOOKPAGE pnbp,
                                                 ULONG ulItemID, USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
@@ -185,32 +185,32 @@
          *                                                                  *
          ********************************************************************/
 
-        VOID XWPENTRY hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,
                                                 ULONG flFlags);
 
-        MRESULT XWPENTRY hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseMappings2ItemChanged(PNOTEBOOKPAGE pnbp,
                                              ULONG ulItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
 
-        VOID XWPENTRY hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,
                                               ULONG flFlags);
 
-        MRESULT XWPENTRY hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
                                            ULONG ulItemID, USHORT usNotifyCode,
                                            ULONG ulExtra);
 
-        VOID XWPENTRY hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,
                                                ULONG flFlags);
 
-        MRESULT XWPENTRY hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
 
         // the following two funcs added V0.9.14 (2001-08-02) [lafaix]
-        VOID XWPENTRY hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID XWPENTRY hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,
                                                ULONG flFlags);
 
-        MRESULT XWPENTRY hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseMovement2ItemChanged(PNOTEBOOKPAGE pnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif
