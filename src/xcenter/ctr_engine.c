@@ -1530,7 +1530,6 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
             else
             {
                 PCXCENTERWIDGETCLASS pClass;
-
                 if (    (!ctrpFindClass(pSetting->Public.pszWidgetClass,
                                         FALSE,       // fMustBeTrayable
                                         &pClass))
@@ -3101,6 +3100,7 @@ APIRET ctrpDrop(HWND hwndClient,          // in: XCenter client
  *@@changed V0.9.13 (2001-06-21) [umoeller]: fixed tooltips
  *@@changed V0.9.16 (2001-10-30) [umoeller]: fixed bad ctxt menu font on eCS default install
  *@@changed V0.9.19 (2002-04-25) [umoeller]: removed redundant pllWidgetViews parameter
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: reworked widget context menu
  */
 
 PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // in: instance data
@@ -3248,10 +3248,61 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                     if (pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
                                                                cmnQueryNLSModuleHandle(FALSE),
                                                                ID_CRM_WIDGET))
+                    {
+                        HWND hwndHelp;
+
+                        // reworked V0.9.20 (2002-08-08) [umoeller]
                         WinSendMsg(pWidget->hwndContextMenu,
                                    MM_SETITEMTEXT,
-                                   (MPARAM)ID_CRM_XCSUB,
-                                   (MPARAM)ENTITY_XCENTER);
+                                   (MPARAM)ID_CRMI_XCSUB_PROPERTIES,
+                                   (MPARAM)cmnGetString(ID_CRMI_XCSUB_PROPERTIES));
+
+                        WinSendMsg(pWidget->hwndContextMenu,
+                                   MM_SETITEMTEXT,
+                                   (MPARAM)ID_CRMI_XCSUB_CLOSE,
+                                   (MPARAM)cmnGetString(ID_CRMI_XCSUB_CLOSE));
+
+                        // remove properties if class has no show-settings proc
+                        // (we used to just disabled, but that's against CUA)
+                        // V0.9.20 (2002-08-08) [umoeller]
+                        if (!pWidgetClass->pShowSettingsDlg)
+                        {
+                            winhRemoveMenuItem(pWidget->hwndContextMenu,
+                                               ID_CRMI_PROPERTIES);
+                            winhRemoveMenuItem(pWidget->hwndContextMenu,
+                                               ID_CRMI_SEP1);
+                        }
+
+                        if (hwndHelp = winhQuerySubmenu(pWidget->hwndContextMenu,
+                                                        ID_CRMI_HELPSUBMENU))
+                        {
+                            SHORT sDefID = ID_CRMI_HELP;
+
+                            // remove "widget help" if widget has none
+                            // (we used to just disabled, but that's against CUA)
+                            // V0.9.20 (2002-08-10) [umoeller]
+                            if (    (!pWidget->pcszHelpLibrary)
+                                 || (!pWidget->ulHelpPanelID)
+                               )
+                            {
+                                winhRemoveMenuItem(hwndHelp,
+                                                   ID_CRMI_HELP);
+                                sDefID = ID_CRMI_HELP_XCENTER;
+                            }
+
+                            WinSendMsg(hwndHelp,
+                                       MM_SETITEMTEXT,
+                                       (MPARAM)ID_CRMI_HELP_XCENTER,
+                                       (MPARAM)cmnGetString(ID_CRMI_HELP_XCENTER));
+
+                            // make conditional cascade
+                            winhSetMenuCondCascade(hwndHelp, sDefID);
+                        }
+
+                        if (!(pWidgetClass->ulClassFlags & WGTF_CONFIRMREMOVE))
+                            winhMenuRemoveEllipse(pWidget->hwndContextMenu,
+                                                  ID_CRMI_REMOVEWGT);
+                    }
 
                     if (pszStdMenuFont)
                     {
@@ -5489,6 +5540,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                 ctrpAddWidgetsMenu(somSelf,
                                    hwndMenu,
                                    MIT_END,
+                                   NULL,
                                    FALSE);      // all widgets
 
                 // add "Close"

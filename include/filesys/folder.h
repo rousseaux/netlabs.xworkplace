@@ -178,7 +178,11 @@
 
     BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf, HWND hwndFrame);
 
-    BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf);
+    #define FDRUPDATE_TITLE         0
+    #define FDRUPDATE_REPAINT       1
+
+    BOOL fdrUpdateAllFrameWindows(WPFolder *somSelf,
+                                    ULONG ulAction);
 
     /* ******************************************************************
      *

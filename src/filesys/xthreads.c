@@ -900,14 +900,22 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         // break;
 
         /*
-         * WOM_REFRESHFOLDERVIEWS:
-         *    this one is posted by XFolder's overrides of wpMoveObject,
-         *    wpSetTitle or wpRefresh with the calling instance's somSelf
-         *    in mp1; we will now update the open frame window titles of both
-         *    the caller and its open subfolders with the full folder path
-         *    Parameters:
+         *@@ WOM_REFRESHFOLDERVIEWS:
+         *      this one is posted by XFolder's overrides of wpMoveObject,
+         *      wpSetTitle or wpRefresh with the calling instance's somSelf
+         *      in mp1; we will now update the open frame window titles of both
+         *      the caller and its open subfolders with the full folder path
+         *      Parameters:
+         *
          *    XFolder* mp1  folder to update; if this is NULL, all open
          *                  folders on the system will be updated
+         *
+         *      ULONG mp2: action to take:
+         *
+         *          --  FDRUPDATE_TITLE (0)
+         *          --  FDRUPDATE_REPAINT (1)
+         *
+         *@@changed V0.9.20 (2002-08-08) [umoeller]: added mp2
          */
 
         case WOM_REFRESHFOLDERVIEWS:
@@ -919,14 +927,18 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                   pFolder;
                   pFolder = _wpclsQueryOpenFolders(_WPFolder, pFolder, QC_NEXT, FALSE))
             {
-                if (wpshCheckObject(pFolder))
-                    if (_somIsA(pFolder, _WPFolder))
+                if (    (wpshCheckObject(pFolder))
+                     && (_somIsA(pFolder, _WPFolder))
+                   )
+                {
+                    if (    (!pCalling)
+                         || (wpshResidesBelow(pFolder, pCalling))
+                       )
                     {
-                        if (pCalling == NULL)
-                            fdrUpdateAllFrameWndTitles(pFolder);
-                        else if (wpshResidesBelow(pFolder, pCalling))
-                            fdrUpdateAllFrameWndTitles(pFolder);
+                        // folder applies:
+                        fdrUpdateAllFrameWindows(pFolder, (ULONG)mp2);
                     }
+                }
             }
         }
         break;

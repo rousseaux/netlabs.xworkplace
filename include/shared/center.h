@@ -594,6 +594,12 @@
                 //    XN_CENTERHOTKEYPRESSED.
                 //    V0.9.19 (2002-04-17) [umoeller]
 
+                #define WGTF_CONFIRMREMOVE          0x0800
+                // -- WGTF_CONFIRMREMOVE: adds "..." to the "Remove widget"
+                //    context menu item and confirms removal if the user
+                //    selects that.
+                //    V0.9.20 (2002-08-08) [umoeller]
+
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,
                 // it must set this func pointer to a procedure

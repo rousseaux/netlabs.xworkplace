@@ -2796,7 +2796,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf,
                                (ULONG)2,           // update
                                (PFNWP)stb_UpdateCallback);
 
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, (MPARAM)FDRUPDATE_TITLE);
 
     return rc;
 }
@@ -3413,7 +3413,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
 
     if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
         // any open views: update titles
-        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
+        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, (MPARAM)FDRUPDATE_TITLE);
 
     return rc;
 }
@@ -3445,7 +3445,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
     // call the parent method first, which will actually move the folder
     rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
 
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, (MPARAM)FDRUPDATE_TITLE);
 
     return rc;
 }

@@ -212,7 +212,7 @@ BOOL fdrSetup(WPFolder *somSelf,
         else if (!strnicmp(szValue, "DEFAULT", 7))
             _bFullPathInstance = 2;
 
-        fdrUpdateAllFrameWndTitles(somSelf);
+        fdrUpdateAllFrameWindows(somSelf, FDRUPDATE_TITLE);
     }
 
     cbValue = sizeof(szValue);
@@ -1135,7 +1135,7 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
 }
 
 /*
- *@@ fdrUpdateAllFrameWndTitles:
+ *@@ fdrUpdateAllFrameWindows:
  *      this function sets the frame wnd titles for all currently
  *      open views of a given folder to the folder's full path.
  *
@@ -1143,16 +1143,19 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
  *      replacements of wpMoveObject, wpSetTitle, or wpRefresh have
  *      been called.
  *
- *      This calls fdrSetOneFrameWndTitle in turn.
+ *      If ulAction is 0, this calls fdrSetOneFrameWndTitle in turn.
+ *
+ *      If ulAction is 1, we simply invalidate the folder windows.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.2 (2000-03-04) [umoeller]: this didn't work for multiple identical views
  *@@changed V0.9.2 (2000-03-06) [umoeller]: added object mutex protection
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: renamed, added ulAction
  */
 
-BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
+BOOL fdrUpdateAllFrameWindows(WPFolder *somSelf,
+                              ULONG ulAction)
 {
-    // HWND        hwndFrame = NULLHANDLE;
     BOOL        brc = FALSE;
 
     WPObject *pobjLock = NULL;
@@ -1165,15 +1168,25 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
                  pUseItem;
                  pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
             {
-                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem + 1);
                 if (    (pViewItem->view == OPEN_CONTENTS)
                      || (pViewItem->view == OPEN_DETAILS)
                      || (pViewItem->view == OPEN_TREE)
                    )
                 {
-                    fdrSetOneFrameWndTitle(somSelf,
-                                           pViewItem->handle); // hwndFrame);
-                    break;
+                    switch (ulAction)
+                    {
+                        case 0:
+                            fdrSetOneFrameWndTitle(somSelf,
+                                                   pViewItem->handle);
+                        break;
+
+                        case 1:
+                            WinInvalidateRect(pViewItem->handle,
+                                              NULL,
+                                              TRUE);
+                        break;
+                    }
                 }
             }
         } // end if fFolderLocked

@@ -281,22 +281,21 @@ END
 /* XCenter standard widget context menu V0.9.7 (2000-11-30) [umoeller] */
 /* changed V0.9.13 (2001-06-21) [umoeller] */
 /* changed V0.9.19 (2002-04-14) [umoeller] */
+/* changed V0.9.20 (2002-08-08) [umoeller] */
 MENU ID_CRM_WIDGET LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Propertie~s", ID_CRMI_PROPERTIES
     MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
-    MENUITEM "~Help", ID_CRMI_HELP
-    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
-    MENUITEM "~Remove widget", ID_CRMI_REMOVEWGT
-
-    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
-
-    MENUITEM "", ID_CRM_XCSUB, MIS_SUBMENU
+    MENUITEM "~Help", ID_CRMI_HELPSUBMENU, MIS_SUBMENU
     BEGIN
-        MENUITEM "Propertie~s", ID_CRMI_XCSUB_PROPERTIES
-        MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
-        MENUITEM "Close", ID_CRMI_XCSUB_CLOSE
+        MENUITEM "~Widget help", ID_CRMI_HELP
+        MENUITEM "", ID_CRMI_HELP_XCENTER
     END
+    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
+    MENUITEM "~Delete widget...", ID_CRMI_REMOVEWGT
+    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
+    MENUITEM "", ID_CRMI_XCSUB_PROPERTIES       /* see ID_CRMI_XCSUB_PROPERTIES stringtable entry */
+    MENUITEM "", ID_CRMI_XCSUB_CLOSE            /* see ID_CRMI_XCSUB_CLOSE stringtable entry */
 END
 
 /* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
@@ -792,7 +791,10 @@ BEGIN
     ID_XSSI_STYLEPAGE                   "~Style"
     ID_XSSI_CLASSESPAGE                 "~Classes"
     ID_XSSI_WIDGETSPAGE                 "~Widgets"
-    ID_XSSI_ADDWIDGET                   "~Add widget"
+    /* this one renamed V0.9.20 (2002-08-10) [umoeller] */
+    ID_XSSI_ADDWIDGET                   "Cre~ate new widget"
+    /* this one added V0.9.20 (2002-08-10) [umoeller] */
+    ID_XSSI_ADDWIDGETTOTRAY             "~Add widget to tray"
     ID_XSSI_WIDGETCLASS                 "Widget class"
     ID_XSSI_WIDGETSETUP                 "Widget setup"
 
@@ -1046,12 +1048,20 @@ BEGIN
     ID_CRSI_WINLIST_HIDE                "~Hide"
     ID_CRSI_WINLIST_KILL1               "Kill process"
     ID_CRSI_WINLIST_KILL2               "~Kill process (PID 0x%lX)"
+    /* the following two added V0.9.20 (2002-08-10) [umoeller] */
+    ID_CRSI_WINLIST_CLOSE               "~Close ""%s"""
+    ID_CRSI_WINLIST_FILTER              "~Filter ""%s"""
 
     /* IP monitor */
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graph colors"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "Incoming"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Outgoing"
     ID_CRSI_IPWGT_BYTESTOTAL            "bytes total"
+
+    /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
+    ID_CRMI_XCSUB_PROPERTIES            "&xcenter; ~properties"
+    ID_CRMI_XCSUB_CLOSE                 "Close &xcenter;"
+    ID_CRMI_HELP_XCENTER                "&xcenter; help"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

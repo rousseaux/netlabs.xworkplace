@@ -169,7 +169,8 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
         (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_WINDOWLIST),
                                     // widget class name displayed to user
                                     // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
-        WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP_AT_MOUSE,
+        WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP_AT_MOUSE
+            | WGTF_CONFIRMREMOVE,       // V0.9.20 (2002-08-08) [umoeller]
         WwgtShowSettingsDlg
     };
 
@@ -243,6 +244,7 @@ PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
 PWINHCENTERWINDOW pwinhCenterWindow = NULL;
 PWINHFREE pwinhFree = NULL;
+PWINHMERGEMENUS pwinhMergeMenus = NULL;
 PWINHMERGEINTOSUBMENU pwinhMergeIntoSubMenu = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYSWITCHLIST pwinhQuerySwitchList = NULL;
@@ -294,6 +296,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhCenterWindow", (PFN*)&pwinhCenterWindow,
         "winhFree", (PFN*)&pwinhFree,
+        "winhMergeMenus", (PFN*)&pwinhMergeMenus,
         "winhMergeIntoSubMenu", (PFN*)&pwinhMergeIntoSubMenu,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
         "winhQuerySwitchList", (PFN*)&pwinhQuerySwitchList,
@@ -399,7 +402,7 @@ typedef struct _WINLISTPRIVATE
     WINLISTSETUP Setup;
             // widget settings that correspond to a setup string
 
-    HWND        hwndContextMenuHacked,
+    HWND        hwndButtonContextMenu,
             // != 0 after context menu has been hacked for the first time
                 hwndContextMenuShowing;
             // != 0 while context menu is showing (overriding standard widget)
@@ -592,6 +595,29 @@ static VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cle
         // add terminator
         pxstrcat(pstrSetup, ";", 0);
     }
+}
+
+/*
+ *@@ WwgtSaveSetupAndSend:
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
+ */
+
+VOID WwgtSaveSetupAndSend(HWND hwndWidget,
+                          PWINLISTPRIVATE pPrivate)
+{
+    XSTRING strSetup;
+    WwgtSaveSetup(&strSetup,
+                  &pPrivate->Setup);
+    if (strSetup.ulLength)
+        // changed V0.9.13 (2001-06-21) [umoeller]:
+        // post it to parent instead of fixed XCenter client
+        // to make this trayable
+        WinSendMsg(WinQueryWindow(hwndWidget, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
+                   XCM_SAVESETUP,
+                   (MPARAM)hwndWidget,
+                   (MPARAM)strSetup.psz);
+    pxstrClear(&strSetup);
 }
 
 /* ******************************************************************
@@ -1639,6 +1665,45 @@ static VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
 }
 
 /*
+ *@@ DoRedraw:
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
+ */
+
+static VOID DoRedraw(HWND hwnd,
+                     PWINLISTPRIVATE pPrivate,
+                     PWINLISTENTRY pCtrlThis)   // in: switch list entry to paint or NULL for all
+{
+    HPS hps;
+
+    // and repaint
+    if (hps = WinGetPS(hwnd))
+    {
+        RECTL       rclSubclient;
+        GetPaintableRect(pPrivate, &rclSubclient);
+        pgpihSwitchToRGB(hps);
+
+        // check if we need to redraw _everything_
+        // (entry added or removed, which changes the scaling)
+        if (!pCtrlThis)
+            DrawAllCtrls(pPrivate,
+                         hps,
+                         &rclSubclient);
+        else
+            // redraw _one_ control only
+            // (title or icon or active window changed)
+            DrawOneCtrl(pPrivate,
+                        hps,
+                        &rclSubclient,
+                        pCtrlThis,
+                        WinQueryActiveWindow(HWND_DESKTOP),
+                        NULL);
+
+        WinReleasePS(hps);
+    }
+}
+
+/*
  *@@ FindCtrlFromPoint:
  *      returns the SWCNTRL from the global list
  *      which matches the specified point, which
@@ -1794,8 +1859,8 @@ static VOID WwgtDestroy(HWND hwnd)
                           (MPARAM)hwnd,
                           NULL);
 
-        if (pPrivate->hwndContextMenuHacked)
-            WinDestroyWindow(pPrivate->hwndContextMenuHacked);
+        if (pPrivate->hwndButtonContextMenu)
+            WinDestroyWindow(pPrivate->hwndButtonContextMenu);
 
         plstClear(&pPrivate->llWinList);      // auto-free
 
@@ -2084,33 +2149,11 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         // do we need to repaint?
         if (pCtrlRedraw || fRedrawAll)
         {
-            HPS hps;
-
-            // and repaint
-            if (hps = WinGetPS(hwnd))
-            {
-                RECTL       rclSubclient;
-                GetPaintableRect(pPrivate, &rclSubclient);
-                pgpihSwitchToRGB(hps);
-
-                // check if we need to redraw _everything_
-                // (entry added or removed, which changes the scaling)
-                if (fRedrawAll)
-                    DrawAllCtrls(pPrivate,
-                                 hps,
-                                 &rclSubclient);
-                else
-                    // redraw _one_ control only
-                    // (title or icon or active window changed)
-                    DrawOneCtrl(pPrivate,
-                                hps,
-                                &rclSubclient,
-                                pCtrlRedraw,
-                                WinQueryActiveWindow(HWND_DESKTOP),
-                                NULL);
-
-                WinReleasePS(hps);
-            }
+            DoRedraw(hwnd,
+                     pPrivate,
+                     (fRedrawAll)
+                        ? NULL
+                        : pCtrlRedraw);
         }
     }
 }
@@ -2268,50 +2311,52 @@ static VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
  *@@ HackContextMenu:
  *
  *@@added V0.9.7 (2001-01-10) [umoeller]
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: cleaned up those stupid menu ids
  */
 
 static VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
 {
     static const ULONG aulMenuItems[] =
             {
-                ID_CRSI_WINLIST_RESTORE, // "~Restore",     // 1000
-                ID_CRSI_WINLIST_MOVE, // "~Move",        // 1001
-                ID_CRSI_WINLIST_SIZE, // "~Size",        // 1002
-                ID_CRSI_WINLIST_MINIMIZE, // "Mi~nimize",    // 1003
-                ID_CRSI_WINLIST_MAXIMIZE, // "Ma~ximize",    // 1004
-                ID_CRSI_WINLIST_HIDE, // "~Hide",        // 1005
+                ID_CRSI_WINLIST_RESTORE, // "~Restore",
+                ID_CRSI_WINLIST_MOVE, // "~Move",
+                ID_CRSI_WINLIST_SIZE, // "~Size",
+                ID_CRSI_WINLIST_MINIMIZE, // "Mi~nimize",
+                ID_CRSI_WINLIST_MAXIMIZE, // "Ma~ximize",
+                ID_CRSI_WINLIST_HIDE, // "~Hide",
                 0, // "",             // separator
-                ID_XSSI_CLOSE, //  "~Close",       // 1007
-                0, // "",             // separator
-                ID_CRSI_WINLIST_KILL1, // "~Kill process ", // 1009
+                ID_CRSI_WINLIST_CLOSE, //  "~Close",
+                ID_CRSI_WINLIST_KILL1, // "~Kill process ",
+                ID_CRSI_WINLIST_FILTER,               // V0.9.20 (2002-08-10) [umoeller]
                 0, // ""              // separator
             };
 
-    if (pPrivate->hwndContextMenuHacked = WinCreateMenu(HWND_DESKTOP, NULL))
+    if (pPrivate->hwndButtonContextMenu = WinCreateMenu(HWND_DESKTOP, NULL))
     {
         // insert window-related menu items from above array
         MENUITEM mi = {0};
         SHORT src = 0;
         SHORT s = 0;
         mi.iPosition = MIT_END;
-        mi.afStyle = MIS_TEXT;
 
         for (s = 0;
              s < sizeof(aulMenuItems) / sizeof(aulMenuItems[0]);
              s++)
         {
-            PCSZ pcsz = "";
-            mi.id = 1000 + s;
-            if (!aulMenuItems[s])
+            PCSZ pcsz;
+            if (!(mi.id = aulMenuItems[s]))
+            {
                 // separator:
                 mi.afStyle = MIS_SEPARATOR;
+                pcsz = "";
+            }
             else
             {
                 mi.afStyle = MIS_TEXT;
-                pcsz = pcmnGetString(aulMenuItems[s]);
+                pcsz = pcmnGetString(mi.id);
             }
 
-            src = SHORT1FROMMR(WinSendMsg(pPrivate->hwndContextMenuHacked,
+            src = SHORT1FROMMR(WinSendMsg(pPrivate->hwndButtonContextMenu,
                                           MM_INSERTITEM,
                                           (MPARAM)&mi,
                                           (MPARAM)pcsz));
@@ -2321,11 +2366,20 @@ static VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
         // we can't just use the old item and insert it
         // because we still display the original menu if
         // the window list is empty, and PMMERGE crashes then
-        pwinhMergeIntoSubMenu(pPrivate->hwndContextMenuHacked,
+
+        // replaced V0.9.20 (2002-08-10) [umoeller]
+        pwinhMergeMenus(pPrivate->hwndButtonContextMenu,
+                        MIT_END,
+                        pPrivate->pWidget->hwndContextMenu,
+                        0);
+
+        /*
+        pwinhMergeIntoSubMenu(pPrivate->hwndButtonContextMenu,
                               MIT_END,
                               pcmnGetString(ID_CRSI_WINLIST_WIDGET), // "Window list widget",
                               2000,
                               pPrivate->pWidget->hwndContextMenu);
+        */
     }
 }
 
@@ -2364,7 +2418,7 @@ static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                &ptlWidget,
                                1);
 
-            if (!pPrivate->hwndContextMenuHacked)
+            if (!pPrivate->hwndButtonContextMenu)
             {
                 // first call:
                 // hack the context menu given to us
@@ -2388,7 +2442,7 @@ static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         fEnableMaximize = FALSE,
                         fEnableHide = FALSE,
                         fEnableKill = FALSE;
-                CHAR    szKillText[200] = "?";
+                CHAR    szMenuItem[200] = "?";
 
                 HPS hps;
                 if (hps = WinGetPS(hwnd))
@@ -2442,23 +2496,23 @@ static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         fEnableHide     = IsMenuItemEnabled(hwndSysMenu, SC_HIDE);
                 }
 
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1000,     // restore
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_RESTORE,     // restore
                                   fEnableRestore);
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1001,     // move
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_MOVE,     // move
                                   fEnableMove);
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1002,     // size
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_SIZE,     // size
                                   fEnableSize);
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1003,     // minimize
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_MINIMIZE,     // minimize
                                   fEnableMinimize);
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1004,     // maximize
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_MAXIMIZE,     // maximize
                                   fEnableMaximize);
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1005,     // hide
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_HIDE,     // hide
                                   fEnableHide);
 
                 // enable "kill process" only if this is not the WPS
@@ -2466,31 +2520,47 @@ static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     // not WPS:
                     fEnableKill = TRUE;
-                    pdrv_sprintf(szKillText,
+                    pdrv_sprintf(szMenuItem,
                                  pcmnGetString(ID_CRSI_WINLIST_KILL2),
                                     // "~Kill process (PID 0x%lX)",
                                  pCtlUnderMouse->swctl.idProcess);
                 }
                 else
-                    strcpy(szKillText,
+                    strcpy(szMenuItem,
                            pcmnGetString(ID_CRSI_WINLIST_KILL1));
 
-                WinSetMenuItemText(pPrivate->hwndContextMenuHacked,
-                                   1009,
-                                   szKillText);
-                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                  1009,
+                WinSetMenuItemText(pPrivate->hwndButtonContextMenu,
+                                   ID_CRSI_WINLIST_KILL1,
+                                   szMenuItem);
+                WinEnableMenuItem(pPrivate->hwndButtonContextMenu,
+                                  ID_CRSI_WINLIST_KILL1,
                                   fEnableKill);
+
+                // set close menu item text V0.9.20 (2002-08-10) [umoeller]
+                sprintf(szMenuItem,
+                        pcmnGetString(ID_CRSI_WINLIST_CLOSE),   // "~Close ""%s"""
+                        pCtlUnderMouse->swctl.szSwtitle);
+                WinSetMenuItemText(pPrivate->hwndButtonContextMenu,
+                                   ID_CRSI_WINLIST_CLOSE,
+                                   szMenuItem);
+
+                // set filter menu item text V0.9.20 (2002-08-10) [umoeller]
+                sprintf(szMenuItem,
+                        pcmnGetString(ID_CRSI_WINLIST_FILTER),   // ~Filter ""%s"""
+                        pCtlUnderMouse->swctl.szSwtitle);
+                WinSetMenuItemText(pPrivate->hwndButtonContextMenu,
+                                   ID_CRSI_WINLIST_FILTER,
+                                   szMenuItem);
 
                 if (WinPopupMenu(HWND_DESKTOP,
                                  hwnd,
-                                 pPrivate->hwndContextMenuHacked,
+                                 pPrivate->hwndButtonContextMenu,
                                  ptlScreen.x,
                                  ptlScreen.y,
                                  0,
                                  PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
                                     | PU_MOUSEBUTTON2 | PU_KEYBOARD))
-                    pPrivate->hwndContextMenuShowing = pPrivate->hwndContextMenuHacked;
+                    pPrivate->hwndContextMenuShowing = pPrivate->hwndButtonContextMenu;
 
 
                 mrc = (MPARAM)TRUE;
@@ -2542,6 +2612,8 @@ static VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ WwgtCommand:
  *
  *@@added V0.9.7 (2001-01-10) [umoeller]
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: cleaned up those stupid menu ids
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: added filtering via menu
  */
 
 static VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -2552,73 +2624,70 @@ static VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
     PWINLISTPRIVATE pPrivate;
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+         // we handle only the button menu items here, the
+         // rest is handled by the def widget proc
+         && (pPrivate->pCtrlMenu)
        )
     {
-        USHORT usCmd = (USHORT)mp1;
-        if (    (usCmd >= 1000)
-             && (usCmd <= 1009)
-           )
+        USHORT usSysCommand = 0;
+
+        fCallDefault = FALSE;
+
+        switch ((USHORT)mp1)
         {
-            fCallDefault = FALSE;
+            case ID_CRSI_WINLIST_RESTORE:
+                usSysCommand = SC_RESTORE;
+            break;
 
-            if (pPrivate->pCtrlMenu)
-            {
-                USHORT usSysCommand = 0;
+            case ID_CRSI_WINLIST_MOVE:
+                usSysCommand = SC_MOVE;
+            break;
 
-                switch (usCmd)
-                {
-                        /*
-                            "~Restore",     // 1000
-                            "~Move",        // 1001
-                            "~Size",        // 1002
-                            "Mi~nimize",    // 1003
-                            "Ma~ximize",    // 1004
-                            "Hide"          // 1005
-                            "~Close",       // 1007
-                        */
+            case ID_CRSI_WINLIST_SIZE:
+                usSysCommand = SC_SIZE;
+            break;
 
-                    case 1000:
-                        usSysCommand = SC_RESTORE;
-                    break;
+            case ID_CRSI_WINLIST_MINIMIZE:
+                usSysCommand = SC_MINIMIZE;
+            break;
 
-                    case 1001:
-                        usSysCommand = SC_MOVE;
-                    break;
+            case ID_CRSI_WINLIST_MAXIMIZE:
+                usSysCommand = SC_MAXIMIZE;
+            break;
 
-                    case 1002:
-                        usSysCommand = SC_SIZE;
-                    break;
+            case ID_CRSI_WINLIST_HIDE:
+                usSysCommand = SC_HIDE;
+            break;
 
-                    case 1003:
-                        usSysCommand = SC_MINIMIZE;
-                    break;
+            case ID_CRSI_WINLIST_CLOSE:
+                usSysCommand = SC_CLOSE;
+            break;
 
-                    case 1004:
-                        usSysCommand = SC_MAXIMIZE;
-                    break;
+            case ID_CRSI_WINLIST_KILL1:
+                DosKillProcess(DKP_PROCESS,
+                               pPrivate->pCtrlMenu->swctl.idProcess);
+            break;
 
-                    case 1005:
-                        usSysCommand = SC_HIDE;
-                    break;
+            case ID_CRSI_WINLIST_FILTER:      // filter V0.9.20 (2002-08-10) [umoeller]
+                plstAppendItem(&pPrivate->Setup.llFilters,
+                               plstStrDup(pPrivate->pCtrlMenu->swctl.szSwtitle));
+                WwgtSaveSetupAndSend(hwnd, pPrivate);
+                WinPostMsg(hwnd,
+                           WLM_WINDOWCHANGE,
+                           (MPARAM)pPrivate->pCtrlMenu->swctl.hwnd,
+                           (MPARAM)WM_SETWINDOWPARAMS);
+            break;
 
-                    case 1007:
-                        usSysCommand = SC_CLOSE;
-                    break;
-
-                    case 1009:
-                        DosKillProcess(DKP_PROCESS,
-                                       pPrivate->pCtrlMenu->swctl.idProcess);
-                    break;
-                }
-
-                if (usSysCommand)
-                    WinPostMsg(pPrivate->pCtrlMenu->swctl.hwnd,
-                               WM_SYSCOMMAND,
-                               (MPARAM)usSysCommand,
-                               MPFROM2SHORT(CMDSRC_OTHER,
-                                            TRUE));      // mouse
-            }
+            default:
+                fCallDefault = TRUE;
         }
+
+        if (usSysCommand)
+            WinPostMsg(pPrivate->pCtrlMenu->swctl.hwnd,
+                       WM_SYSCOMMAND,
+                       (MPARAM)usSysCommand,
+                       MPFROM2SHORT(CMDSRC_OTHER,
+                                    TRUE));      // mouse
     }
 
     if (fCallDefault)
@@ -2683,20 +2752,9 @@ static VOID WwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
 
         if (fInvalidate)
         {
-            XSTRING strSetup;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            WwgtSaveSetup(&strSetup,
-                          &pPrivate->Setup);
-            if (strSetup.ulLength)
-                // changed V0.9.13 (2001-06-21) [umoeller]:
-                // post it to parent instead of fixed XCenter client
-                // to make this trayable
-                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
-                           XCM_SAVESETUP,
-                           (MPARAM)hwnd,
-                           (MPARAM)strSetup.psz);
-            pxstrClear(&strSetup);
+            WwgtSaveSetupAndSend(hwnd, pPrivate);
         }
     } // end if (pPrivate)
 }

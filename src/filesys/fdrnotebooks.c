@@ -311,7 +311,8 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MRESULT)0;
-    BOOL fUpdate = FALSE;
+    BOOL    fUpdate = FALSE;
+    ULONG   flOwnerDrawChanged = 0;
 
     switch (ulItemID)
     {
@@ -352,24 +353,12 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
 
         // V0.9.20 (2002-08-04) [umoeller]
         case ID_XSDI_FDRVIEW_LAZYICONS:
-        {
-            ULONG flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
-            if (ulExtra)
-                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw | OWDRFL_LAZYICONS);
-            else
-                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw & ~OWDRFL_LAZYICONS);
-        }
+            flOwnerDrawChanged = OWDRFL_LAZYICONS;
         break;
 
         // V0.9.20 (2002-08-04) [umoeller]
         case ID_XSDI_FDRVIEW_SHADOWOVERLAY:
-        {
-            ULONG flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
-            if (ulExtra)
-                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw | OWDRFL_SHADOWOVERLAY);
-            else
-                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw & ~OWDRFL_SHADOWOVERLAY);
-        }
+            flOwnerDrawChanged = OWDRFL_SHADOWOVERLAY;
         break;
 
         case ID_XSDI_FDRVIEW_ICON:
@@ -415,7 +404,20 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
         // with the full-path-in-title settings
         xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS,
                           (MPARAM)NULL, // update all, not just children
-                          MPNULL);
+                          (MPARAM)FDRUPDATE_TITLE);
+
+    if (flOwnerDrawChanged)
+    {
+        ULONG flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
+        if (ulExtra)
+            cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw | flOwnerDrawChanged);
+        else
+            cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw & ~flOwnerDrawChanged);
+
+        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS,
+                          (MPARAM)NULL, // update all, not just children
+                          (MPARAM)FDRUPDATE_REPAINT);
+    }
 
     return mrc;
 }
@@ -762,12 +764,12 @@ MRESULT fdrXFolderItemChanged(PNOTEBOOKPAGE pnbp,
             _bFullPathInstance = ulExtra;
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-            fdrUpdateAllFrameWndTitles(pnbp->inbp.somSelf);
+            fdrUpdateAllFrameWindows(pnbp->inbp.somSelf, FDRUPDATE_TITLE);
         break;
 
         case ID_XSDI_KEEPTITLE:
             _bKeepTitleInstance = ulExtra;
-            fdrUpdateAllFrameWndTitles(pnbp->inbp.somSelf);
+            fdrUpdateAllFrameWindows(pnbp->inbp.somSelf, FDRUPDATE_TITLE);
         break;
 
         case ID_XSDI_ACCELERATORS:
@@ -806,7 +808,7 @@ MRESULT fdrXFolderItemChanged(PNOTEBOOKPAGE pnbp,
                                            TRUE);  // update open folder views
                 // update the display by calling the INIT callback
                 pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-                fdrUpdateAllFrameWndTitles(pnbp->inbp.somSelf);
+                fdrUpdateAllFrameWindows(pnbp->inbp.somSelf, FDRUPDATE_TITLE);
             }
         break;
 
@@ -821,7 +823,7 @@ MRESULT fdrXFolderItemChanged(PNOTEBOOKPAGE pnbp,
                         TRUE);  // update open folder views
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-            fdrUpdateAllFrameWndTitles(pnbp->inbp.somSelf);
+            fdrUpdateAllFrameWindows(pnbp->inbp.somSelf, FDRUPDATE_TITLE);
         break;
 
         default:

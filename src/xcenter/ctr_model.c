@@ -144,7 +144,8 @@ static const XCENTERWIDGETCLASS G_aBuiltInWidgets[]
             0,
             TRAY_WIDGET_CLASS_NAME,         // also used in strcmp in the code
             (PSZ)(PLUGIN_STRING_RESOURCE | ID_CRSI_WIDGET_TRAY),
-            WGTF_SIZEABLE | WGTF_TOOLTIP,                       // not trayable, of course
+            WGTF_SIZEABLE | WGTF_TOOLTIP                       // not trayable, of course
+                    | WGTF_CONFIRMREMOVE,       // V0.9.20 (2002-08-08) [umoeller]
             NULL        // no settings dlg
         }
     };
@@ -387,11 +388,13 @@ static signed short XWPENTRY SortClasses(void* pItem1,
  *@@changed V0.9.16 (2002-02-02) [umoeller]: now sorting alphabetically
  *@@changed V0.9.18 (2002-03-08) [umoeller]: now never adding object buttons
  *@@changed V0.9.20 (2002-07-23) [lafaux]: now support hidden classes
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: added pcszMenuName
  */
 
 HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                         HWND hwndMenu,
                         SHORT sPosition,        // in: position where to insert (can be MIT_END)
+                        PCSZ pcszMenuName,      // in: submenu title or NULL for default
                         BOOL fTrayableOnly)     // in: if TRUE, only classes with WGTF_TRAYABLE will be shown
 {
     HWND hwndWidgetsSubmenu;
@@ -412,7 +415,9 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                                             (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
                                                     // fixed ID for sliding menus
                                                     // V0.9.13 (2001-06-14) [umoeller]
-                                            cmnGetString(ID_XSSI_ADDWIDGET),
+                                            (pcszMenuName)
+                                                ? pcszMenuName
+                                                : cmnGetString(ID_XSSI_ADDWIDGET),
                                             MIS_TEXT,
                                             0, NULL, 0, 0);
 

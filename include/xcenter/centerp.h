@@ -145,6 +145,7 @@
     HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                             HWND hwndMenu,
                             SHORT sPosition,
+                            PCSZ pcszMenuName,
                             BOOL fTrayableOnly);
 
     PXCENTERWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd);

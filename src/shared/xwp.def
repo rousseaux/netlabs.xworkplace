@@ -119,6 +119,7 @@ EXPORTS
     winhFree
     winhInsertMenuItem
     winhInsertSubmenu
+    winhMergeMenus
     winhMergeIntoSubMenu
     winhQueryPresColor
     winhQuerySwitchList

@@ -274,22 +274,22 @@ END
 
 /* XCenter standard widget context menu V0.9.7 (2000-11-30) [umoeller] */
 /* changed V0.9.13 (2001-06-21) [umoeller] */
+/* changed V0.9.19 (2002-04-14) [umoeller] */
+/* changed V0.9.20 (2002-08-08) [umoeller] */
 MENU ID_CRM_WIDGET LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Einstell~ungen", ID_CRMI_PROPERTIES
     MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
-    MENUITEM "~Hilfe", ID_CRMI_HELP
-    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
-    MENUITEM "Widget ~entfernen", ID_CRMI_REMOVEWGT
-
-    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
-
-    MENUITEM "~XCenter", ID_CRM_XCSUB, MIS_SUBMENU
+    MENUITEM "~Hilfe", ID_CRMI_HELPSUBMENU, MIS_SUBMENU
     BEGIN
-        MENUITEM "Einstell~ungen", ID_CRMI_XCSUB_PROPERTIES
-        MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
-        MENUITEM "Schlie~·en", ID_CRMI_XCSUB_CLOSE
+        MENUITEM "~Widget-Hilfe", ID_CRMI_HELP
+        MENUITEM "", ID_CRMI_HELP_XCENTER
     END
+    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
+    MENUITEM "Widget ~lîschen...", ID_CRMI_REMOVEWGT
+    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
+    MENUITEM "", ID_CRMI_XCSUB_PROPERTIES       /* see ID_CRMI_XCSUB_PROPERTIES stringtable entry */
+    MENUITEM "", ID_CRMI_XCSUB_CLOSE            /* see ID_CRMI_XCSUB_CLOSE stringtable entry */
 END
 
 /* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
@@ -779,6 +779,8 @@ BEGIN
     ID_XSSI_CLASSESPAGE                 "~Klassen"
     ID_XSSI_WIDGETSPAGE                 "~Widgets"
     ID_XSSI_ADDWIDGET                   "Widget hin~zufÅgen"
+    /* this one added V0.9.20 (2002-08-10) [umoeller] */
+    ID_XSSI_ADDWIDGETTOTRAY             "Widget zum Fach hin~zufÅgen"
     ID_XSSI_WIDGETCLASS                 "Widget-Klasse"
     ID_XSSI_WIDGETSETUP                 "Widget-Konfiguration"
 
@@ -1032,11 +1034,19 @@ BEGIN
     ID_CRSI_WINLIST_HIDE                "~Hide"
     ID_CRSI_WINLIST_KILL1               "Kill process"
     ID_CRSI_WINLIST_KILL2               "~Kill process (PID 0x%lX)"
+    /* the following two added V0.9.20 (2002-08-10) [umoeller] */
+    ID_CRSI_WINLIST_CLOSE               "~Close ""%s"""
+    ID_CRSI_WINLIST_FILTER              "~Filter ""%s"""
 
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graphenfarben"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "Eingehend"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Ausgehend"
     ID_CRSI_IPWGT_BYTESTOTAL            "bytes insgesamt"
+
+    /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
+    ID_CRMI_XCSUB_PROPERTIES            "&xcenter;-~Einstellungen"
+    ID_CRMI_XCSUB_CLOSE                 "&xcenter; schlie·en"
+    ID_CRMI_HELP_XCENTER                "Hilfe zum &xcenter;"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

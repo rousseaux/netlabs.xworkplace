@@ -21,6 +21,8 @@ CURRENT PROBLEMS
 
 --  use items crash
 
+--  when owner-draw icon settings change, repaint all folders
+
 
 >b4) XCenter: Window List widget doen't always filter correctly. This
 >is reproducable with emacs; the emacsserver process gets started as

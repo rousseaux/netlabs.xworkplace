@@ -818,28 +818,8 @@ static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                        mp2);
         }
         else
-        {
-            PCXCENTERWIDGETCLASS pClass;
-            if (!ctrpFindClass(pWidget->pcszWidgetClass,
-                               FALSE,       // fMustBeTrayable
-                               &pClass))
-            {
-                // enable "properties" if class has show-settings proc
-                WinEnableMenuItem(pWidget->hwndContextMenu,
-                                  ID_CRMI_PROPERTIES,
-                                  (pClass->pShowSettingsDlg != 0));
-
-                // enable "help" if widget has specified help
-                WinEnableMenuItem(pWidget->hwndContextMenu,
-                                  ID_CRMI_HELP,
-                                  (    (pWidget->pcszHelpLibrary != NULL)
-                                    && (pWidget->ulHelpPanelID != 0)
-                                  ));
-
-                ctrShowContextMenu(pWidget,
-                                   pWidget->hwndContextMenu);
-            }
-        }
+            ctrShowContextMenu(pWidget,
+                               pWidget->hwndContextMenu);
     }
 }
 
@@ -913,17 +893,23 @@ static VOID DwgtCommand(HWND hwnd,
                                    (PSZ)pWidget->pcszHelpLibrary);
                 }
                 else
-                {
-                    // use XCenter help
-                    ULONG ulPanel;
-                    CHAR szHelp[CCHMAXPATH];
-                    if (_wpQueryDefaultHelp(pXCenterData->somSelf,
-                                            &ulPanel,
-                                            szHelp))
-                        _wpDisplayHelp(pXCenterData->somSelf,
-                                       ulPanel,
-                                       szHelp);
-                }
+                    // fall through, avoid compiler warning
+                    goto xcenterhelp;
+            break;
+
+            case ID_CRMI_HELP_XCENTER:
+xcenterhelp:
+            {
+                // use XCenter help
+                ULONG ulPanel;
+                CHAR szHelp[CCHMAXPATH];
+                if (_wpQueryDefaultHelp(pXCenterData->somSelf,
+                                        &ulPanel,
+                                        szHelp))
+                    _wpDisplayHelp(pXCenterData->somSelf,
+                                   ulPanel,
+                                   szHelp);
+            }
             break;
 
             /*
@@ -936,21 +922,28 @@ static VOID DwgtCommand(HWND hwnd,
 
             case ID_CRMI_REMOVEWGT:
             {
-                /* PPRIVATEWIDGETVIEW pOwningTrayWidget;
-                if (pOwningTrayWidget = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTrayWidget)
+                // V0.9.19 (2002-05-04) [umoeller]
+                WIDGETPOSITION Pos;
+                if (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                  hwnd,
+                                                  &Pos))
                 {
-                    // this widget resides in a tray:
-                    WinSendMsg(pOwningTrayWidget->Widget.hwndWidget,
-                               XCM_REMOVESUBWIDGET,
-                               (MPARAM)pWidget,     // ptr is same as PPRIVATEWIDGETVIEW
-                               0);
-                }
-                else V0.9.19 (2002-05-04) [umoeller] */
-                {
-                    WIDGETPOSITION Pos;
-                    if (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                      hwnd,
-                                                      &Pos))
+                    PCXCENTERWIDGETCLASS pClass;
+                    // added confirmation V0.9.20 (2002-08-08) [umoeller]
+                    if (    (!(pWidget->ulClassFlags & WGTF_CONFIRMREMOVE))
+                            // confirm remove enabled:
+                            // get the clear widget class name
+                         || (    (!ctrpFindClass(pWidget->pcszWidgetClass,
+                                                 FALSE,       // fMustBeTrayable
+                                                 &pClass))
+                              && (DID_YES == cmnMessageBoxExt(hwnd,
+                                                              243, // Remove Widget
+                                                              &pClass->pcszClassTitle,
+                                                              1,
+                                                              244, // Are you sure you want to remove this widget of the class %1?
+                                                              MB_YESNO))
+                            )
+                       )
                         _xwpDeleteWidget(pXCenterData->somSelf,
                                          &Pos);
                 }

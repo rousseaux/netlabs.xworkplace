@@ -1315,6 +1315,8 @@ static MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
             ctrpAddWidgetsMenu(pWidget->pGlobals->pvSomSelf,
                                hwndContextMenu,
                                sPosition++,       // position
+                               cmnGetString(ID_XSSI_ADDWIDGETTOTRAY),
+                                        // V0.9.20 (2002-08-10) [umoeller]
                                TRUE);   // trayable only
 
             pPrivate->fContextMenuHacked = TRUE;

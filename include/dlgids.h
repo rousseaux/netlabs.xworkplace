@@ -2085,10 +2085,11 @@
 
 /* ******************************************************************
  *
- *   String IDs II                      >= 6098
+ *   String IDs II                      >= 6097
  *
  ********************************************************************/
 
+#define ID_XSSI_ADDWIDGETTOTRAY         6097        // "~ADD WIDGET to tray"
 #define ID_XSSI_STYLEPAGE               6098
 #define ID_XSSI_CLASSESPAGE             6099
 #define ID_XSSI_WIDGETSPAGE             6100
@@ -2311,11 +2312,13 @@
 #define ID_CRSI_WINLIST_HIDE            6285
 #define ID_CRSI_WINLIST_KILL1           6286
 #define ID_CRSI_WINLIST_KILL2           6287
+#define ID_CRSI_WINLIST_CLOSE           6288        // V0.9.20 (2002-08-10) [umoeller]
+#define ID_CRSI_WINLIST_FILTER          6289        // V0.9.20 (2002-08-10) [umoeller]
 
-#define ID_CRSI_IPWGT_GRAPHCOLORS       6288
-#define ID_CRSI_IPWGT_GRAPHINCOLOR      6289
-#define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6290
-#define ID_CRSI_IPWGT_BYTESTOTAL        6291
+#define ID_CRSI_IPWGT_GRAPHCOLORS       6290
+#define ID_CRSI_IPWGT_GRAPHINCOLOR      6291
+#define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6292
+#define ID_CRSI_IPWGT_BYTESTOTAL        6293
 
 /* ******************************************************************
  *
@@ -2504,7 +2507,7 @@
 
 #define ID_CRM_WIDGET                   0x7f07
 #define ID_CRMI_PROPERTIES              0x7f08
-#define ID_CRMI_HELP                    0x7f09
+#define ID_CRMI_HELP                    0x7f09      // for widget
 #define ID_CRMI_REMOVEWGT               0x7f0a
 
 #define ID_CRMI_LOCKUPNOW               0x7f0b
@@ -2522,6 +2525,9 @@
 #define ID_CRM_XCSUB                    0x7f13      // added V0.9.19 (2002-04-14) [umoeller]
 #define ID_CRMI_XCSUB_PROPERTIES        0x7f14      // added V0.9.19 (2002-04-14) [umoeller]
 #define ID_CRMI_XCSUB_CLOSE             0x7f15      // added V0.9.19 (2002-04-14) [umoeller]
+
+#define ID_CRMI_HELPSUBMENU             0x7f10      // added V0.9.20 (2002-08-10) [umoeller]
+#define ID_CRMI_HELP_XCENTER            0x7f11      // added V0.9.20 (2002-08-10) [umoeller]
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 

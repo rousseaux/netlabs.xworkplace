@@ -1665,6 +1665,7 @@ static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed context menus for broken objects
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: adjusted context menu
  */
 
 static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1707,14 +1708,12 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 // NOTE: Apparently this flag is not supported
                 // on Warp 3 (tested Warp 3 without fixpaks
                 // V0.9.11 (2001-04-25) [umoeller]).
-                hmenuTemp = _wpDisplayMenu(pPrivate->pobjButton,
-                                           hwnd,            // owner
-                                           NULLHANDLE,
-                                           &ptl,
-                                           MENU_OBJECTPOPUP | MENU_NODISPLAY,
-                                           0);
-
-                if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
+                if (hmenuTemp = _wpDisplayMenu(pPrivate->pobjButton,
+                                               hwnd,            // owner
+                                               NULLHANDLE,
+                                               &ptl,
+                                               MENU_OBJECTPOPUP | MENU_NODISPLAY,
+                                               0))
                 {
                     // NOW... we still can't use this because there's
                     // many menu items in there which will cause the
@@ -1728,37 +1727,71 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     // WPS context menu with only the items that we support.
                     if (pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL))
                     {
-                        HWND hwndWidgetSubmenu;
+                        HWND    hwndWidgetSubmenu;
+                        HWND    hwndHelp,
+                                hmenuHelpSource;
 
-                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                         hmenuTemp,
-                                         WPMENUID_OPEN, // 1, "open" submenu
-                                         MIT_END);
-                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                         hmenuTemp,
-                                         WPMENUID_PROPERTIES, // 0x70, properties
-                                         MIT_END);
-                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                         hmenuTemp,
-                                         WPMENUID_HELP, // 2, "help" submenu
-                                         MIT_END);
+                        winhCopyMenuItem2(pPrivate->hwndObjectPopup,
+                                          hmenuTemp,
+                                          WPMENUID_OPEN, // 1, "open" submenu
+                                          MIT_END,
+                                          COPYFL_STRIPTABS);
+                        winhCopyMenuItem2(pPrivate->hwndObjectPopup,
+                                          hmenuTemp,
+                                          WPMENUID_PROPERTIES, // 0x70, properties
+                                          MIT_END,
+                                          COPYFL_STRIPTABS);
 
+                        /*
                         winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
                                                 MIT_END,
                                                 1234);
+                        */
 
                         // add standard widget menu as submenu
-                        hwndWidgetSubmenu
-                            = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
-                                                   MIT_END,
-                                                   cmnGetString(ID_XSSI_XC_OBJBUTTONWIDGET),
-                                                   2000,    // submenu ID
-                                                   pPrivate->pWidget->hwndContextMenu);
-                        if (hwndWidgetSubmenu)
-                            // disable "Properties" as we have none
-                            WinEnableMenuItem(hwndWidgetSubmenu,
-                                              ID_CRMI_PROPERTIES,
-                                              FALSE);
+                        // no, copy to main menu V0.9.20 (2002-08-10) [umoeller]
+                        winhMergeMenus(pPrivate->hwndObjectPopup,
+                                       MIT_END,
+                                       pPrivate->pWidget->hwndContextMenu,
+                                       COPYFL_STRIPTABS);
+
+                        if (    (hwndHelp = winhQuerySubmenu(pPrivate->hwndObjectPopup,
+                                                             ID_CRMI_HELPSUBMENU))
+                             && (hmenuHelpSource = winhQuerySubmenu(hmenuTemp,
+                                                                    2))      // help submenu
+                           )
+                        {
+                            PSZ psz;
+                            if (psz = winhQueryMenuItemText(hmenuHelpSource,
+                                                            0x25A)) // "General help",
+                            {
+                                PSZ p;
+                                // remove the hotkey description
+                                if (p = strchr(psz, '\t'))
+                                    *p = '\0';
+
+                                winhInsertMenuItem(hwndHelp,
+                                                   0,
+                                                   0x25A,
+                                                   psz,
+                                                   MIS_TEXT,
+                                                   0);
+                                winhSetMenuCondCascade(hwndHelp,
+                                                       0x25A);
+
+                                WinSendMsg(hwndHelp,
+                                           MM_SETDEFAULTITEMID,
+                                           (MPARAM)0x25A,
+                                           0);
+
+                                WinSendMsg(hwndHelp,
+                                           MM_SETITEMATTR,
+                                           MPFROM2SHORT(ID_CRMI_HELP,
+                                                        FALSE),
+                                           MPFROM2SHORT(MIA_CHECKED, 0));
+                                free(psz);
+                            }
+                        }
 
                         ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
                                 // destroyed on WM_MENUEND;

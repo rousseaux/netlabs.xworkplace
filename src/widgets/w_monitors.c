@@ -2061,11 +2061,11 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
         HWND hwndSubmenu;
         SHORT s = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
                                     MM_ITEMPOSITIONFROMID,
-                                    MPFROM2SHORT(ID_CRMI_PROPERTIES,
+                                    MPFROM2SHORT(ID_CRMI_HELP,      // adjusted V0.9.20 (2002-08-08) [umoeller]
                                                  FALSE),
                                     0);
         if (hwndSubmenu = pwinhInsertSubmenu(pPrivate->pWidget->hwndContextMenu,
-                                             s + 2,
+                                             0,
                                              1999,
                                              "Drives",
                                              MIS_TEXT,
@@ -2107,7 +2107,7 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
             }
 
             pwinhInsertMenuItem(pPrivate->pWidget->hwndContextMenu,
-                                s + 3,
+                                1,
                                 0,
                                 "",
                                 MIS_SEPARATOR,
