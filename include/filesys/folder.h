@@ -191,6 +191,12 @@
      ********************************************************************/
 
     #ifdef SOM_WPFolder_h
+
+        #define BARPULL_FOLDER      0       // never set
+        #define BARPULL_EDIT        2
+        #define BARPULL_VIEW        3
+        #define BARPULL_HELP        4
+
         /*
          *@@ SUBCLASSEDFOLDERVIEW:
          *      linked list structure used with folder frame
@@ -234,12 +240,11 @@
                         hwndCnr,            // cnr window (child of hwndFrame)
                         hwndSupplObject;    // supplementary object wnd
                                             // (fdr_fnwpSupplFolderObject)
-            // ULONG       ulView;             // OPEN_CONTENTS
-                                            //   or OPEN_TREE
-                                            //   or OPEN_DETAILS
+
             BOOL        fNeedCnrScroll;     // scroll container after adding status bar?
             BOOL        fRemoveSourceEmphasis; // flag for whether XFolder has added
                                             // container source emphasis
+
             ULONG       ulLastSelMenuItem;  // last selected menu item ID
             WPObject    *pSourceObject;     // object whose record core has source
                                             // emphasis;

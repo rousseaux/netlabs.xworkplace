@@ -2330,40 +2330,19 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
     HWND hwndMenu;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
 
-    // OK, here's the trick. If "extend close" is enabled
-    // and a menu is requested for the cnr whitespace
-    // (open view popup), build the menu, but DO NOT
-    // DISPLAY it yet (because otherwise the items would
-    // be modified while the menu is already showing,
-    // causing flicker and display errors).
-    /* if (    (pGlobalSettings->fExtendCloseMenu)
-         && (ulMenuType == MENU_OPENVIEWPOPUP)
-       )
-    {
-        hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
-                                                         hwndOwner,
-                                                         hwndClient,
-                                                         ptlPopupPt,
-                                                         // add MENU_NODISPLAY!
-                                                         ulMenuType | MENU_NODISPLAY,
-                                                         ulReserved);
-        mnuHackFolderClose(somSelf,
-                           hwndOwner,
-                           hwndClient,
-                           ptlPopupPt,
-                           ulMenuType,
-                           hwndMenu);
-    }
-    else */
-        hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
-                                                         hwndOwner,
-                                                         hwndClient,
-                                                         ptlPopupPt,
-                                                         ulMenuType,
-                                                         ulReserved);
+    _ulLastDisplayedMenuType = ulMenuType;
+        // V0.9.12 (2001-05-29) [umoeller]
+
+    hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
+                                                     hwndOwner,
+                                                     hwndClient,
+                                                     ptlPopupPt,
+                                                     ulMenuType,
+                                                     ulReserved);
+
     return (hwndMenu);
 }
 

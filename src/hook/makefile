@@ -61,7 +61,12 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # created from the files in this directory.
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = $(BASE_OUTPUTDIR)\xwphook.obj
+OBJS = \
+$(BASE_OUTPUTDIR)\xwphook.obj \
+$(BASE_OUTPUTDIR)\hk_char.obj \
+$(BASE_OUTPUTDIR)\hk_misc.obj \
+$(BASE_OUTPUTDIR)\hk_msmove.obj \
+$(BASE_OUTPUTDIR)\hk_scroll.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,

@@ -63,6 +63,7 @@ caused huge PM resource leaks which could lead to system hangs. Fixed.
 <P><LI>XFolder: Replacement "File exists" dialog never populated the target folder,
 which could lead to duplicate objects and even system hangs. Fixed.
 <P><LI>XFolder: "Snap to grid" item on "XFolder" page didn't work. Fixed.
+<P><LI>XFolder: Extended menu items in "View" pulldown broke somehow. Fixed.
 <P><LI>XFldDisk: "Details" page always displayed 512 bytes for the sector size.
 Fixed, this now _really_ displays the sector size.
 <P><LI>Extended file types: Removing an association or type on program/file settings
@@ -92,6 +93,9 @@ widget classes. Fixed, added mutex protection to DLL loading.
 <P><LI>XCenter: Hopefully fixed hang on XShutdown.
 <P><LI>XCenter: X-Button started shutdown/restart WPS etc. on XCenter thread. Fixed,
 now started on thread 1.
+<P><LI>Hook: Martin Lafaix fixed the new sliding menus mechanism introduced with
+V0.9.11. Pulldowns are no longer delayed, and all submenu selections should be
+properly processed now (except for some Netscape submenus, but that's a minor annoyance).
 <P><LI>XShutdown: Animations frequently didn't show. Fixed.
 <P><LI>XShutdown: Now recovering all windows from other desktops to screen before
 closing windows.

@@ -237,6 +237,14 @@ $(XWP_OUTPUT_ROOT)\exe_mt\threads.obj \
 $(XWP_OUTPUT_ROOT)\exe_mt\xstring.obj \
 $(XWP_OUTPUT_ROOT)\xwphook.lib
 
+HOOKOBJS = \
+$(XWP_OUTPUT_ROOT)\xwphook.obj \
+# mousemove next, since it gets called most frequently
+$(XWP_OUTPUT_ROOT)\hk_msmove.obj \
+$(XWP_OUTPUT_ROOT)\hk_char.obj \
+$(XWP_OUTPUT_ROOT)\hk_misc.obj \
+$(XWP_OUTPUT_ROOT)\hk_scroll.obj
+
 # objects for XDEBUG.DLL (debugging only)
 DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
 
@@ -690,9 +698,9 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 src\hook\xwphook.def: include\bldlevel.h
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace PM hook module"
 
-$(MODULESDIR)\xwphook.dll: src\hook\$(@B).def $(XWP_OUTPUT_ROOT)\$(@B).obj
+$(MODULESDIR)\xwphook.dll: src\hook\$(@B).def $(HOOKOBJS)
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\hook\$(@B).def $(XWP_OUTPUT_ROOT)\$(@B).obj $(PMPRINTF_LIB)
+        $(LINK) /OUT:$@ src\hook\$(@B).def $(HOOKOBJS) $(PMPRINTF_LIB)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif

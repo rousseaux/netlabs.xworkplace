@@ -128,7 +128,7 @@
             // #define DEBUG_CNRCONTENT
 
         // the following will printf lots of sort info
-            // #define DEBUG_SORT
+            #define DEBUG_SORT
 
         // the following will printf language code queries and
         // NLS DLL evaluation
@@ -158,7 +158,7 @@
             // #define DEBUG_TITLECLASH
 
         // debug new system sounds
-            #define DEBUG_SOUNDS
+            // #define DEBUG_SOUNDS
 
         // debug data/program file associations/icons
             // #define DEBUG_ASSOCS

@@ -377,6 +377,12 @@ interface XFolder : WPFolder
                 // (filesys\refresh.c)
                 // V0.9.12 (2001-05-22) [umoeller]
 
+    ULONG       ulLastDisplayedMenuType;
+                // last ulMenuType in wpDisplayMenu. This gets set
+                // by XFolder::wpDisplayMenu so that all the menu
+                // functions can detect whether this is an "open view",
+                // or regular context menu, or one of the pulldowns.
+
     /*
      * WPFolder methods overridden by XFolder:
      *

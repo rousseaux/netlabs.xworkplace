@@ -13,8 +13,8 @@
  *      -- hookPreAccelHook
  *      See the remarks in the respective functions.
  *
- *      Most of the hook features started out with code taken
- *      from ProgramCommander/2 and WarpEnhancer and were then
+ *      Most of the hook features started out with code and ideas
+ *      taken from ProgramCommander/2 and WarpEnhancer and were then
  *      extended.
  *
  *      I have tried to design the hooks for clarity and lucidity with
@@ -22,7 +22,14 @@
  *      as if that was possible with system hooks at all, since they
  *      are so messy by nature.
  *
- *      XWorkplace implementation notes:
+ *      With V0.9.12, the hook code was spread across several files
+ *
+ *      1)  to group the actual hook functions together for a better
+ *          code path,
+ *
+ *      2)  to make all this more readable.
+ *
+ *      A couple words of wisdom about the hook code:
  *
  *      --  System hooks are possibly running in the context of each PM
  *          thread which is processing a message -- that is, possibly each
@@ -31,39 +38,41 @@
  *          As a result, great care must be taken when accessing global
  *          data, and one must keep in mind for each function which thread
  *          it might run in, or otherwise we'd be asking for system hangs.
- *          Don't expect OS/2 to handle exceptions correctly if all PM
+ *          Don't expect OS/2 to handle exceptions properly if all PM
  *          programs crash at the same time.
  *
  *          It _is_ possible to access static global variables of
- *          this DLL from every function, because the DLL is linked
- *          with the STATIC SHARED flags (see xwphook.def).
- *          This means that the single data segment of the DLL becomes
- *          part of each process which is using the DLL
+ *          this DLL from every function, because the DLL is
+ *          linked with the STATIC SHARED flags (see xwphook.def).
+ *          This means that the single data segment of the DLL
+ *          becomes part of each process which is using the DLL
  *          (that is, each PM process on the system). We use this
- *          for the HOOKDATA structure, which is a static global structure
- *          in the DLL's shared data segment and is returned to the daemon
- *          when it calls hookInit in the DLL.
+ *          for the HOOKDATA structure, which is a static global
+ *          structure in the DLL's shared data segment and is
+ *          returned to the daemon when it calls hookInit in the DLL.
  *
- *          HOOKDATA includes a HOOKCONFIG structure. As a result, to
- *          configure the basic hook flags, the daemon can simply
+ *          HOOKDATA includes a HOOKCONFIG structure. As a result,
+ *          to configure the basic hook flags, the daemon can simply
  *          modify the fields in the HOOKDATA structure to configure
  *          the hook's behavior.
  *
- *          It is however _not_ possible to use malloc() to allocate global
- *          memory and use it between several calls of the hooks, because
- *          that memory will belong to one process only, even if the pointer
- *          is stored in a global DLL variable. The next time the hook gets
- *          called and accesses that memory, some fairly random application
- *          will crash (the one the hook is currently called for), or the
- *          system will hang completely.
+ *          It is however _not_ possible to use malloc() to allocate
+ *          global memory and use it between several calls of the
+ *          hooks, because that memory will belong to one process
+ *          only, even if the pointer is stored in a global DLL
+ *          variable. The next time the hook gets called and accesses
+ *          that memory, some fairly random application will crash
+ *          (the one the hook is currently called for), or the system
+ *          will hang completely.
  *
- *          For this reason, the hooks use another block of shared memory
- *          internally, which is protected by a mutex semaphore, for storing
- *          the list of object hotkeys (which is variable in size).
- *          This block is (re)allocated in hookSetGlobalHotkeys and
- *          requested in the hook when WM_CHAR comes in. The mutex is
- *          necessary because when hotkeys are changed, the daemon changes
- *          the structure by calling hookSetGlobalHotkeys.
+ *          For this reason, the hooks use another block of shared
+ *          memory internally, which is protected by a named mutex
+ *          semaphore, for storing the list of object hotkeys (which
+ *          is variable in size). This block is (re)allocated in
+ *          hookSetGlobalHotkeys and requested in the hook when
+ *          WM_CHAR comes in. The mutex is necessary because when
+ *          hotkeys are changed, the daemon changes the structure by
+ *          calling hookSetGlobalHotkeys.
  *
  *      --  The exported hook* functions may only be used by one
  *          single process. It is not possible for one process to
@@ -94,7 +103,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich Mîller.
+ *      Copyright (C) 1999-2001 Ulrich Mîller.
  *      Copyright (C) 1993-1999 Roman Stangl.
  *      Copyright (C) 1995-1999 Carlos Ugarte.
  *
@@ -176,6 +185,18 @@ ULONG           G_cFunctionKeys = 0;
 HMTX            G_hmtxGlobalHotkeys = NULLHANDLE;
     // mutex for protecting the keys arrays
 
+/******************************************************************
+ *
+ *  System-wide global variables for input hook
+ *
+ ******************************************************************/
+
+HWND    G_hwndUnderMouse = NULLHANDLE;
+HWND    G_hwndLastFrameUnderMouse = NULLHANDLE;
+HWND    G_hwndLastSubframeUnderMouse = NULLHANDLE;
+POINTS  G_ptsMousePosWin = {0};
+POINTL  G_ptlMousePosDesktop = {0};
+
 /*
  * Prototypes:
  *
@@ -196,64 +217,10 @@ int _CRT_init(void);
 void _CRT_term(void);
 
 /******************************************************************
- *                                                                *
- *  Helper functions                                              *
- *                                                                *
+ *
+ *  Helper functions
+ *
  ******************************************************************/
-
-/*
- *@@ _DLL_InitTerm:
- *      this function gets called automatically by the OS/2 DLL
- *      during DosLoadModule processing, on the thread which
- *      invoked DosLoadModule.
- *
- *      We override this function (which is normally provided by
- *      the runtime library) to intercept this DLL's module handle.
- *
- *      Since OS/2 calls this function directly, it must have
- *      _System linkage.
- *
- *      Note: You must then link using the /NOE option, because
- *      the VAC++ runtimes also contain a _DLL_Initterm, and the
- *      linker gets in trouble otherwise.
- *      The XWorkplace makefile takes care of this.
- *
- *      This function must return 0 upon errors or 1 otherwise.
- *
- *@@changed V0.9.0 [umoeller]: reworked locale initialization
- */
-
-unsigned long _System _DLL_InitTerm(unsigned long hModule,
-                                    unsigned long ulFlag)
-{
-    switch (ulFlag)
-    {
-        case 0:
-        {
-            // store the DLL handle in the global variable
-            G_HookData.hmodDLL = hModule;
-
-            // now initialize the C run-time environment before we
-            // call any runtime functions
-            if (_CRT_init() == -1)
-               return (0);  // error
-
-        break; }
-
-        case 1:
-            // DLL being freed: cleanup runtime
-            _CRT_term();
-            break;
-
-        default:
-            // other code: beep for error
-            DosBeep(100, 100);
-            return (0);     // error
-    }
-
-    // a non-zero value must be returned to indicate success
-    return (1);
-}
 
 /*
  *@@ InitializeGlobalsForHooks:
@@ -349,234 +316,65 @@ HWND GetFrameWindow(HWND hwndTemp)
     return (hwndPrevious);
 }
 
-/*
- *@@ GetScrollBar:
- *      returns the specified scroll bar of hwndOwner.
- *      Returns NULLHANDLE if it doesn't exist or is
- *      disabled.
- *
- *@@added V0.9.1 (99-12-03) [umoeller]
- *@@changed V0.9.1 (2000-02-13) [umoeller]: fixed disabled scrollbars bug
- *@@changed V0.9.3 (2000-04-30) [umoeller]: added more error checking
- *@@changed V0.9.3 (2000-04-30) [umoeller]: fixed invisible scrollbars bug
- *@@changed V0.9.9 (2001-03-20) [lafaix]: fixed empty (size=0x0) scrollbar bug
- */
-
-HWND GetScrollBar(HWND hwndOwner,
-                  BOOL fHorizontal) // in: if TRUE, query horizontal;
-                                    // if FALSE; query vertical
-{
-    HAB     hab = WinQueryAnchorBlock(hwndOwner);
-    HWND    hwndReturn = NULLHANDLE;
-    HENUM   henum; // enumeration handle for scroll bar seek
-    HWND    hwndFound; // handle of found window
-    CHAR    szWinClass[3]; // buffer for window class name
-    ULONG   ulWinStyle; // style of the found scroll bar
-
-    // begin window enumeration
-    henum = WinBeginEnumWindows(hwndOwner);
-    if (henum)
-    {
-        while ((hwndFound = WinGetNextWindow(henum)) != NULLHANDLE)
-        {
-            if (!WinIsWindow(hab,
-                             hwndFound))
-                // error:
-                break;
-            else
-            {
-                // query class name of found window
-                if (WinQueryClassName(hwndFound, 3, szWinClass))
-                {
-                    // is it a scroll bar window?
-                    if (strcmp(szWinClass, "#8") == 0)
-                    {
-                        SWP swp;
-
-                        // is it a non-empty scroll bar?
-                        if (WinQueryWindowPos(hwndFound, &swp) && swp.cx && swp.cy)
-                        {
-                            // query style bits of this scroll bar window
-                            ulWinStyle = WinQueryWindowULong(hwndFound, QWL_STYLE);
-
-                            // is scroll bar enabled and visible?
-                            if ((ulWinStyle & (WS_DISABLED | WS_VISIBLE)) == WS_VISIBLE)
-                            {
-                                // return window handle if it matches fHorizontal
-                                if (fHorizontal)
-                                {
-                                    // query horizonal mode:
-                                    if ((ulWinStyle & SBS_VERT) == 0)
-                                        // we must check it this way
-                                        // because SBS_VERT is 1 and SBS_HORZ is 0
-                                    {
-                                        hwndReturn = hwndFound;
-                                        break; // while
-                                    }
-                                }
-                                else
-                                    if (ulWinStyle & SBS_VERT)
-                                    {
-                                        hwndReturn = hwndFound;
-                                        break; // while
-                                    }
-                            }
-                        } // end if (WinQueryWindowPos(hwndFound, &swp) && ...)
-                    } // end if (strcmp(szWinClass, "#8") == 0)
-                }
-            }
-        } // end while ((hwndFound = WinGetNextWindow(henum)) != NULLHANDLE)
-
-        // finish window enumeration
-        WinEndEnumWindows(henum);
-    }
-
-    return (hwndReturn);
-}
-
-/*
- *@@ HiliteMenuItem:
- *      this un-hilites the currently hilited menu
- *      item in hwndMenu and optionally hilites the
- *      specified one instead.
- *
- *      Used during delayed sliding menu processing.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- *@@changed V0.9.6 (2000-10-27) [pr]: fixed some un-hilite problems; changed prototype
- *@@changed V0.9.11 (2001-04-25) [umoeller]: rewritten
- *@@changed V0.9.12 (2001-05-24) [lafaix]: changed prototype, now uses index instead of identity
- */
-
-VOID HiliteMenuItem(HWND hwndMenu,
-                    SHORT sItemIndex)      // in: item index to hilite
-{
-    // we now use an undocumented menu message which is used
-    // by the menu control internally to properly select menu
-    // items... if we change the menu item's attributes manually
-    // (which is what we did before V0.9.11), the menu control
-    // easily gets confused with managing the hilites.
-    // Using this message works much better, apparently.
-    #define MM_UNDOCSELECT1    0x019E       // l576 selects a menu item by its index
-                                            // instead of the menu item ID
-
-    WinSendMsg(hwndMenu,
-               MM_UNDOCSELECT1,
-               MPFROM2SHORT(sItemIndex,
-                            0),         // apparently there are some flags in
-                                        // here for opening submenus and stuff,
-                                        // but we'll post MM_SELECTITEM later
-                                        // anyway, so setting this to 0 will
-                                        // work for our purposes
-               0);                      // mp2 is always zero from my testing
-
-    /* SHORT       sItemIndex2;
-    // first, un-hilite the item which currently
-    // has hilite state; otherwise, we'd successively
-    // hilite _all_ items in the menu... doesn't look
-    // too good.
-    // We cannot use a global variable for storing
-    // the last menu hilite, because there can be more
-    // than one open (sub)menu, and we'd get confused
-    // otherwise.
-    // So go thru all menu items again and un-hilite
-    // the first hilited menu item we find. This will
-    // be the one either PM has hilited when something
-    // was selected, or the one we might have hilited
-    // here previously:
-    for (sItemIndex2 = 0;
-         sItemIndex2 < sItemCount;
-         sItemIndex2++)
-    {
-        SHORT sCurrentItemIdentity2
-            = (SHORT)WinSendMsg(hwndMenu,
-                                MM_ITEMIDFROMPOSITION,
-                                MPFROMSHORT(sItemIndex2),
-                                NULL);
-        ULONG ulAttr
-            = (ULONG)WinSendMsg(hwndMenu,
-                                MM_QUERYITEMATTR,
-                                MPFROM2SHORT(sCurrentItemIdentity2,
-                                             FALSE), // no search submenus
-                                MPFROMSHORT(0xFFFF));
-        if (ulAttr & MIA_HILITED)
-        {
-            WinSendMsg(hwndMenu,
-                       MM_SETITEMATTR,
-                       MPFROM2SHORT(sCurrentItemIdentity2,
-                                    FALSE), // no search submenus
-                       MPFROM2SHORT(MIA_HILITED,
-                                    0));    // unset attribute
-            // stop second loop
-            // break;
-        }
-    }
-
-    if (fHiLite)
-        // now hilite the new item (the one under the mouse)
-        WinSendMsg(hwndMenu,
-                   MM_SETITEMATTR,
-                   MPFROM2SHORT(sItemIndex,
-                                FALSE), // no search submenus
-                   MPFROM2SHORT(MIA_HILITED, MIA_HILITED));
-    */
-}
-
-/*
- *@@ SelectMenuItem:
- *      this gets called to implement the "sliding menu" feature.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- *@@changed V0.9.6 (2000-10-29) [pr]: fixed submenu behavior
- *@@changed V0.9.12 (2001-05-25) [lafaix]: changed prototype, rewritten
- */
-
-VOID SelectMenuItem(HWND hwndMenu,
-                    SHORT sItemIndex,   // item index to select (NOT identity!)
-                    BOOL bOpen)         // open submenu (if any) ?
-{
-    MENUITEM    menuitemCurrent;
-    USHORT      usSelItem;
-
-    #ifndef MM_QUERYITEMBYPOS
-        #define MM_QUERYITEMBYPOS 0x01f3
-    #endif
-    #ifndef MAKE_16BIT_POINTER
-        #define MAKE_16BIT_POINTER(p) \
-                ((PVOID)MAKEULONG(LOUSHORT(p),(HIUSHORT(p) << 3) | 7))
-    #endif
-
-    // query the current menuentry's menuitem structure
-    if (WinSendMsg(hwndMenu,
-                   MM_QUERYITEMBYPOS,
-                   MPFROMSHORT(sItemIndex),
-                   MAKE_16BIT_POINTER(&menuitemCurrent)))
-    {
-        // V0.9.12 (2001-05-25) [lafaix]: this selects the item and
-        // forces the submenu to be displayed (if appropriate).  Then,
-        // if there's really a submenu, we select its first entry.  No
-        // flicker and/or recursive expansion this way.
-
-        WinSendMsg(hwndMenu,
-                   MM_UNDOCSELECT1,
-                   MPFROM2SHORT(sItemIndex, bOpen),
-                   0);
-
-        if (    (bOpen)
-             && (menuitemCurrent.afStyle & MIS_SUBMENU)
-           )
-            WinSendMsg(menuitemCurrent.hwndSubMenu,
-                       MM_UNDOCSELECT1,
-                       0,
-                       0);
-    }
-}
-
 /******************************************************************
- *                                                                *
- *  Hook interface                                                *
- *                                                                *
+ *
+ *  Hook interface
+ *
  ******************************************************************/
+
+/*
+ *@@ _DLL_InitTerm:
+ *      this function gets called automatically by the OS/2 DLL
+ *      during DosLoadModule processing, on the thread which
+ *      invoked DosLoadModule.
+ *
+ *      We override this function (which is normally provided by
+ *      the runtime library) to intercept this DLL's module handle.
+ *
+ *      Since OS/2 calls this function directly, it must have
+ *      _System linkage.
+ *
+ *      Note: You must then link using the /NOE option, because
+ *      the VAC++ runtimes also contain a _DLL_Initterm, and the
+ *      linker gets in trouble otherwise.
+ *      The XWorkplace makefile takes care of this.
+ *
+ *      This function must return 0 upon errors or 1 otherwise.
+ *
+ *@@changed V0.9.0 [umoeller]: reworked locale initialization
+ */
+
+unsigned long _System _DLL_InitTerm(unsigned long hModule,
+                                    unsigned long ulFlag)
+{
+    switch (ulFlag)
+    {
+        case 0:
+        {
+            // store the DLL handle in the global variable
+            G_HookData.hmodDLL = hModule;
+
+            // now initialize the C run-time environment before we
+            // call any runtime functions
+            if (_CRT_init() == -1)
+               return (0);  // error
+
+        break; }
+
+        case 1:
+            // DLL being freed: cleanup runtime
+            _CRT_term();
+            break;
+
+        default:
+            // other code: beep for error
+            DosBeep(100, 100);
+            return (0);     // error
+    }
+
+    // a non-zero value must be returned to indicate success
+    return (1);
+}
 
 /*
  *@@ hookInit:
@@ -815,6 +613,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
         {
             // hotkeys defined already: free the old ones
             DosFreeMem(G_paGlobalHotkeys);
+            G_paGlobalHotkeys = 0;
         }
 
         arc = DosAllocSharedMem((PVOID*)(&G_paGlobalHotkeys),
@@ -836,6 +635,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
         {
             // function keys defined already: free the old ones
             DosFreeMem(G_paFunctionKeys);
+            G_paFunctionKeys = 0;
         }
 
         arc = DosAllocSharedMem((PVOID*)(&G_paFunctionKeys),
@@ -863,21 +663,9 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 }
 
 /******************************************************************
- *                                                                *
- *  System-wide global variables for input hook                   *
- *                                                                *
- ******************************************************************/
-
-HWND    G_hwndUnderMouse = NULLHANDLE;
-HWND    G_hwndLastFrameUnderMouse = NULLHANDLE;
-HWND    G_hwndLastSubframeUnderMouse = NULLHANDLE;
-POINTS  G_ptsMousePosWin = {0};
-POINTL  G_ptlMousePosDesktop = {0};
-
-/******************************************************************
- *                                                                *
- *  Send-Message Hook                                             *
- *                                                                *
+ *
+ *  Send-Message Hook
+ *
  ******************************************************************/
 
 /*
@@ -1082,6 +870,12 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 
 }
 
+/******************************************************************
+ *
+ *  Lockup Hook
+ *
+ ******************************************************************/
+
 /*
  *@@ hookLockupHook:
  *
@@ -1111,1604 +905,9 @@ VOID EXPENTRY hookLockupHook(HAB hab,
 }
 
 /******************************************************************
- *                                                                *
- *  Input hook -- WM_MOUSEMOVE processing                         *
- *                                                                *
- ******************************************************************/
-
-/*
- *@@ StopMB3Scrolling:
- *      this stops MB3 scrolling and unsets all global
- *      data which has been initialized for scrolling.
  *
- *      This gets called from WM_BUTTON3UP with
- *      (fSuccessPostMsgs == TRUE) so that we can
- *      post messages to the scroll bar owner that we're
- *      done.
+ *  Input hook (main function)
  *
- *      Also this gets called with (fSuccessPostMsgs == FALSE)
- *      if any errors occur during processing.
- *
- *@@added V0.9.3 (2000-04-30) [umoeller]
- *@@changed V0.9.9 (2001-03-18) [lafaix]: pointer support added
- */
-
-VOID StopMB3Scrolling(BOOL fSuccessPostMsgs)
-{
-    // set scrolling mode to off
-    G_HookData.hwndCurrentlyScrolling = NULLHANDLE;
-
-    // reset pointers
-    WinSendMsg(G_HookData.hwndDaemonObject,
-               XDM_ENDSCROLL,
-               NULL,
-               NULL);
-
-    // re-enable mouse pointer hidding if applicable
-    G_HookData.HookConfig.fAutoHideMouse = G_HookData.fOldAutoHideMouse;
-
-    // release capture (set in WM_BUTTON3DOWN)
-    WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-
-    if (fSuccessPostMsgs)
-    {
-        if (G_HookData.SDYVert.fPostSBEndScroll)
-        {
-            // we did move the scroller previously:
-            // send end scroll message
-            WinPostMsg(G_HookData.SDYVert.hwndScrollLastOwner,
-                       WM_VSCROLL,
-                       MPFROMSHORT(WinQueryWindowUShort(G_HookData.SDYVert.hwndScrollBar,
-                                                        QWS_ID)),
-                       MPFROM2SHORT(G_HookData.SDYVert.sCurrentThumbPosUnits,
-                                    SB_SLIDERPOSITION)); // SB_ENDSCROLL));
-        }
-
-        if (G_HookData.SDXHorz.fPostSBEndScroll)
-        {
-            // we did move the scroller previously:
-            // send end scroll message
-            WinPostMsg(G_HookData.SDXHorz.hwndScrollLastOwner,
-                       WM_HSCROLL,
-                       MPFROMSHORT(WinQueryWindowUShort(G_HookData.SDXHorz.hwndScrollBar,
-                                                        QWS_ID)),
-                       MPFROM2SHORT(G_HookData.SDXHorz.sCurrentThumbPosUnits,
-                                    SB_SLIDERPOSITION));
-        }
-    }
-}
-
-/*
- *@@ WMMouseMove_MB3ScrollLineWise:
- *      this gets called from WMMouseMove_MB3OneScrollbar
- *      if "amplified" mb3-scroll is on. This is what
- *      WarpEnhancer did with MB3 scrolls.
- *
- *      This can get called twice for every WM_MOUSEMOVE,
- *      once for the vertical, once for the horizontal
- *      scroll bar of a window.
- *
- *      Returns FALSE on errors.
- *
- *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
- *
- *@@added V0.9.1 (99-12-03) [umoeller]
- *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
- */
-
-BOOL WMMouseMove_MB3ScrollLineWise(PSCROLLDATA pScrollData,   // in: scroll data structure in HOOKDATA,
-                                                              // either for vertical or horizontal scroll bar
-                                   LONG lDelta,               // in: X or Y delta that mouse has moved since MB3 was
-                                                              // _initially_ depressed
-                                   BOOL fHorizontal)          // in: TRUE: process horizontal, otherwise vertical
-{
-    BOOL    brc = FALSE;
-
-    USHORT  usScrollCode;
-    ULONG   ulMsg;
-
-    // save window ID of scroll bar control
-    USHORT usScrollBarID = WinQueryWindowUShort(pScrollData->hwndScrollBar,
-                                                QWS_ID);
-
-    if (!fHorizontal)
-    {
-        if (lDelta > 0)
-            usScrollCode = SB_LINEDOWN;
-        else
-            usScrollCode = SB_LINEUP;
-
-        ulMsg = WM_VSCROLL;
-    }
-    else
-    {
-        if (lDelta > 0)
-            usScrollCode = SB_LINERIGHT;
-        else
-            usScrollCode = SB_LINELEFT;
-
-        ulMsg = WM_HSCROLL;
-    }
-
-    // post up or down scroll message
-    if (WinPostMsg(pScrollData->hwndScrollLastOwner,
-                   ulMsg,
-                   MPFROMSHORT(usScrollBarID),
-                   MPFROM2SHORT(1,
-                                usScrollCode)))
-        // post end scroll message
-        if (WinPostMsg(pScrollData->hwndScrollLastOwner,
-                       ulMsg,
-                       MPFROMSHORT(usScrollBarID),
-                       MPFROM2SHORT(1,
-                                    SB_ENDSCROLL)))
-            brc = TRUE;
-
-    return (brc);
-}
-
-/*
- *@@ CalcScrollBarSize:
- *      this calculates the size of the scroll bar range,
- *      that is, the size of the dark background part
- *      inside the scroll bar (besides the thumb), which
- *      is returned in window coordinates.
- *
- *      Gets called with every WMMouseMove_MB3ScrollAmplified.
- *
- *      Returns 0 on errors.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- *@@changed V0.9.2 (2000-03-23) [umoeller]: removed lScrollBarSize from SCROLLDATA; this is returned now
- *@@changed V0.9.3 (2000-04-30) [umoeller]: added more error checking
- */
-
-LONG CalcScrollBarSize(PSCROLLDATA pScrollData,  // in: scroll data structure in HOOKDATA,
-                                                 // either for vertical or horizontal scroll bar
-                       BOOL fHorizontal)         // in: TRUE: process horizontal, otherwise vertical
-{
-    LONG lrc = 0;
-
-    // for "amplified" mode, we also need the size
-    // of the scroll bar and the thumb size to be
-    // able to correlate the mouse movement to the
-    // scroller position
-    SWP     swpScrollBar;
-    WNDPARAMS wp;
-
-    // get size of scroll bar
-    if (WinQueryWindowPos(pScrollData->hwndScrollBar, &swpScrollBar))
-    {
-        // subtract the size of the scroll bar buttons
-        if (fHorizontal)
-        {
-            lrc = swpScrollBar.cx
-                  - 2 * WinQuerySysValue(HWND_DESKTOP,
-                                         SV_CXHSCROLLARROW);
-        }
-        else
-        {
-            lrc = swpScrollBar.cy
-                  - 2 * WinQuerySysValue(HWND_DESKTOP,
-                                         SV_CYVSCROLLARROW);
-        }
-
-        // To make the MB3 scrolling more similar to regular scroll
-        // bar dragging, we must take the size of the scroll bar
-        // thumb into account by subtracting that size from the scroll
-        // bar size; otherwise the user would have much more
-        // mouse mileage with MB3 compared to the regular
-        // scroll bar.
-
-        // Unfortunately, there's no "SBM_QUERYTHUMBSIZE" msg,
-        // so we need to be a bit more tricky and extract this
-        // from the scroll bar's control data.
-
-        memset(&wp, 0, sizeof(wp));
-
-        // get size of scroll bar control data
-        wp.fsStatus = WPM_CBCTLDATA;
-        if (WinSendMsg(pScrollData->hwndScrollBar,
-                       WM_QUERYWINDOWPARAMS,
-                       (MPARAM)&wp,
-                       0))
-        {
-            // success:
-            _Pmpf(("    wp.cbCtlData: %d, sizeof SBCDATA: %d",
-                        wp.cbCtlData, sizeof(SBCDATA)));
-            if (wp.cbCtlData == sizeof(SBCDATA))
-            {
-                // allocate memory
-                SBCDATA sbcd;
-                wp.pCtlData = &sbcd;
-                // now get control data, finally
-                wp.fsStatus = WPM_CTLDATA;
-                if (WinSendMsg(pScrollData->hwndScrollBar,
-                               WM_QUERYWINDOWPARAMS,
-                               (MPARAM)&wp,
-                               0))
-                {
-                    // success:
-                    // cVisible specifies the thumb size in
-                    // units of cTotal; we now correlate
-                    // the window dimensions to the dark part
-                    // of the scroll bar (which is cTotal - cVisible)
-
-                    if (    (sbcd.cTotal) // avoid division by zero
-                         && (sbcd.cTotal > sbcd.cVisible)
-                       )
-                        lrc = lrc
-                              * (sbcd.cTotal - sbcd.cVisible)
-                              / sbcd.cTotal;
-                }
-            }
-        }
-    }
-
-    return (lrc);
-}
-
-/*
- *@@ WMMouseMove_MB3ScrollAmplified:
- *      this gets called from WMMouseMove_MB3OneScrollbar
- *      if "amplified" mb3-scroll is on.
- *      This is new compared to WarpEnhancer.
- *
- *      This can get called twice for every WM_MOUSEMOVE,
- *      once for the vertical, once for the horizontal
- *      scroll bar of a window.
- *
- *      Returns FALSE on errors.
- *
- *@@added V0.9.1 (99-12-03) [umoeller]
- *@@changed V0.9.2 (2000-02-26) [umoeller]: changed ugly pointer arithmetic
- *@@changed V0.9.2 (2000-03-23) [umoeller]: now recalculating scroll bar size on every WM_MOUSEMOVE
- *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
- *@@changed V0.9.9 (2001-03-19) [lafaix]: now returns TRUE if current pos = initial pos
- *@@changed V0.9.9 (2001-03-20) [lafaix]: changed ulAmpPercent to lAmpPercent and 1000 to 1000L
- */
-
-BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data structure in HOOKDATA,
-                                                              // either for vertical or horizontal scroll bar
-                                    LONG lDeltaPels,          // in: X or Y delta that mouse has moved since MB3 was
-                                                              // _initially_ depressed
-                                    BOOL fHorizontal)         // in: TRUE: process horizontal, otherwise vertical
-{
-    BOOL    brc = FALSE;
-
-    // get scroll bar size
-    LONG    lScrollBarSizePels = CalcScrollBarSize(pScrollData,
-                                                   fHorizontal);
-
-    if (lScrollBarSizePels)
-    {
-        // get scroll bar range
-        MRESULT mrThumbRange = WinSendMsg(pScrollData->hwndScrollBar,
-                                          SBM_QUERYRANGE, 0, 0);
-        if (mrThumbRange)
-        {
-            SHORT   sThumbLoLimitUnits = (LONG)SHORT1FROMMR(mrThumbRange),
-                    sThumbHiLimitUnits = (LONG)SHORT2FROMMR(mrThumbRange);
-
-            if (sThumbHiLimitUnits > sThumbLoLimitUnits)
-            {
-                // here come a number of pointers to data we'll
-                // need, depending on we're processing the vertical
-                // or horizontal scroll bar
-                ULONG   ulMsg;
-                LONG    lPerMilleMoved;
-
-                if (!fHorizontal)
-                    // vertical mode:
-                    ulMsg = WM_VSCROLL;
-                else
-                    // horizontal mode:
-                    ulMsg = WM_HSCROLL;
-
-                // We need to calculate a new _absolute_ scroller
-                // position based on the _relative_ delta we got
-                // as a parameter. This is a bit tricky:
-
-                // 1) Calculate per-mille that mouse has moved
-                //    since MB3 was initially depressed, relative
-                //    to the window (scroll bar owner) height.
-                //    This will be in the range of -1000 to +1000.
-                lPerMilleMoved = (lDeltaPels * 1000L)
-                                 / lScrollBarSizePels;
-                        // this correlates the y movement to the
-                        // remaining window height;
-                        // this is now in the range of -1000 thru +1000
-
-                _Pmpf(("  lPerMilleMoved: %d", lPerMilleMoved));
-
-                // 2) amplification desired? (0 is default for 100%)
-                if (G_HookData.HookConfig.sAmplification)
-                {
-                    // yes:
-                    LONG lAmpPercent = 100 + (G_HookData.HookConfig.sAmplification * 10);
-                        // so we get:
-                        //      0       -->  100%
-                        //      2       -->  120%
-                        //     10       -->  200%
-                        //     -2       -->  80%
-                        //     -9       -->  10%
-                    lPerMilleMoved = lPerMilleMoved * lAmpPercent / 100L;
-                }
-
-                if (lPerMilleMoved)
-                {
-                    // 3) Correlate this to scroll bar units;
-                    //    this is still a delta, but now in scroll
-                    //    bar units.
-                    LONG lSliderRange = ((LONG)sThumbHiLimitUnits
-                                        - (LONG)sThumbLoLimitUnits);
-                    SHORT sSliderMovedUnits = (SHORT)(
-                                                      lSliderRange
-                                                      * lPerMilleMoved
-                                                      / 1000L
-                                                     );
-
-                    SHORT   sNewThumbPosUnits = 0;
-
-                    // _Pmpf(("  lSliderRange: %d", lSliderRange));
-                    // _Pmpf(("  lSliderOfs: %d", lSliderMoved));
-
-                    // 4) Calculate new absolute scroll bar position,
-                    //    from on what we stored when MB3 was initially
-                    //    depressed.
-                    sNewThumbPosUnits = pScrollData->sMB3InitialThumbPosUnits
-                                        + sSliderMovedUnits;
-
-                    _Pmpf(("  New sThumbPosUnits: %d", sNewThumbPosUnits));
-
-                    // check against scroll bar limits:
-                    if (sNewThumbPosUnits < sThumbLoLimitUnits)
-                        sNewThumbPosUnits = sThumbLoLimitUnits;
-                    if (sNewThumbPosUnits > sThumbHiLimitUnits)
-                        sNewThumbPosUnits = sThumbHiLimitUnits;
-
-                    // thumb position changed?
-                    if (sNewThumbPosUnits == pScrollData->sCurrentThumbPosUnits)
-                                                    // as calculated last time
-                                                    // zero on first call
-                        // no: do nothing, but report success
-                        brc = TRUE;
-                    else
-                    {
-                        // yes:
-                        // now simulate the message flow that
-                        // the scroll bar normally produces
-                        // _while_ the scroll bar thumb is being
-                        // dragged:
-
-                        // save window ID of scroll bar control
-                        USHORT usScrollBarID = WinQueryWindowUShort(pScrollData->hwndScrollBar,
-                                                                    QWS_ID);
-
-                        // a) adjust thumb position in the scroll bar
-                        if (WinSendMsg(pScrollData->hwndScrollBar,
-                                       SBM_SETPOS,
-                                       MPFROMSHORT(sNewThumbPosUnits),
-                                       0))
-                        {
-                            // b) notify scroll bar owner of the change
-                            // (normally posted by the scroll bar);
-                            // this will scroll the window contents
-                            // depending on the owner's implementation
-                            if (WinPostMsg(pScrollData->hwndScrollLastOwner,
-                                           ulMsg,                   // WM_xSCROLL
-                                           MPFROMSHORT(usScrollBarID),
-                                           MPFROM2SHORT(sNewThumbPosUnits,
-                                                        SB_SLIDERTRACK)))
-                            {
-                                // set flag to provoke a SB_ENDSCROLL
-                                // in WM_BUTTON3UP later (hookInputHook)
-                                pScrollData->fPostSBEndScroll = TRUE;
-
-                                // store this thumb position for next time
-                                pScrollData->sCurrentThumbPosUnits = sNewThumbPosUnits;
-
-                                // hoo-yah!!!
-                                brc = TRUE;
-                            }
-                        } // end if (WinSendMsg(pScrollData->hwndScrollBar,
-                    } // end if (sNewThumbPosUnits != pScrollData->sCurrentThumbPosUnits)
-                } // end if (lPerMilleMoved)
-                else
-                    // it's OK if the mouse hasn't moved V0.9.9 (2001-03-19) [lafaix]
-                    brc = TRUE;
-            } // end if (sThumbHiLimitUnits > sThumbLoLimitUnits)
-        } // end if (mrThumbRange)
-    } // end if (lScrollBarSizePels)
-
-    return (brc);
-}
-
-/*
- *@@ WMMouseMove_MB3OneScrollbar:
- *      this gets called twice from WMMouseMove_MB3Scroll
- *      only when MB3 is currently depressed to do the
- *      scroll bar and scroll bar owner processing and
- *      messaging every time WM_MOUSEMOVE comes in.
- *
- *      Since we pretty much do the same thing twice,
- *      once for the vertical, once for the horizontal
- *      scroll bar, we can put this into a common function
- *      to reduce code size and cache load.
- *
- *      Depending on the configuration and mouse movement,
- *      this calls either WMMouseMove_MB3ScrollLineWise or
- *      WMMouseMove_MB3ScrollAmplified.
- *
- *      Returns TRUE if we were successful and the msg is
- *      to be swallowed. Otherwise FALSE is returned.
- *
- *      Initially based on code from WarpEnhancer, (C) Achim HasenmÅller,
- *      but largely rewritten.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- *@@changed V0.9.2 (2000-03-23) [umoeller]: now recalculating scroll bar size on every WM_MOUSEMOVE
- *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
- *@@changed V0.9.9 (2001-03-21) [lafaix]: do not move scrollbars if AutoScroll is on
- */
-
-BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with WM_MOUSEMOVE
-                                 PSCROLLDATA pScrollData,
-                                 SHORT sCurrentScreenMousePos,  // in: current mouse X or Y
-                                                             // (in screen coordinates)
-                                 BOOL fHorizontal)           // in: TRUE: process horizontal, otherwise vertical
-{
-    BOOL    brc = FALSE;        // swallow?
-
-    // define initial coordinates if not set yet;
-    // this is only -1 if this is the first WM_MOUSEMOVE
-    // after MB3 was just depressed
-    if (pScrollData->sMB3InitialScreenMousePos == -1)
-    {
-        /*
-         * first call after MB3 was depressed
-         *
-         */
-
-        // 1) query window handle of vertical scroll bar
-        pScrollData->hwndScrollBar = GetScrollBar(hwnd,
-                                                  fHorizontal);
-        if (pScrollData->hwndScrollBar == NULLHANDLE)
-            // if not found, then try if parent has a scroll bar
-            pScrollData->hwndScrollBar = GetScrollBar(WinQueryWindow(hwnd,
-                                                                     QW_PARENT),
-                                                      fHorizontal);
-
-        if (pScrollData->hwndScrollBar)
-        {
-            // found a scroll bar:
-
-            // save initial mouse position
-            pScrollData->sMB3InitialScreenMousePos = sCurrentScreenMousePos;
-            // save initial scroller position
-            pScrollData->sMB3InitialThumbPosUnits
-                = (SHORT)WinSendMsg(pScrollData->hwndScrollBar,
-                                    SBM_QUERYPOS,
-                                    0,
-                                    0);
-            // cache that
-            pScrollData->sCurrentThumbPosUnits = pScrollData->sMB3InitialThumbPosUnits;
-
-            brc = TRUE;
-        }
-        // else: error
-    } // if (pScrollData->sMB3InitialMousePos == -1)
-    else
-        if (    (G_HookData.bAutoScroll)
-             && (pScrollData->hwndScrollBar)
-           )
-        {
-            /*
-             * subsequent calls, AutoScroll enabled
-             *
-             */
-
-            pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
-                                                              QW_OWNER);
-            if (pScrollData->hwndScrollLastOwner)
-                brc = TRUE;
-        }
-
-    if (pScrollData->hwndScrollBar && (!G_HookData.bAutoScroll))
-    {
-        /*
-         * subsequent calls, AutoScroll non active
-         *
-         */
-
-        if (!WinIsWindow(WinQueryAnchorBlock(hwnd),
-                         pScrollData->hwndScrollBar))
-            brc = FALSE;        // error
-        else
-        {
-            // check if the scroll bar (still) has an owner;
-            // otherwise all this doesn't make sense
-            pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
-                                                              QW_OWNER);
-            if (pScrollData->hwndScrollLastOwner)
-            {
-                // calculate difference between initial
-                // mouse pos (when MB3 was depressed) and
-                // current mouse pos to get the _absolute_
-                // delta since MB3 was depressed
-                LONG    lDeltaPels = (LONG)pScrollData->sMB3InitialScreenMousePos
-                                     - (LONG)sCurrentScreenMousePos;
-
-                // now check if we need to change the sign of
-                // the delta;
-                // for a vertical scroll bar,
-                // a value of "0" means topmost position
-                // (as opposed to screen coordinates...),
-                // while for a horizontal scroll bar,
-                // "0" means leftmost position (as with
-                // screen coordinates...);
-                // but when "reverse scrolling" is enabled,
-                // we must do this just the other way round
-                if (   (    (fHorizontal)
-                         && (!G_HookData.HookConfig.fMB3ScrollReverse)
-                       )
-                        // horizontal scroll bar and _not_ reverse mode:
-                    ||
-                       (    (!fHorizontal)
-                         && (G_HookData.HookConfig.fMB3ScrollReverse)
-                       )
-                        // vertical scroll bar _and_ reverse mode:
-                   )
-                    // change sign for all subsequent processing
-                    lDeltaPels = -lDeltaPels;
-
-                if (G_HookData.HookConfig.usScrollMode == SM_AMPLIFIED)
-                {
-                    // amplified mode:
-                    if (    (pScrollData->fPostSBEndScroll)
-                                // not first call
-                         || (abs(lDeltaPels) >= (G_HookData.HookConfig.usMB3ScrollMin + 1))
-                                // or movement is large enough:
-                       )
-                        brc = WMMouseMove_MB3ScrollAmplified(pScrollData,
-                                                             lDeltaPels,
-                                                             fHorizontal);
-                    else
-                        // swallow anyway
-                        brc = TRUE;
-                }
-                else
-                    // line-wise mode:
-                    if (abs(lDeltaPels) >= (G_HookData.HookConfig.usMB3ScrollMin + 1))
-                    {
-                        // movement is large enough:
-                        brc = WMMouseMove_MB3ScrollLineWise(pScrollData,
-                                                            lDeltaPels,
-                                                            fHorizontal);
-                        pScrollData->sMB3InitialScreenMousePos = sCurrentScreenMousePos;
-                    }
-                    else
-                        // swallow anyway
-                        brc = TRUE;
-            }
-        }
-    }
-
-    return (brc);
-}
-
-/*
- *@@ WMMouseMove_MB3Scroll:
- *      this gets called when hookInputHook intercepts
- *      WM_MOUSEMOVE only if MB3 is currently down to do
- *      the "MB3 scrolling" processing.
- *
- *      This calls WMMouseMove_MB3OneScrollbar twice,
- *      once for the vertical, once for the horizontal
- *      scroll bar.
- *
- *      Returns TRUE if the msg is to be swallowed.
- *
- *@@added V0.9.1 (99-12-03) [umoeller]
- *@@changed V0.9.2 (2000-02-25) [umoeller]: HScroll not working when VScroll disabled; fixed
- *@@changed V0.9.2 (2000-02-25) [umoeller]: extracted WMMouseMove_MB3OneScrollbar for speed
- *@@changed V0.9.3 (2000-04-30) [umoeller]: recalculating more data with every call
- *@@changed V0.9.3 (2000-04-30) [umoeller]: switched processing to screen coords to avoid mouse capturing
- *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
- *@@changed V0.9.4 (2000-06-26) [umoeller]: changed error beep to debug mode only
- *@@changed V0.9.9 (2001-03-18) [lafaix]: added pointer change support
- */
-
-BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
-{
-    BOOL    brc = FALSE;        // no swallow msg
-    BOOL    bFirst = (G_HookData.SDYVert.sMB3InitialScreenMousePos == -1)
-                  && (G_HookData.SDXHorz.sMB3InitialScreenMousePos == -1);
-
-    // process vertical scroll bar
-    if (WMMouseMove_MB3OneScrollbar(hwnd,
-                                    &G_HookData.SDYVert,
-                                    G_ptlMousePosDesktop.y,
-                                    FALSE))      // vertical
-        // msg to be swallowed:
-        brc = TRUE;
-
-    // process horizontal scroll bar
-    if (WMMouseMove_MB3OneScrollbar(hwnd,
-                                    &G_HookData.SDXHorz,
-                                    G_ptlMousePosDesktop.x,
-                                    TRUE))       // horizontal
-        // msg to be swallowed:
-        brc = TRUE;
-
-    if (!brc)
-    {
-        #ifdef __DEBUG__
-            DosBeep(100, 100);
-        #endif
-        // any error found:
-        StopMB3Scrolling(FALSE);   // don't post messages
-    }
-    else
-    {
-        if (bFirst)
-            // update the pointer now to indicate scrolling in action
-            // V0.9.9 (2001-03-18) [lafaix]
-            WinSendMsg(G_HookData.hwndDaemonObject,
-                       XDM_BEGINSCROLL,
-                       MPFROM2SHORT(G_HookData.SDXHorz.sMB3InitialScreenMousePos,
-                                    G_HookData.SDYVert.sMB3InitialScreenMousePos),
-                       NULL);
-        else
-            // set adequate pointer
-            WinPostMsg(G_HookData.hwndDaemonObject,
-                       XDM_SETPOINTER,
-                       MPFROM2SHORT(G_ptlMousePosDesktop.x,
-                                    G_ptlMousePosDesktop.y),
-                       0);
-    }
-
-    return (brc);
-}
-
-/*
- *@@ WMMouseMove_SlidingFocus:
- *      this gets called when hookInputHook intercepts
- *      WM_MOUSEMOVE to do the "sliding focus" processing.
- *
- *      This function evaluates hwnd to find out whether
- *      the mouse has moved over a new frame window.
- *      If so, XDM_SLIDINGFOCUS is posted to the daemon's
- *      object window, which will then do the actual focus
- *      and active window processing (starting a timer, if
- *      delayed focus is active).
- *
- *      Processing is fairly complicated because special
- *      case checks are needed for certain window classes
- *      (combo boxes, Win-OS/2 windows). Basically, this
- *      function finds the frame window to which hwnd
- *      (the window under the mouse, from the hook) belongs
- *      and passes that frame to the daemon. If another
- *      frame is found between the main frame and hwnd,
- *      that frame is passed to the daemon also.
- *
- *      Frame activation is then not done from the hook, but
- *      from the daemon instead.
- *
- *      Inspired by code from ProgramCommander (W) Roman Stangl.
- *      Fixed a few problems with MDI frames.
- *
- *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed combobox problems
- *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed MDI frames problems
- *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 menu problems
- *@@changed V0.9.9 (2001-03-14) [lafaix]: disabling sliding when processing mouse switch
- */
-
-VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hookInputHook
-                              BOOL fMouseMoved, // in: TRUE if mouse has been moved since previous WM_MOUSEMOVE
-                                                // (determined by hookInputHook)
-                              PSZ pszClassUnderMouse) // in: window class of hwnd (determined
-                                                      // by hookInputHook)
-{
-    BOOL    fStopTimers = FALSE;    // setting this to TRUE will stop timers
-
-    if (G_HookData.fDisableMouseSwitch)
-        return;
-
-    do      // just a do for breaking, no loop
-    {
-        // get currently active window; this can only
-        // be a frame window (WC_FRAME)
-        HWND    hwndActiveNow = WinQueryActiveWindow(HWND_DESKTOP);
-
-        // check 1: check if the active window is still the
-        //          the one which was activated by ourselves
-        //          previously (either by the hook during WM_BUTTON1DOWN
-        //          or by the daemon in sliding focus processing):
-        if (hwndActiveNow)
-        {
-            if (hwndActiveNow != G_HookData.hwndActivatedByUs)
-            {
-                // active window is not the one we set active:
-                // this probably means that some new
-                // window popped up which we haven't noticed
-                // and was explicitly made active either by the
-                // shell or by an application, so we use this
-                // for the below checks. Otherwise, sliding focus
-                // would be disabled after a new window has popped
-                // up until the mouse was moved over a new frame window.
-                G_hwndLastFrameUnderMouse = hwndActiveNow;
-                G_hwndLastSubframeUnderMouse = NULLHANDLE;
-                G_HookData.hwndActivatedByUs = hwndActiveNow;
-
-                fStopTimers = TRUE;
-                        // this will be overridden if we start a new
-                        // timer below; but just in case an old timer
-                        // might still be running V0.9.4 (2000-08-03) [umoeller]
-            }
-        }
-
-        if (fMouseMoved)            // has mouse really moved?
-        {
-            // OK:
-            HWND    hwndDesktopChild = hwnd,
-                    hwndTempParent = NULLHANDLE,
-                    hwndFrameInBetween = NULLHANDLE;
-            HWND    hwndFocusNow = WinQueryFocus(HWND_DESKTOP);
-            CHAR    szClassName[200],
-                    szWindowText[200];
-
-            // check 2: make sure mouse is not captured
-            if (WinQueryCapture(HWND_DESKTOP) != NULLHANDLE)
-            {
-                // stop timers and quit
-                fStopTimers = TRUE;
-                break;
-            }
-
-            // check 3: quit if menu has the focus
-            if (hwndFocusNow)
-            {
-                CHAR    szFocusClass[MAXNAMEL+4] = "";
-                WinQueryClassName(hwndFocusNow,
-                                  sizeof(szFocusClass),
-                                  szFocusClass);
-
-                if (strcmp(szFocusClass, "#4") == 0)
-                {
-                    // menu:
-                    // stop timers and quit
-                    fStopTimers = TRUE;
-                    break;
-                }
-            }
-
-            // now climb up the parent window hierarchy of the
-            // window under the mouse (first: hwndDesktopChild)
-            // until we reach the Desktop; the last window we
-            // had is then in hwndDesktopChild
-            hwndTempParent = WinQueryWindow(hwndDesktopChild, QW_PARENT);
-            while (     (hwndTempParent != G_HookData.hwndPMDesktop)
-                     && (hwndTempParent != NULLHANDLE)
-                  )
-            {
-                WinQueryClassName(hwndDesktopChild,
-                                  sizeof(szClassName), szClassName);
-                if (strcmp(szClassName, "#1") == 0)
-                    // it's a frame:
-                    hwndFrameInBetween = hwndDesktopChild;
-                hwndDesktopChild = hwndTempParent;
-                hwndTempParent = WinQueryWindow(hwndDesktopChild, QW_PARENT);
-            }
-
-            if (hwndFrameInBetween == hwndDesktopChild)
-                hwndFrameInBetween = NULLHANDLE;
-
-            // hwndDesktopChild now has the window which we need to activate
-            // (the topmost parent under the desktop of the window under the mouse)
-
-            WinQueryClassName(hwndDesktopChild,
-                              sizeof(szClassName), szClassName);
-
-            // check 4: skip certain window classes
-
-            if (    (!strcmp(szClassName, "#4"))
-                            // menu
-                 || (!strcmp(szClassName, "#7"))
-                         // listbox: as a desktop child, this must be a
-                         // a drop-down box which is currently open
-               )
-            {
-                // stop timers and quit
-                fStopTimers = TRUE;
-                break;
-            }
-
-            WinQueryWindowText(hwndDesktopChild, sizeof(szWindowText), szWindowText);
-            if (strstr(szWindowText, "Seamless"))
-                // ignore seamless Win-OS/2 menus; these are separate windows!
-            {
-                // stop timers and quit
-                fStopTimers = TRUE;
-                break;
-            }
-
-            // OK, enough checks.
-            // Now let's do the sliding focus if
-            // 1) the desktop window (hwndDesktopChild, highest parent) changed or
-            // 2) if hwndDesktopChild has several subframes and the subframe changed:
-
-            if (hwndDesktopChild)
-                if (    (hwndDesktopChild != G_hwndLastFrameUnderMouse)
-                     || (   (hwndFrameInBetween != NULLHANDLE)
-                         && (hwndFrameInBetween != G_hwndLastSubframeUnderMouse)
-                        )
-                   )
-                {
-                    // OK, mouse moved to a new desktop window:
-                    // store that for next time
-                    G_hwndLastFrameUnderMouse = hwndDesktopChild;
-                    G_hwndLastSubframeUnderMouse = hwndFrameInBetween;
-
-                    // notify daemon of the change;
-                    // it is the daemon which does the rest
-                    // (timer handling, window activation etc.)
-                    WinPostMsg(G_HookData.hwndDaemonObject,
-                               XDM_SLIDINGFOCUS,
-                               (MPARAM)hwndFrameInBetween,  // can be NULLHANDLE
-                               (MPARAM)hwndDesktopChild);
-                    fStopTimers = FALSE;
-                }
-        }
-    } while (FALSE); // end do
-
-    if (fStopTimers)
-        WinPostMsg(G_HookData.hwndDaemonObject,
-                   XDM_SLIDINGFOCUS,
-                   (MPARAM)NULLHANDLE,
-                   (MPARAM)NULLHANDLE);     // stop timers
-}
-
-/*
- *@@ WMMouseMove_SlidingMenus:
- *      this gets called when hookInputHook intercepts
- *      WM_MOUSEMOVE and the window under the mouse is
- *      a menu control to do automatic menu selection.
- *
- *      This implementation is slightly tricky. ;-)
- *      We cannot query the MENUITEM data of a menu
- *      which does not belong to the calling process
- *      because this message needs access to the caller's
- *      storage. I have tried this, this causes every
- *      application to crash as soon as a menu item
- *      gets selected.
- *
- *      Fortunately, Roman Stangl has found a cool way
- *      of doing this, so I could build on that.
- *
- *      So now we start a timer in the daemon which will
- *      post a special WM_MOUSEMOVE message back to us
- *      which can only be received by us
- *      (with the same HWND and MP1 as the original
- *      WM_MOUSEMOVE, but a special flag in MP2). When
- *      that special message comes in, we can select
- *      the menu item.
- *
- *      In addition to Roman's code, we always change the
- *      MIA_HILITE attribute of the current menu item
- *      under the mouse, so the menu hilite follows the
- *      mouse immediately, even though submenus may be
- *      opened delayed.
- *
- *      We return TRUE if the msg is to be swallowed.
- *
- *      Inspired by code from ProgramCommander (W) Roman Stangl.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- *@@changed V0.9.6 (2000-10-27) [pr]: fixed un-hilite problems
- *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
- *@@changed V0.9.9 (2001-03-10) [umoeller]: fixed cc sensitivity and various selection issues
- *@@changed V0.9.12 (2001-05-21) [lafaix]: fixed incorrect vertical pos check
- *@@changed V0.9.12 (2001-05-22) [lafaix]: removed delay for menu bar entries
- *@@changed V0.9.12 (2001-05-25) [lafaix]: reworked logic to fix various selection issues
- */
-
-BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse, from hookInputHook
-                              MPARAM mp1,
-                              MPARAM mp2)
-{
-    static BOOL     G_bDelayProcessed = FALSE,
-                    G_bOpen = FALSE;
-
-    BOOL            brc = FALSE;        // per default, don't swallow msg
-
-    // check for special message which was posted from
-    // the daemon when the "delayed sliding menu" timer
-    // elapsed:
-    if (    // current mp1 the same as timer mp1?
-            (mp1 == G_HookData.mpDelayedSlidingMenuMp1)
-            // special code from daemon in mp2?
-         && (SHORT1FROMMP(mp2) == HT_DELAYEDSLIDINGMENU)
-       )
-    {
-        // yes, special message:
-
-        // get current window under mouse pointer; we
-        // must ignore the timer msg if the user has
-        // moved the mouse away from the menu since
-        // the timer was started
-        HWND    hwndUnderMouse = WinWindowFromPoint(HWND_DESKTOP,
-                                                    &G_ptlMousePosDesktop,
-                                                    TRUE);  // enum desktop children
-        // start V0.9.12 (2001-05-25) [lafaix]:
-        if (    (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
-             && (hwndCurrentMenu == hwndUnderMouse)
-             && (!G_bDelayProcessed)
-           )
-        {
-            // select menu item under the mouse
-            SelectMenuItem(hwndCurrentMenu,
-                           G_HookData.sMenuItemIndexUnderMouse,
-                           G_bOpen);
-                           // stored from last run
-                           // when timer was started...
-            G_bDelayProcessed = TRUE;
-        }
-        else
-            // do nothing, but reset location cache
-            G_HookData.hwndMenuUnderMouse = NULLHANDLE;
-
-        // V0.9.12 (2001-05-25) [lafaix]:
-        // the above is strictly equivalent to the following code, except
-        // that it's simpler and faster.
-        /*
-        CHAR    szClassUnderMouse[100];
-        if (WinQueryClassName(hwndUnderMouse, sizeof(szClassUnderMouse), szClassUnderMouse))
-        {
-            if (strcmp(szClassUnderMouse, "#4") == 0)
-            {
-                if (    // timer menu hwnd same as last menu under mouse?
-                        (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
-                        // last WM_MOUSEMOVE hwnd same as last menu under mouse?
-                     && (G_hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
-                        // timer menu hwnd same as current window under mouse?
-                     && (hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
-                    )
-                {
-                    // check if the menu still exists
-                    // if (WinIsWindow(hwndCurrentMenu))
-                    // and if it's visible; the menu
-                    // might have been hidden by now because
-                    // the user has already proceeded to
-                    // another submenu
-                    if (WinIsWindowVisible(hwndCurrentMenu))
-                    {
-                        // OK:
-                        brc = TRUE;
-                    }
-                }
-            }
-        }
-
-        if (brc)
-        {
-            if (!G_bDelayProcessed)
-            {
-                // select menu item under the mouse
-                SelectMenuItem(hwndCurrentMenu,
-                               G_HookData.sMenuItemIndexUnderMouse,
-                               G_bOpen);
-                               // stored from last run
-                               // when timer was started...
-                G_bDelayProcessed = TRUE;
-            }
-        }
-        */ // @@@
-
-        // V0.9.11 (2001-04-25) [umoeller]:
-        // the following is no longer needed with the new hilite code above
-        /* else
-        {
-            if (G_HookData.hwndMenuUnderMouse)
-            {
-                // remove previously hilited but not selected entry,
-                // as it is unknown to PM
-                SHORT   sItemCount
-                    = (SHORT)WinSendMsg(G_HookData.hwndMenuUnderMouse,
-                                        MM_QUERYITEMCOUNT,
-                                        0, 0);
-                HiliteMenuItem(G_HookData.hwndMenuUnderMouse,
-                               sItemCount,
-                               // G_HookData.sMenuItemUnderMouse,
-                               FALSE);
-                G_HookData.hwndMenuUnderMouse = 0;
-                sLastHiliteID = MIT_NONE;
-            }
-        } */ // @@@
-    }
-    else
-    {
-        // not from daemon, but regular WM_MOUSEMOVE:
-
-        // check if anything is currently selected in the menu
-        // (this rules out main menu bars if user hasn't clicked
-        // into them yet)
-        ULONG   ulMenuStyle = WinQueryWindowULong(hwndCurrentMenu, QWL_STYLE);
-        USHORT  usItemCount = (USHORT)WinSendMsg(hwndCurrentMenu,
-                                                 MM_QUERYITEMCOUNT,
-                                                 0, 0),
-                usItemIndex = 0,
-                usOldItemIndex,
-                usNewItemIndex;
-
-        BOOL    bActive = FALSE,
-                bFound = FALSE;
-        LONG    lCurrentXRight;
-
-        // loop through all items in the current menu
-        // and query each item's rectangle
-        for (usItemIndex = 0;
-             usItemIndex < usItemCount;
-             usItemIndex++)
-        {
-            RECTL       rectlItem;
-
-            USHORT usCurrentItemIdentity = (USHORT)WinSendMsg(hwndCurrentMenu,
-                                                              MM_ITEMIDFROMPOSITION,
-                                                              MPFROMSHORT(usItemIndex),
-                                                              NULL);
-            #ifndef MM_QUERYITEMATTRBYPOS
-                #define MM_QUERYITEMATTRBYPOS 0x01f5
-            #endif
-
-            USHORT usAttr = (USHORT)WinSendMsg(hwndCurrentMenu,
-                                               MM_QUERYITEMATTRBYPOS,
-                                               MPFROMSHORT(usItemIndex),
-                                               MPFROMSHORT(MIA_HILITED));
-
-            if (usAttr == MIA_HILITED)
-            {
-                // this menu contained a selected entry, so it was active
-                bActive = TRUE;
-                usOldItemIndex = usItemIndex;
-            }
-
-            // get the menuentry's rectangle to test if it covers the
-            // current mouse pointer position
-            WinSendMsg(hwndCurrentMenu,
-                       MM_QUERYITEMRECT,
-                       MPFROM2SHORT(usCurrentItemIdentity,
-                                    FALSE),
-                       MPFROMP(&rectlItem));
-
-            // V0.9.9 (2001-03-10) [umoeller]: moved "conditional casc." stuff down
-
-            if (    (G_ptsMousePosWin.x > rectlItem.xLeft)
-                 && (G_ptsMousePosWin.x <= rectlItem.xRight)
-                 && (G_ptsMousePosWin.y >= rectlItem.yBottom) // V0.9.12 (2001-05-21) [lafaix]
-                 && (G_ptsMousePosWin.y < rectlItem.yTop)     // V0.9.12 (2001-05-21) [lafaix]
-               )
-            {
-                lCurrentXRight = rectlItem.xRight;
-                usNewItemIndex = usItemIndex;
-                bFound = TRUE;
-            }
-
-            // we've found what we were looking for ..
-            if (bActive && bFound)
-                break;
-
-        } // end for (sItemIndex = 0; ...
-
-        if (bActive && bFound)
-        {
-            BOOL    fSelect = TRUE;
-
-            // do extra checks if "cc sensitivity" on;
-            // moved this here V0.9.9 (2001-03-10) [umoeller]
-            // so that we can always hilite, but we do not always
-            // select
-            if (G_HookData.HookConfig.fConditionalCascadeSensitive)
-            {
-                // check if the pointer position is within the item's
-                // rectangle or just the right hand half if it is a popup
-                // menu and has conditional cascade submenus
-                MENUITEM    menuitemCurrent;
-                if (WinSendMsg(hwndCurrentMenu,
-                               MM_QUERYITEMBYPOS,
-                               MPFROMSHORT(usNewItemIndex),
-                               MAKE_16BIT_POINTER(&menuitemCurrent)))
-                {
-                    if (menuitemCurrent.afStyle & MIS_SUBMENU)
-                    {
-                        ULONG ulStyle =
-                            WinQueryWindowULong(menuitemCurrent.hwndSubMenu,
-                                                QWL_STYLE);
-                        if (ulStyle & MS_CONDITIONALCASCADE)
-                            // is "cc" menu:
-                            // select only if mouse is on the right
-                            // (approximately above the cc button)
-                            if (G_ptsMousePosWin.x < lCurrentXRight - 20)
-                                // not over button: do not select then
-                                fSelect = FALSE;
-                    }
-                }
-            }
-
-            // do we have a submenu delay?
-            if (    (G_HookData.HookConfig.ulSubmenuDelay)
-                 && ((ulMenuStyle & MS_ACTIONBAR) != MS_ACTIONBAR) // V0.9.12 (2001-05-22) [lafaix]
-               )
-            {
-                // delayed:
-                // this is a three-step process:
-                // 1)  If we used MM_SELECTITEM on the item, this
-                //     would immediately open the subwindow (if the
-                //     item represents a submenu).
-                //     So instead, we first need to manually change
-                //     the hilite attribute of the menu item under
-                //     the mouse so that the item under the mouse is
-                //     always immediately hilited (without being
-                //     "selected"; PM doesn't know what we're doing here!)
-
-                // V0.9.9 (2001-03-10) [umoeller]
-                // Note that we even hilite the menu item for
-                // conditional cascade submenus if "cc sensitivity"
-                // is on. We only differentiate for _selection_ below now.
-
-                // has item changed since last time?
-                if (usNewItemIndex != usOldItemIndex)
-                    if (G_HookData.HookConfig.fMenuImmediateHilite)
-                    {
-                        HiliteMenuItem(hwndCurrentMenu,
-                                       usNewItemIndex);
-                    }
-
-                // 2)  We then post the daemon a message to start
-                //     a timer. Before that, we store the menu item
-                //     data in HOOKDATA so we can re-use it when
-                //     the timer elapses.
-
-                // V0.9.12 (2001-05-25) [lafaix]: we only post the
-                // message if something has changed
-                if (    (usNewItemIndex != usOldItemIndex)
-                     || (G_HookData.hwndMenuUnderMouse != hwndCurrentMenu)
-                     || (G_HookData.sMenuItemIndexUnderMouse != usNewItemIndex)
-                     || (fSelect && (G_bOpen == FALSE))
-                   )
-                {
-                    // prepare data for delayed selection:
-                    // when the special WM_MOUSEMOVE comes in,
-                    // we check against all these.
-                    // a) store mp1 for comparison later
-                    G_HookData.mpDelayedSlidingMenuMp1 = mp1;
-                    // b) store menu
-                    G_HookData.hwndMenuUnderMouse = hwndCurrentMenu;
-                    // c) store menu item
-                    G_HookData.sMenuItemIndexUnderMouse = usNewItemIndex;
-                    // d) enable submenu delay processing
-                    G_bDelayProcessed = FALSE;
-                    // e) record fSelect state
-                    G_bOpen = fSelect;
-                    // f) notify daemon of the change, which
-                    // will start the timer and post WM_MOUSEMOVE
-                    // back to us
-                    WinPostMsg(G_HookData.hwndDaemonObject,
-                               XDM_SLIDINGMENU,
-                               mp1,
-                               0);
-
-                    // 3)  When the timer elapses, the daemon posts a special
-                    //     WM_MOUSEMOVE to the same menu control for which
-                    //     the timer was started. See the "special message"
-                    //     processing on top. We then immediately select
-                    //     the menu item.
-                }
-            } // end if (HookData.HookConfig.ulSubmenuDelay)
-            else
-            {
-                // V0.9.12 (2001-05-25) [lafaix]: disable timer now, and update
-                // hookdata so that we know the mouse has moved (we must do that,
-                // cause we may be over an action bar)
-                G_bDelayProcessed = TRUE;
-                G_HookData.hwndMenuUnderMouse = hwndCurrentMenu;
-
-                // no delay, but immediately:
-                if (usOldItemIndex != usNewItemIndex)
-                    if (fSelect)
-                    {
-                        SelectMenuItem(hwndCurrentMenu,
-                                       usNewItemIndex,
-                                       fSelect);
-                    }
-            }
-        }
-    }
-
-    return (brc);
-}
-
-/*
- *@@ WMMouseMove_AutoHideMouse:
- *      this gets called when hookInputHook intercepts
- *      WM_MOUSEMOVE to automatically hide the mouse
- *      pointer.
- *
- *      We start a timer here which posts WM_TIMER
- *      to fnwpDaemonObject in the daemon. So it's the
- *      daemon which actually hides the mouse.
- *
- *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
- *
- *@@added V0.9.1 (99-12-03) [umoeller]
- *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
- */
-
-VOID WMMouseMove_AutoHideMouse(VOID)
-{
-    // is the timer currently running?
-    if (G_HookData.idAutoHideTimer != NULLHANDLE)
-    {
-        // stop the running async timer
-        WinStopTimer(G_HookData.habDaemonObject,
-                     G_HookData.hwndDaemonObject,
-                     G_HookData.idAutoHideTimer);
-        G_HookData.idAutoHideTimer = NULLHANDLE;
-    }
-
-    // show the mouse pointer now
-    if (G_HookData.fMousePointerHidden)
-    {
-        WinShowPointer(HWND_DESKTOP, TRUE);
-        G_HookData.fMousePointerHidden = FALSE;
-    }
-
-    // (re)start timer
-    if (G_HookData.HookConfig.fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
-        G_HookData.idAutoHideTimer =
-            WinStartTimer(G_HookData.habDaemonObject,
-                          G_HookData.hwndDaemonObject,
-                          TIMERID_AUTOHIDEMOUSE,
-                          (G_HookData.HookConfig.ulAutoHideDelay + 1) * 1000);
-}
-
-/*
- *@@ WMMouseMove:
- *
- *@@added V0.9.3 (2000-04-30) [umoeller]
- *@@changed V0.9.3 (2000-04-30) [umoeller]: pointer was hidden while MB3-dragging; fixed
- *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed sliding menus without mouse moving
- *@@changed V0.9.5 (2000-08-22) [umoeller]: sliding focus was always on, working half way; fixed
- *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
- *@@changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
- *@@changed V0.9.9 (2001-03-15) [lafaix]: added AutoScroll support
- */
-
-BOOL WMMouseMove(PQMSG pqmsg,
-                 PBOOL pfRestartAutoHide)      // out: set to TRUE if auto-hide must be processed
-{
-    BOOL    brc = FALSE;        // swallow?
-    BOOL    fGlobalMouseMoved = FALSE,
-            fWinChanged = FALSE;
-
-    do // allow break's
-    {
-        HWND    hwndCaptured = WinQueryCapture(HWND_DESKTOP);
-
-        // store mouse pos in win coords
-        G_ptsMousePosWin.x = SHORT1FROMMP(pqmsg->mp1);
-        G_ptsMousePosWin.y = SHORT2FROMMP(pqmsg->mp1);
-
-        // has position changed since last WM_MOUSEMOVE?
-        // PM keeps posting WM_MOUSEMOVE even if the
-        // mouse hasn't moved, so we can drop unnecessary
-        // processing...
-        if (G_ptlMousePosDesktop.x != pqmsg->ptl.x)
-        {
-            // store x mouse pos in Desktop coords
-            G_ptlMousePosDesktop.x = pqmsg->ptl.x;
-            fGlobalMouseMoved = TRUE;
-        }
-        if (G_ptlMousePosDesktop.y != pqmsg->ptl.y)
-        {
-            // store y mouse pos in Desktop coords
-            G_ptlMousePosDesktop.y = pqmsg->ptl.y;
-            fGlobalMouseMoved = TRUE;
-        }
-        if (pqmsg->hwnd != G_hwndUnderMouse)
-        {
-            // mouse has moved to a different window:
-            // this can happen even if the coordinates
-            // are the same, because PM posts WM_MOUSEMOVE
-            // with changing window positions also to
-            // allow an application to change pointers
-            G_hwndUnderMouse = pqmsg->hwnd;
-            fWinChanged = TRUE;
-        }
-
-        if (    (fGlobalMouseMoved)
-             || (fWinChanged)
-           )
-        {
-            BYTE    bHotCorner = 0;
-
-            /*
-             * MB3 scroll
-             *
-             */
-
-            // are we currently in scrolling mode
-            if (    (    (G_HookData.HookConfig.fMB3Scroll)
-                      || (G_HookData.bAutoScroll)
-                    )
-                 && (G_HookData.hwndCurrentlyScrolling)
-               )
-            {
-                // simulate mouse capturing by passing the scrolling
-                // window, no matter what hwnd came in with WM_MOUSEMOVE
-                brc = WMMouseMove_MB3Scroll(G_HookData.hwndCurrentlyScrolling);
-                break;  // skip all the rest
-            }
-
-            // make sure that the mouse is not currently captured
-            if (hwndCaptured == NULLHANDLE)
-            {
-                CHAR    szClassUnderMouse[200];
-
-                WinQueryClassName(pqmsg->hwnd,
-                                  sizeof(szClassUnderMouse),
-                                  szClassUnderMouse);
-
-                /*
-                 * sliding focus:
-                 *
-                 */
-
-                if (G_HookData.HookConfig.fSlidingFocus)
-                {
-                    // sliding focus enabled?
-                    // V0.9.5 (2000-08-22) [umoeller]
-                    WMMouseMove_SlidingFocus(pqmsg->hwnd,
-                                             fGlobalMouseMoved,
-                                             szClassUnderMouse);
-                }
-
-                if (fGlobalMouseMoved)
-                {
-                    // only if mouse has moved, not
-                    // on window change:
-
-                    /*
-                     * hot corners:
-                     *
-                     *changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
-                     */
-
-                    // check if mouse is in one of the screen
-                    // corners
-                    if (G_ptlMousePosDesktop.x == 0)
-                    {
-                        if (G_ptlMousePosDesktop.y == 0)
-                            // lower left corner:
-                            bHotCorner = 1;
-                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                            // top left corner:
-                            bHotCorner = 2;
-                        // or maybe left screen border:
-                        // make sure mouse y is in the middle third of the screen
-                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
-                                )
-                            bHotCorner = 6; // left border
-                    }
-                    else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
-                    {
-                        if (G_ptlMousePosDesktop.y == 0)
-                            // lower right corner:
-                            bHotCorner = 3;
-                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                            // top right corner:
-                            bHotCorner = 4;
-                        // or maybe right screen border:
-                        // make sure mouse y is in the middle third of the screen
-                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
-                                )
-                            bHotCorner = 7; // right border
-                    }
-                    else
-                        // more checks for top and bottom screen border:
-                        if (    (G_ptlMousePosDesktop.y == 0)   // bottom
-                             || (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1) // top
-                           )
-                        {
-                            if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                 && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
-                               )
-                                if (G_ptlMousePosDesktop.y == 0)
-                                    // bottom border:
-                                    bHotCorner = 8;
-                                else
-                                    // top border:
-                                    bHotCorner = 5;
-                        }
-
-                    // is mouse in a screen corner?
-                    if (bHotCorner != 0)
-                        // yes:
-                        // notify thread-1 object window, which
-                        // will start the user-configured action
-                        // (if any)
-                        WinPostMsg(G_HookData.hwndDaemonObject,
-                                   XDM_HOTCORNER,
-                                   (MPARAM)bHotCorner,
-                                   (MPARAM)NULL);
-
-                    /*
-                     * sliding menus:
-                     *    only if mouse has moved globally
-                     *    V0.9.4 (2000-08-03) [umoeller]
-                     */
-
-                    if (G_HookData.HookConfig.fSlidingMenus)
-                        if (strcmp(szClassUnderMouse, "#4") == 0)
-                            // window under mouse is a menu:
-                            WMMouseMove_SlidingMenus(pqmsg->hwnd,
-                                                     pqmsg->mp1,
-                                                     pqmsg->mp2);
-                } // end if (fMouseMoved)
-
-            } // if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-        } // end if (fMouseMoved)
-    } while (FALSE);
-
-    if (fGlobalMouseMoved)
-    {
-        /*
-         * auto-hide pointer:
-         *
-         */
-
-        // V0.9.9 (2001-01-29) [umoeller]
-        *pfRestartAutoHide = TRUE;
-    }
-
-    return (brc);
-}
-
-/******************************************************************
- *                                                                *
- *  Input hook -- miscellaneous processing                        *
- *                                                                *
- ******************************************************************/
-
-/*
- *@@ WMButton_SystemMenuContext:
- *      this gets called from hookInputHook upon
- *      MB2 clicks to copy a window's system menu
- *      and display it as a popup menu on the
- *      title bar.
- *
- *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
- */
-
-VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
-{
-    POINTL      ptlMouse; // mouse coordinates
-    HWND        hwndFrame; // handle of the frame window (parent)
-
-    // get mouse coordinates (absolute coordinates)
-    WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
-    // query parent of title bar window (frame window)
-    hwndFrame = WinQueryWindow(hwnd, QW_PARENT);
-    if (hwndFrame)
-    {
-        // query handle of system menu icon (action bar style)
-        HWND hwndSysMenuIcon = WinWindowFromID(hwndFrame, FID_SYSMENU);
-        if (hwndSysMenuIcon)
-        {
-            HWND        hNewMenu; // handle of our copied menu
-            HWND        SysMenuHandle;
-
-            // query item id of action bar system menu
-            SHORT id = (SHORT)(USHORT)(ULONG)WinSendMsg(hwndSysMenuIcon,
-                                                        MM_ITEMIDFROMPOSITION,
-                                                        MPFROMSHORT(0), 0);
-            // query item id of action bar system menu
-            MENUITEM    mi = {0};
-            CHAR        szItemText[100]; // buffer for menu text
-            WinSendMsg(hwndSysMenuIcon, MM_QUERYITEM,
-                       MPFROM2SHORT(id, FALSE),
-                       MPFROMP(&mi));
-            // submenu is our system menu
-            SysMenuHandle = mi.hwndSubMenu;
-
-            // create a new empty menu
-            hNewMenu = WinCreateMenu(HWND_OBJECT, NULL);
-            if (hNewMenu)
-            {
-                // query how menu entries the original system menu has
-                SHORT SysMenuItems = (SHORT)WinSendMsg(SysMenuHandle,
-                                                       MM_QUERYITEMCOUNT,
-                                                       0, 0);
-                ULONG i;
-                // loop through all entries in the original system menu
-                for (i = 0; i < SysMenuItems; i++)
-                {
-                    id = (SHORT)(USHORT)(ULONG)WinSendMsg(SysMenuHandle,
-                                                          MM_ITEMIDFROMPOSITION,
-                                                          MPFROMSHORT(i),
-                                                          0);
-                    // get this menu item into mi buffer
-                    WinSendMsg(SysMenuHandle,
-                               MM_QUERYITEM,
-                               MPFROM2SHORT(id, FALSE),
-                               MPFROMP(&mi));
-                    // query text of this menu entry into our buffer
-                    WinSendMsg(SysMenuHandle,
-                               MM_QUERYITEMTEXT,
-                               MPFROM2SHORT(id, sizeof(szItemText)-1),
-                               MPFROMP(szItemText));
-                    // add this entry to our new menu
-                    WinSendMsg(hNewMenu,
-                               MM_INSERTITEM,
-                               MPFROMP(&mi),
-                               MPFROMP(szItemText));
-                }
-
-                // display popup menu
-                WinPopupMenu(HWND_DESKTOP, hwndFrame, hNewMenu,
-                             ptlMouse.x, ptlMouse.y, 0x8007, PU_HCONSTRAIN |
-                             PU_VCONSTRAIN | PU_MOUSEBUTTON1 |
-                             PU_MOUSEBUTTON2 | PU_KEYBOARD);
-            }
-        }
-    }
-}
-
-/*
- *@@ WMChord_WinList:
- *      this displays the window list at the current
- *      mouse position when WM_CHORD comes in.
- *
- *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
- */
-
-VOID WMChord_WinList(VOID)
-{
-    POINTL  ptlMouse;       // mouse coordinates
-    SWP     WinListPos;     // position of window list window
-    LONG WinListX, WinListY; // new ordinates of window list window
-    // LONG DesktopCX, DesktopCY; // width and height of screen
-    // get mouse coordinates (absolute coordinates)
-    WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
-    // get position of window list window
-    WinQueryWindowPos(G_HookData.hwndWindowList,
-                      &WinListPos);
-    // calculate window list position (mouse pointer is center)
-    WinListX = ptlMouse.x - (WinListPos.cx / 2);
-    if (WinListX < 0)
-        WinListX = 0;
-    WinListY = ptlMouse.y - (WinListPos.cy / 2);
-    if (WinListY < 0)
-        WinListY = 0;
-    if (WinListX + WinListPos.cx > G_HookData.lCXScreen)
-        WinListX = G_HookData.lCXScreen - WinListPos.cx;
-    if (WinListY + WinListPos.cy > G_HookData.lCYScreen)
-        WinListY = G_HookData.lCYScreen - WinListPos.cy;
-    // set window list window to calculated position
-    WinSetWindowPos(G_HookData.hwndWindowList, HWND_TOP,
-                    WinListX, WinListY, 0, 0,
-                    SWP_MOVE | SWP_SHOW | SWP_ZORDER);
-    // now make it the active window
-    WinSetActiveWindow(HWND_DESKTOP,
-                       G_HookData.hwndWindowList);
-}
-
-/******************************************************************
- *                                                                *
- *  Input hook (main function)                                    *
- *                                                                *
  ******************************************************************/
 
 /*
@@ -2865,7 +1064,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          *      if mb2 is clicked on titlebar,
          *      show system menu as context menu.
          *
-         *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
+         *      Based on ideas from WarpEnhancer by Achim HasenmÅller.
          */
 
         case WM_BUTTON2DOWN:
@@ -2923,7 +1122,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          *      is never received in VIO windows, so for those, we'll
          *      still have to use WM_BUTTON3DOWN.
          *
-         *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
+         *      Based on ideas from WarpEnhancer by Achim HasenmÅller.
          */
 
         case WM_BUTTON3MOTIONSTART: // mouse button 3 was pressed down
@@ -3032,7 +1231,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          *
          *      Also needed for MB3 double-clicks on minimized windows.
          *
-         *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
+         *      Based on ideas from WarpEnhancer by Achim HasenmÅller.
          *      Contributed for V0.9.4 by Lars Erdmann.
          */
 
@@ -3159,7 +1358,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          *      if enabled, we show the window list at the
          *      current mouse position.
          *
-         *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
+         *      Based on ideas from WarpEnhancer by Achim HasenmÅller.
          */
 
         case WM_CHORD:
@@ -3209,437 +1408,10 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 }
 
 /******************************************************************
- *                                                                *
- *  Pre-accelerator hook                                          *
- *                                                                *
+ *
+ *  Pre-accelerator hook
+ *
  ******************************************************************/
-
-/*
- *@@ WMChar_FunctionKeys:
- *      returns TRUE if the specified key is one of
- *      the user-defined XWP function keys.
- *
- *@@added V0.9.3 (2000-04-20) [umoeller]
- */
-
-BOOL WMChar_FunctionKeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
-                         UCHAR ucScanCode) // in: CHAR4FROMMP(mp1) from WM_CHAR
-{
-    // set return value:
-    // per default, pass message on to next hook or application
-    BOOL brc = FALSE;
-
-    // scan code valid?
-    if (usFlags & KC_SCANCODE)
-    {
-        // request access to shared memory
-        // with function key definitions:
-        PFUNCTIONKEY paFunctionKeysShared = NULL;
-        APIRET arc = DosGetNamedSharedMem((PVOID*)(&paFunctionKeysShared),
-                                          SHMEM_FUNCTIONKEYS,
-                                          PAG_READ | PAG_WRITE);
-
-        // _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
-
-        _Pmpf(("WMChar_FunctionKeys: Searching for scan code 0x%lX", ucScanCode));
-
-        if (arc == NO_ERROR)
-        {
-            // search function keys array
-            ULONG   ul = 0;
-            PFUNCTIONKEY pKeyThis = paFunctionKeysShared;
-            for (ul = 0;
-                 ul < G_cFunctionKeys;
-                 ul++)
-            {
-                _Pmpf(("  funckey %d is scan code 0x%lX", ul, pKeyThis->ucScanCode));
-
-                if (pKeyThis->ucScanCode == ucScanCode)
-                {
-                    // scan codes match:
-                    // return "found" flag
-                    brc = TRUE;
-                    break;  // for
-                }
-
-                pKeyThis++;
-            }
-
-            DosFreeMem(paFunctionKeysShared);
-        } // end if DosGetNamedSharedMem
-
-    } // end if (usFlags & KC_SCANCODE)
-
-    return (brc);
-}
-
-/*
- *@@ WMChar_Hotkeys:
- *      this gets called from hookPreAccelHook to
- *      process WM_CHAR messages.
- *
- *      As opposed to folder hotkeys (folder.c),
- *      for the global object hotkeys, we need a more
- *      sophisticated processing, because we cannot rely
- *      on the usch field, which is different between
- *      PM and VIO sessions (apparently the translation
- *      is taking place differently for VIO sessions).
- *
- *      As a result, we can only use the scan code to
- *      identify hotkeys. See GLOBALHOTKEY for details.
- *
- *      Since we use a dynamically allocated array of
- *      GLOBALHOTKEY structures, to make this thread-safe,
- *      we have to use shared memory and a global mutex
- *      semaphore. See hookSetGlobalHotkeys. While this
- *      function is being called, the global mutex is
- *      requested, so this is protected.
- *
- *      If this returns TRUE, the msg is swallowed. We
- *      return TRUE if we found a hotkey.
- *
- *      This function gets called for BOTH the key-down and
- *      the key-up message. As usual with PM, applications
- *      should react to key-down messages only. However, since
- *      we swallow the key-down message if a hotkey was found
- *      (and post XDM_HOTKEYPRESSED to the daemon object window),
- *      we should swallow the key-up msg also, because otherwise
- *      the application gets a key-up msg without a previous
- *      key-down event, which might lead to confusion.
- *
- *@@changed V0.9.3 (2000-04-10) [umoeller]: moved debug code to hook
- *@@changed V0.9.3 (2000-04-10) [umoeller]: removed usch and usvk params
- *@@changed V0.9.3 (2000-04-19) [umoeller]: added XWP function keys support
- *@@changed V0.9.9 (2001-03-05) [umoeller]: removed break for multiple hotkey assignments
- */
-
-BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
-                    UCHAR ucScanCode) // in: CHAR4FROMMP(mp1) from WM_CHAR
-{
-    // set return value:
-    // per default, pass message on to next hook or application
-    BOOL brc = FALSE;
-
-    // request access to shared memory
-    // with hotkey definitions:
-    PGLOBALHOTKEY pGlobalHotkeysShared = NULL;
-    APIRET arc = DosGetNamedSharedMem((PVOID*)(&pGlobalHotkeysShared),
-                                      SHMEM_HOTKEYS,
-                                      PAG_READ | PAG_WRITE);
-
-    _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
-
-    if (arc == NO_ERROR)
-    {
-        // OK, we got the shared hotkeys:
-        USHORT  us;
-
-        PGLOBALHOTKEY pKeyThis = pGlobalHotkeysShared;
-
-        // filter out unwanted flags;
-        // we used to check for KC_VIRTUALKEY also, but this doesn't
-        // work with VIO sessions, where this is never set V0.9.3 (2000-04-10) [umoeller]
-        USHORT usFlags = usFlagsOrig & (KC_CTRL | KC_ALT | KC_SHIFT);
-
-        _Pmpf(("  Checking %d hotkeys for scan code 0x%lX",
-                G_cGlobalHotkeys,
-                ucScanCode));
-
-        // now go through the shared hotkey list and check
-        // if the pressed key was assigned an action to
-        us = 0;
-        for (us = 0;
-             us < G_cGlobalHotkeys;
-             us++)
-        {
-            _Pmpf(("    item %d: scan code %lX", us, pKeyThis->ucScanCode));
-
-            // when comparing,
-            // filter out KC_VIRTUALKEY, because this is never set
-            // in VIO sessions... V0.9.3 (2000-04-10) [umoeller]
-            if (   ((pKeyThis->usFlags & (KC_CTRL | KC_ALT | KC_SHIFT))
-                            == usFlags)
-                && (pKeyThis->ucScanCode == ucScanCode)
-               )
-            {
-                // hotkey found:
-
-                // only for the key-down event,
-                // notify daemon
-                if ((usFlagsOrig & KC_KEYUP) == 0)
-                    WinPostMsg(G_HookData.hwndDaemonObject,
-                               XDM_HOTKEYPRESSED,
-                               (MPARAM)(pKeyThis->ulHandle),
-                               (MPARAM)0);
-
-                // reset return code: swallow this message
-                // (both key-down and key-up)
-                brc = TRUE;
-                // get outta here
-                // break; // for
-                        // removed this V0.9.9 (2001-03-05) [umoeller]
-                        // to allow for multiple hotkey assignments...
-                        // whoever wants to use this!
-            }
-
-            // not found: go for next key to check
-            pKeyThis++;
-        } // end for
-
-        DosFreeMem(pGlobalHotkeysShared);
-    } // end if DosGetNamedSharedMem
-
-    return (brc);
-}
-
-/*
- *@@ WMChar_Main:
- *      WM_CHAR processing in hookPreAccelHook.
- *      This has been extracted with V0.9.3 (2000-04-20) [umoeller].
- *
- *      This requests the global hotkeys semaphore to make the
- *      whole thing thread-safe.
- *
- *      Then, we call WMChar_FunctionKeys to see if the key is
- *      a function key. If so, the message is swallowed in any
- *      case.
- *
- *      Then, we call WMChar_Hotkeys to check if some global hotkey
- *      has been defined for the key (be it a function key or some
- *      other key combo). If so, the message is swallowed.
- *
- *      Third, we check for the PageMage switch-desktop hotkeys.
- *      If one of those is found, we swallow the msg also and
- *      notify PageMage.
- *
- *      That is, the msg is swallowed if it's a function key or
- *      a global hotkey or a PageMage hotkey.
- *
- *@@added V0.9.3 (2000-04-20) [umoeller]
- */
-
-BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
-{
-    // set return value:
-    // per default, pass message on to next hook or application
-    BOOL brc = FALSE;
-
-    USHORT usFlags    = SHORT1FROMMP(pqmsg->mp1);
-    // UCHAR  ucRepeat   = CHAR3FROMMP(mp1);
-    UCHAR  ucScanCode = CHAR4FROMMP(pqmsg->mp1);
-    USHORT usch       = SHORT1FROMMP(pqmsg->mp2);
-    USHORT usvk       = SHORT2FROMMP(pqmsg->mp2);
-
-    // request access to the hotkeys mutex:
-    // first we need to open it, because this
-    // code can be running in any PM thread in
-    // any process
-    APIRET arc = DosOpenMutexSem(NULL,       // unnamed
-                                 &G_hmtxGlobalHotkeys);
-    if (arc == NO_ERROR)
-    {
-        // OK, semaphore opened: request access
-        arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
-                                 TIMEOUT_HMTX_HOTKEYS);
-
-        // _Pmpf(("WM_CHAR WinRequestMutexSem arc: %d", arc));
-
-        if (arc == NO_ERROR)
-        {
-            // OK, we got the mutex:
-            // search the list of function keys
-            BOOL    fIsFunctionKey = WMChar_FunctionKeys(usFlags, ucScanCode);
-                        // returns TRUE if ucScanCode represents one of the
-                        // function keys
-
-            // global hotkeys enabled? This also gets called if PageMage hotkeys are on!
-            if (G_HookData.HookConfig.fGlobalHotkeys)
-            {
-                if (    // process only key-down messages
-                        // ((usFlags & KC_KEYUP) == 0)
-                        // check flags:
-                        // do the list search only if the key could be
-                        // a valid hotkey, that is:
-                        (
-                            // 1) it's a function key
-                            (fIsFunctionKey)
-
-                            // or 2) it's a typical virtual key or Ctrl/alt/etc combination
-                        ||  (     ((usFlags & KC_VIRTUALKEY) != 0)
-                                  // Ctrl pressed?
-                               || ((usFlags & KC_CTRL) != 0)
-                                  // Alt pressed?
-                               || ((usFlags & KC_ALT) != 0)
-                                  // or one of the Win95 keys?
-                               || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                                   && (     (usch == 0xEC00)
-                                        ||  (usch == 0xED00)
-                                        ||  (usch == 0xEE00)
-                                      )
-                                  )
-                            )
-                        )
-                        // always filter out those ugly composite key (accents etc.),
-                        // but make sure the scan code is valid V0.9.3 (2000-04-10) [umoeller]
-                   &&   ((usFlags & (KC_DEADKEY
-                                     | KC_COMPOSITE
-                                     | KC_INVALIDCOMP
-                                     | KC_SCANCODE))
-                          == KC_SCANCODE)
-                   )
-                {
-                      /*
-                 In PM session:
-                                              usFlags         usvk usch       ucsk
-                      Ctrl alone              VK SC CTRL       0a     0        1d
-                      Ctrl-A                     SC CTRL        0    61        1e
-                      Ctrl-Alt                VK SC CTRL ALT   0b     0        38
-                      Ctrl-Alt-A                 SC CTRL ALT    0    61        1e
-
-                      F11 alone               VK SC toggle     2a  8500        57
-                      Ctrl alone              VK SC CTRL       0a     0        1d
-                      Ctrl-Alt                VK SC CTRL ALT   0b     0        38
-                      Ctrl-Alt-F11            VK SC CTRL ALT   2a  8b00        57
-
-                 In VIO session:
-                      Ctrl alone                 SC CTRL       07   0          1d
-                      Ctrl-A                     SC CTRL        0   1e01       1e
-                      Ctrl-Alt                   SC CTRL ALT   07   0          38
-                      Ctrl-Alt-A                 SC CTRL ALT   20   1e00       1e
-
-                      Alt-A                      SC      ALT   20   1e00
-                      Ctrl-E                     SC CTRL        0   3002
-
-                      F11 alone               ignored...
-                      Ctrl alone              VK SC CTRL       07!    0        1d
-                      Ctrl-Alt                VK SC CTRL ALT   07!    0        38
-                      Ctrl-Alt-F11            !! SC CTRL ALT   20! 8b00        57
-
-                      So apparently, for these keyboard combinations, in VIO
-                      sessions, the KC_VIRTUALKEY flag is missing. Strange.
-
-                      */
-
-                    #ifdef _PMPRINTF_
-                            CHAR    szFlags[2000] = "";
-                            if (usFlags & KC_CHAR)                      // 0x0001
-                                strcat(szFlags, "KC_CHAR ");
-                            if (usFlags & KC_VIRTUALKEY)                // 0x0002
-                                strcat(szFlags, "KC_VIRTUALKEY ");
-                            if (usFlags & KC_SCANCODE)                  // 0x0004
-                                strcat(szFlags, "KC_SCANCODE ");
-                            if (usFlags & KC_SHIFT)                     // 0x0008
-                                strcat(szFlags, "KC_SHIFT ");
-                            if (usFlags & KC_CTRL)                      // 0x0010
-                                strcat(szFlags, "KC_CTRL ");
-                            if (usFlags & KC_ALT)                       // 0x0020
-                                strcat(szFlags, "KC_ALT ");
-                            if (usFlags & KC_KEYUP)                     // 0x0040
-                                strcat(szFlags, "KC_KEYUP ");
-                            if (usFlags & KC_PREVDOWN)                  // 0x0080
-                                strcat(szFlags, "KC_PREVDOWN ");
-                            if (usFlags & KC_LONEKEY)                   // 0x0100
-                                strcat(szFlags, "KC_LONEKEY ");
-                            if (usFlags & KC_DEADKEY)                   // 0x0200
-                                strcat(szFlags, "KC_DEADKEY ");
-                            if (usFlags & KC_COMPOSITE)                 // 0x0400
-                                strcat(szFlags, "KC_COMPOSITE ");
-                            if (usFlags & KC_INVALIDCOMP)               // 0x0800
-                                strcat(szFlags, "KC_INVALIDCOMP ");
-                            if (usFlags & KC_TOGGLE)                    // 0x1000
-                                strcat(szFlags, "KC_TOGGLE ");
-                            if (usFlags & KC_INVALIDCHAR)               // 0x2000
-                                strcat(szFlags, "KC_INVALIDCHAR ");
-                            if (usFlags & KC_DBCSRSRVD1)                // 0x4000
-                                strcat(szFlags, "KC_DBCSRSRVD1 ");
-                            if (usFlags & KC_DBCSRSRVD2)                // 0x8000
-                                strcat(szFlags, "KC_DBCSRSRVD2 ");
-
-                            _Pmpf(("  usFlags: 0x%lX -->", usFlags));
-                            _Pmpf(("    %s", szFlags));
-                            _Pmpf(("  usvk: 0x%lX", usvk));
-                            _Pmpf(("  usch: 0x%lX", usch));
-                            _Pmpf(("  ucScanCode: 0x%lX", ucScanCode));
-                    #endif
-
-/* #ifdef __DEBUG__
-                    // debug code:
-                    // enable Ctrl+Alt+Delete emergency exit
-                    if (    (   (usFlags & (KC_CTRL | KC_ALT | KC_KEYUP))
-                                 == (KC_CTRL | KC_ALT)
-                            )
-                          && (ucScanCode == 0x0e)    // delete
-                       )
-                    {
-                        ULONG ul;
-                        for (ul = 5000;
-                             ul > 100;
-                             ul -= 200)
-                            DosBeep(ul, 20);
-
-                        WinPostMsg(G_HookData.hwndDaemonObject,
-                                   WM_QUIT,
-                                   0, 0);
-                        brc = TRUE;     // swallow
-                    }
-                    else
-#endif */
-
-                    if (WMChar_Hotkeys(usFlags, ucScanCode))
-                        // returns TRUE (== swallow) if hotkey was found
-                        brc = TRUE;
-                }
-            }
-
-            // PageMage hotkeys:
-            if (!brc)       // message not swallowed yet:
-            {
-                if (    (G_HookData.PageMageConfig.fEnableArrowHotkeys)
-                            // arrow hotkeys enabled?
-                     && (G_HookData.hwndPageMageClient)
-                            // PageMage active?
-                   )
-                {
-                    // PageMage hotkeys enabled:
-                    // key-up only
-                    if ((usFlags & KC_KEYUP) == 0)
-                    {
-                        // check KC_CTRL etc. flags
-                        if (   (G_HookData.PageMageConfig.ulKeyShift | KC_SCANCODE)
-                                    == (usFlags & (G_HookData.PageMageConfig.ulKeyShift
-                                                   | KC_SCANCODE))
-                           )
-                            // OK: check scan codes
-                            if (    (ucScanCode == 0x61)
-                                 || (ucScanCode == 0x66)
-                                 || (ucScanCode == 0x63)
-                                 || (ucScanCode == 0x64)
-                               )
-                            {
-                                // cursor keys:
-                                /* ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
-                                                              ucScanCode,
-                                                              ucScanCode); */
-                                WinPostMsg(G_HookData.hwndPageMageMoveThread,
-                                           PGOM_HOOKKEY,
-                                           (MPARAM)ucScanCode,
-                                           0);
-                                // swallow
-                                brc = TRUE;
-                            }
-
-                    }
-                }
-            } // end if (!brc)       // message not swallowed yet
-
-            DosReleaseMutexSem(G_hmtxGlobalHotkeys);
-        } // end if WinRequestMutexSem
-
-        DosCloseMutexSem(G_hmtxGlobalHotkeys);
-    } // end if DosOpenMutexSem
-
-    return (brc);
-}
 
 /*
  *@@ hookPreAccelHook:

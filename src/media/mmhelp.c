@@ -354,6 +354,14 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
     }
     else
     {
+        // go acquire the device
+        mgp.hwndCallback = hwndObject;
+        ulrc = G_mciSendCommand(*pusDeviceID,
+                                MCI_ACQUIREDEVICE,
+                                MCI_WAIT,
+                                &mgp,
+                                0);
+
         // --  if the device ID was != 0, we could already
         //     be playing something... so send MCI_STOP first
         memset(&mgp, 0, sizeof(mgp));
@@ -365,14 +373,6 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
         #ifdef DEBUG_SOUNDS
             _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
         #endif
-
-        // go acquire the device
-        mgp.hwndCallback = hwndObject;
-        ulrc = G_mciSendCommand(*pusDeviceID,
-                                MCI_ACQUIREDEVICE,
-                                MCI_NOTIFY,
-                                &mgp,
-                                0);
     }
 
     return (ulrc);
@@ -451,7 +451,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
  *      In both situations, we need to stop playing.
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: this was in SOUND.DLL previously
- *@@changed V0.9.12 (2001-05-27) [umoeller]: no longer closing device
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: no longer closing device, release it instead
  */
 
 ULONG xmmStopSound(PUSHORT pusDeviceID)
@@ -467,6 +467,14 @@ ULONG xmmStopSound(PUSHORT pusDeviceID)
                             &mgp,
                             0);
     _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
+
+    // go release the device
+    ulrc = G_mciSendCommand(*pusDeviceID,
+                            MCI_RELEASEDEVICE,
+                            MCI_RETURN_RESOURCE, // MCI_WAIT,
+                            &mgp,
+                            0);
+    _Pmpf((__FUNCTION__ ": MCI_RELEASEDEVICE returned 0x%lX", ulrc));
 
     return (ulrc);
 }

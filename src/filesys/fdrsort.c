@@ -330,6 +330,7 @@ typedef struct _WPSSORTINFO
  *      check the default item in the "sort" menu.
  *
  *@@added V0.9.12 (2001-05-18) [umoeller]
+ *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed duplicate checks
  */
 
 VOID CheckDefaultSortItem(HWND hwndSortMenu,
@@ -337,13 +338,27 @@ VOID CheckDefaultSortItem(HWND hwndSortMenu,
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    SHORT sDefID;
-
-    winhSetMenuItemChecked(hwndSortMenu,
-                           WinSendMsg(hwndSortMenu,
-                                      MM_QUERYDEFAULTITEMID,
-                                      MPNULL, MPNULL), // find current default
-                           FALSE);                     // uncheck
+    // first run thru the existing menu as composed
+    // by the WPS and uncheck the default item.
+    // MM_QUERYDEFAULTITEM doesn't work here for some
+    // reason.
+    SHORT sDefID,
+          sItemCount = (SHORT)WinSendMsg(hwndSortMenu,
+                                         MM_QUERYITEMCOUNT,
+                                         0, 0);
+    for (sDefID = 0;
+         sDefID < sItemCount;
+         sDefID++)
+    {
+        SHORT sidThis
+            = (SHORT)WinSendMsg(hwndSortMenu,
+                                MM_ITEMIDFROMPOSITION,
+                                MPFROMSHORT(sDefID),
+                                NULL);
+        winhSetMenuItemChecked(hwndSortMenu,
+                               sidThis,
+                               FALSE);                     // uncheck
+    }
 
     // we need to differentiate here:
 
@@ -425,6 +440,8 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
             // PWPSSORTINFO psi = (PWPSSORTINFO)_pFolderSortInfo;
             SHORT sDefID;
 
+            // we'll insert sort by "class" and "extension"
+            // behind sort by "type", so find that item first
             if (winhQueryMenuItem(hwndSortMenu,
                                   WPMENUID_SORTBYTYPE,
                                   FALSE,
@@ -567,6 +584,8 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                        ulMenuId,
                                        !fAlwaysSort);
 
+                _Pmpf(("    pbDismiss is 0x%lX",
+                            fAlwaysSort));
                 if (pbDismiss)
                     // do not dismiss menu
                     *pbDismiss = FALSE;

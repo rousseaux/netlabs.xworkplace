@@ -739,6 +739,7 @@ VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
+ *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed broken source object with folder menu bars, which broke new "View" menu items
  */
 
 VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
@@ -840,6 +841,12 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         #ifdef DEBUG_MENUS
                             _Pmpf(("  'Edit' menu found"));
                         #endif
+
+                        // set the "source" object for menu item
+                        // selections to the folder
+                        psfv->pSourceObject = psfv->somSelf;
+                                // V0.9.12 (2001-05-29) [umoeller]
+
                         // insert "Select by name" after that item
                         winhInsertMenuItem(hwndMenuMsg,
                                            sPos+1,
@@ -847,7 +854,8 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                                                    + ID_XFMI_OFS_SELECTSOME),
                                            cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
                                            MIS_TEXT, 0);
-                    break; }
+                    }
+                    break;
 
                     case 0x2D1: // "View" submenu
                     {
@@ -855,6 +863,12 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         #ifdef DEBUG_MENUS
                             _Pmpf(("  'View' menu found"));
                         #endif
+
+                        // set the "source" object for menu item
+                        // selections to the folder
+                        psfv->pSourceObject = psfv->somSelf;
+                                // V0.9.12 (2001-05-29) [umoeller]
+
                         // modify the "Sort" menu, as we would
                         // do it for context menus also
                         fdrModifySortMenu(psfv->somSelf,
@@ -872,19 +886,22 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                                                psfv->hwndCnr,
                                                wpshQueryView(psfv->somSelf,
                                                              psfv->hwndFrame));
-                                               // psfv->ulView);
-                                               // wpshQueryView(psfv->somSelf,
-                                                  //            psfv->hwndFrame));
-                    break; }
+                    }
+                    break;
 
-                    case 0x2D2:     // "Selected" submenu:
-                    {
-                    break; }
+                    /* case 0x2D2:     // "Selected" submenu:
+                    break; */
 
                     case 0x2D3: // "Help" submenu: add XFolder product info
                         #ifdef DEBUG_MENUS
                             _Pmpf(("  'Help' menu found"));
                         #endif
+
+                        // set the "source" object for menu item
+                        // selections to the folder
+                        psfv->pSourceObject = psfv->somSelf;
+                                // V0.9.12 (2001-05-29) [umoeller]
+
                         winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
                                                (pGlobalSettings->VarMenuOffset
                                                        + ID_XFMI_OFS_SEPARATOR));
@@ -893,6 +910,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                                                    + ID_XFMI_OFS_PRODINFO),
                                            cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                                            MIS_TEXT, 0);
+
                     break;
 
                 } // end switch (psfv->usLastSelMenuItem)
@@ -947,116 +965,85 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
     // return value for WM_MENUSELECT;
     // TRUE means dismiss menu
 
-    psfv->ulLastSelMenuItem = SHORT1FROMMP(mp1);
+    USHORT      usItem = SHORT1FROMMP(mp1),
+                usPostCommand = SHORT2FROMMP(mp1);
 
-    // check if we have moved a folder content menu
-    // (this flag is set by fdr_fnwpSubclFolderContentMenu); for
-    // some reason, PM gets confused with the menu items
-    // then and automatically tries to select the menu
-    // item under the mouse, so we swallow this one
-    // message if (a) the folder content menu has been
-    // moved by fdr_fnwpSubclFolderContentMenu and (b) no mouse
-    // button is pressed. These flags are all set by
-    // fdr_fnwpSubclFolderContentMenu.
-    /* if (G_fFldrContentMenuMoved)
-    {
-        #ifdef DEBUG_MENUS
-            _Pmpf(( "  FCMenuMoved set!"));
-        #endif
-        if (!G_fFldrContentMenuButtonDown)
-        {
-            // mouse was not pressed: swallow this
-            // menu selection
-            *pfDismiss = FALSE;
-        }
-        else
-        {
-            // mouse was pressed: allow selection
-            // and unset flags
-            *pfDismiss = TRUE;
-            G_fFldrContentMenuButtonDown = FALSE;
-            G_fFldrContentMenuMoved = FALSE;
-        }
-        fHandled = TRUE;
-    }
-    else */
-    {
-        USHORT      usItem = SHORT1FROMMP(mp1),
-                    usPostCommand = SHORT2FROMMP(mp1);
+    psfv->ulLastSelMenuItem = usItem;
 
-        if (    (usPostCommand)
-            && (    (usItem <  0x8000) // avoid system menu
-                 || (usItem == 0x8020) // include context menu
-               )
+    // _Pmpf((__FUNCTION__ ": usPostCommand = 0x%lX", usPostCommand));
+
+    if (    (usPostCommand)
+        && (    (usItem <  0x8000) // avoid system menu
+             || (usItem == 0x8020) // include context menu
            )
+       )
+    {
+        HWND hwndCnr = wpshQueryCnrFromFrame(psfv->hwndFrame);
+
+        // play system sound
+        cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
+
+        // Now check if we have a menu item which we don't
+        // want to see dismissed.
+
+        if (hwndCnr)
         {
-            HWND hwndCnr = wpshQueryCnrFromFrame(psfv->hwndFrame);
+            // first find out what kind of objects we have here
+            WPObject *pObject = psfv->pSourceObject;
+                                // set with WM_INITMENU
 
-            // play system sound
-            cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
+            #ifdef DEBUG_MENUS
+                _Pmpf(( "  Object selections: %d", ulSelection));
+            #endif
 
-            // Now check if we have a menu item which we don't
-            // want to see dismissed.
+            // dereference shadows
+            if (pObject)
+                if (_somIsA(pObject, _WPShadow))
+                    pObject = _wpQueryShadowedObject(pObject, TRUE);
 
-            if (hwndCnr)
+            // now call the functions in fdrmenus.c for this,
+            // depending on the class of the object for which
+            // the menu was opened
+            if (pObject)
             {
-                // first find out what kind of objects we have here
-                WPObject *pObject = psfv->pSourceObject;
-                                    // set with WM_INITMENU
-
-                #ifdef DEBUG_MENUS
-                    _Pmpf(( "  Object selections: %d", ulSelection));
-                #endif
-
-                // dereference shadows
-                if (pObject)
-                    if (_somIsA(pObject, _WPShadow))
-                        pObject = _wpQueryShadowedObject(pObject, TRUE);
-
-                // now call the functions in fdrmenus.c for this,
-                // depending on the class of the object for which
-                // the menu was opened
-                if (pObject)
+                if (_somIsA(pObject, _WPFileSystem))
                 {
-                    if (_somIsA(pObject, _WPFileSystem))
+                    fHandled = mnuFileSystemSelectingMenuItem(
+                                   psfv->pSourceObject,
+                                        // set in WM_INITMENU;
+                                        // note that we're passing
+                                        // psfv->pSourceObject instead of pObject;
+                                        // psfv->pSourceObject might be a shadow!
+                                   usItem,
+                                   (BOOL)usPostCommand,
+                                   (HWND)mp2,               // hwndMenu
+                                   hwndCnr,
+                                   psfv->ulSelection,       // SEL_* flags
+                                   pfDismiss);              // dismiss-menu flag
+
+                    if (    (!fHandled)
+                         && (_somIsA(pObject, _WPFolder))
+                       )
                     {
-                        fHandled = mnuFileSystemSelectingMenuItem(
-                                       psfv->pSourceObject,
-                                            // set in WM_INITMENU;
-                                            // note that we're passing
-                                            // psfv->pSourceObject instead of pObject;
-                                            // psfv->pSourceObject might be a shadow!
+                        fHandled = mnuFolderSelectingMenuItem(pObject,
                                        usItem,
-                                       (BOOL)usPostCommand,
+                                       (BOOL)usPostCommand, // fPostCommand
                                        (HWND)mp2,               // hwndMenu
                                        hwndCnr,
                                        psfv->ulSelection,       // SEL_* flags
                                        pfDismiss);              // dismiss-menu flag
-
-                        if (    (!fHandled)
-                             && (_somIsA(pObject, _WPFolder))
-                           )
-                        {
-                            fHandled = mnuFolderSelectingMenuItem(pObject,
-                                           usItem,
-                                           (BOOL)usPostCommand, // fPostCommand
-                                           (HWND)mp2,               // hwndMenu
-                                           hwndCnr,
-                                           psfv->ulSelection,       // SEL_* flags
-                                           pfDismiss);              // dismiss-menu flag
-                        }
                     }
+                }
 
-                    if (    (fHandled)
-                         && (!(*pfDismiss))
-                       )
-                    {
-                        // menu not to be dismissed: set the flag
-                        // which will remove cnr source
-                        // emphasis when the main menu is dismissed
-                        // later (WM_ENDMENU msg here)
-                        psfv->fRemoveSourceEmphasis = TRUE;
-                    }
+                if (    (fHandled)
+                     && (!(*pfDismiss))
+                   )
+                {
+                    // menu not to be dismissed: set the flag
+                    // which will remove cnr source
+                    // emphasis when the main menu is dismissed
+                    // later (WM_ENDMENU msg here)
+                    psfv->fRemoveSourceEmphasis = TRUE;
                 }
             }
         }

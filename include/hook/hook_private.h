@@ -250,9 +250,9 @@
     #define PGOM_MOUSESWITCH        (WM_USER + 325)
 
     /* ******************************************************************
-     *                                                                  *
-     *   Hook DLL prototypes                                            *
-     *                                                                  *
+     *
+     *   Hook DLL prototypes
+     *
      ********************************************************************/
 
     PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject);
@@ -264,6 +264,37 @@
                                          PFUNCTIONKEY pNewFunctionKeys,
                                          ULONG cNewFunctionKeys);
 
+    /* ******************************************************************
+     *
+     *   Internal prototypes
+     *
+     ********************************************************************/
+
+    VOID _Optlink StopMB3Scrolling(BOOL fSuccessPostMsgs);
+
+    VOID _Optlink WMButton_SystemMenuContext(HWND hwnd);
+
+    BOOL _Optlink WMMouseMove_MB3Scroll(HWND hwnd);
+
+    BOOL _Optlink WMMouseMove(PQMSG pqmsg,
+                              PBOOL pfRestartAutoHide);
+
+    VOID _Optlink WMMouseMove_AutoHideMouse(VOID);
+
+    BOOL _Optlink WMChar_Main(PQMSG pqmsg);
+
+    extern HOOKDATA        G_HookData;
+    extern PGLOBALHOTKEY   G_paGlobalHotkeys;
+    extern ULONG           G_cGlobalHotkeys;
+    extern PFUNCTIONKEY    G_paFunctionKeys;
+    extern ULONG           G_cFunctionKeys;
+    extern HMTX            G_hmtxGlobalHotkeys;
+
+    extern HWND    G_hwndUnderMouse;
+    extern HWND    G_hwndLastFrameUnderMouse;
+    extern HWND    G_hwndLastSubframeUnderMouse;
+    extern POINTS  G_ptsMousePosWin;
+    extern POINTL  G_ptlMousePosDesktop;
 
 #endif
 
