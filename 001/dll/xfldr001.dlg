@@ -1750,7 +1750,7 @@ BEGIN
                         42, 8, NOT WS_GROUP
         GROUPBOX        "Attributes", IDDLG_UNUSED, 160, 80, 75, 42,
                         DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "~Archived", ID_XSDI_FILES_ATTR_ARCHIVED, 164, 106,
+        AUTOCHECKBOX    "~Archive", ID_XSDI_FILES_ATTR_ARCHIVED, 164, 106,
                         49, 8
         AUTOCHECKBOX    "~Read only", ID_XSDI_FILES_ATTR_READONLY, 164, 98,
                         56, 8
@@ -2125,29 +2125,6 @@ BEGIN
         DEFPUSHBUTTON   "~OK", DID_OK, 8, 6, 70, 12
         PUSHBUTTON      "~Cancel", DID_CANCEL, 86, 6, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 164, 6, 70, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_OBJECTDETAILS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_OBJECTDETAILS, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_XSDI_DTL_CNR, 12, 66, 212, 76, CCS_SINGLESEL |
-                        CCS_VERIFYPOINTERS
-        GROUPBOX        "Internals", IDDLG_UNUSED, 6, 46, 225, 106, NOT
-                        WS_GROUP
-        LTEXT           "Setup:", IDDLG_UNUSED, 12, 52, 24, 12, DT_VCENTER
-        ENTRYFIELD      "", ID_XSDI_DTL_SETUP_ENTRY, 40, 54, 182, 8,
-                        ES_MARGIN | ES_READONLY
-        GROUPBOX        "Object settings", IDDLG_UNUSED, 6, 22, 226, 22
-        LTEXT           "~Object hotkey:", ID_XSDI_DTL_HOTKEY_TXT, 12, 24,
-                        64, 12, DT_VCENTER | DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_DTL_HOTKEY, 80, 26, 104, 8, ES_MARGIN
-                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FF8080L
-        PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 190, 24, 36, 12
-        PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
     END
 END
 
@@ -2654,49 +2631,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_DTP_SHUTDOWN LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_SHUTDOWN, 0, 0, 295, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "eXtended Shutdown", IDDLG_UNUSED, 5, 21, 250, 123
-        AUTOCHECKBOX    "~Reboot afterwards", ID_SDDI_REBOOT, 10, 122, 135,
-                        12
-        PUSHBUTTON      "Reboot actio~ns...", ID_SDDI_REBOOTEXT, 155, 122,
-                        95, 12
-        AUTOCHECKBOX    "An~imation before shutdown",
-                        ID_SDDI_ANIMATE_SHUTDOWN, 10, 112, 140, 8
-        AUTOCHECKBOX    "An~imation before reboot", ID_SDDI_ANIMATE_REBOOT,
-                        10, 104, 140, 8
-        AUTOCHECKBOX    "Attempt APM ~1.2 power-off", ID_SDDI_APMPOWEROFF,
-                        10, 92, 140, 8
-        AUTOCHECKBOX    "Dela~y", ID_SDDI_DELAY, 20, 84, 90, 8
-        LTEXT           "APM level:", ID_SDDI_APMVERSION_TXT, 122, 84, 66, 8,
-                        NOT WS_GROUP
-        RTEXT           "1.1", ID_SDDI_APMVERSION, 198, 84, 50, 8, NOT
-                        WS_GROUP
-        LTEXT           "APM.SYS driver:", ID_SDDI_APMSYS_TXT, 122, 76, 70,
-                        8, NOT WS_GROUP
-        RTEXT           "unknown", ID_SDDI_APMSYS, 192, 76, 56, 8, NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "~Empty trash can", ID_SDDI_EMPTYTRASHCAN, 10, 70,
-                        104, 8
-        AUTOCHECKBOX    "~Confirm", ID_SDDI_CONFIRM, 10, 60, 104, 8
-        AUTOCHECKBOX    "Auto-close non-~PM sessions", ID_SDDI_AUTOCLOSEVIO,
-                        10, 46, 132, 12
-        PUSHBUTTON      "Auto-close det~ails...", ID_SDDI_AUTOCLOSEDETAILS,
-                        156, 46, 94, 12
-        AUTOCHECKBOX    "Write XSHUTDWN.LO~G file", ID_SDDI_LOG, 10, 38, 118,
-                        8
-        PUSHBUTTON      "Create XShutdown folder",
-                        ID_SDDI_CREATESHUTDOWNFLDR, 110, 24, 140, 12
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 80, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 90, 6, 80, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 175, 6, 80, 12, BS_HELP |
-                        WS_GROUP
-    END
-END
-
 DLGTEMPLATE ID_XCD_FEATURES LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XCD_FEATURES, 0, 0, 220, 142, NOT FS_DLGBORDER |
@@ -2734,14 +2668,15 @@ BEGIN
     BEGIN
         CONTAINER       ID_OSDI_DRIVR_CNR, 10, 27, 130, 132, CCS_SINGLESEL |
                         CCS_VERIFYPOINTERS
-        GROUPBOX        "Device drivers", ID_OSDI_DRIVR_GROUP1, 5, 21, 255, 150, NOT
-                        WS_GROUP
-        LTEXT           "Driver description:", ID_OSDI_DRIVR_GROUP2, 146, 154, 108,
-                        8
+        GROUPBOX        "Device drivers", ID_OSDI_DRIVR_GROUP1, 5, 21, 255,
+                        150, NOT WS_GROUP
+        LTEXT           "Driver description:", ID_OSDI_DRIVR_GROUP2, 146,
+                        154, 108, 8
         CONTROL         "", ID_OSDI_DRIVR_STATICDATA, 146, 110, 108, 44,
                         WC_MLE, MLS_READONLY | MLS_HSCROLL | MLS_VSCROLL |
                         WS_GROUP | WS_TABSTOP | WS_VISIBLE
-        LTEXT           "Parameters:", ID_OSDI_DRIVR_PARAMS_TXT, 148, 98, 83, 8
+        LTEXT           "Parameters:", ID_OSDI_DRIVR_PARAMS_TXT, 148, 98, 83,
+                        8
         MLE             "", ID_OSDI_DRIVR_PARAMS, 146, 58, 108, 38,
                         MLS_WORDWRAP | MLS_HSCROLL | MLS_VSCROLL |
                         MLS_IGNORETAB | WS_GROUP
@@ -2755,12 +2690,13 @@ END
 
 DLGTEMPLATE ID_OSD_DRIVER_HPFS386 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "OS/2 Kernel: HPFS386 settings", ID_OSD_DRIVER_HPFS386, 10, 6, 240, 94,
-            FS_ICON | FS_ACCELTABLE, FCF_SYSMENU | FCF_TITLEBAR
+    DIALOG  "OS/2 Kernel: HPFS386 settings", ID_OSD_DRIVER_HPFS386, 10, 6,
+            240, 94, FS_ICON | FS_ACCELTABLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        CONTAINER       ID_OSDI_HPFS386INI_CNR, 12, 50, 210, 32, CCS_SINGLESEL | WS_GROUP
-        GROUPBOX        "to be replaced", ID_OSDI_HPFS386INI_GROUP, 5, 46, 225, 45, NOT
-                        WS_GROUP
+        CONTAINER       ID_OSDI_HPFS386INI_CNR, 12, 50, 210, 32,
+                        CCS_SINGLESEL | WS_GROUP
+        GROUPBOX        "to be replaced", ID_OSDI_HPFS386INI_GROUP, 5, 46,
+                        225, 45, NOT WS_GROUP
         LTEXT           "Au~tocheck:", IDDLG_UNUSED, 5, 29, 50, 8,
                         DT_MNEMONIC | NOT WS_GROUP
         ENTRYFIELD      "", ID_OSDI_AUTOCHECK, 67, 29, 101, 8, ES_MARGIN
@@ -2769,5 +2705,78 @@ BEGIN
         DEFPUSHBUTTON   "~OK", DID_OK, 6, 6, 70, 12, WS_GROUP
         PUSHBUTTON      "~Cancel", DID_CANCEL, 84, 6, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 160, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_DTP_SHUTDOWN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_DTP_SHUTDOWN, 0, 0, 295, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "eXtended Shutdown", IDDLG_UNUSED, 5, 21, 250, 123
+        AUTOCHECKBOX    "~Reboot afterwards", ID_SDDI_REBOOT, 10, 124, 135,
+                        12
+        PUSHBUTTON      "Reboot actio~ns...", ID_SDDI_REBOOTEXT, 155, 124,
+                        95, 12
+        AUTOCHECKBOX    "An~imation before shutdown",
+                        ID_SDDI_ANIMATE_SHUTDOWN, 10, 116, 140, 8
+        AUTOCHECKBOX    "An~imation before reboot", ID_SDDI_ANIMATE_REBOOT,
+                        10, 108, 140, 8
+        AUTOCHECKBOX    "Attempt APM ~1.2 power-off", ID_SDDI_APMPOWEROFF,
+                        10, 98, 140, 8
+        AUTOCHECKBOX    "Dela~y", ID_SDDI_DELAY, 20, 90, 90, 8
+        LTEXT           "APM level:", ID_SDDI_APMVERSION_TXT, 142, 98, 57, 8,
+                        NOT WS_GROUP
+        RTEXT           "unknown", ID_SDDI_APMVERSION, 210, 98, 38, 8, NOT
+                        WS_GROUP
+        LTEXT           "APM.SYS driver:", ID_SDDI_APMSYS_TXT, 142, 90, 59,
+                        8, NOT WS_GROUP
+        RTEXT           "unknown", ID_SDDI_APMSYS, 210, 90, 38, 8, NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "~Empty trash can", ID_SDDI_EMPTYTRASHCAN, 10, 80,
+                        104, 8
+        AUTOCHECKBOX    "~Confirm", ID_SDDI_CONFIRM, 10, 70, 104, 8
+        AUTOCHECKBOX    "Auto-close non-~PM sessions", ID_SDDI_AUTOCLOSEVIO,
+                        10, 58, 132, 12
+        PUSHBUTTON      "Auto-close det~ails...", ID_SDDI_AUTOCLOSEDETAILS,
+                        156, 58, 94, 12
+        AUTOCHECKBOX    "Write XSHUTDWN.LO~G file", ID_SDDI_LOG, 10, 52, 118,
+                        8
+        LTEXT           "Save INI files:", ID_SDDI_SAVEINIS_TXT, 10, 40, 74,
+                        8
+        CONTROL         "", ID_SDDI_SAVEINIS_LIST, 98, 2, 150, 47,
+                        WC_COMBOBOX, CBS_DROPDOWNLIST | LS_HORZSCROLL |
+                        WS_GROUP | WS_TABSTOP | WS_VISIBLE
+        PUSHBUTTON      "Create XShutdown folder",
+                        ID_SDDI_CREATESHUTDOWNFLDR, 10, 24, 140, 12
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 80, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 90, 6, 80, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 175, 6, 80, 12, BS_HELP |
+                        WS_GROUP
+    END
+END
+
+DLGTEMPLATE ID_XSD_OBJECTDETAILS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_OBJECTDETAILS, 0, 0, 275, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_XSDI_DTL_CNR, 12, 66, 212, 76, CCS_SINGLESEL |
+                        CCS_VERIFYPOINTERS
+        GROUPBOX        "Internals", IDDLG_UNUSED, 6, 46, 225, 106, NOT
+                        WS_GROUP
+        LTEXT           "Setu~p:", IDDLG_UNUSED, 12, 52, 24, 12, DT_VCENTER |
+                        DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_DTL_SETUP_ENTRY, 40, 54, 182, 8,
+                        ES_MARGIN | ES_READONLY
+        GROUPBOX        "Object settings", IDDLG_UNUSED, 6, 22, 226, 22
+        LTEXT           "H~otkey:", ID_XSDI_DTL_HOTKEY_TXT, 12, 24, 30, 12,
+                        DT_VCENTER | DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_DTL_HOTKEY, 48, 26, 104, 8, ES_MARGIN
+                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FF8080L
+        PUSHBUTTON      "~Set", ID_XSDI_DTL_SET, 160, 24, 32, 12
+        PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 196, 24, 32, 12
+        PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
     END
 END

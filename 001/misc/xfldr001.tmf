@@ -280,13 +280,23 @@ Contact xworkplace-dev@egroups.com if you are familiar with the XWorkplace sourc
 XWorkplace is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the XWorkplace installation directory. The full source code is available from http://xworkplace.netlabs.org in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GPL.
 XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself.
 
-; new with V0.9.4
+;
+; the following items are new with V0.9.4
+;
 
 <--XFL0187-->: The trash can must have a name. The old name has been restored.
 
 <--XFL0188-->: You have just restored a WPS archive. XWorkplace's automatic archiving has been disabled in order to prevent archive overwrites. You can turn archiving back on in the Desktop's settings notebook.
 
 <--XFL0189-->: Emptying the trash can failed. Do you wish to continue shutdown?
+
+;
+; the following items are new with V0.9.5
+;
+
+<--XFL0190-->: Before using XShutdown the first time, please fine-tune XShutdown on the new "XShutdown" page in the Desktop's settings notebook.
+
+Warning: Even though XShutdown has been tested, it MIGHT NOT WORK on your system. Before shutting down the first time using XShutdown, make sure you have a working WPS backup. Don't say you haven't been warned!
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -604,6 +614,13 @@ Selecting this item will install XWorkplace's trash can WPS classes and create a
 See the XWorkplace User Guide for details.
 This was added with XWorkplace 0.9.1.
 ;
+; the following was changed with V0.9.5
+;
+<--FEATURES_6047-->: This will replace the Workplace Shell's file-system handles management in OS2SYS.INI, attempting to reduce the number of unneccessary handles which are created.
+Please see the XWorkplace User Guide for an introduction of this feature.
+This was added with XWorkplace 0.9.5.
+
+;
 ; the following was added with V0.9.3
 ;
 <--FEATURES_6046-->: If "Replace true delete" is enabled, XWorkplace will replace the Workplace Shell's "true" delete operations.
@@ -689,6 +706,13 @@ This was added with XWorkplace 0.9.2.
 <--XWPCLS_1268-->: "XWPString" is a handy class for invoking WPS setup strings on any object.
 By creating an object of this class and entering any setup string, you can later invoke that setup string on any object.
 This was added with XWorkplace 0.9.3.
+
+;
+; the following was added with V0.9.5
+;
+
+<--XWPCLS_1269-->: "XWPMedia" implements a new settings object called "Multimedia", which allows you to view some internals of the OS/2 multimedia subsystem.
+This was added with XWorkplace 0.9.4.
 
 <--XWPCLS_0001-->: Pressing "OK" will register, deregister, replace, and unreplace classes according to the changes you have made to the XWorkplace class setup.
 

@@ -30,19 +30,16 @@
  *          being the CONFIG.SYS keyname to search for (e.g.
  *          "BASEDEV=", "DEVICE=", "IFS=" etc), and the driver
  *          file name _without_ path specification.
- *          Both are _not_ case-sensitive.
- *
- *          At least one CONFIG statement must be present per
- *          DRIVER statement.
+ *          Both are not case-sensitive, of course.
  *
  *      2)  The third parameter  is considered the driver
  *          description, which appears on the "Drivers" page
- *          when the driver gets selected in the tree view.
+ *          in the tree view.
  *
  *          There must be exactly one driver title per DRIVER
- *          statement.
+ *          statement, and it must be the third parameter.
  *
- *      4)  _Optionally_, you can specify a driver flags parameter:
+ *      4)  _Optionally_, you can specify driver flags:
  *
  *          DRVF_CMDREF   item has entry in CMDREF.INF (enables
  *                        the context menu item)
@@ -69,6 +66,10 @@
 
 CATEGORY "General"
     {
+        DRIVER ( "DEVICE=", "RESERVE.SYS",
+                 "Resource manager",
+                 DRVF_NOPARAMS)
+
         DRIVER ( "DEVICE=", "APM.SYS",
                  "Advanced Power Management",
                  DRVF_CMDREF)
@@ -76,23 +77,36 @@ CATEGORY "General"
                  "APM daemon",
                  0)
 
-        DRIVER ( "DEVICE=", "DOS.SYS",
-                 "DOS support",
-                 0)
+        DRIVER ( "DEVICE=", "UNICODE.SYS",
+                 "Unicode Support for WSeB kernel",
+                 0,
+                 TAG=KRNLUNICODE)
+
+        DRIVER ( "BASEDEV=", "USBD.SYS",
+                 "USB base driver",
+                 0 ),
+        DRIVER ( "BASEDEV=", "USBHID.SYS",
+                 "USB base driver",
+                 0 ),
+        DRIVER ( "BASEDEV=", "USBUHCD.SYS",
+                 "DockStation USB base driver",
+                 0 ),
 
         DRIVER ( "DEVICE=", "TESTCFG.SYS",
                  "Test-configuration driver for OS/2 installation",
                  DRVF_NOPARAMS)
 
-        DRIVER ( "DEVICE=", "RESERVE.SYS",
-                 "Resource manager",
-                 DRVF_NOPARAMS)
         DRIVER ( "BASEDEV=", "I2OXPORT.SYS",
                  "IBM I2O Transport",
                  DRVF_NOPARAMS)
         DRIVER ( "BASEDEV=", "I2OSOSM.ADD",
                  "IBM I2O Storage OSM",
                  DRVF_NOPARAMS)
+
+        DRIVER ( "DEVICE=", "DOS.SYS",
+                 "DOS support",
+                 0)
+
         DRIVER ( "DEVICE=", "VEMM.SYS",
                  "DOS Extended Memory support",
                  DRVF_CMDREF)
@@ -107,7 +121,7 @@ CATEGORY "General"
                  DRVF_CMDREF)
     }
 
-CATEGORY "Hard disk"
+CATEGORY "Storage"
     {
         DRIVER ( "BASEDEV=", "IBM1S506.ADD",
                  "Standard IDE",
@@ -121,6 +135,23 @@ CATEGORY "Hard disk"
         DRIVER ( "BASEDEV=", "OS2DASD.DMD",
                  "General storage device manager",
                  DRVF_CMDREF)
+
+        DRIVER ( "BASEDEV=", "OS2LVM.DMD",
+                 "Logical Volume Manager",
+                 DRVF_CMDREF,
+                 TAG=LVM,
+                 REQUIRES=LVMALERT,
+                 REQUIRES=EXTENDFS,
+                 REQUIRES=KRNLUNICODE)
+        DRIVER ( "RUN=", "LVMALERT.EXE",
+                 "LVM daemon",
+                 DRVF_CMDREF,
+                 TAG=LVMALERT)
+        DRIVER ( "RUN=", "EXTENDFS.EXE",
+                 "LVM file-system extender",
+                 DRVF_CMDREF,
+                 TAG=EXTENDFS)
+
         DRIVER ( "BASEDEV=", "CHKDSK.SYS",
                  "Large partition support driver for CHKSDK32",
                  DRVF_NOPARAMS)
@@ -231,29 +262,40 @@ CATEGORY "SCSI"
 CATEGORY "Installable File Systems"
     {
         DRIVER ( "IFS=", "HPFS.IFS",
-                 "High Performance File System",
+                 "High Performance File System (HPFS)",
                  DRVF_CMDREF),
         DRIVER ( "IFS=", "HPFS386.IFS",
-                 "386 High Performance File System",
+                 "386 High Performance File System (HPFS386)",
                  0),
 
+        DRIVER ( "IFS=", "JFS.IFS",
+                 "Journaling File System (JFS)",
+                 DRVF_CMDREF,
+                 REQUIRES=LVM,
+                 REQUIRES=KRNLUNICODE),
+
         DRIVER ( "IFS=", "CDFS.IFS",
-                 "CD-ROM file system",
+                 "CD-ROM file system (CDFS)",
+                 DRVF_CMDREF)
+
+        DRIVER ( "IFS=", "UDF.IFS",
+                 "UDF (DVD)",
                  DRVF_CMDREF)
 
         DRIVER ( "IFS=", "RAMFS.IFS",
-                 "RAM disk file system",
+                 "RAM disk file system (RAMFS)",
                  0),
         DRIVER ( "IFS=", "RAMFS8.IFS",
-                 "RAM disk file system (8 MB version)",
+                 "RAM disk file system (RAMFS, 8 MB version)",
                  0),
         DRIVER ( "IFS=", "RAMFS64.IFS",
-                 "RAM disk file system (64 MB version)",
+                 "RAM disk file system (RAMFS 64 MB version)",
                  0),
 
         DRIVER ( "IFS=", "VFAT-OS2.IFS",
                  "Win95 VFAT file system",
-                 0),
+                 0,
+                 REQUIRES=MWDD32),
         DRIVER ( "RUN=", "VFAT_LW.EXE",
                  "Win95 VFAT cache daemon",
                  0),
@@ -263,44 +305,45 @@ CATEGORY "Installable File Systems"
 
         DRIVER ( "IFS=", "EXT2-OS2.IFS",
                  "Linux ext2fs file system",
-                 0)
+                 0,
+                 REQUIRES=MWDD32)
         DRIVER ( "RUN=", "EXT2_LW.EXE",
                  "Linux ext2fs cache daemon",
                  0)
 
         DRIVER ( "IFS=", "TVFS.IFS",
-                 "Toronto Virtual File System",
+                 "Toronto Virtual File System (TVFS)",
                  0)
         DRIVER ( "RUN=", "TVCTL.EXE",
-                 "Toronto Virtual File System control process",
+                 "TVFS control process",
                  0)
 
         DRIVER ( "IFS=", "FAT32.IFS",
-                 "Henk Kelder's FAT32 File System",
+                 "FAT32 File System (Henk Kelder)",
                  0)
         DRIVER ( "CALL=", "CACHEF32.EXE",
-                 "Henk Kelder's FAT32 Cache daemon",
+                 "FAT32 Cache daemon (Henk Kelder)",
                  0)
         DRIVER ( "BASEDEV=", "PARTFILT.FLT",
                  "Partition type filter",
                  0)
 
         DRIVER ( "IFS=", "HFS.IFS",
-                 "Hierarchical File System Driver",
+                 "Macintosh Hierarchical File System (HFS)",
                  0)
         DRIVER ( "BASEDEV=", "HFS.FLT",
-                 "Hierarchical File System support filter",
+                 "HFS support filter",
                  0)
 
         DRIVER ( "IFS=", "NFS200.IFS",
-                 "Network File System",
+                 "Network File System (NFS)",
                  0)
 
         DRIVER ( "IFS=", "NDFS.IFS",
-                 "Network Drive File System",
+                 "Network Drive File System (NDFS)",
                  0)
         DRIVER ( "RUN=", "NDCTL.EXE",
-                 "Network Drive File System control process",
+                 "NDFS control program",
                  0)
 
         DRIVER ( "IFS=", "CDWFS.IFS",
@@ -519,7 +562,7 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "NULLNDIS.OS2",
                  "Null NDIS driver",
                  0)
-        DRIVER ( "DEVICE=", "PCIND.SYS",
+        DRIVER ( "DEVICE=", "PCIND.OS2",
                  "Realtek 8029 based NIC driver",
                  0)
         DRIVER ( "DEVICE=", "PMAC.SYS",
@@ -651,3 +694,4 @@ CATEGORY "System extensions"
     }
 
 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

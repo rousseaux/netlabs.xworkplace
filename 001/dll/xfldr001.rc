@@ -160,7 +160,7 @@ BEGIN
     MENUITEM "S~ystem clock", 133
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "S~tartup folder", 140
-    MENUITEM "T~emplates fol~der", 141
+    MENUITEM "T~emplates folder", 141
     MENUITEM "Dri~ves folder", 142
 END
 
@@ -170,6 +170,8 @@ BEGIN
     MENUITEM "~OS/2 Kernel settings", 201
     MENUITEM "W~PS Class List", 202
     MENUITEM "Scr~een", 203
+/* the following item added with V0.9.5 (2000-08-23) [umoeller] */
+    MENUITEM "~Multimedia", 204
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Configuration folder", 210
     MENUITEM "~Startup folder", 211
@@ -437,7 +439,7 @@ BEGIN
     ID_XFSI_SETTINGS                    "~Properties"
     ID_XFSI_SETTINGSNOTEBOOK            "~Notebook"
     ID_XFSI_ATTRIBUTES                  "File attributes"
-    ID_XFSI_ATTR_ARCHIVED               "Archived"
+    ID_XFSI_ATTR_ARCHIVE                "Archive"
     ID_XFSI_ATTR_SYSTEM                 "System"
     ID_XFSI_ATTR_HIDDEN                 "Hidden"
     ID_XFSI_ATTR_READONLY               "Read-only"
@@ -603,6 +605,11 @@ BEGIN
     ID_XSSI_FOPS_EMPTYINGTRASHCAN       "Emptying trash can..."
 
     ID_XSSI_ICONPAGE                    "~Icon"
+
+    /* INI save methods V0.9.5 (2000-08-20) [umoeller] */
+    ID_XSSI_XSD_SAVEINIS_NEW            "New method: use XWorkplace INI routines"
+    ID_XSSI_XSD_SAVEINIS_OLD            "Old method: use OS/2 INI routines"
+    ID_XSSI_XSD_SAVEINIS_NONE           "Do not save INIs at all"
 END
 
 /* Strings for XWPSetup "Features" page
@@ -637,6 +644,8 @@ BEGIN
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries"
+/* this item added with V0.9.5 (2000-08-14) [umoeller] */
+    ID_XCSI_REPLHANDLES                 "Replace WPS handles management"
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
     ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
     ID_XCSI_XWPTRASHCAN                 "XWorkplace trash can"
@@ -677,3 +686,4 @@ POINTER ID_ND_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
 
 rcinclude "xfldr001.dlg"
 
+                                                                                                                                                                                                                                                                                                  

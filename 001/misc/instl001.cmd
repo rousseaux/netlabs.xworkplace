@@ -28,6 +28,8 @@ XWPSetup            = "XWorkplace Setup";
 XWPClassList        = "WPS Class List";
 OS2Kernel           = "OS/2 Kernel";
 Screen              = "Screen";
+Media               = "Multimedia";
+String              = "Setup String";
 Mouse               = "Mouse";
 Keyboard            = "Keyboard";
 Sound               = "Sound";
@@ -47,55 +49,64 @@ dir = pdir||"bin\";
 OnlineReferenceFile = "xfldr"LanguageCode".inf";
 XFolderIntroFile    = "xfldr"LanguageCode".sgs";
 
-rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;HELPPANEL=84;OBJECTID=<XWP_MAINFLDR>", "R");
+rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;HELPPANEL=84;OBJECTID=<XWP_MAINFLDR>;", "U");
 if (SysSearchPath("PATH", "sguide.exe") \= "") then
-    rc = SysCreateObject("WPProgram", XFolderIntro, "<XWP_MAINFLDR>", "EXENAME=sguide.exe;PARAMETERS="XFolderIntroFile";STARTUPDIR="dir";ICONFILE="idir"xfolder.ico;OBJECTID=<XWP_INTRO>", "R");
+    rc = SysCreateObject("WPProgram", XFolderIntro, "<XWP_MAINFLDR>", "EXENAME=sguide.exe;PARAMETERS="XFolderIntroFile";STARTUPDIR="dir";ICONFILE="idir"xfolder.ico;OBJECTID=<XWP_INTRO>;", "U");
 /* "Readme" shadow (added V0.9.2) */
-rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID="pdir||"README;OBJECTID=<XWP_READMEMAINSHADOW>;", "R");
+rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID="pdir||"README;OBJECTID=<XWP_READMEMAINSHADOW>;", "U");
 
 /* User Guide */
-rc = SysCreateObject("WPProgram", OnlineReference, "<XWP_MAINFLDR>", "EXENAME=view.exe;PARAMETERS="pdir||OnlineReferenceFile";OBJECTID=<XWP_REF>", "R");
+rc = SysCreateObject("WPProgram", OnlineReference, "<XWP_MAINFLDR>", "EXENAME=view.exe;PARAMETERS="pdir||OnlineReferenceFile";OBJECTID=<XWP_REF>;", "U");
 
 /* XSHUTDWN.EXE */
-rc = SysCreateObject("WPProgram", XShutdown, "<XWP_MAINFLDR>", "EXENAME="dir"xshutdwn.exe;OBJECTID=<XWP_XSHUTDOWN>", "R");
+rc = SysCreateObject("WPProgram", XShutdown, "<XWP_MAINFLDR>", "EXENAME="dir"xshutdwn.exe;OBJECTID=<XWP_XSHUTDOWN>;", "U");
 
 /* create "XWorkplace Setup" (added V0.9.0) */
-rc = SysCreateObject("XWPSetup", XWPSetup, "<WP_CONFIG>", "OBJECTID=<XWORKPLACE_SETUP>;", "R");
+rc = SysCreateObject("XWPSetup", XWPSetup, "<WP_CONFIG>", "OBJECTID=<XWORKPLACE_SETUP>;", "U");
 if (\rc) then
-    rc = SysCreateObject("XWPSetup", XWPSetup, "<WP_DESKTOP>", "OBJECTID=<XWORKPLACE_SETUP>;", "R");
-rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWP_SETUPMAINSHADOW>;", "R");
+    rc = SysCreateObject("XWPSetup", XWPSetup, "<WP_DESKTOP>", "OBJECTID=<XWORKPLACE_SETUP>;", "U");
+rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWP_SETUPMAINSHADOW>;", "U");
 
 /* create "WPS Class List" (added V0.9.2) */
-rc = SysCreateObject("XWPClassList", XWPClassList, "<WP_CONFIG>", "OBJECTID=<XWP_CLASSLIST>;", "R");
+rc = SysCreateObject("XWPClassList", XWPClassList, "<WP_CONFIG>", "OBJECTID=<XWP_CLASSLIST>;", "U");
 if (\rc) then
-    rc = SysCreateObject("XWPClassList", XWPClassList, "<WP_DESKTOP>", "OBJECTID=<XWP_CLASSLIST>;", "R");
-rc = SysCreateObject("WPShadow", XWPClassList, "<XWP_MAINFLDR>", "SHADOWID=<XWP_CLASSLIST>;OBJECTID=<XWP_CLASSLISTMAINSHADOW>;", "R");
+    rc = SysCreateObject("XWPClassList", XWPClassList, "<WP_DESKTOP>", "OBJECTID=<XWP_CLASSLIST>;", "U");
+rc = SysCreateObject("WPShadow", XWPClassList, "<XWP_MAINFLDR>", "SHADOWID=<XWP_CLASSLIST>;OBJECTID=<XWP_CLASSLISTMAINSHADOW>;", "U");
 
 /* create "OS/2 Kernel" */
-rc = SysCreateObject("XFldSystem", OS2Kernel, "<WP_CONFIG>", "OBJECTID=<XWP_KERNEL>;", "R");
+rc = SysCreateObject("XFldSystem", OS2Kernel, "<WP_CONFIG>", "OBJECTID=<XWP_KERNEL>;", "U");
 if (\rc) then
     /* fixed with V0.85: changed following <XWP_WPS> to <XWP_KERNEL> */
-    rc = SysCreateObject("XFldSystem", OS2Kernel, "<WP_DESKTOP>", "OBJECTID=<XWP_KERNEL>;", "R");
-rc = SysCreateObject("WPShadow", OS2Kernel, "<XWP_MAINFLDR>", "SHADOWID=<XWP_KERNEL>;OBJECTID=<XWP_KERNELMAINSHADOW>;", "R");
+    rc = SysCreateObject("XFldSystem", OS2Kernel, "<WP_DESKTOP>", "OBJECTID=<XWP_KERNEL>;", "U");
+rc = SysCreateObject("WPShadow", OS2Kernel, "<XWP_MAINFLDR>", "SHADOWID=<XWP_KERNEL>;OBJECTID=<XWP_KERNELMAINSHADOW>;", "U");
 
 /* create "Workplace Shell" */
-rc = SysCreateObject("XFldWPS", WorkplaceShell, "<WP_CONFIG>", "OBJECTID=<XWP_WPS>", "R");
+rc = SysCreateObject("XFldWPS", WorkplaceShell, "<WP_CONFIG>", "OBJECTID=<XWP_WPS>;", "U");
 if (\rc) then
-    rc = SysCreateObject("XFldWPS", WorkplaceShell, "<WP_DESKTOP>", "OBJECTID=<XWP_WPS>", "R");
-rc = SysCreateObject("WPShadow", WorkplaceShell, "<XWP_MAINFLDR>", "SHADOWID=<XWP_WPS>;OBJECTID=<XWP_WPSMAINSHADOW>;", "R");
+    rc = SysCreateObject("XFldWPS", WorkplaceShell, "<WP_DESKTOP>", "OBJECTID=<XWP_WPS>;", "U");
+rc = SysCreateObject("WPShadow", WorkplaceShell, "<XWP_MAINFLDR>", "SHADOWID=<XWP_WPS>;OBJECTID=<XWP_WPSMAINSHADOW>;", "U");
 
 /* create "Screen" (added V0.9.2) */
-rc = SysCreateObject("XWPScreen", Screen, "<WP_CONFIG>", "OBJECTID=<XWP_SCREEN>", "R");
+rc = SysCreateObject("XWPScreen", Screen, "<WP_CONFIG>", "OBJECTID=<XWP_SCREEN>;", "U");
 if (\rc) then
-    rc = SysCreateObject("XWPScreen", Screen, "<WP_DESKTOP>", "OBJECTID=<XWP_SCREEN>", "R");
-rc = SysCreateObject("WPShadow", Screen, "<XWP_MAINFLDR>", "SHADOWID=<XWP_SCREEN>;OBJECTID=<XWP_SCREENMAINSHADOW>;", "R");
+    rc = SysCreateObject("XWPScreen", Screen, "<WP_DESKTOP>", "OBJECTID=<XWP_SCREEN>;", "U");
+rc = SysCreateObject("WPShadow", Screen, "<XWP_MAINFLDR>", "SHADOWID=<XWP_SCREEN>;OBJECTID=<XWP_SCREENMAINSHADOW>;", "U");
+
+/* create "Media" (added V0.9.5) */
+rc = SysCreateObject("XWPMedia", Media, "<WP_CONFIG>", "OBJECTID=<XWP_MEDIA>;", "U");
+if (\rc) then
+    rc = SysCreateObject("XWPMedia", Media, "<WP_DESKTOP>", "OBJECTID=<XWP_MEDIA>;", "U");
+rc = SysCreateObject("WPShadow", Screen, "<XWP_MAINFLDR>", "SHADOWID=<XWP_MEDIA>;OBJECTID=<XWP_MEDIAMAINSHADOW>;", "U");
+
+/* create "Setup String" template (added V0.9.5) */
+rc = SysCreateObject("XWPString", String, "<XWP_MAINFLDR>", "TEMPLATE=YES;OBJECTID=<XWP_STRINGTPL>;", "U");
 
 /* "Mouse" shadow (added V0.9.2) */
-rc = SysCreateObject("WPShadow", Mouse, "<XWP_MAINFLDR>", "SHADOWID=<WP_MOUSE>;OBJECTID=<XWP_MOUSEMAINSHADOW>;", "R");
+rc = SysCreateObject("WPShadow", Mouse, "<XWP_MAINFLDR>", "SHADOWID=<WP_MOUSE>;OBJECTID=<XWP_MOUSEMAINSHADOW>;", "U");
 /* "Keyboard" shadow (added V0.9.2) */
-rc = SysCreateObject("WPShadow", Keyboard, "<XWP_MAINFLDR>", "SHADOWID=<WP_KEYB>;OBJECTID=<XWP_KEYBMAINSHADOW>;", "R");
+rc = SysCreateObject("WPShadow", Keyboard, "<XWP_MAINFLDR>", "SHADOWID=<WP_KEYB>;OBJECTID=<XWP_KEYBMAINSHADOW>;", "U");
 /* "Sound" shadow (added V0.9.2) */
-rc = SysCreateObject("WPShadow", Sound, "<XWP_MAINFLDR>", "SHADOWID=<WP_SOUND>;OBJECTID=<XWP_SOUNDMAINSHADOW>;", "R");
+rc = SysCreateObject("WPShadow", Sound, "<XWP_MAINFLDR>", "SHADOWID=<WP_SOUND>;OBJECTID=<XWP_SOUNDMAINSHADOW>;", "U");
 
 "@call "idir"crobj"LanguageCode
 

@@ -211,6 +211,8 @@ Last updated August 9, 2000
         the swap file growing constantly until the swap disk is full,
         which will then cause a trap somewhere.
 
+    6)  Drag'n'drop to XWPString doesn't work yet.
+
 
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
