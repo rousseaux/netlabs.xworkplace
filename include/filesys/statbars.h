@@ -66,7 +66,7 @@
         typedef struct _STATUSBARDATA
         {
             WPFolder   *somSelf;            // the folder of the status bar
-            PSUBCLASSEDLISTITEM psli;       // frame info struct (common.h)
+            PSUBCLASSEDLISTITEM psli;       // folder frame info struct (folder.h)
             HAB        habStatusBar;        // status bar PM anchor block V0.9.2 (2000-02-22) [umoeller]
             ULONG      idTimer;             // update delay timer
             BOOL       fDontBroadcast;      // anti-recursion flag for presparams
@@ -111,19 +111,19 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                       ULONG flFlags);
+                                   ULONG flFlags);
 
         MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                             USHORT usItemID,
-                                             USHORT usNotifyCode,
-                                             ULONG ulExtra);
+                                         USHORT usItemID,
+                                         USHORT usNotifyCode,
+                                         ULONG ulExtra);
 
         VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                       ULONG flFlags);
+                                   ULONG flFlags);
 
         MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                             USHORT usItemID,
-                                             USHORT usNotifyCode,
-                                             ULONG ulExtra);
+                                         USHORT usItemID,
+                                         USHORT usNotifyCode,
+                                         ULONG ulExtra);
     #endif
 #endif

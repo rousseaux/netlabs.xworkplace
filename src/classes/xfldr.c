@@ -1053,6 +1053,10 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *@@added V0.9.0 [umoeller]
  */
 
+/*
+ * BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
+ */
+
 SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
                                               HWND hwndStatusBar,
                                               HWND hwndCnr)

@@ -2,10 +2,10 @@
 /*
  *@@sourcefile cfgsys.c:
  *      implementation code for the CONFIG.SYS pages
- *      in the "OS/2 Kernel" object (filesys\xfsys.c).
+ *      in the "OS/2 Kernel" object (XFldSystem).
  *
  *      This file is ALL new with V0.9.0. The code in
- *      this file used to be in filesys\xfsys.c.
+ *      this file used to be in main\xfsys.c.
  *
  *      Function prefix for this file:
  *      --  cfg*
@@ -115,35 +115,17 @@
  *                                                                  *
  ********************************************************************/
 
-PTHREADINFO         ptiDriversThread = NULL;
-PCREATENOTEBOOKPAGE pcnbpDrivers = NULL;
-
-/* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c)                                *
- *                                                                  *
- ********************************************************************/
-
-/*
- *  All the following functions starting with fncbConfig* are callbacks
- *  for the common notebook dlg function in notebook.c. There are
- *  two callbacks for each notebook page in "OS/2 Kernel", one
- *  for (re)initializing the page's controls and one for reacting
- *  to controls being changed by the user.
- *  These callbacks are specified in xfsys::xwpAddXFldSystemPages.
- *  These callbacks are all new with V0.82 and replace the awful
- *  dialog procedures which were previously used, because these
- *  became hard to maintain over time.
- */
+PTHREADINFO         G_ptiDriversThread = NULL;
+PCREATENOTEBOOKPAGE G_pcnbpDrivers = NULL;
 
 /* some global variables for "Kernel" pages */
-CHAR    szOrigSwapPath[CCHMAXPATH] = "";
-CHAR    aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
-PSZ     apszAllDrives[30];    // 30 pointers to the buffers
-LONG    lDriveCount = 0;
+CHAR    G_szOrigSwapPath[CCHMAXPATH] = "";
+CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
+PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
+LONG    G_lDriveCount = 0;
 
 #define SYSPATHCOUNT 5
-PSZ apszPathNames[SYSPATHCOUNT] =
+PSZ G_apszPathNames[SYSPATHCOUNT] =
         {
             "LIBPATH=",
             "SET PATH=",
@@ -168,10 +150,28 @@ typedef struct _SYSPATH
  *      which in turn contains a linked list of path entries.
  */
 
-PLINKLIST pllSysPathsList;
+PLINKLIST G_pllSysPathsList;
 
 // the currently selected SYSPATH
-PSYSPATH  pSysPathSelected = 0;
+PSYSPATH  G_pSysPathSelected = 0;
+
+/* ******************************************************************
+ *                                                                  *
+ *   Notebook callbacks (notebook.c)                                *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *  All the following functions starting with fncbConfig* are callbacks
+ *  for the common notebook dlg function in notebook.c. There are
+ *  two callbacks for each notebook page in "OS/2 Kernel", one
+ *  for (re)initializing the page's controls and one for reacting
+ *  to controls being changed by the user.
+ *  These callbacks are specified in xfsys::xwpAddXFldSystemPages.
+ *  These callbacks are all new with V0.82 and replace the awful
+ *  dialog procedures which were previously used, because these
+ *  became hard to maintain over time.
+ */
 
 /*
  *@@ fnwpNewSystemPathDlg:
@@ -409,10 +409,10 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
 
             // set title
             WinSetDlgItemText(hwndDlg, ID_OSDI_FILELISTSYSPATH2,
-                              pSysPathSelected->pszPathType);
+                              G_pSysPathSelected->pszPathType);
 
             // have file thread collect the files
-            pWinData->df.pllDirectories = pSysPathSelected->pllPaths;
+            pWinData->df.pllDirectories = G_pSysPathSelected->pllPaths;
             pWinData->df.hwndNotify = hwndDlg;
             pWinData->df.ulNotifyMsg = XM_UPDATE;
             xthrPostFileMsg(FIM_DOUBLEFILES,
@@ -580,21 +580,21 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
             while (*p)
             {
-                aszAllDrives[ul][0] = szAllDrives[ul];
-                aszAllDrives[ul][1] = '\0';
-                apszAllDrives[ul] = &(aszAllDrives[ul][0]);
+                G_aszAllDrives[ul][0] = szAllDrives[ul];
+                G_aszAllDrives[ul][1] = '\0';
+                G_apszAllDrives[ul] = &(G_aszAllDrives[ul][0]);
                 p++;
                 ul++;
             }
 
-            aszAllDrives[ul][0] = '0';
-            aszAllDrives[ul][1] = 0;
-            apszAllDrives[ul] = &(aszAllDrives[ul][0]);
-            lDriveCount = ul;
+            G_aszAllDrives[ul][0] = '0';
+            G_aszAllDrives[ul][1] = 0;
+            G_apszAllDrives[ul] = &(G_aszAllDrives[ul][0]);
+            G_lDriveCount = ul;
             ul++;
             WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
                               SPBM_SETARRAY,
-                              (MPARAM)apszAllDrives,
+                              (MPARAM)G_apszAllDrives,
                               (MPARAM)ul);
         }
         krnUnlockGlobals();
@@ -685,12 +685,12 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                                2, 1000,
                                                (ulMinFree / 1024));
 
-                        if (strlen(szOrigSwapPath) == 0)
+                        if (strlen(G_szOrigSwapPath) == 0)
                         {
                             if (szSwapPath[strlen(szSwapPath)-1] != '\\')
-                                sprintf(szOrigSwapPath, "%s\\swapper.dat", szSwapPath);
+                                sprintf(G_szOrigSwapPath, "%s\\swapper.dat", szSwapPath);
                             else
-                                sprintf(szOrigSwapPath, "%sswapper.dat", szSwapPath);
+                                sprintf(G_szOrigSwapPath, "%sswapper.dat", szSwapPath);
                         }
                     }
                 break; }
@@ -927,7 +927,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             lIndex = c-'C'; // 0 for C, 1 for D etc.
                         } else
                             // "0" character:
-                            lIndex = lDriveCount;
+                            lIndex = G_lDriveCount;
 
                         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
                                           SPBM_SETCURRENTVALUE,
@@ -946,7 +946,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     ULONG ul;
 
-                    pllSysPathsList = lstCreate(FALSE);
+                    G_pllSysPathsList = lstCreate(FALSE);
                             // items are not freeable;
                             // we'll free this manually
 
@@ -961,7 +961,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                         memset(szPaths, 0, sizeof(szPaths));
 
-                        p = strhGetParameter(pszConfigSys, apszPathNames[ul],
+                        p = strhGetParameter(pszConfigSys, G_apszPathNames[ul],
                                              szPaths, sizeof(szPaths));
                         if (p)
                         {
@@ -976,7 +976,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             while ((*pStart) && (*pStart == ' '))
                                 pStart++;
 
-                            pSysPath->pszPathType = apszPathNames[ul];
+                            pSysPath->pszPathType = G_apszPathNames[ul];
                             pSysPath->pllPaths = lstCreate(TRUE);
                                     // items are freeable;
                                     // this holds simple PSZ's
@@ -1003,7 +1003,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             } while (fContinue);
 
                             // store SYSPATH in global list
-                            lstAppendItem(pllSysPathsList, pSysPath);
+                            lstAppendItem(G_pllSysPathsList, pSysPath);
 
                             WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_PATHDROPDOWN,
                                               LM_INSERTITEM,
@@ -1101,7 +1101,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHUP,
                             (ulLastSel > 0));
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHDOWN,
-                            (ulLastSel < lstCountItems(pSysPathSelected->pllPaths)-1));
+                            (ulLastSel < lstCountItems(G_pSysPathSelected->pllPaths)-1));
                 break;
 
                 default:
@@ -1118,7 +1118,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
     {
         if (pcnbp->ulPageID == SP_SYSPATHS)
         {
-            PLISTNODE pSysPathNode = lstQueryFirstNode(pllSysPathsList);
+            PLISTNODE pSysPathNode = lstQueryFirstNode(G_pllSysPathsList);
                     // this list holds SYSPATH entries
                  /* typedef struct _SYSPATH
                  {
@@ -1135,8 +1135,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                 pSysPathNode = pSysPathNode->pNext;
             }
-            lstFree(pllSysPathsList);
-            pllSysPathsList = NULL;
+            lstFree(G_pllSysPathsList);
+            G_pllSysPathsList = NULL;
         }
     }
 }
@@ -1231,15 +1231,15 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 if (ulSelection != LIT_NONE)
                 {
-                    pSysPathSelected = lstItemFromIndex(pllSysPathsList, ulSelection);
+                    G_pSysPathSelected = lstItemFromIndex(G_pllSysPathsList, ulSelection);
                     // clear listbox
                     WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_PATHLISTBOX,
                                       LM_DELETEALL,
                                       MPNULL, MPNULL);
 
-                    if (pSysPathSelected)
+                    if (G_pSysPathSelected)
                     {
-                        PLISTNODE pPathNode = lstQueryFirstNode(pSysPathSelected->pllPaths);
+                        PLISTNODE pPathNode = lstQueryFirstNode(G_pSysPathSelected->pllPaths);
                         // insert new items
                         while (pPathNode)
                         {
@@ -1286,7 +1286,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 PSZ     pszPathCopy = strdup(szNewPath);
                 SHORT   sInserted = 0;
                 // insert the item
-                lstAppendItem(pSysPathSelected->pllPaths,
+                lstAppendItem(G_pSysPathSelected->pllPaths,
                               pszPathCopy);
                 sInserted = (SHORT)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_PATHLISTBOX,
                                                      LM_INSERTITEM,
@@ -1317,8 +1317,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   MPNULL);
 
                 // and from linked list
-                lstRemoveNode(pSysPathSelected->pllPaths,
-                                lstNodeFromIndex(pSysPathSelected->pllPaths, ulNextSel));
+                lstRemoveNode(G_pSysPathSelected->pllPaths,
+                              lstNodeFromIndex(G_pSysPathSelected->pllPaths,
+                                               ulNextSel));
 
             } while (TRUE);
 
@@ -1342,14 +1343,14 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               (MPARAM)ulSel,
                               MPNULL);
 
-            pNode = lstNodeFromIndex(pSysPathSelected->pllPaths, ulSel);
+            pNode = lstNodeFromIndex(G_pSysPathSelected->pllPaths, ulSel);
             if (pNode)
             {
                 // make a backup of the item
                 PSZ pszPathCopy = strdup(pNode->pItemData);
                 // remove it from the linked list
-                lstRemoveNode(pSysPathSelected->pllPaths,
-                            pNode);
+                lstRemoveNode(G_pSysPathSelected->pllPaths,
+                              pNode);
 
                 // new position to insert at
                 if (usItemID == ID_OSDI_PATHUP)
@@ -1358,7 +1359,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     ulSel++;
 
                 // and insert the item again
-                lstInsertItemBefore(pSysPathSelected->pllPaths,
+                lstInsertItemBefore(G_pSysPathSelected->pllPaths,
                                     pszPathCopy,
                                     ulSel);
                 WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_PATHLISTBOX,
@@ -1379,7 +1380,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_OSDI_VALIDATE:
         {
-            PLISTNODE pNode = lstQueryFirstNode(pSysPathSelected->pllPaths);
+            PLISTNODE pNode = lstQueryFirstNode(G_pSysPathSelected->pllPaths);
             ULONG     ulCount = 0;
             HPOINTER hptrOld = winhSetWaitPointer();
 
@@ -1406,14 +1407,14 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_OSDI_DOUBLEFILES:
         {
-            if (pSysPathSelected)
+            if (G_pSysPathSelected)
             {
                 HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,        // parent
                                           pcnbp->hwndFrame, // pcnbp->hwndPage,     // owner
                                           fnwpDoubleFilesDlg,
                                           cmnQueryNLSModuleHandle(FALSE),
                                           ID_OSD_FILELIST,
-                                          pSysPathSelected);
+                                          G_pSysPathSelected);
                 if (hwndDlg)
                 {
                     winhCenterWindow(hwndDlg);
@@ -1763,7 +1764,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         case SP_SYSPATHS:
                         {
-                            PLISTNODE pSysPathNode = lstQueryFirstNode(pllSysPathsList);
+                            PLISTNODE pSysPathNode = lstQueryFirstNode(G_pllSysPathsList);
 
                             while (pSysPathNode)
                             {
@@ -1850,8 +1851,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // minsize: get current size, add 50% and
                     // round up to the next multiple of 2 MB
-                    if (strlen(szOrigSwapPath) != 0) {
-                        ULONG ulSize = doshQueryPathSize(szOrigSwapPath)/1024/1024;
+                    if (strlen(G_szOrigSwapPath) != 0)
+                    {
+                        ULONG ulSize = doshQueryPathSize(G_szOrigSwapPath)/1024/1024;
                         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MINSWAPSIZE,
                                                2, 100,
                                                ( (((ulSize*3)/2)+1) / 2 ) * 2
@@ -2089,9 +2091,9 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case SP_MEMORY:
-            if (strlen(szOrigSwapPath) != 0)
+            if (strlen(G_szOrigSwapPath) != 0)
             {
-                ULONG ulSize = doshQueryPathSize(szOrigSwapPath)/1024/1024;
+                ULONG ulSize = doshQueryPathSize(G_szOrigSwapPath)/1024/1024;
                 if (ulSize)
                 {
                     sprintf(szTemp, "%d", ulSize);
@@ -2513,7 +2515,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
     {
         if (hmqDriversThread = WinCreateMsgQueue(habDriversThread, 4000))
         {
-            HWND            hwndDriversCnr = WinWindowFromID(pcnbpDrivers->hwndDlgPage,
+            HWND            hwndDriversCnr = WinWindowFromID(G_pcnbpDrivers->hwndDlgPage,
                                                              ID_OSDI_DRIVR_CNR);
             PSZ             pszConfigSys = NULL;
             PDRIVERRECORD   preccRoot = 0;
@@ -2521,7 +2523,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
             PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-            pcnbpDrivers->fShowWaitPointer = TRUE;
+            G_pcnbpDrivers->fShowWaitPointer = TRUE;
 
             WinSendMsg(hwndDriversCnr,
                        CM_REMOVERECORD,
@@ -2566,7 +2568,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
                 {
                     // drivers file successfully loaded:
                     // parse file
-                    pcnbpDrivers->pUser = InsertDriverCategories(hwndDriversCnr,
+                    G_pcnbpDrivers->pUser = InsertDriverCategories(hwndDriversCnr,
                                                                  preccRoot,
                                                                  pszConfigSys,
                                                                  pszDriverSpecsFile);
@@ -2580,7 +2582,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
 
             }
 
-            pcnbpDrivers->fShowWaitPointer = FALSE;
+            G_pcnbpDrivers->fShowWaitPointer = FALSE;
         }
     }
 
@@ -2588,7 +2590,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
     hmqDriversThread = NULLHANDLE;
     WinTerminate(habDriversThread);
     habDriversThread = NULLHANDLE;
-    pcnbpDrivers = NULL;
+    G_pcnbpDrivers = NULL;
 }
 
 /*
@@ -2638,10 +2640,10 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
-        if (!thrQueryID(ptiDriversThread))
+        if (!thrQueryID(G_ptiDriversThread))
         {
-            pcnbpDrivers = pcnbp;
-            thrCreate(&ptiDriversThread,
+            G_pcnbpDrivers = pcnbp;
+            thrCreate(&G_ptiDriversThread,
                       96000,
                       fntDriversThread,
                       0);
@@ -3164,6 +3166,47 @@ VOID AddOneSyslevel2Cnr(HWND hwndCnr,
             precc->pszCSDPrevious = precc->szCSDPrevious;
         }
 
+        // version
+        if (lvlQueryLevelFileData(hfSysLevel,
+                                  QLD_MAJORVERSION,
+                                  abBuf,
+                                  sizeof(abBuf),
+                                  &ulWritten)
+            == NO_ERROR)
+        {
+            // OK, we got the major version:
+            abBuf[ulWritten] = 0;
+            strcpy(precc->szVersion, abBuf);
+
+            // minor version:
+            if (lvlQueryLevelFileData(hfSysLevel,
+                                      QLD_MINORVERSION,
+                                      abBuf,
+                                      sizeof(abBuf),
+                                      &ulWritten)
+                == NO_ERROR)
+            {
+                abBuf[ulWritten] = 0;
+                strcat(precc->szVersion, ".");
+                strcat(precc->szVersion, abBuf);
+
+                // revision:
+                if (lvlQueryLevelFileData(hfSysLevel,
+                                          QLD_REVISION,
+                                          abBuf,
+                                          sizeof(abBuf),
+                                          &ulWritten)
+                    == NO_ERROR)
+                {
+                    abBuf[ulWritten] = 0;
+                    strcat(precc->szVersion, ".");
+                    strcat(precc->szVersion, abBuf);
+                }
+            }
+
+            precc->pszVersion = precc->szVersion;
+        }
+
         cnrhInsertRecords(hwndCnr,
                           NULL,
                           (PRECORDCORE)precc,
@@ -3268,22 +3311,22 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszFile);
-        xfi[i].pszColumnTitle = "File"; // ###
-        xfi[i].ulDataType = CFA_STRING;
-        xfi[i++].ulOrientation = CFA_LEFT;
-
-        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDCurrent);
-        xfi[i].pszColumnTitle = "Level"; // ###
-        xfi[i].ulDataType = CFA_STRING;
-        xfi[i++].ulOrientation = CFA_LEFT;
-
-        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDPrevious);
-        xfi[i].pszColumnTitle = "Previous"; // ###
+        xfi[i].pszColumnTitle = "SYSLEVEL File"; // ###
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszVersion);
         xfi[i].pszColumnTitle = "Version";  // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDCurrent);
+        xfi[i].pszColumnTitle = "Syslevel"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDPrevious);
+        xfi[i].pszColumnTitle = "Previous"; // ###
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -3297,7 +3340,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
         {
             cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
             cnrhSetSplitBarAfter(pfi);
-            cnrhSetSplitBarPos(100);
+            cnrhSetSplitBarPos(300);
         } END_CNRINFO(hwndCnr);
     }
 

@@ -5,7 +5,7 @@ to this file and remove them when they are fixed. Please don't report
 bugs which are already mentioned in this file. Thanks.
 
 folders:
-    -- WarpCenter moves icons upwards
+    -- using WarpCenter moves icons upwards at each WPS startup
     -- noticed a problem with the replacement 'File exists' dialogue. If you
        open a folder that contains objects, then rmb on an object and select
        'Create another' from the popup menu, the 'create another' dialogue
@@ -15,9 +15,15 @@ folders:
        object on which you used the rmb. I'm using WSeB, no fixpacks.
 
 trash can:
-    -- close subfolders too
+    -- close subfolders too when deleting parent folder
     -- check if delete works if not yet populated...
     -- sorting doesn't work
+    -- Drives page: multiple selections are not all moved
+    -- working on trash can while folder sizes are collected crashes
+
+archiving:
+    -- after restoring backup, archiving is enabled because of the
+       date. Disable archiving when archive was restored.
 
 startup folder:
     -- 1) After pressing Shift during WPS-Startup and skipping the startup folder, a
@@ -33,21 +39,21 @@ file page:
     -- Same with chkdsk.log. Apparently EA handling is buggy somewhere.
 
 other settings pages:
-    -- 8) by chosing "undo" or "default" new entries are created in
-       the list "Global XWP features"
-    -- 14) Clicking "Refresh" in the "object" strap of an object causes a WPS-Hangup -
-       I did not try it much, but it was reproducable with the "UnterstÅtzung"
-       object (in german Warp4).
+    -- XWPSetup: "Undo" and "Default" don't affect newer settings (trashcan)
+    -- Clicking "Refresh" in the "object" strap of an object causes a WPS-Hangup.
+    -- System paths: scroll listbox to first visible
 
 NetscDDE:
-    -- 12) With the Netscape DDE feature Netscape does not get the right location of
+    -- With the Netscape DDE feature Netscape does not get the right location of
        what to display - the 'Ñ' (german Umlaut) gets lost.
 
 icons:
     -- trash can icons...
     -- program file icons changing when settings notebook is opened
 
-drive objects: network drives don't work
+drive objects:
+    -- network drives don't work. Check doshAssertDrive for error codes
+       other than 50.
 
 create objects:
     -- check "Shift" with creating objects
@@ -56,17 +62,19 @@ create objects:
 hook:
     -- VIO copy conflicts with WM_CHORD; check window class
     -- WM_CHORD over Netscape/PMMail no work
+    -- function keys (F-keys, Del, Pos, ...) don't work as hotkeys in VIO sessions
     -- sliding focus over MDI frames no work
     -- sliding focus windows appear/disappear
-    -- 7) Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
+    -- Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
        ignore WinOS/2 windows.
-    -- 13) The displaying window in keyboard object / hotkeys should be a bit wider,
+    -- The displaying window in keyboard object / hotkeys should be a bit wider,
        so you would not have to horizontally scroll all the time.
-    -- 10) I had problem with my second installation of XWp. I installed, but
+    -- I had problem with my second installation of XWp. I installed, but
        afterwards it was not possible to check "Enable global object hotkeys"
        unless (afaik) I temporarily turned sliding focus on. (the Hook etc was - of
        course - installed).
        But I reinstalled XWorkplace on a new partition (with a new Warp4, FP12, DDFix,
        ..) and the same happened. I was not able to enable the global hotkeys - unless
        I temporarily turned the sliding focus on. So it is definetely reproducable.
+    -- sliding focus closes drop-down box when mouse is above the box's scroll bar
 

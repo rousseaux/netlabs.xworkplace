@@ -1130,7 +1130,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
  *      by fopsCreateFileTaskList.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
- *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  */
 
 typedef struct _FILETASKLIST
@@ -1200,7 +1200,7 @@ typedef struct _FILETASKLIST
  *          In that case, pTargetFolder is ignored.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
- *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  */
 
 HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
@@ -1260,7 +1260,7 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
  *      thread 1).
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
- *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  */
 
 BOOL fopsValidateObjOperation(ULONG ulOperation,        // in: operation
@@ -1323,7 +1323,7 @@ BOOL fopsValidateObjOperation(ULONG ulOperation,        // in: operation
  *         returned FALSE).
  *
  *@@added V0.9.1 (2000-01-26) [umoeller]
- *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  */
 
 BOOL fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle

@@ -75,6 +75,35 @@ CATEGORY "General"
         DRIVER ( "DEVICE=", "TESTCFG.SYS",
                  "Test-configuration driver for OS/2 installation",
                  DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "PMDD.SYS",
+                 "OS/2 PM Ring 0 Device driver",
+                 DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "POINTDD.SYS",
+                 "Pointer device driver",
+                 DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "RESERVE.SYS",
+                 "Resource manager",
+                 DRVF_NOPARAMS)
+        DRIVER ( "BASEDEV=", "I2OXPORT.SYS",
+                 "IBM I2O Transport",
+                 DRVF_NOPARAMS)
+        DRIVER ( "BASEDEV=", "I2OSOSM.ADD",
+                 "IBM I2O Storage OSM",
+                 DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "VEMM.SYS",
+                 "Extended memory support for MVDM",
+                 DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "VDPMI.SYS",
+                 "DPMI memory support for MVDM",
+                 DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "VAPM.SYS",
+                 "Advanced Power Management support for MVDM",
+                 DRV_NOPARAMS)
+        DRIVER ( "DEVICE=", "VXMS.SYS",
+                 "eXtended Memory Specification support for MVDM",
+                 "DRV_CMDREF")
     }
 
 CATEGORY "Hard disk"
@@ -91,6 +120,9 @@ CATEGORY "Hard disk"
         DRIVER ( "BASEDEV=", "OS2DASD.DMD",
                  "General storage device manager",
                  DRVF_CMDREF)
+        DRIVER ( "BASEDEV=", "CHKDSK.SYS",
+                 "Large partition support driver for CHKSDK32",
+                 DRVF_NOPARAMS)
     }
 
 CATEGORY "CD-ROM"
@@ -126,6 +158,10 @@ CATEGORY "CD-ROM"
         DRIVER ( "DEVICE=", "OS2CDROM.DMD",
                  "General CD-ROM manager",
                  DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "VCDROM.SYS",
+                 "CD-ROM access support driver for MVDM",
+                 DRVF_NOPARAMS)
     }
 
 CATEGORY "SCSI"
@@ -163,10 +199,10 @@ CATEGORY "SCSI"
         DRIVER ( "BASEDEV=", "FD8XX.ADD",
                  "Future Domain adapter",
                  DRVF_NOPARAMS),
-
         DRIVER ( "BASEDEV=", "TMSCSIM.ADD",
                  "Tekram DC-390 adapter",
                  DRVF_NOPARAMS),
+
         DRIVER ( "BASEDEV=", "OS2SCSI.DMD",
                  "OS/2 SCSI manager",
                  DRVF_CMDREF | DRVF_NOPARAMS),
@@ -176,6 +212,16 @@ CATEGORY "SCSI"
         DRIVER ( "DEVICE=", "ASPIROUT.SYS",
                  "ASPI router",
                  DRVF_NOPARAMS)
+
+        DRIVER ( "BASEDEV=", "SYM8xx.ADD",
+                 "Symbios/LSI/NCR 8xx based SCSI host",
+                 DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "CDMGRDRV.SYS",
+                 "Plextor CD-ROM Manager/2 support driver",
+                 DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "VASPI.SYS",
+                 "Advanced SCSI Programming Interface access for MVDM",
+                 DRVF_CMDREF)
     }
 
 CATEGORY "Installable File Systems"
@@ -216,6 +262,24 @@ CATEGORY "Installable File Systems"
         DRIVER ( "RUN=", "TVCTL.EXE",
                  "Toronto Virtual File System control process",
                  0)
+        DRIVER ( "IFS=", "FAT32.IFS",
+                 "Henk Kelder's FAT32 File System",
+                 0)
+        DRIVER ( "RUN", "CACHEF32.EXE",
+                 "Henk Kelder's FAT32 Cache daemon",
+                 0)
+        DRIVER ( "IFS=", "HFS.IFS",
+                 "Hierarchical File System Driver",
+                 0)
+        DRIVER ( "BASEDEV=", "HFS.FLT",
+                 "Hierarchical File System support filter",
+                 0)
+        DRIVER ( "BASEDEV=", "PARTFILT.FLT",
+                 "Partition Reordination Filter",
+                 0)
+        DRIVER ( "IFS=", "NFS200.IFS",
+                 "Network File System",
+                 0)
     }
 
 CATEGORY "Video"
@@ -246,7 +310,7 @@ CATEGORY "Other peripherals"
                  "Microchannel floppy",
                  DRVF_CMDREF | DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "XDFLOPPY.FLT",
-                 "1.8MB floppy support",
+                 "1.8MB floppy support filter",
                  DRVF_CMDREF | DRVF_NOPARAMS),
 
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
@@ -276,6 +340,16 @@ CATEGORY "Other peripherals"
         DRIVER ( "DEVICE=", "SIO.SYS",
                  "SIO enhanced serial (COM) port driver",
                  DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "VCOM.SYS",
+                 "Standard serial (COM) port vdriver for MVDM",
+                 DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "VSIO.SYS",
+                 "SIO enhanced serial (COM) port vdrier for MVDM",
+                 DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "USBCOM.SYS",
+                 "USB modem",
+                 0),
         DRIVER ( "DEVICE=", "USBCOM.SYS",
                  "USB modem",
                  0),
@@ -305,6 +379,21 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "OPL3VDD.SYS",
                  "Yamaha SAx sound chip virtual driver",
                  0),
+        DRIVER ( "DEVICE=", "ES1868DD.SYS",
+                 "ESS AudioDrive 1868 sound chip driver",
+                 0)
+        DRIVER ( "DEVICE=", "VAUDDRV.SYS",
+                 "ESS AudioDrive 1868 sound chip driver",
+                 0)
+        DRIVER ( "DEVICE=", "ULTRADD.SYS",
+                 "Gravis UltraSound driver",
+                 0)
+        DRIVER ( "DEVICE=", "ULTRAVDD.SYS",
+                 "Gravis UltraSound virtual driver",
+                 0)
+        DRIVER ( "DEVICE=", "VCSHDD.SYS",
+                 "MMPM/2 video support driver",
+                 0)
 
         DRIVER ( "DEVICE=", "R0STUB.SYS",
                  "MMPM/2 R0STUB support driver",
@@ -325,9 +414,11 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "MPU401.SYS",
                  "MPU401 MIDI support",
                  0),
+
         DRIVER ( "DEVICE=", "USBAUDIO.SYS",
                  "USB Audio",
                  0),
+
         DRIVER ( "RUN=", "MIDIDMON.EXE",
                  "OS/2 MIDI daemon process",
                  0),
@@ -338,14 +429,25 @@ CATEGORY "Network"
         DRIVER ( "BASEDEV=", "DETNE2.SYS",
                  "NE200 card",
                  0),
-
         DRIVER ( "DEVICE=", "EL90X.OS2",
                  "3Com Fast EtherLink/EtherLink XL Family card",
                  0),
-
+        DRIVER ( "DEVICE=", "NULLNDIS.OS2",
+                 "Null NDIS driver",
+                 0)
+        DRIVER ( "DEVICE=", "PCIND.SYS",
+                 "Realtek 8029 based NIC driver",
+                 0)
+        DRIVER ( "DEVICE=", "PMAC.SYS",
+                 "SSW Parallel port NICless driver",
+                 0)
         DRIVER ( "DEVICE=", "IBMTOK.OS2",
                  "IBM TokenRing card",
                  0),
+
+        DRIVER ( "CALL=", "NETBIND.EXE",
+                 "NDIS Protocol to adapter binder",
+                 0)
 
         DRIVER ( "DEVICE=", "IPX.SYS",
                  "IPX protocol driver",
@@ -451,8 +553,16 @@ CATEGORY "System extensions"
         DRIVER ( "DEVICE=", "VWCAT.SYS",
                  "WatchCat process killer VDD",
                  0)
+
         DRIVER ( "DEVICE=", "THESEUS5.SYS",
                  "Theseus system analysis driver",
+                 0)
+        DRIVER ( "DEVICE=", "OS20MEMU.SYS",
+                 "OS20MEMU system analysis driver",
+                 0)
+
+        DRIVER ( "BASEDEV=", "K6.SYS",
+                 "AMD K6 processor family support driver",
                  0)
     }
 

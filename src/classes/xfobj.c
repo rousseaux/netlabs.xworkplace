@@ -247,6 +247,32 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpSetTrashObject:
+ *      sets the member trash object. This gets called
+ *      by the trash can while somSelf is being deleted
+ *      to the trash can or when the object has been
+ *      previously deleted and the trash can is first
+ *      populated after WPS bootup.
+ *
+ *      This reverse linkage makes sure we destroy the
+ *      trash object when the related object (somSelf)
+ *      gets deleted.
+ *
+ *@@added V0.9.2 (2000-03-15) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
+                                                WPObject* pTrashObject)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetTrashObject");
+
+    _pTrashObject = pTrashObject;
+
+    return TRUE;
+}
+
+/*
  *@@ xwpQueryObjectHotkey:
  *      this returns the global object hotkey which has been defined
  *      to be monitored for in the XWorkplace hook.
@@ -444,6 +470,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
  *      data here.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.2 (2000-03-15) [umoeller]: initializing new members
  */
 
 SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
@@ -456,6 +483,11 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     _fDeleted = FALSE;
     _pWPObjectData = NULL;
     _cbWPObjectData = 0;
+
+    _pWPObjectData = NULL;
+    _cbWPObjectData = 0;
+
+    _pTrashObject = NULL;
 }
 
 /*

@@ -1,7 +1,7 @@
 
 /*
  *@@sourcefile xthreads.c:
- *      this file has the "additional XWorkplace threads
+ *      this file has the additional XWorkplace threads
  *      to offload tasks to the background.
  *
  *      Currently, there are three additional threads which

@@ -255,6 +255,7 @@
     #define ID_XSH_MOUSEMAPPINGS2            58     // V0.9.1: XWPMouse "Mappings" page 2
     #define ID_XSH_XWPSCREEN                 59     // V0.9.2: default help for XWPScreen
     #define ID_XSH_MOUSE_CORNERS             60     // V0.9.2: XWPMouse "Movement" page 2
+    #define ID_XSH_SETTINGS_TRASH_DRIVES     61     // V0.9.2: XWPTrashCan "Drives" page
 
     // "subpanels" for pages with context-sensitive help
     // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page

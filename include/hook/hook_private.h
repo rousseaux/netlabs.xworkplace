@@ -73,10 +73,13 @@
                 // scroll bar of hwndScrollBarsOwner or NULLHANDLE if none
 
         // cached data used while MB3 is down; V0.9.1 (99-12-03)
-        LONG        lScrollBarSize;
+        // LONG        lScrollBarSize;
                 // size (height or width) of the scroll bar (in window coordinates);
                 // calculated when MB3 is depressed; the size of the buttons
                 // has already been subtracted
+                // V0.9.2 (2000-03-23) [umoeller]: removed this from SCROLLDATA
+                // because this might change while the user holds down MB3, so this
+                // needs to be recalculated with every WM_MOUSEMOVE
         SHORT       sMB3InitialMousePos,
                 // mouse position when MB3 was depressed (in window coordinates)
                     sMB3InitialThumbPos,

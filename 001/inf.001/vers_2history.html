@@ -17,13 +17,14 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.2 (March 5, 2000)</B>
+<P><B>XWorkplace 0.9.2 (March 24, 2000)</B>
 <H6>New features:
 <UL><LI>Incorporated "PageMage", virtual desktops.
 <P><LI>Automatic menu selection, even with configurable delay for submenus (as in Win95).
 Added second "Movement" page to "Mouse" object for this.
 <P><LI>New "Screen" settings object, which has those "System" settings pages dealing
 with the screen. The "Screen" page from "OS/2 Kernel" has been moved to that object now.
+<P><LI>Added "Syslevel" page to "OS/2 Kernel".
 <P><LI>Trash can now automatically calculates the total size if a folder has been deleted,
 including subdirectories.
 <P><LI>Added meaningful file operations error messages. Drives support is finally
@@ -45,6 +46,8 @@ to create it manually.
 <P><LI>XWorkplace settings objects had a "Create another" menu item, which doesn't make
 sense. Removed that.
 <P><LI>Rearranged controls on "File" page a bit.
+<P><LI>Added "?:\xwplog.log" file for XWorkplace warnings. If this file exists, you
+might have a problem.
 <P><LI>Increased stack space for all additional XWorkplace threads.
 <P><LI>Removed context-sensitive help upon pressing F1 on some notebook pages.
 Now we'll always show the help for the entire page first.
@@ -61,12 +64,15 @@ the characters.
 <P><LI>With folders, "Object" page would appear between the two "Icon" pages. Fixed.
 <P><LI>Using work area folders would lock the WPS hard when objects in the folder were
 re-opened. Fixed.
+<P><LI>Removed static view field from folder view structure (SUBCLASSEDLISTITEM).
+Now rechecking folder view every time this is needed because this might change.
 <P><LI>Deleting the configuration folder would take to a lot of WPS-internal crashes
 the next time a folder context menu was opened. Fixed.
 <P><LI>Drives were checked for readiness even if "Replace drive not ready dlg" was
 disabled. Fixed. If a drive cannot be opened now, disable that setting.
 <P><LI>There was a heap allocation error with the XWPSetup object on object creation,
 sometimes leading to system hangs. Fixed.
+<P><LI>"Features" page "Undo" and "Default" buttons created duplicate records. Fixed.
 <P><LI>XFldDisk and XFldShutdown items were checked in the "XWorkplace classes" dlg
 even if those classes were not installed. Fixed.
 <P><LI>Automatically creating the trashcan via "Features" works now.
@@ -80,6 +86,8 @@ PM resource leak). Fixed.
 working. Another (static) control on the page had the same dialog item ID. %$õ%!, I hate
 that. Took me half an hour to figure out.
 <P><LI>Mouse-button-3 scrolling didn't work horizontally when vertical scroll bar was disabled in a window. Fixed.
+<P><LI>Fixed Netscape hangs with MB3 scrolling when the scroller changed while being
+scrolled.
 <P><LI>Fixed some other minor quirks with MB3 scrolling.
 <P><LI>Many hook features were triggered even though the mouse was currently captured by an application
 or the system. This could lead to severe system hangs, especially with "show window list everywhere".

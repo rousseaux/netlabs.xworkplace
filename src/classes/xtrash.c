@@ -234,7 +234,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
     pcnbp->ulPageID = SP_TRASHCAN_DRIVES;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = pNLSStrings->pszTrashDrivesPage;
-    pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
+    pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN;
 
     pcnbp->pfncbInitPage    = trshTrashCanDrivesInitPage;
     pcnbp->pfncbItemChanged = trshTrashCanDrivesItemChanged;

@@ -1177,29 +1177,34 @@ typedef struct _FEATURESITEM
 
 FEATURESITEM FeatureItemsList[] =
         {
+            // general features
             ID_XCSI_GENERALFEATURES, 0, 0, NULL,
             ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XSYSTEMSOUNDS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
+            // folder features
             ID_XCSI_FOLDERFEATURES, 0, 0, NULL,
             ID_XCSI_ENABLESTATUSBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_ENABLESNAP2GRID, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
+            // mouse/keyboard features
             ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
             ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
+            // startup/shutdown features
             ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
             ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_RESTARTWPS, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XSHUTDOWN, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
+            // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1456,6 +1461,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: added global hotkeys flag
  *@@changed V0.9.1 (2000-02-09) [umoeller]: fixed mutex hangs while dialogs were displayed
+ *@@changed V0.9.2 (2000-03-19) [umoeller]: "Undo" and "Default" created duplicate records; fixed
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1657,7 +1663,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
 
             // update the display by calling the INIT callback
-            ulUpdateFlags = CBI_INIT | CBI_ENABLE;
+            ulUpdateFlags = CBI_SET | CBI_ENABLE;
         break; }
 
         case DID_DEFAULT:
@@ -1667,21 +1673,24 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            ulUpdateFlags = CBI_INIT | CBI_ENABLE;
+            ulUpdateFlags = CBI_SET | CBI_ENABLE;
         break; }
 
         default:
             fSave = FALSE;
     }
 
+    // now unlock the global settings for the following
+    // stuff; otherwise we block other threads
     cmnUnlockGlobalSettings();
 
     if (fSave)
+        // settings need to be saved:
         cmnStoreGlobalSettings();
 
     if (fShowClassesSetup)
     {
-        // "classes" dialog
+        // "classes" dialog to be shown (classes button):
         HWND hwndClassesDlg = WinLoadDlg(HWND_DESKTOP,     // parent
                                          pcnbp->hwndFrame,  // owner
                                          fnwpXWorkplaceClasses,

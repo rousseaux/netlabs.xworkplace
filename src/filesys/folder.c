@@ -1850,7 +1850,7 @@ VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
 
 VOID FormatFrame(PSUBCLASSEDLISTITEM psli, // in: frame information
                  MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
-                 ULONG *pulCount)       // in/out: frame control count from default wnd proc
+                 ULONG ulCount)         // in: frame control count (returned from default wnd proc)
 {
     // access the SWP array that is passed to us
     // and search all the controls for the container child window,
@@ -1859,7 +1859,7 @@ VOID FormatFrame(PSUBCLASSEDLISTITEM psli, // in: frame information
     PSWP        swpArr = (PSWP)mp1;
     CNRINFO     CnrInfo;
 
-    for (ul = 0; ul < *pulCount; ul++)
+    for (ul = 0; ul < ulCount; ul++)
     {
         if (WinQueryWindowUShort( swpArr[ul].hwnd, QWS_ID ) == 0x8008 )
                                                          // FID_CLIENT
@@ -1869,26 +1869,28 @@ VOID FormatFrame(PSUBCLASSEDLISTITEM psli, // in: frame information
             POINTL          ptlBorderSizes;
             // XFolderData     *somThis = XFolderGetData(psli->somSelf);
             ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
-            WinSendMsg(psli->hwndFrame, WM_QUERYBORDERSIZE,
-                       (MPARAM)&ptlBorderSizes, MPNULL);
+            WinSendMsg(psli->hwndFrame,
+                       WM_QUERYBORDERSIZE,
+                       (MPARAM)&ptlBorderSizes,
+                       MPNULL);
 
             // first initialize the _new_ SWP for the status bar.
             // Since the SWP array for the std frame controls is
             // zero-based, and the standard frame controls occupy
             // indices 0 thru ulCount-1 (where ulCount is the total
             // count), we use ulCount for our static text control.
-            swpArr[*pulCount].fl = SWP_MOVE | SWP_SIZE | SWP_NOADJUST | SWP_ZORDER;
-            swpArr[*pulCount].x  = ptlBorderSizes.x;
-            swpArr[*pulCount].y  = ptlBorderSizes.y;
-            swpArr[*pulCount].cx = swpArr[ul].cx;
-            swpArr[*pulCount].cy = ulStatusBarHeight;
-            swpArr[*pulCount].hwndInsertBehind = HWND_BOTTOM; // HWND_TOP;
-            swpArr[*pulCount].hwnd = psli->hwndStatusBar;
+            swpArr[ulCount].fl = SWP_MOVE | SWP_SIZE | SWP_NOADJUST | SWP_ZORDER;
+            swpArr[ulCount].x  = ptlBorderSizes.x;
+            swpArr[ulCount].y  = ptlBorderSizes.y;
+            swpArr[ulCount].cx = swpArr[ul].cx;  // same as cnr's width
+            swpArr[ulCount].cy = ulStatusBarHeight;
+            swpArr[ulCount].hwndInsertBehind = HWND_BOTTOM; // HWND_TOP;
+            swpArr[ulCount].hwnd = psli->hwndStatusBar;
 
             // adjust the origin and height of the container to
             // accomodate our static text control
-            swpArr[ul].y  += swpArr[*pulCount].cy;
-            swpArr[ul].cy -= swpArr[*pulCount].cy;
+            swpArr[ul].y  += swpArr[ulCount].cy;
+            swpArr[ul].cy -= swpArr[ulCount].cy;
 
             // now we need to adjust the workspace origin of the cnr
             // accordingly, or otherwise the folder icons will appear
@@ -1897,7 +1899,7 @@ VOID FormatFrame(PSUBCLASSEDLISTITEM psli, // in: frame information
             // We only do this the first time we're arriving here
             // (which should be before the WPS is populating the folder);
             // psli->fNeedCnrScroll has been initially set to TRUE
-            // by xfCreateStatusBar.
+            // by fdrCreateStatusBar.
             if (psli->fNeedCnrScroll)
             {
                 cnrhQueryCnrInfo(swpArr[ul].hwnd, &CnrInfo);
@@ -1923,6 +1925,8 @@ VOID FormatFrame(PSUBCLASSEDLISTITEM psli, // in: frame information
                     psli->fNeedCnrScroll = FALSE;
                 }
             } // end if (psli->fNeedCnrScroll)
+
+            break;  // we're done
         } // end if WinQueryWindowUShort
     } // end for (ul = 0; ul < ulCount; ul++)
 }
@@ -2435,8 +2439,9 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                 /*
                  * WM_QUERYFRAMECTLCOUNT:
                  *      this gets sent to the frame when PM wants to find out
-                 *      how many frame controls the frame has. We call the
-                 *      "parent" window proc and add one for the status bar.
+                 *      how many frame controls the frame has. According to what
+                 *      we return here, SWP structures are allocated for WM_FORMATFRAME.
+                 *      We call the "parent" window proc and add one for the status bar.
                  */
 
                 case WM_QUERYFRAMECTLCOUNT:
@@ -2484,13 +2489,14 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                     {
                         // we have a status bar:
                         // format the frame
-                        FormatFrame(psli, mp1, &ulCount);
+                        FormatFrame(psli, mp1, ulCount);
 
                         // increment the number of frame controls
                         // to include our status bar
                         mrc = (MRESULT)(ulCount + 1);
                     } // end if (psli->hwndStatusBar)
                     else
+                        // no status bar:
                         mrc = (MRESULT)ulCount;
                 break; }
 
@@ -2662,6 +2668,12 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                         mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
                 break; }
 
+                /* *************************
+                 *                         *
+                 * Miscellaneae:           *
+                 *                         *
+                 **************************/
+
                 /*
                  * WM_COMMAND:
                  *      this is intercepted to provide "delete" menu
@@ -2699,12 +2711,6 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                         _Pmpf(("    WM_COMMAND: calling default"));
                     #endif
                 break; }
-
-                /* *************************
-                 *                         *
-                 * Miscellaneae:           *
-                 *                         *
-                 **************************/
 
                 /*
                  * WM_CHAR:
@@ -2926,6 +2932,11 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                 {
                     HWND hwndSuppl = psli->hwndSupplObject;
 
+                    // destroy the supplementary object window for this folder
+                    // frame window; do this first because this references
+                    // the SLI
+                    WinDestroyWindow(hwndSuppl);
+
                     // upon closing the window, undo the subclassing, in case
                     // some other message still comes in
                     // (there are usually still two more, even after WM_DESTROY!!)
@@ -2933,10 +2944,6 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
 
                     // and remove this window from our subclassing linked list
                     fdrRemovePSLI(psli);
-
-                    // destroy the supplementary object window for this folder
-                    // frame window
-                    WinDestroyWindow(hwndSuppl);
 
                     // do the default stuff
                     fCallDefault = TRUE;
@@ -2976,7 +2983,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
         // We do this outside the TRY/CATCH stuff above so that
         // we don't get blamed for exceptions which we are not
         // responsible for, which was the case with XFolder < 0.85
-        // (i.e. exceptions in PMWP.DLL or Object Desktop or whatever).
+        // (i.e. exceptions in WPFolder or Object Desktop or whatever).
         if (pfnwpOriginal)
             mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
         else
@@ -4056,7 +4063,8 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
             {
                 mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2);
 
-                if (psbd->fDontBroadcast) {
+                if (psbd->fDontBroadcast)
+                {
                     // this flag has been set if it was not this status
                     // bar whose presparams have changed, but some other
                     // status bar; in this case, update only

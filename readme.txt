@@ -1,6 +1,6 @@
 XWorkplace 0.9.2 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated March 5, 2000, Ulrich M”ller
+Last updated March 24, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE

@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.2 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated March 5, 2000
+Last updated March 24, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -21,7 +21,8 @@ Last updated March 5, 2000
 ===============
 
     Welcome to XWorkplace V0.9.2. This is mainly a bugfix
-    release compared to V0.9.1.
+    release compared to V0.9.1. Some new features have been
+    introduces anyways, I couldn't resist.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell. It can add features to pretty much all
@@ -91,7 +92,7 @@ Last updated March 5, 2000
     Alternatively, manually kill XWPDAEMN.EXE before installing.
 
     With the latest WarpIN, you will get a notification message
-    that XWPDAEMN.EXE is running. Have WarpIN kill that programm
+    that XWPDAEMN.EXE is running. Have WarpIN kill that program
     (which is the XWorkplace Daemon), and you can overwrite your
     existing installation.
 
@@ -174,6 +175,13 @@ Last updated March 5, 2000
 
     6)  VIO windows started via object hotkeys never come up right to
         the foreground.
+
+    7)  PageMage is completely experimental at this point. There's no
+        configuration yet, and it moves windows around more than it
+        really should. Please don't complain.
+
+    Please check the BUGS and FEATURES files in this package also
+    before reporting bugs or suggesting features. Thank you.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

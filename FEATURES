@@ -3,13 +3,17 @@ This file lists feature suggestions from XWorkplace users.
 Please don't suggest features which are already listed in
 this file. Thank you.
 
+PageMage:
+    -- add configuration to "Screen" object
+
 setup strings:
     -- make setup strings editable
     -- create REXX scripts
     -- setup strings for XWP setup objects
 
-System paths page:
-    -- add other paths (TEMP, Java...)
+OS/2 Kernel:
+    -- add other paths (TEMP, Java...) to System paths page
+    -- add page for unparsed lines
 
 File page:
     -- allow changing dates
@@ -35,4 +39,7 @@ hook:
     -- 3) an extended Lockup (like the one from PC/2) which can be accessed through a
        shortcut (in the keyboard object).
     -- global special keys support (Win, notebook keys, Fujitsu...)
+
+startup:
+    -- environment var for X, Y pos of classes initialization dlg
 

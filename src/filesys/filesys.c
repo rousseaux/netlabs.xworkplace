@@ -763,6 +763,8 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             {
                 PSZ     pszExeFormat = NULL,
                         pszOS = NULL;
+                CHAR    szOS[400] = "";
+
                 switch (pExec->ulExeFormat)
                 {
                     case EXEFORMAT_OLDDOS:
@@ -814,10 +816,16 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                     break;
                 }
 
+                strcpy(szOS, pszOS);
+                if (pExec->f32Bits)
+                    strcat(szOS, " (32-bit)");
+                else
+                    strcat(szOS, " (16-bit)");
+
                 if (pszOS)
                     WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_XSDI_PROG_TARGETOS,
-                                      pszOS);
+                                      szOS);
 
                 // now get buildlevel info
                 if (doshExecQueryBldLevel(pExec) == NO_ERROR)
