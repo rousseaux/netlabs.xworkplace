@@ -747,6 +747,7 @@ SHORT XWPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
  *@@changed V0.9.7 (2001-01-21) [lafaix]: using MIS_BREAKSEPARATOR instead of MIS_BREAK
  *@@changed V0.9.16 (2002-01-05) [umoeller]: now applying folder "include" criteria
  *@@changed V0.9.19 (2002-04-14) [umoeller]: finally sorting folder templates under non-folders
+ *@@changed V0.9.20 (2002-07-09) [pr]: made "... objects dropped" entry clickable to open folder
  */
 
 VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
@@ -945,7 +946,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         winhInsertMenuSeparator(hwndMenu, MIT_END,
                                 (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
         sprintf(szMsgItem,
-                cmnGetString(ID_XSSI_DROPPED1),  // "... %d objects dropped,", // pszDropped1
+                cmnGetString(ID_XSSI_DROPPED1),  // "... %d objects dropped,"
                 ulObjectsLeftOut);
 
         winhInsertMenuItem(hwndMenu,
@@ -954,12 +955,22 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                            szMsgItem,
                            MIS_TEXT,
                            MIA_DISABLED);
+        /*
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
                            cmnGetString(ID_XSSI_DROPPED2),  // "open folder to see them", // pszDropped2
                            MIS_TEXT,
                            MIA_DISABLED);
+        */
+
+        // V0.9.20 (2002-07-09) [pr]
+        cmnuInsertOneObjectMenuItem(hwndMenu,
+                                    MIT_END,
+                                    cmnGetString(ID_XSSI_DROPPED2),  // "open folder to see them", // pszDropped2
+                                    MIS_TEXT,
+                                    pFolder,
+                                    OC_CONTENT);
     }
 
     // calculate maximum number of items per column by looking

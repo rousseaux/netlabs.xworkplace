@@ -100,7 +100,7 @@ interface XWPFontFolder : WPFolder
     wpInitData: override;
     wpUnInitData: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;   replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
 //#    wpOpen: override;
     wpPopulate: override;
@@ -169,6 +169,7 @@ interface M_XWPFontFolder : M_WPFolder
     wpclsUnInitData: override;
     wpclsQueryTitle: override;
     wpclsQueryStyle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsCreateDefaultTemplates: override;
 

@@ -48,8 +48,10 @@ for use by applications.
 the same physical memory pages, the private arena is different
 for each process. Each application has its own private memory
 (code and data). By contrast, the shared arena is used for
-code and data that is shared between applications: for example,
-all DLLs are loaded into that arena.
+code and data that is shared between applications: for example, all
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_dll.html">DLLs</A>
+are loaded into that arena.
 
 <P>The border between the shared and private arenas is variable
 and depends on how much shared memory is used in the system.
@@ -87,7 +89,7 @@ is called "high memory" and is again divided into shared and
 private arenas. This memory is only given to applications if
 they explicitly request this, so enabling high memory only
 has direct consequences for applications which are aware of
-its existence. (For example, OS/2 Java will use this arena
+its existence. (For example, Java will use this arena
 if <CODE>SET JAVA_HIGH_MEMORY=1</CODE> is specified in
 &cfgsys;.).
 

@@ -96,6 +96,9 @@ interface XWPString : WPAbstract
     BOOL        fConfirm;           // display confirmation box before
                                     // invoking setup string?
 
+    BOOL        fNoStringPage;      // if TRUE, do not show "string" page
+                                    // V0.9.20 (2002-07-12) [umoeller]
+
     PVOID       pvtiSetupThread;    // PTHREADINFO of setup thread
 
     ULONG       tidRunning;         // or NULLHANDLE
@@ -121,7 +124,7 @@ interface XWPString : WPAbstract
 
     wpOpen: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
     wpQueryDefaultView: override;
 
     wpAddObjectWindowPage: override;
@@ -174,6 +177,7 @@ interface M_XWPString : M_WPAbstract
     wpclsInitData: override;
     wpclsQueryStyle: override;
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
 

@@ -1,13 +1,15 @@
 <HTML>
 <HEAD>
     <TITLE>
-        WPProgram Strings
+        &xwp;: WPProgram Strings
     </TITLE>
 </HEAD>
 <!-- this is all new with V0.9.16 -->
 <!-- V0.9.19: title was wrong, fixed -->
 <BODY>
-<CODE>WPProgram</CODE> is the WPS class for all program objects
+<CODE>WPProgram</CODE> is the WPS class for all
+<!-- V0.9.20: added link -->
+&link_progobjs;
 (see <A HREF="glossary/gls_wpsclasses.html">WPS classes</A> for details).
 In addition to the settings strings
 recognized by the <CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE> class,
@@ -32,8 +34,10 @@ object. Multiple types are separated by commas.
 
 <DT><P><CITE><B>EXENAME</B>=<I>filename</I></CITE>
 <DD>Sets the executable that the program object should point to.
-This must either be fully qualified (i.e. include the full path of
-the executable) or be an executable on the <CODE>PATH</CODE>, or
+This must either be fully qualified (i.e. include the full
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+of the executable) or be an executable on the <CODE>PATH</CODE>, or
 executing the program will fail.
 
 <DT><P><CITE><B>MAXIMIZED</B>={YES|NO}</CITE>
@@ -79,9 +83,11 @@ Note that this does not affect PM programs. The default is <CODE>NO</CODE>.
 object. This may contain the standard program object substitution macros.
 
 <DT><P><CITE><B>SET </B> <I>variable</I>=<I>value</I></CITE>
-<DD>Sets an environment variable for the executable's session.
-
-<P>Note that &os2; uses environment variables also to pass DOS settings to
+<DD>Sets an
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_env.html">environment variable</A>
+for the executable's session.
+Note that &os2; uses environment variables also to pass DOS settings to
 DOS and &winos2; sessions.
 
 <DT><P><CITE><B>STARTUPDIR</B>=<I>path</I></CITE>

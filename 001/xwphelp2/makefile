@@ -106,7 +106,53 @@ BMPS = \
     img\xwpmedia.bmp \
     img\xwpscreen.bmp \
     img\xwsetup.bmp \
-    img\trashcan.bmp
+    img\trashcan.bmp \
+    img\os2infofdr.bmp \
+    img\setupfdr.bmp \
+    img\setupfdr_mini.bmp \
+    img\os2system.bmp \
+    img\os2system_mini.bmp \
+    img\os2cmdpfdr.bmp \
+    img\os2cmdpfdr_mini.bmp \
+    img\os2drives.bmp \
+    img\os2drives_mini.bmp \
+    img\disk_diskette.bmp \
+    img\disk_harddisk.bmp \
+    img\disk_network.bmp \
+    img\disk_cdrom.bmp \
+    img\os2_dosfull.bmp \
+    img\os2_doswin.bmp \
+    img\os2_os2full.bmp \
+    img\os2_os2win.bmp \
+    img\os2_win16.bmp \
+    img\foldericon.bmp \
+    img\pager.bmp \
+    img\os2wpstartup.bmp \
+    img\os2minwinv.bmp \
+    img\os2temps.bmp \
+    img\os2temps_mini.bmp \
+    img\template.bmp \
+    img\templ_pgm.bmp \
+    img\os2games.bmp \
+    img\os2warpcenter.bmp \
+    img\os2clipview.bmp \
+    img\notebook.bmp \
+    img\os2iconedit.bmp \
+    img\xfwps_mini.bmp \
+    img\os2eexe.bmp \
+    img\desktop.bmp \
+    img\desktop_mini.bmp \
+    img\selection.bmp \
+    img\fontsfdr.bmp \
+    img\os2pgmfdr.bmp \
+    img\os2internet.bmp \
+    img\os2wpnetwork.bmp \
+    img\os2wpnetgrp.bmp \
+    img\setup_look.bmp \
+    img\setup_look_mini.bmp \
+    img\estyler.bmp \
+    img\os2country.bmp \
+    img\drag.bmp
 
 # main target
 all: $(BMPS) $(COPYTO)\xfldr$(LANGUAGE).hlp
@@ -122,6 +168,7 @@ media\*.html \
 menus\*.html \
 objects\*.html \
 setup\*.html \
+tasks\*.html \
 wps\*.html \
 xcenter\*.html \
 xshutdown\*.html
@@ -133,14 +180,16 @@ xshutdown\*.html
 IPFFILE = $(OUTPUTDIR)\hlp$(LANGUAGE).ipf
 
 $(COPYTO)\xfldr$(LANGUAGE).hlp: $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp
-        cmd.exe /c copy $(OUTPUTDIR)\$(@B).hlp $(COPYTO)
+# added unlock help V0.9.20 (2002-07-12) [umoeller]
+    cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlockhelp.cmd
+    cmd.exe /c copy $(OUTPUTDIR)\$(@B).hlp $(COPYTO)
 
 $(IPFFILE): $(SRCHTML) makefile ..\$(ENTITYDEFS)
-        $(HTML2IPF) xfldr$(LANGUAGE).html
-        $(COPY) xfldr$(LANGUAGE).ipf $(IPFFILE)
+    $(HTML2IPF) xfldr$(LANGUAGE).html
+    $(COPY) xfldr$(LANGUAGE).ipf $(IPFFILE)
 
 $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp: $(IPFFILE) img\*.bmp
-        ipfc $(IPFFILE) $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp
+    ipfc $(IPFFILE) $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp
 
 
 

@@ -94,12 +94,27 @@ BOOL ctsIsShadow(WPObject *somSelf)
 
 /*
  *@@ ctsIsTransient:
- *
+ *      returns TRUE if somSelf is a WPTransient.
  */
 
 BOOL ctsIsTransient(WPObject *somSelf)
 {
     return _somIsA(somSelf, _WPTransient);
+}
+
+/*
+ *@@ ctsIsMinWin:
+ *      returns TRUE if somSelf is a WPMinWindow,
+ *      a transient mini-window in the minimized
+ *      window viewer.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+BOOL ctsIsMinWin(WPObject *somSelf)
+{
+    // WPMinWindow is undocumented, so check class name
+    return (!strcmp(_somGetClassName(somSelf), "WPMinWindow"));
 }
 
 /*

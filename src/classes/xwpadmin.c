@@ -590,27 +590,6 @@ SOM_Scope ULONG  SOMLINK adm_wpFilterPopupMenu(XWPAdmin *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK adm_wpQueryDefaultHelp(XWPAdmin *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    /* XWPAdminData *somThis = XWPAdminGetData(somSelf); */
-    XWPAdminMethodDebug("XWPAdmin","adm_wpQueryDefaultHelp");
-
-    return (XWPAdmin_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
-                                                          pHelpPanelId,
-                                                          HelpLibrary));
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -729,6 +708,33 @@ SOM_Scope PSZ  SOMLINK admM_wpclsQueryTitle(M_XWPAdmin *somSelf)
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryTitle");
 
     return (cmnGetString(ID_XSSI_ADMINISTRATOR)) ; // pszAdministrator
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK admM_wpclsQueryDefaultHelp(M_XWPAdmin *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
+{
+    /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
+    M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryDefaultHelp");
+
+    return (M_XWPAdmin_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
+                                                                 pHelpPanelId,
+                                                                 pszHelpLibrary));
 }
 
 /*

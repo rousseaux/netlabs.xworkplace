@@ -184,8 +184,8 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *      -- While the File thread is processing the file task,
  *         this is called if an error occurs.
  *
- *      Normally, this will return the same FOPSRET that was
- *      passed in in frError. For certain FOPSRET codes, this may
+ *      Normally, this will return the same APIRET that was
+ *      passed in in frError. For certain APIRET codes, this may
  *      return NO_ERROR, and the bottom layer will attempt to
  *      fix the error. However, this usually only works for
  *      things like "delete non-deletable" or something, which
@@ -205,10 +205,10 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@changed V0.9.16 (2001-12-06) [umoeller]: added delete folders confirmations
  */
 
-FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
-                                          WPObject *pObject,
-                                          FOPSRET frError, // in: error reported
-                                          PULONG pulIgnoreSubsequent)
+APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
+                                         WPObject *pObject,
+                                         APIRET frError, // in: error reported
+                                         PULONG pulIgnoreSubsequent)
                                                             // out: ignore subsequent errors of the same type
 {
     CHAR    szMsg[1000];
@@ -575,13 +575,13 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *@@changed V0.9.19 (2002-06-13) [umoeller]: fixed crash if pSourceFolder was NULL (font install)
  */
 
-static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
-                                        ULONG ulOperation,
-                                        HAB hab,  // in: as with fopsStartTask
-                                        WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
-                                        PGENERICPROGRESSWINDATA ppwd)
+static APIRET StartWithGenericProgress(HFILETASKLIST hftl,
+                                       ULONG ulOperation,
+                                       HAB hab,  // in: as with fopsStartTask
+                                       WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
+                                       PGENERICPROGRESSWINDATA ppwd)
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
 
     TRY_LOUD(excpt1)
     {
@@ -714,18 +714,18 @@ static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *@@changed V0.9.19 (2002-04-24) [umoeller]: added help support for confirmations
  */
 
-FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
-                             HAB hab,                 // in: as with fopsStartTask
-                             WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
-                             WPFolder *pTargetFolder, // in: target folder, as required by fopsCreateFileTaskList
-                             WPObject *pSourceObject, // in: first object with source emphasis
-                             ULONG ulSelection,       // in: SEL_* flags
-                             BOOL fRelatedObjects,    // in: if TRUE, then the objects must be trash objects,
+APIRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
+                            HAB hab,                 // in: as with fopsStartTask
+                            WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
+                            WPFolder *pTargetFolder, // in: target folder, as required by fopsCreateFileTaskList
+                            WPObject *pSourceObject, // in: first object with source emphasis
+                            ULONG ulSelection,       // in: SEL_* flags
+                            BOOL fRelatedObjects,    // in: if TRUE, then the objects must be trash objects,
                                                       // and their related objects will be collected instead
-                             HWND hwndCnr,            // in: container to get more source objects from
-                             PFOPSCONFIRM pConfirm)   // in: confirmations or NULL
+                            HWND hwndCnr,            // in: container to get more source objects from
+                            PFOPSCONFIRM pConfirm)   // in: confirmations or NULL
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
 
     WPObject *pObject;
 
@@ -753,7 +753,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                 // now add all objects to the task list
                 while (pObject)
                 {
-                    FOPSRET     frc2;
+                    APIRET      frc2;
                     WPObject    *pAddObject = pObject;
                     #ifdef DEBUG_FOPS
                         _PmpfF(("got object %s", _wpQueryTitle(pObject)));
@@ -850,7 +850,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
         frc = FOPSERR_INVALID_OBJECT;
 
     #ifdef DEBUG_FOPS
-        _PmpfF(("returning FOPSRET %d", frc));
+        _PmpfF(("returning APIRET %d", frc));
     #endif
 
     return (frc);
@@ -876,13 +876,13 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
  *@@changed V0.9.4 (2000-08-03) [umoeller]: now checking for "no objects"
  */
 
-FOPSRET fopsStartTaskFromList(ULONG ulOperation,
-                              HAB hab,                 // in: as with fopsStartTask
-                              WPFolder *pSourceFolder,
-                              WPFolder *pTargetFolder,
-                              PLINKLIST pllObjects)      // in: list with WPObject* pointers
+APIRET fopsStartTaskFromList(ULONG ulOperation,
+                             HAB hab,                 // in: as with fopsStartTask
+                             WPFolder *pSourceFolder,
+                             WPFolder *pTargetFolder,
+                             PLINKLIST pllObjects)      // in: list with WPObject* pointers
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
 
     // allocate progress window data structure
     // this is passed to fopsCreateFileTaskList as ulUser
@@ -917,7 +917,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
             while (pNode)
             {
                 WPObject *pObject = (WPObject*)pNode->pItemData;
-                FOPSRET frc2;
+                APIRET frc2;
 
                 #ifdef DEBUG_FOPS
                     _PmpfF(("got object %s", _wpQueryTitle(pObject) ));
@@ -965,7 +965,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
         frc = ERROR_NOT_ENOUGH_MEMORY;
 
     #ifdef DEBUG_FOPS
-        _PmpfF(("FOPSRET %d", frc));
+        _PmpfF(("APIRET %d", frc));
     #endif
 
     return (frc);
@@ -1014,13 +1014,13 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
  *@@changed V0.9.19 (2002-04-24) [umoeller]: added help to some confirmations
  */
 
-FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartTask
-                               WPObject *pSourceObject, // in: first object with source emphasis
-                               ULONG ulSelection,       // in: SEL_* flag
-                               HWND hwndCnr,            // in: container to collect objects from
-                               BOOL fTrueDelete)        // in: if TRUE, perform true delete; if FALSE, move to trash can
+APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartTask
+                              WPObject *pSourceObject, // in: first object with source emphasis
+                              ULONG ulSelection,       // in: SEL_* flag
+                              HWND hwndCnr,            // in: container to collect objects from
+                              BOOL fTrueDelete)        // in: if TRUE, perform true delete; if FALSE, move to trash can
 {
-    FOPSRET     frc = NO_ERROR;
+    APIRET      frc = NO_ERROR;
 
     ULONG       ulOperation = XFT_MOVE2TRASHCAN;
     FOPSCONFIRM Confirm = {0};
@@ -1141,13 +1141,13 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
  *@@added V0.9.1 (2000-01-31) [umoeller]
  */
 
-FOPSRET fopsStartTrashRestoreFromCnr(HAB hab,                 // in: as with fopsStartTask
-                                     WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
-                                     WPFolder *pTargetFolder, // in: specific target folder or NULL for
-                                                              // each trash object's original folder
-                                     WPObject *pSourceObject, // in: first object with source emphasis
-                                     ULONG ulSelection,       // in: SEL_* flag
-                                     HWND hwndCnr)            // in: container to collect objects from
+APIRET fopsStartTrashRestoreFromCnr(HAB hab,                 // in: as with fopsStartTask
+                                    WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
+                                    WPFolder *pTargetFolder, // in: specific target folder or NULL for
+                                                             // each trash object's original folder
+                                    WPObject *pSourceObject, // in: first object with source emphasis
+                                    ULONG ulSelection,       // in: SEL_* flag
+                                    HWND hwndCnr)            // in: container to collect objects from
 {
     return (fopsStartTaskFromCnr(XFT_RESTOREFROMTRASHCAN,
                                  hab,
@@ -1181,12 +1181,12 @@ FOPSRET fopsStartTrashRestoreFromCnr(HAB hab,                 // in: as with fop
  *@@changed V0.9.4 (2000-08-03) [umoeller]: confirmations were always displayed; fixed, added fConfirm
  */
 
-FOPSRET fopsStartTrashDestroyFromCnr(HAB hab,                 // in: as with fopsStartTask
-                                     WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
-                                     WPObject *pSourceObject, // in: first object with source emphasis
-                                     ULONG ulSelection,       // in: SEL_* flag
-                                     HWND hwndCnr,            // in: container to collect objects from
-                                     BOOL fConfirm)           // in: display confirmation?
+APIRET fopsStartTrashDestroyFromCnr(HAB hab,                 // in: as with fopsStartTask
+                                    WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
+                                    WPObject *pSourceObject, // in: first object with source emphasis
+                                    ULONG ulSelection,       // in: SEL_* flag
+                                    HWND hwndCnr,            // in: container to collect objects from
+                                    BOOL fConfirm)           // in: display confirmation?
 {
     FOPSCONFIRM Confirm = {0};
 
@@ -1227,10 +1227,10 @@ FOPSRET fopsStartTrashDestroyFromCnr(HAB hab,                 // in: as with fop
  *@@changed V0.9.7 (2001-01-17) [umoeller]: fixed crash with invalid fopsDeleteFileTaskList
  */
 
-FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
-                          WPFolder *pFolder)    // in: folder to populate
+APIRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
+                         WPFolder *pFolder)    // in: folder to populate
 {
-    FOPSRET     frc = NO_ERROR;
+    APIRET     frc = NO_ERROR;
     HFILETASKLIST hftl = NULLHANDLE;
 
     // create task list for the desired task
@@ -1274,12 +1274,12 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
 
-FOPSRET fopsStartFontDeinstallFromCnr(HAB hab,          // in: as with fopsStartTask
-                                      WPFolder *pFontFolderSource, // in: XWPFontFolder with font objects
-                                      WPObject *pSourceObject,  // in: first XWPFontObject
-                                      ULONG ulSelection,        // in: SEL_* flag
-                                      HWND hwndCnr,             // in: container to collect objects from
-                                      BOOL fConfirm)            // in: display confirmation?
+APIRET fopsStartFontDeinstallFromCnr(HAB hab,          // in: as with fopsStartTask
+                                     WPFolder *pFontFolderSource, // in: XWPFontFolder with font objects
+                                     WPObject *pSourceObject,  // in: first XWPFontObject
+                                     ULONG ulSelection,        // in: SEL_* flag
+                                     HWND hwndCnr,             // in: container to collect objects from
+                                     BOOL fConfirm)            // in: display confirmation?
 {
     FOPSCONFIRM Confirm = {0};
 

@@ -22,7 +22,7 @@
 ;      SOM Emitter emitdef: 2.41
 
 LIBRARY xwpres INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.20#@ XWorkplace resources module'
+Description '@#Ulrich M”ller:0.9.20#@ eWorkplace resources module'
 PROTMODE
 DATA MULTIPLE NONSHARED LOADONCALL
 

@@ -746,27 +746,6 @@ SOM_Scope BOOL  SOMLINK cdp_wpModifyPopupMenu(XMMCDPlayer *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK cdp_wpQueryDefaultHelp(XMMCDPlayer *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
-    XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpQueryDefaultHelp");
-
-    return (XMMCDPlayer_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
-                                                             pHelpPanelId,
-                                                             HelpLibrary));
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -915,6 +894,33 @@ SOM_Scope PSZ  SOMLINK cdpM_wpclsQueryTitle(M_XMMCDPlayer *somSelf)
     M_XMMCDPlayerMethodDebug("M_XMMCDPlayer","cdpM_wpclsQueryTitle");
 
     return (cmnGetString(ID_XSSI_CDPLAYER)) ; // pszCDPlayer
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK cdpM_wpclsQueryDefaultHelp(M_XMMCDPlayer *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
+{
+    /* M_XMMCDPlayerData *somThis = M_XMMCDPlayerGetData(somSelf); */
+    M_XMMCDPlayerMethodDebug("M_XMMCDPlayer","cdpM_wpclsQueryDefaultHelp");
+
+    return (M_XMMCDPlayer_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
+                                                                    pHelpPanelId,
+                                                                    pszHelpLibrary));
 }
 
 /*

@@ -26,7 +26,7 @@
  *          --  the bottom layer (see fops_bottom.c);
  *          --  the top layer (see fops_top.c).
  *
- *          The framework uses the special FOPSRET error return type,
+ *          The framework uses the special APIRET error return type,
  *          which is NO_ERROR (0) if no error occured.
  *
  *      This file is ALL new with V0.9.0.
@@ -154,11 +154,11 @@
  *@@added V0.9.6 (2000-10-25) [umoeller]
  */
 
-FOPSRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
-                       PULONG pulFilesCount,    // out: no. of dormant files found (raised!)
-                       PULONG pulSizeContents)  // out: total size of dormant files found (raised!)
+APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
+                      PULONG pulFilesCount,    // out: no. of dormant files found (raised!)
+                      PULONG pulSizeContents)  // out: total size of dormant files found (raised!)
 {
-    FOPSRET       frc = NO_ERROR;
+    APIRET  frc = NO_ERROR;
 
     CHAR    szFolderPath[CCHMAXPATH];
 
@@ -526,15 +526,15 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  */
 
-FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (plain WPObject* pointers)
-                             WPObject *pObject,     // in: object to start with
-                             BOOL fFoldersOnly,
-                             PULONG pulObjectCount, // out: objects count on list;
-                                                    // the ULONG must be set to 0 before calling this!
-                             PULONG pulDormantFilesCount) // out: count of dormant files;
-                                                    // the ULONG must be set to 0 before calling this!
+APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (plain WPObject* pointers)
+                            WPObject *pObject,     // in: object to start with
+                            BOOL fFoldersOnly,
+                            PULONG pulObjectCount, // out: objects count on list;
+                                                   // the ULONG must be set to 0 before calling this!
+                            PULONG pulDormantFilesCount) // out: count of dormant files;
+                                                   // the ULONG must be set to 0 before calling this!
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
 
     if (_somIsA(pObject, _WPFolder))
     {

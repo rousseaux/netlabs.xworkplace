@@ -238,7 +238,7 @@ interface XFldObject : WPObject
     wpUnInitData: override;
 
     wpSetTitle: override;
-    //# wpSetDefaultView: override; removed V0.9.19 (2002-07-01) [umoeller]
+//# wpSetDefaultView: override; removed V0.9.19 (2002-07-01) [umoeller]
     wpSetObjectID: override;
 
     wpSaveDeferred: override;
@@ -252,6 +252,9 @@ interface XFldObject : WPObject
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
+
+    wpQueryDefaultHelp: override;
+    wpDisplayHelp: override;
 
     wpAddSettingsPages: override;
     wpAddObjectGeneralPage: override;

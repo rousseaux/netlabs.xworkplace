@@ -972,29 +972,6 @@ SOM_Scope BOOL  SOMLINK xvc_wpAddSettingsPages(XWPVCard *somSelf,
     return brc;
 }
 
-
-/*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK xvc_wpQueryDefaultHelp(XWPVCard *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    /* XWPVCardData *somThis = XWPVCardGetData(somSelf); */
-    XWPVCardMethodDebug("XWPVCard","xvc_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_VCARD_MAIN;
-    return TRUE;
-}
-
-
 /*
  *@@ wpCreateFromTemplate:
  *
@@ -1059,6 +1036,19 @@ SOM_Scope BOOL  SOMLINK xvcM_wpclsCreateDefaultTemplates(M_XWPVCard *somSelf,
 }
 
 /*
+ *@@ wpclsQueryTitle:
+ *
+ */
+
+SOM_Scope PSZ  SOMLINK xvcM_wpclsQueryTitle(M_XWPVCard *somSelf)
+{
+    /* M_XWPVCardData *somThis = M_XWPVCardGetData(somSelf); */
+    M_XWPVCardMethodDebug("M_XWPVCard","xvcM_wpclsQueryTitle");
+
+    return "vCard";
+}
+
+/*
  *@@ wpclsQueryDefaultView:
  *      this WPObject class method returns the default view for
  *      objects of a class.
@@ -1087,16 +1077,33 @@ SOM_Scope ULONG  SOMLINK xvcM_wpclsQueryDefaultView(M_XWPVCard *somSelf)
 }
 
 /*
- *@@ wpclsQueryTitle:
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
  *
+ *      We override the default data file help and return
+ *      help for vCard objects here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
  */
 
-SOM_Scope PSZ  SOMLINK xvcM_wpclsQueryTitle(M_XWPVCard *somSelf)
+SOM_Scope BOOL  SOMLINK xvcM_wpclsQueryDefaultHelp(M_XWPVCard *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
 {
     /* M_XWPVCardData *somThis = M_XWPVCardGetData(somSelf); */
-    M_XWPVCardMethodDebug("M_XWPVCard","xvcM_wpclsQueryTitle");
+    M_XWPVCardMethodDebug("M_XWPVCard","xvcM_wpclsQueryDefaultHelp");
 
-    return "vCard";
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_VCARD_MAIN;
+    return TRUE;
 }
 
 /*

@@ -802,9 +802,8 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
     InitMappings(pTrashCan, pfNeedSave);
 
     // check if we have a mapping for the source folder yet
-    pMapping = trshGetMappingFromSource(pTrashCan,
-                                        pcszSourceFolder);
-    if (pMapping)
+    if (pMapping = trshGetMappingFromSource(pTrashCan,
+                                            pcszSourceFolder))
         // got one: return the folder
         pFolderInTrash = pMapping->pFolderInTrash;
     else
@@ -2034,7 +2033,7 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                 {
                     // no errors so far:
                     // add item to list
-                    FOPSRET frc = NO_ERROR;
+                    APIRET frc = NO_ERROR;
                     frc = fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
                                                    NULL, // no callback
                                                    pobjDropped,
@@ -2097,6 +2096,7 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
  *@@added V0.9.1 (2000-01-31) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: switched implementation to XFT_TRUEDELETE
  *@@changed V0.9.7 (2001-01-17) [umoeller]: now returning ULONG
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: changed dialog confirmation title
  */
 
 ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
@@ -2104,14 +2104,15 @@ ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
                         HWND hwndConfirmOwner,
                         PULONG pulDeleted)   // out: if TRUE is returned, no. of deleted objects; can be 0
 {
-    FOPSRET     frc = NO_ERROR;
+    APIRET  frc = NO_ERROR;
 
     TRY_LOUD(excpt1)
     {
         if (hwndConfirmOwner)
             // confirmations desired:
             if (cmnMessageBoxExt(hwndConfirmOwner,
-                                 168,      // "trash can"
+                                 // 168,      // "trash can"
+                                 242,       // Empty Trash Can V0.9.20 (2002-07-12) [umoeller]
                                  NULL, 0,
                                  169,      // "really empty?"
                                  MB_YESNO | MB_DEFBUTTON2)
@@ -2437,13 +2438,13 @@ VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf)
  *      --  FOPSERR_WPQUERYFILENAME_FAILED
  *
  *@@added V0.9.2 (2000-03-04) [umoeller]
- *@@changed V0.9.16 (2001-11-10) [umoeller]: now returning FOPSRET
+ *@@changed V0.9.16 (2001-11-10) [umoeller]: now returning APIRET
  *@@changed V0.9.16 (2001-11-10) [umoeller]: fixed UNC objects
  */
 
 APIRET trshIsOnSupportedDrive(WPObject *pObject)
 {
-    FOPSRET frc = FOPSERR_NOT_HANDLED_ABORT;
+    APIRET frc = FOPSERR_NOT_HANDLED_ABORT;
 
     WPFolder *pFolder;
     CHAR szFolderPath[CCHMAXPATH];

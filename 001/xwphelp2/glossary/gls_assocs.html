@@ -1,13 +1,17 @@
 <HTML>
 <HEAD>
     <TITLE>
-        Types and Associations
+        &xwp;: Types and Associations
     </TITLE>
 </HEAD>
-<!-- this page is all new with V0.9.9 -->
+<!-- this page is all new with V0.9.9
+    Changes:
+    V0.9.20: add &xwp; to title
+-->
 <BODY>
 In the Workplace Shell, associations link data files to
-program objects and program files.
+<!-- V0.9.20: replaced this line -->
+&link_progobjs;.
 
 <IFNDEF __NOXWPSETUP__>
 If extended file types have been enabled in the
@@ -19,9 +23,10 @@ this is done entirely with the use of file types.
 
 <UL><LI>You can explicitly set a type on the "Types" page
 of a data file's <A HREF="glossary/gls_notebook.html">properties notebook</A>.
-This type is stored in
-the extended attributes of the file and remain there unless
-you remove it again.
+This type is stored in the
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_eas.html">extended attributes</A>
+of the file and remain there unless you remove it again.
 
 <P><LI>In addition, &xwp; also associates file types
 automatically according to so-called "filters", which are
@@ -30,7 +35,7 @@ strings containing the standard
 "*" and/or "?".
 
 <P>These file type filters can be defined on the "File types" page in the
-<A HREF="objects/obj_wps.html">"Workplace Shell" object</A>. For example,
+&link_wpsobj;. For example,
 you can create a file type "Acrobat PDF" with the filter <CODE>*.PDF</CODE>,
 and all such files will automatically receive that type.
 
@@ -48,7 +53,7 @@ matching <CODE>*.PDF</CODE> can be opened with that program object.
 
 <P>In addition, file types may <B>inherit</B> from each other. You
 can define those parent-child relationships on the "File types" page in the
-<A HREF="objects/obj_wps.html">"Workplace Shell" object</A>, simply by dragging
+&link_wpsobj;, simply by dragging
 the file types around. If a type has thus been made a child of another type,
 the associations for the parent type will also be available for all data files
 of the child type.

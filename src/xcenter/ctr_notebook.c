@@ -135,7 +135,7 @@
  *@@changed V0.9.19 (2002-05-07) [umoeller]: added "auto screen border"
  */
 
-static XWPSETUPENTRY    G_XCenterSetupSet[] =
+static const XWPSETUPENTRY    G_XCenterSetupSet[] =
     {
         /*
          * ulWindowStyle bitfield... first a LONG, then the bitfields

@@ -119,7 +119,7 @@ interface XWPTrashObject : WPTransient
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpMoveObject: override;
 
@@ -181,10 +181,14 @@ interface M_XWPTrashObject : M_WPTransient
      */
 
     wpclsInitData: override;
+
     wpclsCreateDefaultTemplates: override;
+
     wpclsQueryDetailsInfo: override;
     wpclsQueryTitle: override;
     wpclsQueryStyle: override;
+    wpclsQueryDefaultHelp: override;
+
   };
 #endif /* __SOMIDL__ */
 };

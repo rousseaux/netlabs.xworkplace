@@ -1,19 +1,23 @@
 <HTML>
 <HEAD>
     <TITLE>
-        WPS Classes
+        &xwp;: Workplace Shell Classes
     </TITLE>
 </HEAD>
-<!-- all new with V0.9.13 -->
+<!-- all new with V0.9.13
+    Changes:
+    V0.9.20: title changed
+-->
 <BODY>
 &os2;'s Workplace Shell (WPS) is frequently described as
-<B>"object-oriented".</B> This term suggests that -- as opposed to other user
-operating system user interfaces -- everything the Workplace Shell
+<B>"object-oriented".</B> This term suggests that -- as opposed to the
+user interfaces of other operating systems --
+everything the Workplace Shell
 deals with is first considered an <B>"object":</B> this applies, for example, to
 <!-- V0.9.19: link added -->
-<A HREF="objects/obj_fdr_main.html">folders</A>,
+&link_folders;,
 <!-- V0.9.19: link added -->
-<A HREF="objects/obj_dataf.html">data files</A>,
+&link_datafiles;,
 printers, drive objects etc. All these objects have certain common
 characteristics (such as
 <!-- V0.9.19: links added -->
@@ -31,8 +35,10 @@ A class is therefore not visible on the Desktop, it thus does not
 about properties and capabilities of an object and the executable code
 to make an object do something.
 
-<P>All WPS classes reside in <B>dynamic link libraries</B> (DLLs). For
-example, most of the default WPS classes reside in the large <CODE>PMWP.DLL</CODE>
+<P>All WPS classes reside in
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_dll.html">dynamic link libraries (DLLs)</A>.
+For example, most of the default WPS classes reside in the large <CODE>PMWP.DLL</CODE>
 file in the <CODE>\OS2\DLL</CODE> directory. All &xwp; classes reside in
 <CODE>XFLDR.DLL</CODE> in the &xwp; installation directory.
 
@@ -68,7 +74,7 @@ make the general structure more lucid (where the lines represent parentship):
    ÀÄÄ WPTransient
 </PRE>
 
-<P>You see that all classes are descendants of <CODE>WPObject</CODE>,
+You see that all classes are descendants of <CODE>WPObject</CODE>,
 which is therefore called the "root class" of all WPS classes.
 This implements all the features that are
 common to all Desktop objects: as mentioned before, e.g. &popmenu;s and

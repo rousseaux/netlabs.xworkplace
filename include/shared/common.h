@@ -1349,12 +1349,12 @@
 
     } XWPSETUPENTRY, *PXWPSETUPENTRY;
 
-    VOID XWPENTRY cmnSetupInitData(PXWPSETUPENTRY paSettings,
+    VOID XWPENTRY cmnSetupInitData(const XWPSETUPENTRY *paSettings,
                                    ULONG cSettings,
                                    PVOID somThis);
 
     #ifdef XSTRING_HEADER_INCLUDED
-        VOID XWPENTRY cmnSetupBuildString(PXWPSETUPENTRY paSettings,
+        VOID XWPENTRY cmnSetupBuildString(const XWPSETUPENTRY *paSettings,
                                           ULONG cSettings,
                                           PVOID somThis,
                                           PXSTRING pstr);
@@ -1362,26 +1362,26 @@
 
     #ifdef SOM_WPObject_h
         BOOL XWPENTRY cmnSetupScanString(WPObject *somSelf,
-                                         PXWPSETUPENTRY paSettings,
+                                         const XWPSETUPENTRY *paSettings,
                                          ULONG cSettings,
                                          PVOID somThis,
                                          PSZ pszSetupString,
                                          PULONG pcSuccess);
 
         BOOL XWPENTRY cmnSetupSave(WPObject *somSelf,
-                                   PXWPSETUPENTRY paSettings,
+                                   const XWPSETUPENTRY *paSettings,
                                    ULONG cSettings,
                                    PCSZ pcszClassName,
                                    PVOID somThis);
 
         BOOL XWPENTRY cmnSetupRestore(WPObject *somSelf,
-                                      PXWPSETUPENTRY paSettings,
+                                      const XWPSETUPENTRY *paSettings,
                                       ULONG cSettings,
                                       PCSZ pcszClassName,
                                       PVOID somThis);
     #endif
 
-    ULONG XWPENTRY cmnSetupSetDefaults(PXWPSETUPENTRY paSettings,
+    ULONG XWPENTRY cmnSetupSetDefaults(const XWPSETUPENTRY *paSettings,
                                        ULONG cSettings,
                                        PULONG paulOffsets,
                                        ULONG cOffsets,

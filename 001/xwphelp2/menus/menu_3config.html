@@ -1,28 +1,31 @@
 <HTML>
 <HEAD>
     <TITLE>
-        Configuring Pop-Up Menus
+        &xwp;: Configuring Pop-Up Menus
     </TITLE>
 </HEAD>
 <!-- This is all new with V0.9.16 -->
+<!-- V0.9.20: title changed -->
 <BODY>
 &xwp; allows you to globally add menu items to the
 <!-- V0.9.19: link added -->
 <A HREF="glossary/gls_popmenu.html">&popmenu;s</A>
 of all
 <!-- V0.9.19: link added -->
-<A HREF="objects/obj_fdr_main.html">folders</A>
+&link_folders;
 on the system with the use of a special
 <B>&cfgfdr;,</B> which looks just like any normal WPS folder.
-Per default,
+
+<P>This folder is placed in your
 <IFDEF __EWORKPLACE__>
-this special folder is placed in your &syssetup; folder.
+<!-- V0.9.20: changed this -->
+&link_lookfdr;.
 </IFDEF>
 <IFNDEF __EWORKPLACE__>
-this special folder is placed in your "XWorkplace Installation" folder.
+"XWorkplace Installation" folder.
 </IFNDEF>
 
-<P>Whatever you put into this &cfgfdr; will immediately
+<P>Whatever you put into this folder will immediately
 appear in the &popmenu;s of all the folders on your system.
 Note however that certain object classes have a special meaning in the
 context of the &cfgfdr;:
@@ -45,7 +48,9 @@ the default setup).
 There's no limit on nesting folders, so you may create hierarchies many
 levels deep.
 
-<BR><LI>A <B>template or shadow of a template</B> will result in the creation of a
+<!-- V0.9.20: added link -->
+<BR><LI>A <B><A HREF="tasks/tsk_templates.html">template</A>
+or shadow of a template</B> will result in the creation of a
 new object from it when the respective menu item is selected. The new object will be
 created in the folder whose &popmenu; was used.
 <P>For example, if you have created a folder template with
@@ -53,7 +58,8 @@ special settings for fonts, colors, etc., you can put a shadow of it into a Conf
 Folder, and when you select its corresponding menu item from a folder's &popmenu;, a
 new folder will be created in this folder, just as if you had dragged a folder from the
 template.
-<P>See <A HREF="menus/menu_2template.html">"Creating objects with &xwp;"</A> for more.
+<!-- V0.9.20: link name changed -->
+<P>See <A HREF="menus/menu_2template.html">"Creating objects with Create New"</A> for more.
 
 <BR><LI>A <A HREF="objects/obj_string.html">setup string object</A> will invoke
 the setup string which is stored in the setup string object on the folder whose

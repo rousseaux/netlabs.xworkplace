@@ -78,7 +78,7 @@ interface XFldSystem : WPSystem
 
     wpFilterPopupMenu: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;        replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpAddSettingsPages: override;
 
@@ -127,8 +127,11 @@ interface M_XFldSystem : M_WPSystem
      */
 
     wpclsInitData: override;
+
     wpclsQuerySettingsPageSize: override;
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
+
     wpclsQueryIconData: override;
   };
 #endif /* __SOMIDL__ */

@@ -50,6 +50,8 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #include <os2.h>
 
@@ -62,6 +64,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\except.h"             // exception handling
 
 // SOM headers which don't crash with prec. header files
 #include "xfont.ih"
@@ -224,64 +227,61 @@ SOM_Scope void  SOMLINK fon_wpUnInitData(XWPFontFolder *somSelf)
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *
- *      We'll display some help for the font folder.
- */
-
-SOM_Scope BOOL  SOMLINK fon_wpQueryDefaultHelp(XWPFontFolder *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
-    XWPFontFolderMethodDebug("XWPFontFolder","fon_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_FONTFOLDER;
-    return TRUE;
-}
-
-/*
  *@@ wpPopulate:
  *      this instance method populates a folder, in this
  *      case, the font folder.
  *
  *@@changed V0.9.9 (2001-03-11) [umoeller]: fFoldersOnly wasn't respected, fixed.
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: finally requesting find sem properly
  */
 
 SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
                                        ULONG ulReserved, PSZ pszPath,
                                        BOOL fFoldersOnly)
 {
-    BOOL brc = TRUE;
+    BOOL    brc = TRUE;
+    BOOL    fFindSem = FALSE;
+
     XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpPopulate");
 
-    brc = XWPFontFolder_parent_WPFolder_wpPopulate(somSelf,
-                                                   ulReserved,
-                                                   pszPath,
-                                                   fFoldersOnly);
-
-    if (!_fFilledWithFonts)
+    TRY_LOUD(excpt1)
     {
-        // very first call:
-        _ulFontsCurrent = 0;
-        _ulFontsMax = 0;
-
-        if (!fFoldersOnly)      // V0.9.9 (2001-03-11) [umoeller]
+        // request the find mutex to avoid weird behavior;
+        // there can only be one populate at a time
+        // V0.9.20 (2002-07-12) [umoeller]
+        if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
-            // tell XFolder to allow wpAddToContent hacks...
-            _xwpSetDisableCnrAdd(somSelf, TRUE);
+            brc = XWPFontFolder_parent_WPFolder_wpPopulate(somSelf,
+                                                           ulReserved,
+                                                           pszPath,
+                                                           fFoldersOnly);
 
-            // now create font objects...
-            fonPopulateFirstTime(somSelf);
-            _fFilledWithFonts = TRUE;
+            if (!_fFilledWithFonts)
+            {
+                // very first call:
+                _ulFontsCurrent = 0;
+                _ulFontsMax = 0;
+
+                if (!fFoldersOnly)      // V0.9.9 (2001-03-11) [umoeller]
+                {
+                    // tell XFolder to allow wpAddToContent hacks...
+                    _xwpSetDisableCnrAdd(somSelf, TRUE);
+
+                    // now create font objects...
+                    fonPopulateFirstTime(somSelf);
+                    _fFilledWithFonts = TRUE;
+                }
+            }
         }
     }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fFindSem)
+        fdrReleaseFindMutexSem(somSelf);
 
     return brc;
 }
@@ -496,6 +496,35 @@ SOM_Scope ULONG  SOMLINK fonM_wpclsQueryStyle(M_XWPFontFolder *somSelf)
                 | CLSSTYLE_NEVERCOPY    // but allow move
                 | CLSSTYLE_NEVERDELETE
                 | CLSSTYLE_NEVERPRINT);
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return the font folder default help here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK fonM_wpclsQueryDefaultHelp(M_XWPFontFolder *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
+{
+    /* M_XWPFontFolderData *somThis = M_XWPFontFolderGetData(somSelf); */
+    M_XWPFontFolderMethodDebug("M_XWPFontFolder","fonM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FONTFOLDER;
+    return TRUE;
 }
 
 /*

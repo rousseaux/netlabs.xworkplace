@@ -32,10 +32,6 @@
         #error fileops.h requires wpobject.h to be included.
     #endif
 
-    #ifndef XWPERRORS_HEADER_INCLUDED
-        #error fileops.h requires shared\errors.h to be included.
-    #endif
-
     /* ******************************************************************
      *
      *   Expanded object lists
@@ -74,11 +70,11 @@
 
         VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI);
 
-        FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,
-                                     WPObject *pObject,
-                                     BOOL fFoldersOnly,
-                                     PULONG pulObjectCount,
-                                     PULONG pulDormantFilesCount);
+        APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,
+                                    WPObject *pObject,
+                                    BOOL fFoldersOnly,
+                                    PULONG pulObjectCount,
+                                    PULONG pulDormantFilesCount);
     #endif
 
     /********************************************************************
@@ -310,10 +306,10 @@
      *@@changed V0.9.4 (2000-07-27) [umoeller]: added pfIgnoreSubsequent
      */
 
-    typedef FOPSRET APIENTRY FNFOPSERRORCALLBACK(ULONG ulOperation,
-                                                 WPObject *pObject,
-                                                 FOPSRET frError,
-                                                 PBOOL pfIgnoreSubsequent);
+    typedef APIRET APIENTRY FNFOPSERRORCALLBACK(ULONG ulOperation,
+                                                WPObject *pObject,
+                                                APIRET frError,
+                                                PBOOL pfIgnoreSubsequent);
 
     #define FOPS_ISQ_MOVE2TRASH_READONLY    0x0001
 
@@ -328,24 +324,26 @@
 
     #define FOPS_ISQ_FONTINSTALL            0x0008
 
-    FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,
-                                   ULONG ulOperation,
-                                   WPFolder *pSourceFolder,
-                                   WPFolder *pTargetFolder,
-                                   FNFOPSPROGRESSCALLBACK *pfnProgressCallback,
-                                   FNFOPSERRORCALLBACK *pfnErrorCallback,
-                                   ULONG ulUser);
+    APIRET fopsCreateFileTaskList(HFILETASKLIST *phftl,
+                                  ULONG ulOperation,
+                                  WPFolder *pSourceFolder,
+                                  WPFolder *pTargetFolder,
+                                  FNFOPSPROGRESSCALLBACK *pfnProgressCallback,
+                                  FNFOPSERRORCALLBACK *pfnErrorCallback,
+                                  ULONG ulUser);
 
-    FOPSRET fopsValidateObjOperation(ULONG ulOperation,
-                                     FNFOPSERRORCALLBACK *pfnErrorCallback,
-                                     WPObject *pObject,
-                                     PBOOL pfIgnoreSubsequent);
+    APIRET fopsValidateObjOperation(ULONG ulOperation,
+                                    FNFOPSERRORCALLBACK *pfnErrorCallback,
+                                    WPObject *pObject,
+                                    PBOOL pfIgnoreSubsequent);
 
-    FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,
-                                WPObject *pObject);
+    APIRET fopsAddObjectToTask(HFILETASKLIST hftl,
+                               WPObject *pObject);
 
-    FOPSRET fopsStartTask(HFILETASKLIST hftl,
-                          HAB hab);
+    APIRET fopsStartTask(HFILETASKLIST hftl,
+                         HAB hab);
+
+    APIRET fopsDeleteFile(PCSZ pcszFilename);
 
     VOID fopsFileThreadProcessing(HAB hab,
                                   HFILETASKLIST hftl,
@@ -376,22 +374,22 @@
                                         // V0.9.19 (2002-04-24) [umoeller]
     } FOPSCONFIRM, *PFOPSCONFIRM;
 
-     FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,
-                                  HAB hab,
-                                  WPFolder *pSourceFolder,
-                                  WPFolder *pTargetFolder,
-                                  WPObject *pSourceObject,
-                                  ULONG ulSelection,
-                                  BOOL fRelatedObjects,
-                                  HWND hwndCnr,
-                                  PFOPSCONFIRM pConfirm);
+    APIRET fopsStartTaskFromCnr(ULONG ulOperation,
+                                HAB hab,
+                                WPFolder *pSourceFolder,
+                                WPFolder *pTargetFolder,
+                                WPObject *pSourceObject,
+                                ULONG ulSelection,
+                                BOOL fRelatedObjects,
+                                HWND hwndCnr,
+                                PFOPSCONFIRM pConfirm);
 
     #ifdef LINKLIST_HEADER_INCLUDED
-        FOPSRET fopsStartTaskFromList(ULONG ulOperation,
-                                      HAB hab,
-                                      WPFolder *pSourceFolder,
-                                      WPFolder *pTargetFolder,
-                                      PLINKLIST pllObjects);
+        APIRET fopsStartTaskFromList(ULONG ulOperation,
+                                     HAB hab,
+                                     WPFolder *pSourceFolder,
+                                     WPFolder *pTargetFolder,
+                                     PLINKLIST pllObjects);
     #endif
 
     /********************************************************************
@@ -400,36 +398,36 @@
      *
      ********************************************************************/
 
-    FOPSRET fopsStartDeleteFromCnr(HAB hab,
-                                   WPObject *pSourceObject,
-                                   ULONG ulSelection,
-                                   HWND hwndCnr,
-                                   BOOL fTrueDelete);
+    APIRET fopsStartDeleteFromCnr(HAB hab,
+                                  WPObject *pSourceObject,
+                                  ULONG ulSelection,
+                                  HWND hwndCnr,
+                                  BOOL fTrueDelete);
 
-    FOPSRET fopsStartTrashRestoreFromCnr(HAB hab,
-                                         WPFolder *pTrashSource,
-                                         WPFolder *pTargetFolder,
-                                         WPObject *pSourceObject,
-                                         ULONG ulSelection,
-                                         HWND hwndCnr);
+    APIRET fopsStartTrashRestoreFromCnr(HAB hab,
+                                        WPFolder *pTrashSource,
+                                        WPFolder *pTargetFolder,
+                                        WPObject *pSourceObject,
+                                        ULONG ulSelection,
+                                        HWND hwndCnr);
 
-    FOPSRET fopsStartTrashDestroyFromCnr(HAB hab,
-                                         WPFolder *pTrashSource,
+    APIRET fopsStartTrashDestroyFromCnr(HAB hab,
+                                        WPFolder *pTrashSource,
+                                        WPObject *pSourceObject,
+                                        ULONG ulSelection,
+                                        HWND hwndCnr,
+                                        BOOL fConfirm);
+
+    APIRET fopsStartPopulate(HAB hab,
+                             WPFolder *pFolder);
+
+
+    APIRET fopsStartFontDeinstallFromCnr(HAB hab,
+                                         WPFolder *pFontFolderSource,
                                          WPObject *pSourceObject,
                                          ULONG ulSelection,
                                          HWND hwndCnr,
                                          BOOL fConfirm);
-
-    FOPSRET fopsStartPopulate(HAB hab,
-                              WPFolder *pFolder);
-
-
-    FOPSRET fopsStartFontDeinstallFromCnr(HAB hab,
-                                          WPFolder *pFontFolderSource,
-                                          WPObject *pSourceObject,
-                                          ULONG ulSelection,
-                                          HWND hwndCnr,
-                                          BOOL fConfirm);
 #endif
 
 

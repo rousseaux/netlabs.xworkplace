@@ -75,7 +75,7 @@ interface XWPAdmin : WPAbstract
 
     wpFilterPopupMenu: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
     wpQueryDefaultView: override;
 
     wpAddObjectWindowPage: override;
@@ -123,8 +123,10 @@ interface M_XWPAdmin : M_WPAbstract
      */
 
     wpclsInitData: override;
+
     wpclsQueryStyle: override;
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
 

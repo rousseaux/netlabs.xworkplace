@@ -1,10 +1,13 @@
 <HTML>
 <HEAD>
     <TITLE>
-        File-System Caches
+        &xwp;: File-System Caches
     </TITLE>
 </HEAD>
-<!-- all new with V0.9.13 -->
+<!-- all new with V0.9.13
+    Changes:
+    V0.9.20: add &xwp; to title
+-->
 <BODY>
 File-system caches are a mechanism used by most of today's operating
 systems to avoid redundant disk accesses. In order to accomplish this, a part of
@@ -33,12 +36,21 @@ gets lost then. You should still have lazy writing enabled if you have a
 reasonably stable &os2; system and rarely get CHKDSK's at bootup.
 
 <P>&os2; implements separate caches for each file system that is installed. This
-means that all FAT drives will use one cache, and all HPFS drives a different
+means that all FAT
+<!-- V0.9.20: replace drives with volumes -->
+volumes will use one cache, and all HPFS
+<!-- V0.9.20: replace drives with volumes -->
+volumes a different
 one. These caches are separately configured with different &cfgsys;
-settings, which you may alter in the "&os2; Kernel" object. You will find the
+settings.
+<!-- V0.9.20: added link, added ifndef -->
+<IFNDEF __NOOS2KERNEL__>
+You can edit these settings in the <A HREF="objects/obj_krnl.html">"&os2; Kernel"</A>
+object. You will find the
 HPFS settings on the "Drivers" page in that object, since HPFS is an
 installable file system (IFS). By contrast, since FAT is built into the &os2;
 Kernel itself, it has its own page.
+</IFNDEF>
 
 <P>Please keep in mind that memory you reserve for file-system caches is no longer
 available for other purposes. If you reserve too much cache memory, this will
@@ -48,7 +60,9 @@ here.
 
 <P>In general, the more memory you have on your system, the more memory you should
 reserve for the caches. You should also take in account which file systems you use
-more frequently: for example, if you mainly use HPFS drives, it's a waste to reserve
+more frequently: for example, if you mainly use HPFS
+<!-- V0.9.20: replace drives with volumes -->
+volumes, it's a waste to reserve
 much memory for FAT caches, and vice versa.
 
 <P>This is not so much an issue any more considering the amount of memory which

@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        WPFolder Strings
+        &xwp;: WPFolder Strings
     </TITLE>
 </HEAD>
 <!-- V0.9.1: this page is all new with V0.9.1. Its contents have been extracted
@@ -17,23 +17,32 @@ recognized by the <CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CO
 
 <DL>
 
-<DT><CODE><B>ALWAYSSORT</B>={YES|NO}</CODE>
-<DD>Set whether folder sort order is always
-maintained. Opening and adding an object to a folder may take
-longer if the sort order is being maintained.
-<P><B>Note:</B> The XFolder class overrides this setting string if you have the
-extended sort functions
-enabled. See
-<A HREF="objects/string_3xfolder.html">"XFolder setup strings"</A>
-for the changes with respect to this setting.
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only" -->
+<DT><CODE><B>ACCELERATORS</B>={YES|NO|DEFAULT}</CODE> (&xwp; only)
+<DD>Sets for an individual folder whether it will respond to folder hotkeys.
+This setting corresponds to the one on the
+<!-- V0.9.16: replaced "XFolder" with "View" -->
+"View" page in a folder's properties notebook.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+
+<!-- V0.9.20: rewrote ALWAYSSORT -->
+<P><DT><CODE><B>ALWAYSSORT</B>={YES|NO|DEFAULT}</CODE>
+<DD>Sets for an individual folder whether it will always maintain its sort order.
+Opening and adding an object to a folder may take longer if the sort order is
+being maintained.
+Note that the <CODE>DEFAULT</CODE> option is only available with &xwp;,
+which will reset the setting to what you specified on the "Sort" page in the
+"Workplace Shell" object.
 
 <P><DT><CODE><B>BACKGROUND</B>=<I>name</I>,<I>mode</I>,<I>factor</I>,<I>bgtype</I>,<I>bgcol</I></CODE>
-<DD>This sets the folder
-background, where:
+<DD>This sets the folder background, where:
 
 <P><CODE><I>name</I></CODE> = Image file name. This
-name must be the fully qualified path of the
-image file. "?:\" is
+name must be the fully qualified
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+of the image file. "?:\" is
 permitted to indicate the
 boot drive.
 
@@ -58,10 +67,27 @@ by spaces (<CODE>r g b</CODE>, for red, green, and blue values).
 </CODE>or
 <CODE>BACKGROUND=(none),,,C,0 128 128</CODE>
 
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only" -->
+<P><DT><CODE><B>DEFAULTSORT</B>=<I>crit</I></CODE> (&xwp; only)
+<DD>This will set the default sort criterion for an individual folder to something
+different from the global sort criterion.
+<CODE><I>crit</I></CODE> may be one of the following:
+<BR><CODE>  -1   </CODE>sort by type
+<BR><CODE>  -2   </CODE>sort by name
+<BR><CODE>  -3   </CODE>sort by object class
+<BR><CODE>  -4   </CODE>sort by file name extension
+<BR><CODE>  255  </CODE>reset to global default sort criterion
+<P>Note that depending on the folder sort class, values between 0 and 100 may also
+be supported. Those values correspond to the indices of object details columns
+in Details view and are class-specific. Experiment with with the setup string values
+reported in a folder's properties notebook.
+
 <P><DT><CODE><B>DEFAULTVIEW</B>=DEFAULT</CODE>
 <DD>Sets the default open view to
-what was specified in the &os2; System object. This is
-the default value.
+what was specified in the
+<!-- V0.9.20: replaced system with workplace shell, dammit -->
+"Workplace Shell" object.
+This is the default value.
 <P>Note that <CODE>DEFAULTVIEW</CODE> is really a
 <A HREF="objects/string_1wpobject.html">WPObject setup string</A>, but the
 meaning of the view setting is only meaningful for WPObject subclasses,
@@ -108,6 +134,26 @@ values are:
 <BR><CODE>MINI</CODE> small icon; this is the default.
 <BR><CODE>NORMAL</CODE> normal-size icon.
 
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only",
+        added ifdef  -->
+<IFNDEF __NOFOLDERCONTENTS__>
+<P><DT><CODE><B>FAVORITEFOLDER</B>={YES|NO}</CODE> (&xwp; only)
+<DD>Sets for an individual folder whether its contents can be viewed from
+all &popmenu;s on your system.
+This setting corresponds to the one on the
+<!-- V0.9.16: replaced "XFolder" with "View" -->
+"View" page in the folder's properties notebook.
+Default is NO. There is no global value for this setting.
+</IFNDEF>
+
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only" -->
+<P><DT><CODE><B>FULLPATH</B>={YES|NO|DEFAULT}</CODE> (&xwp; only)
+<DD>Sets for an individual folder whether its full path will be displayed in its window title.
+This setting corresponds to the one on the
+"View" page in the folder's properties notebook.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+
 <P><DT><CODE><B>ICONFONT</B>=<I>size</I>.<I>facename</I></CODE>
 <DD>Setup string used to change
 the font used for an icon
@@ -127,10 +173,10 @@ animation (open folder) icon to data residing in a resource file.
 The <CODE><I>index</I></CODE> value must be set
 to 1. The <CODE><I>id</I></CODE> is the identity
 of an icon resource in the
-<CODE><I>dllfile</I></CODE> dynamic link library
-(DLL). The specified resource
-is the folder's open folder
-icon.
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_dll.html">DLL</A>
+<CODE><I>dllfile</I></CODE>.
+The specified resource is the folder's open folder icon.
 
 <P><DT><CODE><B>ICONSHADOWCOLOR</B>=<I>color</I></CODE> (&warp4; and higher only)
 <DD>Text color for shadow icons
@@ -172,6 +218,24 @@ of the screen size.
 <P><DT><CODE><B>MENUBAR</B>={YES|NO}</CODE> (&warp4; and higher only)
 <DD>The menubar of the folder is displayed or not displayed.
 
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only",
+    added ifdef -->
+<IFNDEF __NOQUICKOPEN__>
+<P><DT><CODE><B>QUICKOPEN</B>={YES|NO|IMMEDIATE}</CODE> (&xwp; only)
+<DD>Sets for an individual folder whether it will be pre-populated on Desktop startup.
+This setting corresponds to the one on the
+"View" page in the folder's properties notebook.
+YES or NO will set this setting for this folder.
+Default is NO. There is no global value for this setting.
+<P>As a special command, <CODE>QUICKOPEN=IMMEDIATE</CODE> will populate the folder
+immediately. This can be used in a
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_cmd_rexx.html">REXX</A>
+script to force population of a folder without
+having to open it. As a result, <CODE>QUICKOPEN=IMMEDIATE</CODE> is no setting, but
+rather a command to be performed on a folder.
+</IFNDEF>
+
 <P><DT><CODE><B>REMOVEFONTS</B>={YES|NO}</CODE>
 <DD>This can remove all instance
 fonts from the folder, i.e. the ones that apply to this folder only (specified by the
@@ -181,9 +245,49 @@ respective object settings strings or in the folder properties notebook). Defaul
 <P><DT><CODE><B>SHOWALLINTREEVIEW</B>={YES|NO}</CODE> (&warp4; and higher only)
 <DD>Show all objects in an open Tree View or only folders.
 
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only",
+        added ifndef -->
+<IFNDEF __NOSNAPTOGRID__>
+<P><DT><CODE><B>SNAPTOGRID</B>={YES|NO|DEFAULT|EXEC}</CODE> (&xwp; only)
+<DD>Sets for an individual folder whether the "Snap to grid" item will appear
+in the folder's &popmenu;.
+This setting corresponds to the one on the
+"View" page in the folder's properties notebook.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+EXEC will execute the "Snap to grid" function on the folder, just as if you had
+selected it from the &popmenu;. EXEC is thus no setting, but a command to be performed
+on a folder.
+</IFNDEF>
+
 <P><DT><CODE><B>SORTCLASS</B>=<I>classname</I></CODE>
 <DD>This sets the class object to sort by.
 The default class object is WPFileSystem.
+
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only" -->
+<P><DT><CODE><B>SORTFOLDERSFIRST</B>={YES|NO|DEFAULT}</CODE> (&xwp; only)
+<DD>Sets for an individual folder whether folders will always be sorted in first.
+This setting corresponds to the one on the
+"Sort" page in the folder's properties notebook.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+<!-- end V0.9.12 -->
+
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only" -->
+<P><DT><CODE><B>SORTNOW</B>=<I>crit</I></CODE> (&xwp; only)
+<DD>This will sort all currently open views of an individual folder without changing
+a folder's setting (as opposed to <CODE>DEFAULTSORT</CODE>). This is not really a
+"setting", but rather a command to be performed on a folder.
+<CODE><I>crit</I></CODE> has the same meaning as with <CODE>DEFAULTSORT</CODE>.
+
+<!-- V0.9.20: moved this item here from string_3xfolder.html, added "&xwp; only" -->
+<P><DT><CODE><B>STATUSBAR</B>={YES|NO|DEFAULT}</CODE> (&xwp; only)
+<DD>Sets the visibility state for an individual folder status bar.
+This setting corresponds to the one on the
+<!-- V0.9.16: replaced "XFolder" with "View" -->
+"View" page in the folder's properties notebook.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
 
 <P><DT><CODE><B>TREEFONT</B>=<I>size</I>.<I>facename</I></CODE>
 <DD>Setup string used to change

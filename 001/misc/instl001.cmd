@@ -116,7 +116,7 @@ title = FontFolder;
 setup = "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;";
 id = "<XWP_FONTFOLDER>"
 target = "<WP_CONFIG>";
-idOfShadow = "<XWP_FONTFOLDERSHADOW>";
+idOfShadow = "<XWP_FONTFOLDERSHADOW>";  /* was missing V0.9.20 */
 call CreateObjectWithShadow;
 
 /* create "Workplace Shell" */
@@ -204,12 +204,14 @@ id = "<XWP_XSHUTDOWN>"
 target = "<XWP_MAINFLDR>";
 call CreateObject;
 
-/* the following three added with V0.9.19 */
+/* the following three added with V0.9.19
+   and redone with V0.9.20 */
+commonXWPString = "DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;NOSTRINGPAGE=YES;HELPLIBRARY=WPHELP.HLP;HELPPANEL="
 
 /* create "Lockup" setup string object */
 class = "XWPString";
 title = Lockup;
-setup = "SETUPSTRING=MENUITEMSELECTED%3D705%3B;DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;ICONRESOURCE=78,PMWP;"
+setup = "SETUPSTRING=MENUITEMSELECTED%3D705%3B;"commonXWPString"=8004;ICONRESOURCE=78,PMWP;"
 id = "<XWP_LOCKUPSTR>"
 target = "<WP_NOWHERE>";
 call CreateObject;
@@ -217,15 +219,16 @@ call CreateObject;
 /* create "Find objects" setup string object */
 class = "XWPString";
 title = FindObjects;
-setup = "SETUPSTRING=MENUITEMSELECTED%3D8%3B;DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;ICONRESOURCE=79,PMWP;";
+setup = "SETUPSTRING=MENUITEMSELECTED%3D8%3B;"commonXWPString"=1205;ICONRESOURCE=79,PMWP;";
 id = "<XWP_FINDSTR>";
 target = "<WP_NOWHERE>";
 call CreateObject;
 
 /* create "Shutdown" setup string object */
+/* setup string modified to use POSTSHUTDOWN=YES V0.9.20 */
 class = "XWPString";
 title = Shutdown;
-setup = "SETUPSTRING=MENUITEMSELECTED%3D704%3B;DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;ICONRESOURCE=80,PMWP;"
+setup = "SETUPSTRING=POSTSHUTDOWN%3DYES%3B;"commonXWPString"=4001;ICONRESOURCE=80,PMWP;"
 id = "<XWP_SHUTDOWNSTR>";
 target = "<WP_NOWHERE>";
 call CreateObject;

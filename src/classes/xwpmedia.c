@@ -1040,31 +1040,6 @@ SOM_Scope ULONG  SOMLINK xwmm_wpFilterPopupMenu(XWPMedia *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We'll display some help for the XWPMedia class.
- *
- *@@changed V0.9.5 (2000-08-24) [umoeller]: finally working now
- */
-
-SOM_Scope BOOL  SOMLINK xwmm_wpQueryDefaultHelp(XWPMedia *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    /* XWPMediaData *somThis = XWPMediaGetData(somSelf); */
-    XWPMediaMethodDebug("XWPMedia","xwmm_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XWPMEDIA;
-    return TRUE;
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -1179,6 +1154,36 @@ SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)
     M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQueryTitle");
 
     return ("Multimedia");
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return the default help for the "Multimedia"
+ *      object here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwmmM_wpclsQueryDefaultHelp(M_XWPMedia *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
+{
+    /* M_XWPMediaData *somThis = M_XWPMediaGetData(somSelf); */
+    M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XWPMEDIA;
+    return TRUE;
 }
 
 /*

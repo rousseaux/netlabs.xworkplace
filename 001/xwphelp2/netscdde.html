@@ -32,7 +32,9 @@ to start
 <!-- V0.9.19: changed this -->
 the default browser that is specified in your URL objects; if none is there, it
 will attempt to start
-<CODE>NETSCAPE.EXE</CODE> from your path.
+<CODE>NETSCAPE.EXE</CODE> from your
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_path_sys.html"><CODE>PATH</CODE></A>.
 
 <P>This will work with all known versions of Netscape on &os2;. To make
 this work with Mozilla too, you must use the <CODE>-S</CODE> parameter
@@ -50,7 +52,7 @@ windows (<B>quiet</B> mode).
 <!-- V0.9.19: rewrote the following chunk -->
 <DD>Specifies whether to use a <B>new browser window</B> when the browser is already
 running. If this is specified, a new window will be opened.
-Per default, an existing browser window will load the URL.
+By default, an existing browser window will load the URL.
 
 <DT><CODE>-x</CODE> or <CODE>-X</CODE>
 <DD>These options control NetscDDE's behavior if the DDE connection fails,
@@ -66,9 +68,14 @@ a new copy.
 <DD>This specifies the <B>executable</B> to be started if the DDE connection fails.
 <!-- V0.9.19: rewrote the following chunk -->
 If this is not specified, NetscDDE will look for your default browser settings
-from a WPUrl object. If none are there, <CODE>NETSCAPE.EXE</CODE> on your path
+from a WPUrl object. If none are there, <CODE>NETSCAPE.EXE</CODE> on your
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_path_sys.html"><CODE>PATH</CODE></A>
 is used.
-If you want to use Mozilla, you could specify the full path of <CODE>MOZILLA.EXE</CODE>,
+If you want to use Mozilla, you could specify the full
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+of <CODE>MOZILLA.EXE</CODE>,
 for example. You could also start a batch file.
 
 <DT><CODE>-P <I>params</I></CODE>
@@ -78,7 +85,10 @@ given on the command line will then be added after <CODE><I>params</I></CODE>.
 <DT><CODE>-s <I>directory</I></CODE>
 <DD>This specifies the <B>startup directory</B> to be used if the DDE connection fails.
 This is useful if the browser executable is not on the <CODE>LIBPATH</CODE> and
-the browser does not find its DLLs otherwise.
+the browser does not find its
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_dll.html">DLLs</A>
+otherwise.
 <!-- V0.9.19: added the following chunk -->
 If this is not specified, NetscDDE will look for your default browser settings
 from a WPUrl object. If none are there, no startup directory is used.

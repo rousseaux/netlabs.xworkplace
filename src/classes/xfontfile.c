@@ -175,27 +175,6 @@ SOM_Scope void  SOMLINK fonf_wpObjectReady(XWPFontFile *somSelf,
     }
 }
 
-/*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK fonf_wpQueryDefaultHelp(XWPFontFile *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    /* XWPFontFileData *somThis = XWPFontFileGetData(somSelf); */
-    XWPFontFileMethodDebug("XWPFontFile","fonf_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_FONTFILE;
-    return TRUE;
-}
-
 /* ******************************************************************
  *
  *   XWPFontFile class methods
@@ -277,6 +256,37 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDROPON
                 | CLSSTYLE_NEVERPRINT);
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return a new default help panel for font files
+ *      because the standard data file help doesn't make all
+ *      that much sense for them.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK fonfM_wpclsQueryDefaultHelp(M_XWPFontFile *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
+{
+    /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
+    M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FONTFILE;
+    return TRUE;
 }
 
 /*

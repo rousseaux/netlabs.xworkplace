@@ -108,6 +108,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
+#include "filesys\fileops.h"            // file operations implementation
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
@@ -143,6 +144,7 @@
  *      TRUE, since the file was obviously already deleted.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: now using DosForceDelete if the file is in the trash can
  */
 
 SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
@@ -154,9 +156,10 @@ SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        APIRET arc = DosDelete(szFilename);
-
-        switch (arc)
+        // replaced DosDelete with this func, which
+        // uses DosForceDelete if the file is in \trash
+        // V0.9.20 (2002-07-12) [umoeller]
+        switch (fopsDeleteFile(szFilename))
         {
             case NO_ERROR:
             case ERROR_FILE_NOT_FOUND:
@@ -1709,14 +1712,19 @@ SOM_Scope PSZ  SOMLINK xdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method gets called from
- *      WPObject::wpQueryDefaultHelp if the object does
- *      not have a custom help panel set in its instance
- *      data.
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
  *
  *      We replace the default data file help because,
  *      frankly, it sucks. The replacement was added
- *      with V0.9.16, but we should rather override the
+ *      with V0.9.16, but we rather have overridden the
  *      class method instead.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
@@ -1732,10 +1740,6 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsQueryDefaultHelp(M_XFldDataFile *somSelf,
     strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_DATAFILE_MAIN;
     return TRUE;
-
-    /* return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryDefaultHelp(somSelf,
-                                                                     pHelpPanelId,
-                                                                     pszHelpLibrary)); */
 }
 
 /*

@@ -1,60 +1,51 @@
 <HTML RESID=&ID_XSH_SETTINGS_TRASHCAN;>
 <HEAD>
     <TITLE>
-        The &xwp; Trash Can
+        &xwp;: Trash Can
     </TITLE>
 </HEAD>
-<!-- this page is all new with V0.9.0 -->
+<!-- this page is all new with V0.9.0
+    Changes:
+    V0.9.20: title changed
+-->
 <BODY>
 <!-- V0.9.19: added image -->
 <IMG SRC="img/trashcan.gif">
 
 <!-- V0.9.16: rewrote all the following -->
-<P>The &xwp; trash can contains all the objects that you have recently deleted.
+<P>The &xwp; trash can collects all the objects that you have recently deleted.
 This allows you to recover objects that you deleted accidentally.
+<!-- V0.9.20: much stuff replaced with this link -->
+See <A HREF="tasks/tsk_delete.html">"Deleting objects"</A> for details.
 
-<P>To delete objects into the trash can, do one of the following:
+<P>If you open the trash can (it supports only the Icon and Details views), you
+can see all the objects that have been moved into it.
 
-<UL><LI>Drag and drop the objects onto the trash can. In that
-respect, the trash can operates similar to a regular folder.
-
-<P><LI>Select the
-<!-- V0.9.19: added link -->
-<A HREF="fsys/fops_delete.html">"Delete" menu item</A>
-for a number of objects that are currently selected.
-
-<P><LI>Press the "Delete" key on your keyboard to delete the objects that
-are currently selected.
-
-</UL>
-
-<IFNDEF __NOXWPSETUP__>
-The WPS "Delete" support can be enabled in the
-<!-- V0.9.3: link changed -->
-<A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
-<P>
-</IFNDEF>
-
-<!-- end V0.9.16 -->
-
-If you open the trash can (it supports only the Icon and Details views), you can
-see all the objects that have been moved into it.
-<P>
-To <B>restore</B> a trash object, either open its &popmenu; and select
+<P>To <B>restore</B> a trash object, either open its &popmenu; and select
 "Restore object", which will move this object back to its original location,
-or drag it out of the trash can into any open folder, which will restore the
-object in that location instead.
-<P>
-To <B>permanently delete</B> a trash object, select "Destroy object" from
+or
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_dragdrop.html">drag</A>
+it out of the trash can and drop it onto any folder, which will restore
+the object in that location instead.
+
+<P>To <B>permanently delete</B> a trash object, select "Destroy object" from
 its &popmenu;.
-<P>
+
 <!-- V0.9.4: added this -->
-If the trash can is not empty,
+<P>If the trash can is not empty,
 <!-- rest as before -->
 the trash can's &popmenu; offers you an additional menu item called
 <B>"Empty trash can"</B>, which will permanently delete <I>all</I> the objects
 which have been moved into the trash can.
-<BR>
+
+<P>For related information, select from the list below:
+
+<UL>
+<LI>&link_desktop;
+<LI><A HREF="tasks/tsk_delete.html">Deleting objects</A>
+<LI><A HREF="glossary/gls_dragdrop.html">About drag and drop</A>
+</UL>
 </BODY>
 </HTML>
 

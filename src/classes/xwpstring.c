@@ -92,6 +92,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
@@ -133,6 +134,30 @@ typedef struct _INVOKESETUPSTRING
     ULONG           cTargetObjects;         // no. of objects which follow
     WPObject        *apTargetObjects[1];    // objects to invoke setup string on
 } INVOKESETUPSTRING, *PINVOKESETUPSTRING;
+
+/*
+ *@@ G_XWPStringSetupSet:
+ *      XWPString setup set.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+static const XWPSETUPENTRY G_XWPStringSetupSet[] =
+    {
+        // type,  setup string,     offset,
+        STG_BOOL, "CONFIRMINVOCATION", FIELDOFFSET(XWPStringData, fConfirm),
+        //     key for wpSaveState/wpRestoreState
+               3,
+        //     default, ulExtra,            min, max
+               TRUE,    0,                  0,   1,
+
+        // type,  setup string,     offset,
+        STG_BOOL, "NOSTRINGPAGE", FIELDOFFSET(XWPStringData, fNoStringPage),
+        //     key for wpSaveState/wpRestoreState
+               4,
+        //     default, ulExtra,            min, max
+               FALSE,   0,                  0,   1,
+    };
 
 /* ******************************************************************
  *
@@ -489,6 +514,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpSetStaticObject(XWPString *somSelf,
 /*
  *@@ xwpAddXWPStringPages:
  *
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: no longer adding page if NOSTRINGPAGE=YES
  */
 
 SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
@@ -496,22 +522,27 @@ SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
 {
     INSERTNOTEBOOKPAGE inbp;
 
-    /* XWPStringData *somThis = XWPStringGetData(somSelf); */
+    XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_xwpAddXWPStringPages");
 
-    // add the "XWorkplace Startup" page on top
-    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-    inbp.somSelf = somSelf;
-    inbp.hwndNotebook = hwndNotebook;
-    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
-    inbp.usPageStyleFlags = BKA_MAJOR;
-    inbp.pcszName = cmnGetString(ID_XSSI_XWPSTRING_PAGE);  // pszXWPStringPage
-    inbp.ulDlgID = ID_XSD_XWPSTRING_PAGE;
-    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING_PAGE;
-    inbp.ulPageID = SP_XWPSTRING;
-    inbp.pfncbInitPage    = xwstrStringInitPage;
-    inbp.pfncbItemChanged = xwstrStringItemChanged;
-    return ntbInsertPage(&inbp);
+    if (!_fNoStringPage)        // V0.9.20 (2002-07-12) [umoeller]
+    {
+        // add the "XWorkplace Startup" page on top
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndNotebook;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_XWPSTRING_PAGE);  // pszXWPStringPage
+        inbp.ulDlgID = ID_XSD_XWPSTRING_PAGE;
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING_PAGE;
+        inbp.ulPageID = SP_XWPSTRING;
+        inbp.pfncbInitPage    = xwstrStringInitPage;
+        inbp.pfncbItemChanged = xwstrStringItemChanged;
+        return ntbInsertPage(&inbp);
+    }
+
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
@@ -687,9 +718,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
 SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
                                              PVOID pstrSetup)
 {
-    // XSTRING strTemp;
     CHAR szTemp[CCHMAXPATH];
-    // ULONG ulReturn = 0;
     // method pointer for parent class
     somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2 = 0;
 
@@ -753,13 +782,20 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
         xstrcat(pstrSetup, "NONE;", 0);
 
     // CONFIRMINVOCATION
-    xstrcat(pstrSetup, "CONFIRMINVOCATION=", 0);
-    xstrcat(pstrSetup, (_fConfirm) ? "YES;" : "NO;", 0);
+    // xstrcat(pstrSetup, "CONFIRMINVOCATION=", 0);
+    // xstrcat(pstrSetup, (_fConfirm) ? "YES;" : "NO;", 0);
+            // in setup set now V0.9.20 (2002-07-12) [umoeller]
+
+    // V0.9.20 (2002-07-12) [umoeller]
+    cmnSetupBuildString(G_XWPStringSetupSet,
+                        ARRAYITEMCOUNT(G_XWPStringSetupSet),
+                        somThis,
+                        pstrSetup);
 
     // manually resolve parent method
-    return (wpshParentQuerySetup2(somSelf,
-                                  _somGetParent(_XWPString),
-                                  pstrSetup));
+    return wpshParentQuerySetup2(somSelf,
+                                 _somGetParent(_XWPString),
+                                 pstrSetup);
 }
 
 /*
@@ -770,6 +806,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
  *      Always call the parent first.
  *
  *@@added V0.9.3 (2000-04-26) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: added cmnSetupInitData for setup set
  */
 
 SOM_Scope void  SOMLINK xwstr_wpInitData(XWPString *somSelf)
@@ -781,10 +818,15 @@ SOM_Scope void  SOMLINK xwstr_wpInitData(XWPString *somSelf)
 
     _pWszSetupString = NULL;
     _hobjStatic = NULLHANDLE;
-    _fConfirm = TRUE;
+    // _fConfirm = TRUE;        // in setup set now V0.9.20 (2002-07-12) [umoeller]
     _pvtiSetupThread = NULL;
 
     _tidRunning = 0;
+
+    // V0.9.20 (2002-07-12) [umoeller]
+    cmnSetupInitData(G_XWPStringSetupSet,
+                     ARRAYITEMCOUNT(G_XWPStringSetupSet),
+                     somThis);
 }
 
 /*
@@ -894,8 +936,8 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
             if (_wpScanSetupString(somSelf, pszSetupString,
                                    "SETUPSTRING", NULL, &cbValue))
             {
-                PSZ psz = (PSZ)malloc(cbValue);
-                if (psz)
+                PSZ psz;
+                if (psz = (PSZ)malloc(cbValue))
                 {
                     if (_wpScanSetupString(somSelf, pszSetupString,
                                            "SETUPSTRING", psz, &cbValue))
@@ -942,6 +984,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
             }
 
             // CONFIRMINVOCATION
+            /* in setup set now
             cbValue = sizeof(szValue);
             if (_wpScanSetupString(somSelf, pszSetupString,
                                    "CONFIRMINVOCATION", szValue, &cbValue))
@@ -953,6 +996,14 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
                 else
                     brc = FALSE;
             }
+            */
+
+            brc = cmnSetupScanString(somSelf,
+                                     G_XWPStringSetupSet,
+                                     ARRAYITEMCOUNT(G_XWPStringSetupSet),
+                                     somThis,
+                                     pszSetupString,
+                                     NULL);
         }
         CATCH(excpt1)
         {
@@ -989,7 +1040,14 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSaveState(XWPString *somSelf)
     if (_hobjStatic)
         _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 2, (ULONG)_hobjStatic);
 
-    _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 3, _fConfirm);
+    // _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 3, _fConfirm);
+
+    // V0.9.20 (2002-07-12) [umoeller]
+    cmnSetupSave(somSelf,
+                 G_XWPStringSetupSet,
+                 ARRAYITEMCOUNT(G_XWPStringSetupSet),
+                 G_pcszXWPString,
+                 somThis);
 
     return brc;
 }
@@ -1022,8 +1080,15 @@ SOM_Scope BOOL  SOMLINK xwstr_wpRestoreState(XWPString *somSelf,
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPString, 2, &ul))
         _hobjStatic = (HOBJECT)ul;
 
-    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPString, 3, &ul))
-        _fConfirm = (BOOL)ul;
+    // if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPString, 3, &ul))
+    //     _fConfirm = (BOOL)ul;
+
+    // V0.9.20 (2002-07-12) [umoeller]
+    cmnSetupRestore(somSelf,
+                    G_XWPStringSetupSet,
+                    ARRAYITEMCOUNT(G_XWPStringSetupSet),
+                    G_pcszXWPString,
+                    somThis);
 
     return brc;
 }
@@ -1187,29 +1252,6 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We'll display some help for the XWPString class.
- */
-
-SOM_Scope BOOL  SOMLINK xwstr_wpQueryDefaultHelp(XWPString *somSelf,
-                                                 PULONG pHelpPanelId,
-                                                 PSZ HelpLibrary)
-{
-    /* XWPStringData *somThis = XWPStringGetData(somSelf); */
-    XWPStringMethodDebug("XWPString","xwstr_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_SETTINGS_XWPSTRING_MAIN;
-    return TRUE;
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -1269,16 +1311,17 @@ SOM_Scope ULONG  SOMLINK xwstr_wpAddObjectWindowPage(XWPString *somSelf,
 SOM_Scope BOOL  SOMLINK xwstr_wpAddSettingsPages(XWPString *somSelf,
                                                  HWND hwndNotebook)
 {
-    BOOL brc = FALSE;
     /* XWPStringData *somThis = XWPStringGetData(somSelf); */
     XWPStringMethodDebug("XWPString","xwstr_wpAddSettingsPages");
 
-    brc = XWPString_parent_WPAbstract_wpAddSettingsPages(somSelf,
-                                                         hwndNotebook);
-    if (brc)
+    if (XWPString_parent_WPAbstract_wpAddSettingsPages(somSelf,
+                                                       hwndNotebook))
+    {
         _xwpAddXWPStringPages(somSelf, hwndNotebook);
+        return TRUE;
+    }
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -1489,6 +1532,35 @@ SOM_Scope PSZ  SOMLINK xwstrM_wpclsQueryTitle(M_XWPString *somSelf)
     M_XWPStringMethodDebug("M_XWPString","xwstrM_wpclsQueryTitle");
 
     return ("Setup string");
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return default help for string objects here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwstrM_wpclsQueryDefaultHelp(M_XWPString *somSelf,
+                                                     PULONG pHelpPanelId,
+                                                     PSZ pszHelpLibrary)
+{
+    /* XWPStringData *somThis = XWPStringGetData(somSelf); */
+    XWPStringMethodDebug("XWPString","xwstr_wpQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_SETTINGS_XWPSTRING_MAIN;
+    return TRUE;
 }
 
 /*

@@ -13,7 +13,10 @@ find files no matter of their physical location.
 allows for the WPS's superior features of program objects and shadows working
 even after the files they point to have been moved to a different location.
 Basically, this works because program objects and shadows never store the
-physical path of an object, but only an object handle.
+physical
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+of an object, but only an object handle.
 
 <P>Object handles are 32-bit integers which are supposed to be unique on the
 system. The high-word of the integer signifies the storage class of the object
@@ -59,8 +62,11 @@ the original design when the WPS was first created for OS/2 2.0.
 (Again, this is only a problem for file-system
 objects, since per definition, abstract objects must have a handle.)
 
-<P>For example, if you enter a path to an executable file in a program object's
-properties notebook, the program object wants a handle, so it should get a new one
+<P>For example, if you enter a
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+to an executable file in a program object's properties notebook, the program
+object wants a handle, so it should get a new one
 when no one exists yet. The same applies to shadows.
 
 <P>So again, in theory, object handles are a great thing.

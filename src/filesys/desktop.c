@@ -122,6 +122,7 @@
  *@@added V0.9.7 (2001-01-25) [umoeller]
  *@@changed V0.9.14 (2001-07-28) [umoeller]: added SHOWRUNDLG
  *@@changed V0.9.20 (2002-07-03) [umoeller]: added POSTSHUTDOWN
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: added SHOWHELPPANEL
  */
 
 BOOL dtpSetup(WPDesktop *somSelf,
@@ -284,6 +285,36 @@ BOOL dtpSetup(WPDesktop *somSelf,
             winhDebugBox(NULLHANDLE,
                          "Test file dlg",
                          szFullFile);
+    }
+
+    // SHOWHELPPANEL=[XWP|filename,]panelid
+    // V0.9.20 (2002-07-12) [umoeller]
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pcszSetupString,
+                           "SHOWHELPPANEL",
+                           szValue,
+                           &cbValue))
+    {
+        PSZ     p;
+        PCSZ    pcszHelpLibrary = NULL,      // null means WPHELP.HLP
+                pcszPanelId = szValue;
+        ULONG   ulPanelId;
+        if (p = strchr(szValue, ','))
+        {
+            *p = '\0';
+            if (!strcmp(szValue, "XWP"))
+                pcszHelpLibrary = cmnQueryHelpLibrary();
+            else
+                pcszHelpLibrary = szValue;
+            pcszPanelId = p + 1;
+        }
+
+        if (ulPanelId = atoi(pcszPanelId))
+        {
+            brc = _wpDisplayHelp(somSelf,
+                                 ulPanelId,
+                                 (PSZ)pcszHelpLibrary);  // can be NULL for WPHELP.HLP
+        }
     }
 
     return brc;

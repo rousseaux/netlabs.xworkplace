@@ -24,6 +24,17 @@ FIXED SINCE 0.9.19
 CURRENT PROBLEMS
 ----------------
 
+>b4) XCenter: Window List widget doen't always filter correctly. This
+>is reproducable with emacs; the emacsserver process gets started as
+>emacsserer.exe, but then gets renamed to emacsserver (for which the
+>filter is set), the widget, however still shows it as emacsserver.exe
+>(and hence doesn't filter it).
+
+>b5) Starting Programs: Since upgrading to 0.9.19, the RCJ CD Writer
+>Error Log dosn't start-up minimised anymore. I've seen this behaviour
+>with 0.9.14, but with that it happened only once every 20 boots or so.
+>Now however this behaviour turns-up 100% of the time.
+
 - Regular Expressions
  At least in the select by name dialog the expression "5[67]."
  matches the files 567, 576, but also 562blabla, which it should not

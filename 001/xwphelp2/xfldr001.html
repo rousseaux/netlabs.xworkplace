@@ -4,7 +4,16 @@
         &xwp; Online Help
     </TITLE>
 </HEAD>
-<!-- changes for V0.9.0: see notes below -->
+<!--
+    GENERAL REMARK about this file:
+    There is NO NEED to translate this file. The titles that
+    appear here are ONLY listed if some smart ass opens the
+    XWP help file manually via viewhelp.exe on the main page
+    that is opened then. The help _panel_ titles are, by
+    contrast, taken from the TITLE tag of each individual
+    page. As a result, you can simply copy this file over
+    to your main help file with every new release.
+-->
 <BODY>
 <P>Online help is available for the following topics:
 
@@ -53,17 +62,26 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="wps/wps_statbars2.html">Status bars page 2</A>
 <LI><A HREF="clst_main.html">WPS Classes</A>
 <LI><A HREF="objects/obj_details.html">Internals</A>
+<!-- V0.9.20: ifndef added -->
+<IFNDEF __NOOS2KERNEL__>
 <LI><A HREF="kernel/krn_sched.html">Scheduler</A>
 <LI><A HREF="kernel/krn_mem.html">Memory</A>
+</IFNDEF>
 <LI><A HREF="objects/obj_startshut.html">Startup / Shutdown folders</A>
 <LI><A HREF="menus/menu_content.html">Folder Content Menus</A>
+<!-- V0.9.20: ifndef added -->
+<IFNDEF __NOOS2KERNEL__>
 <LI><A HREF="kernel/krn_fat.html">File system settings</A>
+</IFNDEF>
 <LI><A HREF="wps/wps_cfgfdr.html">Config folder menu items</A>
+<!-- V0.9.20: ifndef added -->
+<IFNDEF __NOOS2KERNEL__>
 <LI><A HREF="kernel/krn_wps.html">WPS settings</A>
 <LI><A HREF="kernel/krn_errors.html">Error settings</A>
 <!-- the following items have been added with V0.9.0 -->
 <LI><A HREF="kernel/krn_paths.html">System paths</A>
-<!-- V0.9.19: added ifdef -->
+</IFNDEF>
+<!-- V0.9.19: added ifndef -->
 <IFNDEF __NEVEREXTASSOCS__>
 <LI><A HREF="wps/wps_filetypes.html">File types</A>
 <LI><A HREF="wps/wps_ftyp_merge.html">Merge with WPS filters</A>
@@ -71,7 +89,7 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="media/snd_main.html">The new "Sound" object</A>
 <LI><A HREF="objects/obj_trash.html">The &xwp; trash can</A>
 <LI><A HREF="fsys/trash_set.html">Trash can settings</A>
-<!-- V0.9.19: added ifdef -->
+<!-- V0.9.19: added ifndef -->
 <IFNDEF __NOXWPSETUP__>
 <LI><A HREF="setup/xset_status.html">&xwp; status</A>
 <LI><A HREF="setup/xset_features.html">&xwp; features</A>
@@ -93,8 +111,9 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>
 <LI><A HREF="setup/xset_objects.html">"Objects" page</A>
 </IFNDEF>
-<LI><A HREF="kernel/krn_drivers.html">"Drivers" page</A>
+<!-- V0.9.20: ifndef moved -->
 <IFNDEF __NOOS2KERNEL__>
+<LI><A HREF="kernel/krn_drivers.html">"Drivers" page</A>
 <LI><A HREF="kernel/drv_hpfs.html">&os2; Kernel: HPFS.IFS</A>
 <LI><A HREF="kernel/drv_cdfs.html">&os2; Kernel: CDFS.IFS</A>
 <!-- the following one item has been added with V0.9.13 -->
@@ -110,7 +129,10 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="hook/screen_corners.html">Screen Movement</A>
 <!-- removed V0.9.16 &xwp; trash can drives support -->
 <!-- the following items have been added with &xwp; V0.9.3 -->
+<!-- V0.9.20: ifndef added -->
+<IFNDEF __NOOS2KERNEL__>
 <LI><A HREF="kernel/krn_syslevel.html">&os2; Kernel: Syslevels</A>
+</IFNDEF>
 <LI><A HREF="hook/pager1.html">&xwp; &pgr; general</A>
 <LI><A HREF="hook/pager2.html">&xwp; &pgr; colors</A>
 <LI><A HREF="hook/pager_mouse.html">&xwp; &pgr; mouse actions</A>
@@ -222,7 +244,7 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="objects/obj_pgmf_driv.html">&xwp;: Driver program file</A>
 
 <!-- V0.9.19: the following have been added-->
-<LI><A HREF="fsys/fops_delete.html">&xwp;: "Delete"</A>
+<!-- V0.9.20: removed this one fsys/fops_delete.html -->
 <LI><A HREF="xshutdown/xsd_dlg_confirm_wps.html">&xwp;: Restart desktop confirm dialog</A>
 <LI><A HREF="objects/obj_fdr_main.html">&xwp;: Folders</A>
 <LI><A HREF="objects/obj_fdr_main.html">&xwp;: Folders</A>
@@ -231,6 +253,77 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="xcenter/xc_ipmon.html">&xcenter;: IP monitor widget</A>
 <LI><A HREF="objects/obj_iconpage_x.html">&xwp;: Icon page</A>
 <LI><A HREF="dlg_batchren.html">&xwp;: Batch rename</A>
+
+<!-- V0.9.20: the following have been added-->
+<LI><A HREF="objects/obj_desktop.html">Desktop</A>
+<LI><A HREF="objects/obj_desktop_sec.html">Secondary desktop</A>
+<LI><A HREF="objects/obj_os2cmdfdr.html">Command Prompts folder</A>
+<LI><A HREF="objects/obj_os2drivfdr.html">Drives folder</A>
+<LI><A HREF="objects/obj_disk_harddisk.html">Hard disk</A>
+<LI><A HREF="objects/obj_disk_cdrom.html">CD-ROM</A>
+<LI><A HREF="objects/obj_disk_network.html">Network drive</A>
+<LI><A HREF="objects/obj_disk_diskette.html">Diskette</A>
+<LI><A HREF="objects/obj_setupfdr.html">&syssetup; folder</A>
+<LI><A HREF="menus/menu_os2syssetup.html">&syssetup;</A>
+<LI><A HREF="objects/obj_os2system.html">&sysfdr; folder</A>
+<LI><A HREF="objects/obj_os2infofdr.html">Help Center</A>
+<LI><A HREF="objects/obj_pgmobj.html">Program objects</A>
+<LI><A HREF="objects/obj_os2wpstartup.html">Startup</A>
+<LI><A HREF="objects/obj_os2_dosfull.html">DOS Full Screen</A>
+<LI><A HREF="objects/obj_os2_doswin.html">DOS Window</A>
+<LI><A HREF="objects/obj_os2_os2full.html">OS/2 Full Screen</A>
+<LI><A HREF="objects/obj_os2_os2win.html">OS/2 Window</A>
+<LI><A HREF="objects/obj_os2_win16.html">&winos2; Sessions</A>
+<LI><A HREF="objects/obj_os2minwinv.html">&minwinv;</A>
+<LI><A HREF="objects/obj_os2cmdref.html">Command Reference</A>
+<LI><A HREF="menus/menu_openparent.html">Open parent</A>
+<LI><A HREF="menus/menu_cranother.html">Create another</A>
+<LI><A HREF="menus/menu_crshadow.html">Create shadow</A>
+<LI><A HREF="menus/menu_copy.html">Copy</A>
+<LI><A HREF="menus/menu_delete.html">Delete</A>
+<LI><A HREF="menus/menu_move.html">Move</A>
+<LI><A HREF="menus/menu_chkdsk.html">Check disk</A>
+<LI><A HREF="menus/menu_format.html">Format disk</A>
+<LI><A HREF="menus/menu_volumes.html">Manage volumes</A>
+<LI><A HREF="objects/obj_os2temps.html">"Templates" folder</A>
+<LI><A HREF="objects/obj_fdr_template.html">Folder template</A>
+<LI><A HREF="objects/obj_pgmobj_templ.html">Program object template</A>
+<LI><A HREF="objects/obj_os2wpbitmap.html">Bitmap</A>
+<LI><A HREF="objects/obj_os2wpbitmap2.html">Bitmap template</A>
+<LI><A HREF="objects/obj_os2wpicon.html">Icon</A>
+<LI><A HREF="objects/obj_os2wpicon2.html">Icon template</A>
+<LI><A HREF="objects/obj_os2wpmet.html">Metafile</A>
+<LI><A HREF="objects/obj_os2wpmet2.html">Metafile template</A>
+<LI><A HREF="objects/obj_os2wppif.html">Picture Interchange File</A>
+<LI><A HREF="objects/obj_os2wppif2.html">Picture Interchange File template</A>
+<LI><A HREF="objects/obj_os2wppointer.html">Pointer</A>
+<LI><A HREF="objects/obj_os2wppointer2.html">Pointer template</A>
+<LI><A HREF="objects/obj_os2games.html">Games folder</A>
+<LI><A HREF="objects/obj_os2utilsfdr.html">Utilities folder</A>
+<LI><A HREF="objects/obj_os2clipview.html">Clipboard viewer</A>
+<LI><A HREF="objects/obj_os2epm.html">Enhanced Editor</A>
+<LI><A HREF="objects/obj_os2iconedit.html">Icon Editor</A>
+<LI><A HREF="objects/obj_os2eexe.html">&eexe;</A>
+<LI><A HREF="objects/obj_os2picview.html">Picture Viewer</A>
+<LI><A HREF="objects/obj_os2cpumon.html">CPU Monitor</A>
+<LI><A HREF="objects/obj_os2seekscan.html">Seek and Scan Files</A>
+<LI><A HREF="objects/obj_os2warpcenter.html">&warpcenter;</A>
+<LI><A HREF="objects/obj_os2shredder.html">Shredder</A>
+<LI><A HREF="objects/obj_os2pgmfdr.html">Programs</A>
+<LI><A HREF="objects/obj_os2connectfdr.html">&connectfdr;</A>
+<LI><A HREF="objects/obj_os2internetfdr.html">Internet</A>
+<LI><A HREF="objects/obj_os2wpnetwork.html">Local Network</A>
+<LI><A HREF="objects/obj_os2wpnetgrp.html">File and Print Client Resource Browser</A>
+<LI><A HREF="objects/obj_setup_estyler.html">eStyler</A>
+<LI><A HREF="objects/obj_setup_itheme.html">iTheme</A>
+<LI><A HREF="objects/obj_setup_locale.html">Locale</A>
+<LI><A HREF="objects/obj_setup_look.html">Appearance</A>
+<LI><A HREF="objects/obj_setup_lvm.html">LVM GUI</A>
+<LI><A HREF="objects/obj_setup_mmpm2.html">Multimedia Setup</A>
+<LI><A HREF="objects/obj_setup_net.html">Network Setup</A>
+<LI><A HREF="objects/obj_setup_regedit.html">Regedit/2</A>
+<LI><A HREF="objects/obj_setup_thememgr.html">Theme Manager</A>
+<LI><A HREF="objects/obj_setup_win16.html">&winos2;</A>
 
 <!-- V0.9.3: removed all the following
 A HREF="099empty001.html"

@@ -247,23 +247,6 @@ SOM_Scope BOOL  SOMLINK xsrv_wpMenuItemHelpSelected(XWPNetServer *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *
- */
-
-SOM_Scope BOOL  SOMLINK xsrv_wpQueryDefaultHelp(XWPNetServer *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    XWPNetServerData *somThis = XWPNetServerGetData(somSelf);
-    XWPNetServerMethodDebug("XWPNetServer","xsrv_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XWPNETSERVER_MAIN;
-    return TRUE;
-}
-
-/*
  *@@ wpMoveObject:
  *
  */
@@ -415,6 +398,32 @@ SOM_Scope ULONG  SOMLINK xsrvM_wpclsQueryStyle(M_XWPNetServer *somSelf)
                 | CLSSTYLE_NEVERSETTINGS);
 }
 
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xsrvM_wpclsQueryDefaultHelp(M_XWPNetServer *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
+{
+    /* M_XWPNetServerData *somThis = M_XWPNetServerGetData(somSelf); */
+    M_XWPNetServerMethodDebug("M_XWPNetServer","xsrvM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XWPNETSERVER_MAIN;
+    return TRUE;
+}
 
 /*
  *@@ wpclsQueryIconData:

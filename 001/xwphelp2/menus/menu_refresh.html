@@ -1,22 +1,31 @@
 <HTML RESID=&ID_XMH_REFRESH;>
 <HEAD>
     <TITLE>
-        "Refresh now"
+        &xwp;: "Refresh now"
     </TITLE>
 </HEAD>
 <!-- V0.9.16: replace XFolder with &xwp; -->
+<!-- V0.9.20: rewritten, title changed -->
 <BODY>
-Select this menu item to update a folder's contents. This menu item behaves exactly
-like &os2;'s own "Refresh now" item.
-<P>Note that per default, &xwp; also defines the F5 key in folders
-as a shortcut to the "Refresh now" function.
-<!-- the following paragraph was changed added with V0.81 -->
-<P>You may remove this menu item on the
-<!-- V0.9.19: changed this -->
-"Menu" pages in the
-<!-- V0.9.4: link added -->
-<A HREF="objects/obj_wps.html">"Workplace Shell" object.</A>
-<BR>
+Select "Refresh now" to make sure the
+<A HREF="objects/obj_fdr_views.html">folder view</A> is up to date.
+
+<P>This will rescan the directory that corresponds to the folder,
+if necessary, to make sure the objects in the folder reflect
+the current file-system information. This operation might take a
+few seconds to finish.
+In addition, this completely repaints the folder view window.
+
+<P>Remarks:
+
+<OL><LI>By default, &xwp; also defines the <B>F5</B> folder
+hotkey as a shortcut to the "Refresh now" function.
+
+<P><LI>You can control the automatic refresh of folder views
+on the "Folder views" page in the
+&link_wpsobj;.
+
+</OL>
 </BODY>
 </HTML>
 

@@ -267,20 +267,20 @@ typedef struct _FILETASKLIST
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added XFT_POPULATE
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
- *@@changed V0.9.16 (2001-11-25) [umoeller]: now returning FOPSRET
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: now returning APIRET
  *@@changed V0.9.16 (2001-11-25) [umoeller]: for XFT_MOVE2TRASHCAN, now checking if trash can exists
  */
 
-FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task list
-                               ULONG ulOperation,     // in: XFT_* flag
-                               WPFolder *pSourceFolder,
-                               WPFolder *pTargetFolder,
-                               FNFOPSPROGRESSCALLBACK *pfnProgressCallback, // in: callback procedure
-                               FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback
-                               ULONG ulUser)          // in: user parameter passed to callback
+APIRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task list
+                              ULONG ulOperation,     // in: XFT_* flag
+                              WPFolder *pSourceFolder,
+                              WPFolder *pTargetFolder,
+                              FNFOPSPROGRESSCALLBACK *pfnProgressCallback, // in: callback procedure
+                              FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback
+                              ULONG ulUser)          // in: user parameter passed to callback
 {
     HFILETASKLIST   hftl = NULLHANDLE;
-    FOPSRET         frc = NO_ERROR;
+    APIRET          frc = NO_ERROR;
 
     if (    (ulOperation == XFT_MOVE2TRASHCAN)
             // check if the trash can exists
@@ -367,18 +367,18 @@ FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task l
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added pulIgnoreSubsequent to ignore further errors
  */
 
-FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
-                                 FNFOPSERRORCALLBACK *pfnErrorCallback,
-                                                           // in: error callback or NULL
-                                 WPObject *pObject,        // in: current object to check
-                                 PULONG pulIgnoreSubsequent)
+APIRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
+                                FNFOPSERRORCALLBACK *pfnErrorCallback,
+                                                          // in: error callback or NULL
+                                WPObject *pObject,        // in: current object to check
+                                PULONG pulIgnoreSubsequent)
                                     // in: ignore subsequent errors of the same type;
                                     // ULONG must be 0 on the first call; FOPS_ISQ_*
                                     // flags can be set by the error callback.
                                     // The ptr can only be NULL if pfnErrorCallback is
                                     // also NULL.
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET  frc = NO_ERROR;
     BOOL    fPromptUser = TRUE;
 
     // error checking
@@ -454,10 +454,10 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  */
 
-FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
-                            WPObject *pObject)
+APIRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
+                           WPObject *pObject)
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     if (!(frc = fopsValidateObjOperation(pftl->ulOperation,
@@ -520,10 +520,10 @@ FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handl
  *@@changed V0.9.19 (2002-04-17) [umoeller]: removed special window class
  */
 
-FOPSRET fopsStartTask(HFILETASKLIST hftl,
-                      HAB hab)             // in: if != NULLHANDLE, synchronous operation
+APIRET fopsStartTask(HFILETASKLIST hftl,
+                     HAB hab)             // in: if != NULLHANDLE, synchronous operation
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET  frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
     HWND    hwndNotify = NULLHANDLE;
     // unlock the folders so the file thread
@@ -590,7 +590,7 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
                        )
                     {
                         fQuit = TRUE;
-                        // mp2 has FOPSRET return code
+                        // mp2 has APIRET return code
                         frc = (ULONG)qmsg.mp2;
                     }
 
@@ -632,12 +632,12 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
  *@@added V0.9.2 (2000-03-30) [cbo]:
  */
 
-FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
-                                 ULONG flChanged,
-                                 FOPSUPDATE *pfu)   // in: update structure in fopsFileThreadProcessing;
+APIRET fopsCallProgressCallback(PFILETASKLIST pftl,
+                                ULONG flChanged,
+                                FOPSUPDATE *pfu)   // in: update structure in fopsFileThreadProcessing;
                                                     // NULL means done altogether
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
 
     // store changed flags
     pfu->flChanged = flChanged;
@@ -702,11 +702,11 @@ FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
  *@@added V0.9.6 (2000-10-25) [umoeller]
  */
 
-FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
-                                      WPObject *pSubObjThis, // in: obj to fix
-                                      PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
+APIRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
+                                     WPObject *pSubObjThis, // in: obj to fix
+                                     PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
 
     if (_somIsA(pSubObjThis, _WPFileSystem))
     {
@@ -755,9 +755,9 @@ FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
  *@@added V0.9.16 (2001-12-06) [umoeller]
  */
 
-FOPSRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
-                                          WPObject *pSubObjThis, // in: folder to be deleted
-                                          PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
+APIRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
+                                         WPObject *pSubObjThis, // in: folder to be deleted
+                                         PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
 {
     if (    // does caller want to have folder deletions confirmed?
             (_wpQueryConfirmations(pSubObjThis) & CONFIRM_DELETEFOLDER)
@@ -771,6 +771,29 @@ FOPSRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
     }
 
     return NO_ERROR;
+}
+
+/*
+ *@@ fopsDeleteFile:
+ *      deletes a single file via DosDelete or,
+ *      if the file resides somewhere in the \trash
+ *      hierarchy, via DosForceDelete to avoid
+ *      polluting DELDIR when emptying the trash
+ *      can.
+ *
+ *      Called directly from fopsFileThreadSneakyDeleteFolderContents,
+ *      if the file is not awake, or by XFldDataFile::xwpDestroyStorage
+ *      if it is.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+APIRET fopsDeleteFile(PCSZ pcszFilename)
+{
+    if (!strnicmp(pcszFilename + 1, ":\\trash\\", 8))
+        return DosForceDelete((PSZ)pcszFilename);
+
+    return DosDelete((PSZ)pcszFilename);
 }
 
 /*
@@ -801,22 +824,22 @@ FOPSRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
  *@@added V0.9.6 (2000-10-25) [umoeller]
  */
 
-FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
-                                                 FOPSUPDATE *pfu,
+APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
+                                                FOPSUPDATE *pfu,
                                     // in: update structure in fopsFileThreadProcessing
-                                                 WPObject **ppObject,
+                                                WPObject **ppObject,
                                     // in: folder whose contents are to be deleted,
                                     // out: failing object if error
-                                                 WPFolder *pMainFolder,
+                                                WPFolder *pMainFolder,
                                     // in: main folder of which *ppObject is a subobject
                                     // somehow; just for the progress dialog
-                                                 PULONG pulIgnoreSubsequent,
+                                                PULONG pulIgnoreSubsequent,
                                     // in: ignore subsequent errors of the same type
-                                                 ULONG ulProgressScalarFirst,
-                                                 ULONG cSubObjects,
-                                                 PULONG pulSubObjectThis)
+                                                ULONG ulProgressScalarFirst,
+                                                ULONG cSubObjects,
+                                                PULONG pulSubObjectThis)
 {
-    FOPSRET     frc = NO_ERROR;
+    APIRET      frc = NO_ERROR;
     WPFolder    *pFolder = *ppObject;
     CHAR        szFolderPath[CCHMAXPATH] = "";
     CHAR        szMainFolderPath[CCHMAXPATH] = "";
@@ -924,8 +947,11 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                         else
                         {
                             // sneaky delete!!
-                            frc = DosDelete(szFullPath);
-                            // _Pmpf(("    deleted file %s --> %d", szFullPath, frc));
+                            // replaced DosDelete with this func, which
+                            // uses DosForceDelete if the file is in \trash
+                            // V0.9.20 (2002-07-12) [umoeller]
+                            frc = fopsDeleteFile(szFullPath);
+                            _PmpfF(("<%s> deleted --> %d", szFullPath, frc));
                         }
                     }
 
@@ -998,12 +1024,12 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: fixed duplicate updates in progress dlg and other overhead
  */
 
-FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
-                                 FOPSUPDATE *pfu,       // in: update structure in fopsFileThreadProcessing
-                                 PULONG pulIgnoreSubsequent, // in: ignore subsequent errors of the same type
-                                 WPObject **ppObjectFailed)   // out: failing object if error
+APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
+                                FOPSUPDATE *pfu,       // in: update structure in fopsFileThreadProcessing
+                                PULONG pulIgnoreSubsequent, // in: ignore subsequent errors of the same type
+                                WPObject **ppObjectFailed)   // out: failing object if error
 {
-    FOPSRET frc = NO_ERROR;
+    APIRET frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     *ppObjectFailed = pfu->pSourceObject;
@@ -1277,13 +1303,13 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
 
-FOPSRET fopsFileThreadFontProcessing(HAB hab,
-                                     PFILETASKLIST pftl,
-                                     WPObject *pObjectThis,
-                                     PULONG pulIgnoreSubsequent)
+APIRET fopsFileThreadFontProcessing(HAB hab,
+                                    PFILETASKLIST pftl,
+                                    WPObject *pObjectThis,
+                                    PULONG pulIgnoreSubsequent)
 {
     WPObject *pFree = NULL;
-    FOPSRET frc = FOPSERR_INTEGRITY_ABORT;
+    APIRET frc = FOPSERR_INTEGRITY_ABORT;
 
     switch (pftl->ulOperation)
     {
@@ -1292,14 +1318,14 @@ FOPSRET fopsFileThreadFontProcessing(HAB hab,
                                  pftl->pTargetFolder, // font folder
                                  pObjectThis,    // font file
                                  NULL);          // out: new obj
-                    // this returns proper APIRET or FOPSRET codes
+                    // this returns proper APIRET codes
         break;
 
         case XFT_DEINSTALLFONTS:
             frc = fonDeInstallFont(hab,
                                    pftl->pSourceFolder,
                                    pObjectThis);     // font object
-                    // this returns proper APIRET or FOPSRET codes
+                    // this returns proper APIRET
             if ((frc == NO_ERROR) || (frc == FOPSERR_FONT_STILL_IN_USE))
                 // in these two cases only, destroy the
                 // font object after we've called the error

@@ -316,6 +316,113 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpSetup(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpSetupOnce:
+ *      this WPObject method allows special object handling
+ *      based on a creation setup string after an object has
+ *      been fully created.
+ *      As opposed to WPObject::wpSetup, this method _only_
+ *      gets called during object creation. The WPObject
+ *      implementation calls wpSetup in turn.
+ *      If FALSE is returned, object creation is aborted.
+ *
+ *      We now make sure that ALWAYSSORT=NO is always part
+ *      of the setup string.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdesk_wpSetupOnce(XFldDesktop *somSelf,
+                                           PSZ pszSetupString)
+{
+    BOOL    brc;
+    CHAR    szDummy[50];
+    ULONG   cbValue;
+    PSZ     pszHackedSetupString = NULL;
+
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpSetupOnce");
+
+    // if a desktop is newly created during eCS installation,
+    // MAKE SURE IT HAS ALWAYSSORT=NO because uses might still
+    // have a leftover global alwayssort setting from XWorkplace
+    // V0.9.20 (2002-07-12) [umoeller]
+    cbValue = sizeof(szDummy);
+    if (!_wpScanSetupString(somSelf,
+                            pszSetupString,
+                            "ALWAYSSORT",
+                            szDummy,
+                            &cbValue))
+    {
+        const char ADDTHIS[] = "ALWAYSSORT=NO;";
+        #define ADDTHISLEN (sizeof(ADDTHIS) - 1)
+
+        if (    (pszSetupString)
+             && (*pszSetupString)
+           )
+        {
+            ULONG ulSetupStringLen = strlen(pszSetupString);
+            if (pszHackedSetupString = malloc(   ulSetupStringLen
+                                               + sizeof(ADDTHIS)))
+            {
+                memcpy(pszHackedSetupString,
+                       ADDTHIS,
+                       ADDTHISLEN);
+                memcpy(pszHackedSetupString + ADDTHISLEN,
+                       pszSetupString,
+                       ulSetupStringLen + 1);
+                pszSetupString = pszHackedSetupString;
+            }
+        }
+        else
+            pszSetupString = (PSZ)ADDTHIS;
+
+    }
+
+    brc = XFldDesktop_parent_WPDesktop_wpSetupOnce(somSelf,
+                                                   pszSetupString);
+
+    if (pszHackedSetupString)
+        free(pszHackedSetupString);
+
+    return brc;
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object. This should hand out a help
+ *      panel describing what this object can do in general
+ *      and return TRUE.
+ *
+ *      See XFldObject::wpQueryDefaultHelp for general remarks
+ *      for how the method works.
+ *
+ *      We return a different default help for non-default
+ *      desktops.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdesk_wpQueryDefaultHelp(XFldDesktop *somSelf,
+                                                  PULONG pHelpPanelId,
+                                                  PSZ HelpLibrary)
+{
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpQueryDefaultHelp");
+
+    if (_wpclsQueryActiveDesktop(_WPDesktop) != somSelf)
+    {
+        strcpy(HelpLibrary, cmnQueryHelpLibrary());
+        *pHelpPanelId = ID_XSH_DESKTOP_SECONDARY;
+        return TRUE;
+    }
+
+    return XFldDesktop_parent_WPDesktop_wpQueryDefaultHelp(somSelf,
+                                                           pHelpPanelId,
+                                                           HelpLibrary);
+}
+
+/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.

@@ -86,7 +86,7 @@ interface XWPNetwork : WPFolder
 
     wpDeleteContents: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpDragOver: override;
     wpDrop: override;
@@ -146,10 +146,12 @@ interface M_XWPNetwork : M_WPFolder
 
     wpclsInitData: override;
     wpclsUnInitData: override;
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
 
     wpclsCreateDefaultTemplates: override;
+
+    wpclsQueryTitle: override;
+    wpclsQueryStyle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;

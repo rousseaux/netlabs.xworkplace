@@ -86,7 +86,7 @@ interface XMMVolume : WPAbstract
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
     wpQueryDefaultView: override;
 
     wpOpen: override;
@@ -135,8 +135,10 @@ interface M_XMMVolume : M_WPAbstract
      */
 
     wpclsInitData: override;
+
     wpclsQueryStyle: override;
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
   };

@@ -312,27 +312,6 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemHelpSelected(XMMVolume *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK vol_wpQueryDefaultHelp(XMMVolume *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
-    XMMVolumeMethodDebug("XMMVolume","vol_wpQueryDefaultHelp");
-
-    return (XMMVolume_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
-                                                           pHelpPanelId,
-                                                           HelpLibrary));
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -482,6 +461,33 @@ SOM_Scope PSZ  SOMLINK volM_wpclsQueryTitle(M_XMMVolume *somSelf)
     M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryTitle");
 
     return (cmnGetString(ID_XSSI_VOLUME)) ; // pszVolume
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK volM_wpclsQueryDefaultHelp(M_XMMVolume *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
+{
+    /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
+    M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryDefaultHelp");
+
+    return (M_XMMVolume_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
+                                                                  pHelpPanelId,
+                                                                  pszHelpLibrary));
 }
 
 /*

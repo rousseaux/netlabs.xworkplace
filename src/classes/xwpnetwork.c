@@ -235,23 +235,6 @@ SOM_Scope ULONG  SOMLINK xnw_wpDeleteContents(XWPNetwork *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *
- */
-
-SOM_Scope BOOL  SOMLINK xnw_wpQueryDefaultHelp(XWPNetwork *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    XWPNetworkData *somThis = XWPNetworkGetData(somSelf);
-    XWPNetworkMethodDebug("XWPNetwork","xnw_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XWPNETWORK_MAIN;
-    return TRUE;
-}
-
-/*
  *@@ wpDragOver:
  *
  */
@@ -353,6 +336,21 @@ SOM_Scope void  SOMLINK xnwM_wpclsUnInitData(M_XWPNetwork *somSelf)
 }
 
 /*
+ *@@ wpclsCreateDefaultTemplates:
+ *
+ */
+
+SOM_Scope BOOL  SOMLINK xnwM_wpclsCreateDefaultTemplates(M_XWPNetwork *somSelf,
+                                                         WPObject* Folder)
+{
+    /* M_XWPNetworkData *somThis = M_XWPNetworkGetData(somSelf); */
+    M_XWPNetworkMethodDebug("M_XWPNetwork","xnwM_wpclsCreateDefaultTemplates");
+
+    // pretend we've created the templates
+    return TRUE;
+}
+
+/*
  *@@ wpclsQueryTitle:
  *
  */
@@ -383,17 +381,29 @@ SOM_Scope ULONG  SOMLINK xnwM_wpclsQueryStyle(M_XWPNetwork *somSelf)
 }
 
 /*
- *@@ wpclsCreateDefaultTemplates:
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
  *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xnwM_wpclsCreateDefaultTemplates(M_XWPNetwork *somSelf,
-                                                         WPObject* Folder)
+SOM_Scope BOOL  SOMLINK xnwM_wpclsQueryDefaultHelp(M_XWPNetwork *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
 {
     /* M_XWPNetworkData *somThis = M_XWPNetworkGetData(somSelf); */
-    M_XWPNetworkMethodDebug("M_XWPNetwork","xnwM_wpclsCreateDefaultTemplates");
+    M_XWPNetworkMethodDebug("M_XWPNetwork","xnwM_wpclsQueryDefaultHelp");
 
-    // pretend we've created the templates
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XWPNETWORK_MAIN;
     return TRUE;
 }
 

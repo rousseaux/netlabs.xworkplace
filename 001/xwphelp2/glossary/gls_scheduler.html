@@ -1,10 +1,13 @@
 <HTML>
 <HEAD>
     <TITLE>
-        Processes And Threads
+        &xwp;: Processes And Threads
     </TITLE>
 </HEAD>
-<!-- all new with V0.9.13 -->
+<!-- all new with V0.9.13
+    Changes:
+    V0.9.20: add &xwp; to title
+-->
 <BODY>
 Since you will normally have only one processor, but expect several tasks to
 run at the same time, &os2; switches between tasks
@@ -33,108 +36,27 @@ or after an instruction of another thread. It is only &os2; which keeps
 switching between threads without the thread even knowing about it (or, on
 SMP systems, threads might actually run concurrently on several processors).
 
-<P>Well-programmed &os2; software uses several threads to ensure that the
+<P>Well-programmed
+<!-- V0.9.20: removed &os2; -->
+software uses several threads to ensure that the
 user gets a quick response to his input and mouse actions. For example, if
 you execute a command in a program which will take a long time, a
 program should start a secondary thread for this task. While this new thread
 is working in the background, the user interface (on the main thread of the
 program) is ready again for new input.
 
-<P>Not-so-well-programmed &os2; software uses only one thread for both the
+<P>Not-so-well-programmed
+<!-- V0.9.20: removed &os2; -->
+software uses only one thread for both the
 user interface and executing tasks. As a result, while executing a task, the
 user interface is blocked.
 
-<P>Threads can have different <B>priorities.</B> In general, a thread with a
-higher priority gets more processor time that one with lower priority.
-To be more precise, &os2; looks at thread priorities if more than one thread
-is internally marked as "ready". By contrast, threads which are currently
-"blocked" need no CPU time anyway, so for them, priorities do not matter
-until they are unblocked again. Note that on your typical &os2; system,
-the large majority of threads will be in "blocked" state at any given
-point in time.
+<P>Threads can have different <B>priorities.</B>
+<!-- V0.9.20: moved all the text about prties to gls_sched_prty.html and
+replaced it with the link -->
+See <A HREF="glossary/gls_sched_prty.html">"Thread priorities"</A> for details.
 
-<P>&os2; is capable of controlling thread priorities in a very refined way. It
-differentiates between four <B>priority classes:</B>
-
-<!-- V0.9.19: corrected all the following -->
-
-<OL><LI><B>"Idle time priority"</B> (1) is the lowest priority class. This means that a
-thread only gets processor time if no threads of higher priority classes
-are running. Such threads are helpful for offloading work that needs to be
-done, but can be delayed until the computer has time for it.
-<!-- V0.9.19: added ifdef -->
-<IFNDEF __EWORKPLACE__>
-An example of such a thread is &xwp;'s own
-<A HREF="glossary/gls_workerthr.html">Worker thread</A>, which keeps track of
-the awake Desktop objects on your system. This is fairly time-consuming,
-but not time-critical, so it's done with idle-time priority.
-</IFNDEF>
-
-<P><LI><B>"Regular priority"</B> (2) is the priority class that most threads use. It is
-also the default &os2; priority class if a thread does not explicitly change its
-priority. Between threads of this class, &os2; dynamically varies priority levels
-(more on this below) to make sure that no thread of this class "starves", i.e. gets
-no processor time.
-
-<P><LI><B>"Foreground server priority"</B> (4) is the second-highest priority class
-for threads that do not want to be influenced by the dynamic priority variations
-that are performed on "regular" class threads. Note that even though this class
-has the value 4, time-critical threads do take priority over threads of this class.
-&os2; still does some priority variations on threads of this class based on the
-activity of the thread and the system.
-
-<P><LI><B>"Time-critical priority"</B> (3) is the highest priority class in &os2;.
-A thread with time-critical priority will be given processor time immediately
-and will not be interrupted until its work is done.
-Many device drivers will yield the CPU only to threads of this priority class.
-Such a thread should only use the minimum possible CPU time because it cannot be
-interrupted (except by other time-critical threads) and can easily hang the system.
-Even if it yields the CPU
-(via <CODE>DosSleep(0)</CODE>), other non-time-critical threads will not run.
-This is normally only used for network and other communications software, or
-CD writers, or MP3 players.
-
-<!-- end V0.9.19 -->
-
-</OL>Within each priority class, a thread may set a <B>priority level.</B>
-This is a value from 0 to +31 which determines the precedence of a thread
-<I>within</I> a priority class and will only be taken into account if two threads
-of the same priority class compete.
-
-<P>A few examples:
-
-<UL><LI>A "regular" thread with priority level +31 supercedes a "regular" thread
-with priority level 0.
-
-<P>Within the "regular priority" class however &os2; ensures that no thread
-"starves", i.e. never gets processor time, by dynamically raising each
-thread's priorities after a certain time automatically. This period of time
-is determined by the <CODE>MAXWAIT</CODE> &cfgsys; setting. Moreover, &os2;
-boosts a thread's priority temporarily if it is to receive keyboard input,
-if the process of the thread runs in the foreground, or if the thread is
-currently doing I/O.
-
-<P>These dynamic adjustments are only then performed if &cfgsys; does
-not contain the command <CODE>PRIORITY=ABSOLUTE,</CODE> which is not
-recommended.
-<!-- V0.9.19: added ifdef -->
-<IFNDEF __NOOS2KERNEL__>
-(This is why you will not find that setting in the "&os2; Kernel" object.)
-</IFNDEF>
-
-<P><LI>A "time-critical" thread with priority level 0 still supercedes a
-"regular" thread with priority level +31 because it belongs to a higher
-priority class. For this case, the dynamic priority adjustments will have
-no effect, because they only affect the execution of "regular" threads.
-While the time-critical thread is running, all "regular" threads starve.
-
-<P><LI>The same applies, for example, to a "regular thread" with priority level
-0 and an "idle-time" thread with priority level +31.
-
-<P><LI>Two threads with exactly the same priority however run "against" each
-other, i.e. &os2; keeps alternating CPU ownership between them.
-
-</UL>On the other hand side, a <B>process</B> is the &os2; term for an
+<P>On the other hand side, a <B>process</B> is the &os2; term for an
 application which has been loaded into memory. Each process must have at
 least one thread.
 
@@ -148,11 +70,17 @@ process may all access the process's memory, because memory is
 administered on a per-process basis. The same applies to other system
 resources such as open files.
 
-<P>To summarize, threads own only the CPU until they are interrupted by &os2;
-(over which they have little control, other than setting their priorities).
-By contrast, processes own everything else: files, devices, and memory.
+<!-- V0.9.20: rewrote summary and added links -->
+<P>To summarize: A <B>thread</B> is the &os2; kernel concept for managing
+CPU ownership.
+By contrast, a <B>process</B> is the concept for owning everything else:
+files, devices, and memory.
 
-<BR>
+<P>For more information, select from the following list:
+
+<UL><LI><A HREF="glossary/gls_sessions.html">Session types</A>
+<LI><A HREF="glossary/gls_cmd.html">About command prompts</A>
+</UL>
 </BODY>
 </HTML>
 

@@ -6,20 +6,32 @@
 </HEAD>
 <!-- this page is all new with V0.9.7 -->
 <BODY>
-The "Resources" page appears in the properties notebooks of all program files
-(WPProgramFile class) and shows you the resources in the module.
+<!-- V0.9.20: rewrote the top -->
+The "Resources" page appears in the properties notebooks of all
+executable files to display additional information about the executable module.
 
 <P><B>Resources</B> are read-only data objects that can be accessed
 dynamically at run time.
 
 <P>Resource objects are placed into an executable file by the Resource
 Compiler (<CODE>RC.EXE</CODE>), which ships with &os2;.
+<!-- V0.9.20: added this -->
+This can either be the application's main module (<CODE>.EXE</CODE> file)
+or a <A HREF="glossary/gls_dll.html">dynamic link library (DLL)</A>.
 
-<P>Resources can be loaded by an application using a "type" and "ID" pair.
-They are frequently used by applications to separate their national
+<!-- V0.9.20: rewrote the following paragraphs -->
+<P>A resource can be loaded at any time by using a "type" and "ID" pair.
+Typically, as opposed to the actual application code, resources are only
+loaded when they are actually needed. This makes application startup faster
+and also reduces memory consumption.
+
+<P>Resources are frequently used by applications to separate their national
 language support (NLS) from the actual code. This way, applications can
-be translated without having to recompile the source code. (&xwp;
-does its language support this way, for example.)
+be translated without having to recompile the source code.
+<IFNDEF __EWORKPLACE__>
+(&xwp; does its language support this way, for example.)
+</IFNDEF>
+<!-- end 0.9.20 -->
 
 <P>The following types of resources exist:
 
@@ -70,9 +82,11 @@ character set (DBCS) font drivers. I'm unsure what this is.
 
 </UL>
 
-<P>Resources are either loaded as soon as the module is loaded or when needed.
+<!-- V0.9.20: removed this
+Resources are either loaded as soon as the module is loaded or when needed.
 Once loaded, resources are either automatically discarded when they are no longer
 needed or when the module is discarded.
+-->
 
 </BODY>
 </HTML>

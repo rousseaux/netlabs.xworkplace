@@ -1258,27 +1258,6 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK xctr_wpQueryDefaultHelp(XCenter *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
-    XCenterMethodDebug("XCenter","xctr_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XCENTER_MAIN;
-    return TRUE;
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -1592,6 +1571,35 @@ SOM_Scope PSZ  SOMLINK xctrM_wpclsQueryTitle(M_XCenter *somSelf)
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryTitle");
 
     return ((PSZ)ENTITY_XCENTER);
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return the XCenter default help here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctrM_wpclsQueryDefaultHelp(M_XCenter *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
+{
+    /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
+    M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XCENTER_MAIN;
+    return TRUE;
 }
 
 /*

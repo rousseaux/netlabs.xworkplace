@@ -495,6 +495,7 @@ BOOL objSetup(WPObject *somSelf,
  *@@todo some strings missing
  *@@changed V0.9.18 (2002-03-23) [umoeller]: optimized
  *@@changed V0.9.19 (2002-07-01) [umoeller]: adapted to use IBMOBJECTDATA
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: added HELPLIBRARY
  */
 
 BOOL objQuerySetup(WPObject *somSelf,
@@ -576,17 +577,30 @@ BOOL objQuerySetup(WPObject *somSelf,
         }
     }
 
-    // HELPLIBRARY  @@todo
-
-    // HELPPANEL
-    // modified to use IBMOBJECTDATA V0.9.19 (2002-07-01) [umoeller]
     if (_pvWPObjectData)
+    {
+        // HELPLIBRARY
+        // added V0.9.20 (2002-07-12) [umoeller]
+        PSZ p;
+        if (    (p = (((PIBMOBJECTDATA)_pvWPObjectData)->pszHelpLibrary))
+             && (*p)
+           )
+        {
+            APPEND("HELPLIBRARY=");
+            xstrcat(pstrSetup, p, 0);
+            xstrcatc(pstrSetup, ';');
+        }
+
+        // HELPPANEL
+        // modified to use IBMOBJECTDATA V0.9.19 (2002-07-01) [umoeller]
+
         if (((PIBMOBJECTDATA)_pvWPObjectData)->ulHelpPanelID)
         {
             CHAR szTemp[40];
             sprintf(szTemp, "HELPPANEL=%d;", ((PIBMOBJECTDATA)_pvWPObjectData)->ulHelpPanelID);
             xstrcat(pstrSetup, szTemp, 0);
         }
+    }
 
     // HIDEBUTTON
     ulValue = _wpQueryButtonAppearance(somSelf);

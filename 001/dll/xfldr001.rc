@@ -563,7 +563,7 @@ BEGIN
     ID_XSSI_ITEMSSELECTED               "%d items selected"
 
     /* Trash can menu items */
-    ID_XTSI_TRASHEMPTY                  "~Empty trashcan"
+    ID_XTSI_TRASHEMPTY                  "~Empty trash can"
     ID_XTSI_TRASHRESTORE                "~Restore object"
     ID_XTSI_TRASHDESTROY                "~Destroy object"
 
@@ -1109,7 +1109,7 @@ BEGIN
     DID_DEFAULT                         "~Default"
     DID_HELP                            "~Help"
     DID_BROWSE                          "Bro~wse..."
-    DID_DETAILS                         "De~tails..."
+    DID_DETAILS                         "Det~ails..."
     DID_CLOSE                           "~Close"
 
     /*  the following added; these are the strings formerly

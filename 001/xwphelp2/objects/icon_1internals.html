@@ -38,12 +38,16 @@ IDs.
 <P>The <B>"Object style"</B> tree shows you WPS-internal object flags. The
 object style flags determine the WPS behavior only: for example, if the "no copy"
 flag is enabled, you cannot drag-copy the file from the WPS. Note that these
-flags are normally independent of file attributes in the file system, i.e. an object
-can have the "no delete" flag, but can still be deletable from the command line.
+flags are normally independent of
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_fattrs.html">file attributes</A>,
+i.e. an object can have the "no delete" flag, but can still be deletable from the
+command line.
 
 <P>The <B>"Object usage"</B> tree shows you additional internal object data. This
 data is mainly useful for programmers and represents the information returned by the
 <CITE>wpFindUseItem</CITE> method.
+
 <P>For folders, &xwp; also adds the <B>"Folder data"</B> tree. This contains flags which
 represent the data returned by the <CITE>wpQueryFolderFlags</CITE> method, for example
 whether the folder has been populated or not.

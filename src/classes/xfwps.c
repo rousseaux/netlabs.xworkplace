@@ -446,31 +446,6 @@ SOM_Scope ULONG  SOMLINK xwp_wpFilterPopupMenu(XFldWPS *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We will display some introduction to "Workplace Shell".
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xwp_wpQueryDefaultHelp(XFldWPS *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xwp_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XFLDWPS;
-    return TRUE;
-}
-
-/*
  *@@ wpAddSystemScreenPage:
  *      this WPSystem instance method is overridden in order
  *      to suppress the "Screen" page in the "Workplace Shell"
@@ -760,6 +735,36 @@ SOM_Scope PSZ  SOMLINK xwpM_wpclsQueryTitle(M_XFldWPS *somSelf)
     M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsQueryTitle");
 
     return ("Workplace Shell");
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return the default help for the "Workplace Shell"
+ *      object here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwpM_wpclsQueryDefaultHelp(M_XFldWPS *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
+{
+    /* M_XFldWPSData *somThis = M_XFldWPSGetData(somSelf); */
+    M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XFLDWPS;
+    return TRUE;
 }
 
 /*

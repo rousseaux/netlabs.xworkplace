@@ -1392,6 +1392,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
  *      bugs.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: optimized
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
@@ -1411,7 +1412,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
 
         // if the object has an object ID assigned, remove this...
         // this should clean the INI entry
-        if (pszID && strlen(pszID))
+        if (pszID && *pszID) // strlen(pszID)) V0.9.20 (2002-07-12) [umoeller]
             _wpSetObjectID(somSelf, NULL);
 
         // if the object is a template, unset that bit...
@@ -1457,6 +1458,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
                                                 NULL,
                                                 "wpMakeDormant"))
             brc = _wpMakeDormant(somSelf, 0);
+
     } // if (pKernelGlobals->fAutoRefreshReplaced)
     else
         brc = XFldObject_parent_WPObject_wpFree(somSelf);
@@ -2404,6 +2406,349 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
 
     return XFldObject_parent_WPObject_wpMenuItemHelpSelected(somSelf,
                                                              MenuId);
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object. This should hand out a help
+ *      panel describing what this object can do in general
+ *      and return TRUE.
+ *
+ *      "Default help" is displayed when help is requested
+ *      on an object itself, i.e. when a single object is
+ *      selected and F1 is pressed (or when "Extended help"
+ *      is selected from the context menu).
+ *
+ *      Default help can either be instance or class help.
+ *      WPobject::wpQueryDefaultHelp checks for whether
+ *      the object has HELPLIBRARY and/or HELPPANEL set and
+ *      hands out those values if so, or calls the class
+ *      method wpclsQueryDefaultHelp on the object's class
+ *      object instead.
+ *
+ *      As a result, classes should only override the instance
+ *      method if they want to display specific help depending
+ *      on the object's instance settings. For example, this
+ *      makes sense in XWPProgramFile::wpQueryDefaultHelp in
+ *      order to differentiate between program types.
+ *
+ *      We override this method to hand out more meaningful
+ *      help for many default WPS objects which have no
+ *      HELPPANEL assigned, unfortunately. We no longer call
+ *      the parent, but check the instance data ourselves
+ *      and base additional help on the object ID.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
+                                              PULONG pHelpPanelId,
+                                              PSZ HelpLibrary)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpQueryDefaultHelp");
+
+    if (_pvWPObjectData)
+    {
+        // check the help library, if it's null, it's WPHELP.HLP
+        PSZ     p;
+        ULONG   ul;
+        if (    (    (!(p = (((PIBMOBJECTDATA)_pvWPObjectData)->pszHelpLibrary)))
+                  || (!*p)
+                )
+                // and no help panel assigned
+             && (!(((PIBMOBJECTDATA)_pvWPObjectData)->ulHelpPanelID))
+                // but we have an object ID
+             && (p = _wpQueryObjectID(somSelf))
+             && (*p)
+           )
+        {
+            static const struct
+            {
+                PCSZ    pcszID;
+                ULONG   ulHelpPanelId;
+            } aObjectIDsWithHelp[] =
+            {
+                // "picture viewer" never had one
+                "<WP_PICV>",                ID_XSH_PICVIEW,
+                // programs folder never had one
+                "<WP_PROGRAMSFOLDER>",      ID_XSH_PROGRAMSFDR,
+                "<WP_CONNECTIONSFOLDER>",   ID_XSH_CONNECTIONSFDR,
+                "<WP_INTERNET>",            ID_XSH_INTERNETFDR,
+                "<WP_ASSISTANCE>",          ID_XSH_OS2INFORMATIONFDR,
+                "<WP_TROUBLEINFO>",         ID_XSH_OS2INFORMATIONFDR,
+                "<WP_PRINTERSFOLDER>",      ID_XSH_PRINTERSFDR,
+                "<WP_INSTREMFOLDER>",       ID_XSH_INSTALLREMOVEFDR,
+                // items in system setup:
+                "<WP_LOCALE>",              ID_XSH_SYSSETUP_LOCALE,
+                "<LVMGUI>",                 ID_XSH_SYSSETUP_LVMGUI,
+                "<MMPM2_SETUP>",            ID_XSH_SYSSETUP_MMPM2,
+                "<WP_REGEDIT>",             ID_XSH_SYSSETUP_REGEDIT,
+                // Appearance folder under System Setup, new with eCS 1.1
+                "<WP_CONFIG_LOOK>",         ID_XSH_SYSSETUP_LOOK,
+                "<ECS_ESTLRLITEPREF>",      ID_XSH_SYSSETUP_ESTYLER,
+                "<ECS_THEMEMGRPREF>",       ID_XSH_SYSSETUP_THEMEMGR,
+                "<ECS_ITHEME>",             ID_XSH_SYSSETUP_ITHEME,
+                // Network folder under System Setup
+                "<WP_CONFIG_NET>",          ID_XSH_SYSSETUP_NET,
+                "<TCP/IP>",                 ID_XSH_SYSSETUP_NET,
+            };
+
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aObjectIDsWithHelp);
+                 ++ul)
+            {
+                if (!strcmp(p, aObjectIDsWithHelp[ul].pcszID))
+                {
+                    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+                    *pHelpPanelId = aObjectIDsWithHelp[ul].ulHelpPanelId;
+                    return TRUE;
+                }
+            }
+        }
+
+        if (ul = (((PIBMOBJECTDATA)_pvWPObjectData)->ulHelpPanelID))
+        {
+            *pHelpPanelId = ul;
+            if (p = (((PIBMOBJECTDATA)_pvWPObjectData)->pszHelpLibrary))
+                strcpy(HelpLibrary, p);
+            else
+                *HelpLibrary = '\0';
+        }
+        else
+            return _wpclsQueryDefaultHelp(_somGetClass(somSelf),
+                                          pHelpPanelId,
+                                          HelpLibrary);
+    }
+
+    return TRUE;
+
+    /*
+    return (XFldObject_parent_WPObject_wpQueryDefaultHelp(somSelf,
+                                                          pHelpPanelId,
+                                                          HelpLibrary));
+    */
+}
+
+/*
+ *@@ wpDisplayHelp:
+ *      this WPObject method displays the given help panel
+ *      (help library and help panel ID).
+ *
+ *      We override this method to be able to hack ourselves
+ *      into some default WPS help panels that are displayed
+ *      from within the original IBM code.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
+                                         ULONG HelpPanelId,
+                                         PSZ HelpLibrary)
+{
+    static const struct
+    {
+        ULONG   ulOldId,
+                ulReplacementId,
+                ulTemplateReplacemendId;
+    } aReplacements[] =
+    {
+        // menu item help
+
+        // shutdown menu item help panel, this sucks:
+        4001,   ID_XMH_XSHUTDOWN, 0,
+        // "System Setup" menu item
+        21644,  ID_XSH_OS2SYSSETUPMENUITEM, 0,
+        // "Open parent" menu item
+        32112,  ID_XSH_FDR_OPENPARENT, 0,
+        // "Create another" menu items
+        1200,   ID_XSH_CRANOTHERMENUITEM, 0,
+        1201,   ID_XSH_COPYMENUITEM, 0,
+        1202,   ID_XSH_MOVEMENUITEM, 0,
+        1203,   ID_XSH_CRSHADOWMENUITEM, 0,
+        // "Refresh now" menu item
+        1296,   ID_XMH_REFRESH, 0,
+        // "Check disk" menu item
+        8018,   ID_XMH_CHECKDISK, 0,
+        // "Format disk" menu item
+        8019,   ID_XMH_FORMATDISK, 0,
+        // "Manage volumes" menu item
+        8020,   ID_XMH_MANAGEVOLUMES, 0,
+
+        // object class default help panels
+
+        // Desktop
+        4000,   ID_XSH_DESKTOP, 0,
+        // default program object help with template (just to
+        // make sure, but see below)
+        4083,   ID_XSH_PROGRAMOBJ_MAIN, ID_XSH_PROGRAMOBJ_TEMPLATE,
+        // default startup folder help
+        8002,   ID_XSH_STARTUPFOLDER, 0,
+        // "Templates" folder default help
+        15680,  ID_XSH_OS2TEMPLATES, 0,
+        // Minimized window viewer default help
+        9286,   ID_XSH_OS2MINWINV, 0,
+        // "Shredder" default help
+        1190,   ID_XSH_SHREDDER, 0,
+        // "Drives" folder default help
+        8013,   ID_XSH_OS2DRIVESFDR, 0,
+        // "Diskette" disk object help
+        8014,   ID_XSH_DISK_DISKETTE, 0,
+        // "Hard disk" disk object help
+        8015,   ID_XSH_DISK_HARDDISK, 0,
+        // "CD-ROM" disk object help
+        8024,   ID_XSH_DISK_CDROM, 0,
+        // Winos2 setup class help
+        4203,   ID_XSH_SYSSETUP_WINOS2, 0,
+        // "Network drive" disk object help
+        8025,   ID_XSH_DISK_NETWORK, 0,
+        // WPNetwork class default help
+        30000,  ID_XSH_WPNETWORK, 0,
+        // WPNetgrp ("Resource Browser") default help
+        30001,  ID_XSH_WPNETGRP, 0,
+
+        // object default help panels that are totally brain-dead
+        // and display template help even for regular objects:
+
+        // WPBitmap:
+        15682,  ID_XSH_WPBITMAP, ID_XSH_WPBITMAP_TEMPLATE,
+        // WPIcon:
+        15678,  ID_XSH_WPICON, ID_XSH_WPICON_TEMPLATE,
+        // WPPointer: use WPIcon too
+        21652,  ID_XSH_WPPOINTER, ID_XSH_WPPOINTER_TEMPLATE,
+        // WPPif
+        4159,   ID_XSH_WPPIF, ID_XSH_WPPIF_TEMPLATE,
+        // WPMet
+        4160,   ID_XSH_WPMET, ID_XSH_WPMET_TEMPLATE,
+
+        // WPS help panels set via HELPPANEL
+        // for specific objects:
+
+        // "OS/2 system" folder
+        4002,   ID_XSH_OS2SYSTEM, 0,
+        // "System Setup" folder
+        1220,   ID_XSH_OS2SYSSETUPFDR, 0,
+        // "Command prompts" folder
+        8008,   ID_XSH_OS2CMDPROMPTSFDR, 0,
+        // program templates automatically receive a different
+        // help panel, probably from WPProgram::wpQueryDefaultHelp
+        15684,  ID_XSH_PROGRAMOBJ_TEMPLATE, 0,
+        // OS/2 full screen etc. objects
+        8009,   ID_XSH_OS2CMD_OS2FULL, 0,
+        8010,   ID_XSH_OS2CMD_OS2WIN, 0,
+        8011,   ID_XSH_OS2CMD_DOSFULL, 0,
+        8012,   ID_XSH_OS2CMD_DOSWIN, 0,
+        8022,   ID_XSH_OS2CMD_WIN16, 0,
+        // "Information folder"
+        13092,  ID_XSH_OS2INFORMATIONFDR, 0,
+        // "OS/2 Warp Command Reference" object
+        9301,   ID_XSH_OS2CMDREFINF, 0,
+        // "Games" folder
+        13091,  ID_XSH_GAMESFDR, 0,
+        // "Utilites" folder
+        13090,  ID_XSH_UTILITIESFDR, 0,
+        // "Clipboard viewer" program object
+        20274,  ID_XSH_CLIPVIEW, 0,
+        // "Enhanced editor" program object
+        20278,  ID_XSH_EPM, 0,
+        // "Icon editor" program object
+        20279,  ID_XSH_ICONEDIT, 0,
+        // "System editor" program object
+        9289,   ID_XSH_EEXE, 0,
+        // "Picture viewer" program object (not assigned with eCS!)
+        7126,   ID_XSH_PICVIEW, 0,
+        // "CPU Monitor" program object
+        20284,  ID_XSH_CPUMONITOR, 0,
+        // "Seek and scan files" program object
+        20285,  ID_XSH_SEEKANDSCAN, 0,
+        // "WarpCenter" default help
+        33784,  ID_XSH_WARPCENTER, 0,
+    };
+
+    PCSZ    pcszXWPHelp = cmnQueryHelpLibrary();
+    BOOL    fOurHelp = FALSE;
+
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpDisplayHelp");
+
+    // WPS passes WPHELP.HLP as NULL!
+    if (    (!HelpLibrary)
+         || (!*HelpLibrary)
+         || (!stricmp(HelpLibrary, "WPHELP.HLP"))
+         || (strhistr(HelpLibrary, "\\WPHELP.HLP"))
+       )
+    {
+        ULONG ul,
+              ulNewHelpPanelId = 0;
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(aReplacements);
+             ++ul)
+        {
+            if (HelpPanelId == aReplacements[ul].ulOldId)
+            {
+                // use template help if set and somSelf is
+                // a template indeed
+                if (    (ulNewHelpPanelId = aReplacements[ul].ulTemplateReplacemendId)
+                     && (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
+                   )
+                    break;
+
+                // not template, or we have no help panel if it is:
+                ulNewHelpPanelId = aReplacements[ul].ulReplacementId;
+                break;
+            }
+        }
+
+        // there is a bug in the WPS in that the default help
+        // for a minimized window in the miniwin viewer is
+        // passed as NULL, 0; so display our replacement help
+        // for the miniwin viewer instead
+        if (    (!HelpPanelId)
+             && (ctsIsMinWin(somSelf))
+           )
+            ulNewHelpPanelId = ID_XSH_OS2MINWINV;
+
+        if (ulNewHelpPanelId)
+        {
+            HelpPanelId = ulNewHelpPanelId;
+            HelpLibrary = (PSZ)pcszXWPHelp;
+        }
+        else
+            // no help panel ID found:
+            // but help is supposed to be in wphelp.hlp
+            // so enforce that
+            HelpLibrary = "WPHELP.HLP";
+    }
+
+    fOurHelp = (!strcmp(HelpLibrary, pcszXWPHelp));
+
+    #if 0
+        if ( (!fOurHelp) && (HelpPanelId != 1) )      // used by unlockhelp.cmd
+        {
+            CHAR sz[500];
+            sprintf(sz,
+                    "lib: \"%s\", panel: %d",
+                    (HelpLibrary) ? HelpLibrary : "NULL",
+                    HelpPanelId);
+            winhDebugBox(NULLHANDLE,
+                         __FUNCTION__,
+                         sz);
+        }
+    #endif
+
+    if (!XFldObject_parent_WPObject_wpDisplayHelp(somSelf,
+                                                  HelpPanelId,
+                                                  HelpLibrary))
+    {
+        // FAILED: if this was one of our items, report
+        if (fOurHelp)
+            cmnHelpNotFound(HelpPanelId);
+
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /*

@@ -87,7 +87,7 @@ interface XWPVCard : WPDataFile
 
     wpAddSettingsPages: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpCreateFromTemplate: override;
 
@@ -136,11 +136,13 @@ interface M_XWPVCard : M_WPDataFile
      */
 
     wpclsInitData: override;
+
     wpclsCreateDefaultTemplates: override;
 
-    wpclsQueryDefaultView: override;
-
     wpclsQueryTitle: override;
+
+    wpclsQueryDefaultView: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
 

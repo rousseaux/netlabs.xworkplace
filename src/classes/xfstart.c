@@ -448,32 +448,6 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemHelpSelected(XFldStartup *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *
- *      We'll display some help for the Startup folder.
- */
-
-SOM_Scope BOOL  SOMLINK xfstup_wpQueryDefaultHelp(XFldStartup *somSelf,
-                                                  PULONG pHelpPanelId,
-                                                  PSZ HelpLibrary)
-{
-    /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
-    XFldStartupMethodDebug("XFldStartup","xfstup_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
-    return TRUE;
-
-    /* return (XFldStartup_parent_XFolder_wpQueryDefaultHelp(somSelf,
-                                                          pHelpPanelId,
-                                                          HelpLibrary)); */
-}
-
-/*
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
@@ -630,6 +604,36 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
 }
 
 /*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We override the standard folder help to return help
+ *      for the startup folder here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfstupM_wpclsQueryDefaultHelp(M_XFldStartup *somSelf,
+                                                      PULONG pHelpPanelId,
+                                                      PSZ pszHelpLibrary)
+{
+    /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
+    M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
+    return TRUE;
+}
+
+/*
  *@@ wpclsQueryIconData:
  *      this WPObject class method must return information
  *      about how to build the default icon for objects
@@ -699,33 +703,6 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
  ********************************************************************/
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We'll display some help for the Shutdown folder.
- */
-
-SOM_Scope BOOL  SOMLINK xfshut_wpQueryDefaultHelp(XFldShutdown *somSelf,
-                                                  PULONG pHelpPanelId,
-                                                  PSZ HelpLibrary)
-{
-    /* XFldShutdownData *somThis = XFldShutdownGetData(somSelf); */
-    XFldShutdownMethodDebug("XFldShutdown","xfshut_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
-    return TRUE;
-
-    /* return (XFldShutdown_parent_XFolder_wpQueryDefaultHelp(somSelf,
-                                                           pHelpPanelId,
-                                                           HelpLibrary)); */
-}
-
-/*
  *@@ wpclsInitData:
  *      this WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
@@ -779,6 +756,37 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryStyle(M_XFldShutdown *somSelf)
                 | CLSSTYLE_NEVERCOPY
                 // | CLSSTYLE_NEVERDELETE
            );
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We override the standard folder help to return help
+ *      for the shutdown folder here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfshutM_wpclsQueryDefaultHelp(M_XFldShutdown *somSelf,
+                                                      PULONG pHelpPanelId,
+                                                      PSZ pszHelpLibrary)
+{
+    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
+    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
+    return TRUE;
+
 }
 
 /*

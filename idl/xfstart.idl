@@ -109,7 +109,7 @@ interface XFldStartup : XFolder
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpAddSettingsPages: override;
 
@@ -170,8 +170,8 @@ interface M_XFldStartup : M_XFolder
     wpclsInitData: override;
 
     wpclsQueryTitle: override;
-
     wpclsQueryStyle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;
@@ -237,7 +237,7 @@ interface XFldShutdown : XFolder
      *
      */
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
 #ifdef __PRIVATE__
 
@@ -289,8 +289,10 @@ interface M_XFldShutdown : M_XFolder
      */
 
     wpclsInitData: override;
+
     wpclsQueryTitle: override;
     wpclsQueryStyle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;

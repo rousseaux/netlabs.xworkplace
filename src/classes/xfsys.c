@@ -283,31 +283,6 @@ SOM_Scope ULONG  SOMLINK xfsys_wpFilterPopupMenu(XFldSystem *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We'll display some introduction to "OS/2 Kernel".
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xfsys_wpQueryDefaultHelp(XFldSystem *somSelf,
-                                                 PULONG pHelpPanelId,
-                                                 PSZ HelpLibrary)
-{
-    /* XFldSystemData *somThis = XFldSystemGetData(somSelf); */
-    XFldSystemMethodDebug("XFldSystem","xfsys_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XFLDSYSTEM;
-    return TRUE;
-}
-
-/*
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
@@ -421,6 +396,36 @@ SOM_Scope PSZ  SOMLINK xfsysM_wpclsQueryTitle(M_XFldSystem *somSelf)
     M_XFldSystemMethodDebug("M_XFldSystem","xfsysM_wpclsQueryTitle");
 
     return ("OS/2 Kernel");
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return the default help for the "OS/2 Kernel"
+ *      object here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfsysM_wpclsQueryDefaultHelp(M_XFldSystem *somSelf,
+                                                     PULONG pHelpPanelId,
+                                                     PSZ pszHelpLibrary)
+{
+    /* M_XFldSystemData *somThis = M_XFldSystemGetData(somSelf); */
+    M_XFldSystemMethodDebug("M_XFldSystem","xfsysM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XFLDSYSTEM;
+    return TRUE;
 }
 
 /*

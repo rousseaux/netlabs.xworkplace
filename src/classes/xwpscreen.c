@@ -177,29 +177,6 @@ SOM_Scope ULONG  SOMLINK xwpscr_wpFilterPopupMenu(XWPScreen *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We'll display some help for the "Screen" object.
- */
-
-SOM_Scope BOOL  SOMLINK xwpscr_wpQueryDefaultHelp(XWPScreen *somSelf,
-                                                  PULONG pHelpPanelId,
-                                                  PSZ HelpLibrary)
-{
-    /* XWPScreenData *somThis = XWPScreenGetData(somSelf); */
-    XWPScreenMethodDebug("XWPScreen","xwpscr_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_XWPSCREEN;
-    return TRUE;
-}
-
-/*
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
@@ -273,42 +250,6 @@ SOM_Scope void  SOMLINK xwpscrM_wpclsInitData(M_XWPScreen *somSelf)
 }
 
 /*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- *
- *@@added V0.9.5 (2000-08-26) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
-                                                           PSIZEL pSizl)
-{
-    BOOL brc = FALSE;
-    /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
-    M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQuerySettingsPageSize");
-
-    brc = M_XWPScreen_parent_M_WPSystem_wpclsQuerySettingsPageSize(somSelf,
-                                                                   pSizl);
-    if (brc)
-    {
-        LONG lCompCY = 160;     // this is the height of the "XPager General" page
-                                // which seems to be the largest
-        if (G_fIsWarp4)
-            // on Warp 4, reduce again, because we're moving
-            // the notebook buttons to the bottom
-            lCompCY -= WARP4_NOTEBOOK_OFFSET;
-        if (pSizl->cy < lCompCY)
-            pSizl->cy = lCompCY;
-    }
-
-    return brc;
-}
-
-/*
  *@@ wpclsQueryTitle:
  *      this WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
@@ -323,6 +264,36 @@ SOM_Scope PSZ  SOMLINK xwpscrM_wpclsQueryTitle(M_XWPScreen *somSelf)
     M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQueryTitle");
 
     return (cmnGetString(ID_XSSI_XWPSCREENTITLE)) ; // pszXWPScreenTitle
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      We return the default help for the "Screen"
+ *      object here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQueryDefaultHelp(M_XWPScreen *somSelf,
+                                                      PULONG pHelpPanelId,
+                                                      PSZ pszHelpLibrary)
+{
+    /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
+    M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XWPSCREEN;
+    return TRUE;
 }
 
 /*
@@ -364,4 +335,41 @@ SOM_Scope ULONG  SOMLINK xwpscrM_wpclsQueryIconData(M_XWPScreen *somSelf,
 
     return (sizeof(ICONINFO));
 }
+
+/*
+ *@@ wpclsQuerySettingsPageSize:
+ *      this WPObject class method should return the
+ *      size of the largest settings page in dialog
+ *      units; if a settings notebook is initially
+ *      opened, i.e. no window pos has been stored
+ *      yet, the WPS will use this size, to avoid
+ *      truncated settings pages.
+ *
+ *@@added V0.9.5 (2000-08-26) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
+                                                           PSIZEL pSizl)
+{
+    BOOL brc = FALSE;
+    /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
+    M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQuerySettingsPageSize");
+
+    brc = M_XWPScreen_parent_M_WPSystem_wpclsQuerySettingsPageSize(somSelf,
+                                                                   pSizl);
+    if (brc)
+    {
+        LONG lCompCY = 160;     // this is the height of the "XPager General" page
+                                // which seems to be the largest
+        if (G_fIsWarp4)
+            // on Warp 4, reduce again, because we're moving
+            // the notebook buttons to the bottom
+            lCompCY -= WARP4_NOTEBOOK_OFFSET;
+        if (pSizl->cy < lCompCY)
+            pSizl->cy = lCompCY;
+    }
+
+    return brc;
+}
+
 

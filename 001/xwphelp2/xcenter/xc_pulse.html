@@ -42,7 +42,11 @@ case you are running &os2; on a multi-processor system. -->
 <P><B>Implementation Details</B>
 
 <!-- V0.9.9: rewrote most of the following -->
-<P>Internally, the pulse widget uses the <CODE>DosPerfSysCall</CODE> API.
+<P>Internally, the pulse widget uses the <CODE>DosPerfSysCall</CODE> API
+(see the documentation for
+<A HREF="cpref.inf#DosPerfSysCall"><CODE>DosPerfSysCall</CODE></A>
+in the Toolkit documentation<A HREF="_toolkitlink.html">*</A>).
+
 This API has the advantage that in order to measure CPU activity, one can directly
 access the performance counters in the &os2; kernel instead of having to
 run a second idle-time thread which consumes all remaining CPU time itself

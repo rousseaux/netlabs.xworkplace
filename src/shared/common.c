@@ -3571,20 +3571,20 @@ VOID cmnEnableTurboFolders(VOID)
  *      of the caller to clean that up.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: made array pointer const
  */
 
-VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
+VOID cmnSetupInitData(const XWPSETUPENTRY *paSettings, // in: object's setup set
                       ULONG cSettings,       // in: array item count (NOT array size)
                       PVOID somThis)         // in: instance's somThis pointer
 {
     ULONG   ul = 0;
-    // CHAR    szTemp[100];
 
     for (ul = 0;
          ul < cSettings;
          ul++)
     {
-        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+        const XWPSETUPENTRY *pSettingThis = &paSettings[ul];
 
         switch (pSettingThis->ulType)
         {
@@ -3626,9 +3626,11 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
  *      setup set helper to be used in an xwpQuerySetup2 override.
  *      See XWPSETUPENTRY for an introduction.
  *
- *      This adds new setup strings to the specified XSTRING, which
- *      should be safely initialized. XWPSETUPENTRY's that have
- *      (pcszSetupString == NULL) are skipped.
+ *      This appends new setup strings to the specified XSTRING,
+ *      which should be safely initialized and, if not empty,
+ *      should already end with a semicolon. XWPSETUPENTRY's that
+ *      have (pcszSetupString == NULL) or are set to the default
+ *      value are skipped.
  *
  *      -- For STG_LONG_DEC, this appends "KEYWORD=%d;".
  *
@@ -3637,9 +3639,10 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
  *      -- For STG_BOOL and STG_BITFLAG, this appends "KEYWORD={YES|NO};".
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: made array pointer const
  */
 
-VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
+VOID cmnSetupBuildString(const XWPSETUPENTRY *paSettings, // in: object's setup set
                          ULONG cSettings,       // in: array item count (NOT array size)
                          PVOID somThis,         // in: instance's somThis pointer
                          PXSTRING pstr)         // out: setup string
@@ -3652,7 +3655,7 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
          ul < cSettings;
          ul++)
     {
-        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+        const XWPSETUPENTRY *pSettingThis = &paSettings[ul];
 
         // setup string supported for this?
         if (pSettingThis->pcszSetupString)
@@ -3765,17 +3768,23 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
  *
  *      -- for STG_PSZ, this expects "KEYWORD=STRING;" strings.
  *
- *      Returns FALSE if values were not set properly.
+ *      Returns FALSE only if values were not set properly.
+ *      If pszSetupString does not contain any keywords that
+ *      are listed in the XWPSETUPENTRY array, we still return
+ *      TRUE, so you can return this func's return value from
+ *      wpSetup. (Not specifying a string is not an error.)
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: made array pointer const
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: pcSuccess can be NULL now
  */
 
 BOOL cmnSetupScanString(WPObject *somSelf,
-                        PXWPSETUPENTRY paSettings, // in: object's setup set
+                        const XWPSETUPENTRY *paSettings, // in: object's setup set
                         ULONG cSettings,         // in: array item count (NOT array size)
                         PVOID somThis,           // in: instance's somThis pointer
                         PSZ pszSetupString,      // in: setup string from wpSetup
-                        PULONG pcSuccess)        // out: items successfully parsed and set
+                        PULONG pcSuccess)        // out: items successfully parsed and set; ptr can be NULL
 {
     BOOL    brc = TRUE;
     CHAR    szValue[500];
@@ -3786,7 +3795,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
          ul < cSettings;
          ul++)
     {
-        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+        const XWPSETUPENTRY *pSettingThis = &paSettings[ul];
 
         // setup string supported for this?
         if (pSettingThis->pcszSetupString)
@@ -3815,7 +3824,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                             {
                                 // data changed:
                                 *plData = lValue;
-                                (*pcSuccess)++;
+                                if (pcSuccess)      // V0.9.20 (2002-07-12) [umoeller]
+                                    (*pcSuccess)++;
                             }
                         }
                         else
@@ -3842,7 +3852,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                             {
                                 // data changed:
                                 *plData = lValue;
-                                (*pcSuccess)++;
+                                if (pcSuccess)
+                                    (*pcSuccess)++;
                             }
                         }
                         else
@@ -3866,7 +3877,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                             if (*plData != fNew)
                             {
                                 *plData = fNew;
-                                (*pcSuccess)++;
+                                if (pcSuccess)
+                                    (*pcSuccess)++;
                             }
                         }
                     }
@@ -3894,7 +3906,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                                               // set it if set
                                             | ulNew);
 
-                                (*pcSuccess)++;
+                                if (pcSuccess)
+                                    (*pcSuccess)++;
                             }
                         }
                     }
@@ -3911,7 +3924,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                         }
 
                         *ppszData = strdup(szValue);
-                        (*pcSuccess)++;
+                        if (pcSuccess)
+                            (*pcSuccess)++;
                     }
                     break;
                 }
@@ -3936,10 +3950,11 @@ BOOL cmnSetupScanString(WPObject *somSelf,
  *      Returns FALSE if values were not saved properly.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: made array pointer const
  */
 
 BOOL cmnSetupSave(WPObject *somSelf,
-                  PXWPSETUPENTRY paSettings, // in: object's setup set
+                  const XWPSETUPENTRY *paSettings, // in: object's setup set
                   ULONG cSettings,         // in: array item count (NOT array size)
                   PCSZ pcszClassName, // in: class name to be used with wpSave*
                   PVOID somThis)           // in: instance's somThis pointer
@@ -3951,7 +3966,7 @@ BOOL cmnSetupSave(WPObject *somSelf,
          ul < cSettings;
          ul++)
     {
-        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+        const XWPSETUPENTRY *pSettingThis = &paSettings[ul];
 
         if (pSettingThis->ulKey)
         {
@@ -4010,10 +4025,11 @@ BOOL cmnSetupSave(WPObject *somSelf,
  *      on wpInitData.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: made array pointer const
  */
 
 BOOL cmnSetupRestore(WPObject *somSelf,
-                     PXWPSETUPENTRY paSettings, // in: object's setup set
+                     const XWPSETUPENTRY *paSettings, // in: object's setup set
                      ULONG cSettings,         // in: array item count (NOT array size)
                      PCSZ pcszClassName, // in: class name to be used with wpRestore*
                      PVOID somThis)           // in: instance's somThis pointer
@@ -4025,7 +4041,7 @@ BOOL cmnSetupRestore(WPObject *somSelf,
          ul < cSettings;
          ul++)
     {
-        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+        const XWPSETUPENTRY *pSettingThis = &paSettings[ul];
 
         if (pSettingThis->ulKey)
         {
@@ -4112,9 +4128,10 @@ BOOL cmnSetupRestore(WPObject *somSelf,
  *      which should match cOffsets.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: made array pointer const
  */
 
-ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
+ULONG cmnSetupSetDefaults(const XWPSETUPENTRY *paSettings, // in: object's setup set
                           ULONG cSettings,          // in: array item count (NOT array size)
                           PULONG paulOffsets,
                           ULONG cOffsets,           // in: array item count (NOT array size)
@@ -4137,7 +4154,7 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
              ulSettingThis < cSettings;
              ulSettingThis++)
         {
-            PXWPSETUPENTRY pSettingThis = &paSettings[ulSettingThis];
+            const XWPSETUPENTRY *pSettingThis = &paSettings[ulSettingThis];
 
             if (pSettingThis->ulOfsOfData == *pulOfsOfDataThis)
             {

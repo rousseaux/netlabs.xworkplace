@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        WPObject Strings
+        &xwp;: WPObject Strings
     </TITLE>
 </HEAD>
 <!-- V0.9.1: this page is all new with V0.9.1. Its contents have been extracted
@@ -72,7 +72,9 @@ percentage coordinates.
 <P><DT><CODE><B>ICONRESOURCE</B>=<I>id</I>,<I>dllfile</I></CODE>
 <DD>Sets the object's icon to data residing in a resource file.
 The <CODE><I>id</I></CODE> is the
-icon resource ID in the dynamic link library (DLL)
+icon resource ID in the
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_dll.html">DLL</A>
 <CODE><I>dllfile</I></CODE>.
 <!-- V0.9.16 -->
 <P>Note that for folders, this specifies the "closed" icon.
@@ -151,8 +153,10 @@ with a <CODE>&lt;</CODE> and terminated with a <CODE>&gt;</CODE>.
 
 <P><DT><CODE><B>OPEN</B>={SETTINGS|DEFAULT|ICON|TREE|DETAILS}</CODE>
 <DD>Open a view now.
+<!-- V0.9.20: removed this
 This is the clever trick used by a zillion REXX scripts on the Internet to open an
 object from the &os2; command line.
+-->
 <BR><CODE>OPEN=DEFAULT</CODE> will open the default view of the object (as if
 you had double-clicked on it). <CODE>OPEN=SETTINGS</CODE> will open the object's
 properties notebook. All the other values are valid for folders only.
@@ -160,8 +164,10 @@ properties notebook. All the other values are valid for folders only.
 It will open immediately.
 
 <P><DT><CODE><B>TEMPLATE</B>={YES|NO}</CODE>
-<DD>Determines whether this object is a template or not.
-Default is <CODE>NO</CODE> (of course).
+<DD>Determines whether this object is a
+<!-- V0.9.20: added link -->
+<A HREF="tasks/tsk_templates.html">template</A>
+or not. The default is <CODE>NO</CODE> (of course).
 
 <P><DT><CODE><B>TITLE</B>=<I>title</I></CODE>
 <DD>Sets the object's title to something new. This will also change the

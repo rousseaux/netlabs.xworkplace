@@ -419,3 +419,4 @@ APIRET xsecQueryProcessOwner(ULONG ulPID,           // in: process ID
 
     return arc;
 }
+

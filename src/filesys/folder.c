@@ -394,6 +394,7 @@ BOOL fdrSetup(WPFolder *somSelf,
  *@@changed V0.9.3 (2000-04-09) [umoeller]: bitmaps on boot drive are returned with "?:\" now
  *@@changed V0.9.3 (2000-05-30) [umoeller]: ICONSHADOWCOLOR was reported as TREESHADOWCOLOR. Fixed.
  *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: fixed MENUBAR defaults
  */
 
 BOOL fdrQuerySetup(WPObject *somSelf,
@@ -419,6 +420,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                 fIconViewColumns = FALSE;
 
         CHAR    szTemp[1000] = "";
+        BOOL    fDefaultMenuBar = FALSE;
 
         // some settings better have this extra check,
         // not sure if it's really needed
@@ -432,8 +434,12 @@ BOOL fdrQuerySetup(WPObject *somSelf,
             xstrcat(pstrSetup, "WORKAREA=YES;", 0);
 
         // MENUBAR
+        // V0.9.20 (2002-07-12) [umoeller]: this reported MENUBAR=NO
+        // for the desktop, which is not necessary
         ulValue = _xwpQueryMenuBarVisibility(somSelf);
-        if (ulValue != _xwpclsQueryMenuBarVisibility(_XFolder))
+        if (!cmnIsADesktop(somSelf))
+            fDefaultMenuBar = _xwpclsQueryMenuBarVisibility(_XFolder);
+        if (ulValue != fDefaultMenuBar)
             // non-default value:
             if (ulValue)
                 xstrcat(pstrSetup, "MENUBAR=YES;", 0);

@@ -43,17 +43,17 @@ types, if you have additional Installable File Systems (IFS's) installed.
 on the disk. That is, if a file of 1 byte length is created, at least this number
 of bytes will be allocated on the disk.
 
-<P>For <B>HPFS drives,</B> this number should always be 512.
+<P>For <B>HPFS volumes,</B> this number should always be 512.
 
 <!-- V0.9.12: added JFS -->
-<P>For <B>JFS drives,</B> this number depends on what was specified when the
+<P>For <B>JFS volumes,</B> this number depends on what was specified when the
 volume was formatted. JFS allows block sizes of 512, 1024, 2048, and 4096, where
 4096 is the default.
 
-<P>For <B>FAT drives,</B> the block size depends on the size of the disk. Since the
-file allocation tables on FAT drives can only handle a limited number of blocks,
+<P>For <B>FAT volumes,</B> the block size depends on the size of the disk. Since the
+file allocation tables on FAT volumes can only handle a limited number of blocks,
 for larger disks, more bytes have to be used for each blocks. As a result, the larger
-your FAT drives are, the more bytes are wasted because of growing block sizes:
+your FAT volumes are, the more bytes are wasted because of growing block sizes:
 <PRE>
 Drive size      Block size
 &lt;   16 MB          4 KB

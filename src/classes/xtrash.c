@@ -1057,28 +1057,6 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *
- *      We'll display some help for the trash can.
- */
-
-SOM_Scope BOOL  SOMLINK xtrc_wpQueryDefaultHelp(XWPTrashCan *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
-    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_SETTINGS_TRASHCAN;
-    return TRUE;
-}
-
-/*
  *@@ wpOpen:
  *      this WPObject instance method gets called when
  *      a new view needs to be opened. Normally, this
@@ -1159,14 +1137,17 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
  *      Note that when objects are deleted into the trash can,
  *      XWPTrashCan::xwpDeleteIntoTrashCan will add trash objects
  *      only if the trash can has been populated already.
+ *
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: finally requesting find sem properly
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                                         ULONG ulReserved, PSZ pszPath,
                                         BOOL fFoldersOnly)
 {
-    BOOL brc = TRUE;
-    ULONG ulFldrFlags = _wpQueryFldrFlags(somSelf);
+    BOOL    brc = TRUE;
+    BOOL    fFindSem = FALSE;
+    ULONG   ulFldrFlags = _wpQueryFldrFlags(somSelf);
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpPopulate");
@@ -1175,48 +1156,64 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
     _xwpTrashCanBusy(somSelf,
                      +1);       // inc "busy"
 
-    // we must call the parent first;
-    // otherwise, we'll get a "Wait" pointer all the time
-    if (XWPTrashCan_parent_WPFolder_wpPopulate(somSelf,
-                                               ulReserved,
-                                               pszPath,
-                                               fFoldersOnly))
+    TRY_LOUD(excpt1)
     {
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("%s -> wpPopulate, fFoldersOnly: %d, Flags: 0x%lX",
-                        _wpQueryTitle(somSelf),
-                        fFoldersOnly,
-                        ulFldrFlags));
-        #endif
-
-        if (!fFoldersOnly)
+        // request the find mutex to avoid weird behavior;
+        // there can only be one populate at a time
+        // V0.9.20 (2002-07-12) [umoeller]
+        if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
-            if (!_fAlreadyPopulated)
+            // we must call the parent first;
+            // otherwise, we'll get a "Wait" pointer all the time
+            if (XWPTrashCan_parent_WPFolder_wpPopulate(somSelf,
+                                                       ulReserved,
+                                                       pszPath,
+                                                       fFoldersOnly))
             {
-                // very first call:
-                _ulTrashObjectCount = 0;
-                _dSizeOfAllObjects = 0;
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("%s -> wpPopulate, fFoldersOnly: %d, Flags: 0x%lX",
+                                _wpQueryTitle(somSelf),
+                                fFoldersOnly,
+                                ulFldrFlags));
+                #endif
 
-                // tell XFolder to allow wpAddToContent hacks...
-                _xwpSetDisableCnrAdd(somSelf, TRUE);
+                if (!fFoldersOnly)
+                {
+                    if (!_fAlreadyPopulated)
+                    {
+                        // very first call:
+                        _ulTrashObjectCount = 0;
+                        _dSizeOfAllObjects = 0;
 
-                brc = trshPopulateFirstTime(somSelf, ulFldrFlags);
+                        // tell XFolder to allow wpAddToContent hacks...
+                        _xwpSetDisableCnrAdd(somSelf, TRUE);
 
-                _fAlreadyPopulated = TRUE;
+                        brc = trshPopulateFirstTime(somSelf, ulFldrFlags);
 
-                // alright, now that we're done populating, we
-                // must re-enable cnr add or otherwise later
-                // objects won't get inserted
-                _xwpSetDisableCnrAdd(somSelf, FALSE);
+                        _fAlreadyPopulated = TRUE;
+
+                        // alright, now that we're done populating, we
+                        // must re-enable cnr add or otherwise later
+                        // objects won't get inserted
+                        _xwpSetDisableCnrAdd(somSelf, FALSE);
+                    }
+                }
+
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("End of %s -> wpPopulate, fFoldersOnly: %d",
+                                _wpQueryTitle(somSelf),
+                                fFoldersOnly));
+                #endif
             }
         }
-
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("End of %s -> wpPopulate, fFoldersOnly: %d",
-                        _wpQueryTitle(somSelf),
-                        fFoldersOnly));
-        #endif
     }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fFindSem)
+        fdrReleaseFindMutexSem(somSelf);
 
     _xwpSetCorrectTrashIcon(somSelf,
                             TRUE);      // always set icon, because wpPopulate gets
@@ -1752,6 +1749,29 @@ SOM_Scope void  SOMLINK xtrcM_wpclsUnInitData(M_XWPTrashCan *somSelf)
 }
 
 /*
+ *@@ wpclsCreateDefaultTemplates:
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
+ *
+ *@@added V0.9.7 (2001-01-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrcM_wpclsCreateDefaultTemplates(M_XWPTrashCan *somSelf,
+                                                          WPObject* Folder)
+{
+    /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
+    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsCreateDefaultTemplates");
+
+    // pretend we've created the templates
+    return TRUE;
+}
+
+/*
  *@@ wpclsQueryTitle:
  *      this WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
@@ -1787,25 +1807,32 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryStyle(M_XWPTrashCan *somSelf)
 }
 
 /*
- *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
- *      Templates folder to allow a class to
- *      create its default templates.
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
  *
- *      The default WPS behavior is to create new templates
- *      if the class default title is different from the
- *      existing templates.
+ *      We override the standard folder help and return help
+ *      for the trash can here.
  *
- *@@added V0.9.7 (2001-01-17) [umoeller]
+ *@@added V0.9.20 (2002-07-12) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xtrcM_wpclsCreateDefaultTemplates(M_XWPTrashCan *somSelf,
-                                                          WPObject* Folder)
+SOM_Scope BOOL  SOMLINK xtrcM_wpclsQueryDefaultHelp(M_XWPTrashCan *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
 {
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
-    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsCreateDefaultTemplates");
+    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryDefaultHelp");
 
-    // pretend we've created the templates
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_SETTINGS_TRASHCAN;
     return TRUE;
 }
 

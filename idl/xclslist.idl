@@ -95,7 +95,7 @@ interface XWPClassList : WPAbstract
     wpMenuItemSelected: override;
 
     wpQueryDefaultView: override;
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpOpen: override;
 
@@ -143,8 +143,11 @@ interface M_XWPClassList : M_WPAbstract
      */
 
     wpclsInitData: override;
+
     wpclsQueryStyle: override;
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
+
     wpclsQueryIconData: override;
   };
 #endif /* __SOMIDL__ */

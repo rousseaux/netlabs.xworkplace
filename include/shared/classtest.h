@@ -29,6 +29,8 @@
 
     BOOL ctsIsTransient(WPObject *somSelf);
 
+    BOOL ctsIsMinWin(WPObject *somSelf);
+
     BOOL ctsIsIcon(WPObject *somSelf);
 
     BOOL ctsIsPointer(WPObject *somSelf);

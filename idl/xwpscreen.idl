@@ -78,7 +78,7 @@ interface XWPScreen : WPSystem
 
     wpFilterPopupMenu: override;
 
-    wpQueryDefaultHelp: override;
+//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
     wpAddSettingsPages: override;
 
@@ -127,9 +127,13 @@ interface M_XWPScreen : M_WPSystem
      */
 
     wpclsInitData: override;
-    wpclsQuerySettingsPageSize: override;
+
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
+
     wpclsQueryIconData: override;
+
+    wpclsQuerySettingsPageSize: override;
   };
 #endif /* __SOMIDL__ */
 };

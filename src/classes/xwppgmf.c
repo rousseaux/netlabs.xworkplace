@@ -280,7 +280,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddAssociationsPage(XWPProgramFile *somSelf,
  *      because that method needs to open a PEXECUTABLE anyway
  *      and we'd rather avoid opening that twice.
  *
- *      If NULL is passed in for pvExec, this method calls doshOpen
+ *      If NULL is passed in for pvExec, this method calls exehOpen
  *      itself.
  *
  *      Same for pszFullFile: if you have run wpQueryFilename(TRUE)
@@ -1146,28 +1146,54 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryDefaultView(XWPProgramFile *somSelf)
  *      describe what this object can do in general.
  *      We must return TRUE to report successful completion.
  *
+ *      The WPObject implementation checks for whether the
+ *      object has instance help settings set (HELPLIBRARY,
+ *      HELPPANEL) and, if so, returns those settings or
+ *      calls the class method wpclsQueryDefaultHelp instead.
+ *      It is thus recommended to always override the class
+ *      method because otherwise instance help settings
+ *      break for objects of a class (fixed with 0.9.20).
+ *
+ *      We make an exception here because we need to select
+ *      the default help panel based on the program type
+ *      of this program file, and no sane person would
+ *      change the default help panel for a program file
+ *      on disk anyway.
+ *
  *      We replace the default help panel for program files
  *      because the WPS even displays the standard data
  *      file help for them: "This data file is associated
  *      with the system editor per default." Yeah, right.
  *
- *      We try to be just a bit smarter and display help
- *      based on the program type.
- *
  *@@added V0.9.16 (2002-01-13) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: added more help
  */
 
 SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
                                                 PULONG pHelpPanelId,
                                                 PSZ HelpLibrary)
 {
-    XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultHelp");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+    // if (cmnQuerySetting(sfExtAssocs))
     {
         strcpy(HelpLibrary, cmnQueryHelpLibrary());
+
+        // V0.9.20 (2002-07-12) [umoeller]
+        if (ctsIsCommandFile(somSelf))
+        {
+            // batch file:
+            CHAR szFilename[CCHMAXPATH];
+            if (    (_wpQueryFilename(somSelf, szFilename, FALSE))
+                 && (!stricmp(szFilename, "AUTOEXEC.BAT"))
+               )
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_AUTOEXEC;
+            else
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_BATCH;
+
+            return TRUE;
+        }
 
         switch (_xwpQueryProgType(somSelf, NULL, NULL))
         {
@@ -1217,6 +1243,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
             case PROG_DEFAULT:             // (PROGCATEGORY)0
             case PROG_GROUP:               // (PROGCATEGORY)5
             */
+
             default:
                 *pHelpPanelId = ID_XSH_PROGRAMFILE_MAIN;
             break;
@@ -1225,11 +1252,12 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
 
         return TRUE;
     }
-#endif
 
-    return (XWPProgramFile_parent_WPProgramFile_wpQueryDefaultHelp(somSelf,
+    /* return (XWPProgramFile_parent_WPProgramFile_wpQueryDefaultHelp(somSelf,
                                                                    pHelpPanelId,
                                                                    HelpLibrary));
+    */
+// #endif
 }
 
 /*

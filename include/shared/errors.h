@@ -101,7 +101,7 @@
             // this is only a warning, it will be gone after a reboot
     #define ERROR_FOPS_LAST                   (ERROR_XWP_FIRST + 27)
 
-    typedef unsigned long FOPSRET;
+    // typedef unsigned long FOPSRET;   removed V0.9.20 (2002-07-12) [umoeller]
 
     #define ERROR_XCENTER_FIRST                 (ERROR_XWP_FIRST + 100)
     #define XCERR_INVALID_ROOT_WIDGET_INDEX     (ERROR_XWP_FIRST + 101)

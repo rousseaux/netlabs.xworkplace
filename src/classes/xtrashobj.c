@@ -781,33 +781,6 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We'll display some help for the trash object.
- */
-
-SOM_Scope BOOL  SOMLINK xtro_wpQueryDefaultHelp(XWPTrashObject *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
-    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_SETTINGS_TRASHCAN;
-    return TRUE;
-
-    /* return (XWPTrashObject_parent_WPTransient_wpQueryDefaultHelp(somSelf,
-                                                                 pHelpPanelId,
-                                                                 HelpLibrary)); */
-}
-
-/*
  *@@ wpMoveObject:
  *      this instance method gets called by the WPS on an
  *      object if it is to be moved.
@@ -1207,5 +1180,34 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryStyle(M_XWPTrashObject *somSelf)
                 | CLSSTYLE_NEVERSETTINGS);
 }
 
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      Since this is a subclass of WPTransient which doesn't
+ *      have any help at all, we return help for trash objects
+ *      here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
 
+SOM_Scope BOOL  SOMLINK xtroM_wpclsQueryDefaultHelp(M_XWPTrashObject *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
+{
+    /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
+    M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_SETTINGS_TRASHCAN;
+    return TRUE;
+}
 

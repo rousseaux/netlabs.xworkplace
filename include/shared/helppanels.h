@@ -3,6 +3,11 @@
  *@@sourcefile helppanels.h:
  *      shared include file for XWorkplace help panel IDs.
  *
+ *      NOTE: If you look at this file from the toolkit\shared
+ *      directory of a binary XWorkplace distribution, this
+ *      file is called helpids.h to conform to FAT 8+3
+ *      naming conventions.
+ *
  *      This is now also used by h2i.exe to finally get
  *      rid of the stupid hand calculations for getting
  *      the help panels right. However, this must be
@@ -273,5 +278,79 @@
     #define ID_XFH_BATCHRENAME              162     // V0.9.19 (2002-06-18) [umoeller]
 
     #define ID_XSH_SETTINGS_MACROS          163     // V0.9.20 (2002-07-03) [umoeller]
+
+    // all the following added with V0.9.20 (2002-07-12) [umoeller]
+    #define ID_XSH_OS2SYSSETUPMENUITEM      164
+    #define ID_XSH_FDR_OPENPARENT           165
+    #define ID_XSH_CRANOTHERMENUITEM        166
+    #define ID_XSH_COPYMENUITEM             167
+    #define ID_XSH_MOVEMENUITEM             168
+    #define ID_XSH_CRSHADOWMENUITEM         169
+    #define ID_XMH_CHECKDISK                170
+    #define ID_XMH_FORMATDISK               171
+    #define ID_XMH_MANAGEVOLUMES            172
+    #define ID_XSH_PROGRAMOBJ_MAIN          173
+    #define ID_XSH_PROGRAMOBJ_TEMPLATE      174
+    #define ID_XSH_STARTUPFOLDER            175
+    #define ID_XSH_FOLDER_TEMPLATE          176
+    #define ID_XSH_OS2TEMPLATES             177
+    #define ID_XSH_OS2MINWINV               178
+    #define ID_XSH_PROGRAMFILE_BATCH        179
+    #define ID_XSH_PROGRAMFILE_AUTOEXEC     180
+    #define ID_XSH_WPBITMAP                 181
+    #define ID_XSH_WPBITMAP_TEMPLATE        182
+    #define ID_XSH_WPICON                   183
+    #define ID_XSH_WPICON_TEMPLATE          184
+    #define ID_XSH_WPPOINTER                185
+    #define ID_XSH_WPPOINTER_TEMPLATE       186
+    #define ID_XSH_WPPIF                    187
+    #define ID_XSH_WPPIF_TEMPLATE           188
+    #define ID_XSH_WPMET                    189
+    #define ID_XSH_WPMET_TEMPLATE           190
+    #define ID_XSH_OS2SYSTEM                191
+    #define ID_XSH_OS2SYSSETUPFDR           192
+    #define ID_XSH_OS2CMDPROMPTSFDR         193
+    #define ID_XSH_OS2CMD_OS2FULL           194
+    #define ID_XSH_OS2CMD_OS2WIN            195
+    #define ID_XSH_OS2CMD_DOSFULL           196
+    #define ID_XSH_OS2CMD_DOSWIN            197
+    #define ID_XSH_OS2CMD_WIN16             198
+    #define ID_XSH_OS2DRIVESFDR             199
+    #define ID_XSH_DISK_DISKETTE            200
+    #define ID_XSH_DISK_HARDDISK            201
+    #define ID_XSH_DISK_CDROM               202
+    #define ID_XSH_DISK_NETWORK             203
+    #define ID_XSH_OS2INFORMATIONFDR        204
+    #define ID_XSH_OS2CMDREFINF             205
+    #define ID_XSH_GAMESFDR                 206
+    #define ID_XSH_UTILITIESFDR             207
+    #define ID_XSH_CLIPVIEW                 208
+    #define ID_XSH_EPM                      209
+    #define ID_XSH_ICONEDIT                 210
+    #define ID_XSH_EEXE                     211
+    #define ID_XSH_PICVIEW                  212
+    #define ID_XSH_CPUMONITOR               213
+    #define ID_XSH_SEEKANDSCAN              214
+    #define ID_XSH_WARPCENTER               215
+    #define ID_XSH_SHREDDER                 216
+    #define ID_XSH_DESKTOP                  217
+    #define ID_XSH_DESKTOP_SECONDARY        218
+    #define ID_XSH_PROGRAMSFDR              219
+    #define ID_XSH_PRINTERSFDR              220
+    #define ID_XSH_INSTALLREMOVEFDR         221
+    #define ID_XSH_SYSSETUP_LOOK            222
+    #define ID_XSH_SYSSETUP_NET             223
+    #define ID_XSH_SYSSETUP_LOCALE          224
+    #define ID_XSH_SYSSETUP_LVMGUI          225
+    #define ID_XSH_SYSSETUP_MMPM2           226
+    #define ID_XSH_SYSSETUP_REGEDIT         227
+    #define ID_XSH_SYSSETUP_ESTYLER         228
+    #define ID_XSH_SYSSETUP_THEMEMGR        229
+    #define ID_XSH_SYSSETUP_ITHEME          230
+    #define ID_XSH_SYSSETUP_WINOS2          231
+    #define ID_XSH_CONNECTIONSFDR           232
+    #define ID_XSH_INTERNETFDR              233
+    #define ID_XSH_WPNETWORK                234
+    #define ID_XSH_WPNETGRP                 235
 #endif
 

@@ -1138,14 +1138,14 @@ static VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
     {
         // collect objects from cnr and start
         // moving them to trash can
-        FOPSRET frc = fopsStartDeleteFromCnr(NULLHANDLE,   // no anchor block, ansynchronously
-                                             pSelected,    // first selected object
-                                             ulSelection,  // can only be SEL_SINGLESEL
-                                                            // or SEL_MULTISEL
-                                             psfv->hwndCnr,
-                                             fTrueDelete);  // V0.9.19 (2002-04-02) [umoeller]
+        APIRET frc = fopsStartDeleteFromCnr(NULLHANDLE,   // no anchor block, ansynchronously
+                                            pSelected,    // first selected object
+                                            ulSelection,  // can only be SEL_SINGLESEL
+                                                          // or SEL_MULTISEL
+                                            psfv->hwndCnr,
+                                            fTrueDelete);  // V0.9.19 (2002-04-02) [umoeller]
         #ifdef DEBUG_TRASHCAN
-            _Pmpf(("    got FOPSRET %d", frc));
+            _Pmpf(("    got APIRET %d", frc));
         #endif
     }
 }
@@ -1261,8 +1261,8 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
         if (cmnQuerySetting(sfReplaceDelete))
 #endif
         {
-            FOPSRET frc;
-            BOOL fTrueDelete;
+            APIRET  frc;
+            BOOL    fTrueDelete;
 
             // use true delete if the user doesn't want the
             // trash can or if the shift key is pressed
@@ -1287,7 +1287,7 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
                                          hwndCnr,
                                          fTrueDelete);
             #ifdef DEBUG_TRASHCAN
-                _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
+                _Pmpf(("WM_COMMAND WPMENUID_DELETE: got APIRET %d", frc));
             #endif
 
             // return "processed", skip default processing

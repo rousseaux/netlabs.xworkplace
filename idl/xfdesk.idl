@@ -92,6 +92,9 @@ interface XFldDesktop : WPDesktop
 
     wpInitData: override;
     wpSetup: override;
+    wpSetupOnce: override;
+
+    wpQueryDefaultHelp: override;
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;

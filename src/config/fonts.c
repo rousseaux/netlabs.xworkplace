@@ -842,7 +842,7 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
     {
         // OK:
         // start "move to trashcan" with the new list
-        FOPSRET frc;
+        APIRET frc;
         _PmpfF(("starting XFT_INSTALLFONTS (%d items)", cItems));
         if (frc = fopsStartTaskFromList(XFT_INSTALLFONTS,
                                         NULLHANDLE,       // no anchor block, asynchronously

@@ -400,7 +400,7 @@
      *
      *      Parameters:
      *      -- HFILETASKLIST mp1: file task list handle.
-     *      -- FOPSRET mp2: file-operations return code.
+     *      -- APIRET mp2: file-operations return code.
      *
      *@@added V0.9.4 (2000-08-03) [umoeller]
      */

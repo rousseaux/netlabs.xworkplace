@@ -207,6 +207,12 @@ typedef struct _STATUS
                                     // 1: in regular <A HREF= block, must be closed
                                     // 2: in special <A AUTO= block, must not be closed
 
+    XSTRING     strLinkTag;         // if ulInLink > 0, current link tag (for
+                                    // image link support); this has something
+                                    // like
+                                    // :link reftype=hd res=58.
+                                    // V0.9.20 (2002-07-12) [umoeller]
+
     LINKLIST    llListStack;        // linklist abused as a stack for list tags;
                                     // the list item is simply a ULONG with a
                                     // LISTFL_* value
@@ -1388,6 +1394,8 @@ PCSZ HandleDT(PARTICLETREENODE pFile2Process,
 /*
  *@@ HandleA:
  *
+ *@@changed V0.9.20 (2002-07-06) [umoeller]: added support for cpref etc. toolkit INF variables
+ +@@changed V0.9.20 (2002-07-12) [umoeller]: added support for A HREF="helpfile.hlp#panel"
  */
 
 PCSZ HandleA(PARTICLETREENODE pFile2Process,
@@ -1415,33 +1423,71 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         = GetOrCreateArticle(pszAttrib,
                                              pFile2Process->ulHeaderLevel,
                                              pFile2Process);
-                    xstrCatf(pxstrIPF,
-                               // hack in the @#!LINK@#! for now;
+
+                    // V0.9.20 (2002-07-12) [umoeller]
+                    xstrPrintf(&pstat->strLinkTag,
+                               // hack in the @#!LINK@#! string for now;
                                // this is later replaced with the
                                // resid in ParseFiles
                                ":link reftype=hd res=" START_KEY "%s" END_KEY " auto dependent.",
                                pszAttrib);
+
+                    xstrcats(pxstrIPF,
+                             &pstat->strLinkTag);
+
                     pstat->ulInLink = 2;        // special, do not close
                 }
                 else if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                                "HREF",
-                                                NULL))
+                                                     "HREF",
+                                                     NULL))
                 {
-                    if (strhistr(pszAttrib, ".INF"))
+                    PSZ pExt;
+                    if (pExt = strhistr(pszAttrib, ".INF"))
                     {
                         // special INF cross-link support:
-                        // convert all # into spaces
-                        PSZ p3 = pszAttrib;
-                        while (*p3)
+                        // V0.9.20 (2002-07-06) [umoeller]
+                        // remove .INF and the following # if any;
+                        // this allows us to specify "cpref.inf#func"
+                        // in the sources even though cpref is really
+                        // an environment variable defined by the
+                        // toolkit install
+                        PSZ p3 = pExt + 4;
+                        if (*p3 == '#')
                         {
-                            if (*p3 == '#')
-                                *p3 = ' ';
-                            p3++;
+                            *p3 = ' ';
                         }
+                        strcpy(pExt, p3);
 
-                        xstrCatf(pxstrIPF,
+                        // V0.9.20 (2002-07-12) [umoeller]
+                        xstrPrintf(&pstat->strLinkTag,
                                    ":link reftype=launch object='view.exe' data='%s'.",
                                    pszAttrib);
+
+                        xstrcats(pxstrIPF,
+                                 &pstat->strLinkTag);
+                    }
+                    else if (pExt = strhistr(pszAttrib, ".HLP"))
+                    {
+                        // V0.9.20 (2002-07-06) [umoeller]
+                        // special HLP cross-link support:
+                        // syntax is "helpfile.hlp#panel" here
+                        PSZ p3 = pExt + 4;
+                        printf("\ngot \"%s\"", pszAttrib);
+                        if (*p3 == '#')
+                        {
+                            *p3 = '\0';
+
+                            // V0.9.20 (2002-07-12) [umoeller]
+                            xstrPrintf(&pstat->strLinkTag,
+                                       ":link reftype=hd refid=%d database='%s'.",
+                                       atoi(p3 + 1),
+                                       pszAttrib);
+
+                            xstrcats(pxstrIPF,
+                                     &pstat->strLinkTag);
+                        }
+                        else
+                            return ("Invalid syntax in <A HREF=\"file.hlp#panel\".");
                     }
                     else
                     {
@@ -1450,12 +1496,17 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         = GetOrCreateArticle(pszAttrib,
                                              pFile2Process->ulHeaderLevel,
                                              pFile2Process);
-                        xstrCatf(pxstrIPF,
+
+                        // V0.9.20 (2002-07-12) [umoeller]
+                        xstrPrintf(&pstat->strLinkTag,
                                    // hack in the @#!LINK@#! string for now;
                                    // this is later replaced with the
                                    // resid in ParseFiles
                                    ":link reftype=hd res=" START_KEY "%s" END_KEY ".",
                                    pszAttrib);
+
+                        xstrcats(pxstrIPF,
+                                 &pstat->strLinkTag);
                     }
 
                     pstat->ulInLink = 1;        // regular, do close
@@ -1520,15 +1571,37 @@ PCSZ HandleIMG(PARTICLETREENODE pFile2Process,
                   "The bitmap file \"%s\" was not found.",
                   str.psz);
 
+        if (pstat->ulInLink == 1)
+            // if we are inside a link, close it first
+            // V0.9.20 (2002-07-12) [umoeller]
+            xstrcat(pxstrIPF,
+                    ":elink.",
+                    0);
+
         if (pstat->fNeedsP)
             // if we had a <P> just before, do not use runin
             xstrCatf(pxstrIPF,
-                       ":artwork name='%s' align=left.",
-                       str.psz);
+                     "\n:artwork name='%s' align=left.",
+                     str.psz);
         else
             xstrCatf(pxstrIPF,
-                       ":artwork name='%s' runin align=left.",
-                       str.psz);
+                     "\n:artwork name='%s' runin align=left.",
+                     str.psz);
+
+        // if we are inside a link, add special tag
+        // :artwork name='img/xfwps_mini.bmp' runin align=left.
+        // :artlink.:link reftype=hd res=58.:eartlink.
+        // V0.9.20 (2002-07-12) [umoeller]
+        if (pstat->ulInLink)
+        {
+            xstrCatf(pxstrIPF,
+                     "\n:artlink.\n%s\n:eartlink.\n",
+                     pstat->strLinkTag.psz);
+                        // e.g. ":link reftype=hd res=58."
+
+            // do not add another :elink.
+            pstat->ulInLink = 2;
+        }
 
         xstrClear(&str);
 
@@ -1806,6 +1879,7 @@ APIRET ParseFile(PARTICLETREENODE pFile2Process,
 
     STATUS stat = {0};
     lstInit(&stat.llListStack, FALSE);
+    xstrInit(&stat.strLinkTag, 0);       // V0.9.20 (2002-07-12) [umoeller]
     stat.fJustHadSpace = TRUE;
 
     // start at beginning of buffer
@@ -2475,10 +2549,13 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
                                 return (FALSE);
 
                             case '"':
-                                // looks goood!
-                                pszValue = strhSubstr(p + 1,    // after quote
-                                                      pEnd);
-                                // printf("-->found \"%s\"\n", pszValue);
+                                // allow for \" escape
+                                // V0.9.20 (2002-07-12) [umoeller]
+                                if (pEnd[-1] != '\\')
+                                    // looks goood!
+                                    pszValue = strhSubstr(p + 1,    // after quote
+                                                          pEnd);
+                                    // printf("-->found \"%s\"\n", pszValue);
                             break;
                         }
 
@@ -2559,6 +2636,44 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
         {
             PDEFINENODE pMapping = NEW(DEFINENODE);
             pMapping->Tree.ulKey = (ULONG)pszIdentifier;
+
+            // handle escapes V0.9.20 (2002-07-12) [umoeller]
+            XSTRING strValue;
+            xstrInitSet(&strValue, pszValue);
+
+            ULONG ulOfs;
+            ulOfs = 0;
+            while (xstrFindReplaceC(&strValue,
+                                    &ulOfs,
+                                    // replace \" with "
+                                    "\\\"",
+                                    "\""))
+                ;
+            ulOfs = 0;
+            while (xstrFindReplaceC(&strValue,
+                                    &ulOfs,
+                                    // replace \r with carriage return
+                                    "\\r",
+                                    "\r"))
+                ;
+            ulOfs = 0;
+            while (xstrFindReplaceC(&strValue,
+                                    &ulOfs,
+                                    // replace \n with newline
+                                    "\\n",
+                                    "\n"))
+                ;
+            ulOfs = 0;
+            while (xstrFindReplaceC(&strValue,
+                                    &ulOfs,
+                                    // replace \\ with backslash
+                                    "\\\\",
+                                    "\\"))
+                ;
+
+            pszValue = strValue.psz;
+                // do not free strValue
+
             pMapping->pszValue = pszValue;
             pMapping->ulValueLength = strlen(pszValue);
 

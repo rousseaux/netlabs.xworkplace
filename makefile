@@ -858,6 +858,7 @@ release: really_all
 !endif
     $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
     $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
+    $(COPY) include\shared\helppanels.h $(XWPRELEASE_MAIN)\toolkit\shared\helpids.h
 !ifndef XWPLITE
     $(COPY) include\config\drivdlgs.h $(XWPRELEASE_MAIN)\toolkit\config
 !endif

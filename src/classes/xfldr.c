@@ -2499,13 +2499,18 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 /*
  *@@ wpQueryDefaultHelp:
  *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
+ *      help panel for an object. This should hand out a help
+ *      panel describing what this object can do in general
+ *      and return TRUE.
+ *
+ *      See XFldObject::wpQueryDefaultHelp for general remarks
+ *      for how the method works.
  *
  *      XFolder will return something different for the
- *      Config folder and its subfolders.
+ *      Config folder and its subfolders; otherwise we call
+ *      the parent for folder default help.
+ *
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: added template help
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
@@ -2527,6 +2532,15 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
         *pHelpPanelId = ID_XMH_CONFIGFOLDER;
         return TRUE;
     }
+    else
+        if (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
+        {
+            // different help for folder templates
+            // V0.9.20 (2002-07-12) [umoeller]
+            strhncpy0(HelpLibrary, cmnQueryHelpLibrary(), CCHMAXPATH);
+            *pHelpPanelId = ID_XSH_FOLDER_TEMPLATE;
+            return TRUE;
+        }
 
     // not cfg folder: call parent, which might call our
     // new V0.9.19 class method to replace the default
@@ -3877,10 +3891,15 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method gets called from
- *      WPObject::wpQueryDefaultHelp if the object does
- *      not have a custom help panel set in its instance
- *      data.
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
  *
  *      We replace the default folder help because,
  *      frankly, it sucks.
@@ -3898,10 +3917,6 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsQueryDefaultHelp(M_XFolder *somSelf,
     strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_FOLDER_MAIN;
     return TRUE;
-
-    /* return (M_XFolder_parent_M_WPFolder_wpclsQueryDefaultHelp(somSelf,
-                                                              pHelpPanelId,
-                                                              pszHelpLibrary)); */
 }
 
 /*

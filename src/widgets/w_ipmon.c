@@ -142,7 +142,7 @@
 #endif
 
 typedef unsigned long   u_long;
-VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
+VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #pragma pack(1)
 struct ifmib {
@@ -260,7 +260,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
             (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_IPMONITOR),
                                        // widget class name displayed to user
             WGTF_SIZEABLE | WGTF_TOOLTIP,
-            PwgtShowSettingsDlg        // with settings dlg
+            IwgtShowSettingsDlg        // with settings dlg
         },
     };
 
@@ -790,12 +790,13 @@ static const DLGHITEM
     };
 
 /*
- *@@ PwgtShowSettingsDlg:
+ *@@ IwgtShowSettingsDlg:
  *
  *@@added V0.9.19 (2002-06-02) [umoeller]
+ *@@changed V0.9.20 (2002-07-06) [umoeller]: fixed wrong title
  */
 
-VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 {
     HWND hwndDlg = NULLHANDLE;
     APIRET arc;
@@ -812,7 +813,9 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                pData->hwndOwner,
                                FCF_FIXED_DLG,
                                WinDefDlgProc,
-                               pcmnGetString(ID_CRSI_PWGT_TITLE),
+                               pcmnGetString(ID_CRSI_WIDGET_IPMONITOR),
+                                    // fixed wrong title ID_CRSI_PWGT_TITLE
+                                    // V0.9.20 (2002-07-06) [umoeller]
                                dlgIpmon,
                                ARRAYITEMCOUNT(dlgIpmon),
                                NULL,

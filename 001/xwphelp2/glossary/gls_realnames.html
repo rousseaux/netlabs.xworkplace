@@ -1,18 +1,21 @@
 <HTML>
 <HEAD>
     <TITLE>
-        Real Names
+        &xwp;: Real Names
     </TITLE>
 </HEAD>
-<!-- this is all new with V0.9.16 -->
+<!-- this is all new with V0.9.16
+    Changes:
+    V0.9.20: add &xwp; to title
+-->
 <BODY>
 While, per definition, every WPS object has a title associated with it,
 only file-system objects (that is,
 <!-- V0.9.19: link added -->
-<A HREF="objects/obj_fdr_main.html">folders</A>
+&link_folders;
 and
 <!-- V0.9.19: link added -->
-<A HREF="objects/obj_dataf.html">data files</A>
+&link_datafiles;
 which physically reside in a
 <!-- V0.9.19: link added -->
 <A HREF="glossary/gls_fs.html">file system</A>)
@@ -49,7 +52,10 @@ invalid:
 <P><CODE>&lt; &gt; | : " / </CODE>
 
 </UL>Naturally, the backslash character (<CODE>\</CODE>) is invalid
-with every file system because it is used as the path separator in &os2;.
+with every file system because it is used as the
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+separator in &os2;.
 
 <P>If the title of the file-system object obeys these restrictions, the
 real name is identical to the title.
@@ -57,7 +63,8 @@ However, <I>if not,</I> the WPS modifies the
 title to match these restrictions by truncating it to the allowed file-name
 length and replacing illegal characters with exclamation marks (<CODE>!</CODE>).
 The original title is then stored with the object in the <CODE>.LONGNAME</CODE>
-extended attribute.
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_eas.html">extended attribute.</A>
 
 <P>In that case, the "real name" that is displayed with the
 <CODE>DIR</CODE> command from the &os2; command line is different from the
@@ -66,7 +73,10 @@ title displayed in the WPS folder.
 <P>Examples:
 
 <OL><LI>The folder title is <CITE>LongFolderTitle</CITE>,
-but the folder resides on a FAT drive, so the path on the folder's "File"
+but the folder resides on a FAT drive, so the
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_path.html">path</A>
+on the folder's "File"
 page will display <CITE>C:\LONGFOLD</CITE> only.
 
 <P><LI>The folder title is <CITE>Accounting/Taxes</CITE>, but the real name

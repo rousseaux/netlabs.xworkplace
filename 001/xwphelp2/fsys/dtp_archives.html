@@ -15,16 +15,14 @@ if the respective setting has been enabled in the
 On this page, you may set detailed criteria for whether your Desktop
 should be backed up at Desktop startup.
 
-<P>In order to restore an archive which has been created by the WPS
-archiving mechanism, press Alt-F1 while the
-<!-- V0.9.16: -->
-small white "&os2;"
-text box is
-displayed at system bootup.
+<P>In order to restore an archive which has been created by the
+Workplace Shell archiving mechanism, press Alt-F1 while the
+<!-- V0.9.20 -->
+small white "&os2short;" text box is displayed at system bootup.
 
 <IFNDEF __EWORKPLACE__>
 <P>Please see the <I>&xwp; User Guide</I> for an introduction to
-this feature. Again, this enhanced page does not modify the WPS archiving
+this feature. Again, this enhanced page does not modify the archiving
 mechanism itself; it only determines <I>whether</I> archiving is enabled,
 according to the criteria you specify here.
 </IFNDEF>
@@ -51,8 +49,8 @@ will be backed up every time it starts up.
 
 <IFDEF __EWORKPLACE__>
 <LI>If <B>"At every Desktop startup"</B> is checked, the Desktop
-will be backed up every time it starts up. This is the same behavior as in
-earlier versions of OS/2.
+will be backed up every time it starts up. This is the same behavior as
+with OS/2 Warp.
 </IFDEF>
 
 <P><LI><B>"At next Desktop startup only"</B> will back up the Desktop exactly once.
@@ -70,15 +68,15 @@ values, your Desktop might be backed up at every startup also.
 if more than the number of days which you have specified have passed, your Desktop
 will be backed up.
 <P>Note that this only checks the pure calendar date, not the amount of time (e.g.
-hours) which have passed. If you restart the WPS one minute after midnight, your
+hours) which have passed. If you restart the Desktop one minute after midnight, your
 Desktop may be backed up, even if it has been backed up just before midnight already.
 
 </UL>The <B>"Show status at bootup"</B> setting determines whether &xwp; displays
-another status window while the WPS is starting up, which displays the results of
+another status window while the Desktop is starting up, which displays the results of
 the aforementioned computations. This might be useful for testing your settings.
 
 <P><B>"Keep xxx archives"</B> lets you specify how many archives are kept by the
-WPS in the archives directory tree. This defaults to 3, but you may keep up to
+Desktop in the archives directory tree. This defaults to 3, but you may keep up to
 9 archives, theoretically. However, if this number exceeds 3, the standard screen
 which comes up when you press Alt-F1 during system startup will be partly unreadable,
 because the additional archives information will make the top scroll off the screen.

@@ -627,27 +627,6 @@ SOM_Scope ULONG  SOMLINK fono_wpQueryDefaultView(XWPFontObject *somSelf)
 }
 
 /*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- */
-
-SOM_Scope BOOL  SOMLINK fono_wpQueryDefaultHelp(XWPFontObject *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
-{
-    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
-    XWPFontObjectMethodDebug("XWPFontObject","fono_wpQueryDefaultHelp");
-
-    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XSH_FONTOBJECT;
-    return TRUE;
-}
-
-/*
  *@@ wpOpen:
  *      this WPObject instance method gets called when
  *      a new view needs to be opened. Normally, this
@@ -980,6 +959,36 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryStyle(M_XWPFontObject *somSelf)
                 | CLSSTYLE_NEVERRENAME);
 }
 
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method returns the default help
+ *      panel for objects of this class. This gets called
+ *      from WPObject::wpQueryDefaultHelp if no instance
+ *      help settings (HELPLIBRARY, HELPPANEL) have been
+ *      set for an individual object. It is thus recommended
+ *      to override this method instead of the instance
+ *      method to change the default help panel for a class
+ *      in order not to break instance help settings (fixed
+ *      with 0.9.20).
+ *
+ *      Since this is a subclass of WPTransient which doesn't
+ *      have any help at all, we return help for font objects
+ *      here.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK fonoM_wpclsQueryDefaultHelp(M_XWPFontObject *somSelf,
+                                                    PULONG pHelpPanelId,
+                                                    PSZ pszHelpLibrary)
+{
+    /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
+    M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FONTOBJECT;
+    return TRUE;
+}
 
 /*
  *@@ wpclsQueryIconData:
