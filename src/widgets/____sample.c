@@ -14,9 +14,11 @@
  *      for implementing something more useful.
  *
  *      This code might look terribly complex even though
- *      it does close to nothing. However, this gives you
- *      a good impression about how to structure a widget
- *      class in order to be able to extend it later.
+ *      it does close to nothing. While a simple widget
+ *      class like this could be written with less complexity,
+ *      this sample gives you a good impression about how to
+ *      structure a widget class in order to be able to extend
+ *      it later.
  *
  *      In this template, we have basic support for
  *      setup strings. The widget does save colors and
@@ -51,7 +53,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -122,8 +124,6 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
 
-#include "config\drivdlgs.h"            // driver configuration dialogs
-
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -181,6 +181,12 @@ static XCENTERWIDGETCLASS G_WidgetClasses[]
  *      the G_aImports array. These better match.
  *
  *      The actual imports are then made by WgtInitModule.
+ *
+ *      WARNING: Using these imports requires that you
+ *      use VAC 3.0.8 because most of these functions
+ *      use _Optlink linkage for speed. That linkage
+ *      is not supported by EMX (I don't know about
+ *      Watcom).
  */
 
 // resolved function pointers from XFLDR.DLL
@@ -191,8 +197,6 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 PCTRSETSETUPSTRING pctrSetSetupString = NULL;
-
-PDRV_SPRINTF pdrv_sprintf = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
@@ -215,8 +219,6 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "ctrSetSetupString", (PFN*)&pctrSetSetupString,
-
-        "drv_sprintf", (PFN*)&pdrv_sprintf,
 
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
@@ -243,9 +245,13 @@ RESOLVEFUNCTION G_aImports[] =
  *      This is also a member of SAMPLEPRIVATE.
  *
  *      Putting these settings into a separate structure
- *      is no requirement, but comes in handy if you
- *      want to use the same setup string routines on
- *      both the open widget window and a settings dialog.
+ *      is no requirement technically. However, once the
+ *      widget uses a settings dialog, the dialog must
+ *      support changing the widget settings even if the
+ *      widget doesn't currently exist as a window, so
+ *      separating the setup data from the widget window
+ *      data will come in handy for managing the setup
+ *      strings.
  */
 
 typedef struct _SAMPLESETUP
@@ -374,18 +380,18 @@ VOID WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
     // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
+    sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
+    sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        pdrv_sprintf(szTemp, "FONT=%s;",
+        sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
@@ -442,11 +448,12 @@ MRESULT WgtCreate(HWND hwnd,
                  &pPrivate->Setup);
 
     // set window font (this affects all the cached presentation
-    // spaces we use)
+    // spaces we use in WM_PAINT)
     pwinhSetWindowFont(hwnd,
                        (pPrivate->Setup.pszFont)
                         ? pPrivate->Setup.pszFont
-                        // default font: use the same as in the rest of XWorkplace:
+                        // default font: use the same as in the rest of XWorkplace
+                        // (either 9.WarpSans or 8.Helv)
                         : pcmnQueryDefaultFont());
 
     // if you want the context menu help to be enabled,
@@ -861,7 +868,7 @@ ULONG EXPENTRY WgtInitModule(HAB hab,         // XCenter's anchor block
     // a copy of the doshResolveImports code, but we can't
     // use that before resolving...)
     for (ul = 0;
-         ul < sizeof(G_aImports) / sizeof(G_aImports[0]);
+         ul < sizeof(G_aImports) / sizeof(G_aImports[0]); // array item count
          ul++)
     {
         if (DosQueryProcAddr(hmodXFLDR,

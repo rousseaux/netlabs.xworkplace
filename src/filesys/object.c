@@ -615,7 +615,7 @@ BOOL WriteObjectsList(POBJECTLIST pll,
  *@@changed V0.9.9 (2001-01-29) [lafaix]: wrong object set, fixed
  *@@changed V0.9.9 (2001-03-19) [pr]: lock/unlock objects on the lists
  *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
- *@@changed V0.9.14 (2001-07-31) [umoeller]: fixed confusing code
+ *@@changed V0.9.14 (2001-07-31) [pr]: fixed confusing code
  */
 
 BOOL objAddToList(WPObject *somSelf,

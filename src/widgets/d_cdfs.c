@@ -1156,7 +1156,7 @@ ULONG EXPENTRY CheckDriverName(HMODULE hmodPlugin, // in: module handle of the w
         // a copy of the doshResolveImports code, but we can't
         // use that before resolving...)
         for (ul = 0;
-             ul < sizeof(G_aImports) / sizeof(G_aImports[0]);
+             ul < sizeof(G_aImports) / sizeof(G_aImports[0]); // array item count
              ul++)
         {
             if (DosQueryProcAddr(hmodXFLDR,

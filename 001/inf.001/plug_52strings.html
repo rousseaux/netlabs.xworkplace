@@ -56,8 +56,12 @@ the user.
 
 <P>Reversely, when your widget's data has changed (e.g. because a new background
 color has been dropped on it), it should compose a new full setup string.
-When the new setup string is composed, the widget can send the
-<CODE>XCM_SAVESETUP</CODE> message to the XCenter client, which will cause the
+<!-- V0.9.14: changed the following -->
+After the new setup string is composed, the widget must send the
+<CODE>XCM_SAVESETUP</CODE> message to its parent window (which is either the
+XCenter client or a tray widget window, if the widget resides in a tray),
+<!-- end V0.9.14 -->
+which will cause the
 new setup string to be stored together with the other widget data in the XCenter's
 private data. See <CODE>center.h</CODE> for details.
 

@@ -257,9 +257,13 @@ HMODULE hmStHealth = 0;
  *      This is also a member of HEALTHPRIVATE.
  *
  *      Putting these settings into a separate structure
- *      is no requirement, but comes in handy if you
- *      want to use the same setup string routines on
- *      both the open widget window and a settings dialog.
+ *      is no requirement technically. However, once the
+ *      widget uses a settings dialog, the dialog must
+ *      support changing the widget settings even if the
+ *      widget doesn't currently exist as a window, so
+ *      separating the setup data from the widget window
+ *      data will come in handy for managing the setup
+ *      strings.
  */
 
 typedef struct _MONITORSETUP
@@ -1256,7 +1260,9 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
     // resolve imports from XFLDR.DLL (this is basically
     // a copy of the doshResolveImports code, but we can't
     // use that before resolving...)
-    for (ul = 0; ul < sizeof(G_aImports) / sizeof(G_aImports[0]); ul++)
+    for (ul = 0;
+         ul < sizeof(G_aImports) / sizeof(G_aImports[0]); // array item count
+         ul++)
     {
         if (DosQueryProcAddr(hmodXFLDR,
                              0, // ordinal, ignored

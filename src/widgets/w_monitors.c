@@ -240,8 +240,16 @@ PDRV_SPRINTF pdrv_sprintf = NULL;
 
 PDSKQUERYINFO pdskQueryInfo = NULL;
 
+PGPIHBOX pgpihBox = NULL;
+PGPIHCREATEFONT pgpihCreateFont = NULL;
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHFINDPRESFONT pgpihFindPresFont = NULL;
+PGPIHMATCHFONT pgpihMatchFont = NULL;
+PGPIHSETPOINTSIZE pgpihSetPointSize = NULL;
+PGPIHSPLITPRESFONT pgpihSplitPresFont = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
+PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
+PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
 PKRNQUERYDAEMONOBJECT pkrnQueryDaemonObject = NULL;
 
@@ -276,8 +284,16 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "drv_sprintf", (PFN*)&pdrv_sprintf,
         "dskQueryInfo", (PFN*)&pdskQueryInfo,
+        "gpihBox", (PFN*)&pgpihBox,
+        "gpihCreateFont", (PFN*)&pgpihCreateFont,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihFindPresFont", (PFN*)&pgpihFindPresFont,
+        "gpihMatchFont", (PFN*)&pgpihMatchFont,
+        "gpihSetPointSize", (PFN*)&pgpihSetPointSize,
+        "gpihSplitPresFont", (PFN*)&pgpihSplitPresFont,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
+        "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
+        "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
         "krnQueryDaemonObject", (PFN*)&pkrnQueryDaemonObject,
         "strhDateTime", (PFN*)&pstrhDateTime,
         "strhThousandsULong", (PFN*)&pstrhThousandsULong,
@@ -307,9 +323,13 @@ RESOLVEFUNCTION G_aImports[] =
  *      This is also a member of MONITORPRIVATE.
  *
  *      Putting these settings into a separate structure
- *      is no requirement, but comes in handy if you
- *      want to use the same setup string routines on
- *      both the open widget window and a settings dialog.
+ *      is no requirement technically. However, once the
+ *      widget uses a settings dialog, the dialog must
+ *      support changing the widget settings even if the
+ *      widget doesn't currently exist as a window, so
+ *      separating the setup data from the widget window
+ *      data will come in handy for managing the setup
+ *      strings.
  */
 
 typedef struct _MONITORSETUP
@@ -341,6 +361,8 @@ typedef struct _MONITORSETUP
             // count of 100 ms intervals that the flash should
             // last; 20 means 2 seconds then
 
+#define WIDGET_BORDER           1
+
 /*
  *@@ DISKDATA:
  *
@@ -353,10 +375,11 @@ typedef struct _DISKDATA
                                 // if negative, this is an APIRET from xwpdaemon
     ULONG       fl;             // DFFL_* flags
 
-    ULONG       ulFade;         // fade percentage while (fl & DFFL_FLASH);
+    LONG        lFade;          // fade percentage while (fl & DFFL_FLASH);
                                 // initially set to 100 and fading to 0
 
-    LONG        lX;             // cached x position of this drive in PaintDiskfree
+    LONG        lX,             // cached x position of this drive in RefreshDiskfreeBitmap
+                lCX;
 
 } DISKDATA, *PDISKDATA;
 
@@ -417,17 +440,20 @@ typedef struct _MONITORPRIVATE
     PDISKDATA       paDiskDatas;    // array of 26 DISKDATA structures
                                     // holding temporary information
 
-    /* PLONG           palKBs;          // array of 26 LONG values for the
-                                     // disks being monitored; only those
-                                     // values are valid for which a corresponding
-                                     // drive letter exists in Setup
+    USHORT          idFlashTimer;   // != 0 if flash timer is running
 
-    PULONG          paulFlags;       // array of 26 ULONGs;
-                                     // one ULONG of DFFL_* flags for each disk
+    ULONG           ulPointSize;
+    FATTRS          fattrs;
+    FONTMETRICS     fm;
+    BOOL            fFontMatched;
 
-    PLONG           palXPoses;       // array of 26 LONG values for the
-                                     // X positions of each disk display (speed)
-    */
+    PXBITMAP        pBitmap;        // bitmap for diskfree display
+                                    // (to avoid flicker)
+    LONG            lcidFont;
+
+    ULONG           ulRefreshBitmap;        // 0 = just paint the bitmap
+                                            // 1 = update the bitmap partly
+                                            // 2 = do a full repaint
 
     BOOL            fContextMenuHacked;
 
@@ -688,6 +714,8 @@ BOOL UpdateDiskMonitors(HWND hwnd,
 
             DosFreeMem(pAddDiskWatch);
         }
+
+        pPrivate->ulRefreshBitmap = 2;
     }
 
     return (FALSE);
@@ -929,7 +957,51 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ PaintDiskfree:
+ *@@ CalcHatchCol:
+ *
+ *@@added V0.9.14 (2001-08-03) [umoeller]
+ */
+
+LONG CalcHatchCol(LONG lcolBackground,
+                  ULONG ulFade)         // in: 0 <= fade <= FLASH_MAX
+{
+    // color to be used for hatch on the first flash;
+    // we'll calculate a value in between lcolHatchMax
+    // and lcolBackground for each flash that comes in...
+    // the max color is the inverse of the background
+    // color, so we get white for black and vice versa
+    // (we use LONGs to avoid overflows below)
+    LONG    lBackRed = GET_RED(lcolBackground),         // if white: 255
+            lBackGreen = GET_GREEN(lcolBackground),
+            lBackBlue = GET_BLUE(lcolBackground);
+    LONG    lHatchMaxRed    = 255 - lBackRed,           // if white: 0
+            lHatchMaxGreen  = 255 - lBackGreen,
+            lHatchMaxBlue   = 255 - lBackBlue;
+    LONG    lDiffRed,
+            lDiffGreen,
+            lDiffBlue;
+    // calculate the hatch color
+    // based on the current flash value...
+    // if we're at FLASH_MAX, we'll use
+    // lHatchMax, if we're at 0, we'll
+    // use lcolBackground
+    lDiffRed   =   (lHatchMaxRed - lBackRed)            // if white: -255
+                 * (LONG)ulFade
+                 / (LONG)FLASH_MAX;
+    lDiffGreen =   (lHatchMaxGreen - lBackGreen)
+                 * (LONG)ulFade
+                 / (LONG)FLASH_MAX;
+    lDiffBlue  =   (lHatchMaxBlue - lBackBlue)
+                 * (LONG)ulFade
+                 / (LONG)FLASH_MAX;
+
+    return (MAKE_RGB(lBackRed + lDiffRed,
+                     lBackGreen + lDiffGreen,
+                     lBackBlue + lDiffBlue));
+}
+
+/*
+ *@@ RefreshDiskfreeBitmap:
  *      called from MwgtPaint for diskfree type only.
  *
  *      This is another major mess because this also
@@ -939,214 +1011,313 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
-VOID PaintDiskfree(HWND hwnd,
-                   PMONITORPRIVATE pPrivate,
-                   PCOUNTRYSETTINGS pCountrySettings,
-                   PRECTL prclWin,          // exclusive!
-                   HPS hps,
-                   BOOL fPaintAll)
+VOID RefreshDiskfreeBitmap(HWND hwnd,
+                           PMONITORPRIVATE pPrivate,
+                           PCOUNTRYSETTINGS pCountrySettings,
+                           PRECTL prclWin,          // exclusive!
+                           HPS hpsWin,
+                           BOOL fPaintAll)
 {
-    FONTMETRICS fm;
-
     LONG    lcolBackground = pPrivate->Setup.lcolBackground;
 
-    // color to be used for hatch on the first flash;
-    // we'll calculate a value in between lcolHatchMax
-    // and lcolBackground for each flash that comes in...
-    // the max color is the inverse of the background
-    // color, so we get white for black and vice versa
-    // (we use LONGs to avoid overflows below)
-    LONG lBackRed = GET_RED(lcolBackground),
-         lBackGreen = GET_GREEN(lcolBackground),
-         lBackBlue = GET_BLUE(lcolBackground);
-    LONG lHatchMaxRed    = 255 - lBackRed,
-         lHatchMaxGreen  = 255 - lBackGreen,
-         lHatchMaxBlue   = 255 - lBackBlue;
+    ULONG   cx = prclWin->xRight - prclWin->xLeft,
+            cy = prclWin->yTop - prclWin->yBottom;
 
-    GpiQueryFontMetrics(hps,
-                        sizeof(fm),
-                        &fm);
+    HPS hpsMem;
 
-    // make rclWin inclusive
+    if (!pPrivate->pBitmap)
+    {
+        // bitmap needs to be created:
+        pPrivate->pBitmap = pgpihCreateXBitmap(pPrivate->pWidget->habWidget,
+                                               cx,
+                                               cy);
+        hpsMem = pPrivate->pBitmap->hpsMem;
+
+        if (!pPrivate->fFontMatched)
+        {
+            // this is the very first time that we're called
+            // to create the bitmap (or the font has changed
+            // in MwgtPresParamChanged): go find the font
+            // then
+            PSZ pszFace = pPrivate->Setup.pszFont;
+            pgpihSplitPresFont(pPrivate->Setup.pszFont,
+                               &pPrivate->ulPointSize,
+                               &pszFace);
+
+            pgpihMatchFont(hpsMem,
+                           pPrivate->ulPointSize,
+                           FALSE,       // face mode
+                           pszFace,
+                           0,
+                           &pPrivate->fattrs,       // FATTRS
+                           &pPrivate->fm);         // FONTMETRICS
+
+            pPrivate->fFontMatched = TRUE;
+        }
+
+        pPrivate->lcidFont = pgpihCreateFont(hpsMem,
+                                             &pPrivate->fattrs);
+        GpiSetCharSet(hpsMem,
+                      pPrivate->lcidFont);
+        if (pPrivate->fm.fsDefn & FM_DEFN_OUTLINE)
+            pgpihSetPointSize(hpsMem, pPrivate->ulPointSize);
+
+        // enforce repaint below
+        pPrivate->ulRefreshBitmap = 2;
+        fPaintAll = TRUE;
+    }
+    else
+        hpsMem = pPrivate->pBitmap->hpsMem;
+
+    // now make rclWin inclusive
     (prclWin->xRight)--;
     (prclWin->yTop)--;
 
-    GpiIntersectClipRectangle(hps,
-                              prclWin);
+    /* GpiIntersectClipRectangle(hpsWin,
+                              prclWin); */
 
-    if (pPrivate->Setup.pszDisks)
+    if (pPrivate->pBitmap)
     {
-        ULONG cDisks = strlen(pPrivate->Setup.pszDisks),
-              ul;
-        CHAR szTemp2[50];
+        POINTL      ptlBmpDest;
 
-        POINTL ptl,
-               ptlNow;
-        ptl.x = prclWin->xLeft;
-        ptl.y =   prclWin->yBottom
-                + (   (prclWin->yTop - prclWin->yBottom)
-                    // - (fm.lMaxAscender)
-                  ) / 2;
-        GpiMove(hps, &ptl);
-
-        GpiSetTextAlignment(hps,
-                            TA_LEFT,
-                            TA_HALF);
-
-        GpiSetColor(hps,
-                    pPrivate->Setup.lcolForeground);
-        GpiSetBackColor(hps,
-                        pPrivate->Setup.lcolBackground);
-
-        for (ul = 0;
-             ul < cDisks;
-             ul++)
+        if (pPrivate->ulRefreshBitmap)
         {
-            CHAR c = pPrivate->Setup.pszDisks[ul];
-            if ((c > 'A') && (c <= 'Z'))
+            POINTL ptlNow1,
+                   ptlTemp;
+
+            if (pPrivate->ulRefreshBitmap == 2)
+                fPaintAll = TRUE;
+
+            if (fPaintAll)
             {
-                ULONG ulOfs = c - 'A' + 1;
-                PDISKDATA pDataThis = &pPrivate->paDiskDatas[ulOfs];
+                RECTL rcl = {0, 0, cx-1, cy-1};
+                GpiSetColor(hpsMem,
+                            pPrivate->Setup.lcolBackground);
+                pgpihBox(hpsMem,
+                         DRO_FILL,
+                         &rcl);
+            }
 
-                if (    (fPaintAll)
-                     || ((pDataThis->fl & DFFL_REPAINT) != 0)
-                   )
+            if (pPrivate->Setup.pszDisks)
+            {
+                ULONG   cDisks = strlen(pPrivate->Setup.pszDisks),
+                        ul;
+                CHAR    szTemp2[50];
+                LONG    lcolHatchNow = -1;     // calc on first need
+
+                #define X_OFS 10
+
+                ptlNow1.x = 0;
+                ptlNow1.y = cy / 2;
+                // GpiMove(hpsMem, &ptlNow1);
+
+                GpiSetTextAlignment(hpsMem,
+                                    TA_LEFT,
+                                    TA_HALF);
+
+                GpiSetColor(hpsMem,
+                            pPrivate->Setup.lcolForeground);
+                GpiSetBackColor(hpsMem,
+                                pPrivate->Setup.lcolBackground);
+
+                // now repaint all the disk entries
+                // (for each character in the pszDisks string)
+                for (ul = 0;
+                     ul < cDisks;
+                     ul++)
                 {
-                    ULONG ulLength;
-                    LONG l = pDataThis->lKB;
-
-                    if (l >= 0)
+                    // drive letter
+                    CHAR c = pPrivate->Setup.pszDisks[ul];
+                    if ((c > 'A') && (c <= 'Z'))
                     {
-                        CHAR szTemp3[50];
-                        pdrv_sprintf(szTemp2,
-                                "%c:%sM ",
-                                // drive letter:
-                                c,
-                                // free KB:
-                                pstrhThousandsULong(szTemp3,
-                                                    (l + 512) / 1024,
-                                                    pCountrySettings->cThousands));
-                    }
-                    else
-                        // error:
-                        pdrv_sprintf(szTemp2,
-                                "%c: E%d ",
-                                // drive letter:
-                                c,
-                                // error (negative):
-                                -l);
+                        // get the offset into paDiskDatas array
+                        ULONG ulLogicalDrive = c - 'A' + 1;
+                        PDISKDATA pDataThis = &pPrivate->paDiskDatas[ulLogicalDrive];
 
-                    ulLength = strlen(szTemp2);
-
-                    if (!fPaintAll)
-                        GpiSetBackMix(hps, BM_OVERPAINT);
-
-                    if (pDataThis->fl & (DFFL_FLASH | DFFL_BACKGROUND))
-                    {
-                        POINTL      aptlText[TXTBOX_COUNT];
-                        POINTL      ptlRect,
-                                    ptlNow2;
-                        // flash the thing:
-                        GpiQueryTextBox(hps,
-                                        ulLength,
-                                        szTemp2,
-                                        TXTBOX_COUNT,
-                                        aptlText);
-                        GpiQueryCurrentPosition(hps, &ptlNow2);
-                        if (fPaintAll)
-                            ptlRect.x = ptlNow2.x - 3;
-                        else
-                            ptlRect.x = pPrivate->paDiskDatas[ulOfs].lX - 3;
-                        ptlRect.y = prclWin->yBottom;
-
-                        GpiMove(hps, &ptlRect);
-
-                        ptlRect.x += aptlText[TXTBOX_TOPRIGHT].x;
-                        ptlRect.y = prclWin->yTop;
-
-                        if (pDataThis->fl & DFFL_FLASH)
+                        if (    (fPaintAll)
+                             || (pDataThis->fl & DFFL_REPAINT)
+                           )
                         {
-                            LONG    lDiffRed,
-                                    lDiffGreen,
-                                    lDiffBlue;
+                            ULONG ulLength;
+                            LONG l = pDataThis->lKB;
+                            LONG lBackMix = BM_OVERPAINT;
 
-                            // flash, but not background:
+                            if (l >= 0)
+                            {
+                                CHAR szTemp3[50];
+                                pdrv_sprintf(szTemp2,
+                                             "%c:%sM",
+                                             // drive letter:
+                                             c,
+                                             // free KB:
+                                             pstrhThousandsULong(szTemp3,
+                                                                 (l + 512) / 1024,
+                                                                 pCountrySettings->cThousands));
+                            }
+                            else
+                                // error:
+                                pdrv_sprintf(szTemp2,
+                                             "%c: E%d",
+                                             // drive letter:
+                                             c,
+                                             // error (negative):
+                                             -l);
 
-                            // calculate the hatch color
-                            // based on the current flash value...
-                            // if we're at FLASH_MAX, we'll use
-                            // lHatchMax, if we're at 0, we'll
-                            // use lcolBackground
-                            lDiffRed   =   (lHatchMaxRed - lBackRed)
-                                         * pDataThis->ulFade
-                                         / FLASH_MAX;
-                            lDiffGreen =   (lHatchMaxGreen - lBackGreen)
-                                         * pDataThis->ulFade
-                                         / FLASH_MAX;
-                            lDiffBlue  =   (lHatchMaxBlue - lBackBlue)
-                                         * pDataThis->ulFade
-                                         / FLASH_MAX;
+                            ulLength = strlen(szTemp2);
 
-                            GpiSetColor(hps,
-                                        MAKE_RGB(lBackRed + lDiffRed,
-                                                 lBackGreen + lDiffGreen,
-                                                 lBackBlue + lDiffBlue));
+                            // if we're not repainting all,
+                            // we must use the xpos we saved from a
+                            // previous run where we stored them all
+                            if (!fPaintAll)
+                            {
+                                ptlNow1.x = pDataThis->lX;
+                                // ptlNow1.y = cy / 2;
+                                // GpiMove(hpsMem, &ptlNow1);
+                            }
+                            else
+                                pDataThis->lX = ptlNow1.x;
 
-                            GpiSetPattern(hps, PATSYM_DIAG1);
-                        }
-                        else
-                            GpiSetColor(hps,
-                                        pPrivate->Setup.lcolBackground);
+                            if (pDataThis->fl & (DFFL_FLASH | DFFL_BACKGROUND))
+                            {
+                                POINTL      aptlText[TXTBOX_COUNT];
+                                POINTL      ptlRect;
+                                            // ptlNow2;
+                                // find the size of the rectangle we need
+                                GpiQueryTextBox(hpsMem,
+                                                ulLength,
+                                                szTemp2,
+                                                TXTBOX_COUNT,
+                                                aptlText);
+                                // GpiQueryCurrentPosition(hpsMem, &ptlNow2);
 
-                        GpiBox(hps,
-                               DRO_FILL,
-                               &ptlRect,
-                               0,
-                               0);
+                                ptlRect.x = ptlNow1.x; //  - (X_OFS / 2);
+                                ptlRect.y = 0;
 
-                        GpiMove(hps, &ptlNow2);
+                                GpiMove(hpsMem, &ptlRect);
 
-                        GpiSetColor(hps,
-                                    pPrivate->Setup.lcolForeground);
+                                if (aptlText[TXTBOX_TOPRIGHT].x != pDataThis->lCX)
+                                {
+                                    // whoa, width changed:
+                                    pDataThis->lCX = aptlText[TXTBOX_TOPRIGHT].x;
+                                    // redraw all from now
+                                    fPaintAll = TRUE;
+                                }
 
-                        if (!fPaintAll)
-                            GpiSetBackMix(hps, BM_LEAVEALONE);
+                                if (pDataThis->fl & DFFL_FLASH)
+                                {
+                                    // flash, but not background:
+                                    GpiSetColor(hpsMem,
+                                                CalcHatchCol(lcolBackground,
+                                                             pDataThis->lFade));
 
-                        // unset background flag, if this was set
-                        pDataThis->fl &= ~DFFL_BACKGROUND;
+                                    GpiSetPattern(hpsMem, PATSYM_DIAG1);
+                                }
+                                else
+                                {
+                                    // background only:
+                                    GpiSetColor(hpsMem,
+                                                pPrivate->Setup.lcolBackground);
 
-                        GpiSetPattern(hps, PATSYM_DEFAULT);
-                    }
+                                    GpiSetPattern(hpsMem, PATSYM_DEFAULT);
+                                }
 
-                    // if we're not painting all,
-                    // we must manually set the xpos now
-                    if (!fPaintAll)
-                    {
-                        ptl.x = pDataThis->lX;
-                                    // this was stored in a previous run
-                        GpiMove(hps,
-                                &ptl);
-                    }
+                                // draw the flash or background
+                                ptlRect.x += aptlText[TXTBOX_TOPRIGHT].x + X_OFS;
+                                ptlRect.y = cy - 1;     // inclusive!
+                                GpiSetBackMix(hpsMem, BM_OVERPAINT);
+                                GpiBox(hpsMem,
+                                       DRO_FILL,
+                                       &ptlRect,
+                                       0,
+                                       0);
 
-                    GpiCharString(hps,
-                                  ulLength,
-                                  szTemp2);
+                                GpiSetBackMix(hpsMem, BM_LEAVEALONE);
 
-                    // unset repaint flag
-                    pDataThis->fl &= ~DFFL_REPAINT;
+                                /* if (fPaintAll)
+                                    pDataThis->lX = ptlRect.x; */
 
-                    {
-                        CHAR c2 = pPrivate->Setup.pszDisks[ul+1];
-                        if ((c2 > 'A') && (c2 <= 'Z'))
-                        {
-                            GpiQueryCurrentPosition(hps,
-                                                    &ptlNow);
-                            pPrivate->paDiskDatas[c2 - 'A' + 1].lX = ptlNow.x;
+                                // GpiMove(hpsMem, &ptlNow2);
+
+                                GpiSetColor(hpsMem,
+                                            pPrivate->Setup.lcolForeground);
+
+                                // unset background flag, if this was set
+                                pDataThis->fl &= ~DFFL_BACKGROUND;
+                            }
+
+                            // GpiSetBackMix(hpsMem, lBackMix);
+
+                            /* if (!fPaintAll)
+                                if (ptlNow.x != pDataThis->lX)
+                                    // xpos has changed compared to
+                                    // previous run (e.g. string has become
+                                    // wider):
+                                    fPaintAll = TRUE; */
+
+                            ptlTemp.x = ptlNow1.x + (X_OFS / 2);
+                            ptlTemp.y = ptlNow1.y;
+                            GpiMove(hpsMem, &ptlTemp);
+                            GpiCharString(hpsMem,
+                                          ulLength,
+                                          szTemp2);
+
+                            // unset repaint flag
+                            pDataThis->fl &= ~DFFL_REPAINT;
+
+                            GpiQueryCurrentPosition(hpsMem,
+                                                    &ptlNow1);
+                            ptlNow1.x += (X_OFS / 2);
+
+                            /* {
+                                CHAR c2 = pPrivate->Setup.pszDisks[ul+1];
+                                if ((c2 > 'A') && (c2 <= 'Z'))
+                                {
+                                    GpiQueryCurrentPosition(hpsMem,
+                                                            &ptlNow);
+                                    pPrivate->paDiskDatas[c2 - 'A' + 1].lX = ptlNow.x;
+                                }
+                            } */
                         }
                     }
                 }
             }
+
+            // unset refresh flag
+            pPrivate->ulRefreshBitmap = 0;
+
+        } // end if (pPrivate->fRefreshBitmap)
+
+        // now go blit the bitmap
+        ptlBmpDest.x = prclWin->xLeft;
+        ptlBmpDest.y = prclWin->yBottom;
+        // now paint graph from bitmap
+        WinDrawBitmap(hpsWin,
+                      pPrivate->pBitmap->hbm,
+                      NULL,     // entire bitmap
+                      &ptlBmpDest,
+                      0, 0,
+                      DBM_NORMAL);
+    } // end if pPrivate->pBitmap)
+}
+
+/*
+ *@@ FreeBitmapData:
+ *
+ *@@added V0.9.14 (2001-08-03) [umoeller]
+ */
+
+VOID FreeBitmapData(PMONITORPRIVATE pPrivate)
+{
+    if (pPrivate->pBitmap)
+    {
+        if (pPrivate->lcidFont)
+        {
+            GpiSetCharSet(pPrivate->pBitmap->hpsMem, LCID_DEFAULT);
+            GpiDeleteSetId(pPrivate->pBitmap->hpsMem, pPrivate->lcidFont);
+            pPrivate->lcidFont = NULLHANDLE;
         }
+
+        pgpihDestroyXBitmap(&pPrivate->pBitmap);
     }
 }
 
@@ -1166,7 +1337,6 @@ VOID MwgtPaint(HWND hwnd,
                BOOL fDrawFrame)
 {
     RECTL       rclWin;
-    ULONG       ulBorder = 1;
     CHAR        szPaint[400] = "";
     ULONG       ulPaintLen = 0;
     POINTL      aptlText[TXTBOX_COUNT];
@@ -1194,19 +1364,19 @@ VOID MwgtPaint(HWND hwnd,
             rcl2.yTop = rclWin.yTop - 1;
             pgpihDraw3DFrame(hps,
                              &rcl2,
-                             ulBorder,
+                             WIDGET_BORDER,
                              pPrivate->pWidget->pGlobals->lcol3DDark,
                              pPrivate->pWidget->pGlobals->lcol3DLight);
         }
 
         // now paint middle
-        rclWin.xLeft += ulBorder;
-        rclWin.yBottom += ulBorder;
-        rclWin.xRight -= ulBorder;
-        rclWin.yTop -= ulBorder;
+        rclWin.xLeft += WIDGET_BORDER;
+        rclWin.yBottom += WIDGET_BORDER;
+        rclWin.xRight -= WIDGET_BORDER;
+        rclWin.yTop -= WIDGET_BORDER;
     }
 
-    if (fDrawFrame)
+    if ((fDrawFrame) && (pPrivate->ulType != MWGT_DISKFREE))
         WinFillRect(hps,
                     &rclWin,
                     pPrivate->Setup.lcolBackground);
@@ -1290,14 +1460,14 @@ VOID MwgtPaint(HWND hwnd,
 
         case MWGT_DISKFREE:
             #ifdef DEBUG_XTIMERS
-                _Pmpf((__FUNCTION__ ": calling PaintDiskfree"));
+                _Pmpf((__FUNCTION__ ": calling RefreshDiskfreeBitmap"));
             #endif
-            PaintDiskfree(hwnd,
-                          pPrivate,
-                          pCountrySettings,
-                          &rclWin,
-                          hps,
-                          fDrawFrame);        // paint all?
+            RefreshDiskfreeBitmap(hwnd,
+                                  pPrivate,
+                                  pCountrySettings,
+                                  &rclWin,
+                                  hps,
+                                  fDrawFrame);        // paint all?
             fSharedPaint = FALSE;
         break;
     }
@@ -1316,12 +1486,14 @@ VOID MwgtPaint(HWND hwnd,
            )
         {
             // we need more space: tell XCenter client
-            pPrivate->Setup.cxCurrent = (aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth + 2*ulBorder + 4);
+            pPrivate->Setup.cxCurrent = (   aptlText[TXTBOX_TOPRIGHT].x
+                                          + ulExtraWidth
+                                          + 2 * WIDGET_BORDER
+                                          + 4);
             WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
                        XCM_SETWIDGETSIZE,
                        (MPARAM)hwnd,
-                       (MPARAM)pPrivate->Setup.cxCurrent
-                      );
+                       (MPARAM)pPrivate->Setup.cxCurrent);
         }
         else
         {
@@ -1352,6 +1524,10 @@ VOID ForceRepaint(PMONITORPRIVATE pPrivate)
     if (hps)
     {
         // _Pmpf((__FUNCTION__ ": calling MwgtPaint"));
+
+        // force refresh of bitmap (diskfree only)
+        pPrivate->ulRefreshBitmap = 1;
+
         MwgtPaint(hwnd,
                   pPrivate,
                   hps,
@@ -1374,75 +1550,136 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
     PMONITORPRIVATE pPrivate;
     if (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
     {
-        if (usTimerID == 1)
+        switch (usTimerID)
         {
-            #ifdef DEBUG_XTIMERS
-            _Pmpf(("  " __FUNCTION__ ": timer 1"));
-            #endif
-
-            if (    (pPrivate->ulType == MWGT_POWER)
-                 && (pPrivate->pApm)
-                 && (!pPrivate->arcAPM)
-               )
-                pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm);
-
-            ForceRepaint(pPrivate);
-        }
-        else if ((usTimerID > 2000) && (usTimerID <= 2026))
-        {
-            // diskfree flag timer for a logical drive:
-            // timer id is 2000 + logical drive num
-            ULONG ulLogicalDrive = usTimerID - 2000;
-            PDISKDATA pThis = &pPrivate->paDiskDatas[ulLogicalDrive];
-
-            if (pThis->ulFade)
+            case 1:     // timer 1: general update timer for all widgets
+                        // except diskfree
             {
-                // still fading:
-                (pThis->ulFade)--;
-                pThis->fl |= (DFFL_REPAINT | DFFL_BACKGROUND);
-                if (!(pThis->ulFade))
-                {
-                    // now zero:
-                    pThis->fl &= ~DFFL_FLASH;
-                    ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
-                                   pWidget->hwndWidget,
-                                   usTimerID);
-                }
-            }
+                #ifdef DEBUG_XTIMERS
+                _Pmpf(("  " __FUNCTION__ ": timer 1"));
+                #endif
 
-            ForceRepaint(pPrivate);
+                if (    (pPrivate->ulType == MWGT_POWER)
+                     && (pPrivate->pApm)
+                     && (!pPrivate->arcAPM)
+                   )
+                    pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm);
+
+                ForceRepaint(pPrivate);
+            }
+            break;
+
+            case 2000:     // timer 2: temporary timer for diskfree only
+                           // while flashing
+                if (pPrivate->paDiskDatas)
+                {
+                    ULONG ulLogicalDrive,
+                          cFlashing = 0;
+
+                    _Pmpf((__FUNCTION__ ": timer 2000"));
+
+                    // run over the array of DISKDATA's and update
+                    // all the drive flags that are currently flashing;
+                    // after this, force repaint
+                    for (ulLogicalDrive = 1;
+                         ulLogicalDrive < 27;
+                         ulLogicalDrive++)
+                    {
+                        PDISKDATA pThis = &pPrivate->paDiskDatas[ulLogicalDrive];
+
+                        if (pThis->lFade > 0)
+                        {
+                            // still fading:
+                            if (pThis->lKB < 0)
+                            {
+                                // if we have an error,
+                                // flash with double speed
+                                pThis->lFade -= 4;
+                            }
+                            else
+                                (pThis->lFade)--;
+
+                            pThis->fl |= (DFFL_REPAINT | DFFL_BACKGROUND);
+
+                            if (pThis->lFade <= 0)
+                            {
+                                // now zero:
+                                // if we had an error here, restart
+                                if (pThis->lKB < 0)
+                                {
+                                    pThis->lFade = FLASH_MAX;
+                                    cFlashing++;
+                                }
+                                else
+                                    // just a change:
+                                    // stop flashing here
+                                    pThis->fl &= ~DFFL_FLASH;
+                            }
+                            else
+                                // count disks which are still flashing
+                                cFlashing++;
+                        }
+                    }
+
+                    if (!cFlashing)
+                    {
+                        // no more flashing disks left:
+                        // stop the timer then
+                        ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
+                                       pWidget->hwndWidget,
+                                       usTimerID);
+                        pPrivate->idFlashTimer = 0;
+                    }
+
+                    ForceRepaint(pPrivate);
+                }
+            break;
+
+            default:
+                pWidget->pfnwpDefWidgetProc(pWidget->hwndWidget, WM_TIMER, mp1, mp2);
         }
-        else
-            pWidget->pfnwpDefWidgetProc(pWidget->hwndWidget, WM_TIMER, mp1, mp2);
     }
 }
 
 /*
  *@@ UpdateLogicalDrive:
+ *      implementation for WM_USER in fnwpMonitorWidgets.
+ *
+ *      WM_USER gets posted from XWPDAEMN.EXE whenever the
+ *      disk monitor has detected that the free space on
+ *      a drive has changed, even it's only a single byte.
  *
  *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
 VOID UpdateLogicalDrive(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
 {
-    if ((ULONG)mp1 < 27)
+    PMONITORPRIVATE pPrivate;
+    if (    (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+         && (pPrivate->paDiskDatas)
+         && ((ULONG)mp1 > 0)
+         && ((ULONG)mp1 < 27)
+       )
     {
-        PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
         PDISKDATA       pThis = &pPrivate->paDiskDatas[(ULONG)mp1];
 
-        _Pmpf((__FUNCTION__ ": drive %d", (ULONG)mp1));
+        _Pmpf((__FUNCTION__ ": drive %d",
+                (ULONG)mp1));
 
         // flash the rectangle
         pThis->fl |= (DFFL_FLASH | DFFL_REPAINT);
-        pThis->ulFade = FLASH_MAX;
+        pThis->lFade = FLASH_MAX;
 
         pThis->lKB = (LONG)mp2;
 
-        ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
-                        pWidget->hwndWidget,
-                        // timer ID: 2000 + logical drive num
-                        2000 + (ULONG)mp1,
-                        100);
+        if (!pPrivate->idFlashTimer)
+        {
+            // no timer is running, start it
+            pPrivate->idFlashTimer = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+                                                     pWidget->hwndWidget,
+                                                     2000,          // timer ID
+                                                     100);
+        }
 
         ForceRepaint(pPrivate);
     }
@@ -1472,6 +1709,10 @@ VOID MwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
             pPrivate->Setup.cxCurrent = pswpNew->cx;
             MwgtSaveSetupAndSend(hwnd,
                                  pPrivate);
+
+            // destroy the buffer bitmap because we
+            // need a new one with a different size
+            FreeBitmapData(pPrivate);
 
             WinInvalidateRect(hwnd, NULL, FALSE);
         } // end if (pswpNew->fl & SWP_SIZE)
@@ -1526,6 +1767,9 @@ VOID MwgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
+
+                // re-match the font now
+                pPrivate->fFontMatched = FALSE;
             break; }
 
             default:
@@ -1534,6 +1778,7 @@ VOID MwgtPresParamChanged(HWND hwnd,
 
         if (fInvalidate)
         {
+            FreeBitmapData(pPrivate);
 
             WinInvalidateRect(hwnd, NULL, FALSE);
 
@@ -1823,6 +2068,8 @@ VOID MwgtDestroy(PXCENTERWIDGET pWidget)
         if (pPrivate->paDiskDatas)
             free(pPrivate->paDiskDatas);
 
+        FreeBitmapData(pPrivate);
+
         free(pPrivate);
     } // end if (pPrivate)
 }
@@ -2079,7 +2326,7 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,         // XCenter's anchor block
     // a copy of the doshResolveImports code, but we can't
     // use that before resolving...)
     for (ul = 0;
-         ul < sizeof(G_aImports) / sizeof(G_aImports[0]);
+         ul < sizeof(G_aImports) / sizeof(G_aImports[0]); // array item count
          ul++)
     {
         if (DosQueryProcAddr(hmodXFLDR,

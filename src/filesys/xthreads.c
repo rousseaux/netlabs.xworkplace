@@ -1963,7 +1963,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                           FALSE, // background
                                           SSF_CONTROL_INVISIBLE, // but auto-close
                                           TRUE,  // wait
-                                          &sid, &pid);
+                                          &sid,
+                                          &pid,
+                                          NULL);
 
                     WinDestroyWindow(hwndCreating);
                 }

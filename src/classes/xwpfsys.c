@@ -255,7 +255,9 @@ BOOL _System xfs_wpDestroyObject(XWPFileSystem *somSelf)
 
 SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 {
+#ifdef __REPLHANDLES__
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+#endif
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsInitData");
 

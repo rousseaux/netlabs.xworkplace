@@ -58,8 +58,6 @@ XCenter:
     --  if widget class is broken "wanna remove" msg displays garbage
         and doesn't work if yes is pressed.
 
-    --  trays: no settings dialogs from member widget menus
-
     --  trays: cycle when clicking on whitespace
 
     --  tray widgets drag'n'drop doesn't work yet

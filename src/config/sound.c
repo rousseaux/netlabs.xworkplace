@@ -241,14 +241,14 @@ BOOL sndInstallAddtlSounds(HAB hab,
                     "/c %s\\install\\sound%s.cmd",
                     szPath,
                     cmnQueryLanguageCode());
-            if (doshQuickStartSession("cmd.exe",
-                                      szCmdFile,
-                                      FALSE, // background
-                                      SSF_CONTROL_INVISIBLE, // but auto-close
-                                      TRUE,  // wait
-                                      &sid,
-                                      &pid)
-                    == NO_ERROR)
+            if (!doshQuickStartSession("cmd.exe",
+                                       szCmdFile,
+                                       FALSE, // background
+                                       SSF_CONTROL_INVISIBLE, // but auto-close
+                                       TRUE,  // wait
+                                       &sid,
+                                       &pid,
+                                       NULL))
                 brc = TRUE;
         }
     }

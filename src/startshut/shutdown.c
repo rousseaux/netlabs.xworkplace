@@ -5462,16 +5462,19 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
     }
 
     sprintf(szTemp, "/c %s", pShutdownData->sdParams.szRebootCommand);
-    if (doshQuickStartSession("cmd.exe", szTemp,
+    if (doshQuickStartSession("cmd.exe",
+                              szTemp,
                               FALSE, // background
                               SSF_CONTROL_INVISIBLE, // but auto-close
                               TRUE,  // wait flag
-                              &sid, &pid)
+                              &sid,
+                              &pid,
+                              NULL)
                != NO_ERROR)
     {
-        winhDebugBox(HWND_DESKTOP, "XShutdown",
-                 "The user-defined restart command failed. "
-                 "We will now restart the WPS.");
+        winhDebugBox(HWND_DESKTOP,
+                     "XShutdown",
+                     "The user-defined restart command failed. We will now restart the WPS.");
         xsdRestartWPS(pShutdownData->habShutdownThread,
                       FALSE);
     }

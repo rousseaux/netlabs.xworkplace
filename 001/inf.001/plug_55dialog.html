@@ -14,10 +14,14 @@ displayed by the standard "Window List" widget that comes with &xwp;.
 to remember is that the XCenter does <I>not</I> invoke a settings dialog on
 an open XCenter widget, but on a <I>setup string</I> only.
 
-<P>This was done so that settings dialogs could be displayed for a widget even
-if that widget is not currently visible. With the current implementation, settings
-dialogs will only be invoked from the "Properties" menu item of an open widget,
-but this will change in the future so it has been isolated from the beginning.
+<!-- V0.9.14: changed the following -->
+<P>This was done so that settings dialogs can be displayed for a widget even
+if that widget is not currently visible (i.e. doesn't currently exist as
+a window). This allows the XCenter to display the settings dialog from both
+the "Properties" menu item in a widget's context menu and from a widget's
+context menu on the "Widgets" page in the XCenter settings notebook --
+even if the XCenter isn't currently open.
+<!-- end V0.9.14 -->
 
 <P>Basically, to support settings dialogs, your widget class must do the following:
 

@@ -65,11 +65,16 @@ EXPORTS
     dskQueryInfo
     gpihBox
     gpihCreateBitmap
+    gpihCreateFont
     gpihCreateMemPS
     gpihCreateXBitmap
     gpihDestroyXBitmap
     gpihDraw3DFrame
+    gpihFindPresFont
     gpihManipulateRGB
+    gpihMatchFont
+    gpihSetPointSize
+    gpihSplitPresFont
     gpihSwitchToRGB
     krnQueryDaemonObject
     lstAppendItem
