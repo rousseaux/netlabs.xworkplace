@@ -1,0 +1,117 @@
+
+/*
+ * wpimage.idl:
+ *      beefed up SOM interface description file for the
+ *      following classes built into the WPS:
+ *
+ *      --  WPImageFile
+ *
+ *      XWorkplace uses this file instead of the respective
+ *      file from whatever Toolkit you have installed to
+ *      a) make SOM aware of our class replacements and
+ *      b) allow us to override undocumented WPS methods.
+ *      See idl\wps\readme.txt for details.
+ */
+
+/*
+ *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+
+#ifndef wpimage_idl
+#define wpimage_idl
+
+#include "xfdataf.idl"
+#include <somcls.idl>
+
+interface M_WPImageFile;
+
+interface WPImageFile : XFldDataFile
+{
+    BOOL wpQueryBitmapHandle(in HBITMAP *phBitmap,
+                             in HPAL *phPalette,
+                             in ULONG ulWidth,
+                             in ULONG ulHeight,
+                             in ULONG ulFlags,
+                             in LONG lBackgroundColor,
+                             in BOOL *pbQuitEarly);
+
+    PBITMAPINFOHEADER2 wpQueryBitmapInfoHeader();
+            // in WPREF, this is said to return a PBYTE value,
+            // but really the WPS crashes if it doesn't return
+            // a BITMAPINFOHEADER2... so I've added that struct
+            // def to wps\wptypes.idl and changed this prototype
+
+    PBITMAPFILEHEADER2 wpQueryBitmapData(in ULONG *pulSize);
+
+    BOOL wpSetBitmapData(in PBYTE pBitmapData,
+                         in ULONG ulSize);
+
+    BOOL wpReadImageFile();
+
+    BOOL wpWriteImageFile();
+
+#ifdef __SOMIDL__
+    implementation
+    {
+        releaseorder:
+            wpQueryBitmapHandle,
+            wpQueryBitmapInfoHeader,
+            wpQueryBitmapData,
+            wpSetBitmapData,
+            wpReadImageFile,
+            wpWriteImageFile;
+
+        externalstem = wpimg;
+        local;
+        externalprefix = img_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpimage;
+        metaclass = M_WPImageFile;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
+
+        somDefaultInit: override;
+        somDestruct: override;
+        wpQueryHandleFromContents: override;
+        wpSetContentsFromHandle: override;
+        wpUnInitData: override;
+    };
+#endif
+};
+
+interface M_WPImageFile : M_XFldDataFile
+{
+
+#ifdef __SOMIDL__
+    implementation
+    {
+        externalstem = wpimg;
+        local;
+        externalprefix = imgM_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpimage;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
+
+        wpclsQueryDefaultHelp: override;
+        wpclsQueryInstanceType: override;
+        wpclsQueryStyle: override;
+        wpclsQueryTitle: override;
+    };
+#endif
+};
+
+#endif
