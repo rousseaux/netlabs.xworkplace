@@ -2899,16 +2899,13 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_STATUSBARS1, 1,
             "fDefaultStatusBarVisibility",
         sulSBStyle, FIELDOFFSET(OLDGLOBALSETTINGS, SBStyle), 4,
-            SP_STATUSBARS1, SBSTYLE_WARP4MENU,
-            // @@todo G_GlobalSettings.SBStyle = (G_fIsWarp4 ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
+            SP_STATUSBARS1, SBSTYLE_WARP4MENU,  // Overridden in cmnLoadGlobalSettings()
             "ulSBStyle",
         slSBBgndColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBBgndColor), 4,
-            SP_STATUSBARS1, RGBCOL_GRAY,
-            // @@todo lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
+            SP_STATUSBARS1, RGBCOL_GRAY,        // Overridden in cmnLoadGlobalSettings()
             "lSBBgndColor",
         slSBTextColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBTextColor), 4,
-            SP_STATUSBARS1, RGBCOL_BLACK,
-            // @@todo lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
+            SP_STATUSBARS1, RGBCOL_BLACK,       // Overridden in cmnLoadGlobalSettings()
             "lSBTextColor",
         sflSBForViews, FIELDOFFSET(OLDGLOBALSETTINGS, SBForViews), 4,
             SP_STATUSBARS1, SBV_ICON | SBV_DETAILS | SBV_SPLIT,
@@ -2968,8 +2965,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_SETUP_PARANOIA, 0,
             "fNoExcptBeeps",
         sfUse8HelvFont, FIELDOFFSET(OLDGLOBALSETTINGS, fUse8HelvFont), 4,
-            SP_SETUP_PARANOIA, 0,
-            // @@todo G_GlobalSettings.fUse8HelvFont   = (!G_fIsWarp4);
+            SP_SETUP_PARANOIA, 0,       // Overridden in cmnLoadGlobalSettings()
             "fUse8HelvFont",
         sulDefaultWorkerThreadPriority, FIELDOFFSET(OLDGLOBALSETTINGS, bDefaultWorkerThreadPriority), 1,
             SP_SETUP_PARANOIA, 1, // idle +31
@@ -3127,12 +3123,34 @@ STATIC VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
  *      or sets the default value if no data is found.
  *
  *@@added V1.0.1 (2003-01-25) [umoeller]
+ *changed V1.0.4 (2005-03-13) [pr]: Override non-constant settings
  */
 
 ULONG cmnLoadOneSetting(PCSETTINGINFO pThis)
 {
     PULONG  pulThis = &G_aulSettings[pThis->s];
-    ULONG   cb = sizeof(ULONG);
+    ULONG cb = sizeof(ULONG);
+    ULONG ulDefaultValue = pThis->ulDefaultValue;
+
+    // V1.0.4 (2005-03-12) [pr]
+    switch(pThis->s)
+    {
+        case sulSBStyle:
+            ulDefaultValue = G_fIsWarp4 ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED;
+            break;
+
+        case slSBBgndColor:
+            ulDefaultValue = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
+            break;
+
+        case slSBTextColor:
+            ulDefaultValue = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
+            break;
+
+        case sfUse8HelvFont:
+            ulDefaultValue = !G_fIsWarp4;
+            break;
+    }
 
     // _Pmpf(("      trying to load %s", pThis->pcszIniKey));
     if (!PrfQueryProfileData(HINI_USER,
@@ -3143,12 +3161,12 @@ ULONG cmnLoadOneSetting(PCSETTINGINFO pThis)
     {
         // data not found: use default then
         // _Pmpf(("            PrfQueryProfileData failed"));
-        *pulThis = pThis->ulDefaultValue;
+        *pulThis = ulDefaultValue;
     }
     else if (cb != sizeof(ULONG))
     {
         // _Pmpf(("            cb is %d", cb));
-        *pulThis = pThis->ulDefaultValue;
+        *pulThis = ulDefaultValue;
     }
 
     return *pulThis;
@@ -3165,6 +3183,7 @@ ULONG cmnLoadOneSetting(PCSETTINGINFO pThis)
  *      will be reinitialized here.
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *changed V1.0.4 (2005-03-13) [pr]: Override non-constant settings
  */
 
 VOID cmnLoadGlobalSettings(VOID)
@@ -3185,19 +3204,6 @@ VOID cmnLoadGlobalSettings(VOID)
                             &cb);
     #endif
 
-    // first set all settings to safe defaults
-    // according to the table
-
-    // we can't use cmnSetDefaultSettings here
-    // because that would modify the INI entries
-    for (ul2 = 0;
-         ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
-         ul2++)
-    {
-        PCSETTINGINFO pThis = &G_aSettingInfos[ul2];
-        G_aulSettings[pThis->s] = pThis->ulDefaultValue;
-    }
-
     if (    (PrfQueryProfileSize(HINI_USER,
                                  (PSZ)INIAPP_XWORKPLACE,
                                  (PSZ)INIKEY_GLOBALSETTINGS,
@@ -3208,6 +3214,42 @@ VOID cmnLoadGlobalSettings(VOID)
     {
         // we have an old GLOBALSETTINGS structure:
         // convert it to new format
+
+        // first set all settings to safe defaults
+        // according to the table
+
+        // we can't use cmnSetDefaultSettings here
+        // because that would modify the INI entries
+        for (ul2 = 0;
+             ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
+             ul2++)
+        {
+            PCSETTINGINFO pThis = &G_aSettingInfos[ul2];
+            ULONG ulDefaultValue = pThis->ulDefaultValue;
+
+            // V1.0.4 (2005-03-12) [pr]
+            switch(pThis->s)
+            {
+                case sulSBStyle:
+                    ulDefaultValue = G_fIsWarp4 ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED;
+                    break;
+
+                case slSBBgndColor:
+                    ulDefaultValue = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
+                    break;
+
+                case slSBTextColor:
+                    ulDefaultValue = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
+                    break;
+
+                case sfUse8HelvFont:
+                    ulDefaultValue = !G_fIsWarp4;
+                    break;
+            }
+
+            G_aulSettings[pThis->s] = ulDefaultValue;
+        }
+
         ZERO(pSettings);
         cb = sizeof(OLDGLOBALSETTINGS);
         PrfQueryProfileData(HINI_USER,
