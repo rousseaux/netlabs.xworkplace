@@ -25,13 +25,13 @@ It differentiates between four <B>priority classes:</B>
 thread only gets processor time if no threads of higher priority classes
 are running. Such threads are helpful for offloading work that needs to be
 done, but can be delayed until the computer has time for it.
-<!-- V0.9.19: added ifdef -->
-<IFNDEF __EWORKPLACE__>
+
+<!-- V0.9.21 (2002-09-13) [umoeller]: removed this section
 An example of such a thread is &xwp;'s own
 <A HREF="glossary/gls_workerthr.html">Worker thread</A>, which keeps track of
 the awake Desktop objects on your system. This is fairly time-consuming,
 but not time-critical, so it's done with idle-time priority.
-</IFNDEF>
+-->
 
 <P><LI><B>"Regular priority"</B> (2) is the priority class that most threads use. It is
 also the default &os2; priority class if a thread does not explicitly change its
@@ -59,8 +59,9 @@ Even if it yields the CPU via <CODE>DosSleep(0)</CODE>
 <A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
 in the Toolkit documentation<A HREF="_toolkitlink.html">*</A>),
 other non-time-critical threads will not run.
-This is normally only used for network and other communications software, or
-CD writers, or MP3 players.
+<!-- V0.9.21: changed the following phrase -->
+This class is therefore normally only used for network and other communications software,
+or CD writer or other multimedia software.
 
 <!-- end V0.9.19 -->
 

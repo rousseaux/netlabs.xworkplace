@@ -13,4 +13,8 @@
 #
 # If the name "ALL" appears as a regular expression it is always used
 # in addition to the first matching regex or "DEFAULT".
-ALL D:\nosaadm\cvssec.cmd CHECKCOMMIT
+
+# ALL D:\nosaadm\cvssec.cmd CHECKCOMMIT
+# commented out this line per Knut's request on 2002-09-14
+# to fix the server hangs with large commits
+

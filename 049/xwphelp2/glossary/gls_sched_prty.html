@@ -1,108 +1,112 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: Thread Priorities
+        &xwp;: Thread-Priorit„ten
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.20; moved text from gls_scheduler.html to here -->
 <BODY>
-In general, a thread with a higher priority gets more processor time that one
-with lower priority. To be more precise, &os2; looks at thread priorities
-if more than one thread is internally marked as "ready".
+Generell erh„lt ein Thread mit einer h”heren Priorit„t mehr Prozessorzeit
+als einer mit einer niedrigen. Genau genommen betrachtet &os2;
+Thread-Priorit„ten immer dann, wenn mehr als ein Thread intern
+als "bereit" gekennzeichnet ist.
 
-<P>By contrast, threads which are currently
-"blocked" need no CPU time anyway, so for them, priorities do not matter
-until they are unblocked again. Note that on your typical &os2; system,
-the large majority of threads will be in "blocked" state at any given
-point in time.
+<P>Im Gegensatz dazu erhalten Threads, die derzeit "blockiert" sind,
+niemals Prozessorzeit, egal welche Priorit„t sie haben. Ihre Priorit„t
+wird erst dann bedeutsam, wenn ihre Blockierung wieder aufgehoben wird.
+Beachten Sie, daá auf einem typischen &os2;-System die ganz groáe Mehrheit
+der laufenden Threads blockiert ist.
 
-<P>&os2; is capable of controlling thread priorities in a very refined way.
-It differentiates between four <B>priority classes:</B>
+<P>&os2; ist in der Lage, Thread-Priorit„ten in einer sehr detaillierten
+und leistungsf„higen Weise zu verwalten. Dabei wird zwischen vier
+<b>Priorit„tsklassen</b> unterschieden:
 
 <!-- V0.9.19: corrected all the following -->
 
-<OL><LI><B>"Idle time priority"</B> (1) is the lowest priority class. This means that a
-thread only gets processor time if no threads of higher priority classes
-are running. Such threads are helpful for offloading work that needs to be
-done, but can be delayed until the computer has time for it.
-<!-- V0.9.19: added ifdef -->
-<IFNDEF __EWORKPLACE__>
-An example of such a thread is &xwp;'s own
-<A HREF="glossary/gls_workerthr.html">Worker thread</A>, which keeps track of
-the awake Desktop objects on your system. This is fairly time-consuming,
-but not time-critical, so it's done with idle-time priority.
-</IFNDEF>
+<OL><LI><B>"Idle time"</B> (1) (engl. "idle" = Leerlauf)
+ist die niedrigste Priorit„tsklasse. Ein Thread in
+dieser Klasse erh„lt nur Prozessorzeit, wenn kein anderer Thread einer h”heren
+Klasse l„uft. Threads in dieser Klasse verrichten blicherweise Arbeit,
+die zwar getan werden muá und zeitintensiv ist, die aber auch noch dann
+ausgefhrt werden kann, wenn der Rechner sonst nichts zu tun hat.
 
-<P><LI><B>"Regular priority"</B> (2) is the priority class that most threads use. It is
-also the default &os2; priority class if a thread does not explicitly change its
-priority. Between threads of this class, &os2; dynamically varies priority levels
-(more on this below) to make sure that no thread of this class "starves", i.e. gets
-no processor time.
+<P><LI><B>"Regul„r"</B> (2) ist die Priorit„tsklasse, die die meisten
+Threads benutzen. Dies ist auáerdem die Standardklasse unter &os2;, die benutzt
+wird, wenn ein Thread seine Priorit„t nicht explizit „ndert. Zwischen den
+Threads dieser Klasse variiert &os2; dynamisch die Priorit„ten, damit keiner
+dieser Threads "verhungert" (d.h. berhaupt keine Prozessorzeit erh„lt; hierzu
+sogleich mehr).
 
-<P><LI><B>"Foreground server priority"</B> (4) is the second-highest priority class
-for threads that do not want to be influenced by the dynamic priority variations
-that are performed on "regular" class threads. Note that even though this class
-has the value 4, time-critical threads do take priority over threads of this class.
-&os2; still does some priority variations on threads of this class based on the
-activity of the thread and the system.
+<P><LI><B>"Foreground server"</B> (4) ist die zweith”chste Priorit„tsklasse
+fr Threads, die von den dynamischen Priorit„ts„nderungen der "regul„ren"
+Klasse nicht beeinfluát
+werden sollen. Obwohl diese Klasse den Wert 4 hat, haben zeitkritische Threads
+(sogleich) eine h”here Priorit„t als Threads dieser Klasse. &os2; variiert
+auch fr diese Klasse Priorit„ten in einem gewissen Rahmen dynamisch,
+allerdings abh„ngig von der Aktivit„t des Threads und des gesamten Systems.
 
-<P><LI><B>"Time-critical priority"</B> (3) is the highest priority class in &os2;.
-A thread with time-critical priority will be given processor time immediately
-and will not be interrupted until its work is done.
-Many device drivers will yield the CPU only to threads of this priority class.
+<P><LI><B>"Zeitkritisch" (time-critical)</B> (3) ist die h”chste Priorit„tsklasse
+unter &os2;. Ein Thread in dieser Klasse bekommt Prozessorzeit ohne Verz”gerung
+und wird nicht unterbrochen, bis seine Arbeit beendet ist. Viele Ger„tetreiber
+geben Prozessorzeit nur als Threads dieser Klasse ab.
 
-<P>Such a thread should only use the minimum possible CPU time because it cannot be
-interrupted (except by other time-critical threads) and can easily hang the system.
+<P>Ein solcher Thread sollte nur minimale Zeit beanspruchen, da er nicht unterbrochen
+werden kann (auáer durch andere zeitkritische Threads) und daher das System
+schnell aufh„ngen kann.
 <!-- V0.9.20: added link -->
-Even if it yields the CPU via <CODE>DosSleep(0)</CODE>
-(see the documentation for
-<A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
-in the Toolkit documentation<A HREF="_toolkitlink.html">*</A>),
-other non-time-critical threads will not run.
-This is normally only used for network and other communications software, or
-CD writers, or MP3 players.
+Sogar wenn der Thread den Prozessor via <CODE>DosSleep(0)</CODE>
+freigibt
+(siehe <A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
+in der Toolkit-Dokumentation<A HREF="_toolkitlink.html">*</A>),
+bekommen andere zeitkritische Threads keine Prozessorzeit.
+Diese Klasse wird daher blicherweise nur fr Netzwerk- und andere
+Kommunikationsanwendungen benutzt, oder CD-Brenner- und andere
+Multimedia-Software.
 
 <!-- end V0.9.19 -->
 
-</OL>Within each priority class, a thread may set a <B>priority level.</B>
-This is a value from 0 to +31 which determines the precedence of a thread
-<I>within</I> a priority class and will only be taken into account if two threads
-of the same priority class compete.
+</OL>Innerhalb jeder Priorit„tsklasse kann ein Thread zus„tzlich
+einen <b>Priorit„tswert</b> von 0 bis +31 setzen, der den Vorrang
+des Threads gegenber anderen Threads der <i>gleichen</i> Klasse bestimmt.
+Dieser Wert wird nur bercksichtigt, wenn zwei Threads der gleichen Klasse
+laufen.
 
-<P>A few examples:
+<P>Einige Beispiele:
 
-<UL><LI>A "regular" thread with priority level +31 supercedes a "regular" thread
-with priority level 0.
+<UL><LI>Ein "regul„rer" Thread mit einem Wert von +31 bekommt Vorrang
+gegenber einen anderen "regul„ren" Thread mit dem Wert 0.
 
-<P>Within the "regular priority" class however &os2; ensures that no thread
-"starves", i.e. never gets processor time, by dynamically raising each
-thread's priorities after a certain time automatically. This period of time
-is determined by the <CODE>MAXWAIT</CODE> &cfgsys; setting. Moreover, &os2;
-boosts a thread's priority temporarily if it is to receive keyboard input,
-if the process of the thread runs in the foreground, or if the thread is
-currently doing I/O.
+<P>Innerhalb der "regul„ren" Klasse stellt &os2; jedoch sicher, daá
+kein Thread "verhungert", d.h. keine Prozessorzeit bekommt. Dies geschieht,
+indem die Priorit„ten nach einer gewissen Zeit automatisch angepaát werden.
+Diese Zeitspanne kann in der Datei &cfgsys; mit dem Befehl <CODE>MAXWAIT</CODE>
+festgelegt werden. Zudem erh”ht &os2; die Priorit„t eines Threads
+vorbergehend, wenn dieser Tastatureingaben empf„ngt, d.h. im
+Vordergrund l„uft, oder Dateioperationen vornimmt.
 
-<P>These dynamic adjustments are only then performed if &cfgsys; does
-not contain the command <CODE>PRIORITY=ABSOLUTE,</CODE> which is not
-recommended.
+<P>Diese Variationen werden nur vorgenommen, wenn in der Datei
+&cfgsys; nicht der Befehl <CODE>PRIORITY=ABSOLUTE</CODE> angegeben ist,
+was nicht zu empfehlen ist.
 <!-- V0.9.19: added ifdef -->
 <IFNDEF __NOOS2KERNEL__>
-(This is why you will not find that setting in the
+(Daher gibt es fr diese Einstellung auch keine Entsprechung im Objekt
 <!-- V0.9.20: added link -->
-<A HREF="objects/obj_krnl.html">"&os2; Kernel"</A> object.)
+<A HREF="objects/obj_krnl.html">"&os2;-Kernel"</A>)
 </IFNDEF>
 
-<P><LI>A "time-critical" thread with priority level 0 still supercedes a
-"regular" thread with priority level +31 because it belongs to a higher
-priority class. For this case, the dynamic priority adjustments will have
-no effect, because they only affect the execution of "regular" threads.
-While the time-critical thread is running, all "regular" threads starve.
+<P><LI>Ein "zeitkritischer" Thread mit dem Wert 0 hat immer noch Vorrang
+vor einem "regul„ren" Thread mit der Priorit„t +31, weil er in einer
+h”heren Klasse l„uft. Fr diesen Fall haben die dynamischen Anpassungen
+keine Wirkung, weil diese nur innerhalb der "regul„ren" Klasse wirken.
+W„hrend ein zeitkritischer Thread l„uft, "verhungern" alle regul„ren
+Threads.
 
-<P><LI>The same applies, for example, to a "regular thread" with priority level
-0 and an "idle-time" thread with priority level +31.
+<P><LI>Entsprechendes gilt z.B. fr einen "regul„ren" Thread mit einem
+Wert von 0 gegenber einem "idle time"-Thread mit einem Wert von +31.
 
-<P><LI>Two threads with exactly the same priority however run "against" each
-other, i.e. &os2; keeps alternating CPU ownership between them.
+<P><LI>Zwei Threads mit genau der gleichen Priorit„t hingegen laufen
+"gegeneinander", d.h. &os2; schaltet den Prozessor zwischen diesen
+beiden Threads st„ndig um.
 
 </UL>
 </BODY>
