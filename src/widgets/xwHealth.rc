@@ -1,0 +1,25 @@
+#ifndef OS2_INCLUDED
+   #include <os2.h>
+#endif
+#include <xwhealth.h>
+
+
+DLGTEMPLATE ID_CRD_HEALTHWGT_SETTINGS
+BEGIN
+	DIALOG "Health Monitor Settings", ID_CRD_HEALTHWGT_SETTINGS, 12, 8, 380, 129, WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
+	BEGIN
+		DEFPUSHBUTTON "OK", DID_OK, 8,6,60,12
+		PUSHBUTTON "Cancel", DID_CANCEL, 76, 6, 60, 12
+		PUSHBUTTON "Help", 1, 313, 6, 60, 12
+		CONTROL "Setup-String:", 101, 9, 113, 55, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+		CONTROL "Sample", ID_CRDI_SETUP_STRING, 71, 113, 301, 8, WC_ENTRYFIELD, ES_LEFT | ES_AUTOSCROLL | ES_MARGIN | WS_VISIBLE | WS_GROUP | WS_TABSTOP
+		CONTROL "Please enter a valid Setup-String for Health monitoring. Valid replacement values are:", 102, 8, 99, 366, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+		CONTROL "%T<n> Replaced by temperature sensor n (0-9)", 103, 8, 86, 366, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+		CONTROL "%F<n> Replaced by fan sensor n (0-9)", 104, 8, 76, 366, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+		CONTROL "%V<n> Replaced by voltage sensor n (0-9)", 105, 8, 66, 366, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+		CONTROL "Example: 'Temperature %T0 øC and Fan %F2 RPM'", 106, 9, 52, 260, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+		CONTROL "Sample output: 'Temperature 30.00 øC and Fan 4818 RPM'", 107, 9, 39, 237, 8, WC_STATIC, SS_TEXT | DT_LEFT | DT_TOP | DT_MNEMONIC | WS_VISIBLE | WS_GROUP
+	END
+
+END
+
