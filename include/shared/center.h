@@ -156,6 +156,7 @@
     #define WGTF_NOUSERCREATE           0x0002
     #define WGTF_UNIQUEPERXCENTER       0x0004
     #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
+    #define WGTF_TOOLTIP                0x0010
 
     /*
      *@@ XCENTERWIDGETCLASS:
@@ -198,6 +199,9 @@
                 // -- WGTF_UNIQUEGLOBAL: only one widget of this class
                 //    should be created in all XCenters on the system.
                 //    This includes WGTF_UNIQUEPERXCENTER.
+                // -- WGTF_TOOLTIP: if set, the widget will receive
+                //    WM_CONTROL messages with the TTN_NEEDTEXT notification
+                //    code. The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
 
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,
@@ -296,6 +300,8 @@
                 // is the same as pWidgetClass->pcszWidgetClass,
                 // but this is valid after WM_CREATE.
                 // DO NOT CHANGE it, the XCenter relies on this!
+        ULONG       ulClassFlags;
+                // class flags copied from XCENTERWIDGETCLASS.
 
         const char  *pcszSetupString;
                 // class-specific setup string. This field
@@ -400,6 +406,7 @@
      ********************************************************************/
 
     #define ID_XCENTER_CLIENT           7000
+    #define ID_XCENTER_TOOLTIP          7001
 
     /*
      *@@ XN_QUERYSIZE:
@@ -463,9 +470,36 @@
 
     #define XN_SETUPCHANGED             2
 
+    /*
+     *@@ XN_OBJECTDESTROYED:
+     *      notification code for WM_CONTROL posted (!)
+     *      to a widget if it has registered itself with
+     *      XFldObject::xwpSetWidgetNotify.
+     *
+     *      This is a last chance for the widget to clean
+     *      up itself when an object that it relies on gets
+     *      destroyed (deleted or made dormant). This message
+     *      is posted from XFldObject::wpUnInitData.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_OBJECTDESTROYED).
+     *
+     *      -- WPObject* mp2: SOM object pointer of object
+     *                        being destroyed. NOTE: This pointer
+     *                        is no longer valid. Do not invoke
+     *                        any SOM methods on it.
+     *
+     *@@added V0.9.7 (2001-01-03) [umoeller]
+     */
+
+    #define XN_OBJECTDESTROYED          3
+
     /* ******************************************************************
      *
-     *   Messages _to_ XCenter client
+     *   Public messages _to_ XCenter client
      *
      ********************************************************************/
 
@@ -490,16 +524,47 @@
 
     #define XCM_SETWIDGETSIZE           WM_USER
 
+    // formatting flags
+    #define XFMF_GETWIDGETSIZES         0x0001
+    #define XFMF_DISPLAYSTYLECHANGED    0x0002
+    #define XFMF_RECALCHEIGHT           0x0004
+    #define XFMF_REPOSITIONWIDGETS      0x0008
+    #define XFMF_SHOWWIDGETS            0x0010
+    #define XFMF_RESURFACE              0x0020
+
     /*
-     *@@ XCM_REFORMATALL:
-     *      reformats all widgets. This gets posted
-     *      by ctrDefWidgetProc when a widget gets
-     *      destroyed.
+     *@@ XCM_REFORMAT:
+     *      reformats the XCenter and all widgets. This
+     *      gets posted by ctrDefWidgetProc when a widget
+     *      gets destroyed, but can be posted by anyone.
      *
-     *      No parameters.
+     *      Parameters:
+     *
+     *      -- HWND mp1: reformat flags. Any combination
+     *         of the following:
+     *
+     *          --  XFMF_GETWIDGETSIZES: ask each widget for its
+     *              desired size.
+     *
+     *          --  XFMF_DISPLAYSTYLECHANGED: display style has
+     *              changed, repaint everything.
+     *
+     *          --  XFMF_RECALCHEIGHT: recalculate the XCenter's
+     *              height, e.g. if a widget has been added or
+     *              removed or vertically resized.
+     *
+     *          --  XFMF_REPOSITIONWIDGETS: reposition all widgets.
+     *              This is necessary if a widget's horizontal size
+     *              has changed.
+     *
+     *          --  XFMF_SHOWWIDGETS: set WS_VISIBLE on all widgets.
+     *
+     *          --  XFMF_RESURFACE: resurface XCenter to HWND_TOP.
+     *
+     *      -- ULONG mp2: reserved, must be 0.
      */
 
-    #define XCM_REFORMATALL             (WM_USER + 1)
+    #define XCM_REFORMAT                (WM_USER + 1)
 
     /*
      *@@ XCM_SAVESETUP:
@@ -523,6 +588,8 @@
      */
 
     #define XCM_SAVESETUP               (WM_USER + 2)
+
+    // WM_USER + 3 and WM_USER + 4 are reserved
 
     /* ******************************************************************
      *

@@ -439,7 +439,17 @@ WPPatternPalette 1 (Mesa 2) Part of the Mesa2 Spreadsheet.
 
 WPMesaFile 1 (Mesa 2) Data file class for Mesa2 spreadsheet files.
 WPMesaTemplateFile 1 (Mesa 2) Mesa2 spreadsheet file template class.
+WPMesaBackupFile 1 (Mesa 2) Mesa2 spreadsheet file backup class.
 
+FpwCatalyst 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works).
+FpwWPSData 5 (OS/2 V3 or V4 BonusPak) Superclass for IBMWorks (originally FootPrint Works) data files.
+Shortcut 1 This class allows shadow objects to have different names to their original objects.
+WPKlist 1 Buggy WPS Class List class supplied with IBM VAC++ 3.0.
+CmdrunDisk 1 This class allows opening of command line sessions and running programs direct from an object's popup menu.
+CmdrunFolder 1 This class allows opening of command line sessions and running programs direct from an object's popup menu.
+WPSysset 1 This class allows REXX access to other class's class object settings.
+PDR 0 Undocumented system class.
+QDR 0 Undocumented system class.
 
 
 

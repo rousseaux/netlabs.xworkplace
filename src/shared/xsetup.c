@@ -540,14 +540,12 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 // tooltip successfully created:
                 // add tools (i.e. controls of the dialog)
                 // according to the usToolIDs array
-                TOOLINFO    ti;
+                TOOLINFO    ti = {0};
                 HWND        hwndCtl;
                 ULONG       ul;
-                ti.cbSize = sizeof(TOOLINFO);
-                ti.uFlags = TTF_IDISHWND | TTF_CENTERTIP | TTF_SUBCLASS;
-                ti.hwnd = hwndDlg;
-                ti.hinst = NULLHANDLE;
-                ti.lpszText = LPSTR_TEXTCALLBACK;  // send TTN_NEEDTEXT
+                ti.ulFlags = TTF_CENTERBELOW | TTF_SUBCLASS;
+                ti.hwndToolOwner = hwndDlg;
+                ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 for (ul = 0;
                      ul < (sizeof(G_usClassesToolIDs) / sizeof(G_usClassesToolIDs[0]));
                      ul++)
@@ -556,7 +554,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     if (hwndCtl)
                     {
                         // add tool to tooltip control
-                        ti.uId = hwndCtl;
+                        ti.hwndTool = hwndCtl;
                         WinSendMsg(pxwpc->hwndTooltip,
                                    TTM_ADDTOOL,
                                    (MPARAM)0,
@@ -1128,7 +1126,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     CHAR    szMessageID[200];
                     CHAR    szHelpString[3000];
                     const char *pszMessageFile = cmnQueryMessageFile();
-                    ULONG   ulID = WinQueryWindowUShort(pttt->hdr.idFrom,
+                    ULONG   ulID = WinQueryWindowUShort(pttt->hwndTool,
                                                         QWS_ID);
                     ULONG   ulWritten = 0;
                     APIRET  arc = 0;
@@ -1155,14 +1153,15 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                               "tmfGetMessage rc: %d",
                                               szMessageID,
                                               pszMessageFile,
-                                              pttt->hdr.idFrom,
+                                              pttt->hwndTool,
                                               ulID,
                                               arc);
                     }
 
                     pxwpcOld->pszTooltipString = strdup(szHelpString);
 
-                    pttt->lpszText = pxwpcOld->pszTooltipString;
+                    pttt->ulFormat = TTFMT_PSZ;
+                    pttt->pszText = pxwpcOld->pszTooltipString;
                 }
             }
             else if (usNotifyCode == BN_CLICKED)
@@ -1488,14 +1487,12 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 // tooltip successfully created:
                 // add tools (i.e. controls of the dialog)
                 // according to the usToolIDs array
-                TOOLINFO    ti;
-                ti.cbSize = sizeof(TOOLINFO);
-                ti.uFlags = TTF_IDISHWND | /* TTF_CENTERTIP | */ TTF_SUBCLASS;
-                ti.hwnd = pcnbp->hwndDlgPage;
-                ti.hinst = NULLHANDLE;
-                ti.lpszText = LPSTR_TEXTCALLBACK;  // send TTN_NEEDTEXT
+                TOOLINFO    ti = {0};
+                ti.ulFlags = /* TTF_CENTERTIP | */ TTF_SUBCLASS;
+                ti.hwndToolOwner = pcnbp->hwndDlgPage;
+                ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 // add cnr as tool to tooltip control
-                ti.uId = hwndFeaturesCnr;
+                ti.hwndTool = hwndFeaturesCnr;
                 WinSendMsg(pcnbp->hwndTooltip,
                            TTM_ADDTOOL,
                            (MPARAM)0,
@@ -2026,14 +2023,15 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                                                           "tmfGetMessage rc: %d",
                                                           szMessageID,
                                                           pszMessageFile,
-                                                          pttt->hdr.idFrom,
+                                                          pttt->hwndTool,
                                                           precc->usItemID,
                                                           arc);
                                 }
 
                                 pcnbp->pUser2 = strdup(szHelpString);
 
-                                pttt->lpszText = pcnbp->pUser2;
+                                pttt->ulFormat = TTFMT_PSZ;
+                                pttt->pszText = pcnbp->pUser2;
                             }
                         }
 

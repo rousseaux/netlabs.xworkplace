@@ -109,6 +109,9 @@
             USHORT              cbSize;             // size of struct (req. by PM)
             XCenter             *somSelf;           // XCenter instance
 
+            TID                 tidXCenter;         // thread ID of XCenter GUI thread
+            HEV                 hevRunning;         // event sem posted once XCenter is created
+
             USEITEM             UseItem;            // use item; immediately followed by view item
             VIEWITEM            ViewItem;           // view item
 
@@ -134,6 +137,9 @@
             ULONG               ulWidgetsShown;     // for animation 2 (TIMERID_SHOWWIDGETS)
             ULONG               idTimerAutohide;    // if != 0, TIMERID_AUTOHIDE_START is running
             BOOL                fFrameAutoHidden;   // if TRUE, frame is currently sunk
+
+            HWND                hwndTooltip;        // tooltip control (comctl.c)
+
         } XCENTERWINDATA, *PXCENTERWINDATA;
 
         /*
@@ -175,39 +181,28 @@
 
     #endif // LINKLIST_HEADER_INCLUDED
 
-    #define XFMF_GETWIDGETSIZES         0x0001
-                // reget all widget's sizes
-    #define XFMF_DISPLAYSTYLECHANGED    0x0002
-                // display style has changed;
-                // this includes all other flags except XFMF_SHOWWIDGETS
-    #define XFMF_RECALCHEIGHT           0x0004
-                // e.g. if widget has been added or removed
-    #define XFMF_REPOSITIONWIDGETS      0x0008
-                // reposition widgets
-    #define XFMF_SHOWWIDGETS            0x0010
-                // set WS_VISIBLE on widgets
-    #define XFMF_RESURFACE              0x0020
-                // put the XCenter to HWND_TOP z-order
+    /* ******************************************************************
+     *
+     *   XCenter widget class management
+     *
+     ********************************************************************/
 
-    VOID ctrpReformatHWND(HWND hwnd,
-                          ULONG ulFlags);
+    VOID ctrpLoadClasses(VOID);
+
+    VOID ctrpFreeClasses(VOID);
+
+    PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass);
+
+    /* ******************************************************************
+     *
+     *   XCenter view implementation
+     *
+     ********************************************************************/
 
     #ifdef SOM_XCenter_h
-        VOID ctrpLoadClasses(VOID);
-
-        VOID ctrpFreeClasses(VOID);
-
-        PXCENTERWIDGETCLASS ctrpFindClass(XCenter *somSelf,
-                                          const char *pcszWidgetClass);
 
         ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                                            HWND hwnd);
-
-        VOID ctrpAddWidget(XCenter *somSelf,
-                           PXCENTERWIDGETSETTING pSetting,
-                           ULONG ulBeforeIndex,
-                           PULONG pulNewItemCount,
-                           PULONG pulNewWidgetIndex);
 
         BOOL ctrpRemoveWidget(XCenter *somSelf,
                               ULONG ulIndex);
@@ -238,6 +233,10 @@
             PLINKLIST ctrpQuerySettingsList(XCenter *somSelf);
         #endif
 
+        BOOL ctrpSetPriority(XCenter *somSelf,
+                             ULONG ulClass,
+                             LONG lDelta);
+
         ULONG ctrpQuerySetup(XCenter *somSelf,
                              PSZ pszSetupString,
                              ULONG cbSetupString);
@@ -247,8 +246,54 @@
 
         HWND ctrpCreateXCenterView(XCenter *somSelf,
                                    HAB hab,
-                                   ULONG ulView);
+                                   ULONG ulView,
+                                   PVOID *ppvOpenView);
     #endif // SOM_XCenter_h
+
+    /* ******************************************************************
+     *
+     *   Private messages _to_ XCenter client
+     *
+     ********************************************************************/
+
+    /*
+     *@@ XCM_CREATEWIDGET:
+     *      creates a widget window. This must be _sent_
+     *      to the client... it's an internal message
+     *      and may only be sent after the widget setting
+     *      has been set up.
+     *
+     *      Parameters:
+     *
+     *      -- PXCENTERWIDGETSETTING mp1: setting for
+     *              widget to be created.
+     *
+     *      -- ULONG mp2: widget index.
+     *
+     *@@added V0.9.7 (2001-01-03) [umoeller]
+     */
+
+    #define XCM_CREATEWIDGET            (WM_USER + 3)
+
+    /*
+     *@@ XCM_DESTROYWIDGET:
+     *      destroys a widget window. This is an internal
+     *      message and must only be sent after a widget
+     *      setting has already been destroyed.
+     *
+     *      NEVER send this yourself.
+     *      Use XCenter::xwpRemoveWidget instead.
+     *
+     *      Parameters:
+     *
+     *      -- HWND mp1: widget window to be destroyed.
+     *
+     *      -- mp2: reserved, must be 0.
+     *
+     *@@added V0.9.7 (2001-01-03) [umoeller]
+     */
+
+    #define XCM_DESTROYWIDGET           (WM_USER + 4)
 
     /* ******************************************************************
      *

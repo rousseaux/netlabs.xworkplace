@@ -77,6 +77,9 @@ interface XFldObject : WPObject
     BOOL xwpModifyListNotify(in ULONG flNotifyFlags,
                              in ULONG flNotifyMask);
 
+    BOOL xwpAddDestroyNotify(in HWND hwnd);
+    BOOL xwpRemoveDestroyNotify(in HWND hwnd);
+
     BOOL xwpQueryObjectHotkey(in PUSHORT pusFlags,
                               in PUCHAR  pucScanCode,
                               in PUSHORT pusKeyCode);
@@ -103,7 +106,9 @@ interface XFldObject : WPObject
                   xwpQuerySetup2,
                   xwpQueryListNotify,
                   xwpSetListNotify,
-                  xwpModifyListNotify;
+                  xwpModifyListNotify,
+                  xwpAddDestroyNotify,
+                  xwpRemoveDestroyNotify;
 
     //# Class Modifiers
     externalprefix = xfobj_;
@@ -135,6 +140,8 @@ interface XFldObject : WPObject
                                 // or upon first trash can populate)
 
     ULONG       ulListNotify;   // OBJLIST_* flags set with xwpSetListNotify
+
+    PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
 
     /*
      * The following is forced into the .H file:

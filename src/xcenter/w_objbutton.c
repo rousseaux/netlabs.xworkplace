@@ -80,6 +80,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
+#include "xfobj.ih"
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
@@ -90,12 +91,15 @@
 
 #include "shared\center.h"              // public XCenter interfaces
 
+#include "filesys\object.h"             // XFldObject implementation
+
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpdesk.h>
 #include <wpdisk.h>
 #include <wppower.h>
+#include <wpshadow.h>
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
@@ -144,6 +148,8 @@ typedef struct _OBJBUTTONPRIVATE
                                         // open WPS context menu
 
     WPObject    *pobjButton;            // object for this button
+    WPObject    *pobjNotify;            // != NULL if xwpAddDestroyNotify has been
+                                        // called (to avoid duplicate notifications)
 
     HPOINTER    hptrXMini;              // "X" icon for painting on button,
                                         // if BTF_XBUTTON
@@ -275,6 +281,15 @@ VOID EXPENTRY OwgtSetupStringChanged(PXCENTERWIDGET pWidget,
 
 /*
  *@@ FindObject:
+ *      returns the SOM object pointer for the object handle
+ *      which is stored in the widget's setup.
+ *
+ *      If the HOBJECT is a WPDisk, we return the root folder
+ *      for the disk instead.
+ *
+ *      NOTE: The object is locked by this function. In addition,
+ *      we set the OBJLIST_OBJWIDGET list notify flag (see
+ *      XFldObject::xwpSetListNotify).
  *
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
@@ -287,10 +302,29 @@ WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
     {
         pobj = _wpclsQueryObject(_WPObject,
                                  pPrivate->Setup.hobj);
-        // if pFolder is a disk object: get root folder
         if (pobj)
-            if (_somIsA(pobj, _WPDisk))
-                pobj = wpshQueryRootFolder(pobj, FALSE, NULL);
+        {
+            // dereference shadows
+            while ((pobj) && (_somIsA(pobj, _WPShadow)))
+                pobj = _wpQueryShadowedObject(pobj, TRUE);
+
+            if (pobj)
+            {
+                // now, if pObj is a disk object: get root folder
+                if (_somIsA(pobj, _WPDisk))
+                    pobj = wpshQueryRootFolder(pobj, FALSE, NULL);
+
+                if ((pobj) && (pPrivate->pobjNotify != pobj))
+                {
+                    // set list notify so that the widget is destroyed
+                    // when the object goes dormant
+                    _wpLockObject(pobj);
+                    _xwpAddDestroyNotify(pobj,
+                                         pPrivate->pWidget->hwndWidget);
+                    pPrivate->pobjNotify = pobj;
+                }
+            }
+        }
     }
 
     return (pobj);
@@ -307,7 +341,9 @@ MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
     POBJBUTTONPRIVATE pPrivate = malloc(sizeof(OBJBUTTONPRIVATE));
     memset(pPrivate, 0, sizeof(OBJBUTTONPRIVATE));
+    // link the two together
     pWidget->pUser = pPrivate;
+    pPrivate->pWidget = pWidget;
 
     OwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
@@ -342,15 +378,18 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
+    USHORT  usID = SHORT1FROMMP(mp1),
+            usNotifyCode = SHORT2FROMMP(mp1);
+
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+
+    _Pmpf((__FUNCTION__ ": WM_CONTROL id 0x%lX", usID));
+
     if (pWidget)
     {
         POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
-            USHORT  usID = SHORT1FROMMP(mp1),
-                    usNotifyCode = SHORT2FROMMP(mp1);
-
             if (usID == ID_XCENTER_CLIENT)
             {
                 switch (usNotifyCode)
@@ -373,6 +412,51 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                         brc = TRUE;
                     break; }
+
+                    /*
+                     * XN_OBJECTDESTROYED:
+                     *      member object has been destroyed.
+                     *      Destroy ourselves too.
+                     */
+
+                    case XN_OBJECTDESTROYED:
+                        // simulate "remove widget" context menu command...
+                        // that's easier
+                        WinPostMsg(pWidget->hwndWidget,
+                                   WM_COMMAND,
+                                   (MPARAM)ID_CRMI_REMOVEWGT,
+                                   NULL);
+                    break;
+                }
+            } // if (usID == ID_XCENTER_CLIENT)
+            else
+            {
+                if (usID == ID_XCENTER_TOOLTIP)
+                {
+                    _Pmpf((__FUNCTION__ ": ID_XCENTER_TOOLTIP"));
+                    switch (usNotifyCode)
+                    {
+                        case TTN_NEEDTEXT:
+                        {
+                            PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                            _Pmpf((__FUNCTION__ ": TTN_NEEDTEXT"));
+                            if (pPrivate->ulType == BTF_XBUTTON)
+                                pttt->pszText = "X Button";
+                            else
+                            {
+                                if (!pPrivate->pobjButton)
+                                    // object not queried yet:
+                                    pPrivate->pobjButton = FindObject(pPrivate);
+
+                                if (pPrivate->pobjButton)
+                                    pttt->pszText = _wpQueryTitle(pPrivate->pobjButton);
+                                else
+                                    pttt->pszText = "Invalid object...";
+                            }
+
+                            pttt->ulFormat = TTFMT_PSZ;
+                        break; }
+                    }
                 }
             }
         } // end if (pPrivate)
@@ -540,6 +624,7 @@ VOID OwgtButton1Down(HWND hwnd)
 
                     if (pPrivate->ulType == BTF_XBUTTON)
                     {
+                        // it's an X-button: load default menu
                         WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
                         PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
                         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
@@ -601,25 +686,46 @@ VOID OwgtButton1Down(HWND hwnd)
                                                   pszDesktopTitle,
                                                   ulPosition++,
                                                   FALSE); // no owner draw in main context menu
-                    }
+                    } // if (pPrivate->ulType == BTF_XBUTTON)
                     else
                     {
                         // regular object button:
-                        pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
-                        WinSetWindowBits(pPrivate->hwndMenuMain,
-                                         QWL_STYLE,
-                                         MIS_OWNERDRAW,
-                                         MIS_OWNERDRAW);
+                        // check if this is a folder...
 
-                        // insert a dummy menu item so that cmnuPrepareOwnerDraw
-                        // can measure its size
-                        _Pmpf((__FUNCTION__ ": inserting dummy"));
-                        winhInsertMenuItem(pPrivate->hwndMenuMain,
-                                           0,
-                                           pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY,
-                                           "test",
-                                           MIS_TEXT,
-                                           0);
+                        if (!pPrivate->pobjButton)
+                            // object not queried yet:
+                            pPrivate->pobjButton = FindObject(pPrivate);
+
+                        if (pPrivate->pobjButton)
+                        {
+                            if (_somIsA(pPrivate->pobjButton, _WPFolder))
+                            {
+                                // yes, it's a folder:
+                                // prepare folder content menu by inserting
+                                // a dummy menu item... the actual menu
+                                // fill is done for WM_INITMENU, which comes
+                                // in right afterwards
+                                pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
+                                WinSetWindowBits(pPrivate->hwndMenuMain,
+                                                 QWL_STYLE,
+                                                 MIS_OWNERDRAW,
+                                                 MIS_OWNERDRAW);
+
+                                // insert a dummy menu item so that cmnuPrepareOwnerDraw
+                                // can measure its size
+                                _Pmpf((__FUNCTION__ ": inserting dummy"));
+                                winhInsertMenuItem(pPrivate->hwndMenuMain,
+                                                   0,
+                                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY,
+                                                   "test",
+                                                   MIS_TEXT,
+                                                   0);
+                            }
+                            // else no folder:
+                            // do nothing at this point, just paint the
+                            // button depressed... we'll open the object
+                            // on button-up
+                        }
                     }
 
                     _Pmpf((__FUNCTION__ ": calling ctlDisplayButtonMenu"));
@@ -660,6 +766,27 @@ VOID OwgtButton1Up(HWND hwnd)
 
                 // toggle state with each WM_BUTTON1UP
                 pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
+
+                if (pPrivate->ulType == BTF_OBJBUTTON)
+                    // we have an object button (not X-button):
+                    if (pPrivate->pobjButton)
+                        // object was successfully retrieved on button-down:
+                        if (!_somIsA(pPrivate->pobjButton, _WPFolder))
+                        {
+                            // object is not a folder:
+                            // open it on button up!
+                            _wpViewObject(pPrivate->pobjButton,
+                                          NULLHANDLE,
+                                          OPEN_DEFAULT, // default view, same as dblclick
+                                          0);
+                            // unset button sunk state
+                            // (no toggle)
+                            pPrivate->fButtonSunk = FALSE;
+                        }
+                        // else folder: we do nothing, the work for the menu
+                        // has been set up in button-down and init-menu
+
+                // repaint sunk button state
                 WinInvalidateRect(hwnd, NULL, FALSE);
             }
         } // end if (pPrivate)
@@ -669,6 +796,13 @@ VOID OwgtButton1Up(HWND hwnd)
 /*
  * OwgtInitMenu:
  *      implementation for WM_INITMENU.
+ *
+ *      Note that this comes only in for...
+ *
+ *      -- the X-button;
+ *
+ *      -- an object button if the object button represents
+ *         a folder (or disk).
  */
 
 VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -707,13 +841,9 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                 if (pPrivate->pobjButton)
                 {
-                    if (!_somIsA(pPrivate->pobjButton, _WPFolder))
+                    if (_somIsA(pPrivate->pobjButton, _WPFolder))
                     {
-                        // not a folder:
-                    }
-                    else
-                    {
-                        // it's a folder:
+                        // just to make sure it's a folder:
                         // show "Wait" pointer
                         HPOINTER    hptrOld = winhSetWaitPointer();
 
@@ -1081,7 +1211,15 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 {
                     if (pPrivate->hptrXMini)
                         WinDestroyPointer(pPrivate->hptrXMini);
-                    // free button data
+
+                    if (pPrivate->pobjNotify)
+                    {
+                        _xwpRemoveDestroyNotify(pPrivate->pobjNotify,
+                                                hwnd);
+                        _wpUnlockObject(pPrivate->pobjNotify);
+                    }
+
+                    // free private data
                     free(pPrivate);
                             // pWidget is cleaned up by DestroyWidgets
                 }

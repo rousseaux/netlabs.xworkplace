@@ -52,6 +52,7 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINDIALOGS
 #define INCL_WININPUT
 #define INCL_WINTRACKRECT
@@ -73,12 +74,14 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -96,6 +99,7 @@
 #include "xcenter\centerp.h"            // private XCenter implementation
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
+#include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -129,7 +133,7 @@ XCENTERWIDGETCLASS  G_aBuiltInWidgets[]
             BTF_OBJBUTTON,
             "ObjButton",
             "Object button",
-            WGTF_NOUSERCREATE,  // WGTF_UNIQUEPERXCENTER,
+            WGTF_NOUSERCREATE | WGTF_TOOLTIP,  // WGTF_UNIQUEPERXCENTER,
             NULL        // no settings dlg
         },
         {
@@ -137,7 +141,7 @@ XCENTERWIDGETCLASS  G_aBuiltInWidgets[]
             BTF_XBUTTON,
             "XButton",
             "X-Button",
-            WGTF_UNIQUEPERXCENTER,
+            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
             NULL        // no settings dlg
         },
         {
@@ -145,7 +149,7 @@ XCENTERWIDGETCLASS  G_aBuiltInWidgets[]
             0,
             "Pulse",
             "CPU load",
-            WGTF_SIZEABLE | WGTF_UNIQUEPERXCENTER,
+            WGTF_SIZEABLE | WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
             NULL        // no settings dlg
         }
     };
@@ -183,6 +187,8 @@ BOOL RegisterBuiltInWidgets(HAB hab)
 
 /*
  *@@ GetWidgetSize:
+ *      asks the specified widget for its desired size.
+ *      If the widget does not respond, a default size is used.
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
  */
@@ -350,8 +356,7 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
     if (wpshLockObject(&Lock,
                        pXCenterData->somSelf))
     {
-        PXCENTERWIDGETCLASS pClass = ctrpFindClass(pXCenterData->somSelf,
-                                                   pViewData->pcszWidgetClass);
+        PXCENTERWIDGETCLASS pClass = ctrpFindClass(pViewData->pcszWidgetClass);
         if (pClass)
         {
             if (pClass->pShowSettingsDlg)
@@ -382,6 +387,8 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                     // disable auto-hide while we're showing the dlg
                     pXCenterData->fShowingSettingsDlg = TRUE;
                     pClass->pShowSettingsDlg(&DlgData);
+                                // ### no, this must be outside of the lock
+
                     pXCenterData->fShowingSettingsDlg = FALSE;
                 } // end if (pSettingsNode)
             } // end if (pViewData->pShowSettingsDlg)
@@ -407,6 +414,8 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
  *
  *      If (fRemove == TRUE), we remove emphasis instead of
  *      painting it.
+ *
+ *      May only run on the XCenter GUI thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  */
@@ -487,6 +496,8 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
  *@@ RemoveDragoverEmphasis:
  *      shortcut to ctrpDrawEmphasis.
  *
+ *      May only run on the XCenter GUI thread.
+ *
  *@@added V0.9.7 (2000-12-08) [umoeller]
  */
 
@@ -552,6 +563,8 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
  *      been added and the max client cy might have
  *      changed.
  *
+ *      May only run on the XCenter GUI thread.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -559,6 +572,11 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
                   ULONG ulFlags)
 {
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+
+    // NOTE: We must not request the XCenter mutex here because
+    // this function can get called during message sends from
+    // thread 1 while thread 1 is holding the mutex. Requesting
+    // the mutex here again would cause deadlocks.
 
     ULONG flSWP = SWP_MOVE | SWP_SIZE;
 
@@ -662,32 +680,6 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
 }
 
 /*
- *@@ ctrpReformatHWND:
- *      wrapper around ctrpReformat which accepts
- *      a HWND instead. This MUST, MUST, MUST be an
- *      XCenter frame.
- *
- *@@added V0.9.7 (2000-12-07) [umoeller]
- */
-
-VOID ctrpReformatHWND(HWND hwnd,
-                      ULONG ulFlags)
-{
-    TRY_QUIET(excpt1) // just in case someone's giving us crap here
-    {
-        PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pXCenterData)
-            ctrpReformat(pXCenterData,
-                         ulFlags);
-    }
-    CATCH(excpt1)
-    {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "ctrpReformatFrameHWND trapped.");
-    } END_CATCH();
-}
-
-/*
  *@@ CreateOneWidget:
  *      creates a new widget window as a child of
  *      an open XCenter frame/client. Gets called
@@ -704,6 +696,8 @@ VOID ctrpReformatHWND(HWND hwnd,
  *         if the new widget wants a height larger
  *         than that.
  *
+ *      May only run on the XCenter GUI thread.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -712,6 +706,11 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                                  ULONG ulIndex)
 {
     PWIDGETVIEWSTATE pNewView = NULL;
+
+    // NOTE: We must not request the XCenter mutex here because
+    // this function can get called during message sends from
+    // thread 1 while thread 1 is holding the mutex. Requesting
+    // the mutex here again would cause deadlocks.
 
     if (!pSetting)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -726,8 +725,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
             // get ptr to XCENTERWIDGET struct
             PXCENTERWIDGET pWidget = &pNewView->Widget;
             // find the widget class for this
-            PXCENTERWIDGETCLASS pWidgetClass = ctrpFindClass(pXCenterData->somSelf,
-                                                             pSetting->pszWidgetClass);
+            PXCENTERWIDGETCLASS pWidgetClass = ctrpFindClass(pSetting->pszWidgetClass);
             memset(pNewView, 0, sizeof(*pNewView));
 
             if (pWidgetClass)
@@ -742,6 +740,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                 pWidget->pWidgetClass = pWidgetClass;
                 pWidget->pcszWidgetClass = strdup(pWidgetClass->pcszWidgetClass);
                             // cleaned up in WM_DESTROY of ctrDefWidgetProc
+                pWidget->ulClassFlags = pWidgetClass->ulClassFlags;
 
                 pNewView->xCurrent = 0;         // changed later
                 pNewView->cxCurrent = 20;
@@ -861,15 +860,24 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
  *      client currently has. This does not change the frame's
  *      visibility though.
  *
+ *      May only run on the XCenter GUI thread.
+ *
  *      Preconditions:
  *
  *      -- The client window must have been positioned in
  *         the frame already.
+ *
+ *      -- The caller must have requested the XCenter mutex.
  */
 
 ULONG CreateWidgets(PXCENTERWINDATA pXCenterData)
 {
     ULONG   ulrc = 0;
+
+    // NOTE: We must not request the XCenter mutex here because
+    // this function can get called during message sends from
+    // thread 1 while thread 1 is holding the mutex. Requesting
+    // the mutex here again would cause deadlocks.
 
     ULONG   ul = 0;
 
@@ -890,12 +898,6 @@ ULONG CreateWidgets(PXCENTERWINDATA pXCenterData)
         pNode = pNode->pNext;
     } // end for widgets
 
-    /* _Pmpf((__FUNCTION__ ": calling ReformatWidgets"));
-    ReformatWidgets(pXCenterData,
-                    FALSE,  // do not show widgets
-                    FALSE); // do not send XN_QUERYSIZE; CreateOneWidget has done that
-            */
-
     // this is the first "reformat frame" when the XCenter
     // is created, so get max cy and reposition
     ctrpReformat(pXCenterData,
@@ -907,6 +909,8 @@ ULONG CreateWidgets(PXCENTERWINDATA pXCenterData)
 /*
  *@@ DestroyWidgets:
  *      reversely to CreateWidgets, this cleans up.
+ *
+ *      May only run on the XCenter GUI thread.
  *
  *      This does not affect the XCENTERWIDGETSETTINGS.
  */
@@ -933,6 +937,7 @@ VOID DestroyWidgets(PXCENTERWINDATA pXCenterData)
 /*
  *@@ SetWidgetSize:
  *
+ *      May only run on the XCenter GUI thread.
  */
 
 BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
@@ -950,13 +955,7 @@ BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
             // found it:
             // set new width
             pWidgetThis->szlWanted.cx = ulNewWidth;
-            // reformat widgets from this node on
-            // _Pmpf((__FUNCTION__ ": calling ReformatWidgets"));
-            /* ReformatWidgets(pXCenterData,
-                            FALSE,  // no extra show, they are visible already
-                            FALSE); // no send XN_QUERYSIZE; we're setting a new
-                                    // size currently
-                */
+
             ctrpReformat(pXCenterData,
                          XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS);
             brc = TRUE;
@@ -1398,6 +1397,11 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             case WM_DESTROY:
                 tmrStopAllTimers(hwnd);
                 fCallDefault = TRUE;
+                // stop the XCenter thread we're running on
+                WinPostMsg(NULLHANDLE,      // post into the queue
+                           WM_QUIT,
+                           0,
+                           0);
             break;
 
             default:
@@ -1479,6 +1483,9 @@ BOOL FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
  *      returns a linked list of plain WPObject* pointers
  *      for the objects being dragged over the XCenter.
  *
+ *      The list is not in auto-free mode and must be freed
+ *      by the caller.
+ *
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
@@ -1521,10 +1528,19 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
             else
             {
                 // valid object:
+                WPObject *pReal = pobjDragged;
+
                 if (!pllObjects)
                     // list not created yet:
                     pllObjects = lstCreate(FALSE);
-                lstAppendItem(pllObjects, pobjDragged);
+
+                // dereference shadows
+                while ((pReal) && (_somIsA(pReal, _WPShadow)))
+                    pReal = _wpQueryShadowedObject(pReal,
+                                                   TRUE); // lock
+
+                if (pReal)
+                    lstAppendItem(pllObjects, pReal);
             }
         }
     }
@@ -1831,7 +1847,7 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     CHAR szSetup[100];
                     sprintf(szSetup, "OBJECTHANDLE=%lX;", hobjDragged);
                     // insert object button widgets for the objects
-                    // being dropped
+                    // being dropped; this sets up the object further
                     _xwpInsertWidget(pXCenterData->somSelf,
                                      ulIndex,
                                      "ObjButton",    // widget class
@@ -1846,6 +1862,37 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
         DrgFreeDraginfo(pdrgInfo);
     }
     WinInvalidateRect(pXCenterData->Globals.hwndFrame, NULL, FALSE);
+}
+
+/*
+ *@@ ClientControl:
+ *      implementation for WM_CONTROL.
+ *
+ *@@added V0.9.7 (2001-01-03) [umoeller]
+ */
+
+MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    USHORT  usID = SHORT1FROMMP(mp1),
+            usNotifyCode = SHORT2FROMMP(mp1);
+
+    _Pmpf((__FUNCTION__ ": id 0x%lX, notify 0x%lX", usID, usNotifyCode));
+
+    if (    (usID == ID_XCENTER_TOOLTIP)
+         && (usNotifyCode == TTN_NEEDTEXT)
+       )
+    {
+        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+        // forward tooltip "need text" to widget
+        mrc = WinSendMsg(pttt->hwndTool,      // widget window (tool)
+                         WM_CONTROL,
+                         mp1,
+                         mp2);
+    }
+
+    return (mrc);
 }
 
 /*
@@ -1904,9 +1951,12 @@ VOID ClientDestroy(HWND hwnd)
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
 
-    _hwndOpenView = NULLHANDLE;
+    _pvOpenView = NULL;
 
     DestroyWidgets(pXCenterData);
+
+    if (pXCenterData->hwndTooltip)
+        WinDestroyWindow(pXCenterData->hwndTooltip);
 
     // remove this window from the object's use list
     _wpDeleteFromObjUseList(pXCenterData->somSelf,
@@ -2045,6 +2095,15 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             break;
 
             /*
+             * WM_CONTROL:
+             *
+             */
+
+            case WM_CONTROL:
+                ClientControl(hwnd, mp1, mp2);
+            break;
+
+            /*
              * WM_CLOSE:
              *      this is sent to the client by the frame if
              *      it receives WM_CLOSE itself.
@@ -2070,13 +2129,33 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                 SetWidgetSize(pXCenterData, (HWND)mp1, (ULONG)mp2);
             break; }
 
-            case XCM_REFORMATALL:
-                ctrpReformatHWND(hwnd,
-                                 XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS);
-            break;
+            case XCM_REFORMAT:
+            {
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                ctrpReformat(pXCenterData,
+                             (ULONG)mp1);       // flags
+            break; }
 
             case XCM_SAVESETUP:
                 ClientSaveSetup(hwnd, (HWND)mp1, (PSZ)mp2);
+            break;
+
+            case XCM_CREATEWIDGET:
+            {
+                // this msg is only used for creating the window on the
+                // GUI thread because method calls may run on any thread...
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                CreateOneWidget(pXCenterData,
+                                (PXCENTERWIDGETSETTING)mp1,
+                                (ULONG)mp2);        // ulWidgetIndex
+            break; }
+
+            case XCM_DESTROYWIDGET:
+                // this msg is only used for destroying the window on the
+                // GUI thread because method calls may run on any thread...
+                WinDestroyWindow((HWND)mp1);
+                        // this better be a widget window...
+                        // ctrDefWidgetProc takes care of cleanup
             break;
 
             default:
@@ -2090,7 +2169,7 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
 /* ******************************************************************
  *
- *   XCenter private APIs
+ *   XCenter widget class management
  *
  ********************************************************************/
 
@@ -2099,6 +2178,8 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *      wrapper around DosFreeModule which
  *      attempts to call the "UnInitModule"
  *      export from the widget DLL beforehand.
+ *
+ *      May run on any thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  */
@@ -2136,6 +2217,8 @@ APIRET ctrFreeModule(HMODULE hmod)
  *      will never be removed. This function maintains a
  *      reference count to the global data so calls to this
  *      function may be nested.
+ *
+ *      May run on any thread.
  */
 
 VOID ctrpLoadClasses(VOID)
@@ -2341,6 +2424,10 @@ VOID ctrpLoadClasses(VOID)
  *
  *      See ctrpLoadClasses().
  *
+ *      May run on any thread.
+ *
+ *      ### add a global mutex for this
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -2400,13 +2487,14 @@ VOID ctrpFreeClasses(VOID)
  *          classes are unloaded, the pointer must
  *          no longer be used.
  *
+ *      May run on any thread.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
-PXCENTERWIDGETCLASS ctrpFindClass(XCenter *somSelf,
-                                  const char *pcszWidgetClass)
+PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass)
 {
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     PXCENTERWIDGETCLASS pClass = NULL,
                         paClasses;
     ULONG ul = 0;
@@ -2443,6 +2531,12 @@ PXCENTERWIDGETCLASS ctrpFindClass(XCenter *somSelf,
     return (pClass);    // can be 0
 }
 
+/* ******************************************************************
+ *
+ *   XCenter view implementation
+ *
+ ********************************************************************/
+
 /*
  *@@ ctrpQueryWidgetIndexFromHWND:
  *      returns the index of the widget with the
@@ -2454,6 +2548,8 @@ PXCENTERWIDGETCLASS ctrpFindClass(XCenter *somSelf,
  *
  *      Returns -1 if not found.
  *
+ *      May run on any thread.
+ *
  *@@added V0.9.7 (2000-12-04) [umoeller]
  */
 
@@ -2461,13 +2557,14 @@ ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                                    HWND hwnd)
 {
     ULONG ulIndex = -1;
-    XCenterData *somThis = XCenterGetData(somSelf);
-    if (_hwndOpenView)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        // XCenter view currently open:
-        PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-        if (pXCenterData)
+        XCenterData *somThis = XCenterGetData(somSelf);
+        if (_pvOpenView)
         {
+            // XCenter view currently open:
+            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
             PLISTNODE pViewNode = lstQueryFirstNode(&pXCenterData->llWidgets);
             ULONG     ulThis = 0;
             while (pViewNode)
@@ -2484,12 +2581,13 @@ ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
             }
         }
     }
+    wpshUnlockObject(&Lock);
 
     return (ulIndex);
 }
 
 /*
- *@@ ctrpAddWidget:
+ *@@ AddWidgetSetting:
  *      adds a new XCENTERWIDGETSETTING to the internal
  *      list of widget settings.
  *
@@ -2501,15 +2599,17 @@ ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
  *      put into a separate procedure because it's both
  *      needed by ctrpInsertWidget and ctrpUnstuffSettings.
  *
+ *      The caller must lock the XCenter himself.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype
  */
 
-VOID ctrpAddWidget(XCenter *somSelf,
-                   PXCENTERWIDGETSETTING pSetting,  // in: new setting
-                   ULONG ulBeforeIndex,             // in: index to insert before or -1 for end
-                   PULONG pulNewItemCount,          // out: new settings count (ptr can be NULL)
-                   PULONG pulNewWidgetIndex)        // out: index of new widget (ptr can be NULL)
+VOID AddWidgetSetting(XCenter *somSelf,
+                      PXCENTERWIDGETSETTING pSetting,  // in: new setting
+                      ULONG ulBeforeIndex,             // in: index to insert before or -1 for end
+                      PULONG pulNewItemCount,          // out: new settings count (ptr can be NULL)
+                      PULONG pulNewWidgetIndex)        // out: index of new widget (ptr can be NULL)
 {
     PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
     if (    (ulBeforeIndex == -1)
@@ -2537,13 +2637,18 @@ VOID ctrpAddWidget(XCenter *somSelf,
 
 VOID ctrpFreeWidgets(XCenter *somSelf)
 {
-    XCenterData *somThis = XCenterGetData(somSelf);
-    _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
-    if (_pllWidgetSettings)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        lstFree(_pllWidgetSettings);
-        _pllWidgetSettings = NULL;
+        XCenterData *somThis = XCenterGetData(somSelf);
+        _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
+        if (_pllWidgetSettings)
+        {
+            lstFree(_pllWidgetSettings);
+            _pllWidgetSettings = NULL;
+        }
     }
+    wpshUnlockObject(&Lock);
 }
 
 /*
@@ -2599,6 +2704,8 @@ PVOID ctrpQueryWidgets(XCenter *somSelf,
  *@@ ctrpFreeWidgetsBuf:
  *      implementation for XCenter::FreeWidgetsBuf.
  *
+ *      May run on any thread.
+ *
  *@@added V0.9.7 (2000-12-08) [umoeller]
  */
 
@@ -2621,10 +2728,11 @@ VOID ctrpFreeWidgetsBuf(PVOID pBuf,
     free(paSettings);
 }
 
-
 /*
  *@@ ctrpInsertWidget:
  *      implementation for XCenter::xwpInsertWidget.
+ *
+ *      May run on any thread.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
@@ -2635,60 +2743,70 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
                       const char *pcszSetupString)
 {
     BOOL brc = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
-
-    _Pmpf((__FUNCTION__ ": entering with %s, %s",
-            (pcszWidgetClass) ? pcszWidgetClass : "NULL",
-            (pcszSetupString) ? pcszSetupString : "NULL"));
-
-    if (pcszWidgetClass)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        PXCENTERWIDGETSETTING pSetting = malloc(sizeof(XCENTERWIDGETSETTING));
+        XCenterData *somThis = XCenterGetData(somSelf);
 
-        if (pSetting)
+        _Pmpf((__FUNCTION__ ": entering with %s, %s",
+                (pcszWidgetClass) ? pcszWidgetClass : "NULL",
+                (pcszSetupString) ? pcszSetupString : "NULL"));
+
+        if (pcszWidgetClass)
         {
-            ULONG   ulNewItemCount = 0,
-                    ulWidgetIndex = 0;
+            PXCENTERWIDGETSETTING pSetting = malloc(sizeof(XCENTERWIDGETSETTING));
 
-            pSetting->pszWidgetClass = strdup(pcszWidgetClass);
-            if (pcszSetupString)
-                pSetting->pszSetupString = strdup(pcszSetupString);
-            else
-                pSetting->pszSetupString = NULL;
-
-            // add new widget setting to internal linked list
-            ctrpAddWidget(somSelf,
-                          pSetting,
-                          ulBeforeIndex,
-                          &ulNewItemCount,
-                          &ulWidgetIndex);
-
-            _Pmpf(("  widget added, new item count: %d", ulNewItemCount));
-
-            if (_hwndOpenView)
+            if (pSetting)
             {
-                // XCenter view currently open:
-                PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-                if (pXCenterData)
+                ULONG   ulNewItemCount = 0,
+                        ulWidgetIndex = 0;
+
+                pSetting->pszWidgetClass = strdup(pcszWidgetClass);
+                if (pcszSetupString)
+                    pSetting->pszSetupString = strdup(pcszSetupString);
+                else
+                    pSetting->pszSetupString = NULL;
+
+                // add new widget setting to internal linked list
+                AddWidgetSetting(somSelf,
+                                 pSetting,
+                                 ulBeforeIndex,
+                                 &ulNewItemCount,
+                                 &ulWidgetIndex);
+
+                _Pmpf(("  widget added, new item count: %d", ulNewItemCount));
+
+                if (_pvOpenView)
                 {
-                    CreateOneWidget(pXCenterData,
-                                    pSetting,
-                                    ulWidgetIndex);
+                    // XCenter view currently open:
+                    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                    // we must send msg instead of calling CreateOneWidget
+                    // directly, because that func may only run on the
+                    // XCenter GUI thread
+                    WinSendMsg(pXCenterData->Globals.hwndClient,
+                               XCM_CREATEWIDGET,
+                               (MPARAM)pSetting,
+                               (MPARAM)ulWidgetIndex);
                             // new widget is invisible, and at a random position
-                    ctrpReformat(pXCenterData,
-                                 XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS | XFMF_SHOWWIDGETS);
+                    WinPostMsg(pXCenterData->Globals.hwndClient,
+                               XCM_REFORMAT,
+                               (MPARAM)(XFMF_RECALCHEIGHT
+                                        | XFMF_REPOSITIONWIDGETS
+                                        | XFMF_SHOWWIDGETS),
+                               0);
                 }
+
+                // save instance data (with that linked list)
+                _wpSaveDeferred(somSelf);
+
+                // update the "widgets" notebook page, if open
+                ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
+
+                brc = TRUE;
             }
-
-            // save instance data (with that linked list)
-            _wpSaveDeferred(somSelf);
-
-            // update the "widgets" notebook page, if open
-            ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
-
-            brc = TRUE;
         }
     }
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -2704,7 +2822,8 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                       ULONG ulIndex)
 {
     BOOL brc = FALSE;
-    TRY_LOUD(excpt1)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
         PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
         PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
@@ -2716,22 +2835,26 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
             XCenterData *somThis = XCenterGetData(somSelf);
             PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pSettingsNode->pItemData;
 
-            if (_hwndOpenView)
+            if (_pvOpenView)
             {
                 // XCenter view currently open:
-                pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-                if (pXCenterData)
+                PLISTNODE pViewNode;
+                pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
+                                             ulIndex);
+                if (pViewNode)
                 {
-                    PLISTNODE pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
-                                                           ulIndex);
-                    if (pViewNode)
-                    {
-                        PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pViewNode->pItemData;
-                        WinDestroyWindow(pView->Widget.hwndWidget);
-                            // the window is responsible for cleaning up pView->pUser;
-                            // ctrDefWidgetProc will also free pView and remove it
-                            // from the widget views list
-                    }
+                    // we must send a msg instead of doing WinDestroyWindow
+                    // directly because only the XCenter GUI thread can
+                    // destroy the window
+                    PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pViewNode->pItemData;
+                    WinSendMsg(pXCenterData->Globals.hwndClient,
+                               XCM_DESTROYWIDGET,
+                               (MPARAM)pView->Widget.hwndWidget,
+                               0);
+                        // the window is responsible for cleaning up pView->pUser;
+                        // ctrDefWidgetProc will also free pView and remove it
+                        // from the widget views list
                 }
             } // end if (_hwndOpenView)
 
@@ -2755,18 +2878,13 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
         if (pXCenterData)
         {
             // we found the open view above:
-            /* ReformatWidgets(pXCenterData,
-                            TRUE,
-                            TRUE);      // reget widget sizes
-            RecalcMaxClientCY(pXCenterData); */
-            ctrpReformat(pXCenterData,
-                         XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS);
+            WinPostMsg(pXCenterData->Globals.hwndClient,
+                       XCM_REFORMAT,
+                       (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
+                       0);
         }
     }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -2783,7 +2901,9 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
                     ULONG ulBeforeIndex)
 {
     BOOL brc = FALSE;
-    TRY_LOUD(excpt1)
+
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
         PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
         PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex2Move);
@@ -2801,24 +2921,22 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
             PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pSettingsNode->pItemData,
                                   pNewSetting = NULL;
 
-            if (_hwndOpenView)
+            if (_pvOpenView)
             {
                 // XCenter view currently open:
-                pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-                if (pXCenterData)
+                PLISTNODE pViewNode;
+                pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
+                                             ulIndex2Move);
+                if (pViewNode)
                 {
-                    PLISTNODE pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
-                                                           ulIndex2Move);
-                    if (pViewNode)
-                    {
-                        // the list is NOT in auto-free mode;
-                        // re-insert the node at the new position
-                        lstInsertItemBefore(&pXCenterData->llWidgets,
-                                            pViewNode->pItemData,
-                                            ulBeforeIndex);
-                        // remove old node
-                        lstRemoveNode(&pXCenterData->llWidgets, pViewNode);
-                    }
+                    // the list is NOT in auto-free mode;
+                    // re-insert the node at the new position
+                    lstInsertItemBefore(&pXCenterData->llWidgets,
+                                        pViewNode->pItemData,
+                                        ulBeforeIndex);
+                    // remove old node
+                    lstRemoveNode(&pXCenterData->llWidgets, pViewNode);
                 }
             } // end if (_hwndOpenView)
 
@@ -2851,19 +2969,13 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
         if (pXCenterData)
         {
             // we found the open view above:
-            /* RecalcMaxClientCY(pXCenterData);
-            ReformatWidgets(pXCenterData,
-                            TRUE,
-                            FALSE);         // no reget widget sizes
-                            */
-            ctrpReformat(pXCenterData,
-                         XFMF_REPOSITIONWIDGETS);
+            WinPostMsg(pXCenterData->Globals.hwndClient,
+                       XCM_REFORMAT,
+                       (MPARAM)(XFMF_REPOSITIONWIDGETS),
+                       0);
         }
     }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -2900,6 +3012,8 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
  *
  *      In other words, this is a mechanism to defer loading
  *      the plugin DLLs until they are really needed.
+ *
+ *      The caller must lock the XCenter himself.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
@@ -2952,6 +3066,8 @@ PSZ ctrpStuffSettings(XCenter *somSelf,
  *
  *      See ctrpStuffSettings for details.
  *
+ *      The caller must lock the XCenter himself.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -2994,11 +3110,11 @@ ULONG ctrpUnstuffSettings(XCenter *somSelf)
                     pSetting->pszSetupString = NULL;
 
                 // store in list
-                ctrpAddWidget(somSelf,
-                              pSetting,
-                              -1,
-                              NULL,
-                              NULL);
+                AddWidgetSetting(somSelf,
+                                 pSetting,
+                                 -1,
+                                 NULL,
+                                 NULL);
             }
 
             // go for next setting
@@ -3022,6 +3138,8 @@ ULONG ctrpUnstuffSettings(XCenter *somSelf)
  *      from the XCenter instance data. This unpacks
  *      the binary array if called for the first time.
  *
+ *      The caller must lock the XCenter himself.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -3043,6 +3161,42 @@ PLINKLIST ctrpQuerySettingsList(XCenter *somSelf)
 }
 
 /*
+ *@@ ctrpSetPriority:
+ *
+ *@@added V0.9.7 (2001-01-03) [umoeller]
+ */
+
+BOOL ctrpSetPriority(XCenter *somSelf,
+                     ULONG ulClass,
+                     LONG lDelta)
+{
+    BOOL brc = FALSE;
+
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock,
+                       somSelf))
+    {
+        XCenterData *somThis = XCenterGetData(somSelf);
+        _ulPriorityClass = ulClass;
+        _lPriorityDelta = lDelta;
+
+        if (_pvOpenView)
+        {
+            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+            DosSetPriority(PRTYS_THREAD,
+                           ulClass,
+                           lDelta,
+                           pXCenterData->tidXCenter);       // tid of XCenter GUI thread
+        }
+    }
+    else
+        brc = FALSE;
+    wpshUnlockObject(&Lock);
+
+    return (brc);
+}
+
+/*
  *@@ ctrpQuerySetup:
  *      implementation for XCenter::xwpQuerySetup2.
  *
@@ -3054,178 +3208,184 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                      ULONG cbSetupString)
 {
     ULONG ulReturn = 0;
-    // method pointer for parent class
-    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
 
-    // compose setup string
-
-    TRY_LOUD(excpt1)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        // flag defined in
-        #define WP_GLOBAL_COLOR         0x40000000
+        // method pointer for parent class
+        somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
 
-        XCenterData *somThis = XCenterGetData(somSelf);
+        // compose setup string
 
-        // temporary buffer for building the setup string
-        XSTRING strTemp;
-        PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
-        PLISTNODE pNode;
-
-        xstrInit(&strTemp, 400);
-
-        /*
-         * build string
-         *
-         */
-
-        if (_ulWindowStyle & WS_TOPMOST)
-            xstrcat(&strTemp, "ALWAYSONTOP=YES;");
-        if ((_ulWindowStyle & WS_ANIMATE) == 0)
-            xstrcat(&strTemp, "ANIMATE=YES;");
-        if (_ulAutoHide)
+        TRY_LOUD(excpt1)
         {
-            CHAR szTemp[100];
-            xstrcat(&strTemp, "AUTOHIDE=");
-            sprintf(szTemp, "%d;", _ulAutoHide);
-            xstrcat(&strTemp, szTemp);
-        }
-        if (_ulPosition == XCENTER_TOP)
-            xstrcat(&strTemp, "POSITION=TOP;");
+            // flag defined in
+            #define WP_GLOBAL_COLOR         0x40000000
 
-        pNode = lstQueryFirstNode(pllSettings);
-        if (pNode)
-        {
-            BOOL    fFirstWidget = TRUE;
-            xstrcat(&strTemp, "WIDGETS=");
+            XCenterData *somThis = XCenterGetData(somSelf);
 
-            // we have widgets:
-            // go thru all of them and list all widget classes and setup strings.
-            while (pNode)
+            // temporary buffer for building the setup string
+            XSTRING strTemp;
+            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
+            PLISTNODE pNode;
+
+            xstrInit(&strTemp, 400);
+
+            /*
+             * build string
+             *
+             */
+
+            if (_ulWindowStyle & WS_TOPMOST)
+                xstrcat(&strTemp, "ALWAYSONTOP=YES;");
+            if ((_ulWindowStyle & WS_ANIMATE) == 0)
+                xstrcat(&strTemp, "ANIMATE=YES;");
+            if (_ulAutoHide)
             {
-                PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
+                CHAR szTemp[100];
+                xstrcat(&strTemp, "AUTOHIDE=");
+                sprintf(szTemp, "%d;", _ulAutoHide);
+                xstrcat(&strTemp, szTemp);
+            }
+            if (_ulPosition == XCENTER_TOP)
+                xstrcat(&strTemp, "POSITION=TOP;");
 
-                if (!fFirstWidget)
-                    // not first run:
-                    // add separator
-                    xstrcat(&strTemp, ",");
-                else
-                    fFirstWidget = FALSE;
+            pNode = lstQueryFirstNode(pllSettings);
+            if (pNode)
+            {
+                BOOL    fFirstWidget = TRUE;
+                xstrcat(&strTemp, "WIDGETS=");
 
-                // add widget class
-                xstrcat(&strTemp, pSetting->pszWidgetClass);
-
-                if (    (pSetting->pszSetupString)
-                     && (strlen(pSetting->pszSetupString))
-                   )
+                // we have widgets:
+                // go thru all of them and list all widget classes and setup strings.
+                while (pNode)
                 {
-                    // widget has a setup string:
-                    // add that in brackets
-                    XSTRING strSetup2;
+                    PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
 
-                    // characters that must be encoded
-                    CHAR    achEncode[] = "%,();=";
+                    if (!fFirstWidget)
+                        // not first run:
+                        // add separator
+                        xstrcat(&strTemp, ",");
+                    else
+                        fFirstWidget = FALSE;
 
-                    ULONG   ul = 0;
+                    // add widget class
+                    xstrcat(&strTemp, pSetting->pszWidgetClass);
 
-                    // copy widget setup string to temporary buffer
-                    // for encoding... this has "=" and ";"
-                    // chars in it, and these should not appear
-                    // in the WPS setup string
-                    xstrInitCopy(&strSetup2,
-                                 pSetting->pszSetupString,
-                                 40);
-
-                    // add first separator
-                    xstrcat(&strTemp, "(");
-
-                    // now encode the widget setup string...
-                    for (ul = 0;
-                         ul < strlen(achEncode);
-                         ul++)
+                    if (    (pSetting->pszSetupString)
+                         && (strlen(pSetting->pszSetupString))
+                       )
                     {
-                        CHAR        szFind[3] = "?",
-                                    szReplace[10] = "%xx";
-                        XSTRING     strFind,
-                                    strReplace;
-                        size_t  ShiftTable[256];
-                        BOOL    fRepeat = FALSE;
-                        ULONG ulOfs = 0;
+                        // widget has a setup string:
+                        // add that in brackets
+                        XSTRING strSetup2;
 
-                        // search string:
-                        szFind[0] = achEncode[ul];
-                        xstrInitSet(&strFind, szFind);
+                        // characters that must be encoded
+                        CHAR    achEncode[] = "%,();=";
 
-                        // replace string: ASCII encoding
-                        sprintf(szReplace, "%c%lX", '%', achEncode[ul]);
-                        xstrInitSet(&strReplace, szReplace);
+                        ULONG   ul = 0;
 
-                        // replace all occurences
-                        while (xstrrpl(&strSetup2,
-                                       &ulOfs,
-                                       &strFind,
-                                       &strReplace,
-                                       ShiftTable,
-                                       &fRepeat))
-                                ;
-                    } // for ul; next encoding
+                        // copy widget setup string to temporary buffer
+                        // for encoding... this has "=" and ";"
+                        // chars in it, and these should not appear
+                        // in the WPS setup string
+                        xstrInitCopy(&strSetup2,
+                                     pSetting->pszSetupString,
+                                     40);
 
-                    // now append encoded widget setup string
-                    xstrcat(&strTemp, strSetup2.psz);
+                        // add first separator
+                        xstrcat(&strTemp, "(");
 
-                    // add terminator
-                    xstrcat(&strTemp, ")");
+                        // now encode the widget setup string...
+                        for (ul = 0;
+                             ul < strlen(achEncode);
+                             ul++)
+                        {
+                            CHAR        szFind[3] = "?",
+                                        szReplace[10] = "%xx";
+                            XSTRING     strFind,
+                                        strReplace;
+                            size_t  ShiftTable[256];
+                            BOOL    fRepeat = FALSE;
+                            ULONG ulOfs = 0;
 
-                    xstrClear(&strSetup2);
-                } // end if (    (pSetting->pszSetupString)...
+                            // search string:
+                            szFind[0] = achEncode[ul];
+                            xstrInitSet(&strFind, szFind);
 
-                pNode = pNode->pNext;
-            } // end for widgets
+                            // replace string: ASCII encoding
+                            sprintf(szReplace, "%c%lX", '%', achEncode[ul]);
+                            xstrInitSet(&strReplace, szReplace);
 
-            xstrcat(&strTemp, ";");
+                            // replace all occurences
+                            while (xstrrpl(&strSetup2,
+                                           &ulOfs,
+                                           &strFind,
+                                           &strReplace,
+                                           ShiftTable,
+                                           &fRepeat))
+                                    ;
+                        } // for ul; next encoding
+
+                        // now append encoded widget setup string
+                        xstrcat(&strTemp, strSetup2.psz);
+
+                        // add terminator
+                        xstrcat(&strTemp, ")");
+
+                        xstrClear(&strSetup2);
+                    } // end if (    (pSetting->pszSetupString)...
+
+                    pNode = pNode->pNext;
+                } // end for widgets
+
+                xstrcat(&strTemp, ";");
+            }
+
+            /*
+             * append string
+             *
+             */
+
+            if (strTemp.ulLength)
+            {
+                // return string if buffer is given
+                if ((pszSetupString) && (cbSetupString))
+                    strhncpy0(pszSetupString,   // target
+                              strTemp.psz,      // source
+                              cbSetupString);   // buffer size
+
+                // always return length of string
+                ulReturn = strTemp.ulLength;
+            }
+
+            xstrClear(&strTemp);
         }
-
-        /*
-         * append string
-         *
-         */
-
-        if (strTemp.ulLength)
+        CATCH(excpt1)
         {
-            // return string if buffer is given
-            if ((pszSetupString) && (cbSetupString))
-                strhncpy0(pszSetupString,   // target
-                          strTemp.psz,      // source
-                          cbSetupString);   // buffer size
+            ulReturn = 0;
+        } END_CATCH();
 
-            // always return length of string
-            ulReturn = strTemp.ulLength;
+        // manually resolve parent method
+        pfn_xwpQuerySetup2
+            = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
+                                                                _XCenter,
+                                                                "xwpQuerySetup2");
+        if (pfn_xwpQuerySetup2)
+        {
+            // now call parent method
+            if ( (pszSetupString) && (cbSetupString) )
+                // string buffer already specified:
+                // tell parent to append to that string
+                ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                               pszSetupString + ulReturn, // append to existing
+                                               cbSetupString - ulReturn); // remaining size
+            else
+                // string buffer not yet specified: return length only
+                ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
         }
-
-        xstrClear(&strTemp);
     }
-    CATCH(excpt1)
-    {
-        ulReturn = 0;
-    } END_CATCH();
-
-    // manually resolve parent method
-    pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
-                                                            _XCenter,
-                                                            "xwpQuerySetup2");
-    if (pfn_xwpQuerySetup2)
-    {
-        // now call parent method
-        if ( (pszSetupString) && (cbSetupString) )
-            // string buffer already specified:
-            // tell parent to append to that string
-            ulReturn += pfn_xwpQuerySetup2(somSelf,
-                                           pszSetupString + ulReturn, // append to existing
-                                           cbSetupString - ulReturn); // remaining size
-        else
-            // string buffer not yet specified: return length only
-            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
-    }
+    wpshUnlockObject(&Lock);
 
     return (ulReturn);
 }
@@ -3234,111 +3394,393 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
  *@@ ctrpModifyPopupMenu:
  *      implementation for XCenter::wpModifyPopupMenu.
  *
+ *      This can run on any thread.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
 BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                          HWND hwndMenu)
 {
-    XCenterData *somThis = XCenterGetData(somSelf);
     BOOL brc = TRUE;
-    MENUITEM mi;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // get handle to the "Open" submenu in the
-    // the popup menu
-    if (WinSendMsg(hwndMenu,
-                   MM_QUERYITEM,
-                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                   (MPARAM)&mi))
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        // mi.hwndSubMenu now contains "Open" submenu handle,
-        // which we add items to now
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER),
-                           "XCenter",
-                           MIS_TEXT, 0);
-    }
-
-    if (_fShowingOpenViewMenu)
-    {
-        // context menu for open XCenter client:
-        HWND    hwndWidgetsSubmenu = NULLHANDLE;
-
-        winhInsertMenuSeparator(hwndMenu,
-                                MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-        ctrpLoadClasses();
-
-        hwndWidgetsSubmenu =  winhInsertSubmenu(hwndMenu,
-                                                MIT_END,
-                                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR),
-                                                "~Add widget", // ###
-                                                MIS_TEXT,
-                                                0, NULL, 0, 0);
-        if (G_paWidgetClasses)
+        XCenterData *somThis = XCenterGetData(somSelf);
+        MENUITEM mi;
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // get handle to the "Open" submenu in the
+        // the popup menu
+        if (WinSendMsg(hwndMenu,
+                       MM_QUERYITEM,
+                       MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                       (MPARAM)&mi))
         {
-            ULONG ul = 0;
-            // insert all the classes
-            for (; ul < G_cWidgetClasses; ul++)
-            {
-                ULONG ulAttr = 0;
-
-                // should this be added?
-                if (G_paWidgetClasses[ul].ulClassFlags & WGTF_NOUSERCREATE)
-                    ulAttr |= MIA_DISABLED;
-                else
-                {
-                    // if a widget of the same class already exists
-                    // and the class doesn't allow multiple instances,
-                    // disable this menu item
-                    PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
-                    PLISTNODE pNode = lstQueryFirstNode(pllWidgetSettings);
-                    while (pNode)
-                    {
-                        PXCENTERWIDGETSETTING pSettingThis = (PXCENTERWIDGETSETTING)pNode->pItemData;
-                        if (strcmp(pSettingThis->pszWidgetClass,
-                                   G_paWidgetClasses[ul].pcszWidgetClass)
-                               == 0)
-                        {
-                            // class found:
-                            if (G_paWidgetClasses[ul].ulClassFlags & WGTF_UNIQUEPERXCENTER)
-                                ulAttr = MIA_DISABLED;
-
-                            break;
-                        }
-                        pNode = pNode->pNext;
-                    }
-                }
-
-                winhInsertMenuItem(hwndWidgetsSubmenu,
-                                   MIT_END,
-                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE + ul,
-                                   (PSZ)G_paWidgetClasses[ul].pcszClassTitle,
-                                   MIS_TEXT,
-                                   ulAttr);
-            }
+            // mi.hwndSubMenu now contains "Open" submenu handle,
+            // which we add items to now
+            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+            winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER),
+                               "XCenter",
+                               MIS_TEXT, 0);
         }
 
-        cmnAddCloseMenuItem(hwndMenu);
+        if (_fShowingOpenViewMenu)
+        {
+            // context menu for open XCenter client:
+            HWND    hwndWidgetsSubmenu = NULLHANDLE;
 
-        ctrpFreeClasses();
+            winhInsertMenuSeparator(hwndMenu,
+                                    MIT_END,
+                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+            ctrpLoadClasses();
 
-        _fShowingOpenViewMenu = FALSE;
+            hwndWidgetsSubmenu =  winhInsertSubmenu(hwndMenu,
+                                                    MIT_END,
+                                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR),
+                                                    "~Add widget", // ###
+                                                    MIS_TEXT,
+                                                    0, NULL, 0, 0);
+            if (G_paWidgetClasses)
+            {
+                ULONG ul = 0;
+                // insert all the classes
+                for (; ul < G_cWidgetClasses; ul++)
+                {
+                    ULONG ulAttr = 0;
+
+                    // should this be added?
+                    if (G_paWidgetClasses[ul].ulClassFlags & WGTF_NOUSERCREATE)
+                        ulAttr |= MIA_DISABLED;
+                    else
+                    {
+                        // if a widget of the same class already exists
+                        // and the class doesn't allow multiple instances,
+                        // disable this menu item
+                        PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+                        PLISTNODE pNode = lstQueryFirstNode(pllWidgetSettings);
+                        while (pNode)
+                        {
+                            PXCENTERWIDGETSETTING pSettingThis = (PXCENTERWIDGETSETTING)pNode->pItemData;
+                            if (strcmp(pSettingThis->pszWidgetClass,
+                                       G_paWidgetClasses[ul].pcszWidgetClass)
+                                   == 0)
+                            {
+                                // class found:
+                                if (G_paWidgetClasses[ul].ulClassFlags & WGTF_UNIQUEPERXCENTER)
+                                    ulAttr = MIA_DISABLED;
+
+                                break;
+                            }
+                            pNode = pNode->pNext;
+                        }
+                    }
+
+                    winhInsertMenuItem(hwndWidgetsSubmenu,
+                                       MIT_END,
+                                       pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE + ul,
+                                       (PSZ)G_paWidgetClasses[ul].pcszClassTitle,
+                                       MIS_TEXT,
+                                       ulAttr);
+                }
+            }
+
+            cmnAddCloseMenuItem(hwndMenu);
+
+            ctrpFreeClasses();
+
+            _fShowingOpenViewMenu = FALSE;
+        }
     }
+    wpshUnlockObject(&Lock);
 
     return (brc);
+}
+
+/*
+ *@@ ctrp_fntXCenter:
+ *      the XCenter thread. One of these gets created
+ *      by ctrpCreateXCenterView for each XCenter that
+ *      is opened and keeps running while the XCenter
+ *      is open. The XCenter frame posts WM_QUIT when
+ *      the XCenter is closed.
+ *
+ *      On input, ctrpCreateXCenterView specifies the
+ *      somSelf field in XCENTERWINDATA. Also, the USEITEM
+ *      ulView is set.
+ *
+ *      ctrpCreateXCenterView waits on XCENTERWINDATA.hevRunning
+ *      and will then expect the XCenter's frame window in
+ *      XCENTERWINDATA.Globals.hwndFrame.
+ *
+ *      This thread is created with a PM message queue.
+ *
+ *@@added V0.9.7 (2001-01-03) [umoeller]
+ */
+
+void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
+{
+    BOOL fCreated = FALSE;
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)ptiMyself->ulData;
+
+    if (pXCenterData)
+    {
+        XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+        PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+        SWP swpFrame;
+
+        TRY_LOUD(excpt1)
+        {
+            // set priority to what user wants
+            DosSetPriority(PRTYS_THREAD,
+                           _ulPriorityClass,
+                           _lPriorityDelta,
+                           0);      // current thread
+
+            pXCenterData->tidXCenter = ptiMyself->tid;
+
+            ctrpLoadClasses();
+                    // matching "unload" is in WM_DESTROY of the client
+
+            lstInit(&pXCenterData->llWidgets,
+                    FALSE);      // no auto-free
+
+            pXCenterData->Globals.pCountrySettings = &G_CountrySettings;
+            prfhQueryCountrySettings(&G_CountrySettings);
+
+            pXCenterData->cxFrame = winhQueryScreenCX();
+
+            pGlobals->cxMiniIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
+
+            pGlobals->lcol3DDark = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
+            pGlobals->lcol3DLight = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0);
+
+            // copy display style so that the widgets can see it
+            pGlobals->ulDisplayStyle = _ulDisplayStyle;
+
+            // create the XCenter frame with our special frame
+            // window class
+            memset(&swpFrame, 0, sizeof(swpFrame));
+            swpFrame.x = 0;
+            swpFrame.cx = pXCenterData->cxFrame;
+            if (_ulPosition == XCENTER_BOTTOM)
+            {
+                swpFrame.y = 0;
+                swpFrame.cy = 20;       // changed later
+            }
+            else
+            {
+                // at the top:
+                swpFrame.cy = 20;
+                swpFrame.y = winhQueryScreenCY() - swpFrame.cy;
+            }
+
+            if (_ulDisplayStyle == XCS_BUTTON)
+            {
+                // button style:
+                pGlobals->ulSpacing = WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
+            }
+            else
+                pGlobals->ulSpacing = 1;
+
+            pXCenterData->ulBorderWidth = pGlobals->ulSpacing;
+
+            pGlobals->hwndFrame
+                = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
+                                      &swpFrame,
+                                      FCF_NOBYTEALIGN,
+                                      _ulWindowStyle,   // frame style
+                                      _wpQueryTitle(pXCenterData->somSelf),
+                                      0,
+                                      WNDCLASS_XCENTER_CLIENT, // client class
+                                      WS_VISIBLE,       // client style
+                                      0,
+                                      pXCenterData,     // client control data
+                                      &pGlobals->hwndClient);
+                                            // out: client window
+
+            if ((pGlobals->hwndFrame) && (pGlobals->hwndClient))
+                // frame and client created:
+                fCreated = TRUE;
+        }
+        CATCH(excpt1) {} END_CATCH();
+
+        // in any case, post the event semaphore
+        // to notify thread 1 that we're done
+        DosPostEventSem(pXCenterData->hevRunning);
+
+        if (fCreated)
+        {
+            // successful above:
+            // protect the entire thread with the exception
+            // handler (this includes the message loop)
+            TRY_LOUD(excpt1)
+            {
+                // RECTL rclClient;
+                SWP swpClient;
+                pGlobals->hab = WinQueryAnchorBlock(pGlobals->hwndFrame);
+
+                // store win data in frame's QWL_USER
+                // (client does this in its WM_CREATE)
+                WinSetWindowPtr(pGlobals->hwndFrame,
+                                QWL_USER,
+                                pXCenterData);
+
+                // store client area;
+                // we must use WinQueryWindowPos because WinQueryWindowRect
+                // returns a 0,0,0,0 rectangle for invisible windows
+                /* WinQueryWindowRect(pGlobals->hwndClient,
+                                   &rclClient); */
+                WinQueryWindowPos(pGlobals->hwndClient, &swpClient);
+                pGlobals->cyTallestWidget = swpClient.cy;
+
+                _Pmpf((__FUNCTION__": swpClient.cx: %d, swpClient.cy: %d", swpClient.cx, swpClient.cy));
+
+                // add the use list item to the object's use list;
+                // this struct has been zeroed above
+                pXCenterData->UseItem.type    = USAGE_OPENVIEW;
+                // pXCenterData->ViewItem.view   = pXCenterData->ulView;
+                pXCenterData->ViewItem.handle = pGlobals->hwndFrame;
+                if (!_wpAddToObjUseList(pXCenterData->somSelf,
+                                        &(pXCenterData->UseItem)))
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "_wpAddToObjUseList failed.");
+
+                _wpRegisterView(pXCenterData->somSelf,
+                                pGlobals->hwndFrame,
+                                "XCenter"); // view title
+
+                // subclass the frame AGAIN (the WPS has subclassed it
+                // with wpRegisterView)
+                pXCenterData->pfnwpFrameOrig = WinSubclassWindow(pGlobals->hwndFrame,
+                                                                 fnwpXCenterMainFrame);
+                if (pXCenterData->pfnwpFrameOrig)
+                {
+                    QMSG qmsg;
+
+                    // subclassing succeeded:
+                    CreateWidgets(pXCenterData);
+                            // this sets the frame's size, invisibly
+
+                    // register tooltip class
+                    ctlRegisterTooltip(pGlobals->hab);
+                    // create tooltip window
+                    pXCenterData->hwndTooltip
+                            = WinCreateWindow(HWND_DESKTOP,  // parent
+                                              COMCTL_TOOLTIP_CLASS, // wnd class
+                                              "",            // window text
+                                              XWP_TOOLTIP_STYLE,
+                                                   // tooltip window style (common.h)
+                                              10, 10, 10, 10,    // window pos and size, ignored
+                                              pGlobals->hwndClient,
+                                                        // owner window -- important!
+                                              HWND_TOP,      // hwndInsertBehind, ignored
+                                              ID_XCENTER_TOOLTIP, // window ID, optional
+                                              NULL,          // control data
+                                              NULL);         // presparams
+                                    // destroyed in WM_DESTROY of client
+
+                    if (!pXCenterData->hwndTooltip)
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Cannot create tooltip.");
+                    else
+                    {
+                        // tooltip successfully created:
+                        // add tools (i.e. widgets)
+                        // according to the class flags
+                        PLISTNODE pNode;
+                        TOOLINFO    ti = {0};
+                        if (_ulPosition == XCENTER_BOTTOM)
+                            ti.ulFlags = TTF_CENTERABOVE | TTF_SUBCLASS;
+                        else
+                            ti.ulFlags = TTF_CENTERBELOW | TTF_SUBCLASS;
+                        ti.hwndToolOwner = pGlobals->hwndClient;
+                        ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
+
+                        // go thru all widgets and add them as tools
+                        pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
+                        while (pNode)
+                        {
+                            PWIDGETVIEWSTATE pWidgetThis = (PWIDGETVIEWSTATE)pNode->pItemData;
+                            if (pWidgetThis->Widget.ulClassFlags & WGTF_TOOLTIP)
+                            {
+                                // add tool to tooltip control
+                                ti.hwndTool = pWidgetThis->Widget.hwndWidget;
+                                WinSendMsg(pXCenterData->hwndTooltip,
+                                           TTM_ADDTOOL,
+                                           (MPARAM)0,
+                                           &ti);
+                            }
+                            pNode = pNode->pNext;
+                        }
+
+                        // set timers
+                        WinSendMsg(pXCenterData->hwndTooltip,
+                                   TTM_SETDELAYTIME,
+                                   (MPARAM)TTDT_AUTOPOP,
+                                   (MPARAM)(40*1000));        // 40 secs for autopop (hide)
+                    }
+
+                    if (_ulWindowStyle & WS_ANIMATE)
+                    {
+                        // user wants animation:
+                        // start timer on the frame which will unfold
+                        // the XCenter from the left by repositioning it
+                        // with each timer tick... when this is done,
+                        // the next timer(s) will be started automatically
+                        // until the frame is fully showing
+                        tmrStartTimer(pGlobals->hwndFrame,
+                                      TIMERID_UNFOLDFRAME,
+                                      50);
+                    }
+                    else
+                    {
+                        // no animation:
+                        ctrpReformat(pXCenterData,
+                                     XFMF_RECALCHEIGHT
+                                       | XFMF_REPOSITIONWIDGETS
+                                       | XFMF_SHOWWIDGETS);
+                                // frame is still hidden
+
+                        WinSetWindowPos(pGlobals->hwndFrame,
+                                        HWND_TOP,
+                                        0,
+                                        pXCenterData->yFrame,
+                                        pXCenterData->cxFrame,
+                                        pXCenterData->cyFrame,
+                                        SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
+                    }
+
+                    // now enter the message loop;
+                    // fnwpXCenterMainFrame posts WM_QUIT on destroy
+                    while (WinGetMsg(ptiMyself->hab, &qmsg, NULLHANDLE, 0, 0))
+                        // loop until WM_QUIT
+                        WinDispatchMsg(ptiMyself->hab, &qmsg);
+
+                } // end if (pXCenterData->pfnwpFrameOrig)
+            }
+            CATCH(excpt1) {} END_CATCH();
+
+        } // end if (fCreated)
+    } // if (pXCenterData)
+
+    // free(pXCenterOpenStruct);
 }
 
 /*
  *@@ ctrpCreateXCenterView:
  *      creates a new XCenter view on the screen.
  *      This is the implementation for XCenter::wpOpen.
+ *
+ *      To be precise, this starts a new thread for the
+ *      XCenter view, since we want to allow the user to
+ *      specify the XCenter's priority.
  */
 
 HWND ctrpCreateXCenterView(XCenter *somSelf,
                            HAB hab,             // in: caller's anchor block
-                           ULONG ulView)        // in: view (from wpOpen)
+                           ULONG ulView,        // in: view (from wpOpen)
+                           PVOID *ppvOpenView)  // out: ptr to PXCENTERWINDATA
 {
     XCenterData *somThis = XCenterGetData(somSelf);
     HWND hwndFrame = NULLHANDLE;
@@ -3369,163 +3811,38 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                 (PXCENTERWINDATA)_wpAllocMem(somSelf,
                                              sizeof(XCENTERWINDATA),
                                              NULL);
-
             if (pXCenterData)
             {
-                SWP swpFrame;
-                PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+                BOOL fRunning = FALSE;
                 memset(pXCenterData, 0, sizeof(*pXCenterData));
+
                 pXCenterData->cbSize = sizeof(*pXCenterData);
 
                 pXCenterData->somSelf = somSelf;
+                // pXCenterData->hab = hab;
+                pXCenterData->ViewItem.view = ulView;
 
-                ctrpLoadClasses();
-                        // matching "unload" is in WM_DESTROY of the client
-
-                lstInit(&pXCenterData->llWidgets,
-                        FALSE);      // no auto-free
-
-                pXCenterData->Globals.pCountrySettings = &G_CountrySettings;
-                prfhQueryCountrySettings(&G_CountrySettings);
-
-                pXCenterData->cxFrame = winhQueryScreenCX();
-
-                pGlobals->cxMiniIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
-
-                pGlobals->lcol3DDark = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
-                pGlobals->lcol3DLight = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0);
-
-                // copy display style so that the widgets can see it
-                pGlobals->ulDisplayStyle = _ulDisplayStyle;
-
-                // create the XCenter frame with our special frame
-                // window class
-                memset(&swpFrame, 0, sizeof(swpFrame));
-                swpFrame.x = 0;
-                swpFrame.cx = pXCenterData->cxFrame;
-                if (_ulPosition == XCENTER_BOTTOM)
+                DosCreateEventSem(NULL,     // unnamed
+                                  &pXCenterData->hevRunning,
+                                  0,        // unshared
+                                  FALSE);   // not posted
+                if (thrCreate(NULL,
+                              ctrp_fntXCenter,
+                              &fRunning,
+                              THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
+                              (ULONG)pXCenterData))
                 {
-                    swpFrame.y = 0;
-                    swpFrame.cy = 20;       // changed later
-                }
-                else
-                {
-                    // at the top:
-                    swpFrame.cy = 20;
-                    swpFrame.y = winhQueryScreenCY() - swpFrame.cy;
+                    // thread created:
+                    // wait until it's created the XCenter frame
+                    WinWaitEventSem(pXCenterData->hevRunning,
+                                    10*1000);
+                    hwndFrame = pXCenterData->Globals.hwndFrame;
+                    if (hwndFrame)
+                       *ppvOpenView = pXCenterData;
                 }
 
-                if (_ulDisplayStyle == XCS_BUTTON)
-                {
-                    // button style:
-                    pGlobals->ulSpacing = WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
-                }
-                else
-                    pGlobals->ulSpacing = 1;
-                pXCenterData->ulBorderWidth = pGlobals->ulSpacing;
-
-                hwndFrame = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
-                                                &swpFrame,
-                                                FCF_NOBYTEALIGN,
-                                                _ulWindowStyle,   // frame style
-                                                _wpQueryTitle(somSelf),
-                                                0,
-                                                WNDCLASS_XCENTER_CLIENT, // client class
-                                                WS_VISIBLE,       // client style
-                                                0,
-                                                pXCenterData,     // client control data
-                                                &pGlobals->hwndClient);
-                                                      // out: client window
-
-                if ((hwndFrame) && (pGlobals->hwndClient))
-                {
-                    // frame and client created:
-                    // RECTL rclClient;
-                    SWP swpClient;
-                    pGlobals->hab = WinQueryAnchorBlock(hwndFrame);
-                    pGlobals->hwndFrame = hwndFrame;
-
-                    // store win data in frame's QWL_USER
-                    // (client does this in its WM_CREATE)
-                    WinSetWindowPtr(hwndFrame, QWL_USER, pXCenterData);
-
-                    // store client area;
-                    // we must use WinQueryWindowPos because WinQueryWindowRect
-                    // returns a 0,0,0,0 rectangle for invisible windows
-                    /* WinQueryWindowRect(pGlobals->hwndClient,
-                                       &rclClient); */
-                    WinQueryWindowPos(pGlobals->hwndClient, &swpClient);
-                    pGlobals->cyTallestWidget = swpClient.cy;
-
-                    _Pmpf((__FUNCTION__": swpClient.cx: %d, swpClient.cy: %d", swpClient.cx, swpClient.cy));
-
-                    // add the use list item to the object's use list;
-                    // this struct has been zeroed above
-                    pXCenterData->UseItem.type    = USAGE_OPENVIEW;
-                    pXCenterData->ViewItem.view   = ulView;
-                    pXCenterData->ViewItem.handle = hwndFrame;
-                    if (!_wpAddToObjUseList(somSelf, &(pXCenterData->UseItem)))
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "_wpAddToObjUseList failed.");
-
-                    _wpRegisterView(somSelf,
-                                    hwndFrame,
-                                    "XCenter"); // view title
-
-                    // subclass the frame AGAIN (the WPS has subclassed it
-                    // with wpRegisterView)
-                    pXCenterData->pfnwpFrameOrig = WinSubclassWindow(hwndFrame,
-                                                                     fnwpXCenterMainFrame);
-                    if (pXCenterData->pfnwpFrameOrig)
-                    {
-                        // subclassing succeeded:
-                        CreateWidgets(pXCenterData);
-                                // this sets the frame's size, invisibly
-
-                        if (_ulWindowStyle & WS_ANIMATE)
-                        {
-                            // user wants animation:
-                            // start timer on the frame which will unfold
-                            // the XCenter from the left by repositioning it
-                            // with each timer tick... when this is done,
-                            // the next timer(s) will be started automatically
-                            // until the frame is fully showing
-                            tmrStartTimer(hwndFrame,
-                                          TIMERID_UNFOLDFRAME,
-                                          50);
-                        }
-                        else
-                        {
-                            // no animation:
-                            /* ReformatWidgets(pXCenterData,
-                                            TRUE,           // show widgets
-                                            FALSE);         // no reget widget sizes,
-                                                            // CreateWidgets has done that
-                                */
-                            ctrpReformat(pXCenterData,
-                                         XFMF_RECALCHEIGHT
-                                           | XFMF_REPOSITIONWIDGETS
-                                           | XFMF_SHOWWIDGETS);
-                                    // frame is still hidden
-
-                            WinSetWindowPos(hwndFrame,
-                                            HWND_TOP,
-                                            0,
-                                            pXCenterData->yFrame,
-                                            pXCenterData->cxFrame,
-                                            pXCenterData->cyFrame,
-                                            SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
-                        }
-                    }
-                } // end if (hwndFrame)
-                else
-                {
-                    // window creation failed:
-                    // clean up
-                    // free(pXCenterData);
-                    // ctrpFreeClasses();
-                }
-            } // if (pXCenterData)
+                DosCloseEventSem(pXCenterData->hevRunning);
+            }
         } // end if (G_fXCenterClassRegistered)
     }
     CATCH(excpt1) {} END_CATCH();

@@ -129,10 +129,10 @@ MYOWNINC = $(INC)\shared
 
 $(OUTPUTDIR)\center.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\linklist.h  $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\timer.h \
+    $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\timer.h \
     $(INC)\classes\xcenter.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h \
+    $(INC)\shared\common.h $(INC)\shared\wpsh.h \
     $(INC)\xcenter\centerp.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

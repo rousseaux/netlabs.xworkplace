@@ -88,6 +88,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
@@ -99,6 +100,8 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
+
+#include "shared\center.h"              // public XCenter interfaces
 
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fileops.h"            // file operations implementation
@@ -398,6 +401,86 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpAddDestroyNotify:
+ *      adds a window handle to the object's internal
+ *      destroy-notify list.
+ *
+ *      When the object is destroyed for any reason
+ *      (i.e. when it is deleted or made dormant), the
+ *      specified HWND is posted (!) a WM_CONTROL message
+ *      with the XN_OBJECTDESTROYED notify code.
+ *
+ *      Any XCenter widget that uses an object pointer
+ *      internally (such as the built-in object button
+ *      widget) should use this method to destroy itself
+ *      when its related object gets destroyed.
+ *
+ *      Use XFldObject::xwpRemoveDestroyNotify to remove
+ *      the notification again... e.g. when the widget
+ *      itself is destroyed.
+ *
+ *@@added V0.9.7 (2001-01-03) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_xwpAddDestroyNotify(XFldObject *somSelf,
+                                                  HWND hwnd)
+{
+    BOOL    brc = FALSE;
+    WPSHLOCKSTRUCT Lock;
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpAddDestroyNotify");
+
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        PLINKLIST pllNotifies = NULL;
+        if (_pvllWidgetNotifies == NULL)
+            // list not created yet: do it now
+            _pvllWidgetNotifies = lstCreate(FALSE);     // no auto-free
+
+        pllNotifies = (PLINKLIST)_pvllWidgetNotifies;
+        if (pllNotifies)
+        {
+            lstAppendItem(pllNotifies, (PVOID)hwnd);
+        }
+
+        brc = TRUE;
+    }
+    wpshUnlockObject(&Lock);
+
+    return (brc);
+}
+
+/*
+ *@@ xwpRemoveDestroyNotify:
+ *      the reverse to XFldObject::AddWidgetNotify.
+ *
+ *@@added V0.9.7 (2001-01-03) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
+                                                     HWND hwnd)
+{
+    BOOL    brc = FALSE;
+    WPSHLOCKSTRUCT Lock;
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpRemoveDestroyNotify");
+
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        PLINKLIST pllNotifies = (PLINKLIST)_pvllWidgetNotifies;
+        if (pllNotifies)
+        {
+            lstRemoveItem(pllNotifies, (PVOID)hwnd);
+        }
+
+        brc = TRUE;
+    }
+    wpshUnlockObject(&Lock);
+
+    return (brc);
+}
+
+/*
  *@@ xwpQueryObjectHotkey:
  *      this returns the global object hotkey which has been defined
  *      to be monitored for in the XWorkplace hook.
@@ -650,6 +733,8 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     _pTrashObject = NULL;
 
     _ulListNotify = 0;
+
+    _pvllWidgetNotifies = NULL;
 }
 
 /*
@@ -747,6 +832,8 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
         _ulListNotify = 0;
             // V0.9.7 (2000-12-18) [umoeller]
+
+        _pvllWidgetNotifies = NULL;
     }
 
     // on my Warp 4 FP 10, this method does not get
@@ -805,6 +892,25 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
         // invalidate the content lists for the config
         // folders so that they will be rebuilt
         mnuInvalidateConfigCache();
+    }
+
+    if (_pvllWidgetNotifies)
+    {
+        // we have windows that requested notifications:
+        // go thru list
+        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
+        while (pNode)
+        {
+            HWND hwnd = (HWND)pNode->pItemData;
+            WinPostMsg(hwnd,
+                       WM_CONTROL,
+                       MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                    XN_OBJECTDESTROYED),
+                       (MPARAM)somSelf);
+            pNode = pNode->pNext;
+        }
+
+        lstFree(_pvllWidgetNotifies);
     }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);

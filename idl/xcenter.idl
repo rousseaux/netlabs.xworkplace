@@ -58,6 +58,9 @@ interface XCenter : WPAbstract
     BOOL xwpMoveWidget(in ULONG ulIndex2Move,
                        in ULONG ulBeforeIndex);
 
+    BOOL xwpSetPriority(in ULONG ulClass,
+                        in LONG lDelta);
+
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
                          in ULONG cbSetupString);
 
@@ -70,6 +73,7 @@ interface XCenter : WPAbstract
                   xwpInsertWidget,
                   xwpRemoveWidget,
                   xwpMoveWidget,
+                  xwpSetPriority,
                   xwpQuerySetup2;
 
     /*
@@ -103,10 +107,15 @@ interface XCenter : WPAbstract
     ULONG ulDisplayStyle;           // 0 = button (XCS_BUTTON)
                                     // 1 = flat (XCS_FLAT)
 
+    ULONG ulPriorityClass;          // XCenter priority class
+    LONG lPriorityDelta;            // XCenter priority delta
+
     BOOL fHelpDisplayed;            // TRUE after the first open of the XCenter,
                                     // when introductory help has been displayed.
 
-    HWND hwndOpenView;              // if != NULLHANDLE, currently open XCenter view
+    PVOID pvOpenView;               // if != NULLHANDLE, XCenter is currently open,
+                                    // and this has a PXCENTERWINDATA pointer
+                                    // which contains all the view data...
 
     BOOL fShowingOpenViewMenu;      // TRUE if context menu on XCenter client
 

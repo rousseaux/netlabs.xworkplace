@@ -232,6 +232,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
@@ -243,6 +244,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
@@ -497,8 +499,7 @@ VOID DwgtContextMenu(HWND hwnd)
         PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
         if (pXCenterData)
         {
-            PXCENTERWIDGETCLASS pClass = ctrpFindClass(pXCenterData->somSelf,
-                                                       pWidget->pcszWidgetClass);
+            PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
             if (pClass)
             {
                 POINTL  ptl;
@@ -568,7 +569,6 @@ VOID DwgtCommand(HWND hwnd,
     {
         HWND hwndClient = pWidget->pGlobals->hwndClient;
         PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-        ULONG ulMyIndex = -1;
         if (pWidget)
         {
             switch (usCmd)
@@ -606,11 +606,12 @@ VOID DwgtCommand(HWND hwnd,
                 break;
 
                 case ID_CRMI_REMOVEWGT:
-                    ulMyIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                             hwnd);
+                {
+                    ULONG ulMyIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                                   hwnd);
                     _xwpRemoveWidget(pXCenterData->somSelf,
                                      ulMyIndex);
-                break;
+                break; }
             }
         }
     }
@@ -630,43 +631,52 @@ VOID DwgtDestroy(HWND hwnd)
         PXCENTERWINDATA pXCenterData
             = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
                                                  QWL_USER);
-
-        // stop all running timers
-        tmrStopAllTimers(hwnd);
-
         if (pXCenterData)
         {
-            // remove the widget from the list of open
-            // views in the XCenter... the problem here
-            // is that we only see the XCENTERWIDGET
-            // struct, which is really part of the
-            // WIDGETVIEWSTATE structure in the llWidgets
-            // list... so XCENTERWIDGET must be the first
-            // member of the WIDGETVIEWSTATE structure!
-            if (!lstRemoveItem(&pXCenterData->llWidgets,
-                               pWidget))
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "lstRemoveItem failed.");
+            WPSHLOCKSTRUCT Lock;
+            if (wpshLockObject(&Lock, pXCenterData->somSelf))
+            {
+                // stop all running timers
+                tmrStopAllTimers(hwnd);
+
+                if (pXCenterData)
+                {
+                    // remove the widget from the list of open
+                    // views in the XCenter... the problem here
+                    // is that we only see the XCENTERWIDGET
+                    // struct, which is really part of the
+                    // WIDGETVIEWSTATE structure in the llWidgets
+                    // list... so XCENTERWIDGET must be the first
+                    // member of the WIDGETVIEWSTATE structure!
+                    if (!lstRemoveItem(&pXCenterData->llWidgets,
+                                       pWidget))
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "lstRemoveItem failed.");
+                }
+
+                if (pWidget->pcszWidgetClass)
+                {
+                    free((PSZ)pWidget->pcszWidgetClass);
+                    pWidget->pcszWidgetClass = NULL;
+                }
+
+                if (pWidget->hwndContextMenu)
+                {
+                    WinDestroyWindow(pWidget->hwndContextMenu);
+                    pWidget->hwndContextMenu = NULLHANDLE;
+                }
+
+                free(pWidget);
+                WinSetWindowPtr(hwnd, QWL_USER, 0);
+
+                WinPostMsg(hwndClient,
+                           XCM_REFORMAT,
+                           (MPARAM)XFMF_REPOSITIONWIDGETS,
+                           0);
+            }
+
+            wpshUnlockObject(&Lock);
         }
-
-        if (pWidget->pcszWidgetClass)
-        {
-            free((PSZ)pWidget->pcszWidgetClass);
-            pWidget->pcszWidgetClass = NULL;
-        }
-
-        if (pWidget->hwndContextMenu)
-        {
-            WinDestroyWindow(pWidget->hwndContextMenu);
-            pWidget->hwndContextMenu = NULLHANDLE;
-        }
-
-        free(pWidget);
-        WinSetWindowPtr(hwnd, QWL_USER, 0);
-
-        WinPostMsg(hwndClient,
-                   XCM_REFORMATALL,
-                   0, 0);
     }
 }
 

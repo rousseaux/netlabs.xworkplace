@@ -88,6 +88,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "shared\center.h"              // public XCenter interfaces
+
 #include "xcenter\centerp.h"            // private XCenter implementation
 
 // other SOM headers
@@ -287,6 +288,25 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
 }
 
 /*
+ *@@ xwpSetPriority:
+ *      sets a new priority for the XCenter view.
+ *      ulClass and lDelta are used as with DosSetPriority.
+ *      An open XCenter thread is updated.
+ *
+ *@@added V0.9.7 (2001-01-03) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
+                                            ULONG ulClass, long lDelta)
+{
+    BOOL brc = FALSE;
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpSetPriority");
+
+    return (ctrpSetPriority(somSelf, ulClass, lDelta));
+}
+
+/*
  *@@ xwpQuerySetup2:
  *      this XFldObject method is overridden to support
  *      setup strings for folders.
@@ -329,9 +349,12 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 
     _ulDisplayStyle = XCS_BUTTON;
 
+    _ulPriorityClass = PRTYC_REGULAR;
+    _lPriorityDelta = PRTYD_MINIMUM;
+
     _fHelpDisplayed = FALSE;
 
-    _hwndOpenView = NULLHANDLE;
+    _pvOpenView = NULL;
 
     _fShowingOpenViewMenu = FALSE;
 
@@ -481,6 +504,16 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
                         (PSZ)G_pcszXCenter,
                         5,
                         _fHelpDisplayed);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        6,
+                        _ulPriorityClass);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        7,
+                        _lPriorityDelta);
         }
     }
     CATCH(excpt1)
@@ -590,6 +623,18 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                5,
                                &ul))
                 _fHelpDisplayed = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               6,
+                               &ul))
+                _ulPriorityClass = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               7,
+                               &ul))
+                _lPriorityDelta = ul;
         }
     }
     CATCH(excpt1)
@@ -701,14 +746,14 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                                     ULONG ulView,
                                     ULONG param)
 {
-    HWND    hwndNewView = 0;
+    HWND    hwndNewView = NULLHANDLE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpOpen");
 
     if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER))
     {
-        if (!_hwndOpenView)
+        if (!_pvOpenView)
         {
             // no open view yet (just make sure!)
             HAB hab;
@@ -718,10 +763,9 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                 hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
             hwndNewView = ctrpCreateXCenterView(somSelf,
                                                 hab,
-                                                ulView);
-            // store in instance data
-            _hwndOpenView = hwndNewView;
-
+                                                ulView,
+                                                // store in instance data
+                                                &_pvOpenView);
             if (!_fHelpDisplayed)
             {
                 ULONG ulPanel = 0;
@@ -788,8 +832,10 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
                 // the WPS normally does), show the frame on top
                 // and restart the update timer
                 // DO NOT GIVE FOCUS, DO NOT ACTIVATE
-                ctrpReformatHWND(pViewItem->handle,
-                                 XFMF_RESURFACE);
+                WinPostMsg(pViewItem->handle,
+                           XCM_REFORMAT,
+                           (MPARAM)XFMF_RESURFACE,
+                           0);
                 brc = TRUE;
                 break;
             }

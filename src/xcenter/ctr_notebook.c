@@ -41,6 +41,7 @@
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINSTDCNR
+#define INCL_WINSTDSLIDER
 #include <os2.h>
 
 // C library headers
@@ -92,6 +93,8 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
+        HWND hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW_PRTY_SLIDER);
+
         // make backup of instance data
         if (pcnbp->pUser == NULL)
         {
@@ -105,10 +108,19 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // store in noteboot struct
             pcnbp->pUser = pBackup;
         }
+
+        winhSetSliderTicks(hwndSlider,
+                           0,
+                           3);      // three pixels high
+        winhSetSliderTicks(hwndSlider,
+                           MPFROM2SHORT(9, 10),
+                           6);      // six pixels high
     }
 
     if (flFlags & CBI_SET)
     {
+        HWND hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW_PRTY_SLIDER);
+
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ALWAYSONTOP,
                               ((_ulWindowStyle & WS_TOPMOST) != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ANIMATE,
@@ -126,6 +138,13 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         else
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BUTTONSTYLE, TRUE);
 
+        winhSetSliderArmPosition(hwndSlider,
+                                 SMA_INCREMENTVALUE,
+                                 _lPriorityDelta);
+        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                           ID_CRDI_VIEW_PRTY_TEXT,
+                           _lPriorityDelta,
+                           FALSE);      // unsigned
     }
 
     if (flFlags & CBI_ENABLE)
@@ -197,6 +216,20 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 _ulAutoHide = 0;
         break;
 
+        case ID_CRDI_VIEW_PRTY_SLIDER:
+        {
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                               ID_CRDI_VIEW_PRTY_TEXT,
+                               lSliderIndex,
+                               FALSE);      // unsigned
+            // _lPriorityDelta = lSliderIndex;
+            _xwpSetPriority(pcnbp->somSelf,
+                            _ulPriorityClass,        // unchanged
+                            lSliderIndex);
+        break; }
+
         case DID_DEFAULT:
             _ulPosition = XCENTER_BOTTOM;
             _ulWindowStyle = WS_TOPMOST | WS_ANIMATE;
@@ -223,12 +256,15 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         _wpSaveDeferred(pcnbp->somSelf);
 
-        if (_hwndOpenView)
+        if (_pvOpenView)
         {
             // view is currently open:
-            PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-            ctrpReformat(pXCenterData,
-                         ulUpdateFlags);
+            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+            // this can be on a different thread, so post msg
+            WinPostMsg(pXCenterData->Globals.hwndClient,
+                       XCM_REFORMAT,
+                       (MPARAM)ulUpdateFlags,
+                       0);
         }
     }
 

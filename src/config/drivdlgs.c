@@ -2027,13 +2027,11 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                 // tooltip successfully created:
                 // add tools (i.e. controls of the dialog)
                 // according to the usToolIDs array
-                TOOLINFO    ti;
+                TOOLINFO    ti = {0};
                 HWND        hwndCtl;
-                ti.cbSize = sizeof(TOOLINFO);
-                ti.uFlags = TTF_IDISHWND | TTF_CENTERTIP | TTF_SUBCLASS;
-                ti.hwnd = hwndDlg;
-                ti.hinst = NULLHANDLE;
-                ti.lpszText = LPSTR_TEXTCALLBACK;  // send TTN_NEEDTEXT
+                ti.ulFlags = TTF_CENTERBELOW | TTF_SUBCLASS;
+                ti.hwndToolOwner = hwndDlg;
+                ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 for (ul = 0;
                      ul < (sizeof(usS506ToolIDs) / sizeof(usS506ToolIDs[0]));
                      ul++)
@@ -2042,7 +2040,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     if (hwndCtl)
                     {
                         // add tool to tooltip control
-                        ti.uId = hwndCtl;
+                        ti.hwndTool = hwndCtl;
                         WinSendMsg(pS506All->hwndTooltip,
                                    TTM_ADDTOOL,
                                    (MPARAM)0,
@@ -2142,7 +2140,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         const char* pszMessageFile = cmnQueryMessageFile();
 
                         // get control ID; we need that for the TMF msg ID
-                        ULONG   ulID = WinQueryWindowUShort(pttt->hdr.idFrom,
+                        ULONG   ulID = WinQueryWindowUShort(pttt->hwndTool,
                                                             QWS_ID);
                         ULONG   ulWritten = 0;
                         APIRET  arc = 0;
@@ -2170,7 +2168,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                                                   "tmfGetMessage rc: %d",
                                                   szMessageID,
                                                   pszMessageFile,
-                                                  pttt->hdr.idFrom,
+                                                  pttt->hwndTool,
                                                   ulID,
                                                   arc);
                         }
@@ -2190,7 +2188,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         }
                         xstrcat(&pS506All->strTooltipString, szHelpString);
 
-                        pttt->lpszText = pS506All->strTooltipString.psz;
+                        pttt->ulFormat = TTFMT_PSZ;
+                        pttt->pszText = pS506All->strTooltipString.psz;
                     }
                 break;
 

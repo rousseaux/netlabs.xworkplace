@@ -1451,6 +1451,8 @@ BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passe
  *      written into that pointer as a SOM pointer to the
  *      object.
  *
+ *      This does NOT resolve shadows.
+ *
  *      Returns:
  *      -- 0: invalid object or mechanism not supported.
  *      -- 1: DRM_OBJECT mechanism, *ppObject is valid.
