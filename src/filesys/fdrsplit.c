@@ -564,10 +564,12 @@ VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
 #ifdef __DEBUG__
 VOID DumpFlags(ULONG fl)
 {
-    PMPF_POPULATESPLITVIEW(("  fl %s %s %s",
+    PMPF_POPULATESPLITVIEW(("  fl %s %s %s %s %s",
                 (fl & FFL_FOLDERSONLY) ? "FFL_FOLDERSONLY " : "",
                 (fl & FFL_SCROLLTO) ? "FFL_SCROLLTO " : "",
-                (fl & FFL_EXPAND) ? "FFL_EXPAND " : ""));
+                (fl & FFL_EXPAND) ? "FFL_EXPAND " : "",
+                (fl & FFL_SETBACKGROUND) ? "FFL_SETBACKGROUND " : ""
+              ));
 }
 #else
     #define DumpFlags(fl)
@@ -1077,9 +1079,8 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
              *
              *      --  If FFL_FOLDERSONLY is set, this operates
              *          in "folders only" mode. We will then
-             *          populate the folder with subfolders only
-             *          and expand the folder on the left. The
-             *          files list is not changed.
+             *          populate the folder with subfolders only.
+             *          The files list is not changed.
              *
              *          If the flag is not set, the folder is
              *          fully populated and the files list is
@@ -1090,7 +1091,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
              *          becomes visible.
              *
              *      --  If FFL_EXPAND is set, we will also expand
-             *          the record in the drives tree after
+             *          the record in the tree after
              *          populate and run "add first child" for
              *          each subrecord that was inserted.
              *
@@ -1530,7 +1531,17 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
          * CN_EXPANDTREE:
          *      user clicked on "+" sign next to
          *      tree item; expand that, but start
-         *      "add first child" thread again
+         *      "add first child" thread again.
+         *
+         *      Since a record is automatically selected
+         *      also when it is expanded, we get both
+         *      CN_EXPANDTREE and CN_EMPHASIS, where
+         *      CN_EXPANDTREE comes in first, from my testing.
+         *      So what we do here is only mark this record
+         *      as the one being expanded so that WM_TIMER
+         *      can react accordingly (in response to the
+         *      CN_EMPHASIS that comes in then).
+         *      V0.9.21 (2002-09-13) [umoeller]
          */
 
         case CN_EXPANDTREE:
@@ -1544,9 +1555,13 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
                 PMPF_POPULATESPLITVIEW(("CN_EXPANDTREE %s",
                         prec->pszIcon));
 
+                /*  disabled V0.9.21 (2002-09-13) [umoeller]
                 fdrPostFillFolder(psv,
                                   prec,
                                   FFL_FOLDERSONLY | FFL_EXPAND);
+                */
+
+                psv->precTreeExpanded = prec;
 
                 // and call default because xfolder
                 // handles auto-scroll
@@ -1694,21 +1709,35 @@ STATIC MRESULT EXPENTRY fnwpTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
                     // keep the timer running and do nothing.
                     if (!psv->precFolderPopulating)
                     {
-                        // not currently populating:
                         // then stop the timer
                         WinStopTimer(psv->habGUI,
                                      hwndFrame,
                                      1);
 
-                        PMPF_POPULATESPLITVIEW(("posting FM_FILLFOLDER"));
+                        // fire populate twice:
 
-                        // and fire populate
+                        // 1) full populate for the files cnr
+                        PMPF_POPULATESPLITVIEW(("posting FM_FILLFOLDER for files cnr"));
                         fdrPostFillFolder(psv,
                                           psv->precFolderToPopulate,
                                           FFL_SETBACKGROUND);
 
+                        if (psv->precFolderToPopulate == psv->precTreeExpanded)
+                        {
+                            // 2) this record was also expanded: fire another
+                            //    populate so that the grandchildren get added
+                            //    to the tree
+                            PMPF_POPULATESPLITVIEW(("posting second FM_FILLFOLDER for expanding tree"));
+                            fdrPostFillFolder(psv,
+                                              psv->precFolderToPopulate,
+                                              FFL_FOLDERSONLY | FFL_SCROLLTO | FFL_EXPAND);
+                        }
+
                         psv->precFolderToPopulate = NULL;
                     }
+
+                    // reset "expanded" flag
+                    psv->precTreeExpanded = NULL;
                 }
             break;
 

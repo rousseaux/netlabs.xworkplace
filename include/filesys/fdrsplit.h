@@ -40,10 +40,10 @@
     #define ID_FILESFRAME           1002
 
     #define FM_FILLFOLDER           (WM_USER + 1)
-        #define FFL_FOLDERSONLY         0x0001
-        #define FFL_SCROLLTO            0x0002
-        #define FFL_EXPAND              0x0004
-        #define FFL_SETBACKGROUND       0x0008
+        #define FFL_FOLDERSONLY             0x0001
+        #define FFL_SCROLLTO                0x0002
+        #define FFL_EXPAND                  0x0004
+        #define FFL_SETBACKGROUND           0x0008
 
     #define FM_POPULATED_FILLTREE   (WM_USER + 2)
     #define FM_POPULATED_SCROLLTO   (WM_USER + 3)
@@ -120,6 +120,9 @@
                             precTreeSelected,
                                 // record that is currently selected
                                 // in the tree on the left
+                            precTreeExpanded,
+                                // != NULL if the user not only selected
+                                // a record, but expanded it as well
                             precFilesShowing;
                                 // record whose contents are currently
                                 // showing in the files cnr on the right;
