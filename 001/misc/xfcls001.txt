@@ -261,16 +261,6 @@ XWPSound 1 This is the XWorkplace replacement class for WPSound which implements
 XWPKeyboard 1 This is the XWorkplace replacement class for WPKeyboard. This is required for inserting the new XWorkplace settings pages into the "Keyboard" object.
 XWPMouse 1 This is the XWorkplace replacement class for WPMouse. This is required for inserting the new XWorkplace settings pages into the "Mouse" object.
 
-LSPeerUser 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
-LSPeerWorkstation 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
-PRDisk 1 Undocumented peer networking class. This is included with the networking functionality of Warp 4 and replaces WPDisk, apparently to add networking functionality to disk objects.
-LSDisk 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to implement network drives. This is no WPDisk replacement however.
-PRPrinter 1 Undocumented peer networking class. This is included with the networking functionality of Warp 4 and replaces WPPrinter, apparently to add networking functionality to printer objects.
-LSPrinter 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to implement network printers. This is no WPPrinter replacement however.
-LSDataFile 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4. I have no idea what this class does, since it is not a WPDataFile replacement.
-PRDirectory 1 Undocumented peer networking class. This is included with the networking functionality of Warp 4 and replaces WPFolder, apparently to add networking functionality to folders. Judging from the overridden methods, I guess this allows for giving other users access to a local directory when a peer network is currently active.
-LSDirectory 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to implement network folders. This is no WPFolder replacement however.
-
 IWFProject 1 "Project" class of IBM Workframe/2 (as it comes with Visual Age C++ 3.0). Strangely, this is a subclass of WPFileSystem directly, even though this appears to be created as a directory.
 IWFQuickStart 1 "Project Smarts" folder in the IBM Visual Age C++ 3.0 folder. Strangely, this is a subclass of WPFileSystem directly, even though this appears to be created as a directory.
 IWFRouter 1 Some class for the IBM Workframe/2 (as it comes with Visual Age C++ 3.0).
@@ -278,6 +268,16 @@ IWFRouter 1 Some class for the IBM Workframe/2 (as it comes with Visual Age C++ 
 // Items changed with V0.9.1
 
 UnknownClass 0 No information available for this class. If you know what this class is about, please post a description to xworkplace-user@egroups.com so a class description can be added.
+
+LSPeerUser 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
+LSPeerWorkstation 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
+PRDisk 1 Undocumented peer networking class. This is included with the networking functionality of Warp 4 and replaces WPDisk, apparently to add networking functionality to disk objects.
+LSDisk 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to implement network drives.
+PRPrinter 1 Undocumented peer networking class. This is included with the networking functionality of Warp 4 and replaces WPPrinter, apparently to add networking functionality to printer objects.
+LSPrinter 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to implement network printers.
+LSDataFile 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4. I have no idea what this class does.
+PRDirectory 1 Undocumented peer networking class. This is included with the networking functionality of Warp 4 and replaces WPFolder, apparently to add networking functionality to folders. Judging from the overridden methods, I guess this allows for giving other users access to a local directory when a peer network is currently active.
+LSDirectory 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to implement network folders.
 
 // Items added with V0.9.1
 
@@ -294,4 +294,44 @@ SOMMBeforeAfter 0 Part of the SOM metaclass framework. See the SOM Programming G
 SOMMSingleInstance 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
 SOMMTraced 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
 
+CWProgFolder 1 This is the base class of the CD Creator package by Chris Wohlgemuth. It's needed by CWAudioFolder and CWDataFolder classes.
+CWAudioFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of Audio CDs.
+CWDataFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of Data CDs.
+TSCPad 1 This is part of the Object Desktop package by Stardock. It's the Control Center/Object Netscan.
+TSTabFolder 1 This is part of the Object Desktop package by Stardock. It's the Tab Launchpad.
+TSMasterSetup 1 This is part of the Object Desktop package by Stardock. It's the Master Setup.
+TSClassEdit 1 This is part of the Object Desktop package by Stardock. It's the Class Editor.
+TSInspect 1 This is part of the Object Desktop package by Stardock. It's the Object Inspector.
+TSPackageFile 1 This is part of the Object Desktop package by Stardock. It's the Object Package container class.
+TSPackageElem 1 This is part of the Object Desktop package by Stardock. It's the Object Package contained class.
+StarOfficeAgent 1 This is part of the StarOffice 5.1 package. Presumably it's needed by file association mechanism.
+WPTouch 1 Presumably this class is responsible for the touch screen configuration object. I don't have one, so I've never seen it.
+AcsAgent 1 This class is part of the UniMaint package.
+
+NewDisk 1 A class of WPDisk for handling drive locking and the cache which is used the NEWDASD package that adds support for removable drives.
+CDWriter 1 A subclass of WPDisk used by RSJ CD-Writer, presumably to implement the drive object for RSJ's IFS.
+TSKeyLaunch 1 Object Desktop 1.5 keyboard macro class, lets you start programs by certain key combinations
+TSTaskManager 1 Object Desktop 1.5 window list replacement
+TSArcMgr 1 Object Desktop 1.5 archive viewer ("object archives") parent class
+TSArcFileMgr: Object Desktop 1.5 archive viewer subclass for ARC archives
+TSLHAMgr 1 subclass for LHA archives
+TSRarMgr 1 subclass for RAR archives
+TSTarMgr 1 subclass for TAR/GZ archives
+TSZipMgr 1 subclass for ZIP archives
+TSZooMgr 1 subclass for ZOO archives
+PractiseImage 1 class to fix image association problem by Practise Co.
+PractiseBitmap 1 class to fix image association problem by Practise Co.
+TSCPad 1 Object Desktop 1.5 Control Center class
+TSTabFolder 1 Object Desktop 1.5 Tabbed Launchpad class
+TSMasterSetup 1 Object Desktop 1.5 General settings ("Master Setup") class
+TSEnhFolder 1 Object Desktop 1.5 Enhanced Folder class, adds status bars, configurable default icons, hyper drive etc.
+TSArcElem 1 Object Desktop 1.5 archive viewer parent class for transient elements, for populating archive views
+TSArcFileElem 1 subclass ARC archive objects
+TSLHAElem 1 subclass for LHA archive objects
+TSRarElem 1 subclass for RAR archive objects
+TSTarElem 1 subclass for TAR/GZ archive objects
+TSZipElem 1 subclass for Zip archive objects
+TSZooElem 1 subclass for ZOO archive objects
+TSKeyDfn 1 Object Desktop 1.5 Keyboard definition class
+TSPackageElem 1 Element of an Object Desktop 1.5 "Object Package", used to archive WPS objects including their settings
 

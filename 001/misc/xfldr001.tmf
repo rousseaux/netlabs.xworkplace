@@ -135,26 +135,15 @@ Contact xworkplace-dev@egroups.com if you are familiar with the XWorkplace sourc
 XWorkplace is free software. The full source code is available from the author's homepage in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GNU General Public License (GPL).
 XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself, which is contained in the COPYING file in the XWorkplace installation directory.
 
-XWorkplace contains copyrighted code from the following people:
-    ARAKAWA Atsushi
-    Anthony Cruise
-    John Currier
-    Marc Fiammante
-    Chris Hanson
-    Achim HasenmÅller
-    Henk Kelder
-    Gilles Kohl
-    Ekkehard Kraemer
-    Dan Libby
-    Eberhard Mattes
-    Stefan Mielcke
-    Kim Rasmussen
-    Kai Uwe Rommel
-    Roman Stangl
-    Mark Stern
-    Uri J. Stern
-
-See the "XWorkplace User Guide" for detailed credits.
+Among others, XWorkplace contains copyrighted code from the following people:
+    ARAKAWA Atsushi (APM power off)
+    Achim HasenmÅller (various hook code)
+    Henk Kelder (OS2SYS.INI handles)
+    Stefan Mielcke (WPS archiving)
+    Kai Uwe Rommel (process queries)
+    Roman Stangl (various hook code)
+    Carlos Ugarte (PageMage)
+See the "XWorkplace User Guide" for more detailed credits.
 ;
 ; the following items are new with V0.9.0
 
@@ -257,6 +246,8 @@ Should we do this now?
 <--XFL0171-->: An error occured registering the trash can WPS classes.
 
 <--XFL0172-->: Do you wish to destroy the trash object and deregister the XWorkplace trash can classes (XWPTrashCan, XWPTrashObject)?
+
+<--XFL0173-->: The trash can object has been successfully destroyed and the trash can classes have been deregistered. You should restart the WPS for the changes to take effect.
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -474,7 +465,7 @@ Availability: DANIS506.ADD only.
 This was new with XFolder 0.84.
 See the XWorkplace User Guide for details.
 <--FEATURES_6002-->: If "Add Object page..." is enabled, a new "Object" page will be added to the settings notebooks of all objects on your system.
-On that page, you can view object internals and set a global hotkey for an object, if the XWorkplace Hook is also enabled.
+On that page, you can view object internals and set a global hotkey for an object, if the XWorkplace Hook is also enabled (see "Mouse and Keyboard features" below).
 This was added with XWorkplace 0.9.0 and replaces the "Internals" page which was present in XFolder 0.85.
 <--FEATURES_6003-->: If this is enabled, XWorkplace combines the three standard "File" pages in folder and data file settings notebooks into a more convenient single "File" page.
 Also, a second page for viewing extended attributes is added.
@@ -488,9 +479,12 @@ This was new with XFolder 0.70.
 <--FEATURES_6011-->: If "Enable status bars" is checked, you may configure folders to show status bars with detailed information for the selected objects in a folder.
 If this is enabled, you'll get two additional settings pages in XWorkplace's "Workplace Shell" object, which allow you to configure status bars in detail.
 Also, you can define whether status bars should be visible for each folder individually.
+So after enabling this, go to the "Workplace Shell" object and turn to the "Status bars" pages.
 See the XWorkplace User Guide for details, especially for how to fine-tune status bars for your needs.
 This was new with XFolder 0.70.
 <--FEATURES_6012-->: Check "Enable Snap to grid" to be able to add a "Snap to grid" item to folder context menus.
+This item will make all objects in the folder snap onto a grid of invisible lines, which makes object alignment easier.
+Enabling this will also add a "Snap to grid" page to the "Workplace Shell" object, where you can define the grid to be used.
 See the XWorkplace User Guide for an introduction what this means.
 This was new with XFolder 0.50.
 <--FEATURES_6013-->: If "Folder hotkeys" are enabled, you will be able to define new shortcuts to more than 30 frequently used folder functions (such as "select all") in XWorkplace's "Workplace Shell" object.
@@ -516,17 +510,24 @@ Also, a "Hotkeys" page is added to the "Keyboard" settings object in your "Syste
 This item is unavailable if the XWorkplace hook is not installed.
 Make sure that you also have the "Object page" setting in the "General features" group enabled, or you won't be able to configure hotkeys.
 This was added with XWorkplace V0.9.1.
+<--FEATURES_6054-->: "PageMage" offers you virtual desktops. This means that XWorkplace makes your current desktop one out of several, and you can switch between those.
+Enabling this will add a settings page to the new "Screen" settings object where you can fine-tune PageMage.
+This item is unavailable if the XWorkplace hook is not installed.
+PageMage used to be separate program written by Carlos Ugarte and is now integrated into XWorkplace.
+This was added with XWorkplace V0.9.2.
 
 <--FEATURES_6021-->: This replaces the "Archives" page in the Desktop's settings notebook. If this is enabled, you can define precise conditions for whether the Workplace Shell should be backed up automatically -- instead of just being able to enable or disable archiving altogether.
 This functionality used to be in the separate "WPSArcO" program, but is now part of XWorkplace 0.9.0, and can be configured more easily.
 See the XWorkplace User Guide for details.
 <--FEATURES_6022-->: "Restart WPS" is a new menu item in the Desktop's settings notebook, which will restart the Workplace Shell only, instead of having to reboot the whole system.
 As opposed to other utilities, XWorkplace saves the WPS's state before restarting it.
+This will add an "XShutdown" page to the Desktop's settings notebook which allows you to configure this feature.
 This was new with XFolder 0.60.
 See the XWorkplace User Guide for details.
 <--FEATURES_6023-->: "XShutdown" is a complete rewrite of the default OS/2 shutdown sequence.
 If this setting is enabled, XShutdown will be executed instead of OS/2's default shutdown if you select "Shutdown" from the Desktop's context menu.
 This allows you to cancel shutdown while it's running, skip hung programs, and more.
+This will add an "XShutdown" page to the Desktop's settings notebook which allows you to configure this feature.
 This was new with XFolder 0.60.
 See the XWorkplace User Guide for details.
 
@@ -546,7 +547,7 @@ If this is enabled, you'll get a regular dialog box, which also has a "retry" bu
 This was new with XFolder 0.85.
 <--FEATURES_6045-->: If this is enabled, all Workplace Shell "Delete" operations will not actually delete objects, but move them to the XWorkplace trash can instead.
 This includes pressing the "Del" key and selecting the "Delete" context menu items for all objects on your system.
-This requires that the XWPTrashCan class is installed and that you have created the trash can object.
+This will install XWorkplace's trash can WPS classes and create a trash can object on your Desktop, if these requirements are not met yet.
 This was added with XWorkplace 0.9.1.
 
 ; ---------------------------------------------------------------------------------

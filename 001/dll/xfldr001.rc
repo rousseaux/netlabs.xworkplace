@@ -313,7 +313,7 @@ BEGIN
        status window. Do not change the %d and %s keys, or
        XShutdown might crash. These are needed for inserting
        variable data (sprintf). */
-    ID_SDSI_SHUTDOWN                "~Shutdown"
+    ID_SDSI_SHUTDOWN                "Shut~down"
     ID_SDSI_RESTARTWPS              "~Restart WPS..."
     ID_SDSI_RESTARTINGWPS           "Restarting WPS..."
     ID_SDSI_SAVINGDESKTOP           "Saving %d WPS objects..."
@@ -474,6 +474,11 @@ BEGIN
     ID_XSSI_SPECIAL_WINDOWLIST          "Window list"
     ID_XSSI_SPECIAL_DESKTOPPOPUP        "Desktop's context menu"
 
+    /* default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller] */
+    ID_XSSI_XWPSCREENTITLE              "Screen"
+
+    /* "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller] */
+    ID_XSSI_OPENPARTITIONS              "~Partitions view"
 END
 
 /* Strings for XWPSetup "Features" page
@@ -496,6 +501,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
     ID_XCSI_XWPHOOK                     "Enable XWorkplace Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
+    ID_XCSI_PAGEMAGE                    "PageMage: virtual desktops"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace WPS archiving"

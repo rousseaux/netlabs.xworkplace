@@ -9,7 +9,7 @@ Last updated Feb 18, 2000
 
     1. INTRODUCTION
     2. INSTALLATION
-    3. INSTALLATION
+    3. UPGRADING
     4. NATIONAL LANGUAGE SUPPORT
     5. GETTING STARTED
     6. KNOWN LIMITATIONS
@@ -65,7 +65,7 @@ Last updated Feb 18, 2000
     respective page which WarpIN will show you after you press
     the "Next" button a few times.
 
-    You then then read through XWorkplace's documentation first
+    You can then read through XWorkplace's documentation first
     and decide then whether to actually register XWorkplace's
     classes. To do this later, simply open this WarpIN archive
     again.
@@ -77,10 +77,32 @@ Last updated Feb 18, 2000
     XWorkplace target directory tree).
 
 
-3. UPGRADING FROM XFOLDER
-=========================
+3. UPGRADING
+============
 
-    XWorkplace is the successor to XFolder (the latest XFolder
+    Upgrading from XWorkplace
+    -------------------------
+
+    If you have another version of XWorkplace already installed,
+    this new version MUST be installed to a directory OTHER
+    than that of the installed version.
+
+    WarpIN is not very good at replacing files which are in use
+    just yet and, unless you deregister the XWorkplace classes
+    before installing this new version, many old XWorkplace files
+    will be in use.
+
+    This is most important with the XWorkplace daemon which has
+    installed the XWorkplace PM hook (XWPHOOK.DLL), which is
+    part of every single PM process of your system if the hook
+    is installed. Unlocking that DLL might severely hang your
+    system.
+
+
+    Upgrading from XFolder
+    ----------------------
+
+    XWorkplace is the successor to XFolder (the last XFolder
     version was V0.85).
 
     XWorkplace and XFolder cannot coexist, since XWorkplace
@@ -88,10 +110,23 @@ Last updated Feb 18, 2000
     and even more features.
 
     As a result, if XFolder is installed, XWorkplace will
-    disable your XFolder installation. You should install
-    XWorkplace to a directory OTHER than your existing XFolder
-    directory to make sure no file conflicts occur (I might
-    have forgotten something).
+    disable your XFolder installation.
+
+    You should install XWorkplace to a directory OTHER than
+    your existing XFolder directory to make sure no file
+    conflicts occur. Several people have reported that
+    installing to the same directory can hang your WPS.
+
+    XWorkplace can take over your existing XFolder 0.85 settings,
+    if present. You will be prompted for that during the first
+    WPS restart after installation. However, many new settings
+    have arrived, so many will be initially disabled.
+
+    If you prefer to go back to your existing XFolder installation
+    later (after all, this is a developer's release), have WarpIN
+    de-install XWorkplace and install XFolder again, using
+    INSTALL.CMD in your XFolder directory. Your old XFolder
+    settings remain untouched by XWorkplace.
 
 
 4. NATIONAL LANGUAGE SUPPORT
@@ -102,16 +137,6 @@ Last updated Feb 18, 2000
     for supporting additional languages, there are no other
     NLS packages available yet. These will be added to a later
     release.
-
-    XWorkplace will take over your existing XFolder 0.85 settings,
-    if present. However, many more settings have arrived, so many
-    will be initially disabled.
-
-    If you prefer to go back to your existing XFolder installation
-    later (after all, this is a developer's release), have WarpIN
-    de-install XWorkplace and install XFolder again, using
-    INSTALL.CMD in your XFolder directory. Your old XFolder
-    settings remain untouched by XWorkplace.
 
 
 5. GETTING STARTED
@@ -133,7 +158,7 @@ Last updated Feb 18, 2000
 
     1)  Christian Langanke's Animated Mouse Pointers for OS/2 are
         not yet included. This is currently in the works and will
-        be added in a later release.
+        be added to a later release.
 
     2)  If "Extended associations" is enabled in XWPSetup, the new
         "File types" page in "Workplace Shell" is working, but XFldDataFile
@@ -148,11 +173,7 @@ Last updated Feb 18, 2000
     4)  Trash can confirmations and auto-delete on startup and shutdown
         don't work quite yet.
 
-    5)  Creating the trash can objects from the XWorkplace Setup
-        "Features" page fails. Go the to "Objects" page instead and
-        create the trash can from there.
-
-    6)  XSHUTDWN.EXE currently doesn't work at all.
+    5)  Trash can icons are somewhat shaky.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

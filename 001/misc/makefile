@@ -40,9 +40,9 @@ LANGUAGE = 001
 
 FILES_TO_COPY = \
     $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf \
-    $(XWPRUNNING)\bin\crobj$(LANGUAGE).cmd \
-    $(XWPRUNNING)\bin\instl$(LANGUAGE).cmd \
-    $(XWPRUNNING)\bin\sound$(LANGUAGE).cmd \
+    $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd \
+    $(XWPRUNNING)\install\instl$(LANGUAGE).cmd \
+    $(XWPRUNNING)\install\sound$(LANGUAGE).cmd \
     $(XWPRUNNING)\help\drvrs$(LANGUAGE).txt \
     $(XWPRUNNING)\help\xfcls$(LANGUAGE).txt
 
@@ -52,14 +52,14 @@ all: $(FILES_TO_COPY)
 $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf
     $(COPY) $(@B).tmf $(XWPRUNNING)\help
 
-$(XWPRUNNING)\bin\crobj$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\bin
+$(XWPRUNNING)\install\crobj$(LANGUAGE).cmd: $(@B).cmd
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install
 
-$(XWPRUNNING)\bin\instl$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\bin
+$(XWPRUNNING)\install\instl$(LANGUAGE).cmd: $(@B).cmd
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install
 
-$(XWPRUNNING)\bin\sound$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\bin
+$(XWPRUNNING)\install\sound$(LANGUAGE).cmd: $(@B).cmd
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install
 
 $(XWPRUNNING)\help\drvrs$(LANGUAGE).txt: $(@B).txt
     $(COPY) $(@B).txt $(XWPRUNNING)\help

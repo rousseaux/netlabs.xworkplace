@@ -2065,67 +2065,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_MOUSEHOOK LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSEHOOK, 0, 0, 232, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTROL         "", -1, 20, 108, 52, 30, WC_STATIC, SS_FGNDFRAME |
-                        WS_GROUP | WS_VISIBLE
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPLEFT, 16, 134, 8, 8,
-                        WS_TABSTOP
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPRIGHT, 68, 134, 8, 8,
-                        WS_TABSTOP
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMLEFT, 16, 104, 8, 8,
-                        WS_TABSTOP
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT, 68, 104, 8, 8,
-                        WS_TABSTOP
-        CONTROL         "", ID_XSDI_MOUSE_AUTOHIDE, 10, 99, 76, 1, WC_STATIC,
-                        SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
-        AUTORADIOBUTTON "I~nactive", ID_XSDI_MOUSE_INACTIVEOBJ, 10, 84, 64,
-                        8, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~Open object:", ID_XSDI_MOUSE_OPEN_CHECK, 10, 76,
-                        76, 8, WS_TABSTOP
-        CONTAINER       ID_XSDI_MOUSE_OPEN_CNR, 14, 52, 68, 22,
-                        CCS_SINGLESEL
-        AUTORADIOBUTTON "S~pecial function:", ID_XSDI_MOUSE_SPECIAL_CHECK,
-                        10, 42, 78, 8, WS_TABSTOP
-        CONTROL         "", ID_XSDI_MOUSE_SPECIAL_DROP, 14, 6, 70, 34,
-                        WC_COMBOBOX, CBS_DROPDOWNLIST | LS_HORZSCROLL |
-                        WS_TABSTOP | WS_VISIBLE
-        GROUPBOX        "Screen ~corners", -1, 6, 20, 84, 132, DT_MNEMONIC |
-                        NOT WS_GROUP
-        GROUPBOX        "Sliding focus", -1, 92, 62, 140, 56
-        AUTOCHECKBOX    "Enable ~sliding focus", ID_XSDI_MOUSE_SLIDINGFOCUS,
-                        98, 102, 96, 8
-        AUTOCHECKBOX    "Bring windows to ~top", ID_XSDI_MOUSE_BRING2TOP,
-                        108, 94, 102, 8
-        AUTOCHECKBOX    "Ignore seamless ~Win-OS/2",
-                        ID_XSDI_MOUSE_IGNORESEAMLESS, 108, 86, 120, 8
-        AUTOCHECKBOX    "~Ignore Desktop", ID_XSDI_MOUSE_IGNOREDESKTOP, 108,
-                        78, 76, 8
-        LTEXT           "Dela~y:", ID_XSDI_MOUSE_FOCUSDELAY_TXT1, 108, 66,
-                        30, 12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_FOCUSDELAY_SLIDER, 138, 66, 62, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 31, 0, 5, 0
-        CTEXT           "Text", ID_XSDI_MOUSE_FOCUSDELAY_TXT2, 198, 66, 30,
-                        12, DT_VCENTER | NOT WS_GROUP
-        GROUPBOX        "Auto-hide mouse pointer", -1, 92, 20, 140, 40
-        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_AUTOHIDE, 98, 42, 46, 9
-        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 108, 26, 28,
-                        16, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 140, 26, 58, 16,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 60, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 200, 26, 28, 16,
-                        DT_VCENTER | DT_MNEMONIC
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 84, 4, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 162, 4, 70, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_OSD_SETTINGS_DRIVERS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_OSD_SETTINGS_DRIVERS, 0, 0, 275, 180, NOT FS_DLGBORDER |
@@ -2208,61 +2147,6 @@ BEGIN
         PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 190, 24, 36, 12
         PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
         PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_FILESPAGE1 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FILESPAGE1, 0, 0, 265, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        LTEXT           "Real name:", -1, 6, 128, 60, 8, NOT WS_GROUP
-        LTEXT           "to be replaced", ID_XSDI_FILES_REALNAME, 74, 128,
-                        160, 8, NOT WS_GROUP
-        LTEXT           "Size in bytes:", -1, 6, 120, 60, 8, NOT WS_GROUP
-        AUTOCHECKBOX    "~Work area", ID_XSDI_FILES_WORKAREA, 6, 112, 110, 8
-        LTEXT           "0", ID_XSDI_FILES_FILESIZE, 74, 120, 30, 8, NOT
-                        WS_GROUP
-        GROUPBOX        "Date/time:", ID_XCD_FEATURES, 5, 80, 150, 30, NOT
-                        WS_GROUP
-        LTEXT           "Creation:", -1, 10, 94, 65, 8, NOT WS_GROUP
-        LTEXT           "00.00.0000", ID_XSDI_FILES_CREATIONDATE, 75, 94, 40,
-                        8, NOT WS_GROUP
-        LTEXT           "00:00:00", ID_XSDI_FILES_CREATIONTIME, 115, 94, 35,
-                        8, NOT WS_GROUP
-        LTEXT           "Last write:", -1, 10, 88, 65, 8, NOT WS_GROUP
-        LTEXT           "00.00.0000", ID_XSDI_FILES_LASTWRITEDATE, 75, 88,
-                        40, 8, NOT WS_GROUP
-        LTEXT           "00:00:00", ID_XSDI_FILES_LASTWRITETIME, 115, 88, 35,
-                        8, NOT WS_GROUP
-        LTEXT           "Last access:", -1, 10, 82, 60, 8, NOT WS_GROUP
-        LTEXT           "00.00.0000", ID_XSDI_FILES_LASTACCESSDATE, 75, 82,
-                        40, 8, NOT WS_GROUP
-        LTEXT           "00:00:00", ID_XSDI_FILES_LASTACCESSTIME, 115, 82,
-                        35, 8, NOT WS_GROUP
-        GROUPBOX        "Attributes", -1, 160, 80, 75, 42, DT_MNEMONIC | NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "~Archived", ID_XSDI_FILES_ATTR_ARCHIVED, 164, 106,
-                        49, 8
-        AUTOCHECKBOX    "~Read only", ID_XSDI_FILES_ATTR_READONLY, 164, 98,
-                        48, 8
-        AUTOCHECKBOX    "S~ystem", ID_XSDI_FILES_ATTR_SYSTEM, 164, 90, 40, 8
-        AUTOCHECKBOX    "~Hidden", ID_XSDI_FILES_ATTR_HIDDEN, 164, 82, 40, 8
-        GROUPBOX        "Information", -1, 5, 20, 230, 58
-        LTEXT           "Sub~ject:", -1, 10, 60, 75, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_FILES_SUBJECT, 86, 62, 141, 8, ES_MARGIN
-        LTEXT           "~Comments:", -1, 10, 51, 60, 8, DT_MNEMONIC
-        MLE             "", ID_XSDI_FILES_COMMENTS, 10, 24, 115, 27,
-                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
-                        WS_GROUP
-        LTEXT           "Keyw~ords:", -1, 130, 51, 95, 8, DT_MNEMONIC
-        MLE             "", ID_XSDI_FILES_KEYPHRASES, 130, 24, 100, 27,
-                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
-                        WS_GROUP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
     END
 END
 
@@ -2497,12 +2381,151 @@ BEGIN
         LTEXT           "XWorkplace is a Netlabs project. See www.netlabs.or"
                         "g for details.", -1, 16, 74, 139, 17, DT_WORDBREAK
         DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 60, 12
-        PUSHBUTTON      "Open User Guide", ID_XLD_CLASSLIST, 115, 6,
-                        105, 12, BS_HELP | BS_NOPOINTERFOCUS
+        PUSHBUTTON      "Open User Guide", ID_XLD_CLASSLIST, 115, 6, 105, 12,
+                        BS_HELP | BS_NOPOINTERFOCUS
         CONTROL         ID_XFLDRBITMAP, -1, 160, 81, 23, 16, WC_STATIC,
                         SS_BITMAP | WS_GROUP | WS_VISIBLE
         CONTROL         "", ID_XLDI_TEXT2, 15, 30, 200, 40, WC_MLE,
                         MLS_READONLY | MLS_WORDWRAP | MLS_VSCROLL | WS_GROUP |
                         WS_TABSTOP | WS_VISIBLE
+    END
+END
+
+DLGTEMPLATE ID_XSD_MOUSE_CORNERS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_MOUSE_CORNERS, 0, 0, 232, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        CONTROL         "", -1, 20, 44, 52, 30, WC_STATIC, SS_FGNDFRAME |
+                        WS_GROUP | WS_VISIBLE
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPLEFT, 16, 70, 8, 8,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPRIGHT, 68, 70, 8, 8,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMLEFT, 16, 40, 8, 8,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT, 68, 40, 8, 8,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "I~nactive", ID_XSDI_MOUSE_INACTIVEOBJ, 104, 84, 64,
+                        8, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "~Open object:", ID_XSDI_MOUSE_OPEN_CHECK, 104, 76,
+                        76, 8, WS_TABSTOP
+        CONTAINER       ID_XSDI_MOUSE_OPEN_CNR, 108, 52, 68, 22,
+                        CCS_SINGLESEL
+        AUTORADIOBUTTON "S~pecial function:", ID_XSDI_MOUSE_SPECIAL_CHECK,
+                        104, 42, 78, 8, WS_TABSTOP
+        CONTROL         "", ID_XSDI_MOUSE_SPECIAL_DROP, 108, 6, 70, 34,
+                        WC_COMBOBOX, CBS_DROPDOWNLIST | LS_HORZSCROLL |
+                        WS_TABSTOP | WS_VISIBLE
+        GROUPBOX        "Screen ~corner", -1, 4, 22, 84, 78, DT_MNEMONIC |
+                        NOT WS_GROUP
+        GROUPBOX        "Action", -1, 98, 22, 98, 78
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 84, 4, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 162, 4, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_FILESPAGE1 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FILESPAGE1, 0, 0, 265, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        LTEXT           "Real name:", -1, 6, 128, 60, 8, NOT WS_GROUP
+        LTEXT           "to be replaced", ID_XSDI_FILES_REALNAME, 74, 128,
+                        190, 8, NOT WS_GROUP
+        LTEXT           "Size in bytes:", -1, 6, 120, 60, 8, NOT WS_GROUP
+        LTEXT           "0", ID_XSDI_FILES_FILESIZE, 74, 120, 74, 8, NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "~Work area", ID_XSDI_FILES_WORKAREA, 6, 112, 110, 8
+        GROUPBOX        "Date/time:", ID_XCD_FEATURES, 5, 80, 150, 30, NOT
+                        WS_GROUP
+        LTEXT           "Creation:", -1, 10, 94, 52, 8, NOT WS_GROUP
+        LTEXT           "00.00.0000", ID_XSDI_FILES_CREATIONDATE, 66, 94, 40,
+                        8, NOT WS_GROUP
+        LTEXT           "00:00:00", ID_XSDI_FILES_CREATIONTIME, 110, 94, 42,
+                        8, NOT WS_GROUP
+        LTEXT           "Last write:", -1, 10, 88, 50, 8, NOT WS_GROUP
+        LTEXT           "00.00.0000", ID_XSDI_FILES_LASTWRITEDATE, 66, 88,
+                        40, 8, NOT WS_GROUP
+        LTEXT           "00:00:00", ID_XSDI_FILES_LASTWRITETIME, 110, 88, 42,
+                        8, NOT WS_GROUP
+        LTEXT           "Last access:", -1, 10, 82, 52, 8, NOT WS_GROUP
+        LTEXT           "00.00.0000", ID_XSDI_FILES_LASTACCESSDATE, 66, 82,
+                        40, 8, NOT WS_GROUP
+        LTEXT           "00:00:00", ID_XSDI_FILES_LASTACCESSTIME, 110, 82,
+                        42, 8, NOT WS_GROUP
+        GROUPBOX        "Attributes", -1, 160, 80, 75, 42, DT_MNEMONIC | NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "~Archived", ID_XSDI_FILES_ATTR_ARCHIVED, 164, 106,
+                        49, 8
+        AUTOCHECKBOX    "~Read only", ID_XSDI_FILES_ATTR_READONLY, 164, 98,
+                        56, 8
+        AUTOCHECKBOX    "S~ystem", ID_XSDI_FILES_ATTR_SYSTEM, 164, 90, 40, 8
+        AUTOCHECKBOX    "~Hidden", ID_XSDI_FILES_ATTR_HIDDEN, 164, 82, 40, 8
+        GROUPBOX        "Information", -1, 5, 20, 230, 58
+        LTEXT           "Sub~ject:", -1, 10, 60, 75, 12, DT_VCENTER |
+                        DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_FILES_SUBJECT, 86, 62, 141, 8, ES_MARGIN
+        LTEXT           "~Comments:", -1, 10, 51, 60, 8, DT_MNEMONIC
+        MLE             "", ID_XSDI_FILES_COMMENTS, 10, 24, 115, 27,
+                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
+                        WS_GROUP
+        LTEXT           "Keyw~ords:", -1, 130, 51, 95, 8, DT_MNEMONIC
+        MLE             "", ID_XSDI_FILES_KEYPHRASES, 130, 24, 100, 27,
+                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
+                        WS_GROUP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_MOUSE_MOVEMENT, 0, 0, 232, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Sliding focus", -1, 6, 80, 194, 66
+        AUTOCHECKBOX    "~Enable", ID_XSDI_MOUSE_SLIDINGFOCUS, 14, 130, 96,
+                        8
+        LTEXT           "Activation de~lay:", ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
+                        24, 118, 72, 12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_FOCUSDELAY_SLIDER, 92, 118, 62, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
+                        CTLDATA 12, 0, 31, 0, 5, 0
+        CTEXT           "Text", ID_XSDI_MOUSE_FOCUSDELAY_TXT2, 156, 118, 30,
+                        12, DT_VCENTER | NOT WS_GROUP
+        AUTOCHECKBOX    "Bring windows to ~top", ID_XSDI_MOUSE_BRING2TOP, 24,
+                        108, 102, 8
+        AUTOCHECKBOX    "Ignore seamless ~Win-OS/2",
+                        ID_XSDI_MOUSE_IGNORESEAMLESS, 24, 100, 120, 8
+        AUTOCHECKBOX    "~Ignore Desktop", ID_XSDI_MOUSE_IGNOREDESKTOP, 24,
+                        92, 76, 8
+        AUTOCHECKBOX    "Ignore Pa~geMage", ID_XSDI_MOUSE_IGNOREPAGEMAGE, 24,
+                        84, 82, 8
+        GROUPBOX        "Sliding menu selection", -1, 6, 40, 194, 38
+        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_SLIDINGMENU, 12, 62, 132, 8
+        LTEXT           "Su~bmenu delay:", ID_XSDI_MOUSE_MENUDELAY_TXT1, 22,
+                        50, 68, 12, DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP
+        SLIDER          ID_XSDI_MOUSE_MENUDELAY_SLIDER, 92, 50, 62, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
+                        CTLDATA 12, 0, 31, 0, 5, 0
+        CTEXT           "Text", ID_XSDI_MOUSE_MENUDELAY_TXT2, 156, 50, 30,
+                        12, DT_VCENTER | NOT WS_GROUP
+        AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22, 42, 164, 10
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
+        GROUPBOX        "Auto-hide mouse pointer", -1, 6, 18, 194, 20
+        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 20, 46,
+                        12
+        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 68, 20, 28,
+                        12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 102, 20, 58, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 60, 0, 1, 0
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 162, 20, 28, 12,
+                        DT_VCENTER | DT_MNEMONIC
     END
 END
