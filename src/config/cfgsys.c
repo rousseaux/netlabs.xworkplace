@@ -622,17 +622,17 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
          */
 
         case WM_COMMAND:
-        {
-            switch (SHORT1FROMMP(mp1))  // source id
+            /* switch (SHORT1FROMMP(mp1))  // source id
             {
-                case DID_OK:
-                    WinDestroyWindow(hwndDlg);
-                    break;
+                case DID_OK: */
 
-                default:
-                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-            }
-        break; }
+            // V0.9.9 (2001-03-07) [umoeller]:
+            // nope, paul... we must always destroy the window. If we let this
+            // slip thru to the default window proc, pressing "esc" in the
+            // dialog will dismiss the dialog, but never destroy it.
+
+            WinDestroyWindow(hwndDlg);
+        break;
 
         /*
          * WM_DESTROY:

@@ -361,11 +361,7 @@ Do you wish to ignore this error and continue removing fonts?
 
 <--XFL0205-->: The handle section in OS2SYS.INI has been rewritten. XWorkplace will restart the WPS now.
 
-<--XFL0206-->: Hmmmm. XWorkplace was unable to start xfix.
-
-The following path was attempted:
-
-%1
+<--XFL0206-->: Hmmmm. XWorkplace was unable to start "%1".
 
 <--XFL0207-->: You must restart the Workplace Shell for this change to take effect.
 

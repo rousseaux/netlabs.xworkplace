@@ -119,6 +119,12 @@ interface XCenter : WPAbstract
     BOOL fHelpDisplayed;            // TRUE after the first open of the XCenter,
                                     // when introductory help has been displayed.
 
+    PSZ pszClientFont;              // font presparam for XCenter client ("9.WarpSans Bold")
+                                    // V0.9.9 (2001-03-07) [umoeller]
+
+    LONG lcolClientBackground;      // client background color
+                                    // V0.9.9 (2001-03-07) [umoeller]
+
     PVOID pvOpenView;               // if != NULLHANDLE, XCenter is currently open,
                                     // and this has a PXCENTERWINDATA pointer
                                     // which contains all the view data...

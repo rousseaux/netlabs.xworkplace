@@ -1409,6 +1409,7 @@
     #define     STG_LONG        1
     #define     STG_BOOL        2
     #define     STG_BITFLAG     3
+    #define     STG_PSZ         4       // V0.9.9 (2001-03-07) [umoeller]
 
     /*
      *@@ XWPSETUPENTRY:
@@ -1491,6 +1492,12 @@
                         //      the bit field is initialized on cmnInitData,
                         //      but each flag can be set/cleared individually
                         //      with a setup string.
+
+                        // -- STG_PSZ: a null-terminated string. Note
+                        //      that this requires memory management.
+                        //      In that case, ulOfsOfData must point to
+                        //      a PSZ pointer, and lDefault must also
+                        //      be a PSZ to the default value.
 
         // build/scan setup string values:
 

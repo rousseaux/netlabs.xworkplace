@@ -970,12 +970,12 @@ SOM_Scope BOOL  SOMLINK xfobj_wpFree(XFldObject *somSelf)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpFree");
 
-    // if (pKernelGlobals->fAutoRefreshReplaced)
+    if (pKernelGlobals->fAutoRefreshReplaced)
     {
         brc = objFree(somSelf);
     }
-    /* else
-        brc = XFldObject_parent_WPObject_wpFree(somSelf); */
+    else
+        brc = XFldObject_parent_WPObject_wpFree(somSelf);
 
     return (brc);
 }

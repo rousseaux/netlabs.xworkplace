@@ -2537,9 +2537,14 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
  *      This initializes each entry with the lDefault value
  *      from the XWPSETUPENTRY.
  *
- *      This ONLY initializes STG_LONG and STG_BOOL entries,
+ *      This initializes STG_LONG and STG_BOOL entries with
+ *      a copy of XWPSETUPENTRY.lDefault,
  *      but not STG_BITFLAG fields. For this reason, for bit
  *      fields, always define a preceding STG_LONG entry.
+ *
+ *      For STG_PSZ, if (lDefault != NULL), this makes a
+ *      strdup() copy of that string. It is the responsibility
+ *      of the caller to clean that up.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
@@ -2567,6 +2572,16 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
             break; }
 
             // ignore STG_BITFIELD
+
+            case STG_PSZ:
+            {
+                PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                if (pSettingThis->lDefault)
+                    *ppszData = strdup((PSZ)pSettingThis->lDefault);
+                else
+                    // no default given:
+                    *ppszData = NULL;
+            break; }
         }
     }
 }
@@ -2651,6 +2666,29 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                                     ? "YES"
                                     : "NO");
                         xstrcat(pstr, szTemp, 0);
+                    }
+                break; }
+
+                case STG_PSZ:
+                {
+                    PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    ULONG ulDataLen;
+                    if (    *ppszData
+                         && (ulDataLen = strlen(*ppszData))
+                         && strhcmp(*ppszData, (PSZ)pSettingThis->lDefault)
+                       )
+                    {
+                        // not default value:
+                        ULONG ul1 = strlen(pSettingThis->pcszSetupString);
+                        xstrReserve(pstr,   pstr->cbAllocated
+                                          + ul1
+                                          + ulDataLen
+                                          + 5);
+
+                        xstrcat(pstr, pSettingThis->pcszSetupString, ul1);
+                        xstrcatc(pstr, '=');
+                        xstrcat(pstr, *ppszData, ulDataLen);
+                        xstrcatc(pstr, ';');
                     }
                 break; }
             }
@@ -2772,6 +2810,20 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                             }
                         }
                     break; }
+
+                    case STG_PSZ:
+                    {
+                        PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                        if (*ppszData)
+                        {
+                            // we have something already:
+                            free(*ppszData);
+                            *ppszData = NULL;
+                        }
+
+                        *ppszData = strdup(szValue);
+                        (*pcSuccess)++;
+                    break; }
                 }
             }
 
@@ -2817,13 +2869,27 @@ BOOL cmnSetupSave(WPObject *somSelf,
             {
                 case STG_LONG:
                 case STG_BOOL:
-                case STG_BITFLAG:
+                // case STG_BITFLAG:
                 {
                     PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                     if (!_wpSaveLong(somSelf,
                                      (PSZ)pcszClassName,
                                      pSettingThis->ulKey,
                                      *pulData))
+                    {
+                        // error:
+                        brc = FALSE;
+                        break;
+                    }
+                break; }
+
+                case STG_PSZ:
+                {
+                    PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    if (!_wpSaveString(somSelf,
+                                       (PSZ)pcszClassName,
+                                       pSettingThis->ulKey,
+                                       *ppszData))
                     {
                         // error:
                         brc = FALSE;
@@ -2874,7 +2940,7 @@ BOOL cmnSetupRestore(WPObject *somSelf,
             {
                 case STG_LONG:
                 case STG_BOOL:
-                case STG_BITFLAG:
+                // case STG_BITFLAG:
                 {
                     ULONG   ulTemp = 0;
                     if (_wpRestoreLong(somSelf,
@@ -2886,6 +2952,33 @@ BOOL cmnSetupRestore(WPObject *somSelf,
                         // replace value
                         PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                         *pulData = ulTemp;
+                    }
+                break; }
+
+                case STG_PSZ:
+                {
+                    ULONG cbValue;
+                    if (    _wpRestoreString(somSelf,
+                                             (PSZ)pcszClassName,
+                                             pSettingThis->ulKey,
+                                             NULL,      // get size
+                                             &cbValue)
+                         && cbValue
+                       )
+                    {
+                        PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                        if (*ppszData)
+                        {
+                            // we have something already:
+                            free(*ppszData);
+                            *ppszData = NULL;
+                        }
+                        *ppszData = (PSZ)malloc(cbValue + 1);
+                        _wpRestoreString(somSelf,
+                                         (PSZ)pcszClassName,
+                                         pSettingThis->ulKey,
+                                         *ppszData,
+                                         &cbValue);
                     }
                 break; }
             }
@@ -2950,24 +3043,39 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
         {
             PXWPSETUPENTRY pSettingThis = &paSettings[ulSettingThis];
 
-            if (    (pSettingThis->ulType == STG_LONG)
-                 || (pSettingThis->ulType == STG_BOOL)
-                 // but skip STG_BITFLAG
-               )
+            if (pSettingThis->ulOfsOfData == *pulOfsOfDataThis)
             {
-                if (pSettingThis->ulOfsOfData == *pulOfsOfDataThis)
+                // found:
+                switch (pSettingThis->ulType)
                 {
-                    // found:
-                    // reset value
-                    PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
-                    *plData = pSettingThis->lDefault;
-                    // raise return count
-                    ulrc++;
-                    // and quit inner search block... we'll only modify
-                    // the first entry, since there may be others following
-                    break; // for (ulSettingThis = 0;
+                    case STG_LONG:
+                    case STG_BOOL:
+                     // but skip STG_BITFLAG
+                    {
+                        // reset value
+                        PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                        *plData = pSettingThis->lDefault;
+                        // raise return count
+                        ulrc++;
+                    break; }
+
+                    case STG_PSZ:
+                    {
+                        PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                        if (*ppszData)
+                        {
+                            // we have something already:
+                            free(*ppszData);
+                            *ppszData = NULL;
+                        }
+                        if (pSettingThis->lDefault)
+                            *ppszData = strdup((PSZ)pSettingThis->lDefault);
+                    break; }
                 }
+
+                break;
             }
+
         } // for (ulSettingThis = 0;
     } // for (ulOfsThis = 0;
 
@@ -2990,7 +3098,8 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
  *
  *      This function goes thru the "paulOffsets" array and
  *      copies the value at each offset from pBackup to
- *      somThis.
+ *      somThis. This does NO MEMORY MANAGEMENT for STG_PSZ
+ *      values.
  *
  *      Returns the no. of values successfully changed,
  *      which should match cOffsets.

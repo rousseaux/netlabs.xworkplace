@@ -56,8 +56,6 @@ CHECK ON A CLEAN SYSTEM
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
--- "Language" box not working... DLLRNAME?!?
-
 --  install:
 
     >1. The un-installer fails to remove the font folder and the Xworkplace
@@ -103,8 +101,6 @@ fonts:
     -- try install?
 
 XCenter:
-    -- save fonts for main XCenter too; make background color config.
-
     -- move widgets doesn't work right.
 
     -- put menus on object buttons on top of the bar, not on top of the button.

@@ -769,7 +769,6 @@ VOID DwgtDestroy(HWND hwnd)
  *         menu item IDs >= 1000.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
- *@@changed V0.9.9 (2001-03-01) [lafaix]: added XCM_* handling
  */
 
 MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)

@@ -112,6 +112,7 @@ static const char           *G_pcszXCenter = "XCenter";
  +          10: _ulBorderSpacing,
  +          11: _ulWidgetSpacing,
  +          12: _fReduceDesktopWorkarea
+ +          13: _pszClientFont          // V0.9.9 (2001-03-07) [umoeller]
  +
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
@@ -252,8 +253,26 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                12,
         //     default, bitflag,            min, max
-               FALSE,   0,                  0,   0
+               FALSE,   0,                  0,   0,
 
+        /*
+         * fonts/colors
+         *      V0.9.9 (2001-03-07) [umoeller]
+         */
+
+        // type,  setup string,     offset,
+        STG_PSZ,     "CLIENTFONT",  FIELDOFFSET(XCenterData, pszClientFont),
+        //     key for wpSaveState/wpRestoreState
+               13,
+        //     default, bitflag,            min, max
+               (LONG)NULL, 0,               0,   0,
+
+        // type,  setup string,     offset,
+        STG_LONG,    "CLIENTCOLOR", FIELDOFFSET(XCenterData, lcolClientBackground),
+        //     key for wpSaveState/wpRestoreState
+               14,
+        //     default, bitflag,            min, max
+               0xCCCCCC, 0,                 0,   0x00FFFFFF
     };
 
 /*

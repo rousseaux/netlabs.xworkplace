@@ -1439,7 +1439,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              *
              *      This is useful if you must make sure that
              *      an object view is running on thread 1 and
-             *      nowhere else.
+             *      nowhere else. Used with the XCenter settings
+             *      view, for example.
              *
              *      Parameters:
              *
@@ -1877,6 +1878,68 @@ const char **G_appszXFolderKeys[]
           };
 
 /*
+ *@@ WaitForApp:
+ *      waits for the specified application to terminate.
+ *
+ *      Returns:
+ *
+ *      -1: Error starting app (happ was zero, msg box displayed).
+ *
+ *      Other: Return code of the application.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+ULONG WaitForApp(const char *pcszTitle,
+                 HAPP happ)
+{
+    ULONG   ulrc = -1;
+
+    if (!happ)
+    {
+        // error:
+        PSZ apsz[] = {(PSZ)pcszTitle};
+        cmnMessageBoxMsgExt(NULLHANDLE,
+                            121,       // xwp
+                            apsz,
+                            1,
+                            206,       // cannot start %1
+                            MB_OK);
+    }
+    else
+    {
+        // app started:
+        // enter a modal message loop until we get the
+        // WM_APPTERMINATENOTIFY for happ. Then we
+        // know the app is done.
+        HAB     hab = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
+        QMSG    qmsg;
+        ULONG   ulXFixReturnCode = 0;
+        while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+        {
+            if (    (qmsg.msg == WM_APPTERMINATENOTIFY)
+                 && (qmsg.hwnd == G_KernelGlobals.hwndThread1Object)
+                 && (qmsg.mp1 == (MPARAM)happ)
+               )
+            {
+                // xfix has terminated:
+                // get xfix return code from mp2... this is:
+                // -- 0: everything's OK, continue.
+                // -- 1: handle section was rewritten, restart WPS
+                //       now.
+                ulrc = (ULONG)qmsg.mp2;
+                // do not dispatch this
+                break;
+            }
+
+            WinDispatchMsg(hab, &qmsg);
+        }
+    }
+
+    return (ulrc);
+}
+
+/*
  *@@ krnShowStartupDlgs:
  *      this gets called from krnInitializeXWorkplace
  *      to show dialogs while the WPS is starting up.
@@ -2060,58 +2123,33 @@ VOID krnShowStartupDlgs(VOID)
                 happXFix = winhStartApp(G_KernelGlobals.hwndThread1Object,
                                         &pd);
 
-                if (!happXFix)
+                if (WaitForApp(szXfix,
+                               happXFix)
+                    == 1)
                 {
-                    // error:
-                    PSZ apsz[] = {szXfix};
-                    cmnMessageBoxMsgExt(NULLHANDLE,
-                                        121,       // xwp
-                                        apsz,
-                                        1,
-                                        206,       // error
-                                        MB_OK);
-                }
-                else
-                {
-                    // xfix started:
-                    // enter a modal message loop until we get the
-                    // WM_APPTERMINATENOTIFY for G_happXFix. Then we
-                    // know xfix is done.
-                    HAB     hab = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
-                    QMSG    qmsg;
-                    ULONG   ulXFixReturnCode = 0;
-                    while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-                    {
-                        if (    (qmsg.msg == WM_APPTERMINATENOTIFY)
-                             && (qmsg.hwnd == G_KernelGlobals.hwndThread1Object)
-                             && (qmsg.mp1 == (MPARAM)happXFix)
-                           )
-                        {
-                            // xfix has terminated:
-                            // get xfix return code from mp2... this is:
-                            // -- 0: everything's OK, continue.
-                            // -- 1: handle section was rewritten, restart WPS
-                            //       now.
-                            ulXFixReturnCode = (ULONG)qmsg.mp2;
-                            // do not dispatch this
-                            break;
-                        }
-
-                        WinDispatchMsg(hab, &qmsg);
-                    }
-
-                    if (ulXFixReturnCode == 1)
-                    {
-                        // handle section changed:
-                        cmnMessageBoxMsg(NULLHANDLE,
-                                         121,       // xwp
-                                         205,       // restart wps now.
-                                         MB_OK);
-                        DosExit(EXIT_PROCESS, 0);
-                    }
+                    // handle section changed:
+                    cmnMessageBoxMsg(NULLHANDLE,
+                                     121,       // xwp
+                                     205,       // restart wps now.
+                                     MB_OK);
+                    DosExit(EXIT_PROCESS, 0);
                 }
 
                 fRepeat = TRUE;
+            break; }
+
+            case DID_APPLY:         // run cmd.exe
+            {
+                HAPP happCmd;
+                PROGDETAILS pd = {0};
+                pd.Length = sizeof(pd);
+                pd.progt.progc = PROG_WINDOWABLEVIO;
+                pd.progt.fbVisible = SHE_VISIBLE;
+                pd.pszExecutable = "*";        // use OS2_SHELL
+                happCmd = winhStartApp(G_KernelGlobals.hwndThread1Object,
+                                       &pd);
+                WaitForApp(getenv("OS2_SHELL"),
+                           happCmd);
             break; }
 
             case DID_CANCEL:        // shutdown

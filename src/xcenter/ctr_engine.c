@@ -902,9 +902,6 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
         if (fRemove)
         {
             // remove emphasis:
-            /* GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP,
-                                              SYSCLR_INACTIVEBORDER,  // same as frame!
-                                              0)); */
             ClientPaint2(pGlobals->hwndClient, hps);
         }
         else
@@ -1261,7 +1258,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                 pNewView->szlCurrent.cx = 20;
                 pNewView->szlCurrent.cy = 20;
 
-                // setup fields
+                // set up fields
                 pNewView->szlWanted.cx = 20;
                 pNewView->szlWanted.cy = 20;
 
@@ -1269,9 +1266,6 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
 
                 pWidget->pcszSetupString = pSetting->pszSetupString;
                             // can be NULL
-
-                // _Pmpf(("  pNewView->pcszSetupString is %s",
-                  //       (pWidget->pcszSetupString) ? pWidget->pcszSetupString : "NULL"));
 
                 pWidget->hwndWidget = WinCreateWindow(pGlobals->hwndClient,  // parent
                                                       (PSZ)pWidgetClass->pcszPMClass,
@@ -1294,7 +1288,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                 // clean up setup string
                 pWidget->pcszSetupString = NULL;
 
-                // unset widget class ptr
+                // unset widget class ptr; this is valid only during WM_CREATE
                 pWidget->pWidgetClass = NULL;
 
                 if (pWidget->hwndWidget)
@@ -1428,7 +1422,7 @@ ULONG CreateWidgets(PXCENTERWINDATA pXCenterData)
     // this is the first "reformat frame" when the XCenter
     // is created, so get max cy and reposition
     ctrpReformat(pXCenterData,
-                 XFMF_DISPLAYSTYLECHANGED); // XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS);
+                 XFMF_DISPLAYSTYLECHANGED);
 
     return (ulrc);
 }
@@ -2221,6 +2215,7 @@ VOID ClientPaint2(HWND hwndClient, HPS hps)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+    XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
     RECTL           rclWin;
     ULONG           ul3DBorderWidth = pGlobals->ul3DBorderWidth;
 
@@ -2295,9 +2290,12 @@ VOID ClientPaint2(HWND hwndClient, HPS hps)
 
     // fill client; rclWin has been reduced properly above
     GpiSetColor(hps,
-                WinQuerySysColor(HWND_DESKTOP,
+                /* WinQuerySysColor(HWND_DESKTOP,
                                  SYSCLR_INACTIVEBORDER,  // same as frame!
-                                 0));
+                                 0)); */
+                _lcolClientBackground);
+                        // from the XCenter instance data
+                        // V0.9.9 (2001-03-07) [umoeller]
     gpihBox(hps,
             DRO_FILL,
             &rclWin);
@@ -2358,6 +2356,53 @@ VOID ClientPaint(HWND hwnd)
 
         WinEndPaint(hps);
     }
+}
+
+/*
+ *@@ ClientPresParamChanged:
+ *      implementation for WM_PRESPARAMCHANGED in fnwpXCenterMainClient.
+ *
+ *      We are now even saving fonts and background colors
+ *      being dropped on the XCenter client.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+VOID ClientPresParamChanged(HWND hwnd,
+                            ULONG idAttrChanged)
+{
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+    XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+    BOOL fSave = TRUE;
+
+    switch (idAttrChanged)
+    {
+        case 0:     // layout palette thing dropped
+        case PP_BACKGROUNDCOLOR:
+        // case PP_FOREGROUNDCOLOR:
+            _lcolClientBackground
+                = winhQueryPresColor(hwnd,
+                                     PP_BACKGROUNDCOLOR,
+                                     FALSE,
+                                     SYSCLR_DIALOGBACKGROUND);
+        break;
+
+        case PP_FONTNAMESIZE:
+            if (_pszClientFont)
+            {
+                free(_pszClientFont);
+                _pszClientFont = NULL;
+            }
+
+            _pszClientFont = winhQueryWindowFont(hwnd);
+        break;
+
+        default:
+            fSave = FALSE;
+    }
+
+    if (fSave)
+        _wpSaveDeferred(pXCenterData->somSelf);
 }
 
 /*
@@ -2825,6 +2870,11 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             case WM_PAINT:
                 ClientPaint(hwnd);
+            break;
+
+            case WM_PRESPARAMCHANGED:
+                ClientPresParamChanged(hwnd,
+                                       (ULONG)mp1);
             break;
 
             /*
@@ -4304,10 +4354,10 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                       FCF_NOBYTEALIGN,
                                       _ulWindowStyle,   // frame style
                                       _wpQueryTitle(pXCenterData->somSelf),
-                                      0,
+                                      0,            // resources ID
                                       WC_XCENTER_CLIENT, // client class
                                       WS_VISIBLE,       // client style
-                                      0,
+                                      0,                // client ID
                                       pXCenterData,     // client control data
                                       &pGlobals->hwndClient);
                                             // out: client window
@@ -4355,7 +4405,21 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 WinQueryWindowPos(pGlobals->hwndClient, &swpClient);
                 pGlobals->cyTallestWidget = swpClient.cy;
 
-                // _Pmpf((__FUNCTION__": swpClient.cx: %d, swpClient.cy: %d", swpClient.cx, swpClient.cy));
+                // if a font was set by the user for the entire XCenter,
+                // set it on the client now... this was maybe saved in
+                // the XCenter instance data from a previous WM_PRESPARAMCHANGED
+                // V0.9.9 (2001-03-07) [umoeller]
+                if (_pszClientFont)
+                    winhSetWindowFont(pGlobals->hwndClient,
+                                      _pszClientFont);
+                // we need not care about the color because WM_PAINT
+                // would use the instance variable directly also...
+                // but we can make the widgets inherit that color
+                // so let's set that also
+                WinSetPresParam(pGlobals->hwndClient,
+                                PP_BACKGROUNDCOLOR,
+                                sizeof(ULONG),
+                                &_lcolClientBackground);
 
                 // add the use list item to the object's use list;
                 // this struct has been zeroed above
