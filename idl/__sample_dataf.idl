@@ -15,6 +15,12 @@
  *         should be the parent class of your class. Take WPFolder
  *         if you're creating a WPFolder subclass, for example.
  *
+ *      To add this class into the XWorkplace makefile system to have
+ *      all necessary source files produced, see PROGREF.INF, "Adding
+ *      Features to XWorkplace", which gives you instructions.
+ */
+
+/*
  *      Copyright (C) 2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
