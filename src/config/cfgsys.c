@@ -131,6 +131,11 @@ PSZ G_apszPathNames[] =
             "SET DPATH=",
             "SET BOOKSHELF=",
             "SET HELP="
+            "SET HELP=",
+            "SET CLASSPATH=",   // V0.9.9 (2001-03-06) [pr]
+            "SET INCLUDE=",
+            "SET LIB=",
+            "SET SMINCLUDE="
         };
 
 typedef struct _SYSPATH
@@ -1075,7 +1080,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             // we'll free this manually
 
                     for (ul = 0;
-                         ul < sizeof(G_apszPathNames) / sizeof(G_apszPathNames[0]);
+                         ul < ARRAYITEMCOUNT(G_apszPathNames);
                          ul++)
                     {
                         // create SYSPATH structure

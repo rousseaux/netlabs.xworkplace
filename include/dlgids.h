@@ -138,6 +138,10 @@
 #define ID_ICONXWPFONTOPEN     151
 #define ID_ICONXWPFONTOBJ      152
 
+// icons used by "diskfree" widget
+#define ID_ICON_DRIVE          160
+#define ID_POINTER_HAND        161
+
 /******************************************
  * generics                        < 100  *
  ******************************************/
@@ -241,6 +245,14 @@
 #define ID_XFD_CONTAINERPAGE            300
 #define ID_XFDI_CNR_CNR                 301
 #define ID_XFDI_CNR_GROUPTITLE          302
+
+// "Run" dialog V0.9.9 (2001-03-07) [umoeller]
+#define ID_XFD_RUN                      350
+#define ID_XFD_RUN_COMMAND              351
+#define ID_XFD_RUN_STARTUPDIR           352
+#define ID_XFD_RUN_FULLPATH             353
+#define ID_XFD_RUN_MINIMIZED            354
+#define ID_XFD_RUN_AUTOCLOSE            355
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
@@ -1017,6 +1029,9 @@
 #define ID_CRDI_FILTERS_NEWCOMBO        3703
 #define ID_CRDI_FILTERS_ADD             3704
 
+#define ID_CRD_HEALTHWGT_SETTINGS       3710
+#define ID_CRDI_SETUP_STRING            3711
+
 /******************************************
  * XWPString (V0.9.3)       >= 3800       *
  ******************************************/
@@ -1162,6 +1177,7 @@
 #define ID_CRMI_LOGOFF                  103
 #define ID_CRMI_RESTARTWPS              104
 #define ID_CRMI_SHUTDOWN                105
+#define ID_CRMI_RUN                     106
 
 #define ID_CRM_WIDGET                   200
 #define ID_CRMI_PROPERTIES              201

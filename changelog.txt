@@ -26,6 +26,8 @@ Changes for V0.9.9
 
     -- ID_XSD_IMPORTWPS changed.
     -- ID_XSD_FOLDERVIEWS changed.
+    -- ID_CRD_HEALTHWGT_SETTINGS added.
+    -- ID_XFD_RUN added.
 
 
 Changes for V0.9.7

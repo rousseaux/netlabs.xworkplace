@@ -37,6 +37,7 @@ EXPORTS
    cmnQueryDefaultFont
    cmnQueryHelpLibrary
    cmnQueryNLSModuleHandle
+   cmnQueryMainResModuleHandle
    cmnSetControlsFont
    ctrDisplayHelp
    ctrFreeSetupValue

@@ -622,7 +622,6 @@ VOID OwgtButton1Down(HWND hwnd)
                     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                     // toggle state is still UP (i.e. button pressed
                     // for the first time): create menu
-                    ULONG   ulPosition = 1;
 
                     // prepare globals in fdrmenus.c
                     _Pmpf((__FUNCTION__ ": calling cmnuInitItemCache"));
@@ -690,7 +689,7 @@ VOID OwgtButton1Down(HWND hwnd)
                         cmnuPrepareContentSubmenu(pActiveDesktop,
                                                   pPrivate->hwndMenuMain,
                                                   pszDesktopTitle,
-                                                  ulPosition++,
+                                                  0,        // top item
                                                   FALSE); // no owner draw in main context menu
                     } // if (pPrivate->ulType == BTF_XBUTTON)
                     else
@@ -965,6 +964,8 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 /*
  *@@ OwgtCommand:
  *      implementation for WM_COMMAND.
+ *
+ *@@changed V0.9.9 (2001-03-07) [umoeller]: added "run" to X-button
  */
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
@@ -1025,6 +1026,11 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 
                 case ID_CRMI_SHUTDOWN:
                     xsdInitiateShutdown();
+                break;
+
+                case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]
+                    cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
+                                      NULL);        // boot drive
                 break;
 
                 default:

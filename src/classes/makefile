@@ -276,7 +276,7 @@ $(OUTPUTDIR)\xfontobj.obj: \
 
 $(OUTPUTDIR)\xfpgmf.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\dosh.h \
+            $(HLPINC)\dosh.h $(HLPINC)\winh.h \
             $(INC)\classes\xfobj.ih \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \

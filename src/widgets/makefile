@@ -59,6 +59,7 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\widgets
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = \
     $(OUTPUTDIR)\miniwdgt.obj \
+    $(OUTPUTDIR)\w_diskfree.obj \
     $(OUTPUTDIR)\w_monitors.obj \
     $(OUTPUTDIR)\w_sentinel.obj \
     $(OUTPUTDIR)\w_winlist.obj \
@@ -131,6 +132,14 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 
 $(OUTPUTDIR)\miniwdgt.obj: \
     $(INC)\shared\center.h \
+    $(@B).c
+
+$(OUTPUTDIR)\w_diskfree.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h \
+        $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\dlgids.h \
+    $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 
 $(OUTPUTDIR)\w_monitors.obj: \

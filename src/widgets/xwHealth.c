@@ -88,7 +88,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
-#include "xwHealth.h"
+// #include "xwHealth.h"
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -155,8 +155,11 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
 // resolved function pointers from XFLDR.DLL
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
+PCMNQUERYMAINRESMODULEHANDLE pcmnQueryMainResModuleHandle = NULL;
+PCMNQUERYNLSMODULEHANDLE pcmnQueryNLSModuleHandle = NULL;
 PCMNSETCONTROLSFONT pcmnSetControlsFont = NULL;
 
+PCTRDISPLAYHELP pctrDisplayHelp = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
@@ -184,7 +187,10 @@ RESOLVEFUNCTION G_aImports[] =
 {
     "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
     "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+    "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
+    "cmnQueryNLSModuleHandle", (PFN*)&pcmnQueryNLSModuleHandle,
     "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
+    "ctrDisplayHelp", (PFN*)&pctrDisplayHelp,
     "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
     "ctrParseColorString", (PFN*)&pctrParseColorString,
     "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -224,7 +230,7 @@ RESOLVEFUNCTION G_StHealthImports[] =
 };
 
 HMODULE hmStHealth = 0;
-HMODULE hmXwHealth = 0;
+// HMODULE hmXwHealth = 0;
 
 /* ******************************************************************
  *
@@ -235,7 +241,7 @@ HMODULE hmXwHealth = 0;
 /*
  *@@ MONITORSETUP:
  *      instance data to which setup strings correspond.
- *      This is also a member of MONITORPRIVATE.
+ *      This is also a member of HEALTHPRIVATE.
  *
  *      Putting these settings into a separate structure
  *      is no requirement, but comes in handy if you
@@ -251,18 +257,21 @@ typedef struct _MONITORSETUP
     PSZ         pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
+
     PSZ         pszViewString;
+            // health view string for painting
+
 } MONITORSETUP, *PMONITORSETUP;
 
 /*
- *@@ MONITORPRIVATE:
+ *@@ HEALTHPRIVATE:
  *      more window data for the various monitor widgets.
  *
  *      An instance of this is created on WM_CREATE in
- *      fnwpMonitorWidgets and stored in XCENTERWIDGET.pUser.
+ *      fnwpHealthWidget and stored in XCENTERWIDGET.pUser.
  */
 
-typedef struct _MONITORPRIVATE
+typedef struct _HEALTHPRIVATE
 {
     PXCENTERWIDGET pWidget;
             // reverse ptr to general widget data ptr; we need
@@ -280,7 +289,7 @@ typedef struct _MONITORPRIVATE
 
     ULONG           ulTimerID;              // if != NULLHANDLE, update timer is running
 
-} MONITORPRIVATE, *PMONITORPRIVATE;
+} HEALTHPRIVATE, *PHEALTHPRIVATE;
 
 /* ******************************************************************
  *
@@ -311,6 +320,12 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
         {
             free(pSetup->pszFont);
             pSetup->pszFont = NULL;
+        }
+
+        if (pSetup->pszViewString) // V0.9.9 (2001-03-07) [umoeller]
+        {
+            free(pSetup->pszViewString);
+            pSetup->pszViewString = NULL;
         }
     }
 }
@@ -376,7 +391,11 @@ VOID MwgtScanSetup(const char *pcszSetupString,
     }
     else
     {
-        pSetup->pszViewString = "Temp:%T0/%T1/%T2 øC - Fan:%F0/%F1/%F2 RPM - Volt:%V0/%V1/%V2/%V3/%V4/%V5/%V6";
+        pSetup->pszViewString = strdup("Temp:%T0/%T1/%T2 øC - Fan:%F0/%F1/%F2 RPM - Volt:%V0/%V1/%V2/%V3/%V4/%V5/%V6");
+                // V0.9.9 (2001-03-07) [umoeller]
+                // if you use malloc() for the one case, we better
+                // use malloc() for the second case also... otherwise
+                // we can't use free() on pszViewString
     }
 }
 
@@ -408,7 +427,7 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,  // out: setup string (is cleared first)
         pxstrcat(pstrSetup, szTemp, 0);
     }
 
-    if(pSetup->pszViewString)
+    if (pSetup->pszViewString)
     {
         sprintf(szTemp,"HEALTHVSTR=%s;", pSetup->pszViewString);
         pxstrcat(pstrSetup, szTemp, 0);
@@ -508,92 +527,141 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
  *
  ********************************************************************/
 
+/*
+ *@@ xwhShowSettingsDlg:
+ *
+ */
 
 VOID EXPENTRY xwhShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 {
- HWND hwnd=WinLoadDlg(HWND_DESKTOP
-                      ,pData->hwndOwner
-                      ,fnwpSettingsDlg
-                      ,hmXwHealth
-                      ,ID_CRD_HEALTHWGT_SETTINGS
-                      ,(PVOID)pData);
- if(hwnd)
- {
-  ULONG reply=0;
-  pcmnSetControlsFont(hwnd,1,10000);
-  pwinhCenterWindow(hwnd);
-  reply=WinProcessDlg(hwnd);
-  WinDestroyWindow(hwnd);
-  if(reply==DID_OK)
-  {
-   // Reread setup string
-   // resize control
-  }
- }
+    HWND hwnd=WinLoadDlg(HWND_DESKTOP,
+                         pData->hwndOwner,
+                         fnwpSettingsDlg,
+                         pcmnQueryNLSModuleHandle(FALSE),
+                         ID_CRD_HEALTHWGT_SETTINGS,
+                         (PVOID)pData);
+    if (!hwnd)
+        winhDebugBox(pData->hwndOwner,
+                     "xwhealth",
+                     "Cannot load setup dialog.");
+    else
+    {
+        ULONG reply=0;
+        pcmnSetControlsFont(hwnd,1,10000);
+        pwinhCenterWindow(hwnd);
+        reply = WinProcessDlg(hwnd);
+        WinDestroyWindow(hwnd);
+        if(reply == DID_OK)
+        {
+            // Reread setup string
+            // resize control
+        }
+    }
 }
+
+/*
+ *@@ fnwpSettingsDlg:
+ *
+ */
 
 MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2)
 {
- MRESULT mrc=0;
- switch(msg)
- {
-  case WM_INITDLG:
-   {
-    PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)mp2;
-    PMONITORSETUP pSetup=malloc(sizeof(MONITORSETUP));
-    WinSetWindowPtr(hwnd, QWL_USER, pData);
-    if(pSetup)
+    MRESULT mrc=0;
+    switch(msg)
     {
-     HWND hwndEf=WinWindowFromID(hwnd,ID_CRDI_SETUP_STRING);
-     memset(pSetup,0,sizeof(*pSetup));
-     pData->pUser=pSetup;
-     MwgtScanSetup(pData->pcszSetupString,pSetup);
-     winhSetEntryFieldLimit(hwndEf,550);
-     WinSetWindowText(hwndEf,pSetup->pszViewString);
-    }
-   }
-   mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
-   break;
-  case WM_COMMAND:
-   {
-    PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd,QWL_USER);
-    if(pData)
-    {
-     PMONITORSETUP pSetup=(PMONITORSETUP)pData->pUser;
-     if(pSetup)
-     {
-      switch((SHORT)mp1)
-      {
-       case DID_OK:
+        case WM_INITDLG:
         {
-         XSTRING strSetup;
-         PSZ p=pSetup->pszViewString;
-         CHAR sz[600];
-         HWND hwndEf=WinWindowFromID(hwnd,ID_CRDI_SETUP_STRING);
-         WinQueryWindowText(hwndEf,600,sz);
-         pSetup->pszViewString=sz;
-         pctrFreeSetupValue(p);
-         MwgtSaveSetup(&strSetup,pSetup);
-         pData->pctrSetSetupString(pData->hSettings,strSetup.psz);
-         pxstrClear(&strSetup);
-         WinDismissDlg(hwnd,DID_OK);
-        }
+            PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)mp2;
+            PMONITORSETUP pSetup = malloc(sizeof(MONITORSETUP));
+            WinSetWindowPtr(hwnd, QWL_USER, pData);
+            if(pSetup)
+            {
+                HWND hwndEf=WinWindowFromID(hwnd,ID_CRDI_SETUP_STRING);
+                memset(pSetup,0,sizeof(*pSetup));
+                pData->pUser = pSetup;
+                // decode setup string into binary data;
+                // this sets pSetup->pszViewString to a malloc() buffer
+                MwgtScanSetup(pData->pcszSetupString, pSetup);
+                winhSetEntryFieldLimit(hwndEf, 550);
+                WinSetWindowText(hwndEf, pSetup->pszViewString);
+            }
+
+            mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
+        break; }
+
+        case WM_COMMAND:
+        {
+            PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd,QWL_USER);
+            if(pData)
+            {
+                PMONITORSETUP pSetup = (PMONITORSETUP)pData->pUser;
+                if(pSetup)
+                {
+                    switch((SHORT)mp1)
+                    {
+                        case DID_OK:
+                        {
+                            XSTRING strSetup;
+
+                            CHAR sz[600];
+                            HWND hwndEf=WinWindowFromID(hwnd,ID_CRDI_SETUP_STRING);
+
+                            // V0.9.9 (2001-03-07) [umoeller]
+                            if (pSetup->pszViewString)
+                            {
+                                free(pSetup->pszViewString);
+                                pSetup->pszViewString = NULL;
+                            }
+
+                            WinQueryWindowText(hwndEf,600,sz);
+                            if (sz[0])
+                            {
+                                pSetup->pszViewString = strdup(sz);
+                            }
+
+                            MwgtSaveSetup(&strSetup, pSetup);
+                            pData->pctrSetSetupString(pData->hSettings,
+                                                      strSetup.psz);
+                            pxstrClear(&strSetup);
+                            WinDismissDlg(hwnd,DID_OK);
+                        break; }
+
+                        case DID_CANCEL:
+                            WinDismissDlg(hwnd,DID_CANCEL);
+                        break;
+
+                        case DID_HELP:
+                            pctrDisplayHelp(pData->pGlobals,
+                                            pcmnQueryHelpLibrary(),
+                                            ID_XSH_WIDGET_HEALTH_SETTINGS);
+                        break;
+                    }
+                }
+            }
+        break; }
+
+        case WM_DESTROY:
+        {
+            // V0.9.9 (2001-03-07) [umoeller]
+            // Stefan, you must clean up your allocation here...
+            PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd,QWL_USER);
+            if(pData)
+            {
+                PMONITORSETUP pSetup = (PMONITORSETUP)pData->pUser;
+                if(pSetup)
+                {
+                    MwgtFreeSetup(pSetup);
+                    free(pSetup);
+                    pData->pUser = NULL;
+                }
+            }
+        break; }
+
+        default:
+            mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
         break;
-       case DID_CANCEL:
-        WinDismissDlg(hwnd,DID_CANCEL);
-        break;
-       case DID_HELP:
-        break;
-      }
-     }
     }
-   }
-   break;
-  default:
-   mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
-   break;
- }
- return (mrc);
+    return (mrc);
 }
 
 /* ******************************************************************
@@ -618,9 +686,9 @@ MRESULT MwgtCreate(HWND hwnd,
     MRESULT mrc = 0;            // continue window creation
 
     PSZ p;
-    PMONITORPRIVATE pPrivate = malloc(sizeof(MONITORPRIVATE));
+    PHEALTHPRIVATE pPrivate = malloc(sizeof(HEALTHPRIVATE));
 
-    memset(pPrivate, 0, sizeof(MONITORPRIVATE));
+    memset(pPrivate, 0, sizeof(HEALTHPRIVATE));
     // link the two together
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
@@ -641,12 +709,8 @@ MRESULT MwgtCreate(HWND hwnd,
 
     // enable context menu help
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
-    switch (pPrivate->ulType)
-    {
-        case MWGT_HEALTHMONITOR:
-            pWidget->ulHelpPanelID = ID_XSH_WIDGET_CLOCK_MAIN;
-            break;
-    }
+    pWidget->ulHelpPanelID = ID_XSH_WIDGET_HEALTH_MAIN;
+
     // start update timer
     pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
                                          hwnd,
@@ -669,7 +733,7 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     if (pWidget)
     {
-        PMONITORPRIVATE pPrivate = (PMONITORPRIVATE) pWidget->pUser;
+        PHEALTHPRIVATE pPrivate = (PHEALTHPRIVATE) pWidget->pUser;
 
         if (pPrivate)
         {
@@ -719,7 +783,7 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      painting.
  */
 
-VOID MwgtPaint(HWND hwnd, PMONITORPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
+VOID MwgtPaint(HWND hwnd, PHEALTHPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
 {
     RECTL rclWin;
     ULONG ulBorder = 1;
@@ -838,7 +902,7 @@ VOID MwgtPresParamChanged(HWND hwnd,
                           ULONG ulAttrChanged,
                           PXCENTERWIDGET pWidget)
 {
-    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE) pWidget->pUser;
+    PHEALTHPRIVATE pPrivate = (PHEALTHPRIVATE) pWidget->pUser;
 
     if (pPrivate)
     {
@@ -900,7 +964,7 @@ VOID MwgtPresParamChanged(HWND hwnd,
 }
 
 /*
- *@@ fnwpMonitorWidgets:
+ *@@ fnwpHealthWidget:
  *      window procedure for the various "Monitor" widget classes.
  *
  *      This window proc is shared among the "Monitor" widgets,
@@ -915,7 +979,7 @@ VOID MwgtPresParamChanged(HWND hwnd,
  *      -- "TYPE={CLOCK|SWAPPER|MEMORY}"
  */
 
-MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpHealthWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -935,7 +999,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
          *
          *      We use XCENTERWIDGET.pUser for allocating
-         *      MONITORPRIVATE for our own stuff.
+         *      HEALTHPRIVATE for our own stuff.
          */
 
         case WM_CREATE:
@@ -969,7 +1033,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             if (hps)
             {
                 // get widget data and its button data from QWL_USER
-                PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+                PHEALTHPRIVATE pPrivate = (PHEALTHPRIVATE)pWidget->pUser;
                 if (pPrivate)
                 {
                     MwgtPaint(hwnd,
@@ -993,7 +1057,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             if (hps)
             {
                 // get widget data and its button data from QWL_USER
-                PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+                PHEALTHPRIVATE pPrivate = (PHEALTHPRIVATE)pWidget->pUser;
                 if (pPrivate)
                 {
                     MwgtPaint(hwnd,
@@ -1025,7 +1089,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_DESTROY:
         {
-            PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+            PHEALTHPRIVATE pPrivate = (PHEALTHPRIVATE)pWidget->pUser;
             if (pPrivate)
             {
                 if (pPrivate->ulTimerID)
@@ -1168,9 +1232,6 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
     ULONG ul = 0;
     BOOL fImportsFailed = FALSE;
 
-    // Store plugin module for later use
-    hmXwHealth=hmodPlugin;
-
     // resolve imports from XFLDR.DLL (this is basically
     // a copy of the doshResolveImports code, but we can't
     // use that before resolving...)
@@ -1197,9 +1258,9 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
             {
                 if (!WinRegisterClass(hab
                                       ,WNDCLASS_WIDGET_XWHEALTH
-                                      ,fnwpMonitorWidgets
-                                 ,CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT
-                                      ,sizeof(PMONITORPRIVATE)))
+                                      ,fnwpHealthWidget
+                                      ,CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT
+                                      ,sizeof(PHEALTHPRIVATE)))
                     strcpy(pszErrorMsg, "WinRegisterClass failed.");
                 else
                 {

@@ -218,14 +218,16 @@ BEGIN
 END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
+/* modified V0.9.9 (2001-03-07) [umoeller] */
 MENU ID_CRM_XCENTERBUTTON LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
+    MENUITEM "~Run...", ID_CRMI_RUN
     MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "~Suspend...", ID_CRMI_SUSPEND
     MENUITEM "~Log off...", ID_CRMI_LOGOFF
     MENUITEM "~Restart WPS...", ID_CRMI_RESTARTWPS
-    MENUITEM "Shut~down...", ID_CRMI_SHUTDOWN
+    MENUITEM "Shut ~down...", ID_CRMI_SHUTDOWN
 END
 
 /* XCenter standard widget context menu V0.9.7 (2000-11-30) [umoeller] */

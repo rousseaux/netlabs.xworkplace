@@ -244,7 +244,7 @@ Should we do this now?
 
 <--XFL0178-->: You have selected %1 objects to be permanently deleted. Are you sure you want to do this?
 
-<--XFL0179-->: "%1" is a read-only file. Do you want to move it to the trash can anyways?
+<--XFL0179-->: "%1" is a read-only file. Do you want to move it to the trash can anyway?
 
 <--XFL0180-->: The current drive is not supported by the trash can. Do you wish to permanently delete "%1" instead?
 
@@ -254,7 +254,7 @@ Should we do this now?
 
 <--XFL0183-->: You have selected %1 objects to be moved to the trash can. Are you sure you want to do this?
 
-<--XFL0184-->: "%1" is a read-only file. Do you want to permanently delete it anyways?
+<--XFL0184-->: "%1" is a read-only file. Do you want to permanently delete it anyway?
 
 <--XFL0185-->: "%1" cannot be deleted.
 

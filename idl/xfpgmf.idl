@@ -70,13 +70,6 @@ interface XFldProgramFile : WPProgramFile
     dllname = "xfldr.dll";
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-     passthru C_h =
-"// additional PROG_* flags for _ulAppType in XFldProgramFile instance data;"
-"// these are only used by XFldProgramFile to determine the correct icons"
-"#define PROG_XF_DLL        998 // dynamic link library"
-"#define PROG_XF_DRIVER     999 // virtual or physical dev' drivers"
-"";
-
     /*
      * Internal instance variables for XFldProgramFile:
      *

@@ -322,14 +322,18 @@
     #define ID_XSH_WIDGET_WINLIST_SETTINGS  107     // V0.9.7: Winlist widget properties
     #define ID_XSH_WIDGET_XBUTTON_MAIN      108     // V0.9.7: X-Button widget main help
     #define ID_XSH_WIDGET_SENTINEL_MAIN     109     // V0.9.9: Sentinal widget main help
+    #define ID_XSH_WIDGET_HEALTH_MAIN       110     // V0.9.9: Health widget main help
+    #define ID_XSH_WIDGET_HEALTH_SETTINGS   111     // V0.9.9: Health widget main help
 
-    #define ID_XSH_FONTFOLDER               110
-    #define ID_XSH_FONTFILE                 111
-    #define ID_XSH_FONTOBJECT               112
-    #define ID_XSH_FONTSAMPLEVIEW           113
-    #define ID_XSH_FONTSAMPLEHINTS          114
+    #define ID_XSH_FONTFOLDER               112
+    #define ID_XSH_FONTFILE                 113
+    #define ID_XSH_FONTOBJECT               114
+    #define ID_XSH_FONTSAMPLEVIEW           115
+    #define ID_XSH_FONTSAMPLEHINTS          116
 
-    #define ID_XSH_XFIX_INTRO               115
+    #define ID_XSH_XFIX_INTRO               117
+
+    #define ID_XSH_RUN                      118
 
     /********************************************************************
      *
@@ -1283,7 +1287,9 @@
 
     const char* cmnQueryMainModuleFilename(VOID);
 
-    HMODULE cmnQueryMainResModuleHandle(VOID);
+    HMODULE XWPENTRY cmnQueryMainResModuleHandle(VOID);
+    typedef HMODULE XWPENTRY CMNQUERYMAINRESMODULEHANDLE(VOID);
+    typedef CMNQUERYMAINRESMODULEHANDLE *PCMNQUERYMAINRESMODULEHANDLE;
 
     /* ******************************************************************
      *
@@ -1601,6 +1607,9 @@
     #endif
 
     VOID cmnShowProductInfo(ULONG ulSound);
+
+    VOID cmnRunCommandLine(HWND hwndOwner,
+                           const char *pcszStartupDir);
 
     const char* XWPENTRY cmnQueryDefaultFont(VOID);
     typedef const char* XWPENTRY CMNQUERYDEFAULTFONT(VOID);

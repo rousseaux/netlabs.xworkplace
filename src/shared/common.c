@@ -66,8 +66,10 @@
 #define INCL_WINDIALOGS
 #define INCL_WINMENUS
 #define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #define INCL_WINCOUNTRY
+#define INCL_WINPROGRAMLIST
 #define INCL_WINSYS
 
 #define INCL_GPILOGCOLORTABLE
@@ -3475,6 +3477,182 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
     winhCenterWindow(hwndInfo);
     WinProcessDlg(hwndInfo);
     WinDestroyWindow(hwndInfo);
+}
+
+const char *G_apcszExtensions[]
+    = {
+                "EXE",
+                "COM",
+                "CMD"
+      };
+
+/*
+ *@@ fnwpRunCommandLine:
+ *      window proc for "run" dialog.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_CONTROL:
+        {
+            USHORT usid = SHORT1FROMMP(mp1);
+            USHORT usNotifyCode = SHORT2FROMMP(mp1);
+
+            switch (usid)
+            {
+                case ID_XFD_RUN_COMMAND:
+                    if (usNotifyCode == EN_CHANGE)
+                    {
+                        BOOL fOK = FALSE;
+                        PSZ pszCommand = winhQueryWindowText(WinWindowFromID(hwnd,
+                                                                             usid));
+                        CHAR szExecutable[CCHMAXPATH];
+                        if (pszCommand)
+                        {
+                            APIRET arc = doshFindExecutable(pszCommand,
+                                                            szExecutable,
+                                                            sizeof(szExecutable),
+                                                            G_apcszExtensions,
+                                                            ARRAYITEMCOUNT(G_apcszExtensions));
+                            if (!arc)
+                            {
+                                strupr(szExecutable);
+                                fOK = TRUE;
+                            }
+                            free(pszCommand);
+                        }
+
+                        WinEnableControl(hwnd, DID_OK, fOK);
+                        WinSetDlgItemText(hwnd, ID_XFD_RUN_FULLPATH, szExecutable);
+                    }
+
+                break;
+            }
+        break; }
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,
+                           ID_XSH_RUN);
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ cmnRunCommandLine:
+ *      displays a prompt dialog in which the user can
+ *      enter a command line and then runs that command
+ *      line using winhStartApp.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+VOID cmnRunCommandLine(HWND hwndOwner,
+                       const char *pcszStartupDir)
+{
+    HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,
+                              hwndOwner,
+                              fnwpRunCommandLine,
+                              cmnQueryNLSModuleHandle(FALSE),
+                              ID_XFD_RUN,
+                              NULL);
+    if (hwndDlg)
+    {
+        cmnSetControlsFont(hwndDlg, 1, 10000);
+        WinEnableControl(hwndDlg, DID_OK, FALSE);
+        winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
+        if (WinProcessDlg(hwndDlg) == DID_OK)
+        {
+            PSZ pszCommand = winhQueryWindowText(WinWindowFromID(hwndDlg,
+                                                                 ID_XFD_RUN_COMMAND));
+            PSZ pszStartup = winhQueryWindowText(WinWindowFromID(hwndDlg,
+                                                                 ID_XFD_RUN_STARTUPDIR));
+
+            if (pszCommand)
+            {
+                PSZ     p;
+                const char *pParams = 0;
+                APIRET  arc = NO_ERROR;
+                CHAR    szExecutable[CCHMAXPATH];
+
+                if (!pszStartup)
+                {
+                    pszStartup = strdup("?:\\");
+                    *pszStartup = doshQueryBootDrive();
+                }
+
+                p = strchr(pszCommand, ' ');
+                if (p)
+                {
+                    // we have arguments:
+                    *p = 0;             // terminate executable
+                    pParams = p + 1;
+                }
+
+                arc = doshFindExecutable(pszCommand,
+                                         szExecutable,
+                                         sizeof(szExecutable),
+                                         G_apcszExtensions,
+                                         ARRAYITEMCOUNT(G_apcszExtensions));
+
+                if (arc != NO_ERROR)
+                {
+                    PSZ pszError = doshQuerySysErrorMsg(arc);
+                    if (pszError)
+                    {
+                        cmnMessageBox(hwndOwner,
+                                      pszCommand,
+                                      pszError,
+                                      MB_CANCEL);
+                        free(pszError);
+                    }
+                }
+                else
+                {
+                    PROGDETAILS pd;
+
+                    ULONG   ulDosAppType;
+
+                    memset(&pd, 0, sizeof(pd));
+
+                    winhQueryAppType(szExecutable,
+                                     &ulDosAppType,
+                                     &pd.progt.progc);
+
+                    pd.progt.fbVisible = SHE_VISIBLE;
+                    pd.pszExecutable = szExecutable;
+                    strupr(szExecutable);
+                    pd.pszParameters = (PSZ)pParams;
+                    pd.pszStartupDir = pszStartup;
+
+                    if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
+                        pd.swpInitial.fl = SWP_MINIMIZE;
+                    if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
+                        pd.swpInitial.fl = SWP_NOAUTOCLOSE;
+
+                    winhStartApp(NULLHANDLE,        // no notify
+                                 &pd);
+                        // WinStartApp, system()
+                }
+            }
+
+            if (pszCommand)
+                free(pszCommand);
+            if (pszStartup)
+                free(pszStartup);
+        }
+        WinDestroyWindow(hwndDlg);
+    }
 }
 
 /*

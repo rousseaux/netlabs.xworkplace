@@ -329,19 +329,12 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
                             // because the FOI_POPULATED* flags are turned off
                             // even though we have replaced wpFree.
 
-                            // lock the folder first
-                            WPFolder *pFolder = pNotify->pFolder;
-                            WPSHLOCKSTRUCT Lock;
-                            if (wpshLockObject(&Lock, pFolder))
-                            {
-                                ULONG flFolder = _wpQueryFldrFlags(pFolder);
-                                _wpModifyFldrFlags(pFolder,
-                                                   FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS,
-                                                   0);
-                                _wpFree(pobj);
-                                _wpSetFldrFlags(pFolder, flFolder);
-                            }
-                            wpshUnlockObject(&Lock);
+                            ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
+                            _wpModifyFldrFlags(pNotify->pFolder,
+                                               FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS,
+                                               0);
+                            _wpFree(pobj);
+                            _wpSetFldrFlags(pNotify->pFolder, flFolder);
                         break; }
 
                         // case NO_ERROR: the file has reappeared.
@@ -520,7 +513,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
 
         TRY_LOUD(excpt1)
         {
-            fSemOwned = wpshGetNotifySem(5000);
+            fSemOwned = wpshGetNotifySem(SEM_INDEFINITE_WAIT);
             if (fSemOwned)
             {
                 // only if we got the mutex, reset the event
@@ -601,14 +594,6 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
     if (pNotify)
     {
         // hack the folder's instance data directly...
-        // note that we do NOT request the folder's
-        // object mutex here. Per our definition, the
-        // folder's notify list may only be accessed
-        // under the protection of the global WPS
-        // notify mutex, so we're safe here. If we
-        // additionally requested the folder object
-        // mutex, we are running into the danger of
-        // global deadlocks.
         XFolderData *somThat = XFolderGetData(pNotify->pFolder);
 
         BYTE        bActionThis = pNotify->CNInfo.bAction;

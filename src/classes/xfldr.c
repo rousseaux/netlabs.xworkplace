@@ -1760,6 +1760,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         {
             refrClearFolderNotifications(somSelf);
             lstFree((PLINKLIST)_pvllNotifications);
+            _pvllNotifications = NULL; // V0.9.9 (2001-03-07) [umoeller]
         }
 
         wpshReleaseNotifySem();

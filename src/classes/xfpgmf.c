@@ -63,6 +63,7 @@
 #define INCL_DOSSESMGR          // DosQueryAppType
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINPOINTERS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
 #include <os2.h>
@@ -75,6 +76,7 @@
 
 // headers in /helpers
 #include "helpers\dosh.h"
+#include "helpers\winh.h"
 
 // SOM headers which don't crash with prec. header files
 #include "xfpgmf.ih"
@@ -117,6 +119,8 @@ static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*
  *               PROG_XF_DRIVER  for virtual or physical device drivers;
  *                               most files ending in .SYS will be
  *                               recognized as DLL's though.
+ *
+ *@@changed V0.9.9 (2001-03-07) [umoeller]: extracted winhQueryAppType
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
@@ -153,13 +157,13 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
                     // and we modify a few of these assumptions
                     switch (_ulAppType)
                     {
-                        case PROG_PDD:
+                        /* case PROG_PDD:
                         case PROG_VDD:
                             // these two types are documented in pmshl.h,
                             // but I'm not sure they're ever used; convert
                             // them to our own driver type
                             _ulAppType = PROG_XF_DRIVER;
-                        break;
+                        break; */
 
                         // Windows:
                         case PROG_WINDOW_REAL         :
@@ -186,7 +190,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
                                 strupr(szProgramFile);
                                 if (strcmp(pLastDot, ".DLL") == 0)
                                     // DLL found:
-                                    _ulAppType = PROG_XF_DLL;
+                                    _ulAppType = PROG_XWP_DLL;
                             }
                         break; }
 
@@ -198,32 +202,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
                             if (_wpQueryFilename(somSelf, szProgramFile, TRUE))
                             {
                                 // no type available: get it ourselves
-                                arc = DosQueryAppType(szProgramFile, &(_ulDosAppType));
-                                if (arc == NO_ERROR) {
-                                    if (_ulDosAppType == 0)
-                                        _ulAppType = PROG_FULLSCREEN;
-                                    else if (   (_ulDosAppType & 0x40)
-                                             || (_ulDosAppType & 0x80)
-                                            )
-                                        // some driver bit set
-                                        _ulAppType = PROG_XF_DRIVER;
-                                    else if ((_ulDosAppType & 0xF0) == 0x10)
-                                        // DLL bit set
-                                        _ulAppType = PROG_XF_DLL;
-                                    else if (_ulDosAppType & 0x20)
-                                        // DOS bit set?
-                                        _ulAppType = PROG_WINDOWEDVDM;
-                                    else if ((_ulDosAppType & 0x0003) == 0x0003) // "Window-API" == PM
-                                        _ulAppType = PROG_PM;
-                                    else if (   ((_ulDosAppType & 0xFFFF) == 0x1000) // windows program (?!?)
-                                             || ((_ulDosAppType & 0xFFFF) == 0x0400) // windows program (?!?)
-                                            )
-                                        _ulAppType = PROG_31_ENH;
-                                    else if ((_ulDosAppType & 0x03) == 0x02)
-                                        _ulAppType = PROG_WINDOWABLEVIO;
-                                    else if ((_ulDosAppType & 0x03) == 0x01)
-                                        _ulAppType = PROG_FULLSCREEN;
-                                }
+                                arc = winhQueryAppType(szProgramFile,
+                                                       &_ulDosAppType,
+                                                       &_ulAppType);
                             }
                         break; }
 
@@ -558,13 +539,14 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
                                               104);
                     break;
 
-                    case PROG_XF_DLL:
+                    case PROG_XWP_DLL:
                         // DLL flag set: load DLL icon
                         hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
                                               103);
                     break;
 
-                    case PROG_XF_DRIVER:
+                    case PROG_PDD:
+                    case PROG_VDD:
                         hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
                                               106);
                     break;
@@ -635,8 +617,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
 
     ulView = XFldProgramFile_parent_WPProgramFile_wpQueryDefaultView(somSelf);
 
-    if (    (ulProgType == PROG_XF_DLL)
-         || (ulProgType == PROG_XF_DRIVER)
+    if (    (ulProgType == PROG_XWP_DLL)
+         || (ulProgType == PROG_PDD)
+         || (ulProgType == PROG_VDD)
          || (ulProgType == PROG_DEFAULT)
        )
         if (ulView == OPEN_RUNNING)
@@ -757,8 +740,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpFilterPopupMenu(XFldProgramFile *somSelf,
                                                                       ulFlags,
                                                                       hwndCnr,
                                                                       fMultiSelect);
-    if (    (ulProgType == PROG_XF_DLL)
-         || (ulProgType == PROG_XF_DRIVER)
+    if (    (ulProgType == PROG_XWP_DLL)
+         || (ulProgType == PROG_PDD)
+         || (ulProgType == PROG_VDD)
          || (ulProgType == PROG_DEFAULT)
        )
         ulFilter &= ~ CTXT_PROGRAM;
