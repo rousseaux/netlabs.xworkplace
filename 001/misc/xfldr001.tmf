@@ -18,17 +18,18 @@
 ; enough to find out whether this file has changed and will
 ; automatically recompile it.
 ;
-; The format of this file has slightly changed. We now use
+; The format of this file has slightly changed with V0.9.0. We now use
 ; the angle-bracket syntax, as seen below. Whatever is in angle
 ; brackets at the beginning of a line will be used by XWorkplace
 ; to find the corresponding message, which must follow. If you
 ; change the identifiers, XWorkplace can no longer find the message!
 ;
-; Also, make sure to keep all those "%1" etc. stuff in place,
-; because those placeholders will be replaced at run-time with
-; variable information.
+; Also, make sure to keep all those "%1", "%c", "%s" etc. thingies in
+; place, because those placeholders will be replaced at run-time with
+; variable information. XWorkplace might crash if these placeholders
+; are not found.
 ;
-;       Copyright (C) 1997-99 Ulrich M”ller.
+;       Copyright (C) 1997-2000 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software. You can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -202,7 +203,7 @@ Do you wish to continue?
 
 <--XFL0162-->: Are you sure you wish to remove the hotkey "%1" for the object "%2"?
 
-<--XFL0163-->: This will create the object "%1" on the Desktop with the setup string "%2".
+<--XFL0163-->: This will create an object called "%1" on the Desktop with the setup string "%2".
 
 Do you wish to continue?
 
@@ -213,6 +214,20 @@ Do you wish to continue?
 <--XFL0166-->: You have selected to enable the extended system sounds, but the additional XWorkplace system sounds have not been installed in the "Sound" object yet. Do you wish to have this done now?
 
 <--XFL0167-->: You have selected to disable the extended system sounds. Do you wish to remove the additional XWorkplace system sounds from the "Sound" object?
+
+<--XFL0168-->: XWorkplace Trash Can
+
+<--XFL0169-->: This will delete all the objects in the trash can for good.
+
+Are you sure you wish to empty the trash can?
+
+<--XFL0170-->: The trash can WPS classes which are required for the XWorkplace trash can to work (XWPTrashCan, XWPTrashObject) have not been registered yet.
+
+Should we do this now?
+
+<--XFL0171-->: An error occured registering the trash can WPS classes.
+
+<--XFL0172-->: Do you wish to destroy the trash object and deregister the XWorkplace trash can classes (XWPTrashCan, XWPTrashObject)?
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -431,10 +446,11 @@ This was new with XFolder 0.84.
 See the XWorkplace User Guide for details.
 <--FEATURES_6002-->: If "Add Object page..." is enabled, a new "Object" page will be added to the settings notebooks of all objects on your system.
 On that page, you can view object internals and set a global hotkey for an object, if the XWorkplace Hook is also enabled.
-This is new with XWorkplace 0.9.0 and replaces the "Internals" page which was present in XFolder 0.85.
-<--FEATURES_6003-->: If this is enabled, XWorkplace replaces the three "File" pages in folder and data file settings notebooks with a more convenient single "File" page.
+This was added with XWorkplace 0.9.0 and replaces the "Internals" page which was present in XFolder 0.85.
+<--FEATURES_6003-->: If this is enabled, XWorkplace combines the three standard "File" pages in folder and data file settings notebooks into a more convenient single "File" page.
+Also, a second page for viewing extended attributes is added.
 Also, this replaces the "Details" page in disk objects with a graphical pie chart view.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 <--FEATURES_6004-->: "Extended system sounds" allows you to define more sounds than the WPS usually offers.
 You'll get additional sounds for context menus, object selections, and more.
 You can set up those new sounds in the regular "Sound" object, as usual.
@@ -460,13 +476,17 @@ See the XWorkplace User Guide for details.
 Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.
 Also, the XWorkplace Hook is required for global object hotkeys to work.
 If this is enabled, you'll get additional settings pages in the "Keyboard" and "Mouse" objects in your "System setup" folder.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 See the XWorkplace User Guide for details.
 <--FEATURES_6052-->: "Animated mouse pointers" replaces the "Pointers" page in the "Mouse" object (in your "System Setup" folder) with a new page which allows you to define animated mouse pointers, instead of the default static ones of OS/2.
 This feature used to be in the separate "Animated Mouse Pointers for OS/2" program, but is now part of XWorkplace 0.9.0.
 See the XWorkplace User Guide for details.
-<--FEATURES_6053-->: This setting determines whether the NumLock key will be enabled automatically at WPS startup, since IBM does not seem to be willing to ever implement this feature.
-This is new with XWorkplace V0.9.1.
+<--FEATURES_6053-->: If this is enabled, you can assign a global hotkey to any WPS object. Whenever you press that hotkey, the object will be opened in its default view.
+You can set an object's hotkey on the "Object" page in each object's settings notebook.
+Also, a "Hotkeys" page is added to the "Keyboard" settings object in your "System setup" folder where you can view all hotkeys at once.
+This item is unavailable if the XWorkplace hook is not installed.
+Make sure that you also have the "Object page" setting in the "General features" group enabled, or you won't be able to configure hotkeys.
+This was added with XWorkplace V0.9.1.
 
 <--FEATURES_6021-->: This replaces the "Archives" page in the Desktop's settings notebook. If this is enabled, you can define precise conditions for whether the Workplace Shell should be backed up automatically -- instead of just being able to enable or disable archiving altogether.
 This functionality used to be in the separate "WPSArcO" program, but is now part of XWorkplace 0.9.0, and can be configured more easily.
@@ -485,7 +505,7 @@ See the XWorkplace User Guide for details.
 Don't be shocked, file filters still exist. The difference is that files will be given automatic file types based on file filters, instead of associating programs based on filters directly.
 Also, you can define hierarchical file types, such that all files of type "C Code" will automatically be considered "Plain text" also.
 If this is enabled, you'll get a new settings page for file types in XWorkplace's "Workplace Shell" object.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 See the XWorkplace User Guide for details.
 <--FEATURES_6042-->: "Clean up INI files" will automatically remove some entries from the system profile (OS2.INI) which the WPS frequently forgets to delete.
 I guess this was new with XFolder 0.80.
@@ -498,7 +518,7 @@ This was new with XFolder 0.85.
 <--FEATURES_6045-->: If this is enabled, all Workplace Shell "Delete" operations will not actually delete objects, but move them to the XWorkplace trash can instead.
 This includes pressing the "Del" key and selecting the "Delete" context menu items for all objects on your system.
 This requires that the XWPTrashCan class is installed and that you have created the trash can object.
-This is new with XWorkplace 0.9.1.
+This was added with XWorkplace 0.9.1.
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -530,7 +550,7 @@ This class adds a new "Module" page to the executable's settings notebook and of
 
 <--XWPCLS_1257-->: "XWPSound" is the XWorkplace replacement for the WPSound class, which implements the "Sound" object found in your "System setup" folder.
 This replacement offers a better version of the "Sounds" page in that object's settings notebook, now allowing you to edit sound schemes.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 
 <--XWPCLS_1258-->: "XWPMouse" is the XWorkplace replacement for the WPMouse class, which implements the "Mouse" object found in your "System setup" folder.
 This replacement adds the "Animated Mouse Pointers for OS/2" functionality, which is now part of XWorkplace.
@@ -540,7 +560,7 @@ Also, this replacement adds settings pages for configuring the XWorkplace hook m
 This replacement adds settings pages for configuring the XWorkplace hook keyboard features, such as global object hotkeys.
 
 <--XWPCLS_1260-->: "XWPSetup" implements the "XWorkplace Setup" settings object and is required for XWorkplace's operation. This cannot be deselected.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 
 <--XWPCLS_1261-->: "XFldSystem" implements the "OS/2 Kernel" settings object, which allows you to easily configure various CONFIG.SYS settings.
 
@@ -555,13 +575,13 @@ If this class is to be installed, XFolder must be installed too.
 If this class is to be installed, XFolder and XFldDesktop must be installed too.
 
 <--XWPCLS_1265-->: "XWPClassList" implements an all-new abstract object for editing the WPS class list.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 With previous versions of XFolder, this functionality was contained in the "Workplace Shell" object, but has now been moved and extended to this new object which defines a completely new view.
 This can now even display WPS method information, which might be helpful for WPS programmers.
 
 <--XWPCLS_1266-->: "XWPTrashCan" is new with XWorkplace 0.9.0 and finally implements a special "trash can" folder object, similar to those found on Macintosh, KDE and Win95 systems.
 "XWPTrashObject" implements the "trash objects" found in that folder and will automatically be installed with XWPTrashCan.
-This is new with XWorkplace 0.9.0.
+This was added with XWorkplace 0.9.0.
 
 <--XWPCLS_0001-->: Pressing "OK" will register, deregister, replace, and unreplace classes according to the changes you have made to the XWorkplace class setup.
 

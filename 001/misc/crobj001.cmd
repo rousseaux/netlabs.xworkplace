@@ -1,10 +1,14 @@
-/* create default XWorkplace configuration folder
-   English version (001)
-   (C) 1998-99 Ulrich M”ller. All rights reserved.
+/*
+    Create default XWorkplace configuration folder
+    English version (001)
+    (C) 1998-2000 Ulrich M”ller.
  */
 
-/* This file is executed both after XWorkplace installation
-   and by XWorkplace if no config folder is found. */
+/*
+    This file is executed both by INSTLxxx.CMD
+    and by XWorkplace directly if the config folder
+    is to be (re)created.
+*/
 
 /* Here come the titles of the objects to be created.
    Translate these to your language. The "~" character

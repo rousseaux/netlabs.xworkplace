@@ -1,22 +1,19 @@
 // xfcls001.txt:
 //     Class description file for "WPS classes" notebook page.
-//     (W) (C) 1998-99 Ulrich M”ller. See the GPL for details.
 //     This file is used to get the class descriptions for the
 //     "Information" window.
 //     Each class must be given one line in this file. The first
-//     word must be the class name
-//     (case-sensitive!), the second word must be a flag determining
-//     whether the class may be de-registered via context menu.
-//     Add the following values for this flag (e.g. 1+2=3):
+//     word must be the class name (case-sensitive!), the second
+//     word must be a flag determining whether the class may be
+//     de-registered by context menu.
+//     Add the following values for this flag (e.g. 1 + 2 = 3):
 //        1     allow deregistering of this class
 //        2     do not allow undoing replacement of another class with this class
 //        4     do not allow creating object of this class
 //     The rest of the line makes up the description which appears in the "Information"
 //     window. Do not add any line breaks in this description, or it will be truncated.
 //     Even though this file is mostly sorted alphabetically, this is not necessary.
-
-// this item changed with V0.82
-UnknownClass 0 No information available for this class. If you know what this class is about, please contact XFolder's author, so a class description can be added.
+//     (C) 1998-2000 Ulrich M”ller. See the GPL for details.
 
 AdvAccount 1 (OS/2 V3) This class belongs to the IBM Advantis Dialer. If you're using a different Internet Access Provider, you may remove this class.
 AdvCust 1 (OS/2 V3) This class belongs to the IBM Advantis Dialer. If you're using a different Internet Access Provider, you may remove this class.
@@ -215,6 +212,7 @@ WPStOfWri5 1 (StarOffice/2 5.0) Document class for StarWriter texts.
 WPStOfExe5 1 (StarOffice/2 5.0) Program object class for starting StarOffice.
 
 // Items changed with V0.9.0
+
 WPObject 4 This is the most fundamental WPS class, from which all other WPS classes are derived. This class contains functionality common to all classes. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
 WPAbstract 4 This is the first of the three base WPS storage classes which are derived from WPObject. All subclasses of this class have in common that objects of them do not physically exist as files in the file system, but save their data in OS2.INI only. As a result, objects of subclasses of this class are not visible outside the WPS. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
 WPFileSystem 4 This is the second of the three base WPS storage classes which are derived from WPObject. All subclasses of this class (WPDataFile and WPFolder) have in common that they physically exist in the file system. The WPS stores additional configuration data for those objects in the Extended Attributes of the file, mostly in .CLASSINFO. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
@@ -243,6 +241,7 @@ WPNetwork 0 (OS/2 V3) An object of this class is the "Network" folder on your De
 WPNetgrp 0 (OS/2 V3) Folders of this class are created in the "Network" folder (WPNetwork) for each network that you're connected to.
 
 // Items added with V0.9.0
+
 WPCmpnp 0 Some undocumented PCMCIA plug'n'play system class.
 DwpDoc 1 (Describe 5.0) Class for Describe documents.
 DwpMac 1 (Describe 5.0) Class for Describe macros.
@@ -276,14 +275,18 @@ IWFProject 1 "Project" class of IBM Workframe/2 (as it comes with Visual Age C++
 IWFQuickStart 1 "Project Smarts" folder in the IBM Visual Age C++ 3.0 folder. Strangely, this is a subclass of WPFileSystem directly, even though this appears to be created as a directory.
 IWFRouter 1 Some class for the IBM Workframe/2 (as it comes with Visual Age C++ 3.0).
 
+// Items changed with V0.9.1
+
+UnknownClass 0 No information available for this class. If you know what this class is about, please post a description to xworkplace-user@egroups.com so a class description can be added.
+
 // Items added with V0.9.1
 
 SOMObject 0 This is the base class of all SOM classes. In order to use SOM's features, any class must be derived from this class. WPObject (and thus all WPS classes) is derived from SOMObject too.
 Contained 0 This is used to access the SOM Interface Repository (those ".IR" files that everybody encounters at some point, but nobody really knows more about). The IR was designed to be able to retrieve information about installed SOM classes at run-time. All objects in the IR are instances of classes which are derived from this interface class.
 Container 0 Container class for the SOM Interface Repository. See "Contained".
 SOMClass 0 This is the root class for all SOM metaclasses. Since, with SOM, all classes are objects too, they need to be an instance of a class themselves, the so-called "metaclass". Per default, SOMClass is the metaclass for any SOM class, but most classes define their own metaclasses with their own methods.
-SOMClassMgr 0 An instance of this class is created by the SOM runtime automatically to manage SOM classes. This is needed for run-time class manipulation.
-WPClassManager 0 The WPS subclasses the SOMClassMgr to implement WPS class manipulation.
+SOMClassMgr 0 An instance of this class is created by the SOM runtime automatically to manage SOM classes. This is needed for run-time class manipulation. It is this class which allows things like class replacements in the first place.
+WPClassManager 0 The WPS subclasses the SOMClassMgr to implement WPS class manipulation, especially WPS class replacements.
 SOMMCooperative 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
 SOMMCooperativeSistered 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
 SOMMCooperativeRedispatched 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.

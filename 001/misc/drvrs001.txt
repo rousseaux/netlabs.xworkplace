@@ -53,10 +53,11 @@
  *
  *      Note: Support for the "Configure" button (with the
  *            driver's configuration dialog) is hard-coded
- *            into XWorkplace and cannot be changed using
- *            this file. The "Configure" button is enabled
- *            automatically based on the driver's filename
- *            if a corresponding dialog exists in XWorkplace.
+ *            into XWorkplace's source code and cannot be
+ *            changed using this file. The "Configure" button
+ *            is enabled automatically based on the driver's
+ *            filename if a corresponding dialog exists in
+ *            XWorkplace.
  *            To create a "Configure" dialog, you must create
  *            and modify code in "src\config\drivdlgs.c".
  */
@@ -64,11 +65,11 @@
 CATEGORY "General"
     {
         DRIVER ( "DEVICE=", "APM.SYS",
-                 "IBM Advanced Power Management",
+                 "Advanced Power Management",
                  DRVF_CMDREF)
 
         DRIVER ( "DEVICE=", "DOS.SYS",
-                 "IBM DOS support driver",
+                 "DOS support",
                  DRVF_CMDREF)
 
         DRIVER ( "DEVICE=", "TESTCFG.SYS",
@@ -79,89 +80,89 @@ CATEGORY "General"
 CATEGORY "Hard disk"
     {
         DRIVER ( "BASEDEV=", "IBM1S506.ADD",
-                 "IBM IDE driver",
+                 "Standard IDE",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "DANIS506.ADD",
-                 "Daniela Engert's replacement IDE driver",
+                 "Enhanced IDE (Daniela Engert)",
                  0),
         DRIVER ( "BASEDEV=", "IBMINT13.I13",
-                 "IBM driver for BIOS storage devices",
+                 "Standard BIOS storage devices",
                  DRVF_CMDREF | DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "OS2DASD.DMD",
-                 "IBM general storage device manager",
+                 "General storage device manager",
                  DRVF_CMDREF)
     }
 
 CATEGORY "CD-ROM"
     {
         DRIVER ( "BASEDEV=", "MITFX001.ADD",
-                 "IBM Mitsumi CD-ROM driver",
+                 "Mitsumi CD-ROM",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "SBCD2.ADD",
-                 "IBM Sound Blaster CD-ROM driver",
+                 "Sound Blaster CD-ROM",
                  DRVF_CMDREF | DRVF_NOPARAMS),
 
         DRIVER ( "BASEDEV=", "IBMATAPI.FLT",
-                 "IBM ATAPI filter driver",
+                 "ATAPI filter",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
-                 "IBM CD-ROM filter driver",
+                 "CD-ROM filter",
                  DRVF_CMDREF),
 
         DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
-                 "IBM CD-ROM filter driver",
+                 "CD-ROM filter",
                  DRVF_CMDREF),
 
         DRIVER ( "BASEDEV=", "RSJIDECD.FLT",
-                 "RSJ CD-ROM filter driver replacement",
+                 "RSJ CD-ROM filter replacement",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "LOCKCDR.FLT",
                  "RSJ CD-ROM-to-WORM conversion filter",
                  DRVF_CMDREF),
 
         DRIVER ( "DEVICE=", "OS2CDROM.DMD",
-                 "IBM CD-ROM manager",
+                 "General CD-ROM manager",
                  DRVF_CMDREF)
     }
 
 CATEGORY "SCSI"
     {
         DRIVER ( "BASEDEV=", "AHA152X.ADD",
-                 "Adaptec AHA-1522/1510 SCSI driver",
+                 "Adaptec AHA-1522/1510 adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "AHA154X.ADD",
-                 "Adaptec AHA-1540/1542 SCSI driver",
+                 "Adaptec AHA-1540/1542 adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "AHA164X.ADD",
-                 "Adaptec AHA-164x SCSI driver",
+                 "Adaptec AHA-164x adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "AHA174X.ADD",
-                 "Adaptec AHA-1740/1744 SCSI driver",
+                 "Adaptec AHA-1740/1744 adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "AIC7770.ADD",
-                 "Adaptec AHA-2840QVL/2842VL/2740/2742 and AIC-7770 SCSI driver",
+                 "Adaptec AHA-2840QVL/2842VL/2740/2742 and AIC-7770 adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "AIC7870.ADD",
-                 "Adaptec AHA-2940 and AIC-7870 SCSI driver",
+                 "Adaptec AHA-2940 and AIC-7870 adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "AIC78U2.ADD",
-                 "Adaptec U2W SCSI driver",
+                 "Adaptec U2W adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "BTSCSI.ADD",
-                 "Buslogic generic SCSI driver",
+                 "Buslogic generic adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "FD16-700.ADD",
-                 "Future Domain SCSI driver",
+                 "Future Domain adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "FD7000EX.ADD",
-                 "Future Domain SCSI driver",
+                 "Future Domain adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "FD8XX.ADD",
-                 "Future Domain SCSI driver",
+                 "Future Domain adapter",
                  DRVF_NOPARAMS),
 
         DRIVER ( "BASEDEV=", "TMSCSIM.ADD",
-                 "Tekram DC-390 SCSI driver",
+                 "Tekram DC-390 adapter",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "OS2SCSI.DMD",
                  "OS/2 SCSI manager",
@@ -177,13 +178,13 @@ CATEGORY "SCSI"
 CATEGORY "Installable File Systems"
     {
         DRIVER ( "IFS=", "HPFS.IFS",
-                 "IBM High Performance File System",
+                 "High Performance File System",
                  DRVF_CMDREF),
         DRIVER ( "IFS=", "HPFS386.IFS",
-                 "IBM 386 High Performance File System",
+                 "386 High Performance File System",
                  0),
         DRIVER ( "IFS=", "CDFS.IFS",
-                 "IBM CD-ROM file system",
+                 "CD-ROM file system",
                  DRVF_CMDREF)
         DRIVER ( "IFS=", "RAMFS.IFS",
                  "RAM disk file system",
@@ -217,7 +218,7 @@ CATEGORY "Installable File Systems"
 CATEGORY "Video"
     {
         DRIVER ( "DEVICE=", "GRADD.SYS",
-                 "IBM GRADD",
+                 "GRADD",
                  0 )
 
         DRIVER ( "DEVICE=", "KMGAX64.SYS",
@@ -236,44 +237,44 @@ CATEGORY "Video"
 CATEGORY "Other peripherals"
     {
         DRIVER ( "BASEDEV=", "IBM1FLPY.ADD",
-                 "IBM floppy driver",
+                 "Standard floppy",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "IBM2FLPY.ADD",
-                 "IBM Microchannel floppy driver",
+                 "Microchannel floppy",
                  DRVF_CMDREF | DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "XDFLOPPY.FLT",
-                 "IBM 1.8MB floppy support",
+                 "1.8MB floppy support",
                  DRVF_CMDREF | DRVF_NOPARAMS),
 
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
-                 "IBM printer driver",
+                 "Standard printer",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "PRINT02.SYS",
-                 "IBM printer driver",
+                 "Microchannel printer",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "PAR1284.SYS",
-                 "Replacement bidi printer driver",
+                 "BIDI printer",
                  DRVF_CMDREF),
 
         DRIVER ( "BASEDEV=", "IBMKBD.SYS",
-                 "IBM generic keyboard driver",
+                 "Standard keyboard",
                  DRVF_CMDREF),
 
         DRIVER ( "DEVICE=", "MOUSE.SYS",
-                 "IBM generic mouse driver",
+                 "Standard mouse",
                  DRVF_CMDREF),
         DRIVER ( "DEVICE=", "USBMOUSE.SYS",
-                 "USB mouse driver",
+                 "USB mouse",
                  0),
 
         DRIVER ( "DEVICE=", "COM.SYS",
-                 "IBM generic serial (COM) port driver",
+                 "Standard serial (COM) port",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "SIO.SYS",
                  "SIO enhanced serial (COM) port driver",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "USBCOM.SYS",
-                 "USB modem driver",
+                 "USB modem",
                  0),
 
         DRIVER ( "BASEDEV=", "USBD.SYS",
@@ -283,46 +284,46 @@ CATEGORY "Other peripherals"
                  "USB driver",
                  0 ),
         DRIVER ( "BASEDEV=", "USBUHCD.SYS",
-                 "IBM DockStation USB driver",
+                 "DockStation USB driver",
                  0 ),
     }
 
 CATEGORY "Multimedia"
     {
         DRIVER ( "DEVICE=", "SB16D2.SYS",
-                 "IBM Soundblaster 16 driver",
+                 "Soundblaster 16",
                  0),
         DRIVER ( "DEVICE=", "OPL3.SYS",
-                 "Yamaha OPL3 sound chip driver",
+                 "Yamaha OPL3 sound chip",
                  0),
         DRIVER ( "DEVICE=", "OPL3SA.SYS",
-                 "Yamaha SAx sound chip driver",
+                 "Yamaha SAx sound chip",
                  0),
         DRIVER ( "DEVICE=", "OPL3VDD.SYS",
                  "Yamaha SAx sound chip virtual driver",
                  0),
 
         DRIVER ( "DEVICE=", "R0STUB.SYS",
-                 "IBM MMPM/2 R0STUB support driver",
+                 "MMPM/2 R0STUB support driver",
                  0),
         DRIVER ( "DEVICE=", "SSMDD.SYS",
-                 "IBM MMPM/2 SSMDD support driver",
+                 "MMPM/2 SSMDD support driver",
                  0),
         DRIVER ( "DEVICE=", "AUDIOVDD.SYS",
-                 "IBM MMPM/2 sound sharing driver",
+                 "MMPM/2 sound sharing driver",
                  0),
 
         DRIVER ( "BASEDEV=", "TIMER0.SYS",
-                 "IBM High-resolution timer driver",
+                 "High-resolution timer",
                  0),
         DRIVER ( "DEVICE=", "MIDI.SYS",
-                 "IBM MIDI driver",
+                 "Standard MIDI",
                  0),
         DRIVER ( "DEVICE=", "MPU401.SYS",
-                 "MPU401 MIDI support driver",
+                 "MPU401 MIDI support",
                  0),
         DRIVER ( "DEVICE=", "USBAUDIO.SYS",
-                 "MPU401 MIDI support driver",
+                 "USB Audio",
                  0),
         DRIVER ( "RUN=", "MIDIDMON.EXE",
                  "OS/2 MIDI daemon process",
@@ -332,15 +333,15 @@ CATEGORY "Multimedia"
 CATEGORY "Network"
     {
         DRIVER ( "BASEDEV=", "DETNE2.SYS",
-                 "NE200 card driver",
+                 "NE200 card",
                  0),
 
         DRIVER ( "DEVICE=", "EL90X.OS2",
-                 "3Com Fast EtherLink/EtherLink XL Family card driver",
+                 "3Com Fast EtherLink/EtherLink XL Family card",
                  0),
 
         DRIVER ( "DEVICE=", "IBMTOK.OS2",
-                 "IBM TokenRing card driver",
+                 "IBM TokenRing card",
                  0),
 
         DRIVER ( "DEVICE=", "IPX.SYS",
@@ -432,17 +433,17 @@ CATEGORY "System extensions"
                  "Matthieu Wilm's 32-bit device driver support",
                  0),
         DRIVER ( "DEVICE=", "XF86SUP.SYS",
-                 "XFree/2 support driver",
+                 "XFree86/2 kernel support",
                  0)
         DRIVER ( "DEVICE=", "CPPOPA3.SYS",
                  "IBM VisualAge C++ 3.0 debugger driver",
                  0)
 
         DRIVER ( "DEVICE=", "WATCHCAT.SYS",
-                 "WatchCat driver",
+                 "WatchCat base",
                  0)
         DRIVER ( "DEVICE=", "KILLER.SYS",
-                 "WatchCat process killer driver",
+                 "WatchCat process killer",
                  0)
         DRIVER ( "DEVICE=", "VWCAT.SYS",
                  "WatchCat process killer VDD",

@@ -1,9 +1,13 @@
-/* create XFolder installation objects
-   English version (001)
-   (W) (C) Ulrich M”ller. All rights reserved.
+/*
+    Create XWorkplace installation objects
+    English version (001)
+    (C) 1998-2000 Ulrich M”ller.
  */
 
-/* This file is executed only by the XFolder installation script. */
+/*
+    This file gets called by WarpIN after installation was successful.
+    This calls CROBJxxx.CMD in turn to have the config folder created.
+*/
 
 /* change the following language code to your language. */
 LanguageCode = "001";
@@ -14,10 +18,10 @@ LanguageCode = "001";
 /* Title of the Desktop folder; choose a faily long title,
    or the installation might fail if that object already
    exists */
-XFolderMain         = "XFolder Installation";
+XFolderMain         = "XWorkplace Installation";
 /* "Introduction" object (SmartGuide) */
 XFolderIntro        = "Introduction";
-OnlineReference     = "XFolder Online Reference";
+OnlineReference     = "XWorkplace User Guide";
 /* other objects */
 WorkplaceShell      = "Workplace Shell";
 XWPSetup            = "XWorkplace Setup";
