@@ -348,6 +348,14 @@
                                  WPObject* pFirstObject,
                                  ULONG ulSelectionFlags);
 
+    VOID fdrCalcFrameRect(MPARAM mp1, MPARAM mp2);
+
+    VOID fdrFormatFrame(HWND hwndFrame,
+                        HWND hwndStatusBar,
+                        MPARAM mp1,
+                        ULONG ulCount,
+                        HWND *phwndClient);
+
     MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                                  ULONG msg,
                                  MPARAM mp1,
@@ -464,6 +472,8 @@
                             hwndTreeCnr,        // child of hwndTreeFrame
                             hwndFilesFrame,     // child of hwndSplitWindow
                             hwndFilesCnr;       // child of hwndFilesFrame
+
+            HWND            hwndStatusBar;      // if present, or NULLHANDLE
 
             // data for drives view (left)
             PSUBCLFOLDERVIEW psfvTree;          // XFolder subclassed view data (needed

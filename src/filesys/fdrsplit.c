@@ -74,11 +74,13 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\cnrsort.h"             // container sort comparison functions
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -216,13 +218,18 @@ BOOL fdrIsInsertable(WPObject *pObject,
     if (ulFoldersOnly > 1)      // INSERT_FOLDERSONLY or INSERT_FOLDERSANDDISKS
     {
         // folders only:
+        WPObject *pobj2;
 
         if (_wpQueryStyle(pObject) & OBJSTYLE_TEMPLATE)
             return FALSE;
 
         // allow disks with INSERT_FOLDERSANDDISKS only
         if (    (ulFoldersOnly == INSERT_FOLDERSANDDISKS)
-             && (_somIsA(pObject, _WPDisk))
+             && (    (_somIsA(pObject, _WPDisk))
+                  || (    (pobj2 = objResolveIfShadow(pObject))
+                       && (ctsIsSharedDir(pobj2))
+                     )
+                )
            )
         {
             // always insert, even if drive not ready
@@ -1148,7 +1155,7 @@ MPARAM fdrSetupSplitView(HWND hwnd,
         // split window becomes client of main frame
     sbcd.ulCreateFlags =   SBCF_VERTICAL
                          | SBCF_PERCENTAGE
-                         | SBCF_3DSUNK
+                         // | SBCF_3DSUNK
                          | SBCF_MOVEABLE;
     sbcd.lPos = psv->lSplitBarPos;   // in percent
     sbcd.ulLeftOrBottomLimit = 100;
@@ -1588,6 +1595,41 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
         break;
 
         /*
+         * WM_CHAR:
+         *
+         */
+
+        case WM_CHAR:
+        {
+            USHORT usFlags    = SHORT1FROMMP(mp1);
+            UCHAR  ucScanCode = CHAR4FROMMP(mp1);
+            USHORT usvk       = SHORT2FROMMP(mp2);
+            PFDRSPLITVIEW  psv;
+
+            if (    (usFlags & KC_VIRTUALKEY)
+                 && (usvk == VK_TAB)
+                 && (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+               )
+            {
+                // process only key-down messages
+                if  ((usFlags & KC_KEYUP) == 0)
+                {
+                    HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
+                    if (hwndFocus == psv->hwndTreeCnr)
+                        hwndFocus = psv->hwndFilesCnr;
+                    else
+                        hwndFocus = psv->hwndTreeCnr;
+                    WinSetFocus(HWND_DESKTOP, hwndFocus);
+                }
+
+                mrc = (MRESULT)TRUE;
+            }
+            else
+                mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
+        }
+        break;
+
+        /*
          * WM_CLOSE:
          *      window list is being closed:
          *      clean up
@@ -1664,16 +1706,35 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                              && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                              // notifications not disabled?
                              && (psv->fFileDlgReady)
-                             // record changed?
-                             && (prec != psv->precFolderContentsShowing)
                            )
                         {
                             _PmpfF(("CN_EMPHASIS %s",
                                     prec->pszIcon));
 
-                            fdrPostFillFolder(psv,
-                                              prec,
-                                              0);
+                            // record changed?
+                            if (prec != psv->precFolderContentsShowing)
+                            {
+                                psv->precFolderContentsShowing = prec;
+                                fdrPostFillFolder(psv,
+                                                  prec,
+                                                  0);
+                            }
+
+                            if (psv->hwndStatusBar)
+                            {
+                                #ifdef DEBUG_STATUSBARS
+                                    _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                            psfv->hwndStatusBar ));
+                                #endif
+
+                                // have the status bar updated and make
+                                // sure the status bar retrieves its info
+                                // from the _left_ cnr
+                                WinPostMsg(psv->hwndStatusBar,
+                                           STBM_UPDATESTATUSBAR,
+                                           (MPARAM)psv->hwndTreeCnr,
+                                           MPNULL);
+                            }
                         }
                     }
                     break;
@@ -1831,6 +1892,50 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
             {
                 switch (usNotifyCode)
                 {
+                    /*
+                     * CN_EMPHASIS:
+                     *      selection changed:
+                     */
+
+                    case CN_EMPHASIS:
+                    {
+                        HWND            hwndMainControl;
+                        PFDRSPLITVIEW   psv;
+                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
+                        PMINIRECORDCORE prec;
+
+                        if (    (pnre->pRecord)
+                             && (pnre->fEmphasisMask & CRA_SELECTED)
+                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                             && (prec->flRecordAttr & CRA_SELECTED)
+                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                             // notifications not disabled?
+                             && (psv->fFileDlgReady)
+                           )
+                        {
+                            _PmpfF(("CN_EMPHASIS %s",
+                                    prec->pszIcon));
+
+                            if (psv->hwndStatusBar)
+                            {
+                                #ifdef DEBUG_STATUSBARS
+                                    _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                            psfv->hwndStatusBar ));
+                                #endif
+
+                                // have the status bar updated and make
+                                // sure the status bar retrieves its info
+                                // from the _left_ cnr
+                                WinPostMsg(psv->hwndStatusBar,
+                                           STBM_UPDATESTATUSBAR,
+                                           (MPARAM)psv->hwndFilesCnr,
+                                           MPNULL);
+                            }
+                        }
+                    }
+                    break;
+
                     case CN_ENTER:
                     {
                         PNOTIFYRECORDENTER pnre;
@@ -1960,6 +2065,11 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
 
     switch (msg)
     {
+        /*
+         * WM_SYSCOMMAND:
+         *
+         */
+
         case WM_SYSCOMMAND:
         {
             PSPLITVIEWDATA psvd;
@@ -1991,6 +2101,107 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
         }
         break;
 
+        /*
+         * WM_QUERYFRAMECTLCOUNT:
+         *      this gets sent to the frame when PM wants to find out
+         *      how many frame controls the frame has. According to what
+         *      we return here, SWP structures are allocated for WM_FORMATFRAME.
+         *      We call the "parent" window proc and add one for the status bar.
+         */
+
+        case WM_QUERYFRAMECTLCOUNT:
+        {
+            // query the standard frame controls count
+            ULONG ulCount = (ULONG)G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+
+            PSPLITVIEWDATA psvd;
+            if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                              QWL_USER))
+                 && (psvd->sv.hwndStatusBar)
+               )
+                ulCount++;
+
+            mrc = (MRESULT)ulCount;
+        }
+        break;
+
+        /*
+         * WM_FORMATFRAME:
+         *    this message is sent to a frame window to calculate the sizes
+         *    and positions of all of the frame controls and the client window.
+         *
+         *    Parameters:
+         *          mp1     PSWP    pswp        structure array; for each frame
+         *                                      control which was announced with
+         *                                      WM_QUERYFRAMECTLCOUNT, PM has
+         *                                      allocated one SWP structure.
+         *          mp2     PRECTL  pprectl     pointer to client window
+         *                                      rectangle of the frame
+         *          returns USHORT  ccount      count of the number of SWP
+         *                                      arrays returned
+         *
+         *    It is the responsibility of this message code to set up the
+         *    SWP structures in the given array to position the frame controls.
+         *    We call the "parent" window proc and then set up our status bar.
+         */
+
+        case WM_FORMATFRAME:
+        {
+            //  query the number of standard frame controls
+            ULONG ulCount = (ULONG)G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            PSPLITVIEWDATA psvd;
+            if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                              QWL_USER))
+                 && (psvd->sv.hwndStatusBar)
+               )
+            {
+                // we have a status bar:
+                // format the frame
+                fdrFormatFrame(hwndFrame,
+                               psvd->sv.hwndStatusBar,
+                               mp1,
+                               ulCount,
+                               NULL);
+
+                // increment the number of frame controls
+                // to include our status bar
+                ulCount++;
+            }
+
+            mrc = (MRESULT)ulCount;
+        }
+        break;
+
+        /*
+         * WM_CALCFRAMERECT:
+         *     this message occurs when an application uses the
+         *     WinCalcFrameRect function.
+         *
+         *     Parameters:
+         *          mp1     PRECTL  pRect      rectangle structure
+         *          mp2     USHORT  usFrame    frame indicator
+         *          returns BOOL    rc         rectangle-calculated indicator
+         */
+
+        case WM_CALCFRAMERECT:
+        {
+            PSPLITVIEWDATA psvd;
+            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                              QWL_USER))
+                 && (psvd->sv.hwndStatusBar)
+               )
+            {
+                fdrCalcFrameRect(mp1, mp2);
+            }
+        }
+        break;
+
+        /*
+         * WM_DESTROY:
+         *
+         */
+
         case WM_DESTROY:
         {
             PSPLITVIEWDATA psvd;
@@ -2002,6 +2213,9 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
 
                 _wpDeleteFromObjUseList(psvd->sv.pRootFolder,  // somSelf
                                         &psvd->ui);
+
+                if (psvd->sv.hwndStatusBar)
+                    WinDestroyWindow(psvd->sv.hwndStatusBar);
 
                 _wpFreeMem(psvd->sv.pRootFolder,  // somSelf,
                            (PBYTE)psvd);
@@ -2120,6 +2334,15 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
             {
                 PMINIRECORDCORE pRootRec;
                 POINTL  ptlIcon = {0, 0};
+
+                if (stbFolderWantsStatusBars(somSelf))      // V0.9.19 (2002-04-17) [umoeller]
+                {
+                    psvd->sv.hwndStatusBar = stbCreateBar(somSelf,
+                                                          somSelf,
+                                                          psvd->sv.hwndMainFrame,
+                                                          psvd->sv.hwndTreeCnr);
+
+                }
 
                 // insert somSelf as the root of the tree
                 pRootRec = _wpCnrInsertObject(psvd->sv.pRootFolder,

@@ -191,6 +191,26 @@ BOOL stbClassCanHaveStatusBars(WPFolder *somSelf)
 }
 
 /*
+ *@@ stbFolderWantsStatusBars:
+ *      returns TRUE if status bars are enabled for
+ *      this folder in general, either explicitly
+ *      or globally.
+ *
+ *@@added V0.9.21 (2002-08-21) [umoeller]
+ */
+
+BOOL stbFolderWantsStatusBars(WPFolder *somSelf)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+
+    return (    (_bStatusBarInstance == STATUSBAR_ON)
+             || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                  && (cmnQuerySetting(sfDefaultStatusBarVisibility))
+                )
+           );
+}
+
+/*
  *@@ stbViewHasStatusBars:
  *      returns TRUE if the given view for the given
  *      folder should have a status bar.
@@ -213,7 +233,6 @@ BOOL stbClassCanHaveStatusBars(WPFolder *somSelf)
 BOOL stbViewHasStatusBars(WPFolder *somSelf,
                           ULONG ulView)
 {
-    XFolderData         *somThis = XFolderGetData(somSelf);
     ULONG               flViews;
 
     return (
@@ -221,11 +240,7 @@ BOOL stbViewHasStatusBars(WPFolder *somSelf,
                 (cmnQuerySetting(sfStatusBars))
              &&
 #endif
-                (    (_bStatusBarInstance == STATUSBAR_ON)
-                  || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                       && (cmnQuerySetting(sfDefaultStatusBarVisibility))
-                     )
-                )
+                stbFolderWantsStatusBars(somSelf)
              // 2) rule out desktop and Object Desktop classes
              // V0.9.19 (2002-04-17) [umoeller]
              && (stbClassCanHaveStatusBars(somSelf))
@@ -243,6 +258,63 @@ BOOL stbViewHasStatusBars(WPFolder *somSelf,
                     )
                 )
            );
+}
+
+/*
+ *@@ stbCreateBar:
+ *      this actually creates the status bar window.
+ *
+ *@@added V0.9.21 (2002-08-21) [umoeller]
+ */
+
+HWND stbCreateBar(WPFolder *somSelf,        // in: (root) folder
+                  WPObject *pRealObject,    // in: disk object or folder
+                  HWND hwndFrame,           // in: folder view frame
+                  HWND hwndCnr)             // in: FID_CLIENT of the frame or some other window
+{
+    HWND hwndBar;
+
+    if (hwndBar = WinCreateWindow(hwndFrame,
+                                  WC_STATIC,              // wnd class
+                                  cmnGetString(ID_XSSI_POPULATING),
+                                        // "Collecting objects..."
+                                  SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
+                                      | DT_ERASERECT
+                                      | WS_VISIBLE | WS_CLIPSIBLINGS,
+                                  0L, 0L, -1L, -1L,
+                                  hwndFrame,        // owner
+                                  HWND_BOTTOM,
+                                  ID_STATUSBAR,            // ID
+                                  (PVOID)NULL,
+                                  (PVOID)NULL))
+    {
+        PCSZ    pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
+
+        // set up window data (QWL_USER) for status bar
+        PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
+
+        psbd->somSelf    = somSelf;
+        psbd->pRealObject = pRealObject;        // V0.9.21 (2002-08-21) [umoeller]
+        psbd->hwndFrame = hwndFrame;
+        psbd->hwndCnr = hwndCnr;
+        psbd->habStatusBar = WinQueryAnchorBlock(hwndBar);
+        psbd->idTimer    = 0;
+        psbd->fDontBroadcast = TRUE;
+                    // prevents broadcasting of WM_PRESPARAMSCHANGED
+        psbd->fFolderPopulated = FALSE;
+                    // suspends updating until folder is populated;
+        WinSetWindowPtr(hwndBar, QWL_USER, psbd);
+
+        // subclass static control to make it a status bar
+        psbd->pfnwpStatusBarOriginal = WinSubclassWindow(hwndBar,
+                                                         fdr_fnwpStatusBar);
+        WinSetPresParam(hwndBar,
+                        PP_FONTNAMESIZE,
+                        (ULONG)strlen(pszStatusBarFont) + 1,
+                        (PVOID)pszStatusBarFont);
+    }
+
+    return hwndBar;
 }
 
 /*
@@ -311,20 +383,10 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
         }
         // else create status bar as a static control
         // (which will be subclassed below)
-        else if (psli2->hwndStatusBar = WinCreateWindow(
-                                      psli2->hwndFrame,        // parent
-                                      WC_STATIC,              // wnd class
-                                      cmnGetString(ID_XSSI_POPULATING),
-                                            // "Collecting objects..."
-                                      (SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
-                                          | DT_ERASERECT
-                                          | WS_VISIBLE | WS_CLIPSIBLINGS),
-                                      0L, 0L, -1L, -1L,
-                                      psli2->hwndFrame,        // owner
-                                      HWND_BOTTOM,
-                                      ID_STATUSBAR,            // ID
-                                      (PVOID)NULL,
-                                      (PVOID)NULL))
+        else if (psli2->hwndStatusBar = stbCreateBar(psli2->somSelf,
+                                                     psli2->pRealObject,
+                                                     psli2->hwndFrame,
+                                                     psli2->hwndCnr))
         {
             XFolderData *somThis = XFolderGetData(psli2->somSelf);
             CHAR    szFolderPosKey[50];
@@ -332,12 +394,8 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
             ULONG   cbIni;
             BOOL    fInflate = FALSE;
             SWP     swp;
-            const char* pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
             ULONG   ulView = wpshQueryView(psli2->somSelf,
                                            psli2->hwndFrame);
-
-            // set up window data (QWL_USER) for status bar
-            PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
 
             #ifdef DEBUG_STATUSBARS
                 PCSZ pcszView;
@@ -355,107 +413,99 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                 _Pmpf(( "    View: %s", pcszView));
             #endif
 
-            psbd->somSelf    = psli2->somSelf;
-            psbd->psfv       = psli2;
-            psbd->habStatusBar = WinQueryAnchorBlock(psli2->hwndStatusBar);
-            psbd->idTimer    = 0;
-            psbd->fDontBroadcast = TRUE;
-                        // prevents broadcasting of WM_PRESPARAMSCHANGED
-            psbd->fFolderPopulated = FALSE;
-                        // suspends updating until folder is populated;
-            WinSetWindowULong(psli2->hwndStatusBar, QWL_USER, (ULONG)psbd);
-
-            // subclass static control to make it a status bar
-            psbd->pfnwpStatusBarOriginal = WinSubclassWindow(psli2->hwndStatusBar,
-                                                             fdr_fnwpStatusBar);
-            WinSetPresParam(psli2->hwndStatusBar,
-                            PP_FONTNAMESIZE,
-                            (ULONG)strlen(pszStatusBarFont) + 1,
-                            (PVOID)pszStatusBarFont);
-
-            // now "inflate" the folder frame window if this is the first
-            // time that this folder view has been opened with a status bar;
-            // if we didn't do this, the folder frame would be too small
-            // for the status bar and scroll bars would appear. We store
-            // a flag in the folder's instance data for each different view
-            // that we've inflated the folder frame, so that this happens
-            // only once per view.
-
-            // From wpobject.h:
-            // #define VIEW_CONTENTS      0x00000001
-            // #define VIEW_SETTINGS      0x00000002
-            // #define VIEW_HELP          0x00000004
-            // #define VIEW_RUNNING       0x00000008
-            // #define VIEW_DETAILS       0x00000010
-            // #define VIEW_TREE          0x00000020
-
-            sprintf(szFolderPosKey, "%d@XFSB",
-                    _wpQueryHandle(psli2->pRealObject));
-
-            cbIni = sizeof(ulIni);
-            if (PrfQueryProfileData(HINI_USER,
-                                    (PSZ)WPINIAPP_FOLDERPOS,
-                                    szFolderPosKey,
-                                    &ulIni,
-                                    &cbIni) == FALSE)
-                ulIni = 0;
-
-            if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
-                          : (ulView == OPEN_TREE) ? VIEW_TREE
-                          : VIEW_DETAILS
-                        ))
-                fInflate = FALSE;
-            else
-                fInflate = TRUE;
-
-            #ifdef DEBUG_STATUSBARS
-                _Pmpf(("   fInflate = %d, ulView = %d", fInflate, ulView));
-            #endif
-
-            // set a flag for the subclassed folder frame
-            // window proc that this folder view needs no additional scrolling
-            // (this is evaluated in WM_FORMATFRAME msgs)
-            psli2->fNeedCnrScroll = FALSE;
-
-            if (fInflate)
+            // inflate only for standard folder views,
+            // this rules out split view
+            // V0.9.21 (2002-08-21) [umoeller]
+            switch (ulView)
             {
-                // this view has not been inflated yet:
-                // inflate now and set flag for this view
+                case OPEN_TREE:
+                case OPEN_CONTENTS:
+                case OPEN_DETAILS:
+                    // now "inflate" the folder frame window if this is the first
+                    // time that this folder view has been opened with a status bar;
+                    // if we didn't do this, the folder frame would be too small
+                    // for the status bar and scroll bars would appear. We store
+                    // a flag in the folder's instance data for each different view
+                    // that we've inflated the folder frame, so that this happens
+                    // only once per view.
 
-                ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
-                WinQueryWindowPos(psli2->hwndFrame, &swp);
-                // inflate folder frame
-                WinSetWindowPos(psli2->hwndFrame, 0,
-                                swp.x, (swp.y - ulStatusBarHeight),
-                                swp.cx, (swp.cy + ulStatusBarHeight),
-                                SWP_MOVE | SWP_SIZE);
+                    // From wpobject.h:
+                    // #define VIEW_CONTENTS      0x00000001
+                    // #define VIEW_SETTINGS      0x00000002
+                    // #define VIEW_HELP          0x00000004
+                    // #define VIEW_RUNNING       0x00000008
+                    // #define VIEW_DETAILS       0x00000010
+                    // #define VIEW_TREE          0x00000020
 
-                // mark this folder view as "inflated" in OS2.INI
-                ulIni |= (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
-                           : (ulView == OPEN_TREE) ? VIEW_TREE
-                           : VIEW_DETAILS
-                         );
-                PrfWriteProfileData(HINI_USER,
-                                    (PSZ)WPINIAPP_FOLDERPOS,
-                                    szFolderPosKey,
-                                    &ulIni,
-                                    sizeof(ulIni));
-            }
+                    sprintf(szFolderPosKey, "%d@XFSB",
+                            _wpQueryHandle(psli2->pRealObject));
 
-            // always do this for icon view if auto-sort is off
-            // V0.9.18 (2002-03-24) [umoeller]
-            // WM_FORMATFRAME _will_ have to scroll the container
-            if (    (ulView == OPEN_CONTENTS)
-                 && (  (_lAlwaysSort == SET_DEFAULT)
-                            ? !cmnQuerySetting(sfAlwaysSort)
-                            : !_lAlwaysSort)
-               )
-                psli2->fNeedCnrScroll = TRUE;
+                    cbIni = sizeof(ulIni);
+                    if (PrfQueryProfileData(HINI_USER,
+                                            (PSZ)WPINIAPP_FOLDERPOS,
+                                            szFolderPosKey,
+                                            &ulIni,
+                                            &cbIni) == FALSE)
+                        ulIni = 0;
 
-            #ifdef DEBUG_STATUSBARS
-                _Pmpf(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
-                _Pmpf(("    sending WM_UPDATEFRAME"));
-            #endif
+                    if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                                  : (ulView == OPEN_TREE) ? VIEW_TREE
+                                  : VIEW_DETAILS
+                                ))
+                        fInflate = FALSE;
+                    else
+                        fInflate = TRUE;
+
+                    #ifdef DEBUG_STATUSBARS
+                        _Pmpf(("   fInflate = %d, ulView = %d", fInflate, ulView));
+                    #endif
+
+                    // set a flag for the subclassed folder frame
+                    // window proc that this folder view needs no additional scrolling
+                    // (this is evaluated in WM_FORMATFRAME msgs)
+                    psli2->fNeedCnrScroll = FALSE;
+
+                    if (fInflate)
+                    {
+                        // this view has not been inflated yet:
+                        // inflate now and set flag for this view
+
+                        ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+                        WinQueryWindowPos(psli2->hwndFrame, &swp);
+                        // inflate folder frame
+                        WinSetWindowPos(psli2->hwndFrame, 0,
+                                        swp.x, (swp.y - ulStatusBarHeight),
+                                        swp.cx, (swp.cy + ulStatusBarHeight),
+                                        SWP_MOVE | SWP_SIZE);
+
+                        // mark this folder view as "inflated" in OS2.INI
+                        ulIni |= (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                                   : (ulView == OPEN_TREE) ? VIEW_TREE
+                                   : VIEW_DETAILS
+                                 );
+                        PrfWriteProfileData(HINI_USER,
+                                            (PSZ)WPINIAPP_FOLDERPOS,
+                                            szFolderPosKey,
+                                            &ulIni,
+                                            sizeof(ulIni));
+                    }
+
+                    // always do this for icon view if auto-sort is off
+                    // V0.9.18 (2002-03-24) [umoeller]
+                    // WM_FORMATFRAME _will_ have to scroll the container
+                    if (    (ulView == OPEN_CONTENTS)
+                         && (  (_lAlwaysSort == SET_DEFAULT)
+                                    ? !cmnQuerySetting(sfAlwaysSort)
+                                    : !_lAlwaysSort)
+                       )
+                        psli2->fNeedCnrScroll = TRUE;
+
+                    #ifdef DEBUG_STATUSBARS
+                        _Pmpf(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+                        _Pmpf(("    sending WM_UPDATEFRAME"));
+                    #endif
+
+            } // end switch (ulView)
 
             // enforce reformatting / repaint of frame window
             WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
@@ -796,8 +846,7 @@ static VOID StatusTimer(HWND hwndBar,
 {
     TRY_LOUD(excpt1)
     {
-        // XFolderData *somThis = XFolderGetData(psbd->somSelf);
-        BOOL fUpdate = TRUE;
+        BOOL    fUpdate = TRUE;
 
         // stop timer (it's just for one shot)
         WinStopTimer(psbd->habStatusBar, // anchor block,
@@ -811,7 +860,7 @@ static VOID StatusTimer(HWND hwndBar,
         // FOI_POPULATEDWITHALL is reset to 0 by the WPS for some reason
         // when an object is deleted from an open folder, and no further
         // status bar updates would occur then
-        if (psbd->fFolderPopulated == FALSE)
+        if (!psbd->fFolderPopulated)
         {
             ULONG   ulFlags = _wpQueryFldrFlags(psbd->somSelf);
             ULONG   ulView = wpshQueryView(// psbd->psfv->somSelf,
@@ -820,8 +869,8 @@ static VOID StatusTimer(HWND hwndBar,
                                            // never hold the view information... use
                                            // the "real object" instead, which, for
                                            // root folders, holds the disk object
-                                           psbd->psfv->pRealObject,
-                                           psbd->psfv->hwndFrame);
+                                           psbd->pRealObject,
+                                           psbd->hwndFrame);
             #ifdef DEBUG_STATUSBARS
                 PCSZ pcszView;
                 CHAR szView[100];
@@ -868,7 +917,7 @@ static VOID StatusTimer(HWND hwndBar,
             // OK:
             CallResolvedUpdateStatusBar(psbd->somSelf,
                                         hwndBar,
-                                        psbd->psfv->hwndCnr);
+                                        psbd->hwndCnr);
     }
     CATCH(excpt1)
     {
@@ -1120,7 +1169,9 @@ static VOID StatusPresParamChanged(HWND hwndBar,
             // update parent's frame controls (because font size
             // might have changed)
             WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT),
-                    WM_UPDATEFRAME, MPNULL, MPNULL);
+                       WM_UPDATEFRAME,
+                       MPNULL,
+                       MPNULL);
         }
         break;
 
@@ -1183,15 +1234,25 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
         switch(msg)
         {
             /*
-             * STBM_UPDATESTATUSBAR:
-             *      mp1: MPNULL,
-             *      mp2: MPNULL
-             *      Update status bar text. We will set a timer
+             *@@ STBM_UPDATESTATUSBAR:
+             *      update the status bar text. We will set a timer
              *      for a short delay to filter out repetitive
              *      messages here.
+             *
              *      This timer is "one-shot" in that it will be
              *      started here and stopped as soon as WM_TIMER
              *      is received.
+             *
+             *      Parameters:
+             *
+             *      --  HWND mp1: if != NULLHANDLE, this sets a new
+             *          container window for the status bar to
+             *          retrieve its information from.
+             *          V0.9.21 (2002-08-21) [umoeller]
+             *
+             *      --  mp2: always NULL.
+             *
+             *@@changed V0.9.21 (2002-08-21) [umoeller]: now allowing mp1 to change the hwndCnr
              */
 
             case STBM_UPDATESTATUSBAR:
@@ -1201,6 +1262,9 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                                                   hwndBar,
                                                   1,
                                                   100); // delay: 100 ms
+
+                if (mp1)
+                    psbd->hwndCnr = (HWND)mp1;  // V0.9.21 (2002-08-21) [umoeller]
             break;
 
             /*
@@ -1287,8 +1351,8 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_BUTTON1CLICK:
-                // mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2);
-                WinSetFocus(HWND_DESKTOP, psbd->psfv->hwndCnr);
+                WinSetFocus(HWND_DESKTOP,
+                            psbd->hwndCnr);
             break;
 
             /*
@@ -1301,11 +1365,11 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_BUTTON1DBLCLK:
-                WinPostMsg(psbd->psfv->hwndFrame,
+                WinPostMsg(psbd->hwndFrame,
                            WM_COMMAND,
                            (MPARAM)WPMENUID_PROPERTIES,
                            MPFROM2SHORT(CMDSRC_MENU,
-                                   FALSE) );     // results from keyboard operation
+                                        FALSE) );     // results from keyboard operation
             break;
 
             /*
@@ -1320,18 +1384,17 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_CONTEXTMENU:
-                if (psbd->psfv)
-                {
-                    POINTL  ptl;
-                    ptl.x = SHORT1FROMMP(mp1);
-                    ptl.y = SHORT2FROMMP(mp1)-20; // this is in cnr coords!
-                    _wpDisplayMenu(psbd->somSelf,
-                                   psbd->psfv->hwndFrame, // hwndFolderView, // owner
-                                   psbd->psfv->hwndCnr, // NULLHANDLE, // hwndFolderView, // parent
-                                   &ptl,
-                                   MENU_OPENVIEWPOPUP, // was: MENU_OBJECTPOPUP, V0.9.0
-                                   0);
-                }
+            {
+                POINTL  ptl;
+                ptl.x = SHORT1FROMMP(mp1);
+                ptl.y = SHORT2FROMMP(mp1)-20;   // this is in cnr coords!
+                _wpDisplayMenu(psbd->somSelf,
+                               psbd->hwndFrame, // owner
+                               psbd->hwndCnr,   // parent
+                               &ptl,
+                               MENU_OPENVIEWPOPUP,
+                               0);
+            }
             break;
 
             /*

@@ -574,7 +574,9 @@ static VOID PostWMChar(HWND hwnd,
 
 /*
  * FormatFrame:
- *      implementation WM_FORMATFRAME in fnwpSubclassedFolderFrame.
+ *      part of the implementation of WM_FORMATFRAME in
+ *      fnwpSubclassedFolderFrame. Gets called from FormatFrame2
+ *      but has been exported to be useful for split views too.
  *
  *      Part of the needed frame hacks for folder status bars.
  *
@@ -582,29 +584,32 @@ static VOID PostWMChar(HWND hwnd,
  *@@changed V0.9.18 (2002-03-24) [umoeller]: fixed stupid scroll bars when always sort is off
  */
 
-static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
-                        MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
-                        ULONG ulCount)         // in: frame control count (returned from default wnd proc)
+VOID fdrFormatFrame(HWND hwndFrame,
+                    HWND hwndStatusBar,
+                    MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
+                    ULONG ulCount,         // in: frame control count (returned from default wnd proc)
+                    HWND *phwndClient)     // out: client window (ptr can be NULL)
 {
     // access the SWP array that is passed to us
     // and search all the controls for the container child window,
     // which for folders always has the ID 0x8008
     ULONG       ul;
     PSWP        swpArr = (PSWP)mp1;
-    CNRINFO     CnrInfo;
 
-    for (ul = 0; ul < ulCount; ul++)
+    for (ul = 0;
+         ul < ulCount;
+         ul++)
     {
-        HWND        hwndThis = swpArr[ul].hwnd;
-        if (WinQueryWindowUShort(hwndThis, QWS_ID ) == 0x8008)
-                                                         // FID_CLIENT
+        HWND    hwndThis = swpArr[ul].hwnd;
+
+        if (WinQueryWindowUShort(hwndThis, QWS_ID) == 0x8008)  // FID_CLIENT
         {
             // container found: reduce size of container by
             // status bar height
             POINTL      ptlBorderSizes;
             ULONG       ulStatusBarHeight = cmnQueryStatusBarHeight();
 
-            WinSendMsg(psfv->hwndFrame,
+            WinSendMsg(hwndFrame,
                        WM_QUERYBORDERSIZE,
                        (MPARAM)&ptlBorderSizes,
                        0);
@@ -620,7 +625,7 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
             swpArr[ulCount].cx = swpArr[ul].cx;  // same as cnr's width
             swpArr[ulCount].cy = ulStatusBarHeight;
             swpArr[ulCount].hwndInsertBehind = HWND_BOTTOM; // HWND_TOP;
-            swpArr[ulCount].hwnd = psfv->hwndStatusBar;
+            swpArr[ulCount].hwnd = hwndStatusBar;
 
             // adjust the origin and height of the container to
             // accomodate our static text control
@@ -630,7 +635,7 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
             // now we need to adjust the workspace origin of the cnr
             // accordingly, or otherwise the folder icons will appear
             // outside the visible cnr workspace and scroll bars will
-            // show up.
+            // show up.                s
             // We only do this the first time we're arriving here
             // (which should be before the WPS is populating the folder);
             // psfv->fNeedCnrScroll has been initially set to TRUE
@@ -646,50 +651,101 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
             }
             #endif
 
-            if (psfv->fNeedCnrScroll)
-            {
-                cnrhQueryCnrInfo(hwndThis, &CnrInfo);
-
-                if ((LONG)CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
-                {
-                    RECTL rclViewport;
-
-                    CnrInfo.ptlOrigin.y -= ulStatusBarHeight;
-
-                    #ifdef DEBUG_STATUSBARS
-                        _Pmpf(( "New CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
-                    #endif
-
-                    WinSendMsg(hwndThis,
-                               CM_SETCNRINFO,
-                               (MPARAM)&CnrInfo,
-                               (MPARAM)CMA_PTLORIGIN);
-                }
-
-                // now scroll the damn container up the maximum;
-                // we still get scroll bars in some situations if
-                // always sort is off...
-                // to scroll the container up _and_ get rid of
-                // the scroll bars, we first post HOME to the
-                // container's vertical scroll bar and _then_
-                // another PAGEUP to the container itself
-                // V0.9.18 (2002-03-24) [umoeller]
-                PostWMChar(WinWindowFromID(hwndThis, 0x7FF9),
-                           KC_VIRTUALKEY | KC_CTRL,
-                           MPFROM2SHORT(0,
-                                        VK_HOME));
-                PostWMChar(hwndThis,
-                           KC_VIRTUALKEY,
-                           MPFROM2SHORT(0,
-                                        VK_PAGEUP));
-
-                // set flag to FALSE to prevent a second adjustment
-                psfv->fNeedCnrScroll = FALSE;
-            } // end if (psfv->fNeedCnrScroll)
+            if (phwndClient)
+                *phwndClient = hwndThis;
 
             break;  // we're done
         } // end if WinQueryWindowUShort
     } // end for (ul = 0; ul < ulCount; ul++)
+}
+
+/*
+ *@@ FormatFrame2:
+ *      the implementation of WM_FORMATFRAME in
+ *      fnwpSubclassedFolderFrame.
+ *
+ *@@added V0.9.21 (2002-08-21) [umoeller]
+ */
+
+MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
+                     MPARAM mp1,
+                     MPARAM mp2,
+                     PFNWP pfnwpOriginal)
+{
+    MRESULT mrc;
+
+    //  query the number of standard frame controls
+    ULONG ulCount = (ULONG)pfnwpOriginal(psfv->hwndFrame, WM_FORMATFRAME, mp1, mp2);
+
+    #ifdef DEBUG_STATUSBARS
+        _Pmpf(( "WM_FORMATFRAME ulCount = %d", ulCount ));
+    #endif
+
+    if (psfv->hwndStatusBar)
+    {
+        HWND hwndClient;
+
+        // we have a status bar:
+        // format the frame
+        fdrFormatFrame(psfv->hwndFrame,
+                       psfv->hwndStatusBar,
+                       mp1,
+                       ulCount,
+                       &hwndClient);
+
+        if (psfv->fNeedCnrScroll)
+        {
+            CNRINFO     CnrInfo;
+            ULONG       ulStatusBarHeight = cmnQueryStatusBarHeight();
+
+            cnrhQueryCnrInfo(hwndClient, &CnrInfo);
+
+            if ((LONG)CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
+            {
+                RECTL rclViewport;
+
+                CnrInfo.ptlOrigin.y -= ulStatusBarHeight;
+
+                #ifdef DEBUG_STATUSBARS
+                    _Pmpf(( "New CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
+                #endif
+
+                WinSendMsg(hwndClient,
+                           CM_SETCNRINFO,
+                           (MPARAM)&CnrInfo,
+                           (MPARAM)CMA_PTLORIGIN);
+            }
+
+            // now scroll the damn container up the maximum;
+            // we still get scroll bars in some situations if
+            // always sort is off...
+            // to scroll the container up _and_ get rid of
+            // the scroll bars, we first post HOME to the
+            // container's vertical scroll bar and _then_
+            // another PAGEUP to the container itself
+            // V0.9.18 (2002-03-24) [umoeller]
+            PostWMChar(WinWindowFromID(hwndClient, 0x7FF9),
+                       KC_VIRTUALKEY | KC_CTRL,
+                       MPFROM2SHORT(0,
+                                    VK_HOME));
+            PostWMChar(hwndClient,
+                       KC_VIRTUALKEY,
+                       MPFROM2SHORT(0,
+                                    VK_PAGEUP));
+
+            // set flag to FALSE to prevent a second adjustment
+            psfv->fNeedCnrScroll = FALSE;
+        } // end if (psfv->fNeedCnrScroll)
+
+        // increment the number of frame controls
+        // to include our status bar
+        mrc = (MRESULT)(ulCount + 1);
+    } // end if (psfv->hwndStatusBar)
+    else
+        // no status bar:
+        mrc = (MRESULT)ulCount;
+
+    return mrc;
 }
 
 /*
@@ -701,12 +757,12 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
+VOID fdrCalcFrameRect(MPARAM mp1, MPARAM mp2)
 {
     PRECTL prclPassed = (PRECTL)mp1;
     ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
 
-    if (SHORT1FROMMP(mp2))
+    if (mp2)
         //     TRUE:  Frame rectangle provided, calculate client
         //     FALSE: Client area rectangle provided, calculate frame
     {
@@ -717,7 +773,7 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
 
         //  position the static text frame extension below the client
         lClientHeight = prclPassed->yTop - prclPassed->yBottom;
-        if ( ulStatusBarHeight  > lClientHeight  )
+        if (ulStatusBarHeight > lClientHeight)
         {
             // extension is taller than client, so set client height to 0
             prclPassed->yTop = prclPassed->yBottom;
@@ -1938,28 +1994,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_FORMATFRAME:
-            {
-                //  query the number of standard frame controls
-                ULONG ulCount = (ULONG)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
-
-                #ifdef DEBUG_STATUSBARS
-                    _Pmpf(( "WM_FORMATFRAME ulCount = %d", ulCount ));
-                #endif
-
-                if (psfv->hwndStatusBar)
-                {
-                    // we have a status bar:
-                    // format the frame
-                    FormatFrame(psfv, mp1, ulCount);
-
-                    // increment the number of frame controls
-                    // to include our status bar
-                    mrc = (MRESULT)(ulCount + 1);
-                } // end if (psfv->hwndStatusBar)
-                else
-                    // no status bar:
-                    mrc = (MRESULT)ulCount;
-            }
+                mrc = FormatFrame2(psfv, mp1, mp2, pfnwpOriginal);
             break;
 
             /*
@@ -1978,7 +2013,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                 if (psfv->hwndStatusBar)
                     // we have a status bar: calculate its rectangle
-                    CalcFrameRect(mp1, mp2);
+                    fdrCalcFrameRect(mp1, mp2);
             break;
 
             /* *************************
