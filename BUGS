@@ -66,20 +66,6 @@ the "Menu bar" do not work again.
 
 extended assocs:
     --  break SysOpenObject REXX API?
-    --  There should be a possibility to RENAME file types (ALT left click
-        for consistency) If you have hierachical file types deleting and
-        recreating a file type to rename it is really cumbersome, if there are
-        file types 'below'.
-    --  WPS file types(!)/associations should be imported automatically,
-        somehow. Perhaps for filters without file types new types could be
-        created just saying 'PNG file', 'XLS file'... Could be renamed
-        afterwards (see 2)
-    --  What about files like StarOffice documents? Their first association
-        (SO5.1a) is not shown in the open submenu, because they use some
-        special WPS class. This association cannot be managed from XWPS. (same
-        goes for WordPro, 1-2-3 files I guess).
-    --  There should be a way to indicate the standard association. (top
-        most?)
     --  multiple associations with the same app (object) should not be shown
         in the file-open menu. (if HTML is text/html as well for instance)
 
@@ -118,7 +104,6 @@ NetscDDE:
        what to display - the '„' (german Umlaut) gets lost.
 
 PageMage:
-    -- window creation/destroy/activation not recognized sometimes
     -- I'm using xworkplace 0.95 and find that the os/2 enhanced
        editor, EPM, acts as a sticky app in PageMage
     -- Odin windows
@@ -126,8 +111,6 @@ PageMage:
         Open a full screen app (or make one full screen) and try to
         drag it across (won't work!) or switch screen and go back (won't show
         the FS app!)
-    3)  The title of an application windows is not updated properly (if at
-        all) in the pagemage window
 
 OS/2 Kernel:
     Set Path -> Browse will not work (Standard file dialog doesn't react when

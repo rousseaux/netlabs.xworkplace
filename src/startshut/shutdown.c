@@ -4096,18 +4096,21 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     if (G_psdParams->optEmptyTrashCan)
                         if (cmnTrashCanReady())
                         {
+                            APIRET arc = NO_ERROR;
                             WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
                                               G_pNLSStrings->pszFopsEmptyingTrashCan);
                             xsdLog("    Emptying trash can...\n");
 
-                            if (cmnEmptyDefTrashCan(G_habShutdownThread, // synchr.
-                                                    NULL,
-                                                    NULLHANDLE)) // no confirm
+                            arc = cmnEmptyDefTrashCan(G_habShutdownThread, // synchr.
+                                                      NULL,
+                                                      NULLHANDLE);   // no confirm
+                            if (arc == NO_ERROR)
                                 // success:
                                 xsdLog("    Done emptying trash can.\n");
                             else
                             {
-                                xsdLog("    Emptying trash can failed.\n");
+                                xsdLog("    Emptying trash can failed, rc: %d.\n",
+                                        arc);
                                 if (cmnMessageBoxMsg(G_hwndShutdownStatus,
                                                      104, // "error"
                                                      189, // "empty failed"

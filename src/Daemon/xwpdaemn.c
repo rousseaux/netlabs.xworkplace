@@ -218,7 +218,7 @@ MPARAM          G_SlidingMenuMp1Saved = 0;
 ULONG           G_ulMonitorTimer = 0;
 
 // PageMage
-HWNDLIST        G_MainWindowList[MAX_WINDOWS] = {0};
+PGMGLISTENTRY        G_MainWindowList[MAX_WINDOWS] = {0};
             // array of window data managed by PageMage
 USHORT          G_usWindowCount = 0;
             // count of array items currently in use
@@ -230,7 +230,10 @@ HWND            G_hwndPageMageClient = NULLHANDLE;
 CHAR            G_szFacename[PGMG_TEXTLEN] = "";
 
 POINTL          G_ptlCurrPos = {0};
-POINTL          G_ptlPgmgClientSize = {0};
+
+// POINTL          G_ptlPgmgClientSize = {0};
+            // removed, this was only used in pgmg_control.c
+
 POINTL          G_ptlEachDesktop = {0};
 SWP             G_swpPgmgFrame = {0};
 

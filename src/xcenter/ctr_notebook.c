@@ -77,17 +77,17 @@
  ********************************************************************/
 
 /*
- *@@ ctrpViewInitPage:
+ *@@ ctrpView1InitPage:
  *      notebook callback function (notebook.c) for the
- *      XCenter "View" instance settings page.
+ *      first XCenter "View" instance settings page.
  *      Sets the controls on the page according to the
  *      instance settings.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
  */
 
-VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
-                      ULONG flFlags)        // CBI_* flags (notebook.h)
+VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                       ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
 
@@ -110,16 +110,16 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         }
 
         winhSetSliderTicks(hwndSlider,
-                           0,
-                           3);      // three pixels high
-        winhSetSliderTicks(hwndSlider,
-                           MPFROM2SHORT(9, 10),
-                           6);      // six pixels high
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(9, 10), 6);
     }
 
     if (flFlags & CBI_SET)
     {
         HWND hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW_PRTY_SLIDER);
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_REDUCEWORKAREA,
+                              _fReduceDesktopWorkarea);
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ALWAYSONTOP,
                               ((_ulWindowStyle & WS_TOPMOST) != 0));
@@ -133,11 +133,6 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         else
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
 
-        if (_ulDisplayStyle == XCS_FLAT)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_FLATSTYLE, TRUE);
-        else
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BUTTONSTYLE, TRUE);
-
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
                                  _lPriorityDelta);
@@ -149,15 +144,14 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-    }
-
-    if (flFlags & CBI_DESTROY)
-    {
+        // disable auto-hide if workarea is to be reduced
+        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
+                         (_fReduceDesktopWorkarea == FALSE));
     }
 }
 
 /*
- *@@ ctrpViewItemChanged:
+ *@@ ctrpView1ItemChanged:
  *      notebook callback function (notebook.c) for the
  *      XCenter "View"  instance settings page.
  *      Reacts to changes of any of the dialog controls.
@@ -165,34 +159,36 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.7 (2000-12-05) [umoeller]
  */
 
-MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                            USHORT usItemID, USHORT usNotifyCode,
-                            ULONG ulExtra)      // for checkboxes: contains new state
+MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                             USHORT usItemID, USHORT usNotifyCode,
+                             ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
     BOOL        fSave = TRUE,
-                fDisplayStyleChanged = FALSE;
+                fCallInitCallback = FALSE;
+
     ULONG       ulUpdateFlags = 0;
 
     switch (usItemID)
     {
+        case ID_CRDI_VIEW_REDUCEWORKAREA:
+            _fReduceDesktopWorkarea = ulExtra;
+            // ulUpdateFlags |= RE
+            if (_ulAutoHide)
+                // this conflicts with auto-hide...
+                // disable that.
+                _ulAutoHide = 0;
+            // renable items
+            fCallInitCallback = TRUE;
+        break;
+
         case ID_CRDI_VIEW_TOPOFSCREEN:
             _ulPosition = XCENTER_TOP;
         break;
 
         case ID_CRDI_VIEW_BOTTOMOFSCREEN:
             _ulPosition = XCENTER_BOTTOM;
-        break;
-
-        case ID_CRDI_VIEW_FLATSTYLE:
-            _ulDisplayStyle = XCS_FLAT;
-            ulUpdateFlags |= XFMF_DISPLAYSTYLECHANGED;
-        break;
-
-        case ID_CRDI_VIEW_BUTTONSTYLE:
-            _ulDisplayStyle = XCS_BUTTON;
-            ulUpdateFlags |= XFMF_DISPLAYSTYLECHANGED;
         break;
 
         case ID_CRDI_VIEW_ALWAYSONTOP:
@@ -231,9 +227,200 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break; }
 
         case DID_DEFAULT:
+            _fReduceDesktopWorkarea = FALSE;
             _ulPosition = XCENTER_BOTTOM;
             _ulWindowStyle = WS_TOPMOST | WS_ANIMATE;
             _ulAutoHide = 4000;
+            fCallInitCallback = TRUE;
+        break;
+
+        case DID_UNDO:
+        {
+            XCenterData *pBackup = (XCenterData*)pcnbp->pUser;
+            _fReduceDesktopWorkarea = pBackup->fReduceDesktopWorkarea;
+            _ulPosition = pBackup->ulPosition;
+            _ulWindowStyle = pBackup->ulWindowStyle;
+            _ulAutoHide = pBackup->ulAutoHide;
+            fCallInitCallback = TRUE;
+        break; }
+
+        default:
+            fSave = FALSE;
+    }
+
+    if (fCallInitCallback)
+        // call the init callback to refresh the page controls
+        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+
+    if (fSave)
+    {
+        _wpSaveDeferred(pcnbp->somSelf);
+
+        if (_pvOpenView)
+        {
+            // view is currently open:
+            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+            // this can be on a different thread, so post msg
+            WinPostMsg(pXCenterData->Globals.hwndClient,
+                       XCM_REFORMAT,
+                       (MPARAM)ulUpdateFlags,           // reposition only
+                       0);
+        }
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ ctrpView2InitPage:
+ *      notebook callback function (notebook.c) for the
+ *      first XCenter "View" instance settings page.
+ *      Sets the controls on the page according to the
+ *      instance settings.
+ *
+ *@@added V0.9.7 (2000-12-05) [umoeller]
+ */
+
+VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                       ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+
+    if (flFlags & CBI_INIT)
+    {
+        // make backup of instance data
+        if (pcnbp->pUser == NULL)
+        {
+            // copy data for "Undo"
+            XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
+            memset(pBackup, 0, sizeof(*somThis));
+            // be careful about copying... we have some pointers in there!
+            pBackup->ulWindowStyle = _ulWindowStyle;
+            pBackup->ulAutoHide = _ulAutoHide;
+
+            // store in noteboot struct
+            pcnbp->pUser = pBackup;
+        }
+
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_CRDI_VIEW2_3DBORDER_SLIDER),
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(4, 5), 6);
+
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_CRDI_VIEW2_BDRSPACE_SLIDER),
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(4, 5), 6);
+
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_CRDI_VIEW2_WGTSPACE_SLIDER),
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(4, 5), 6);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        HWND hwndSlider;
+        if (_flDisplayStyle & XCS_FLATBUTTONS)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATSTYLE, TRUE);
+        else
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_BUTTONSTYLE, TRUE);
+
+        hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_3DBORDER_SLIDER);
+        winhSetSliderArmPosition(hwndSlider,
+                                 SMA_INCREMENTVALUE,
+                                 _ul3DBorderWidth);     // slider scale is from 0 to 10
+        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                           ID_CRDI_VIEW_PRTY_TEXT,
+                           _ul3DBorderWidth,
+                           FALSE);      // unsigned
+
+        hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_BDRSPACE_SLIDER);
+        winhSetSliderArmPosition(hwndSlider,
+                                 SMA_INCREMENTVALUE,
+                                 _ulBorderSpacing);     // slider scale is from 0 to 10
+        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                           ID_CRDI_VIEW_PRTY_TEXT,
+                           _ulBorderSpacing,
+                           FALSE);      // unsigned
+
+        hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_WGTSPACE_SLIDER);
+        winhSetSliderArmPosition(hwndSlider,
+                                 SMA_INCREMENTVALUE,
+                                 _ulWidgetSpacing - 1);     // slider scale is from 0 to 9
+        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                           ID_CRDI_VIEW_PRTY_TEXT,
+                           _ulWidgetSpacing,
+                           FALSE);      // unsigned
+
+    }
+}
+
+/*
+ *@@ ctrpView2ItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      XCenter "View"  instance settings page.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *@@added V0.9.7 (2000-12-05) [umoeller]
+ */
+
+MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                             USHORT usItemID, USHORT usNotifyCode,
+                             ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT     mrc = 0;
+    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    BOOL        fSave = TRUE,
+                fDisplayStyleChanged = FALSE;
+    // ULONG       ulUpdateFlags = 0;
+    LONG        lSliderIndex;
+
+    switch (usItemID)
+    {
+        case ID_CRDI_VIEW2_3DBORDER_SLIDER:
+            lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                      SMA_INCREMENTVALUE);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                               ID_CRDI_VIEW2_3DBORDER_TEXT,
+                               lSliderIndex,
+                               FALSE);      // unsigned
+            _ul3DBorderWidth = lSliderIndex;
+        break;
+
+        case ID_CRDI_VIEW2_BDRSPACE_SLIDER:
+            lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                      SMA_INCREMENTVALUE);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                               ID_CRDI_VIEW2_BDRSPACE_TEXT,
+                               lSliderIndex,
+                               FALSE);      // unsigned
+            _ulBorderSpacing = lSliderIndex;
+        break;
+
+        case ID_CRDI_VIEW2_WGTSPACE_SLIDER:
+            lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                      SMA_INCREMENTVALUE);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                               ID_CRDI_VIEW2_WGTSPACE_TEXT,
+                               lSliderIndex + 1,
+                               FALSE);      // unsigned
+            _ulWidgetSpacing = lSliderIndex + 1;
+        break;
+
+        case ID_CRDI_VIEW2_FLATSTYLE:
+            _flDisplayStyle |= XCS_FLATBUTTONS;
+        break;
+
+        case ID_CRDI_VIEW2_BUTTONSTYLE:
+            _flDisplayStyle &= ~XCS_FLATBUTTONS;
+        break;
+
+        case DID_DEFAULT:
+            _flDisplayStyle = XCS_SUNKBORDERS;
+            _ul3DBorderWidth = 1;
+            _ulBorderSpacing = 1;
+            _ulWidgetSpacing = 2;
             // call the init callback to refresh the page controls
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -241,9 +428,10 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             XCenterData *pBackup = (XCenterData*)pcnbp->pUser;
-            _ulPosition = pBackup->ulPosition;
-            _ulWindowStyle = pBackup->ulWindowStyle;
-            _ulAutoHide = pBackup->ulAutoHide;
+            _flDisplayStyle = pBackup->flDisplayStyle;
+            _ul3DBorderWidth = pBackup->ul3DBorderWidth;
+            _ulBorderSpacing = pBackup->ulBorderSpacing;
+            _ulWidgetSpacing = pBackup->ulWidgetSpacing;
             // call the init callback to refresh the page controls
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
@@ -263,7 +451,7 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // this can be on a different thread, so post msg
             WinPostMsg(pXCenterData->Globals.hwndClient,
                        XCM_REFORMAT,
-                       (MPARAM)ulUpdateFlags,
+                       (MPARAM)XFMF_DISPLAYSTYLECHANGED,
                        0);
         }
     }

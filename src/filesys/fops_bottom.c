@@ -1111,6 +1111,12 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
 
 /*
  *@@ fopsFileThreadFontProcessing:
+ *      gets called from fopsFileThreadProcessing with
+ *      XFT_INSTALLFONTS and  XFT_DEINSTALLFONTS for every
+ *      object on the list.
+ *
+ *      This calls the font engine (src\config.fonts.c)
+ *      in turn, most notably fonInstallFont or fonDeInstallFont.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
@@ -1191,6 +1197,7 @@ FOPSRET fopsFileThreadFontProcessing(HAB hab,
  *@@changed V0.9.3 (2000-04-30) [umoeller]: reworked progress reports
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added synchronous processing support
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added hab to prototype (needed for font install)
+ *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
  */
 
 VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor block

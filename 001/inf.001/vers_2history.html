@@ -35,6 +35,9 @@ leave the WarpCenter alone, if this lead to scroll bars on the desktop. Hope thi
 
 </UL>Miscellaneous changes:
 <UL><LI>Moved NLS-independent resources to a separate DLL (XWPRES.DLL).
+<P><LI>Added more error checking to "Empty trash" on shutdown.
+<P><LI>Reworked WPS command interception for file engines command to avoid
+duplicate code... hope I didn't break anything.
 
 </UL>Bugfixes:
 <UL><LI>Reworked mutex semaphore protection all over the place. Maybe the WPS
@@ -51,6 +54,7 @@ This could have lead to system hangs, and maybe it did somewhere.
 <P><LI>Changed a USHORT to a ULONG in my internal EXE structures. This _might_ fix
 problems with very strange and rare EXE files on the "Modules" page. Thanks, Martin
 Lafaix, for pointing this out.
+<P><LI>Fixed crashes when favorite or quick-open folders were deleted.
 <P><LI>Extended folder sorting was pretty broken. Dunno when these bugs were introduced,
 but open folders did _not_ react when global sort settings were changed. This was
 a collection of at least three bugs, which are fixed now. Unfortunately, to fix this,
@@ -71,13 +75,21 @@ file types. Fixed, this is prevented now. Thanks, Martin Lafaix.
 <P><LI>Creating a root file type on the "File types" page led to an error message, even
 though the file type was created. Fixed.
 <P><LI>Fixed memory leaks with "File types" page. Thanks, Martin Lafaix.
+<P><LI>Some "Delete" commands would not be intercepted to go to the trash can if the
+command was selected from an object that was not in a folder. Fixed.
 <P><LI>Trash can would sometimes display wrong empty/non-empty icon after WPS startup.
 Should be fixed now.
+<P><LI>On some systems the trash can folder would appear as a template in the "Templates"
+folder. Preventing template creation now.
 <P><LI>Fixed a memory leak with every time an application was opened via object hotkeys.
 <P><LI>XWPString would never save the "Confirm" setting. Fixed.
 <P><LI>Extended system sounds broke completely with V0.9.6. Fixed. Duh.
 <P><LI>Pages in "Multimedia" hung the system if the object was closed while the
 data was still being inserted by the background threads. Fixed.
+<P><LI>Dmitry Kubov fixed bugs in PageMage, most notably that switch list titles were
+never updated and windows would frequently be made sticky even if they weren't supposed
+to be. Thanks very much, Dmitry.
+<P><LI>XShutdown would sometimes crash if "Empty trash" was enabled. Fixed.
 
 </UL></H6><B>XWorkplace 0.9.6 (November 25, 2000)</B>
 

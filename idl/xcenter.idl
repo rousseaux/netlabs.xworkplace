@@ -95,8 +95,11 @@ interface XCenter : WPAbstract
      *
      */
 
+    BOOL fReduceDesktopWorkarea;    // if TRUE, this XCenter will reduce the desktop
+                                    // workarea if open
+
     ULONG ulWindowStyle;            // XCenter frame's window style;
-                                    // defaults to WS_TOPMOST | WS_ANIMATE
+                                    // defaults to 0, but can be WS_TOPMOST | WS_ANIMATE
 
     ULONG ulAutoHide;               // auto-hide delay in milliseconds; if 0,
                                     // auto-hide is off
@@ -104,8 +107,11 @@ interface XCenter : WPAbstract
     ULONG ulPosition;               // 0 = bottom (XCENTER_BOTTOM)
                                     // 1 = top (XCENTER_TOP)
 
-    ULONG ulDisplayStyle;           // 0 = button (XCS_BUTTON)
-                                    // 1 = flat (XCS_FLAT)
+    ULONG flDisplayStyle;           // XCS_* style flags. See XCENTERGLOBALS.
+
+    ULONG ul3DBorderWidth;          // 3D border width of entire XCenter (0-10)
+    ULONG ulBorderSpacing;          // spacing between 3D border and widgets (0-10)
+    ULONG ulWidgetSpacing;          // spacing between widgets
 
     ULONG ulPriorityClass;          // XCenter priority class
     LONG lPriorityDelta;            // XCenter priority delta

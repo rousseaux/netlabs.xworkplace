@@ -260,11 +260,15 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                   (ulCache == 0));
 
             // sliders
-            winhSetSliderTicks(hwndCacheSlider, 0, 4);
+            winhSetSliderTicks(hwndCacheSlider,
+                               (MPARAM)0, 4,
+                               (MPARAM)-1, -1);
             winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, ulCache / 64);
             WinEnableWindow(hwndCacheSlider, (ulCache != 0));
 
-            winhSetSliderTicks(hwndThresholdSlider, 0, 4);
+            winhSetSliderTicks(hwndThresholdSlider,
+                               (MPARAM)0, 4,
+                               (MPARAM)-1, -1);
             winhSetSliderArmPosition(hwndThresholdSlider, SMA_INCREMENTVALUE, (ulCrecl / 4) - 1);
 
         break; }
@@ -627,9 +631,13 @@ MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI, fKanji);
 
             // sliders
-            winhSetSliderTicks(hwndCacheSlider, 0, 4);
+            winhSetSliderTicks(hwndCacheSlider,
+                               (MPARAM)0, 4,
+                               (MPARAM)-1, -1);
             winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, ulCacheX64);
-            winhSetSliderTicks(hwndSectorsSlider, 0, 4);
+            winhSetSliderTicks(hwndSectorsSlider,
+                               (MPARAM)0, 4,
+                               (MPARAM)-1, -1);
             winhSetSliderArmPosition(hwndSectorsSlider, SMA_INCREMENTVALUE, ulSectors);
 
             // initialization
@@ -1980,15 +1988,13 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             // sliders
             winhSetSliderTicks(WinWindowFromID(hwndDlg,
                                                ID_OSDI_S506_A_IRQ_SLIDER),
-                               0, 4);
+                               0, 4,
+                               (MPARAM)-1, -1);
+
             winhSetSliderTicks(WinWindowFromID(hwndDlg,
                                                ID_OSDI_S506_U_RECOVERY_SLIDER),
-                               0,
-                               2);
-            winhSetSliderTicks(WinWindowFromID(hwndDlg,
-                                               ID_OSDI_S506_U_RECOVERY_SLIDER),
-                               MPFROM2SHORT(5, 10),
-                               4);
+                               0, 2,
+                               MPFROM2SHORT(5, 10), 4);
 
             // spin buttons
             apszDMAChannels[0] = "3";

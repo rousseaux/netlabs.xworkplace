@@ -1112,6 +1112,7 @@ FOPSRET fopsStartTrashDestroyFromCnr(HAB hab,                 // in: as with fop
  *      operations engine.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: fixed crash with invalid fopsDeleteFileTaskList
  */
 
 FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
@@ -1131,7 +1132,14 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
                                   0); // (ULONG)ppwd);     // ulUser
 
     if (hftl)
+    {
         frc = fopsAddObjectToTask(hftl, pFolder);
+
+        if (frc != NO_ERROR)
+            // cancel or no success: clean up
+            fopsDeleteFileTaskList(hftl);
+                        // moved this here... V0.9.7 (2001-01-17) [umoeller]
+    }
     else
         frc = FOPSERR_INTEGRITY_ABORT;
 
@@ -1139,13 +1147,6 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
         // *** go!!!
         frc = fopsStartTask(hftl,
                             hab);
-
-    if (frc != NO_ERROR)
-    {
-        // cancel or no success: clean up
-        fopsDeleteFileTaskList(hftl);
-        // free(ppwd);     // V0.9.3 (2000-04-11) [umoeller]
-    }
 
     return (frc);
 }

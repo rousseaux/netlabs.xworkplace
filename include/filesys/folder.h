@@ -34,7 +34,12 @@
      *
      ********************************************************************/
 
-    extern PFNWP G_pfnwpFolderContentMenuOriginal;
+    extern PFNWP        G_pfnwpFolderContentMenuOriginal;
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+        extern PLINKLIST    G_pllFavoriteFolders,
+                            G_pllQuickOpenFolders;
+    #endif
 
     /* ******************************************************************
      *
@@ -254,27 +259,6 @@
                                             HWND hwndCnr);
 
         VOID fdrUpdateStatusBars(WPFolder *pFolder);
-
-        /* ******************************************************************
-         *
-         *   Folder linked lists
-         *
-         ********************************************************************/
-
-        #ifdef LINKLIST_HEADER_INCLUDED
-
-            BOOL fdrAddToList(WPFolder *somSelf,
-                              PLINKLIST pllFolders,
-                              BOOL fInsert,
-                              const char *pcszIniKey);
-
-            BOOL fdrIsOnList(WPFolder *somSelf,
-                             PLINKLIST pllFolders);
-
-            WPFolder* fdrEnumList(PLINKLIST pllFolders,
-                                  WPFolder *pFolder,
-                                  const char *pcszIniKey);
-        #endif
 
         /********************************************************************
          *

@@ -167,6 +167,8 @@ interface M_XWPFontFolder : M_WPFolder
     wpclsQueryTitle: override;
     wpclsQueryStyle: override;
 
+    wpclsCreateDefaultTemplates: override;
+
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;
 

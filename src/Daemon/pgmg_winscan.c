@@ -49,8 +49,8 @@
  *@@changed V0.9.4 (2000-08-08) [umoeller]: removed "special" windows; now ignoring ShapeWin windows
  */
 
-BOOL pgmwGetWinInfo(HWND hwnd,         // in: window to test
-                    HWNDLIST *phl)     // out: window info
+BOOL pgmwGetWinInfo(HWND hwnd,          // in: window to test
+                    PGMGLISTENTRY *phl) // out: window info
 {
     BOOL    brc = FALSE;
 
@@ -64,6 +64,7 @@ BOOL pgmwGetWinInfo(HWND hwnd,         // in: window to test
         phl->hwnd = hwnd;
         WinQueryWindowProcess(hwnd, &phl->pid, &phl->tid);
         WinQueryClassName(hwnd, sizeof(phl->szClassName), phl->szClassName);
+
         WinQueryWindowPos(hwnd, &phl->swp);
 
         phl->szSwitchName[0] = 0;
@@ -116,6 +117,10 @@ BOOL pgmwGetWinInfo(HWND hwnd,         // in: window to test
                             phl->bWindowType = WINDOW_MAXIMIZE;
                         else if (pgmwStickyCheck(/* phl->szWindowName, */ phl->szSwitchName))
                             phl->bWindowType = WINDOW_STICKY;
+
+                        /* if (phl->bWindowType != WINDOW_MAXIMIZE)
+                            // V0.9.7 (2001-01-18) [umoeller]
+                            phl->bMaximizedAndHiddenByUs = FALSE; */
                     }
                 }
         }
@@ -211,6 +216,7 @@ VOID pgmwWindowListAdd(HWND hwnd)
 
         do {
             if (usIdx == G_usWindowCount)
+            {
                 // no, we need a new entry:
                 if (G_usWindowCount < MAX_WINDOWS)
                     G_usWindowCount++;
@@ -222,6 +228,7 @@ VOID pgmwWindowListAdd(HWND hwnd)
                                0, 0);
                     break;
                 }
+            }
 
             pgmwGetWinInfo(hwnd, &G_MainWindowList[usIdx]);
         } while (FALSE);
@@ -240,6 +247,7 @@ VOID pgmwWindowListAdd(HWND hwnd)
  *@@ pgmwWindowListDelete:
  *      removes a window from our window list which has
  *      been destroyed.
+ *
  *      Called upon PGMG_WNDCHANGE in fnwpPageMageClient.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
@@ -252,15 +260,20 @@ VOID pgmwWindowListDelete(HWND hwnd)
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
             == NO_ERROR)
     {
-        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+        for (usIdx = 0;
+             usIdx < G_usWindowCount;
+             usIdx++)
         {
-            if (G_MainWindowList[usIdx].hwnd == hwnd)
+            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
+            if (pEntryThis->hwnd == hwnd)
             {
                 G_usWindowCount--;
                 if (usIdx != G_usWindowCount)
-                    memcpy(&G_MainWindowList[usIdx],
+                    memcpy(pEntryThis,
                            &G_MainWindowList[G_usWindowCount],
-                           sizeof(HWNDLIST));
+                           sizeof(PGMGLISTENTRY));
+                        // ### is this really correct?!?
+                        // V0.9.7 (2001-01-18) [umoeller]
                 break;
             }
         }
@@ -285,10 +298,15 @@ VOID pgmwWindowListUpdate(HWND hwnd)
             == NO_ERROR)
     {
         // check if we have an entry for this window already
-        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+        for (usIdx = 0;
+             usIdx < G_usWindowCount;
+             usIdx++)
         {
-            if (G_MainWindowList[usIdx].hwnd == hwnd)
-                G_MainWindowList[usIdx].bWindowType = WINDOW_RESCAN;
+            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
+
+            if (    (pEntryThis->hwnd == hwnd)
+               )
+                pEntryThis->bWindowType = WINDOW_RESCAN;
         }
 
         pgmwWindowListRescan();
@@ -305,6 +323,7 @@ VOID pgmwWindowListUpdate(HWND hwnd)
  *      changed.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.7 (2001-01-17) [dk]: this scanned, but never updated. Fixed.
  */
 
 BOOL pgmwWindowListRescan(VOID)
@@ -319,19 +338,23 @@ BOOL pgmwWindowListRescan(VOID)
              usIdx < G_usWindowCount;
              usIdx++)
         {
-            if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
+            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
+
+            if (pEntryThis->bWindowType == WINDOW_RESCAN)
             {
                 // window needs rescan:
-                HWNDLIST hwndListTemp;
-                if (!pgmwGetWinInfo(G_MainWindowList[usIdx].hwnd, &hwndListTemp))
+                PGMGLISTENTRY hwndListTemp;
+                if (!pgmwGetWinInfo(pEntryThis->hwnd, &hwndListTemp))
                 {
                     // window no longer valid:
-                    pgmwWindowListDelete(G_MainWindowList[usIdx].hwnd);
+                    pgmwWindowListDelete(pEntryThis->hwnd);
                     brc = TRUE;
                 }
                 else
                 {
-                    if (memcmp(&G_MainWindowList[usIdx],
+                    // window still valid: check if it's changed
+
+                    if (memcmp(pEntryThis,
                                &hwndListTemp,
                                sizeof(hwndListTemp))
                             != 0)
@@ -339,7 +362,7 @@ BOOL pgmwWindowListRescan(VOID)
                         // changed:
                         brc = TRUE;
                         // V0.9.7 (2001-01-17) [dk]
-                        memcpy(&G_MainWindowList[usIdx],
+                        memcpy(pEntryThis,
                                &hwndListTemp,
                                sizeof(hwndListTemp));
                     }

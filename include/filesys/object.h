@@ -29,6 +29,30 @@
 
     /* ******************************************************************
      *
+     *   Object linked lists
+     *
+     ********************************************************************/
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+
+        BOOL objAddToList(WPObject *somSelf,
+                          PLINKLIST pllFolders,
+                          BOOL fInsert,
+                          const char *pcszIniKey,
+                          ULONG ulListFlag);
+
+        BOOL objIsOnList(WPObject *somSelf,
+                         PLINKLIST pllFolders);
+
+        WPObject* objEnumList(PLINKLIST pllFolders,
+                              WPObject *pFolder,
+                              const char *pcszIniKey,
+                              ULONG ulListFlag);
+
+    #endif
+
+    /* ******************************************************************
+     *
      *   Object flags
      *
      ********************************************************************/
@@ -36,6 +60,10 @@
     #define OBJLIST_RUNNINGSTORED           0x0001
 
     #define OBJLIST_CONFIGFOLDER            0x0002
+
+    #define OBJLIST_FAVORITEFOLDER          0x0004
+
+    #define OBJLIST_QUICKOPENFOLDER         0x0008
 
     /* ******************************************************************
      *

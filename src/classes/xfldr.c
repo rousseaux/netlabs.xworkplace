@@ -143,6 +143,7 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -161,15 +162,16 @@
  *                                                                  *
  ********************************************************************/
 
-static XFolder             *G_pConfigFolder = NULL;
+static XFolder      *G_pConfigFolder = NULL;
 
 // "XFolder" key for wpRestoreData etc.
-static const char*         G_pcszXFolder = "XFolder";
+static const char*  G_pcszXFolder = "XFolder";
 
 // roots of linked lists for favorite/quick-open folders
-// these hold CONTENTMENULISTITEM's
-static PLINKLIST           G_pllFavoriteFolders = NULL,
-                           G_pllQuickOpenFolders = NULL;
+// these hold plain WPObject pointers, no auto-free
+PLINKLIST           G_pllFavoriteFolders = NULL,
+                    G_pllQuickOpenFolders = NULL;
+                            // these two are exported in folder.h
 
 /* ******************************************************************
  *                                                                  *
@@ -830,6 +832,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpCancelProcessOrderedContent(XFolder *somSelf,
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
  *@@changed V0.9.1: made folder list code generic in folder.c
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: added list notify on deletion, which fixed crashes
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
@@ -840,10 +843,11 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
 
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
-    return (fdrAddToList(somSelf,
+    return (objAddToList(somSelf,
                          G_pllFavoriteFolders,
                          fInsert,
-                         INIKEY_FAVORITEFOLDERS));
+                         INIKEY_FAVORITEFOLDERS,
+                         OBJLIST_FAVORITEFOLDER));
 }
 
 /*
@@ -860,7 +864,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
     // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
-    return (fdrIsOnList(somSelf,
+    return (objIsOnList(somSelf,
                         G_pllFavoriteFolders));
 }
 
@@ -871,6 +875,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
  *@@changed V0.9.1: made folder list code generic in folder.c
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: added list notify on deletion, which fixed crashes
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
@@ -880,10 +885,11 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
     // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
-    return (fdrAddToList(somSelf,
+    return (objAddToList(somSelf,
                          G_pllQuickOpenFolders,
                          fQuickOpen,
-                         INIKEY_QUICKOPENFOLDERS));
+                         INIKEY_QUICKOPENFOLDERS,
+                         OBJLIST_QUICKOPENFOLDER));
 }
 
 /*
@@ -900,7 +906,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
     // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
-    return (fdrIsOnList(somSelf,
+    return (objIsOnList(somSelf,
                         G_pllQuickOpenFolders));
 }
 
@@ -3655,10 +3661,14 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
 /*
  *@@ xwpclsQueryFavoriteFolder:
  *      This returns "favorite" folders.
+ *
  *      If pFolder == NULL, the first favorite folder is returned,
  *      otherwise the favorite folder which comes after pFolder
  *      in the favorite folder list.
+ *
  *      This returns NULL if no more folders are found.
+ *
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: added list notify on deletion, which fixed crashes
  */
 
 SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
@@ -3668,18 +3678,23 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryFavoriteFolder");
 
-    return (fdrEnumList(G_pllFavoriteFolders,
+    return (objEnumList(G_pllFavoriteFolders,
                         pFolder,
-                        INIKEY_FAVORITEFOLDERS));
+                        INIKEY_FAVORITEFOLDERS,
+                        OBJLIST_FAVORITEFOLDER));
 }
 
 /*
  *@@ xwpclsQueryQuickOpenFolder:
  *      This returns folders which have the "QuickOpen" flag on.
+ *
  *      If pFolder == NULL, the first such folder is returned,
  *      otherwise the folder which comes after pFolder
  *      in the quick-open folder list.
+ *
  *      This returns NULL if no more folders are found.
+ *
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: added list notify on deletion, which fixed crashes
  */
 
 SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
@@ -3689,10 +3704,10 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryQuickOpenFolder");
 
-
-    return (fdrEnumList(G_pllQuickOpenFolders,
+    return (objEnumList(G_pllQuickOpenFolders,
                         pFolder,
-                        INIKEY_QUICKOPENFOLDERS));
+                        INIKEY_QUICKOPENFOLDERS,
+                        OBJLIST_QUICKOPENFOLDER));
 }
 
 /*
@@ -3757,8 +3772,8 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
                 pKernelGlobals->fXFolder = TRUE;
 
                 // initialize other data
-                G_pllFavoriteFolders = lstCreate(TRUE);       // items are freeable
-                G_pllQuickOpenFolders = lstCreate(TRUE);      // items are freeable
+                G_pllFavoriteFolders = lstCreate(FALSE);    // no auto-free
+                G_pllQuickOpenFolders = lstCreate(FALSE);   // no auto-free
 
                 fdrLoadFolderHotkeys();
 

@@ -38,15 +38,16 @@ Last updated January 8, 2001
     ------------------
 
     This version fixes a number of bugs reported for V0.9.6.
-    In addition, you get the prototype for the XCenter, a
-    WarpCenter replacement. After installation, you can
-    create an XCenter instance from the "Objects" page in
-    the "XWorkplace Setup" object. A future version will
-    create a standard XCenter for you.
+    Many people will be pleased to hear that PageMage is
+    finally becoming more usable.
 
-    For details, refer to the "XWorkplace User Guide". To
-    extract the documentation only, see "2. INSTALLATION"
-    below.
+    In addition, you get the prototype for the XCenter, a
+    WarpCenter replacement. After installation, you should
+    find an XCenter in the XWorkplace installation folder.
+
+    For details, refer to the "Version Notices" in the
+    "XWorkplace User Guide". To extract the documentation
+    only, see "2. INSTALLATION" below.
 
 
 2. INSTALLATION
@@ -153,16 +154,12 @@ Last updated January 8, 2001
         If you have Christian's old package installed, you can keep
         it running, it causes no problems.
 
-    2)  There are still a number of problems left with PageMage. It
-        shouldn't hang system any more, but it has problems tracking
-        windows at times. Only some minor bugs have been fixed.
-
-    3)  There are problems with WPS restarts and FP13/14. This is
+    2)  There are problems with WPS restarts and FP13/14. This is
         an OS/2 kernel bug which IBM says has been fixed with kernel
         build level 14.050, so this will probably be fixed with FP15
         as well.
 
-    4)  From time to time, creating folders from templates (using the
+    3)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
         screen. Some people never get this, but I do from time to time.
         This problem has been reported for all XFolder and XWorkplace

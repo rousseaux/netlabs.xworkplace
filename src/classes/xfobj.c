@@ -324,6 +324,12 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
  *         one. The config folder cache must be invalidated
  *         when this object gets deleted.
  *
+ *      -- OBJLIST_FAVORITEFOLDER: object is a folder
+ *         on the "favorite folders" list.
+ *
+ *      -- OBJLIST_QUICKOPENFOLDER: object is a folder
+ *         on the "quick-open folders" list.
+ *
  *      Note: These flags are NOT persistent across
  *      reboots, i.e. not stored with wpSaveState.
  *      They are also cleared for the copy if the
@@ -919,6 +925,7 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
  *
  *@@changed V0.9.3 (2000-04-11) [umoeller]: now destroying related trash object too
  *@@changed V0.9.6 (2000-10-23) [umoeller]: added support for progOpenProgram
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: added support for favorite and quick-open folders
  */
 
 SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
@@ -935,22 +942,47 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     if (_pTrashObject)
         _wpFree(_pTrashObject);
 
-    // go thru notifications
-    if (_ulListNotify & OBJLIST_RUNNINGSTORED)
-    {
-        // this object is currently stored in the
-        // "running programs" list: remove it, or
-        // we'll get crashes later...
-        _ulListNotify &= ~OBJLIST_RUNNINGSTORED;
-        progRunningAppDestroyed(somSelf);
-    }
+    // go thru list notifications
 
-    if (_ulListNotify & OBJLIST_CONFIGFOLDER)
+    if (_ulListNotify)
     {
-        // somSelf is in the config folder hierarchy:
-        // invalidate the content lists for the config
-        // folders so that they will be rebuilt
-        mnuInvalidateConfigCache();
+        if (_ulListNotify & OBJLIST_RUNNINGSTORED)
+        {
+            // this object is currently stored in the
+            // "running programs" list: remove it, or
+            // we'll get crashes later...
+            _ulListNotify &= ~OBJLIST_RUNNINGSTORED;
+            progRunningAppDestroyed(somSelf);
+        }
+
+        if (_ulListNotify & OBJLIST_CONFIGFOLDER)
+        {
+            // somSelf is in the config folder hierarchy:
+            // invalidate the content lists for the config
+            // folders so that they will be rebuilt
+            _ulListNotify &= ~OBJLIST_CONFIGFOLDER;
+            mnuInvalidateConfigCache();
+        }
+
+        if (_ulListNotify & OBJLIST_FAVORITEFOLDER)
+        {
+            _ulListNotify &= ~OBJLIST_FAVORITEFOLDER;
+            objAddToList(somSelf,
+                         G_pllFavoriteFolders,      // folder.h
+                         FALSE,         // remove
+                         INIKEY_FAVORITEFOLDERS,
+                         0);            // no modify flags... we're being destroyed
+        }
+
+        if (_ulListNotify & OBJLIST_QUICKOPENFOLDER)
+        {
+            _ulListNotify &= ~OBJLIST_QUICKOPENFOLDER;
+            objAddToList(somSelf,
+                         G_pllQuickOpenFolders,      // folder.h
+                         FALSE,         // remove
+                         INIKEY_QUICKOPENFOLDERS,
+                         0);            // no modify flags... we're being destroyed
+        }
     }
 
     if (_pvllWidgetNotifies)

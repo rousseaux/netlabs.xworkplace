@@ -59,6 +59,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
@@ -94,6 +95,26 @@
 // other SOM headers
 
 #pragma hdrstop
+
+/* ******************************************************************
+ *
+ *   Declarations
+ *
+ ********************************************************************/
+
+/*
+ *@@ WPSAVELONGITEM:
+ *      key/PULONG pair to be saved in a loop in
+ *      wpSaveState.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+typedef struct _WPSAVELONGITEM
+{
+    ULONG   ulSaveKey;
+    PULONG  pul;
+} WPSAVELONGITEM, *PWPSAVELONGITEM;
 
 /* ******************************************************************
  *
@@ -140,19 +161,36 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->pfncbItemChanged = ctrpWidgetsItemChanged;
     ntbInsertPage(pcnbp);
 
-    // add the "View" page on top
+    // add the "View2" page on top
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MINOR;
+    pcnbp->fEnumerate = TRUE;
+    pcnbp->pszName = pNLSStrings->pszViewPage;
+    pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW2;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW2;
+    pcnbp->ulPageID = SP_XCENTER_VIEW2;
+    pcnbp->pfncbInitPage    = ctrpView2InitPage;
+    pcnbp->pfncbItemChanged = ctrpView2ItemChanged;
+    ntbInsertPage(pcnbp);
+
+    // add the "View1" page on top
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = pNLSStrings->pszViewPage;
     pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW;
-    pcnbp->ulPageID = SP_XCENTER_VIEW;
-    pcnbp->pfncbInitPage    = ctrpViewInitPage;
-    pcnbp->pfncbItemChanged = ctrpViewItemChanged;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW1;
+    pcnbp->ulPageID = SP_XCENTER_VIEW1;
+    pcnbp->pfncbInitPage    = ctrpView1InitPage;
+    pcnbp->pfncbItemChanged = ctrpView1ItemChanged;
     return (ntbInsertPage(pcnbp));
 }
 
@@ -342,12 +380,18 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 
     XCenter_parent_WPAbstract_wpInitData(somSelf);
 
+    _fReduceDesktopWorkarea = FALSE;
+
     _ulWindowStyle = 0; // WS_TOPMOST | WS_ANIMATE;
     _ulAutoHide = 0; // 4000;
 
     _ulPosition = XCENTER_BOTTOM;
 
-    _ulDisplayStyle = XCS_BUTTON;
+    _flDisplayStyle = XCS_SUNKBORDERS;
+
+    _ul3DBorderWidth = 1;
+    _ulBorderSpacing = 1;
+    _ulWidgetSpacing = 2;
 
     _ulPriorityClass = PRTYC_REGULAR;
     _lPriorityDelta = 0; // PRTYD_MINIMUM;
@@ -446,6 +490,23 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
     {
         if (brc)
         {
+            WPSAVELONGITEM aSaveItems[]
+                = {
+                        2, &_ulWindowStyle,
+                        3, &_ulAutoHide,
+                        4, &_flDisplayStyle,
+                        5, &_fHelpDisplayed,
+                        6, &_ulPriorityClass,
+                        7, (PULONG)&_lPriorityDelta,        // this is a LONG
+                        8, &_ulPosition,
+                        9, &_ul3DBorderWidth,
+                        10, &_ulBorderSpacing,
+                        11, &_ulWidgetSpacing,
+                        12, &_fReduceDesktopWorkarea
+                  };
+                        // this must match exactly the array in wpRestoreState
+            ULONG   ul;
+
             /*
              * key 1: widget settings
              *
@@ -485,7 +546,17 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
              *
              */
 
-            _wpSaveLong(somSelf,
+            for (ul = 0;
+                 ul < sizeof(aSaveItems) / sizeof(aSaveItems[0]);
+                 ul++)
+            {
+                _wpSaveLong(somSelf,
+                            (PSZ)G_pcszXCenter,
+                            aSaveItems[ul].ulSaveKey,
+                            *(aSaveItems[ul].pul));
+            }
+
+            /* _wpSaveLong(somSelf,
                         (PSZ)G_pcszXCenter,
                         2,
                         _ulWindowStyle);
@@ -498,7 +569,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
             _wpSaveLong(somSelf,
                         (PSZ)G_pcszXCenter,
                         4,
-                        _ulDisplayStyle);
+                        _flDisplayStyle);
 
             _wpSaveLong(somSelf,
                         (PSZ)G_pcszXCenter,
@@ -519,6 +590,23 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
                         (PSZ)G_pcszXCenter,
                         8,
                         _ulPosition);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        9,
+                        _ul3DBorderWidth);
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        10,
+                        _ulBorderSpacing);
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        11,
+                        _ulWidgetSpacing);
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        12,
+                        _fReduceDesktopWorkarea); */
         }
     }
     CATCH(excpt1)
@@ -552,13 +640,29 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
     {
         if (brc)
         {
+            WPSAVELONGITEM aSaveItems[]
+                = {
+                        2, &_ulWindowStyle,
+                        3, &_ulAutoHide,
+                        4, &_flDisplayStyle,
+                        5, &_fHelpDisplayed,
+                        6, &_ulPriorityClass,
+                        7, (PULONG)&_lPriorityDelta,        // this is a LONG
+                        8, &_ulPosition,
+                        9, &_ul3DBorderWidth,
+                        10, &_ulBorderSpacing,
+                        11, &_ulWidgetSpacing,
+                        12, &_fReduceDesktopWorkarea
+                  };
+                        // this must match exactly the array in wpSaveState
+            ULONG   ul;
+
             /*
              * key 1: widget settings
              *
              */
 
             BOOL    fError = FALSE;
-            ULONG   ul;
 
             if (_pszPackedWidgetSettings)
             {
@@ -605,7 +709,19 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
              *
              */
 
-            if (_wpRestoreLong(somSelf,
+            for (ul = 0;
+                 ul < sizeof(aSaveItems) / sizeof(aSaveItems[0]);
+                 ul++)
+            {
+                ULONG ulTemp = 0;
+                if (_wpRestoreLong(somSelf,
+                                   (PSZ)G_pcszXCenter,
+                                   aSaveItems[ul].ulSaveKey,
+                                   &ulTemp))
+                    *(aSaveItems[ul].pul) = ulTemp;
+            }
+
+            /* if (_wpRestoreLong(somSelf,
                                (PSZ)G_pcszXCenter,
                                2,
                                &ul))
@@ -621,7 +737,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                (PSZ)G_pcszXCenter,
                                4,
                                &ul))
-                _ulDisplayStyle = ul;
+                _flDisplayStyle = ul;
 
             if (_wpRestoreLong(somSelf,
                                (PSZ)G_pcszXCenter,
@@ -646,6 +762,22 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                8,
                                &ul))
                 _ulPosition = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               9,
+                               &ul))
+                _ul3DBorderWidth = ul;
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               10,
+                               &ul))
+                _ulBorderSpacing = ul;
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               11,
+                               &ul))
+                _ulWidgetSpacing = ul; */
         }
     }
     CATCH(excpt1)
@@ -914,6 +1046,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpAddSettingsPages(XCenter *somSelf,
 
 SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
 {
+    APIRET arc = NO_ERROR;
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsInitData");
 
@@ -928,6 +1061,10 @@ SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
             krnUnlockGlobals();
         }
     }
+
+    // resolve WinSetDesktopWorkArea etc. (ctr_engine.c)
+    arc = ctrpDesktopWorkareaSupported();
+    _Pmpf((__FUNCTION__ ": ctrpChangeDesktopSupported returned %d.", arc));
 }
 
 /*

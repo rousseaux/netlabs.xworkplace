@@ -84,10 +84,10 @@
     MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                                      PDRAGINFO pdrgInfo);
 
-    BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
-                           HAB hab,
-                           HWND hwndConfirmOwner,
-                           PULONG pulDeleted);
+    ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
+                            HAB hab,
+                            HWND hwndConfirmOwner,
+                            PULONG pulDeleted);
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 

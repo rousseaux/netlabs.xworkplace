@@ -878,17 +878,11 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
         // set up sliders
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
-                           0,
-                           3);      // three pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
-                           MPFROM2SHORT(9, 10),
-                           6);      // six pixels high
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(9, 10), 6);
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
-                           0,
-                           3);      // three pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
-                           MPFROM2SHORT(9, 10),
-                           6);      // six pixels high
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(9, 10), 6);
     }
 
     if (flFlags & CBI_SET)

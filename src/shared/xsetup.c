@@ -2799,7 +2799,8 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // set up slider
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
-                           0, 6);      // six pixels high
+                           (MPARAM)0, 6,
+                           (MPARAM)-1, -1);
     }
 
     if (flFlags & CBI_SET)

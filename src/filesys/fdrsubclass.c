@@ -1725,11 +1725,13 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
  *      --  playing the new system sounds for menus and such.
  *
  *      Note that this function calls lots of "external" functions
- *      spread across all over the XFolder code. I have tried to
+ *      spread across all over the XWorkplace code. I have tried to
  *      reduce the size of this window procedure to an absolute
  *      minimum because this function gets called very often (for
  *      every single folder message) and large message procedures
  *      may thrash the processor caches.
+ *
+ *      The actual message processing is now in ProcessFolderMsgs.
  *
  *@@changed V0.9.0 [umoeller]: moved cleanup code from WM_CLOSE to WM_DESTROY; un-subclassing removed
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c

@@ -486,19 +486,24 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
  *      is specified for synchronous mode. Otherwise this
  *      function will fail.
  *
- *      Returns TRUE if emptying the trash can has started on
+ *      Returns NO_ERROR if emptying the trash can has started on
  *      the File thread or (in synchronous mode) if emptying succeeded.
  *
- *      If (pulDeleted != NULL) and TRUE is returned, *pulDeleted
+ *      If (pulDeleted != NULL) and NO_ERROR is returned, *pulDeleted
  *      receives the no. of objects which were deleted. This works
  *      only in synchronous mode. Note that if the trash can was
- *      empty, TRUE is returned still, but *pulDeleted will be set
+ *      empty, NO_ERROR is returned still, but *pulDeleted will be set
  *      to 0.
  *
+ *      If something != NO_ERROR (0) is returned, it's either an
+ *      OS/2 error code or one of the error codes in
+ *      include\filesys\fileops.h.
+ *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added hwndConfirmOwner
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: now returning FOPSRET
  */
 
-SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
+SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
                                               ULONG hab, PULONG pulDeleted,
                                               HWND hwndConfirmOwner)
 {
@@ -1592,6 +1597,29 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryStyle(M_XWPTrashCan *somSelf)
                 | CLSSTYLE_NEVERCOPY    // but allow move
                 | CLSSTYLE_NEVERDELETE
                 | CLSSTYLE_NEVERPRINT);
+}
+
+/*
+ *@@ wpclsCreateDefaultTemplates:
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
+ *
+ *@@added V0.9.7 (2001-01-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrcM_wpclsCreateDefaultTemplates(M_XWPTrashCan *somSelf,
+                                                          WPObject* Folder)
+{
+    /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
+    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsCreateDefaultTemplates");
+
+    // pretend we've created the templates
+    return (TRUE);
 }
 
 /*

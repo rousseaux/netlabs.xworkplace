@@ -57,9 +57,9 @@ interface XWPTrashCan : WPFolder
 
     BOOL xwpSetCorrectTrashIcon(in BOOL fForce);
 
-    BOOL xwpEmptyTrashCan(in ULONG hab,
-                          in PULONG pulDeleted,
-                          in HWND hwndConfirmOwner);
+    ULONG xwpEmptyTrashCan(in ULONG hab,
+                           in PULONG pulDeleted,
+                           in HWND hwndConfirmOwner);
 
     BOOL xwpProcessObjectCommand(in USHORT usCommand,
                                  in HWND hwndCnr,
@@ -221,6 +221,8 @@ interface M_XWPTrashCan : M_WPFolder
     wpclsUnInitData: override;
     wpclsQueryTitle: override;
     wpclsQueryStyle: override;
+
+    wpclsCreateDefaultTemplates: override;
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;

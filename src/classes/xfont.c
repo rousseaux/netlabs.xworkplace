@@ -472,6 +472,27 @@ SOM_Scope ULONG  SOMLINK fonM_wpclsQueryStyle(M_XWPFontFolder *somSelf)
 }
 
 /*
+ *@@ wpclsCreateDefaultTemplates:
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
+ */
+
+SOM_Scope BOOL  SOMLINK fonM_wpclsCreateDefaultTemplates(M_XWPFontFolder *somSelf,
+                                                         WPObject* Folder)
+{
+    /* M_XWPFontFolderData *somThis = M_XWPFontFolderGetData(somSelf); */
+    M_XWPFontFolderMethodDebug("M_XWPFontFolder","fonM_wpclsCreateDefaultTemplates");
+
+    // pretend we've created the templates
+    return (TRUE);
+}
+
+/*
  *@@ wpclsQueryIconData:
  *      this WPObject class method builds the default
  *      icon for objects of a class (i.e. the icon which

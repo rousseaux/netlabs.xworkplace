@@ -548,6 +548,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.7 (2000-12-17) [umoeller]: moved config.sys path composition to krnInitializeXWorkplace
  *@@changed V0.9.7 (2000-12-17) [umoeller]: raised buffer size for syspaths page
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: changed QSV_MAX compile problems; thanks, Martin Lafaix
  */
 
 VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -661,13 +662,15 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // installed physical memory
                     CHAR    szMemory[30];
-                    ULONG   aulSysInfo[QSV_MAX] = {0};
+                    ULONG   ulTotPhysMem = 0;
                     PSZ     p = 0;
 
-                    DosQuerySysInfo(1L, QSV_MAX,
-                                        (PVOID)aulSysInfo, sizeof(ULONG)*QSV_MAX);
+                    DosQuerySysInfo(QSV_TOTPHYSMEM,     // changed V0.9.7 (2001-01-17) [umoeller]
+                                    QSV_TOTPHYSMEM,
+                                    &ulTotPhysMem,
+                                    sizeof(ulTotPhysMem));
                     sprintf(szMemory, "%d",
-                               (aulSysInfo[QSV_TOTPHYSMEM-1] + (512*1000)) / 1024 / 1024);
+                            (ulTotPhysMem + (512*1000)) / 1024 / 1024);
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_PHYSICALMEMORY, szMemory);
 
                     // parse SWAPPATH command

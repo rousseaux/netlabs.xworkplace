@@ -1170,9 +1170,9 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
         ULONG   cxThis = cxRegular;
 
         LONG    lButtonBorder
-            = (pGlobals->ulDisplayStyle == XCS_BUTTON)
-                            ? THICK_BUTTON_BORDER
-                            : 1;
+            = ((pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
+                            ? THICK_BUTTON_BORDER   // raised buttons
+                            : 1;        // flat buttons
 
         if (pCtrlThis->fbJump & WLF_LASTBUTTON)
             // last button: add leftover space
@@ -1723,9 +1723,11 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = 2 * WIDGET_BORDER        // thin border
                                    + 2                      // space around icon
                                    + pWidget->pGlobals->cxMiniIcon;
-                        if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
+                        if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
+                            // raised buttons
                             pszl->cy += 2 * THICK_BUTTON_BORDER;
                         else
+                            // flat buttons
                             pszl->cy += 2;      // 2*1 pixel for thin border
                         brc = TRUE;
                     break; }

@@ -53,26 +53,29 @@
     #define WINDOW_STICKY       0x0003      // window is on sticky list
     #define WINDOW_MINIMIZE     0x0005      // window is minimized, treat as sticky
     #define WINDOW_MAXIMIZE     0x0006      // window is maximized; hide when moving
-    #define WINDOW_MAX_OFF      0x0007      // window was maximized and has been hidden by us
+    // #define WINDOW_MAX_OFF      0x0007      // window was maximized and has been hidden by us
     #define WINDOW_RESCAN       0x0008
 
     /*
-     *@@ HWNDLIST:
+     *@@ PGMGLISTENTRY:
      *      one of these exists for every window
      *      which is currently handled by PageMage.
+     *
+     *@@changed V0.9.7 (2001-01-18) [umoeller]: renamed from PGMGLISTENTRY
      */
 
-    typedef struct _HWNDLIST
+    typedef struct _PGMGLISTENTRY
     {
         HWND    hwnd;
         BYTE    bWindowType;
+        // BYTE    bMaximizedAndHiddenByUs;
         // CHAR    szWindowName[30];
         CHAR    szSwitchName[30];
         CHAR    szClassName[30];
         ULONG   pid;
         ULONG   tid;
         SWP     swp;
-    } HWNDLIST;
+    } PGMGLISTENTRY, *PPGMGLISTENTRY;
 
     // xwpdaemn.c
     VOID                dmnKillPageMage(BOOL fNotifyKernel);
@@ -89,8 +92,8 @@
     #ifdef THREADS_HEADER_INCLUDED
         VOID _Optlink fntMoveQueueThread(PTHREADINFO pti);
     #endif
-    INT pgmmMoveIt(LONG, LONG, BOOL);
-    INT pgmmZMoveIt(LONG, LONG);
+    BOOL pgmmMoveIt(LONG, LONG, BOOL);
+    BOOL pgmmZMoveIt(LONG, LONG);
     VOID pgmmRecoverAllWindows(VOID);
 
     // pgmg_settings.c
@@ -100,7 +103,7 @@
 
     // pgmg_winscan.c
     BOOL pgmwGetWinInfo(HWND hwnd,
-                        HWNDLIST *phl);
+                        PGMGLISTENTRY *phl);
     VOID pgmwScanAllWindows(VOID);
     VOID pgmwWindowListAdd(HWND hwnd);
     VOID pgmwWindowListDelete(HWND hwnd);
@@ -123,12 +126,12 @@
 
     extern HPOINTER     G_hptrDaemon;
 
-    extern HWNDLIST     G_MainWindowList[MAX_WINDOWS];
+    extern PGMGLISTENTRY G_MainWindowList[MAX_WINDOWS];
     extern USHORT       G_usWindowCount;
 
     extern HMTX         G_hmtxWindowList;
     extern POINTL       G_ptlCurrPos;
-    extern POINTL       G_ptlPgmgClientSize;
+    // extern POINTL       G_ptlPgmgClientSize;
     extern POINTL       G_ptlEachDesktop;
     extern BOOL         G_bConfigChanged;
     extern SWP          G_swpPgmgFrame;

@@ -227,7 +227,8 @@
 
     #define PGMG_INVALIDATECLIENT   (WM_USER + 300)
     #define PGMG_ZAPPO              (WM_USER + 301)
-    #define PGMG_LOCKUP             (WM_USER + 302)
+    // #define PGMG_LOCKUP             (WM_USER + 302)
+                // removed, this did nothing V0.9.7 (2001-01-18) [umoeller]
     #define PGMG_WNDCHANGE          (WM_USER + 303)
     #define PGMG_WNDRESCAN          (WM_USER + 304)
     #define PGMG_CHANGEACTIVE       (WM_USER + 305)

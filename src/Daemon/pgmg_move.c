@@ -26,6 +26,7 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINSWITCHLIST
+#define INCL_WINSYS
 #include <os2.h>
 
 #include <stdio.h>
@@ -51,10 +52,15 @@
  *      given X and Y deltas. Runs on the Move thread.
  *
  *      Parameters:
- *          Positive lXDelta:  at left edge of screen, panning left, window shift +
- *          Negative lXDelta:  at right edge of screen, panning right, window shift -
- *          Negative lYDelta:  at top edge of screen, panning up, window shift -
- *          Positive lYDelta:  at bottom edge of screen, panning down, window shift +
+ *
+ *      --  Positive lXDelta:  at left edge of screen, panning left, window shift +
+ *
+ *      --  Negative lXDelta:  at right edge of screen, panning right, window shift -
+ *
+ *      --  Negative lYDelta:  at top edge of screen, panning up, window shift -
+ *
+ *      --  Positive lYDelta:  at bottom edge of screen, panning down, window shift +
+ *
  *      Returns:
  *          TRUE:  moved successfully
  *
@@ -63,11 +69,11 @@
  *@@changed V0.9.4 (2000-08-08) [umoeller]: added special maximized window handling
  */
 
-INT pgmmMoveIt(LONG lXDelta,
-               LONG lYDelta,
-               BOOL bAllowUpdate)
+BOOL pgmmMoveIt(LONG lXDelta,
+                LONG lYDelta,
+                BOOL bAllowUpdate)
 {
-    BOOL        bResult = FALSE;
+    BOOL    fAnythingMoved = FALSE;
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, FALSE);
@@ -78,137 +84,226 @@ INT pgmmMoveIt(LONG lXDelta,
         HWND        ahwndMoveList[MAX_WINDOWS];
                     // here we build a second list of windows to be moved
         SWP         swp[MAX_WINDOWS];
-        USHORT      usMoveListCtr = 0;
-        USHORT      usIdx = 0;
+        ULONG       ulMoveListCtr = 0;
+        ULONG       usIdx = 0;
+
+        LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
+        LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
 
         // now go thru all windows on the main list and copy them
         // to the move list, if necessary
-        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+        for (usIdx = 0;
+             usIdx < G_usWindowCount;
+             usIdx++)
         {
-            BOOL fRescan = FALSE;
+            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
 
-            if (!WinIsWindow(G_habDaemon, G_MainWindowList[usIdx].hwnd))
+            BOOL fRescanThis = FALSE;
+                    // if TRUE, this gets rescanned
+
+            if (!WinIsWindow(G_habDaemon, pEntryThis->hwnd))
                 // window no longer valid:
                 // mark for rescan so it will be removed later
-                G_MainWindowList[usIdx].bWindowType = WINDOW_RESCAN;
+                // pEntryThis->bWindowType = WINDOW_RESCAN;
+                                // V0.9.7 (2001-01-18) [umoeller]
+                fRescanThis = TRUE;
             else
             {
-                WinQueryWindowPos(G_MainWindowList[usIdx].hwnd, &G_MainWindowList[usIdx].swp);
-                bResult = FALSE;
+                BOOL fMoveThis = FALSE;
+
+                // update window pos in winlist's SWP
+                PSWP pswpThis = &pEntryThis->swp;
+                WinQueryWindowPos(pEntryThis->hwnd, pswpThis);
 
                 // fix outdated minimize flags
-                if (    (G_MainWindowList[usIdx].bWindowType == WINDOW_MINIMIZE)
-                     && ( (G_MainWindowList[usIdx].swp.fl & SWP_MINIMIZE) == 0)
+                if (    (pEntryThis->bWindowType == WINDOW_MINIMIZE)
+                     && ( (pswpThis->fl & SWP_MINIMIZE) == 0)
                    )
                     // no longer minimized:
-                    fRescan = TRUE;
-                else if (    (G_MainWindowList[usIdx].bWindowType == WINDOW_MAXIMIZE)
-                          && ( (G_MainWindowList[usIdx].swp.fl & SWP_MAXIMIZE) == 0)
+                    fRescanThis = TRUE;
+                else if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
+                          && ( (pswpThis->fl & SWP_MAXIMIZE) == 0)
                         )
                         // no longer minimized:
-                        fRescan = TRUE;
+                        fRescanThis = TRUE;
 
-                if (G_MainWindowList[usIdx].bWindowType == WINDOW_NORMAL)
+                if (pEntryThis->bWindowType == WINDOW_NORMAL)
                 {
-                    if (G_MainWindowList[usIdx].swp.fl & SWP_MINIMIZE)
+                    if (pswpThis->fl & SWP_MINIMIZE)
                         // now minimized:
-                        G_MainWindowList[usIdx].bWindowType = WINDOW_MINIMIZE;
-                    else if (G_MainWindowList[usIdx].swp.fl & SWP_MAXIMIZE)
+                        pEntryThis->bWindowType = WINDOW_MINIMIZE;
+                    else if (pswpThis->fl & SWP_MAXIMIZE)
                         // now maximized:
-                        G_MainWindowList[usIdx].bWindowType = WINDOW_MAXIMIZE;
+                        pEntryThis->bWindowType = WINDOW_MAXIMIZE;
                 }
 
-                if (fRescan)
+                if (fRescanThis)
                 {
-                    if (pgmwGetWinInfo(G_MainWindowList[usIdx].hwnd,
-                                       &G_MainWindowList[usIdx]))
+                    if (pgmwGetWinInfo(pEntryThis->hwnd,
+                                       pEntryThis))
                     {
                         // window still valid:
-                        bResult = TRUE;
+                        fMoveThis = TRUE;
                     }
                     else
                         // window no longer valid:
                         // remove from list during next paint
-                        G_MainWindowList[usIdx].bWindowType = WINDOW_RESCAN;
+                        pEntryThis->bWindowType = WINDOW_RESCAN;
                 }
                 else
-                    if (   (G_MainWindowList[usIdx].bWindowType == WINDOW_MAXIMIZE)
-                        || (G_MainWindowList[usIdx].bWindowType == WINDOW_MAX_OFF)
+                    if (   (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
+                        // || (pEntryThis->bWindowType == WINDOW_MAX_OFF)
                        )
                         // may even be hidden
-                        bResult = TRUE;
-                    else if (   (G_MainWindowList[usIdx].bWindowType == WINDOW_NORMAL)
-                             && (!(G_MainWindowList[usIdx].swp.fl & SWP_HIDE))
+                        fMoveThis = TRUE;
+                    else if (   (pEntryThis->bWindowType == WINDOW_NORMAL)
+                             && (!(pswpThis->fl & SWP_HIDE))
                             )
-                        bResult = TRUE;
+                        fMoveThis = TRUE;
 
-                if (bResult)
+                if (fMoveThis)
                 {
                     // OK, window to be moved:
 
                     // default flags
                     ULONG   fl = SWP_MOVE | SWP_NOADJUST;
 
-                    ahwndMoveList[usMoveListCtr] = G_MainWindowList[usIdx].hwnd;
+                    PSWP    pswpNewThis = &swp[ulMoveListCtr];
 
-                    WinQueryWindowPos(ahwndMoveList[usMoveListCtr],
-                                      &swp[usMoveListCtr]);
-                    swp[usMoveListCtr].hwnd = ahwndMoveList[usMoveListCtr];
-                    swp[usMoveListCtr].x += lXDelta;
-                    swp[usMoveListCtr].y += lYDelta;
+                    ahwndMoveList[ulMoveListCtr] = pEntryThis->hwnd;
 
-                    if (swp[usMoveListCtr].fl & SWP_MAXIMIZE)
+                    WinQueryWindowPos(ahwndMoveList[ulMoveListCtr],
+                                      pswpNewThis);
+
+                    pswpNewThis->hwnd = ahwndMoveList[ulMoveListCtr];
+                    // add the delta for moving
+                    pswpNewThis->x += lXDelta;
+                    pswpNewThis->y += lYDelta;
+
+                    if (pswpNewThis->fl & SWP_MAXIMIZE)
                     {
+                        // maximized:
+
+                        // V0.9.7 (2001-01-18) [dk]: check if visible
+                        /* BOOL bVisible
+                            = !(    ((pswpNewThis->x + bx) >= G_pHookData->lCXScreen)
+                                 || ((pswpNewThis->x + pswpNewThis->cx - bx) <= 0)
+                                 || ((pswpNewThis->y + by) >= G_pHookData->lCYScreen)
+                                 || ((pswpNewThis->y + pswpNewThis->cy - by) <= 0)
+                               );
+
                         // currently maximized:
                         // this can be one of two sorts:
                         if (G_MainWindowList[usIdx].bWindowType == WINDOW_MAX_OFF)
                         {
-                            // this is a maxiized window which has been hidden by
+                            // this is a maximized window which has been hidden by
                             // us previously: check if it's currently being shown
-
-                            if (    // is desktop left in window?
-                                    (swp[usMoveListCtr].x < 0)
-                                 && (swp[usMoveListCtr].x + swp[usMoveListCtr].cx > G_pHookData->lCXScreen)
-                                    // and desktop bottom in window?
-                                 && (swp[usMoveListCtr].y < 0)
-                                 && (swp[usMoveListCtr].y + swp[usMoveListCtr].cy > G_pHookData->lCYScreen)
-                               )
+                            if (bVisible)
                             {
                                 // yes:
                                 // unhide
-                                fl = SWP_SHOW | SWP_MOVE | SWP_NOADJUST;
-                                // and mark as maximized again
-                                G_MainWindowList[usIdx].bWindowType = WINDOW_MAXIMIZE;
+                                fl |= SWP_SHOW;
+                                pEntryThis->bWindowType = WINDOW_MAXIMIZE;
                             }
+                        }
+                        else
+                        {
+                            if (!bVisible)
+                            {
+                                // regular maximized window on current Desktop:
+                                // hide to avoid the borders on the adjacent screen
+                                fl = SWP_HIDE | SWP_MOVE | SWP_NOADJUST;
+                                // and mark this as "hidden by us" in the window list
+                                // so we can un-hide it later
+                                G_MainWindowList[usIdx].bWindowType = WINDOW_MAX_OFF;
+                            }
+                         } */
+
+                        // check if this was hidden by us
+                        /* if (pEntryThis->bMaximizedAndHiddenByUs) //  == WINDOW_MAX_OFF)
+                        {
+                            // this is a maximized window which has been hidden by
+                            // us previously: check if it's currently being shown
+
+                            // if (    // is desktop left in window?
+                                    (pswpNewThis->x < 0)
+                                 && (pswpNewThis->x + pswpNewThis->cx > G_pHookData->lCXScreen)
+                                    // and desktop bottom in window?
+                                 && (pswpNewThis->y < 0)
+                                 && (pswpNewThis->y + pswpNewThis->cy > G_pHookData->lCYScreen)
+                               )
+
+                            // check if the new center is on the current desktop
+                                    // V0.9.7 (2001-01-18) [umoeller]
+                            LONG lCenterX = (pswpNewThis->x + pswpNewThis->cx) / 2L;
+                            LONG lCenterY = (pswpNewThis->y + pswpNewThis->cy) / 2L;
+
+                            if (    (lCenterX > 0L)
+                                 && (lCenterX < G_pHookData->lCXScreen)
+                                 && (lCenterY > 0L)
+                                 && (lCenterY < G_pHookData->lCYScreen)
+                               )
+                            {
+                                // yes:
+                                // unhide in addition to moving
+                                fl |= SWP_SHOW;
+                                // and mark this as maximized again
+                                // pEntryThis->bWindowType = WINDOW_MAXIMIZE;
+                                pEntryThis->bMaximizedAndHiddenByUs = FALSE;
+                            }
+                            // else: this is not on our desktop, so do not
+                            // unhide it
                         }
                         else
                         {
                             // regular maximized window on current Desktop:
                             // hide to avoid the borders on the adjacent screen
-                            fl = SWP_HIDE | SWP_MOVE | SWP_NOADJUST;
+                            fl |= SWP_HIDE;
                             // and mark this as "hidden by us" in the window list
                             // so we can un-hide it later
-                            G_MainWindowList[usIdx].bWindowType = WINDOW_MAX_OFF;
-                        }
+                            // pEntryThis->bWindowType = WINDOW_MAX_OFF;
+                            pEntryThis->bMaximizedAndHiddenByUs = TRUE;
+                        } */
                     }
 
-                    swp[usMoveListCtr].fl = fl;
+                    pswpNewThis->fl = fl;
 
-                    usMoveListCtr++;
-                }
-            }
-        }
+                    ulMoveListCtr++;
+                } // end if (bResult)
+            } // end else if (!WinIsWindow(G_habDaemon, pEntryThis->hwnd))
+        } // end for for (usIdx = 0;...
         DosReleaseMutexSem(G_hmtxWindowList);
 
-        // now set all windows at once, this saves a lot of
-        // repainting...
-        bResult = WinSetMultWindowPos(NULLHANDLE, (PSWP)&swp, usMoveListCtr);
+        {
+            // if window animations are enabled, turn them off for now.
+                    // V0.9.7 (2001-01-18) [umoeller]
+            BOOL fAnimation = FALSE;
+            if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
+            {
+                fAnimation = TRUE;
+                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
+            }
+
+            G_pHookData->fDisableSwitching = TRUE;
+
+            // now set all windows at once, this saves a lot of
+            // repainting...
+            fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
+                                                 (PSWP)&swp,
+                                                 ulMoveListCtr);
+
+            G_pHookData->fDisableSwitching = FALSE;
+
+            if (fAnimation)
+                // turn animation back on
+                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE);
+        }
     }
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, TRUE);
 
-    return (bResult);
+    return (fAnythingMoved);
 } // pgmmMoveIt
 
 /*
@@ -231,7 +326,7 @@ INT pgmmMoveIt(LONG lXDelta,
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-INT pgmmZMoveIt(LONG lXDelta,
+BOOL pgmmZMoveIt(LONG lXDelta,
                 LONG lYDelta)
 {
     BOOL        bReturn = FALSE;
@@ -587,7 +682,8 @@ VOID pgmmRecoverAllWindows(VOID)
     HWND        hwndTemp[MAX_WINDOWS];
     SWP         swpTemp[MAX_WINDOWS];
     SWP         swpHold;
-    USHORT      usIdx, usIdx2;
+    ULONG       usIdx,
+                usIdx2;
     CHAR        szClassName[PGMG_TEXTLEN];
     BOOL        bResult;
 

@@ -46,8 +46,8 @@
     #define XCENTER_TOP             1
 
     // display style
-    #define XCS_BUTTON              0
-    #define XCS_FLAT                1
+    #define XCS_FLATBUTTONS         0x0001
+    #define XCS_SUNKBORDERS         0x0002
 
     /*
      *@@ XCENTERGLOBALS:
@@ -76,19 +76,12 @@
         HWND                hwndFrame,          // XCenter frame window
                             hwndClient;         // client (child of XCenter frame)
 
-        ULONG               ulDisplayStyle;
-                    // XCenter display style (XCS_BUTTON or XCS_FLAT);
-                    // the widget should be prepared that this style may
-                    // change.
-
-        ULONG               cyTallestWidget;
-                    // height of client (same as height of all widgets!)
-        ULONG               ulSpacing;
-                    // spacing between widgets; depends on display style
-
         PVOID               pCountrySettings;
                     // country settings; this points to a COUNTRYSETTINGS
                     // structure (prfh.h)
+
+        ULONG               cyTallestWidget;
+                    // height of client (same as height of all widgets!)
 
         ULONG               cxMiniIcon;
                     // system mini-icon size (for convenience); either 16 or 20
@@ -96,6 +89,26 @@
         LONG                lcol3DDark,
                             lcol3DLight;
                     // system colors for 3D frames (for convenience; RGB!)
+
+        // the following are the width settings from the second "View"
+        // settings page;
+        // a widget may or may not want to consider these.
+        ULONG               flDisplayStyle;
+                    // XCenter display style flags;
+                    // a widget may or may not want to consider these.
+                    // These flags can be:
+                    // -- XCS_FLATBUTTONS: paint buttons flat. If not set,
+                    //      paint them raised.
+                    // -- XCS_SUNKBORDERS: paint static controls (e.g. CPU meter)
+                    //      with a "sunk" 3D frame. If not set, do not.
+
+        ULONG               ul3DBorderWidth;
+                    // 3D border width
+        ULONG               ulBorderSpacing;
+                    // border spacing (added to 3D border width)
+        ULONG               ulSpacing;
+                    // spacing between widgets
+
     } XCENTERGLOBALS, *PXCENTERGLOBALS;
 
     // forward declaration
@@ -549,8 +562,8 @@
     #define XCM_SETWIDGETSIZE           WM_USER
 
     // formatting flags
-    #define XFMF_GETWIDGETSIZES         0x0001
     #define XFMF_DISPLAYSTYLECHANGED    0x0002
+    #define XFMF_GETWIDGETSIZES         0x0001
     #define XFMF_RECALCHEIGHT           0x0004
     #define XFMF_REPOSITIONWIDGETS      0x0008
     #define XFMF_SHOWWIDGETS            0x0010

@@ -597,12 +597,13 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
  *@@changed V0.9.1 (2000-02-04) [umoeller]: added status bar updates while populating
  *@@changed V0.9.5 (2000-08-25) [umoeller]: now deleting empty trash dirs
  *@@changed V0.9.5 (2000-08-27) [umoeller]: fixed object counts
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: this returned FALSE always, which stopped shutdown... fixed
  */
 
 BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                            ULONG ulFldrFlags)
 {
-    BOOL        brc = FALSE;
+    BOOL            brc = TRUE;     // fixed V0.9.7 (2001-01-17) [umoeller]
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
 
     TRY_LOUD(excpt1)
@@ -1221,12 +1222,13 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: switched implementation to XFT_TRUEDELETE
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: now returning ULONG
  */
 
-BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
-                       HAB hab,             // in: synchronous operation, as with fopsStartTask
-                       HWND hwndConfirmOwner,
-                       PULONG pulDeleted)   // out: if TRUE is returned, no. of deleted objects; can be 0
+ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
+                        HAB hab,             // in: synchronous operation, as with fopsStartTask
+                        HWND hwndConfirmOwner,
+                        PULONG pulDeleted)   // out: if TRUE is returned, no. of deleted objects; can be 0
 {
     FOPSRET     frc = NO_ERROR;
 
@@ -1279,7 +1281,7 @@ BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    return (frc == NO_ERROR);
+    return (frc);
 }
 
 /*

@@ -404,7 +404,8 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         PSIZEL pszl = (PSIZEL)mp2;
                         pszl->cx = pWidget->pGlobals->cxMiniIcon
                                    + 2;    // 2*1 spacing between icon and border
-                        if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
+                        if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS)
+                                        == 0)
                             pszl->cx += 4;     // 2*2 for button borders
 
                         // we wanna be square
@@ -495,7 +496,7 @@ VOID OwgtPaintButton(HWND hwnd)
                         lMiddle = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
                 HPOINTER hptr = NULLHANDLE;
 
-                if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
+                if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
                     ulBorder = 2;
 
                 WinQueryWindowRect(hwnd, &rclWin);      // exclusive
@@ -981,7 +982,11 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 
                         if (fGo)
                         {
-                            DosSleep(300);
+                            // sleep a little while... otherwise the
+                            // "key up" or tiny "mouse move" will immediately
+                            // wake up the system again
+                            winhSleep(pWidget->habWidget, 300);
+                            // tell "Power" object to suspend
                             _wpChangePowerState(pPrivate->pPower,
                                                 MAKEULONG(6,        // set power state
                                                           0),       // reserved

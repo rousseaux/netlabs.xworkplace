@@ -2701,23 +2701,24 @@ BOOL cmnMove2DefTrashCan(WPObject *pObject)
  *      of the parameters.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: now returning ULONG
  */
 
-BOOL cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
-                         PULONG pulDeleted, // out: if TRUE is returned, no. of deleted objects; can be 0
-                         HWND hwndConfirmOwner) // in: if != NULLHANDLE, confirm empty
+APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
+                           PULONG pulDeleted, // out: if TRUE is returned, no. of deleted objects; can be 0
+                           HWND hwndConfirmOwner) // in: if != NULLHANDLE, confirm empty
 {
-    BOOL brc = FALSE;
+    LONG ulrc = FALSE;
     XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
     if (pDefaultTrashCan)
     {
-        brc = _xwpEmptyTrashCan(pDefaultTrashCan,
-                                hab,
-                                pulDeleted,
-                                hwndConfirmOwner);
+        ulrc = _xwpEmptyTrashCan(pDefaultTrashCan,
+                                 hab,
+                                 pulDeleted,
+                                 hwndConfirmOwner);
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /* ******************************************************************

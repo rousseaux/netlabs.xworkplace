@@ -186,9 +186,11 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
         }
 
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_X_SLIDER),
-                           0, 3);      // six pixels high
+                           (MPARAM)0, 3,
+                           (MPARAM)-1, -1);
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_Y_SLIDER),
-                           0, 3);      // six pixels high
+                           (MPARAM)0, 3,
+                           (MPARAM)-1, -1);
     }
 
     if (flFlags & CBI_SET)

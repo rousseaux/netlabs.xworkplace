@@ -254,8 +254,8 @@ $(OUTPUTDIR)\fops_top.obj: \
 $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
-        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
-        $(HLPINC)\undoc.h \
+        $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h \
+        $(HLPINC)\xstring.h $(HLPINC)\undoc.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \

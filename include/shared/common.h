@@ -305,23 +305,24 @@
     #define ID_XSH_SETTINGS_PGMFILE_RESOURCES 96    // V0.9.7: progfile "Resources" page
 
     #define ID_XSH_XCENTER_MAIN              97     // V0.9.7: XCenter default help
-    #define ID_XSH_XCENTER_VIEW              98     // V0.9.7: XCenter "View" page
-    #define ID_XSH_XCENTER_WIDGETS           99     // V0.9.7: XCenter "Widgets" page
+    #define ID_XSH_XCENTER_VIEW1             98     // V0.9.7: XCenter "View" page
+    #define ID_XSH_XCENTER_VIEW2             99     // V0.9.7: XCenter "View" page
+    #define ID_XSH_XCENTER_WIDGETS          100     // V0.9.7: XCenter "Widgets" page
 
-    #define ID_XSH_WIDGET_CLOCK_MAIN        100     // V0.9.7: Winlist widget main help
-    #define ID_XSH_WIDGET_MEMORY_MAIN       101     // V0.9.7: Memory widget main help
-    #define ID_XSH_WIDGET_OBJBUTTON_MAIN    102     // V0.9.7: Object button widget main help
-    #define ID_XSH_WIDGET_PULSE_MAIN        103     // V0.9.7: Pulse widget main help
-    #define ID_XSH_WIDGET_SWAP_MAIN         104     // V0.9.7: Swapper widget main help
-    #define ID_XSH_WIDGET_WINLIST_MAIN      105     // V0.9.7: Winlist widget main help
-    #define ID_XSH_WIDGET_WINLIST_SETTINGS  106     // V0.9.7: Winlist widget properties
-    #define ID_XSH_WIDGET_XBUTTON_MAIN      107     // V0.9.7: X-Button widget main help
+    #define ID_XSH_WIDGET_CLOCK_MAIN        101     // V0.9.7: Winlist widget main help
+    #define ID_XSH_WIDGET_MEMORY_MAIN       102     // V0.9.7: Memory widget main help
+    #define ID_XSH_WIDGET_OBJBUTTON_MAIN    103     // V0.9.7: Object button widget main help
+    #define ID_XSH_WIDGET_PULSE_MAIN        104     // V0.9.7: Pulse widget main help
+    #define ID_XSH_WIDGET_SWAP_MAIN         105     // V0.9.7: Swapper widget main help
+    #define ID_XSH_WIDGET_WINLIST_MAIN      106     // V0.9.7: Winlist widget main help
+    #define ID_XSH_WIDGET_WINLIST_SETTINGS  107     // V0.9.7: Winlist widget properties
+    #define ID_XSH_WIDGET_XBUTTON_MAIN      108     // V0.9.7: X-Button widget main help
 
-    #define ID_XSH_FONTFOLDER               108
-    #define ID_XSH_FONTFILE                 109
-    #define ID_XSH_FONTOBJECT               110
-    #define ID_XSH_FONTSAMPLEVIEW           111
-    #define ID_XSH_FONTSAMPLEHINTS          112
+    #define ID_XSH_FONTFOLDER               109
+    #define ID_XSH_FONTFILE                 110
+    #define ID_XSH_FONTOBJECT               111
+    #define ID_XSH_FONTSAMPLEVIEW           112
+    #define ID_XSH_FONTSAMPLEHINTS          113
 
     /********************************************************************
      *
@@ -521,8 +522,9 @@
     #define SP_MEDIA_IOPROCS        162     // new with V0.9.3 (2000-04-29) [umoeller]
 
     // 17) XCenter
-    #define SP_XCENTER_VIEW         170     // new with V0.9.7 (2000-12-05) [umoeller]
-    #define SP_XCENTER_WIDGETS      171     // new with V0.9.7 (2000-12-05) [umoeller]
+    #define SP_XCENTER_VIEW1        170     // new with V0.9.7 (2000-12-05) [umoeller]
+    #define SP_XCENTER_VIEW2        171     // new with V0.9.7 (2001-01-18) [umoeller]
+    #define SP_XCENTER_WIDGETS      172     // new with V0.9.7 (2000-12-05) [umoeller]
 
     /********************************************************************
      *

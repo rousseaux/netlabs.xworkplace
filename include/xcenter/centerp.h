@@ -75,7 +75,8 @@
                         // widget's public data; this must be
                         // the first member of this structure,
                         // or WM_DESTROY in ctrDefWidgetProc
-                        // won't work
+                        // won't work, which relies on these
+                        // two structs having the same address
 
             SIZEL           szlWanted;
                         // the widget's desired size
@@ -83,6 +84,7 @@
             LONG            xCurrent,
                             cxCurrent,
                             cyCurrent;
+                        // widget's current pos and extension
 
         } WIDGETVIEWSTATE, *PWIDGETVIEWSTATE;
 
@@ -123,7 +125,7 @@
 
             PFNWP               pfnwpFrameOrig;     // original frame window proc (subclassed)
 
-            ULONG               ulBorderWidth;      // depends on _ulDisplayStyle
+                    // NOTE: the view settings (border width, spacing) are in XCENTERGLOBALS.
 
             LONG                yFrame;             // current frame y pos
             ULONG               cxFrame,            // always screen width
@@ -136,7 +138,12 @@
             ULONG               ulStartTime;        // for animation 1 (TIMERID_UNFOLDFRAME)
             ULONG               ulWidgetsShown;     // for animation 2 (TIMERID_SHOWWIDGETS)
             ULONG               idTimerAutohide;    // if != 0, TIMERID_AUTOHIDE_START is running
-            BOOL                fFrameAutoHidden;   // if TRUE, frame is currently sunk
+
+            BOOL                fFrameFullyShown;   // FALSE while the "unfold" animation is still
+                                                    // running; always TRUE afterwards.
+
+            BOOL                fFrameAutoHidden;   // if TRUE, frame is currently auto-hidden;
+                                                    // this changes frequently
 
             HWND                hwndTooltip;        // tooltip control (comctl.c)
 
@@ -167,7 +174,23 @@
                         // index of the widget for which settings dlg is
                         // shown
         } WGTSETTINGSTEMP, *PWGTSETTINGSTEMP;
+    #endif // LINKLIST_HEADER_INCLUDED
 
+    /* ******************************************************************
+     *
+     *   Desktop workarea resizing
+     *
+     ********************************************************************/
+
+    APIRET ctrpDesktopWorkareaSupported(VOID);
+
+    /* ******************************************************************
+     *
+     *   Internal widgets management
+     *
+     ********************************************************************/
+
+    #ifdef LINKLIST_HEADER_INCLUDED
         VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                                  PXCENTERWIDGET pWidget);
 
@@ -302,12 +325,19 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                             ULONG flFlags);
+        VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                               ULONG flFlags);
 
-        MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                   USHORT usItemID, USHORT usNotifyCode,
-                                   ULONG ulExtra);
+        MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                    USHORT usItemID, USHORT usNotifyCode,
+                                    ULONG ulExtra);
+
+        VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                               ULONG flFlags);
+
+        MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                    USHORT usItemID, USHORT usNotifyCode,
+                                    ULONG ulExtra);
 
         VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG flFlags);

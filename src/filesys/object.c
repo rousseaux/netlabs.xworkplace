@@ -41,8 +41,10 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WININPUT
 #define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINPOINTERS
 #define INCL_WINTIMER
 #define INCL_WINMENUS
@@ -52,6 +54,7 @@
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
+#define INCL_WINSHELLDATA
 #include <os2.h>
 
 // C library headers
@@ -68,6 +71,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
@@ -102,9 +106,451 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
- *                                                                  *
- *   Object "Internals" page                                        *
- *                                                                  *
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// mutex semaphores for object lists (favorite folders, quick-open)
+HMTX                G_hmtxObjectsLists = NULLHANDLE;
+
+/* ******************************************************************
+ *
+ *   Folder linked lists
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockObjectsList:
+ *      locks G_hmtxFolderLists. Creates the mutex on
+ *      the first call.
+ *
+ *      Returns TRUE if the mutex was obtained.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+BOOL LockObjectsList(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxObjectsLists == NULLHANDLE)
+        DosCreateMutexSem(NULL,
+                          &G_hmtxObjectsLists,
+                          0,
+                          FALSE);
+
+    brc = !(WinRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT));
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockObjectsList:
+ *      the reverse to LockObjectsLists.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+VOID UnlockObjectsList(VOID)
+{
+    DosReleaseMutexSem(G_hmtxObjectsLists);
+}
+
+/*
+ *@@ LoadObjectsList:
+ *      adds WPObject pointers to pll according to the
+ *      specified INI key.
+ *
+ *      If (ulListFlag != 0), this invokes
+ *      WPObject::xwpModifyListNotify to set that flag
+ *      on each object that was added to the list.
+ *
+ *      Preconditions: caller must lock the list.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+BOOL LoadObjectsList(PLINKLIST pll,
+                     ULONG ulListFlag,          // in: list flag for xwpModifyListNotify
+                     const char *pcszIniKey)
+{
+    BOOL        brc = FALSE;
+    CHAR        szFavorites[1000],
+                szDummy[1000];
+    PSZ         pszFavorites;
+
+    brc = PrfQueryProfileString(HINI_USERPROFILE,
+                               (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                               "", &szFavorites, sizeof(szFavorites));
+    if (brc)
+    {
+        pszFavorites = szFavorites;
+
+        do
+        {
+            HOBJECT          hObject;
+            WPObject         *pobj;
+            sscanf(pszFavorites, "%lX %s", &hObject, &szDummy);
+            pobj = _wpclsQueryObject(_WPFolder, hObject);
+            if (pobj)
+            {
+                if (wpshCheckObject(pobj))
+                {
+                    lstAppendItem(pll,
+                                  pobj);
+                    if (ulListFlag)
+                    {
+                        // set list notify flag
+                        _xwpModifyListNotify(pobj,
+                                             ulListFlag,        // set
+                                             ulListFlag);       // mask
+                    }
+                }
+            }
+            pszFavorites += 6;
+        } while (strlen(pszFavorites) > 0);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ WriteObjectsList:
+ *
+ *      This creates a handle for each object on the
+ *      list.
+ *
+ *      Preconditions: caller must lock the list.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+BOOL WriteObjectsList(PLINKLIST pll,
+                      const char *pcszIniKey)
+{
+    BOOL brc = FALSE;
+
+    PLISTNODE pNode = lstQueryFirstNode(pll);
+    if (pNode)
+    {
+        // list is not empty: recompose string
+        XSTRING strTemp;
+        xstrInit(&strTemp, 100);
+
+        while (pNode)
+        {
+            CHAR szHandle[30];
+            WPObject *pobj = (WPObject*)pNode->pItemData;
+            sprintf(szHandle,
+                    "%lX ",
+                    _wpQueryHandle(pobj));
+
+            xstrcat(&strTemp, szHandle, 0);
+
+            pNode = pNode->pNext;
+        }
+
+        brc = PrfWriteProfileString(HINI_USERPROFILE,
+                                    (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                    strTemp.psz);
+
+        xstrClear(&strTemp);
+    }
+    else
+    {
+        // list is empty: remove
+        brc = PrfWriteProfileData(HINI_USERPROFILE,
+                                  (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                  NULL, 0);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ objAddToList:
+ *      appends or removes the given folder to or from
+ *      the given object list.
+ *
+ *      An "object list" is an abstract concept of a list
+ *      of object which is stored in OS2.INI (in the
+ *      "XWorkplace" section under the pcszIniKey key).
+ *
+ *      If fInsert == TRUE, somSelf is added to the list.
+ *      If fInsert == FALSE, somSelf is removed from the list.
+ *
+ *      Returns TRUE if the list was changed. In that case,
+ *      the list is rewritten to the specified INI key.
+ *
+ *      The list is protected by a global mutex semaphore,
+ *      so this is thread-safe.
+ *
+ *      WARNING: If an object is added to such a list, the
+ *      caller must make sure that the object gets removed
+ *      when the object goes dormant (e.g. when it's deleted).
+ *
+ *      This is used from the XFolder methods for
+ *      "favorite" and "quick-open" folders. The linked
+ *      list roots are stored in classes\xfldr.c.
+ *
+ *@@added V0.9.0 (99-11-16) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ */
+
+BOOL objAddToList(WPObject *somSelf,
+                  PLINKLIST pll,        // in: linked list of WPObject* pointers
+                  BOOL fInsert,
+                  const char *pcszIniKey,
+                  ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
+{
+    BOOL    brc = FALSE,
+            fSemOwned = FALSE;
+
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fSemOwned = LockObjectsList();
+        if (fSemOwned)
+        {
+            PLISTNODE   pNode = 0;
+            WPObject    *pobj,
+                        *pobjFound = NULL;
+
+            // find folder on list
+            pNode = lstQueryFirstNode(pll);
+            while (pNode)
+            {
+                pobj = pNode->pItemData;
+
+                if (pobj == somSelf)
+                {
+                    pobjFound = pobj;
+                    break;
+                }
+
+                pNode = pNode->pNext;
+            }
+
+            if (fInsert)
+            {
+                // insert mode:
+                if (!pobjFound)
+                {
+                    // not on list yet: append
+                    lstAppendItem(pll,
+                                  somSelf);
+
+                    if (ulListFlag)
+                        // set list notify flag
+                        _xwpModifyListNotify(pobj,
+                                             ulListFlag,        // set
+                                             ulListFlag);       // mask
+
+                    brc = TRUE;
+                }
+            }
+            else
+            {
+                // remove mode:
+                if (pobjFound)
+                {
+                    lstRemoveItem(pll,
+                                  pobjFound);
+
+                    if (ulListFlag)
+                        // set list notify flag
+                        _xwpModifyListNotify(pobj,
+                                             0,                 // clear
+                                             ulListFlag);       // mask
+
+                    brc = TRUE;
+                }
+            }
+
+            if (brc)
+            {
+                // list changed:
+                // write list to INI as a string of handles
+                WriteObjectsList(pll, pcszIniKey);
+            }
+        }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "hmtxFolderLists request failed.");
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fSemOwned)
+    {
+        UnlockObjectsList();
+        fSemOwned = FALSE;
+    }
+
+    DosExitMustComplete(&ulNesting);
+
+    return (brc);
+}
+
+/*
+ *@@ objIsOnList:
+ *      returns TRUE if the given object is on the
+ *      given list of CONTENTMENULISTITEM's.
+ *
+ *      The list is protected by a global mutex semaphore,
+ *      so this is thread-safe.
+ *
+ *      This is used from the XFolder methods for
+ *      "favorite" and "quick-open" folders. The linked
+ *      list roots are stored in classes\xfldr.c.
+ *
+ *@@added V0.9.0 (99-11-16) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ */
+
+BOOL objIsOnList(WPObject *somSelf,
+                 PLINKLIST pll)     // in: linked list of WPObject* pointers
+{
+    BOOL                 rc = FALSE,
+                         fSemOwned = FALSE;
+
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fSemOwned = LockObjectsList();
+        if (fSemOwned)
+        {
+            PLISTNODE pNode = lstQueryFirstNode(pll);
+            while (pNode)
+            {
+                WPObject *pobj = (WPObject*)pNode->pItemData;
+                if (pobj == somSelf)
+                {
+                    rc = TRUE;
+                    break;
+                }
+                else
+                    pNode = pNode->pNext;
+            }
+        }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxFolderLists request failed.");
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fSemOwned)
+    {
+        UnlockObjectsList();
+        fSemOwned = FALSE;
+    }
+
+    DosExitMustComplete(&ulNesting);
+
+    return (rc);
+}
+
+/*
+ *@@ objEnumList:
+ *      this enumerates object on the given list.
+ *
+ *      If (pObject == NULL), the first object on the list
+ *      is returned, otherwise the object which comes
+ *      after pObject in the list. If no (more) objects
+ *      are found, NULL is returned.
+ *
+ *      The list is protected by a global mutex semaphore,
+ *      so this is thread-safe.
+ *
+ *      This is used from the XFolder methods for
+ *      "favorite" and "quick-open" folders. The linked
+ *      list roots are stored in classes\xfldr.c.
+ *
+ *@@added V0.9.0 (99-11-16) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ */
+
+WPObject* objEnumList(PLINKLIST pll,        // in: linked list of WPObject* pointers
+                      WPObject *pObjectFind,
+                      const char *pcszIniKey,
+                      ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
+{
+    WPObject    *pObjectFound = NULL;
+    BOOL        fSemOwned = FALSE;
+
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fSemOwned = LockObjectsList();
+        if (fSemOwned)
+        {
+            PLISTNODE       pNode = lstQueryFirstNode(pll);
+
+            if (pNode == NULL)
+            {
+                // if the list of favorite folders has not yet been built
+                // yet, we will do this now
+                LoadObjectsList(pll,
+                                ulListFlag,
+                                pcszIniKey);
+            }
+
+            // OK, now we have a valid list
+            pNode = lstQueryFirstNode(pll);
+
+            if (pObjectFind)
+            {
+                // obj given as param: look for this obj
+                // and return the following in the list
+                while (pNode)
+                {
+                    WPObject *pobj = (WPObject*)pNode->pItemData;
+                    if (pobj == pObjectFind)
+                    {
+                        // return node after this
+                        pNode = pNode->pNext;
+                        break;
+                    }
+
+                    pNode = pNode->pNext;
+                }
+            }
+            // else pObject == NULL: pNode still points to first
+
+            if (pNode)
+                // found something (either first or next):
+                pObjectFound = (WPObject*)pNode->pItemData;
+        }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxFolderLists request failed.");
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fSemOwned)
+    {
+        UnlockObjectsList();
+        fSemOwned = FALSE;
+    }
+
+    DosExitMustComplete(&ulNesting);
+
+    return (pObjectFound);
+}
+
+/* ******************************************************************
+ *
+ *   Object "Internals" page
+ *
  ********************************************************************/
 
 VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject);
@@ -1376,9 +1822,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Object hotkeys                                                 *
- *                                                                  *
+ *
+ *   Object hotkeys
+ *
  ********************************************************************/
 
 /*
@@ -1715,9 +2161,9 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Object setup strings                                           *
- *                                                                  *
+ *
+ *   Object setup strings
+ *
  ********************************************************************/
 
 /*

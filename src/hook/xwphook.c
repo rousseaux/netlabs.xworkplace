@@ -851,6 +851,7 @@ POINTL  G_ptlMousePosDesktop = {0};
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
  *@@changed V0.9.7 (2001-01-15) [dk]: WM_SETWINDOWPARAMS added
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pagemage doesn't need this
  */
 
 VOID ProcessMsgsForPageMage(HWND hwnd,
@@ -865,12 +866,16 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
          || (msg == WM_DESTROY)
          || (msg == WM_ACTIVATE)
          || (msg == WM_WINDOWPOSCHANGED)
-         || (msg == WM_SETWINDOWPARAMS)
+         // respect WM_SETWINDOWPARAMS only if text has changed
+         || (   (msg == WM_SETWINDOWPARAMS)
+             && (((PWNDPARAMS)mp1)->fsStatus & WPM_TEXT) // 0x0001
+            )
        )
     {
         if (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
         {
             CHAR    szClass[200];
+
             if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
             {
                 if (    (strcmp(szClass, "#1") == 0)
@@ -965,10 +970,12 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
         // current lockup frame being destroyed
         // (system is being unlocked):
         G_HookData.hwndLockupFrame = NULLHANDLE;
-        WinPostMsg(G_HookData.hwndPageMageClient,
+        /* WinPostMsg(G_HookData.hwndPageMageClient,
                    PGMG_LOCKUP,
                    MPFROMLONG(FALSE),
-                   MPVOID);
+                   MPVOID); */
+            // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
+            // need this
     }
 }
 
@@ -1041,6 +1048,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.6 (2000-11-05) [pr]: fix for hotkeys not working after Lockup
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pagemage doesn't need this
  */
 
 VOID EXPENTRY hookLockupHook(HAB hab,
@@ -1049,10 +1057,12 @@ VOID EXPENTRY hookLockupHook(HAB hab,
     if (G_HookData.hwndPageMageFrame)
     {
         G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
-        WinPostMsg(G_HookData.hwndPageMageClient,
+        /* WinPostMsg(G_HookData.hwndPageMageClient,
                    PGMG_LOCKUP,
                    MPFROMLONG(TRUE),
-                   MPVOID);
+                   MPVOID); */
+            // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
+            // need this
     }
     /* G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
     WinPostMsg(G_HookData.hwndPageMageClient,
@@ -3243,27 +3253,28 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                             _Pmpf(("  ucScanCode: 0x%lX", ucScanCode));
                     #endif
 
-                    #ifdef __DEBUG__
-                        // debug code:
-                        // enable Ctrl+Alt+Delete emergency exit
-                        if (    (   (usFlags & (KC_CTRL | KC_ALT | KC_KEYUP))
-                                     == (KC_CTRL | KC_ALT)
-                                )
-                              && (ucScanCode == 0x0e)    // delete
-                           )
-                        {
-                            ULONG ul;
-                            for (ul = 5000;
-                                 ul > 100;
-                                 ul -= 200)
-                                DosBeep(ul, 20);
+/* #ifdef __DEBUG__
+                    // debug code:
+                    // enable Ctrl+Alt+Delete emergency exit
+                    if (    (   (usFlags & (KC_CTRL | KC_ALT | KC_KEYUP))
+                                 == (KC_CTRL | KC_ALT)
+                            )
+                          && (ucScanCode == 0x0e)    // delete
+                       )
+                    {
+                        ULONG ul;
+                        for (ul = 5000;
+                             ul > 100;
+                             ul -= 200)
+                            DosBeep(ul, 20);
 
-                            WinPostMsg(G_HookData.hwndDaemonObject,
-                                       WM_QUIT,
-                                       0, 0);
-                            brc = TRUE;
-                        }
-                    #endif
+                        WinPostMsg(G_HookData.hwndDaemonObject,
+                                   WM_QUIT,
+                                   0, 0);
+                        brc = TRUE;     // swallow
+                    }
+                    else
+#endif */
 
                     if (WMChar_Hotkeys(usFlags, ucScanCode))
                         // returns TRUE (== swallow) if hotkey was found

@@ -103,30 +103,68 @@
 
 /* ******************************************************************
  *
+ *   Declarations
+ *
+ ********************************************************************/
+
+/*
+ * WinSetDesktopWorkArea:
+ *      undocumented Warp 4 API to change the "desktop work
+ *      area", which, among other things, sets the size for
+ *      maximized windows.
+ *
+ *      This is manually imported from PMMERGE.5468.
+ */
+
+BOOL APIENTRY WinSetDesktopWorkArea(HWND hwndDesktop,
+                                    PWRECT pwrcWorkArea);
+typedef BOOL APIENTRY WINSETDESKTOPWORKAREA(HWND hwndDesktop,
+                                            PWRECT pwrcWorkArea);
+typedef WINSETDESKTOPWORKAREA *PWINSETDESKTOPWORKAREA;
+
+/*
+ * WinQueryDesktopWorkArea:
+ *      the reverse to the above.
+ *
+ *      This is manually imported from PMMERGE.5469.
+ */
+
+BOOL APIENTRY WinQueryDesktopWorkArea(HWND hwndDesktop,
+                                      PWRECT pwrcWorkArea);
+typedef BOOL APIENTRY WINQUERYDESKTOPWORKAREA(HWND hwndDesktop,
+                                              PWRECT pwrcWorkArea);
+typedef WINQUERYDESKTOPWORKAREA *PWINQUERYDESKTOPWORKAREA;
+
+// some more forward declarations
+VOID StartAutoHide(PXCENTERWINDATA pXCenterData);
+VOID ClientPaint2(HWND hwndClient, HPS hps);
+
+/* ******************************************************************
+ *
  *   Global variables
  *
  ********************************************************************/
 
-static BOOL                    G_fXCenterClassRegistered = FALSE;
+static BOOL                 G_fXCenterClassRegistered = FALSE;
 
-static COUNTRYSETTINGS         G_CountrySettings = {0};
+static COUNTRYSETTINGS      G_CountrySettings = {0};
 
 // array of classes created by ctrpLoadClasses
-static PXCENTERWIDGETCLASS     G_paWidgetClasses = NULL;
-static ULONG                   G_cWidgetClasses = 0;
+static PXCENTERWIDGETCLASS  G_paWidgetClasses = NULL;
+static ULONG                G_cWidgetClasses = 0;
 // reference count (raised with each ctrpLoadClasses call)
-static ULONG                   G_ulWidgetClassesRefCount = 0;
+static ULONG                G_ulWidgetClassesRefCount = 0;
 
 // global array of plugin modules which were loaded
-static LINKLIST                G_llModules;      // this contains plain HMODULEs as data
-static BOOL                    G_fModulesInitialized = FALSE;
+static LINKLIST             G_llModules;      // this contains plain HMODULEs as data
+static BOOL                 G_fModulesInitialized = FALSE;
 
 /*
  * G_aBuiltInWidgets:
  *      array of the built-in widgets in this file.
  */
 
-XCENTERWIDGETCLASS  G_aBuiltInWidgets[]
+static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
     ={
         {
             WNDCLASS_WIDGET_OBJBUTTON,
@@ -154,7 +192,311 @@ XCENTERWIDGETCLASS  G_aBuiltInWidgets[]
         }
     };
 
-VOID StartAutoHide(PXCENTERWINDATA pXCenterData);
+static HMODULE                  G_hmodPMMERGE = NULLHANDLE;
+
+static PWINSETDESKTOPWORKAREA   G_pWinSetDesktopWorkArea = NULL;
+static PWINQUERYDESKTOPWORKAREA G_pWinQueryDesktopWorkArea = NULL;
+
+static BOOL                     G_fWorkAreaSupported = FALSE;
+                                    // set by ctrpDesktopWorkareaSupported
+                                // G_fWorkAreaChanged = FALSE;
+                                    // set after first manipulation
+static LINKLIST                 G_llWorkAreaViews;
+                                    // linked list of XCENTERVIEWDATA's which have
+                                    // the "reduce workarea" flag on. Plain pointers,
+                                    // no auto-free.
+static HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
+                                    // mutex protecting that list;
+
+// static RECTL                    G_rclDesktopWorkArea;
+                                    // current work area, if (G_fWorkAreaChanged == TRUE).
+
+
+/* ******************************************************************
+ *
+ *   Desktop workarea resizing
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockWorkAreas:
+ *      locks G_hmtxFolderLists. Creates the mutex on
+ *      the first call.
+ *
+ *      Returns TRUE if the mutex was obtained.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+BOOL LockWorkAreas(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxWorkAreaViews == NULLHANDLE)
+        DosCreateMutexSem(NULL,
+                          &G_hmtxWorkAreaViews,
+                          0,
+                          FALSE);
+
+    brc = !(WinRequestMutexSem(G_hmtxWorkAreaViews, SEM_INDEFINITE_WAIT));
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockWorkAreas:
+ *      the reverse to LockWorkAreass.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+VOID UnlockWorkAreas(VOID)
+{
+    DosReleaseMutexSem(G_hmtxWorkAreaViews);
+}
+
+/*
+ *@@ ctrpDesktopWorkareaSupported:
+ *      checks if changing the desktop work area is supported
+ *      on this system. If so, this resolves the respective
+ *      APIs from PMMERGE.DLL (on the first call only) and
+ *      returns NO_ERROR, which should always be the case on
+ *      Warp 4.
+ *
+ *      On Warp 3, this should always return ERROR_INVALID_ORDINAL.
+ *
+ *      Gets called from M_XCenter::wpclsInitData, thus no
+ *      semaphore protection.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+APIRET ctrpDesktopWorkareaSupported(VOID)
+{
+    APIRET arc = NO_ERROR;
+
+    if (G_hmodPMMERGE == NULLHANDLE)
+    {
+        // first call: load PMMERGE (we must load that again...
+        // retrieving the existing module handle from the kernel
+        // module table is too risky)
+        CHAR        szFailure[100];
+        arc = DosLoadModule(szFailure,
+                            sizeof(szFailure),
+                            "PMMERGE",
+                            &G_hmodPMMERGE);
+        if (arc == NO_ERROR)
+        {
+            // alright, got it:
+            arc = DosQueryProcAddr(G_hmodPMMERGE,
+                                   5468,
+                                   NULL,
+                                   (PFN*)&G_pWinSetDesktopWorkArea);
+            if (arc == NO_ERROR)
+                arc = DosQueryProcAddr(G_hmodPMMERGE,
+                                       5469,
+                                       NULL,
+                                       (PFN*)&G_pWinQueryDesktopWorkArea);
+
+                if (arc == NO_ERROR)
+                {
+                    lstInit(&G_llWorkAreaViews, FALSE);
+                    G_fWorkAreaSupported = TRUE;
+                }
+        }
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ UpdateDesktopWorkarea:
+ *      updates the current desktop workarea according to
+ *      the given open XCenter.
+ *
+ *      Gets called from an XCenter's ctrpReformatFrame.
+ *
+ *      This function is smart enough to update the global
+ *      list of currently open XCenter views which have the
+ *      "reduce workarea" setting enabled.
+ *
+ *      WinSetDesktopWorkArea only gets called if the
+ *      workarea rectangle really has changed.
+ *
+ *      This also gets called with (fForceRemove == TRUE)
+ *      when an XCenter is closed to remove that XCenter
+ *      view from the list and update the desktop work area.
+ *
+ *      Returns TRUE only if the work area has actually changed.
+ *
+ *      May run on any thread.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
+                           BOOL fForceRemove)       // in: if TRUE, item is removed.
+{
+    BOOL brc = FALSE;
+
+    if (G_fWorkAreaSupported)
+    {
+        // ctrpDesktopWorkareaSupported has initialized everything, so go ahead.
+
+        BOOL fLocked = FALSE;
+
+        TRY_LOUD(excpt1)
+        {
+            if (fLocked = LockWorkAreas())
+            {
+                XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+                RECTL       rclCurrent,
+                            rclNew;
+
+                BOOL        fUpdateWorkArea = (lstCountItems(&G_llWorkAreaViews) != 0);
+
+                /*
+                 *  (1)  List maintenance:
+                 *
+                 */
+
+                PLISTNODE pNode = lstQueryFirstNode(&G_llWorkAreaViews);
+
+                if (    (_fReduceDesktopWorkarea)
+                     && (!fForceRemove)
+                   )
+                {
+                    // this XCenter has "reduce workarea" enabled:
+                    // it must be on the list then
+
+                    PLISTNODE pNodeFound = NULL;
+
+                    _Pmpf((__FUNCTION__ ":_fReduceDesktopWorkarea enabled."));
+
+                    while (pNode)
+                    {
+                        PXCENTERWINDATA pDataThis = (PXCENTERWINDATA)pNode->pItemData;
+                        if (pDataThis == pXCenterData)
+                        {
+                            pNodeFound = pNode;
+                            break;
+                        }
+
+                        pNode = pNode->pNext;
+                    }
+
+                    if (!pNodeFound)
+                    {
+                        _Pmpf((__FUNCTION__ ": not on list, appending."));
+                        // not on list yet:
+                        lstAppendItem(&G_llWorkAreaViews,
+                                      pXCenterData);
+                        fUpdateWorkArea = TRUE;
+                    }
+                    else
+                        _Pmpf((__FUNCTION__ ": not on list, appending."));
+                } // if ((_fReduceDesktopWorkarea) && (!fForceRemove))
+                else
+                {
+                    // this XCenter has "reduce workarea" disabled,
+                    // or "force remove" is enabled:
+                    // it must not be on the list then
+                    while (pNode)
+                    {
+                        PXCENTERWINDATA pDataThis = (PXCENTERWINDATA)pNode->pItemData;
+                        if (pDataThis == pXCenterData)
+                        {
+                            // it's on the list:
+                            // remove it then
+                            lstRemoveNode(&G_llWorkAreaViews,
+                                          pNode);
+                            fUpdateWorkArea = TRUE;
+                            break;
+                        }
+
+                        pNode = pNode->pNext;
+                    }
+                }
+
+                /*
+                 *  (2)  Calculate new desktop workarea:
+                 *
+                 */
+
+                if (fUpdateWorkArea)
+                {
+                    // if we have any views:
+                    ULONG   ulCutBottom = 0,
+                            ulCutTop = 0;
+
+                    // get current first
+                    G_pWinQueryDesktopWorkArea(HWND_DESKTOP, &rclCurrent);
+
+                    // compose new workarea; start out with screen size
+                    rclNew.xLeft = 0;
+                    rclNew.yBottom = 0;
+                    rclNew.xRight = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+                    rclNew.yTop = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+                        // the workarea APIs want inclusive rectangles...
+                        // I tested this, I get 1024 and 768 for the top right.
+
+                    // now go thru all XCenters with that setting and reduce
+                    // workarea accordingly...
+                    pNode = lstQueryFirstNode(&G_llWorkAreaViews);
+                    while (pNode)
+                    {
+                        PXCENTERWINDATA pDataThat = (PXCENTERWINDATA)pNode->pItemData;
+
+                        if (pDataThat->fFrameFullyShown)
+                        {
+                            XCenterData *somThat = XCenterGetData(pDataThat->somSelf);
+                            if (somThat->ulPosition == XCENTER_BOTTOM)
+                            {
+                                // XCenter on bottom:
+                                if (pDataThat->cyFrame > ulCutBottom)
+                                    ulCutBottom = pDataThat->cyFrame;
+                            }
+                            else
+                                // XCenter on top:
+                                if (pDataThat->cyFrame > ulCutTop)
+                                    ulCutTop = pDataThat->cyFrame;
+
+                            pNode = pNode->pNext;
+                        }
+                    }
+
+                    rclNew.yBottom += ulCutBottom;
+                    rclNew.yTop -= ulCutTop;
+
+                    if (memcmp(&rclCurrent, &rclNew, sizeof(RECTL)) != 0)
+                    {
+                        // rectangle has changed:
+
+                        /*
+                         *  (3)  Set new desktop workarea:
+                         *
+                         */
+
+                        G_pWinSetDesktopWorkArea(HWND_DESKTOP, &rclNew);
+
+                        brc = TRUE;
+                    }
+                } // if (cWorkAreaViews)
+            }
+        } // end if (fLocked)
+
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+
+        if (fLocked)
+            UnlockWorkAreas();
+
+    } // end if (G_fWorkAreaSupported)
+
+    return (brc);
+}
 
 /* ******************************************************************
  *
@@ -183,6 +525,24 @@ BOOL RegisterBuiltInWidgets(HAB hab)
                                   CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
                                   sizeof(PXCENTERWINDATA))) // additional bytes to reserve
            );
+}
+
+/*
+ *@@ CopyDisplayStyle:
+ *      updates the XCenter view data struct with the data
+ *      from the XCenter instance.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+VOID CopyDisplayStyle(PXCENTERWINDATA pXCenterData,     // target: view data
+                      XCenterData *somThis)             // source: XCenter instance data
+{
+    pXCenterData->Globals.flDisplayStyle = _flDisplayStyle;
+
+    pXCenterData->Globals.ul3DBorderWidth = _ul3DBorderWidth;       // can be 0
+    pXCenterData->Globals.ulBorderSpacing = _ulBorderSpacing;       // can be 0
+    pXCenterData->Globals.ulSpacing = _ulWidgetSpacing;
 }
 
 /*
@@ -250,9 +610,15 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
     WinQueryWindowRect(pXCenterData->Globals.hwndClient,
                        &rclXCenterClient);
 
-    cxWidgetsSpace = rclXCenterClient.xRight - 2 * pXCenterData->ulBorderWidth;
-    x = pXCenterData->ulBorderWidth;
-    y = pXCenterData->ulBorderWidth;
+    // calc available space for widgets:
+    // size of client rect - borders
+    cxWidgetsSpace = rclXCenterClient.xRight
+                      - 2 * pXCenterData->Globals.ul3DBorderWidth       // can be 0
+                      - 2 * pXCenterData->Globals.ulBorderSpacing;      // can be 0
+    // start at border
+    x =   pXCenterData->Globals.ul3DBorderWidth
+        + pXCenterData->Globals.ulBorderSpacing;
+    y = x;          // this doesn't change
 
     if (fShow)
         fl |= SWP_SHOW;
@@ -418,13 +784,14 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
  *      May only run on the XCenter GUI thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed wrong emphasis with new view settings
  */
 
 VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
-                      HWND hwnd,
-                      BOOL fRemove,
-                      HPS hpsPre)        // in: presentation space; if NULLHANDLE,
-                                         // we use WinGetPS in here
+                      HWND hwnd,        // in: client or widget
+                      BOOL fRemove,     // in: if TRUE, invalidate.
+                      HPS hpsPre)       // in: presentation space; if NULLHANDLE,
+                                        // we use WinGetPS in here
 {
     HPS hps;
 
@@ -440,7 +807,9 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
 
     if (hps)
     {
-        RECTL rcl;
+        RECTL   rcl;
+        ULONG   ulEmphasisWidth;
+
         // get window's rectangle
         WinQueryWindowRect(hwnd,
                            &rcl);
@@ -450,45 +819,59 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                                pXCenterData->Globals.hwndClient,
                                (PPOINTL)&rcl,
                                2);
-        if (fRemove == FALSE)
+        if (fRemove)
+        {
+            // remove emphasis:
+            /* GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP,
+                                              SYSCLR_INACTIVEBORDER,  // same as frame!
+                                              0)); */
+            ClientPaint2(pXCenterData->Globals.hwndClient, hps);
+        }
+        else
         {
             // add emphasis:
             GpiSetColor(hps, RGBCOL_BLACK);
             GpiSetLineType(hps, LINETYPE_DOT);
-        }
-        else
-        {
-            // remove emphasis:
-            GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP,
-                                              SYSCLR_INACTIVEBORDER,  // same as frame!
-                                              0));
-        }
 
-        if (hwnd != pXCenterData->Globals.hwndClient)
-        {
-            // widget window given:
-            // we draw emphasis _around_ the widget window
-            // on the client, so add the ulSpacing around
-            // the widget's window rectangle
-            rcl.xLeft -= pXCenterData->Globals.ulSpacing;
-            rcl.yBottom -= pXCenterData->Globals.ulSpacing;
-            rcl.xRight += pXCenterData->Globals.ulSpacing;
-            rcl.yTop += pXCenterData->Globals.ulSpacing;
+            if (hwnd != pXCenterData->Globals.hwndClient)
+            {
+                // widget window given:
+                // we draw emphasis _around_ the widget window
+                // on the client, so add the border spacing or
+                // the widget spacing, whichever is smaller,
+                // to the widget rect
+                ulEmphasisWidth = pXCenterData->Globals.ulSpacing;
+                if (ulEmphasisWidth >   pXCenterData->Globals.ul3DBorderWidth
+                                      + pXCenterData->Globals.ulBorderSpacing)
+                    ulEmphasisWidth =   pXCenterData->Globals.ul3DBorderWidth
+                                      + pXCenterData->Globals.ulBorderSpacing;
+
+                rcl.xLeft -= ulEmphasisWidth;
+                rcl.yBottom -= ulEmphasisWidth;
+                rcl.xRight += ulEmphasisWidth;
+                rcl.yTop += ulEmphasisWidth;
+            }
+            else
+                // client window given: we just use that
+                ulEmphasisWidth =   pXCenterData->Globals.ul3DBorderWidth
+                                  + pXCenterData->Globals.ulBorderSpacing;
+
+            if (ulEmphasisWidth)
+            {
+                // WinQueryWindowRect returns an inclusive-exclusive
+                // rectangle; since GpiBox uses inclusive-inclusive
+                // rectangles, fix the top right
+                rcl.xRight--;
+                rcl.yTop--;
+                gpihDrawThickFrame(hps,
+                                   &rcl,
+                                   ulEmphasisWidth);
+
+                if (hpsPre == NULLHANDLE)
+                    // we acquired a PS ourselves:
+                    WinReleasePS(hps);
+            }
         }
-        // else (client window given): we just use that
-
-        // WinQueryWindowRect returns an inclusive-exclusive
-        // rectangle; since GpiBox uses inclusive-inclusive
-        // rectangles, fix the top right
-        rcl.xRight--;
-        rcl.yTop--;
-        gpihDrawThickFrame(hps,
-                           &rcl,
-                           pXCenterData->Globals.ulSpacing);
-
-        if (hpsPre == NULLHANDLE)
-            // we acquired a PS ourselves:
-            WinReleasePS(hps);
     }
 }
 
@@ -527,6 +910,7 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
     if (_ulAutoHide)
     {
+        // auto-hide enabled:
         pXCenterData->idTimerAutohide = tmrStartTimer(pXCenterData->Globals.hwndFrame,
                                                       TIMERID_AUTOHIDE_START,
                                                       _ulAutoHide);
@@ -547,29 +931,39 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
  *      one-shot function for refreshing the XCenter
  *      display.
  *
+ *      Calling this is necessary if new widgets have
+ *      been added and the max client cy might have
+ *      changed, or if you want to put the XCenter back
+ *      on top, or if view settings have been changed.
+ *
  *      ulFlags is used to optimize repainting. This
  *      can be any combination of XFMF_* flags or 0.
- *
- *      This does _not_
- *
- *      --  change the frame's visibility flag (WS_VISIBLE);
  *
  *      If the frame is currently auto-hidden (i.e. moved
  *      mostly off the screen), calling this function will
  *      re-show it and restart the auto-hide timer, even
  *      if ulFlags is 0.,
  *
- *      Calling this is necessary if new widgets have
- *      been added and the max client cy might have
- *      changed.
+ *      This function also takes care of desktop resizing
+ *      if this XCenter has the "Reduce desktop workarea"
+ *      flag set (and this is supported on the user's system).
  *
- *      May only run on the XCenter GUI thread.
+ *      This does _not_
+ *
+ *      --  change the frame's visibility flag (WS_VISIBLE);
+ *          however, if the frame is visible and XFMF_RESURFACE
+ *          is set, the XCenter is put on top of the Z-order.
+ *
+ *      This may only run on the XCenter GUI thread. If
+ *      you're not sure this is the case, post XCM_REFORMAT
+ *      with the format flags to the client, which will in
+ *      turn call this function properly.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
 VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
-                  ULONG ulFlags)
+                  ULONG ulFlags)                // in: XFMF_* flags (shared\center.h)
 {
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
 
@@ -589,20 +983,14 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
 
     if (ulFlags & XFMF_DISPLAYSTYLECHANGED)
     {
-        pXCenterData->Globals.ulDisplayStyle = _ulDisplayStyle;
-        if (_ulDisplayStyle == XCS_BUTTON)
-        {
-            pXCenterData->ulBorderWidth = WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
-            pXCenterData->Globals.ulSpacing = WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
-        }
-        else
-        {
-            pXCenterData->ulBorderWidth = 1;
-            pXCenterData->Globals.ulSpacing = 1;
-        }
+        // display style changed: copy data
+        // from XCenter instance data to view globals...
 
-        ulFlags |=    XFMF_GETWIDGETSIZES;       // reget all widget sizes
+        CopyDisplayStyle(pXCenterData, somThis);
 
+        ulFlags |=    XFMF_GETWIDGETSIZES;
+                    // reget all widget sizes; if display style changes,
+                    // widgets may wish to get different size now
     }
 
     if (ulFlags & XFMF_GETWIDGETSIZES)
@@ -621,6 +1009,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
         }
 
         ulFlags |= XFMF_RECALCHEIGHT;
+                    // widget sizes might have changed, so recalc max cy
     }
 
     if (ulFlags & XFMF_RECALCHEIGHT)
@@ -643,8 +1032,9 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
         }
 
         // recalc cyFrame
-        pXCenterData->cyFrame = (2 * pXCenterData->ulBorderWidth)
-                                  + pXCenterData->Globals.cyTallestWidget;
+        pXCenterData->cyFrame = 2 * (  pXCenterData->Globals.ul3DBorderWidth
+                                     + pXCenterData->Globals.ulBorderSpacing )
+                                + pXCenterData->Globals.cyTallestWidget;
 
         ulFlags |= XFMF_REPOSITIONWIDGETS;
     }
@@ -675,6 +1065,12 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     pXCenterData->fFrameAutoHidden = FALSE;
             // we must set this to FALSE before calling StartAutoHide
             // because otherwise StartAutoHide calls us again...
+
+    if (pXCenterData->fFrameFullyShown)
+        // frame is completely ready:
+        // check if desktop workarea needs updating
+        UpdateDesktopWorkarea(pXCenterData,
+                              FALSE);           // no force remove
 
     // (re)start auto-hide timer
     StartAutoHide(pXCenterData);
@@ -1057,8 +1453,11 @@ BOOL FrameTimer(HWND hwnd,
                 DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
                                 &pXCenterData->ulStartTime,
                                 sizeof(pXCenterData->ulStartTime));
-                cxCurrent = 2 * pXCenterData->ulBorderWidth;
-                    // WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
+                // initial value for XCenter:
+                // start with a square
+                cxCurrent = pXCenterData->cyFrame;
+                         /* 2 * (   pXCenterData->ul3DBorderWidth
+                                  + pXCenterData->ulBorderSpacing); */
             }
             else
             {
@@ -1076,8 +1475,9 @@ BOOL FrameTimer(HWND hwnd,
 
                 if (cxCurrent >= pXCenterData->cxFrame)
                 {
-                    // last step:
+                    // we're on the last step:
                     cxCurrent = pXCenterData->cxFrame;
+
                     // stop this timer
                     tmrStopTimer(hwnd,
                                  usTimerID);
@@ -1087,15 +1487,16 @@ BOOL FrameTimer(HWND hwnd,
                                   100);
                     pXCenterData->ulStartTime = 0;
                 }
+
+                WinSetWindowPos(hwnd,
+                                HWND_TOP,
+                                0,
+                                pXCenterData->yFrame,
+                                cxCurrent,
+                                pXCenterData->cyFrame,
+                                SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
             }
 
-            WinSetWindowPos(hwnd,
-                            HWND_TOP,
-                            0,
-                            pXCenterData->yFrame,
-                            cxCurrent,
-                            pXCenterData->cyFrame,
-                            SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
         break; } // case TIMERID_UNFOLDFRAME
 
         /*
@@ -1114,11 +1515,18 @@ BOOL FrameTimer(HWND hwnd,
             else
             {
                 XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
-                // no more widgets:
+                // no more widgets: we're done
                 tmrStopTimer(hwnd,
                              usTimerID);
                 pXCenterData->ulWidgetsShown = 0;
 
+                // OK, XCenter is ready now.
+                pXCenterData->fFrameFullyShown = TRUE;
+
+                // resize the desktop
+                // ctrpReformat(pXCenterData, 0);
+                UpdateDesktopWorkarea(pXCenterData, FALSE);
+                // start auto-hide now
                 StartAutoHide(pXCenterData);
             }
         break; }
@@ -1217,7 +1625,8 @@ BOOL FrameTimer(HWND hwnd,
                 // cySubtractMax has the width that should be
                 // subtracted from the full frame width to
                 // get only a single dlg frame
-                cySubtractMax = pXCenterData->cyFrame - pXCenterData->ulBorderWidth;
+                cySubtractMax =   pXCenterData->cyFrame
+                                - pXCenterData->Globals.ul3DBorderWidth;
 
                 // total animation should last two seconds,
                 // so check where we are now compared to
@@ -1309,6 +1718,10 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              *      a system menu, closing from the task list
              *      won't work otherwise.
              *
+             *      This comes in for the "Window->close" syscommand.
+             *      In addition, this gets posted from FrameCommand
+             *      when it intercepts WPMENUID_CLOSE.
+             *
              *      NOTE: Apparently, since we're running on a
              *      separate thread, the tasklist posts WM_QUIT
              *      directly into the queue. Anyway, this msg
@@ -1319,6 +1732,10 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 switch ((USHORT)mp1)
                 {
                     case SC_CLOSE:
+                        // update desktop workarea
+                        UpdateDesktopWorkarea((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
+                                              TRUE);            // force remove
+
                         WinDestroyWindow(hwnd);
                     break;
                 }
@@ -1333,7 +1750,6 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             break;
 
             case WM_QUERYFRAMEINFO:
-                // DosBeep(2000, 30);
                 // this msg never comes in... sigh
                 mrc = (MRESULT)(FI_FRAME | FI_NOMOVEWITHOWNER);
                         // but not FI_ACTIVATEOK
@@ -1582,6 +1998,48 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
 }
 
 /*
+ *@@ ClientPaint2:
+ *      called from ClientPaint.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ */
+
+VOID ClientPaint2(HWND hwndClient, HPS hps)
+{
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
+    RECTL rclWin;
+
+    // draw 3D frame
+    WinQueryWindowRect(hwndClient,
+                       &rclWin);        // exclusive
+    // make rect inclusive
+    rclWin.xRight--;
+    rclWin.yTop--;
+
+    if (pXCenterData->Globals.ul3DBorderWidth)
+    {
+        gpihDraw3DFrame(hps,
+                        &rclWin,            // inclusive
+                        pXCenterData->Globals.ul3DBorderWidth,      // width
+                        pXCenterData->Globals.lcol3DLight,
+                        pXCenterData->Globals.lcol3DDark);
+
+        rclWin.xLeft += pXCenterData->Globals.ul3DBorderWidth;
+        rclWin.xRight -= pXCenterData->Globals.ul3DBorderWidth;
+        rclWin.yBottom += pXCenterData->Globals.ul3DBorderWidth;
+        rclWin.yTop -= pXCenterData->Globals.ul3DBorderWidth;
+    }
+
+    GpiSetColor(hps,
+                WinQuerySysColor(HWND_DESKTOP,
+                                 SYSCLR_INACTIVEBORDER,  // same as frame!
+                                 0));
+    gpihBox(hps,
+            DRO_FILL,
+            &rclWin);
+}
+
+/*
  *@@ ClientPaint:
  *      implementation for WM_PAINT in fnwpXCenterMainClient.
  */
@@ -1592,29 +2050,11 @@ VOID ClientPaint(HWND hwnd)
     HPS hps = WinBeginPaint(hwnd, NULLHANDLE, &rclPaint);
     if (hps)
     {
-        PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-        RECTL rclWin;
-
         // switch to RGB
         gpihSwitchToRGB(hps);
 
-        WinQueryWindowRect(hwnd,
-                           &rclWin);        // exclusive
-        rclWin.xRight--;
-        rclWin.yTop--;
-        gpihDraw3DFrame(hps,
-                        &rclWin,            // inclusive
-                        1,
-                        pXCenterData->Globals.lcol3DLight,
-                        pXCenterData->Globals.lcol3DDark);
+        ClientPaint2(hwnd, hps);
 
-        rclWin.xLeft++;
-        rclWin.yBottom++;
-        WinFillRect(hps,
-                    &rclWin,
-                    WinQuerySysColor(HWND_DESKTOP,
-                                     SYSCLR_INACTIVEBORDER,  // same as frame!
-                                     0));
         WinEndPaint(hps);
     }
 }
@@ -1622,6 +2062,12 @@ VOID ClientPaint(HWND hwnd)
 /*
  *@@ ClientMouseMove:
  *      implementation for WM_MOUSEMOVE in fnwpXCenterMainClient.
+ *
+ *      This does the usual stuff (setting the mouse pointer).
+ *      In addition, since this message also comes in when the
+ *      XCenter is auto-hidden (i.e. only exists as a minimal
+ *      line at the edge of the screen), we unhide the frame if
+ *      it's auto-hidden.
  */
 
 MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
@@ -1647,9 +2093,12 @@ MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
                                      idPtr,
                                      FALSE));   // no copy
 
-    /* ctrpReformat(pXCenterData,
-                 0);        // just show
-                                        */
+    if (pXCenterData->fFrameAutoHidden)
+    {
+        ctrpReformat(pXCenterData,
+                     0);        // just show
+    }
+
     return ((MPARAM)TRUE);      // message processed
 }
 
@@ -1980,6 +2429,12 @@ VOID ClientDestroy(HWND hwnd)
     XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
 
     _pvOpenView = NULL;
+
+    // last chance... update desktop workarea in case
+    // this hasn't been done that. This has probably been
+    // called before, but we better make sure.
+    UpdateDesktopWorkarea(pXCenterData,
+                          TRUE);            // force remove
 
     DestroyWidgets(pXCenterData);
 
@@ -3585,7 +4040,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             pGlobals->lcol3DLight = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0);
 
             // copy display style so that the widgets can see it
-            pGlobals->ulDisplayStyle = _ulDisplayStyle;
+            CopyDisplayStyle(pXCenterData, somThis);
+            // pGlobals->ulDisplayStyle = _ulDisplayStyle;
 
             // create the XCenter frame with our special frame
             // window class
@@ -3604,15 +4060,14 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 swpFrame.y = winhQueryScreenCY() - swpFrame.cy;
             }
 
-            if (_ulDisplayStyle == XCS_BUTTON)
+            /* if (_ulDisplayStyle == XCS_BUTTON)
             {
                 // button style:
                 pGlobals->ulSpacing = WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
             }
             else
                 pGlobals->ulSpacing = 1;
-
-            pXCenterData->ulBorderWidth = pGlobals->ulSpacing;
+            pXCenterData->ulBorderWidth = pGlobals->ulSpacing; */
 
             pGlobals->hwndFrame
                 = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
@@ -3778,6 +4233,11 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                         pXCenterData->cxFrame,
                                         pXCenterData->cyFrame,
                                         SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
+
+                        // OK, XCenter is ready now.
+                        pXCenterData->fFrameFullyShown = TRUE;
+                        // this resizes the desktop now and starts auto-hide:
+                        ctrpReformat(pXCenterData, 0);
                     }
 
                     // now enter the message loop;
@@ -3796,10 +4256,12 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             //      Apparently, the task list posts WM_QUIT directly...
             //      so at this point, the XCenter might not have been
             //      destroyed.
-            // 2)   By contrast, WM_DESTROY in fnwpFrame posts QM_QUIT
-            //      too. At that point, the XCenter is already destroyed.
+            // 2)   By contrast, our WM_DESTROY in fnwpFrame explicitly
+            //      posts QM_QUIT too. At that point, the XCenter is
+            //      already destroyed.
             // 3)   The XCenter crashed. At that point, the window still
             //      exists.
+
             // So check...
             if (_pvOpenView)
             {
@@ -3807,6 +4269,10 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 // this means the window still exists... clean up
                 TRY_QUIET(excpt1)
                 {
+                    // update desktop workarea
+                    UpdateDesktopWorkarea(pXCenterData,
+                                          TRUE);            // force remove
+
                     WinDestroyWindow(pGlobals->hwndFrame);
                     // ClientDestroy sets _pvOpenView to NULL
                 }

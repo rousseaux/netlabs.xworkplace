@@ -1945,11 +1945,11 @@ ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf)
      */
 
     VOID wpshDumpTaskRec(WPObject *somSelf,
-                         PSZ pszMethodName,
+                         const char *pcszMethodName,
                          PTASKREC pTaskRec)
     {
         _Pmpf(("%s: dumping task rec 0x%lX for obj 0x%lX (%s)",
-                pszMethodName,
+                pcszMethodName,
                 pTaskRec,
                 somSelf,
                 _wpQueryTitle(somSelf) ));

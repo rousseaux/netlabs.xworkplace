@@ -1616,15 +1616,11 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
 
         // set up sliders
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
-                           0, 3);      // six pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
-                           MPFROM2SHORT(9, 10),
-                           6);      // six pixels high
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(9, 10), 6);
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
-                           0, 3);      // six pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
-                           MPFROM2SHORT(9, 10),
-                           6);      // six pixels high
+                           (MPARAM)0, 3,
+                           MPFROM2SHORT(9, 10), 6);
     }
 
     if (flFlags & CBI_SET)
@@ -1917,28 +1913,16 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         // setup sliders
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
-                           MPFROM2SHORT(5, 10),
-                           3);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
-                           MPFROM2SHORT(0, 10),
-                           6);
+                           MPFROM2SHORT(5, 10), 3,
+                           MPFROM2SHORT(0, 10), 6);
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_MENUDELAY_SLIDER),
-                           MPFROM2SHORT(5, 10),
-                           3);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_XSDI_MOUSE_MENUDELAY_SLIDER),
-                           MPFROM2SHORT(0, 10),
-                           6);
+                           MPFROM2SHORT(5, 10), 3,
+                           MPFROM2SHORT(0, 10), 6);
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
-                           MPFROM2SHORT(4, 10),
-                           3);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
-                           MPFROM2SHORT(9, 10),
-                           6);
+                           MPFROM2SHORT(4, 10), 3,
+                           MPFROM2SHORT(9, 10), 6);
     }
 
     if (flFlags & CBI_SET)
