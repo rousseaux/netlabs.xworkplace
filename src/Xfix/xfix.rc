@@ -1,0 +1,78 @@
+
+/*
+ * treesize.rc:
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      This program is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, in version 2 as it comes in the COPYING
+ *      file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <os2.h>
+#include "xfix.h"
+
+POINTER 1 LOADONCALL MOVEABLE DISCARDABLE xfix.ico
+
+MENU 1 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", IDM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "Re-parse buffer", IDMI_RESCAN, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "Write back to OS2SYS.INI...", IDMI_WRITETOINI, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "E~xit\tAlt+F4",      IDMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "Sor~t", IDM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", IDMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", IDMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~Type", IDMI_SORT_TYPE, MIS_TEXT
+        MENUITEM "~Handle", IDMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Parent", IDMI_SORT_PARENT, MIS_TEXT
+        MENUITEM "Sh~ort name", IDMI_SORT_SHORTNAME, MIS_TEXT
+        MENUITEM "~Children", IDMI_SORT_CHILDREN, MIS_TEXT
+        MENUITEM "~Duplicates", IDMI_SORT_DUPS, MIS_TEXT
+        MENUITEM "~References", IDMI_SORT_REFCS, MIS_TEXT
+        MENUITEM "~Long name", IDMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Actions", IDM_ACTIONS, MIS_TEXT
+    BEGIN
+        MENUITEM "Find invalid ~files", IDMI_ACTIONS_FILES, MIS_TEXT
+    END
+
+    SUBMENU "~Select", IDM_SELECT, MIS_TEXT
+    BEGIN
+        MENUITEM "Select all invalid", IDMI_SELECT_INVALID, MIS_TEXT
+    END
+
+    SUBMENU "~Help", IDM_SELECT, MIS_TEXT
+    BEGIN
+        MENUITEM "~General help", IDMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Using help", IDMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Product information", IDMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+MENU IDM_RECORDSELMULTI LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Remove folder positions", IDMI_NUKEFOLDERPOS
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Delete handle...", IDMI_DELETE
+END
+
+MENU IDM_RECORDSELSINGLE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Move abstracts to desktop", IDMI_MOVEABSTRACTS
+    MENUITEM "~Remove folder positions", IDMI_NUKEFOLDERPOS
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Delete...", IDMI_DELETE
+END
+

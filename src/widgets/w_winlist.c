@@ -1036,7 +1036,7 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
 }
 
 /*
- *@@ QuerySuperSwitchList:
+ *@@ SuperQuerySwitchList:
  *      calls winhQuerySwitchList and hacks the entries
  *      so that we know about what to display right.
  *
@@ -1047,7 +1047,7 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
  *@@added V0.9.7 (2001-01-03) [umoeller]
  */
 
-PSWBLOCK QuerySuperSwitchList(HAB hab,          // in: pPrivate->pWidget->habWidget
+PSWBLOCK SuperQuerySwitchList(HAB hab,          // in: pPrivate->pWidget->habWidget
                               PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
                               HWND hwndXCenterFrame,  // in: pPrivate->pWidget->pGlobals->hwndFrame
                               PULONG pcShow)    // out: count of visible swentries
@@ -1138,10 +1138,65 @@ VOID ScanSwitchList(PWINLISTPRIVATE pPrivate)
         pPrivate->pCtrlSourceEmphasis = NULL;
     }
 
-    pPrivate->pswBlock = QuerySuperSwitchList(pPrivate->pWidget->habWidget,
+    pPrivate->pswBlock = SuperQuerySwitchList(pPrivate->pWidget->habWidget,
                                               &pPrivate->Setup.llFilters,
                                               pPrivate->pWidget->pGlobals->hwndFrame,
                                               &pPrivate->cShow);
+}
+
+/*
+ *@@ CalcButtonCX:
+ *      returns the width of the specified button.
+ *      *pcxRegular receives the regular width;
+ *      this is the same as the returned size of
+ *      the current button, except if the button
+ *      is the last one.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+ULONG CalcButtonCX(const WINLISTPRIVATE *pPrivate,
+                   PRECTL prclSubclient,
+                   PSWCNTRL pCtrlThis,      // in: switch list entry; can be NULL
+                   PULONG pcxRegular)
+{
+    ULONG cxPerButton = 0;
+
+    // avoid division by zero
+    if (pPrivate->cShow)
+    {
+        // max paint space:
+        ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
+        // calc width for this button...
+        // use standard with, except for last button
+        cxPerButton = ulCX / pPrivate->cShow;
+
+        // limit size per button V0.9.9 (2001-01-29) [umoeller]
+        if (cxPerButton > 130)
+        {
+            cxPerButton = 130;
+            *pcxRegular = cxPerButton;
+        }
+        else
+        {
+            // no limit:
+            *pcxRegular = cxPerButton;
+            if ((pCtrlThis) && (pCtrlThis->fbJump & WLF_LASTBUTTON))
+                // last button: add leftover space
+                cxPerButton += (ulCX % pPrivate->cShow);
+        }
+    }
+
+    return (cxPerButton);
+}
+
+VOID HackColor(PBYTE pb, double dFactor)
+{
+    ULONG ul = (ULONG)((double)(*pb) * dFactor);
+    if (ul > 255)
+        *pb = 255;
+    else
+        *pb = (BYTE)ul;
 }
 
 /*
@@ -1159,7 +1214,8 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
                  HPS hps,
                  PRECTL prclSubclient,     // in: paint area (exclusive)
                  PSWCNTRL pCtrlThis,       // in: switch list entry to paint
-                 HWND hwndActive)          // in: currently active window
+                 HWND hwndActive,          // in: currently active window
+                 PULONG pulNextX)          // out: next X pos (ptr can be NULL)
 {
     // colors for borders
     LONG    lLeft,
@@ -1172,29 +1228,33 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
     if (pPrivate->cShow)
     {
         RECTL   rclButtonArea;
-        // max paint space:
-        ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
-        // calc width for this button...
-        // use standard with, except for last button
-        ULONG   cxRegular = ulCX / pPrivate->cShow;
-        ULONG   cxThis = cxRegular;
+
+        LONG    lButtonColor = pPrivate->Setup.lcolBackground;
+
+        ULONG   cxRegular = 0,
+                cxThis = CalcButtonCX(pPrivate,
+                                      prclSubclient,
+                                      pCtrlThis,
+                                      &cxRegular);
 
         LONG    lButtonBorder
             = ((pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
                             ? THICK_BUTTON_BORDER   // raised buttons
                             : 1;        // flat buttons
 
-        if (pCtrlThis->fbJump & WLF_LASTBUTTON)
-            // last button: add leftover space
-            cxThis += (ulCX % pPrivate->cShow);
-
         if ((hwndActive) && (pCtrlThis->hwnd == hwndActive))
         {
+            PBYTE   pb = (PBYTE)(&lButtonColor);
+
             // active window: paint rect lowered
             lLeft = pGlobals->lcol3DDark;
             lRight = pGlobals->lcol3DLight;
-            // mark this so we can quickly undo
-            // the change without repainting everything
+
+            // and paint button lighter:
+            // in memory, the bytes are blue, green, red, unused
+            HackColor(pb++, 1.1);           // blue
+            HackColor(pb++, 1.1);           // green
+            HackColor(pb++, 1.1);           // red
         }
         else
         {
@@ -1218,6 +1278,10 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
                          lButtonBorder,
                          lLeft,
                          lRight);
+
+        // store next X if caller wants it
+        if (pulNextX)
+            *pulNextX = rclButtonArea.xRight + 1;
 
         // source emphasis for this control?
         if (    (pPrivate->pCtrlSourceEmphasis)
@@ -1246,7 +1310,7 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
         rclButtonArea.yTop -= (lButtonBorder - 1);
         WinFillRect(hps,
                     &rclButtonArea,         // exclusive
-                    pPrivate->Setup.lcolBackground);
+                    lButtonColor);
 
         if (pCtrlThis->hwndIcon)
         {
@@ -1282,16 +1346,25 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
 
 VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                   HPS hps,
-                  PRECTL prcl)       // in: max available space (exclusive)
+                  PRECTL prclSubclient)       // in: max available space (exclusive)
 {
     ULONG   ul = 0;
+
+    LONG    lcolBackground = pPrivate->Setup.lcolBackground;
+    PBYTE   pb = (PBYTE)&lcolBackground;
+
+    // make background color darker:
+    // in memory, the bytes are blue, green, red, unused
+    HackColor(pb++, 0.91);           // blue
+    HackColor(pb++, 0.91);           // green
+    HackColor(pb++, 0.91);           // red
 
     if (!pPrivate->cShow)      // avoid division by zero
     {
         // draw no buttons
         WinFillRect(hps,
-                    prcl,
-                    pPrivate->Setup.lcolBackground);
+                    prclSubclient,
+                    lcolBackground);
     }
     else
     {
@@ -1299,6 +1372,8 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
         ULONG   cEntries = pPrivate->pswBlock->cswentry;
 
         HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+
+        ULONG   ulNextX = 0;
 
         for (;
              ul < cEntries;
@@ -1311,11 +1386,25 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                 // yes:
                 DrawOneCtrl(pPrivate,
                             hps,
-                            prcl,
+                            prclSubclient,
                             pCtrlThis,
-                            hwndActive);
+                            hwndActive,
+                            &ulNextX);
             }
         } // end for ul
+
+        if (ulNextX < prclSubclient->xRight)
+        {
+            // we have leftover space at the right:
+            RECTL rcl2;
+            rcl2.xLeft = ulNextX;
+            rcl2.yBottom = prclSubclient->yBottom;
+            rcl2.xRight = prclSubclient->xRight;
+            rcl2.yTop = prclSubclient->yTop;
+            WinFillRect(hps,
+                        &rcl2,
+                        lcolBackground);
+        }
     } // end if (cWins)
 }
 
@@ -1357,7 +1446,8 @@ VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
                             hps,
                             &rclSubclient,
                             pPrivate->pCtrlActive,
-                            hwndActive);
+                            hwndActive,
+                            NULL);
                 // unset old active... this may change below
                 pPrivate->pCtrlActive = NULL;
             }
@@ -1386,7 +1476,8 @@ VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
                                     hps,
                                     &rclSubclient,
                                     pCtrlThis,
-                                    hwndActive);
+                                    hwndActive,
+                                    NULL);
                         break;
                     }
                 }
@@ -1413,14 +1504,10 @@ VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
 VOID UpdateSwitchList(HWND hwnd,
                       PWINLISTPRIVATE pPrivate)
 {
-    // check current switch list count
-    /* ULONG cItems = WinQuerySwitchList(pPrivate->pWidget->habWidget,
-                                      NULL,
-                                      0); */
     BOOL        fRedrawAll = FALSE,
                 fFreeTestList = TRUE;
     ULONG       cShowTest = 0;
-    PSWBLOCK    pswBlockTest = QuerySuperSwitchList(pPrivate->pWidget->habWidget,
+    PSWBLOCK    pswBlockTest = SuperQuerySwitchList(pPrivate->pWidget->habWidget,
                                                     &pPrivate->Setup.llFilters,
                                                     pPrivate->pWidget->pGlobals->hwndFrame,
                                                     &cShowTest);
@@ -1522,7 +1609,8 @@ VOID UpdateSwitchList(HWND hwnd,
                                     hps,
                                     &rclSubclient,
                                     pCtrlThis,
-                                    hwndActive);
+                                    hwndActive,
+                                    NULL);
 
                         pNode = pNode->pNext;
                     }
@@ -1625,10 +1713,14 @@ PSWCNTRL FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
                         prclSubclient,
                         pptl))
         {
-            ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
+            // ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
             // calc width for this button...
             // use standard with, except for last button
-            ULONG   cxRegular = ulCX / pPrivate->cShow;
+            ULONG   cxRegular = 0,
+                    cxThis = CalcButtonCX(pPrivate,
+                                          prclSubclient,
+                                          NULL,
+                                          &cxRegular);
             // avoid division by zero
             if (cxRegular)
             {
@@ -2168,7 +2260,8 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                     hps,
                                     &rclSubclient,
                                     pCtlUnderMouse,
-                                    WinQueryActiveWindow(HWND_DESKTOP));
+                                    WinQueryActiveWindow(HWND_DESKTOP),
+                                    NULL);
                         WinReleasePS(hps);
                     }
 

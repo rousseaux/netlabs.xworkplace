@@ -316,6 +316,32 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpSetup:
+ *      this instance method is called to allow the newly
+ *      created object to initialize itself based on an input
+ *      setup string.
+ *
+ *      We support new setup strings for XFldDesktop, which
+ *      are parsed here. This calls dtpSetup for the implementation.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdesk_wpSetup(XFldDesktop *somSelf,
+                                       PSZ pszSetupString)
+{
+    BOOL brc = FALSE;
+    /* XFldDesktopData *somThis = XFldDesktopGetData(somSelf); */
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpSetup");
+
+    brc = XFldDesktop_parent_WPDesktop_wpSetup(somSelf, pszSetupString);
+
+    dtpSetup(somSelf, pszSetupString);
+
+    return (brc);
+}
+
+/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.

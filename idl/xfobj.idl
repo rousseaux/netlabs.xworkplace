@@ -168,7 +168,6 @@ interface XFldObject : WPObject
     wpRestoreState: override;
     wpRestoreData: override;
 
-    wpDisplayMenu: override;
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;

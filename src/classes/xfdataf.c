@@ -258,7 +258,7 @@ SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
  *      by the SOM compiler.
  *
  *      Instead, we "manually" hack the WPDataFile
- *      method table to point to this function instead
+ *      method table to point to this function instead.
  *      This is done in M_XFldDataFile::wpclsInitData
  *      by calling wpshOverrideStaticMethod.
  *
@@ -469,15 +469,16 @@ SOM_Scope BOOL  SOMLINK xfdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
  *      associated program (damn it, IBM, do you ever
  *      read the specs that you've written yourself?):
  *
- *      --  The WPS always uses its internal list of associations,
- *          no matter what we return from XFldDataFile::wpQueryAssociatedProgram,
- *          so we need to override this method as well and intercept
- *          the new menu items that we have changed.
+ *      --  The WPS always uses its internal list of
+ *          associations, no matter what we return from
+ *          XFldDataFile::wpQueryAssociatedProgram, so
+ *          we need to override this method as well and
+ *          intercept the new menu items that we have changed.
  *
  *      --  We cannot use the WPProgram/WPProgramFile classes
- *          to start the associated programs. These things do not
- *          accept parameters, and of course there's no export for
- *          resolving all the parameter placeholders.
+ *          to start the associated programs. These things do
+ *          not accept parameters, and of course there's no
+ *          export for resolving all the parameter placeholders.
  *          So we need to start the program ourselves with
  *          the data file as the parameter, using progOpenProgram.
  *

@@ -1413,7 +1413,10 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 /*
  *@@ wpSetup:
  *      this WPObject instance method is called to allow an
- *      object to set up itself according to setup strings.
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
+ *
  *      XFolder will examine its setup strings here.
  *
  *@@changed V0.9.1 (2000-01-03) [umoeller]: now processing our own strings first
@@ -1431,7 +1434,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpSetup");
 
-    rc = (XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString));
+    rc = XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString);
 
     cbValue = sizeof(szValue);
     if (_wpScanSetupString(somSelf, pszSetupString,

@@ -1,6 +1,7 @@
-XWorkplace 0.9.7 README
+
+XWorkplace Source README
 (W) Ulrich M”ller, July 2, 1999
-Last updated January 8, 2001, Ulrich M”ller
+Last updated January 26, 2001, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -73,6 +74,8 @@ Last updated January 8, 2001, Ulrich M”ller
 
     See "001\readme" for this, which is the readme that comes with
     the binary release.
+
+    For instructions how to use CVS, see the separate cvs.txt file.
 
 
 5. KNOWN LIMITATIONS

@@ -150,8 +150,6 @@ VOID ClientPaint2(HWND hwndClient, HPS hps);
  *
  ********************************************************************/
 
-static BOOL                 G_fXCenterClassRegistered = FALSE;
-
 static COUNTRYSETTINGS      G_CountrySettings = {0};
 
 // array of classes created by ctrpLoadClasses
@@ -166,11 +164,12 @@ static BOOL                 G_fModulesInitialized = FALSE;
 
 /*
  * G_aBuiltInWidgets:
- *      array of the built-in widgets in this file.
+ *      array of the built-in widgets in src\xcenter.
  */
 
 static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
     ={
+        // object button widget
         {
             WNDCLASS_WIDGET_OBJBUTTON,
             BTF_OBJBUTTON,
@@ -179,6 +178,7 @@ static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WGTF_NOUSERCREATE | WGTF_TOOLTIP,  // WGTF_UNIQUEPERXCENTER,
             NULL        // no settings dlg
         },
+        // X-button widget
         {
             WNDCLASS_WIDGET_OBJBUTTON,
             BTF_XBUTTON,
@@ -187,6 +187,7 @@ static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
             NULL        // no settings dlg
         },
+        // CPU pulse widget
         {
             WNDCLASS_WIDGET_PULSE,
             0,
@@ -197,25 +198,19 @@ static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
         }
     };
 
-static HMODULE                  G_hmodPMMERGE = NULLHANDLE;
-
 static PWINSETDESKTOPWORKAREA   G_pWinSetDesktopWorkArea = NULL;
 static PWINQUERYDESKTOPWORKAREA G_pWinQueryDesktopWorkArea = NULL;
 
 static BOOL                     G_fWorkAreaSupported = FALSE;
                                     // set by ctrpDesktopWorkareaSupported
-                                // G_fWorkAreaChanged = FALSE;
-                                    // set after first manipulation
 static LINKLIST                 G_llWorkAreaViews;
-                                    // linked list of XCENTERVIEWDATA's which have
-                                    // the "reduce workarea" flag on. Plain pointers,
-                                    // no auto-free.
+                                    // linked list of XCENTERVIEWDATA's which currently
+                                    // have the "reduce workarea" flag on. This list
+                                    // gets updated when XCenters are opened/closed
+                                    // and/or their "reduce workarea" setting is
+                                    // changed. Plain pointers, no auto-free.
 static HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
                                     // mutex protecting that list;
-
-// static RECTL                    G_rclDesktopWorkArea;
-                                    // current work area, if (G_fWorkAreaChanged == TRUE).
-
 
 /* ******************************************************************
  *
@@ -280,7 +275,9 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
 {
     APIRET arc = NO_ERROR;
 
-    if (G_hmodPMMERGE == NULLHANDLE)
+    static HMODULE      s_hmodPMMERGE = NULLHANDLE;
+
+    if (s_hmodPMMERGE == NULLHANDLE)
     {
         // first call: load PMMERGE (we must load that again...
         // retrieving the existing module handle from the kernel
@@ -289,25 +286,25 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
         arc = DosLoadModule(szFailure,
                             sizeof(szFailure),
                             "PMMERGE",
-                            &G_hmodPMMERGE);
+                            &s_hmodPMMERGE);
         if (arc == NO_ERROR)
         {
             // alright, got it:
-            arc = DosQueryProcAddr(G_hmodPMMERGE,
+            arc = DosQueryProcAddr(s_hmodPMMERGE,
                                    5468,
                                    NULL,
                                    (PFN*)&G_pWinSetDesktopWorkArea);
             if (arc == NO_ERROR)
-                arc = DosQueryProcAddr(G_hmodPMMERGE,
+                arc = DosQueryProcAddr(s_hmodPMMERGE,
                                        5469,
                                        NULL,
                                        (PFN*)&G_pWinQueryDesktopWorkArea);
 
-                if (arc == NO_ERROR)
-                {
-                    lstInit(&G_llWorkAreaViews, FALSE);
-                    G_fWorkAreaSupported = TRUE;
-                }
+            if (arc == NO_ERROR)
+            {
+                lstInit(&G_llWorkAreaViews, FALSE);
+                G_fWorkAreaSupported = TRUE;
+            }
         }
     }
 
@@ -450,6 +447,7 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                     {
                         PXCENTERWINDATA pDataThat = (PXCENTERWINDATA)pNode->pItemData;
 
+                        // only do this for XCenters which are not currently animating
                         if (pDataThat->fFrameFullyShown)
                         {
                             XCenterData *somThat = XCenterGetData(pDataThat->somSelf);
@@ -3598,6 +3596,10 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                     // directly because only the XCenter GUI thread can
                     // destroy the window
                     PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pViewNode->pItemData;
+
+                    // unlock the object first!! otherwise we get a deadlock
+                    wpshUnlockObject(&Lock);
+
                     WinSendMsg(pGlobals->hwndClient,
                                XCM_DESTROYWIDGET,
                                (MPARAM)pView->Widget.hwndWidget,
@@ -3605,6 +3607,8 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                         // the window is responsible for cleaning up pView->pUser;
                         // ctrDefWidgetProc will also free pView and remove it
                         // from the widget views list
+
+                    wpshLockObject(&Lock, somSelf);
                 }
             } // end if (_hwndOpenView)
 
@@ -3944,201 +3948,6 @@ BOOL ctrpSetPriority(XCenter *somSelf,
     wpshUnlockObject(&Lock);
 
     return (brc);
-}
-
-/*
- *@@ ctrpQuerySetup:
- *      implementation for XCenter::xwpQuerySetup2.
- *
- *@@added V0.9.7 (2000-12-09) [umoeller]
- */
-
-ULONG ctrpQuerySetup(XCenter *somSelf,
-                     PSZ pszSetupString,
-                     ULONG cbSetupString)
-{
-    ULONG ulReturn = 0;
-
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
-    {
-        // method pointer for parent class
-        somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
-
-        // compose setup string
-
-        TRY_LOUD(excpt1)
-        {
-            // flag defined in
-            #define WP_GLOBAL_COLOR         0x40000000
-
-            XCenterData *somThis = XCenterGetData(somSelf);
-
-            // temporary buffer for building the setup string
-            XSTRING strTemp;
-            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
-            PLISTNODE pNode;
-
-            xstrInit(&strTemp, 400);
-
-            /*
-             * build string
-             *
-             */
-
-            if (_ulWindowStyle & WS_TOPMOST)
-                xstrcat(&strTemp, "ALWAYSONTOP=YES;", 0);
-            if ((_ulWindowStyle & WS_ANIMATE) != 0)
-                xstrcat(&strTemp, "ANIMATE=YES;", 0);
-            if (_ulAutoHide)
-            {
-                CHAR szTemp[100];
-                xstrcat(&strTemp, "AUTOHIDE=", 0);
-                sprintf(szTemp, "%d;", _ulAutoHide);
-                xstrcat(&strTemp, szTemp, 0);
-            }
-            if (_ulPosition == XCENTER_TOP)
-                xstrcat(&strTemp, "POSITION=TOP;", 0);
-
-            pNode = lstQueryFirstNode(pllSettings);
-            if (pNode)
-            {
-                BOOL    fFirstWidget = TRUE;
-                xstrcat(&strTemp, "WIDGETS=", 0);
-
-                // we have widgets:
-                // go thru all of them and list all widget classes and setup strings.
-                while (pNode)
-                {
-                    PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
-
-                    if (!fFirstWidget)
-                        // not first run:
-                        // add separator
-                        xstrcatc(&strTemp, ',');
-                    else
-                        fFirstWidget = FALSE;
-
-                    // add widget class
-                    xstrcat(&strTemp, pSetting->pszWidgetClass, 0);
-
-                    if (    (pSetting->pszSetupString)
-                         && (strlen(pSetting->pszSetupString))
-                       )
-                    {
-                        // widget has a setup string:
-                        // add that in brackets
-                        XSTRING strSetup2;
-
-                        // characters that must be encoded
-                        CHAR    achEncode[] = "%,();=";
-
-                        ULONG   ul = 0;
-
-                        // copy widget setup string to temporary buffer
-                        // for encoding... this has "=" and ";"
-                        // chars in it, and these should not appear
-                        // in the WPS setup string
-                        xstrInitCopy(&strSetup2,
-                                     pSetting->pszSetupString,
-                                     40);
-
-                        // add first separator
-                        xstrcatc(&strTemp, '(');
-
-                        // now encode the widget setup string...
-                        for (ul = 0;
-                             ul < strlen(achEncode);
-                             ul++)
-                        {
-                            CHAR        szFind[3] = "?",
-                                        szReplace[10] = "%xx";
-                            XSTRING     strFind,
-                                        strReplace;
-                            size_t  ShiftTable[256];
-                            BOOL    fRepeat = FALSE;
-                            ULONG ulOfs = 0;
-
-                            // search string:
-                            szFind[0] = achEncode[ul];
-                            xstrInitSet(&strFind, szFind);
-
-                            // replace string: ASCII encoding
-                            sprintf(szReplace, "%c%lX", '%', achEncode[ul]);
-                            xstrInitSet(&strReplace, szReplace);
-
-                            // replace all occurences
-                            while (xstrFindReplace(&strSetup2,
-                                                   &ulOfs,
-                                                   &strFind,
-                                                   &strReplace,
-                                                   ShiftTable,
-                                                   &fRepeat))
-                                    ;
-
-                        } // for ul; next encoding
-
-                        // now append encoded widget setup string
-                        xstrcat(&strTemp, strSetup2.psz, strSetup2.ulLength);
-
-                        // add terminator
-                        xstrcatc(&strTemp, ')');
-
-                        xstrClear(&strSetup2);
-                    } // end if (    (pSetting->pszSetupString)...
-
-                    pNode = pNode->pNext;
-                } // end for widgets
-
-                xstrcatc(&strTemp, ';');
-            }
-
-            /*
-             * append string
-             *
-             */
-
-            if (strTemp.ulLength)
-            {
-                // return string if buffer is given
-                if ((pszSetupString) && (cbSetupString))
-                    strhncpy0(pszSetupString,   // target
-                              strTemp.psz,      // source
-                              cbSetupString);   // buffer size
-
-                // always return length of string
-                ulReturn = strTemp.ulLength;
-            }
-
-            xstrClear(&strTemp);
-        }
-        CATCH(excpt1)
-        {
-            ulReturn = 0;
-        } END_CATCH();
-
-        // manually resolve parent method
-        pfn_xwpQuerySetup2
-            = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
-                                                             _somGetParent(_XCenter),
-                                                             "xwpQuerySetup2");
-        if (pfn_xwpQuerySetup2)
-        {
-            // now call parent method
-            if ( (pszSetupString) && (cbSetupString) )
-                // string buffer already specified:
-                // tell parent to append to that string
-                ulReturn += pfn_xwpQuerySetup2(somSelf,
-                                               pszSetupString + ulReturn, // append to existing
-                                               cbSetupString - ulReturn); // remaining size
-            else
-                // string buffer not yet specified: return length only
-                ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
-        }
-    }
-    wpshUnlockObject(&Lock);
-
-    return (ulReturn);
 }
 
 /*
@@ -4582,7 +4391,9 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (!G_fXCenterClassRegistered)
+        static BOOL     s_fXCenterClassRegistered = FALSE;
+
+        if (!s_fXCenterClassRegistered)
         {
             // get window proc for WC_FRAME
             if (   (WinRegisterClass(hab,
@@ -4593,14 +4404,14 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                 && (RegisterBuiltInWidgets(hab))
                )
             {
-                G_fXCenterClassRegistered = TRUE;
+                s_fXCenterClassRegistered = TRUE;
             }
             else
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "Error registering PM window classes.");
         }
 
-        if (G_fXCenterClassRegistered)
+        if (s_fXCenterClassRegistered)
         {
             PXCENTERWINDATA pXCenterData =
                 (PXCENTERWINDATA)_wpAllocMem(somSelf,
@@ -4640,7 +4451,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
 
                 DosCloseEventSem(pXCenterData->hevRunning);
             }
-        } // end if (G_fXCenterClassRegistered)
+        } // end if (s_fXCenterClassRegistered)
     }
     CATCH(excpt1) {} END_CATCH();
 

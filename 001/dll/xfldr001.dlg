@@ -1356,8 +1356,8 @@ BEGIN
         LTEXT           "You must at least specify the URL you wish to open."
                         " NETSCDDE uses the following syntax:", -1, 10, 134,
                         315, 11, DT_WORDBREAK
-        LTEXT           "netscdde [-q] [-[x|X]n]] [-p <exe>] [-P <params>] [-m[h]"
-                        "] <URL>", -1, 20, 125, 300, 8, DT_WORDBREAK
+        LTEXT           "netscdde [-q] [-[x|X]n]] [-p <exe>] [-P <params>] ["
+                        "-m[h]] <URL>", -1, 20, 125, 300, 8, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
         LTEXT           "dont' start Netscape if it's not yet running.", -1,
                         70, 96, 250, 7, DT_WORDBREAK
@@ -1843,64 +1843,6 @@ BEGIN
         LTEXT           "", ID_XSDI_SUBOBJECT, 48, 32, 146, 8
         LTEXT           "Target:", ID_XSDI_TARGETFOLDER_TXT, 6, 24, 42, 8
         LTEXT           "", ID_XSDI_TARGETFOLDER, 48, 24, 146, 8
-    END
-END
-
-DLGTEMPLATE ID_XFD_STARTUPPANIC LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Panic", ID_XFD_STARTUPPANIC, 32, 10, 223, 168, ,
-            FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "You have held down the Shift key while the WPS is i"
-                        "nitializing.", -1, 5, 156, 210, 8, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "You can now selectively disable certain XWorkplace "
-                        "features in case these don't work right.", -1, 5,
-                        138, 210, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Note that most of these changes will only affect th"
-                        "is one WPS session. To permanently disable a featur"
-                        "e, open the respective XWorkplace settings object a"
-                        "fter the WPS has started.", -1, 5, 120, 210, 20,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip ~boot logo once", ID_XFDI_PANIC_SKIPBOOTLOGO,
-                        6, 106, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip XWorkplace S~tartup folder once",
-                        ID_XFDI_PANIC_SKIPXFLDSTARTUP, 6, 98, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip ""~Quick open"" folders once",
-                        ID_XFDI_PANIC_SKIPQUICKOPEN, 6, 90, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip WPS ~archiving once",
-                        ID_XFDI_PANIC_NOARCHIVING, 6, 82, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Permanently ~disable all features",
-                        ID_XFDI_PANIC_DISABLEFEATURES, 6, 70, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Permanently disable ~icon replacements",
-                        ID_XFDI_PANIC_DISABLEREPLICONS, 6, 62, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "~Remove all object hotkeys",
-                        ID_XFDI_PANIC_REMOVEHOTKEYS, 6, 54, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Disable ~PageMage", ID_XFDI_PANIC_DISABLEPAGEMAGE,
-                        6, 46, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Disable ~multimedia",
-                        ID_XFDI_PANIC_DISABLEMULTIMEDIA, 6, 38, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        DEFPUSHBUTTON   "C~ontinue", DID_OK, 4, 20, 75, 12, WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "This will continue WPS startup.", -1, 84, 20, 135,
-                        11, NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        PUSHBUTTON      "~Shut down now", DID_CANCEL, 4, 6, 75, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
-                        6, 135, 11, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     END
 END
 
@@ -2827,10 +2769,75 @@ BEGIN
         AUTOCHECKBOX    "Draw spa~cing bars", ID_CRDI_VIEW2_SIZINGBARS, 14,
                         58, 148, 8
         GROUPBOX        "Default widget styles", -1, 6, 22, 172, 30
-        AUTOCHECKBOX    "~Flat buttons", ID_CRDI_VIEW2_FLATBUTTONS, 10, 34, 154, 8
-        AUTOCHECKBOX    "Fra~me around statics", ID_CRDI_VIEW2_SUNKBORDERS, 10, 26, 154, 8
+        AUTOCHECKBOX    "~Flat buttons", ID_CRDI_VIEW2_FLATBUTTONS, 10, 34,
+                        154, 8
+        AUTOCHECKBOX    "Fra~me around statics", ID_CRDI_VIEW2_SUNKBORDERS,
+                        10, 26, 154, 8
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XFD_STARTUPPANIC LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "XWorkplace Panic", ID_XFD_STARTUPPANIC, 32, -4, 223, 182, ,
+            FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        LTEXT           "You have held down the Shift key while the WPS is i"
+                        "nitializing.", -1, 5, 170, 210, 8, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "You can now selectively disable certain XWorkplace "
+                        "features in case these don't work right.", -1, 5,
+                        152, 210, 17, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "Note that most of these changes will only affect th"
+                        "is one WPS session. To permanently disable a featur"
+                        "e, open the respective XWorkplace settings object a"
+                        "fter the WPS has started.", -1, 5, 134, 210, 20,
+                        DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip ~boot logo once", ID_XFDI_PANIC_SKIPBOOTLOGO,
+                        6, 120, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip XWorkplace S~tartup folder once",
+                        ID_XFDI_PANIC_SKIPXFLDSTARTUP, 6, 112, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip ""~Quick open"" folders once",
+                        ID_XFDI_PANIC_SKIPQUICKOPEN, 6, 104, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip WPS ~archiving once",
+                        ID_XFDI_PANIC_NOARCHIVING, 6, 96, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Permanently ~disable all features",
+                        ID_XFDI_PANIC_DISABLEFEATURES, 6, 84, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Permanently disable ~icon replacements",
+                        ID_XFDI_PANIC_DISABLEREPLICONS, 6, 76, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "~Remove all object hotkeys",
+                        ID_XFDI_PANIC_REMOVEHOTKEYS, 6, 68, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Disable ~PageMage", ID_XFDI_PANIC_DISABLEPAGEMAGE,
+                        6, 60, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Disable ~multimedia",
+                        ID_XFDI_PANIC_DISABLEMULTIMEDIA, 6, 52, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        DEFPUSHBUTTON   "C~ontinue", DID_OK, 4, 34, 75, 12, WS_GROUP
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "This will continue WPS startup.", -1, 84, 34, 135,
+                        11, NOT WS_GROUP
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        PUSHBUTTON      "Run x~fix", DID_UNDO, 4, 20, 75, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "Run the XWorkplace Handles Fixer.", -1, 84, 20, 135,
+                        11, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        PUSHBUTTON      "~Shut down now", DID_CANCEL, 4, 6, 75, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
+                        6, 135, 11, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     END
 END

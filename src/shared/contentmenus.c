@@ -197,7 +197,7 @@ static LINKLIST         G_llVarMenuItems;     // changed V0.9.0
 
 // icon for drawing the little triangle in
 // folder content menus (subfolders)
-static HPOINTER         G_hMenuArrowIcon = NULLHANDLE;
+// static HPOINTER         G_hMenuArrowIcon = NULLHANDLE;
 
 // original wnd proc for folder content menus,
 // which we must subclass
@@ -206,7 +206,7 @@ static PFNWP            G_pfnwpFolderContentMenuOriginal = NULL;
 static POINTL           G_ptlPositionBelow;         // in screen coords
 static BOOL             G_fPositionBelow = FALSE;
 
-#define CX_ARROW 21
+// #define CX_ARROW 21
 
 // global data for owner draw
 static ULONG            G_ulMiniIconSize = 0;
@@ -214,13 +214,13 @@ static RECTL            G_rtlMenuItem;
 static LONG             G_lHiliteBackground,
                         G_lBackground,
                         G_lHiliteText,
-                        G_lBorderLight,  // [lafaix]
-                        G_lBorderDark,   // [lafaix]
+                        G_lBorderLight,     // [lafaix]
+                        G_lBorderDark,      // [lafaix]
                         G_lText;
 
-static SIZEF            G_szfCharBox; // [lafaix]
-static LONG             G_lMaxDescender; // [lafaix]
-
+static SIZEF            G_szfCharBox;       // [lafaix]
+static LONG             G_lMaxDescender;    // [lafaix]
+static BOOL             G_bInitNeeded;
 /* ******************************************************************
  *
  *   Functions
@@ -1119,6 +1119,7 @@ PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
  *@@changed V0.9.0 [umoeller]: changed colors
  *@@changed V0.9.7 (2001-01-21) [lafaix]: fixed nonrecursive queries
  *@@changed V0.9.7 (2001-01-21) [lafaix]: added border colors and CharBox
+ *@@changed V0.9.7 (2001-01-26) [lafaix]: fixed nonrecursive queries
  */
 
 #ifndef RGB_DARKGRAY // [lafaix]
@@ -1166,7 +1167,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
     G_lBorderLight = winhQueryPresColor(hwndMenuMsg,
                                         PP_BORDERLIGHTCOLOR, TRUE, -1);
     if (G_lBorderLight == -1)
-       G_lBorderLight = RGB_WHITE;
+        G_lBorderLight = RGB_WHITE;
 
     #ifndef PP_BORDERDARKCOLOR
         #define PP_BORDERDARKCOLOR   52L
@@ -1175,11 +1176,15 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
     G_lBorderDark = winhQueryPresColor(hwndMenuMsg,
                                        PP_BORDERDARKCOLOR, TRUE, -1);
     if (G_lBorderDark == -1)
-       G_lBorderDark = RGB_DARKGRAY;
+        G_lBorderDark = RGB_DARKGRAY;
 
-    G_szfCharBox.cx = 0; G_szfCharBox.cy = 0;
+    // query font CharBox and MaxDescender, to be done in cmnuMeasureItem
+    // as we don't have the presentation space here
+    G_bInitNeeded = TRUE;
 
-    G_lMaxDescender = 0;
+    /* G_szfCharBox.cx = 0; G_szfCharBox.cy = 0;
+
+    G_lMaxDescender = 0; */
     // [lafaix] end
 }
 
@@ -1195,7 +1200,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
  *      the height of the menu bar only.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
- *@@changed V0.9.7 (2001-01-21) [lafaix]: saving CharBox too
+ *@@changed V0.9.7 (2001-01-26) [lafaix]: added CharBox and MaxDescender queries
  */
 
 MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
@@ -1214,15 +1219,20 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
         // not queried yet?
         G_ulMiniIconSize = WinQuerySysValue(HWND_DESKTOP, SV_CYICON) / 2;
 
-    if (G_szfCharBox.cx == 0 && G_szfCharBox.cy == 0)
-        GpiQueryCharBox(poi->hps, &G_szfCharBox);
-
-    if (G_lMaxDescender == 0)
+    if (G_bInitNeeded)
     {
         FONTMETRICS fm;
 
+        // the presentation space we get in cmnuDrawItem may differ from
+        // the one we have here, it that the font size reverts to the one
+        // of the default font, so we save it
+        GpiQueryCharBox(poi->hps, &G_szfCharBox);
+
+        // get max descender which is needed to position the item
+        // correctly in its rectangle
         GpiQueryFontMetrics(poi->hps, sizeof(FONTMETRICS), &fm);
         G_lMaxDescender = fm.lMaxDescender;
+        G_bInitNeeded = FALSE;
     }
 
     if (pItem)
@@ -1236,12 +1246,9 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
                         pItem->szTitle,
                         TXTBOX_COUNT,
                         (PPOINTL)&aptlText);
-// [lafaix]        poi->rclItem.xLeft = 0;
-// [lafaix]        poi->rclItem.yBottom = 0;
         poi->rclItem.xRight = aptlText[TXTBOX_TOPRIGHT].x
                                 + G_ulMiniIconSize
-                                - 15
-                                + CX_ARROW;
+                                + 6;     // lafaix
 
         poi->rclItem.yTop = G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom;
         /* if (poi->rclItem.yTop < G_ulMiniIconSize)
@@ -1295,7 +1302,7 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
             // if the attribute of a folder has changed, i.e. item's
             // hilite state has been altered: we then need
             // to handle the little "submenu" arrow, because
-            // this will be overpainted by the WinFilLRect
+            // this will be overpainted by the WinFillRect
             // below. We do this by sending a MM_SETITEMATTR
             // to the menu.
             // This will call cmnuDrawItem again to paint the item.
@@ -1333,35 +1340,44 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
             rcl.xRight -= 2; // [lafaix]
             WinFillRect(poi->hps, &rcl, lColor);
 
-            // [lafaix]
+            // let's fix the vertical border that has been overwritten by PM
             GpiSetColor(poi->hps,
                         G_lBorderLight);
             ptl.x = poi->rclItem.xLeft;
-            ptl.y = poi->rclItem.yBottom;
-            GpiMove(poi->hps, &ptl);
             ptl.y = poi->rclItem.yTop;
-            GpiLine(poi->hps, &ptl);
-    /*        ptl.x = poi->rclItem.xRight;
-            GpiSetColor(poi->hps,
-                        G_lBorderDark);
             GpiMove(poi->hps, &ptl);
             ptl.y = poi->rclItem.yBottom;
-            GpiLine(poi->hps, &ptl); */
+            GpiLine(poi->hps, &ptl);
+            // if we are close to the bottom, let's fix that border too;
+            // the "+4" offset makes us redraw the bottom twice in most
+            // cases but is necessary as some menus with three or more
+            // columns may have an odd number of elements
+            if (rcl.yBottom < (rcl.yTop - rcl.yBottom + 4))
+            {
+                ptl.y = 1;
+                GpiLine(poi->hps, &ptl);
+                ptl.x++;
+                GpiSetColor(poi->hps,
+                            G_lBorderDark);
+                GpiMove(poi->hps, &ptl);
+                ptl.x = poi->rclItem.xRight;
+                GpiLine(poi->hps, &ptl);
+            }
 
-            // print the item's text                          v-- [lafaix]
-            ptl.x = poi->rclItem.xLeft+5+(G_ulMiniIconSize) + 5;
-            ptl.y = poi->rclItem.yBottom+G_lMaxDescender+1; // [lafaix] was +4
+            // print the item's text
+            ptl.x = poi->rclItem.xLeft+10+(G_ulMiniIconSize);
+            ptl.y = poi->rclItem.yBottom+G_lMaxDescender+1;
             GpiMove(poi->hps, &ptl);
             GpiSetColor(poi->hps,
                         (poi->fsAttribute & MIA_HILITED)
                             ? G_lHiliteText
                             : G_lText);
-            GpiSetCharBox(poi->hps, &G_szfCharBox); // [lafaix]
+            GpiSetCharBox(poi->hps, &G_szfCharBox);
             GpiCharString(poi->hps, strlen(pItem->szTitle), pItem->szTitle);
 
             // draw the item's icon
-            WinDrawPointer(poi->hps,           //  v-- [lafaix]
-                           poi->rclItem.xLeft+2    + 5,
+            WinDrawPointer(poi->hps,
+                           poi->rclItem.xLeft+7,
                            poi->rclItem.yBottom
                              +( (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom - G_ulMiniIconSize) / 2 ),
                            hIcon,

@@ -472,7 +472,9 @@ SOM_Scope void  SOMLINK cdp_wpObjectReady(XMMCDPlayer *somSelf,
 /*
  *@@ wpSetup:
  *      this WPObject instance method is called to allow an
- *      object to set up itself according to setup strings.
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
  *
  *      We use this interface to allow controlling the CD
  *      player thru setup strings. This allows the user to

@@ -64,11 +64,11 @@
  XFLDRxxx.DLL
     (with "xxx" being your three-digit language code): National
     Language support DLL for XWorkplace.
- XFLDRxxx.SGS
-    (with "xxx" being your three-digit language code): SmartGuide
-    script for OS/2 Warp 4 (XWorkplace introduction after installation).
  XHELP.CMD
     used by the install script only to display messages.
+ XSHUTDWN.CMD
+    external XShutdown interface. See the XWorkplace User Guide,
+    "Extended Shutdown".
  XWPDAEMN.EXE
     XWorkplace PM daemon. This gets started while the WPS is starting
     up and is required for the XWorkplace PM hook to work.
@@ -76,8 +76,5 @@
     XWorkplace PM hook DLL. This implements all the hook features and
     becomes part of every process once the hook is installed from
     "XWorkplace Setup".
- XSHUTDWN.EXE
-    external XShutdown interface. See the XWorkplace User Guide,
-    "Extended Shutdown".
 
 

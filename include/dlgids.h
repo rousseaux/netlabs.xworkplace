@@ -77,11 +77,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.7"
+#define XFOLDER_VERSION        "0.9.8"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.7"
+#define MINIMUM_NLS_VERSION    "0.9.8"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -103,8 +103,8 @@
 #define ID_ICONSDANIM4         113
 #define ID_ICONSDANIM5         114
 
-#define ID_ICONMENUARROW4      115
-#define ID_ICONMENUARROW3      116
+// #define ID_ICONMENUARROW4      115 removed V0.9.7 (2001-01-26) [umoeller]
+// #define ID_ICONMENUARROW3      116
 
 #define ID_ICONXWPCONFG        117
 #define ID_ICONXWPLIST         118

@@ -2215,7 +2215,8 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
  */
 
-BOOL WMMouseMove(PQMSG pqmsg)
+BOOL WMMouseMove(PQMSG pqmsg,
+                 PBOOL pfRestartAutoHide)      // out: set to TRUE if auto-hide must be processed
 {
     BOOL    brc = FALSE;        // swallow?
     BOOL    fGlobalMouseMoved = FALSE,
@@ -2397,9 +2398,8 @@ BOOL WMMouseMove(PQMSG pqmsg)
          *
          */
 
-        // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
-        // if (G_HookData.HookConfig.fAutoHideMouse)
-            WMMouseMove_AutoHideMouse();
+        // V0.9.9 (2001-01-29) [umoeller]
+        *pfRestartAutoHide = TRUE;
     }
 
     return (brc);
@@ -2581,6 +2581,7 @@ VOID WMChord_WinList(VOID)
  *@@changed V0.9.4 (2000-06-11) [umoeller]: changed MB3 scroll to WM_BUTTON3MOTIONSTART/END
  *@@changed V0.9.4 (2000-06-11) [umoeller]: added MB3 single-click
  *@@changed V0.9.4 (2000-06-14) [umoeller]: fixed PMMail win-list-as-pointer bug
+ *@@changed V0.9.9 (2001-01-29) [umoeller]: auto-hide now respects button clicks too
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -2589,7 +2590,10 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 {
     // set return value:
     // per default, pass message on to next hook or application
-    BOOL brc = FALSE;
+    BOOL        brc = FALSE;
+
+    BOOL        fRestartAutoHide = FALSE;
+                            // set to TRUE if auto-hide mouse should be handles
 
     HWND        hwnd;
     ULONG       msg;
@@ -2658,6 +2662,9 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                         // this activates the frame, which is not really
                         // what we want in every case... this breaks XCenter too
             }
+
+            // un-hide mouse if auto-hidden
+            fRestartAutoHide = TRUE;
         break;
 
         /*****************************************************************
@@ -2695,6 +2702,9 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     }
                 }
             }
+
+            // un-hide mouse if auto-hidden
+            fRestartAutoHide = TRUE;
         break; }
 
         /*****************************************************************
@@ -2766,6 +2776,9 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 // swallow msg
                 // brc = TRUE;
             }
+
+            // un-hide mouse if auto-hidden
+            fRestartAutoHide = TRUE;
         break; }
 
         /*
@@ -2888,9 +2901,14 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          */
 
         case WM_MOUSEMOVE:
-            brc = WMMouseMove(pqmsg);
+            brc = WMMouseMove(pqmsg,
+                              &fRestartAutoHide);
         break; // WM_MOUSEMOVE
     }
+
+    if (fRestartAutoHide)
+        // handle auto-hide V0.9.9 (2001-01-29) [umoeller]
+        WMMouseMove_AutoHideMouse();
 
     return (brc);                           // msg not processed if FALSE
 }

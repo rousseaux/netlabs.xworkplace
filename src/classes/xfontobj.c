@@ -408,6 +408,7 @@ SOM_Scope void  SOMLINK fono_wpUnInitData(XWPFontObject *somSelf)
  *      this WPObject method allows an object which is being
  *      created to parse its setup string. As opposed to
  *      wpSetup, this only gets called during object creation.
+ *      The WPObject implementation calls wpSetup in turn.
  *      If we return FALSE here, object creation is aborted.
  */
 

@@ -1,6 +1,6 @@
-NAME XWPDAEMN WINDOWAPI
+NAME XDOC WINDOWAPI
 
-Description '@#Ulrich M”ller:0.9.8#@ XWorkplace PM daemon'
+Description '@#Ulrich M”ller:0.9.8#@ WPS handles fixer'
 
 CODE  MOVEABLE
 DATA  MOVEABLE MULTIPLE
@@ -9,4 +9,5 @@ STACKSIZE   65536
 HEAPSIZE    10240
 
 PROTMODE
+
 

@@ -26,7 +26,7 @@
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)\modules
 !if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
 !endif
 

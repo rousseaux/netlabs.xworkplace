@@ -283,6 +283,11 @@ PVOID wpshParentNumResolve(SOMClass *pClass,    // in: class whose parent we sho
  *          does not require the method descriptor and stub methods
  *          that the others do."
  *
+ *      If you don't understand what this means... I don't
+ *      either. I just tested whether this method can be used
+ *      to hack a class's method table at runtime, and it
+ *      worked.
+ *
  *      Even though SOMREF says that use of that method is
  *      deprecated, it still works from my testing. Since
  *      SOM is never going to change any more (because IBM
@@ -420,7 +425,7 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
  *@@ wpshCheckObject:
  *      checks pObject for validity.
  *
- *      since somIsObj doesn't seem to be working right,
+ *      Since somIsObj doesn't seem to be working right,
  *      here is a new function which checks if pObject
  *      points to a valid WPS object. This is done by
  *      temporarily installing yet another xcpt handler,

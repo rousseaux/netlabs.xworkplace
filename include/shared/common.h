@@ -21,7 +21,8 @@
  *@@include #define INCL_WINWINDOWMGR
  *@@include #define INCL_DOSMODULEMGR
  *@@include #include <os2.h>
- *@@include #include <wpfolder.h>       // only for some features
+ *@@include #include "helpers\xstring.h"    // only for setup sets
+ *@@include #include <wpfolder.h>           // only for some features
  *@@include #include "shared\common.h"
  */
 
@@ -1358,6 +1359,203 @@
     BOOL cmnStoreGlobalSettings(VOID);
 
     BOOL cmnSetDefaultSettings(USHORT usSettingsPage);
+
+    /* ******************************************************************
+     *
+     *   Object setup sets V0.9.9 (2001-01-29) [umoeller]
+     *
+     ********************************************************************/
+
+    /*
+     *@@ ARRAYITEMCOUNT:
+     *      helpful macro to count the count of items
+     *      in an array. Use this to avoid typos when
+     *      having to pass the array item count to
+     *      a function.
+     *
+     *      ULONG   aul[] = { 0, 1, 2, 3, 4 };
+     *
+     *      ARRAYITEMCOUNT(aul) then expands to:
+     *
+     +          sizeof(aul) / sizeof(aul[0])
+     *
+     *      which should return 5. Note that the compiler
+     *      should calculate this at compile-time, so that
+     *      there is no run-time overhead... and this will
+     *      never miscount the array item size.
+     *
+     *@@added V0.9.9 (2001-01-29) [umoeller]
+     */
+
+    #define ARRAYITEMCOUNT(array) sizeof(array) / sizeof(array[0])
+
+    // settings types for XWPSETUPENTRY.ulType
+    #define     STG_LONG        1
+    #define     STG_BOOL        2
+    #define     STG_BITFLAG     3
+
+    /*
+     *@@ XWPSETUPENTRY:
+     *      describes an entry in an object's setup set.
+     *
+     *      A "setup set" is an array of XWPSETUPENTRY
+     *      structures, each of which represents an object
+     *      instance variable together with its setup
+     *      string, variable type, default value, and
+     *      value limits.
+     *
+     *      A setup set can be quickly
+     *
+     *      -- initialized to the default values in
+     *         wpInitData (see cmnSetupInitData);
+     *
+     *      -- built a setup string from during xwpQuerySetup
+     *         (see cmnSetupBuildString);
+     *
+     *      -- updated from a setup string during wpSetup
+     *         (see cmnSetupScanString);
+     *
+     *      -- stored during wpSaveState (see cmnSetupSave);
+     *
+     *      -- restored during wpRestoreState (see cmnSetupRestore).
+     *
+     *      Setup sets have been introduced because when new
+     *      instance variables are added to a WPS class, one
+     *      always has to go through the same dull procedure
+     *      of adding that instance variable to all these
+     *      methods. So there is always the danger that a
+     *      variable is not safely initialized, saved, or
+     *      restored, or that default values get messed up
+     *      somewhere. The cmnSetup* functions are intended
+     *      to aid in getting that synchronized.
+     *
+     *      To use these, set up a "setup set" (an array of
+     *      XWPSETUPENTRY structs) for your class as a global
+     *      variable with your class implementation and use the
+     *      cmnSetup* function calls in your method overrides.
+     *
+     *      In order to support any type of variable, ulOfsOfData
+     *      does not specify the absolute address of the variable,
+     *      but the offset in bytes within a structure which is
+     *      then passed with the somThis pointer to the cmnSetup*
+     *      functions. While this _can_ be a "true" somThis pointer
+     *      from a SOM object, it can really be any structure.
+     *
+     *@@added V0.9.9 (2001-01-29) [umoeller]
+     */
+
+    typedef struct _XWPSETUPENTRY
+    {
+        ULONG       ulType;
+                        // describes the type of the variable specified
+                        // by ulOfsOfData. One of:
+
+                        // -- STG_LONG: LONG value; in that case,
+                        //      ulMin and ulMax apply and the setup
+                        //      string gets the long value appended
+
+                        // -- STG_BOOL: BOOL value; in that case,
+                        //      the setup string gets either YES or NO
+
+                        // -- STG_BITFLAG: a bitflag value; in that case,
+                        //      the data is assumed to be a ULONG and
+                        //      ulBitflag applies; the setup string
+                        //      gets either YES or NO also for each entry.
+                        //      NOTE: For bitfields, always set them up
+                        //      as follows:
+                        //      1) a STG_LONG entry for the entire bit
+                        //         field with the default value and a
+                        //         save/restore key, but no setup string;
+                        //      2) for each bit flag, a STG_BITFLAG
+                        //         entry afterwards with each flag's
+                        //         default value and the setup string,
+                        //         but NO save/restore key.
+                        //      This ensures that on save/restore, the
+                        //      bit field is flushed once only and that
+                        //      the bit field is initialized on cmnInitData,
+                        //      but each flag can be set/cleared individually
+                        //      with a setup string.
+
+        // build/scan setup string values:
+
+        const char  *pcszSetupString;
+                        // setup string keyword; e.g. "CCVIEW";
+                        // if this is NULL, no setup string is supported
+                        // for this entry, and it is not scanned/built.
+
+        // data description:
+
+        ULONG       ulOfsOfData;
+                        // offset of the data in an object's instance
+                        // data (this is added to the somThis pointer);
+                        // the size of the data depends on the setting
+                        // type (usually a ULONG).
+                        // You can use the FIELDOFFSET macro to determine
+                        // this value, e.g. FIELDOFFSET(somThis, ulVariable).
+
+        // save/restore values:
+        ULONG       ulKey;
+                        // key to be used with wpSaveState/wpRestoreState;
+                        // if 0, value is not saved/restored.
+                        // NOTE: For STG_BITFLAG, set this to 0 always.
+                        // Define a preceding STG_LONG for the bitflag
+                        // instead.
+
+        // defaults/limits:
+        LONG        lDefault;   // default value; a setup string is only
+                                // built if the value is different from
+                                // this. This is also used for cmnSetupInitData.
+
+        ULONG       ulBitflag;  // only with STG_BITFLAG, the mask for the
+                                // ULONG data pointed to by ulOfsOfData
+
+        LONG        lMin,       // only with STG_LONG, the min and max
+                    lMax;       // values allowed
+
+    } XWPSETUPENTRY, *PXWPSETUPENTRY;
+
+    VOID cmnSetupInitData(PXWPSETUPENTRY paSettings,
+                          ULONG cSettings,
+                          PVOID somThis);
+
+    #ifdef XSTRING_HEADER_INCLUDED
+        VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings,
+                                 ULONG cSettings,
+                                 PVOID somThis,
+                                 PXSTRING pstr);
+    #endif
+
+    #ifdef SOM_WPObject_h
+        BOOL cmnSetupScanString(WPObject *somSelf,
+                                PXWPSETUPENTRY paSettings,
+                                ULONG cSettings,
+                                PVOID somThis,
+                                PSZ pszSetupString,
+                                PULONG pcSuccess);
+
+        BOOL cmnSetupSave(WPObject *somSelf,
+                          PXWPSETUPENTRY paSettings,
+                          ULONG cSettings,
+                          const char *pcszClassName,
+                          PVOID somThis);
+
+        BOOL cmnSetupRestore(WPObject *somSelf,
+                             PXWPSETUPENTRY paSettings,
+                             ULONG cSettings,
+                             const char *pcszClassName,
+                             PVOID somThis);
+    #endif
+
+    ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings,
+                              ULONG cSettings,
+                              PULONG paulOffsets,
+                              ULONG cOffsets,
+                              PVOID somThis);
+
+    ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
+                                ULONG cOffsets,
+                                PVOID somThis,
+                                PVOID pBackup);
 
     /* ******************************************************************
      *

@@ -141,6 +141,8 @@ interface XCenter : WPAbstract
     wpUnInitData: override;
     wpObjectReady: override;
 
+    wpSetup: override;
+
     wpSaveState: override;
     wpRestoreState: override;
 

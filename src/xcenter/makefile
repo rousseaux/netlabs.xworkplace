@@ -135,10 +135,11 @@ $(OUTPUTDIR)\ctr_engine.obj: \
 
 $(OUTPUTDIR)\ctr_notebook.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
-    $(INC)\classes\xcenter.ih \
+    $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xcenter.ih $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\notebook.h \
+    $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\shared\center.h $(INC)\xcenter\centerp.h \
     $(@B).c
 

@@ -1,0 +1,92 @@
+<HTML XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        New XFldDesktop Setup Strings
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.7 -->
+<BODY>
+<B>Class: XFldDesktop</B><HR>
+The following setup strings can be used on the desktop if the XFldDesktop class is
+installed.
+Most notably, this includes an interface to invoke the extended shutdown procedure.
+To get the currently open desktop, invoke these strings on the object
+with the ID <CODE>&lt;WP_DESKTOP&gt;</CODE>.
+
+<P>Note that since the desktop is a folder, it understands all the setup strings for
+<A HREF="setupstr_3xfolder.html">XFolder,</A>
+<A HREF="setupstr_2wpfolder.html">WPFolder,</A> and
+<A HREF="setupstr_1wpobject.html">WPObject</A> as well.
+
+<DL>
+<DT><P><CITE><STRONG>XSHUTDOWNNOW</STRONG>=<I>settings</I></CITE>
+<DD>Starts XShutdown now with the specified <I>settings</I>, which correspond to
+the various settings on the "XShutdown" page in the desktop's settings notebook.
+
+<P><B>Note 1:</B> This setup string changes no settings,
+but is a rather a command to be performed immediately.
+The below <CODE><I>settings</I></CODE> will only affect this one system shutdown.
+See <A HREF="0633intro_xshutdwn.html">"Startup and shutdown"</A> for details.
+
+<P><B>Note 2:</B> If you invoke this setup string programatically (either through
+<CODE>WinSetObjectData</CODE> or <CODE>SysSetObjectData</CODE>) and confirmations
+are enabled, that function will not return until the confirmation dialog has
+been dismissed.
+
+<P><CODE><I>settings</I></CODE> is a comma-separated list of XShutdown settings
+or <CODE>DEFAULT</CODE>. You can specify any combination of what's listed below.
+In general, if one of the keywords below is not specified, XShutdown will use
+what is specified on the "XShutdown" page in the desktop's settings notebook.
+
+<P>To override the preconfigured behavior after XShutdown has completed, use one
+of the following:
+
+<UL><LI><CODE>HALT</CODE> will only show the "It is now safe..." message and then
+halt the system.
+
+<P><LI><CODE>REBOOT</CODE> will do a standard reboot.
+
+<P><LI><CODE>USERREBOOT(<I>cmd</I>)</CODE> will attempt to do a user-defined reboot
+with the reboot action <CODE><I>cmd</I></CODE>.
+
+<P><LI><CODE>POWEROFF</CODE> will attempt an APM power-off, if this is supported on
+the system.
+
+<P><LI><CODE>RESTARTWPS</CODE> will not shut down the system, but only restart the
+WPS.
+
+<P><LI><CODE>FULLRESTARTWPS</CODE> will not shut down the system, but only restart the
+WPS, but close all open sessions first and reuse the XWorkplace startup folder at
+the next WPS startup.
+
+</UL><BR>To override the preconfigured treatment of VIO windows,
+use either <CODE>AUTOCLOSEVIO</CODE> or <CODE>NOAUTOCLOSEVIO</CODE>.
+
+<P>To override the preconfigured setting for <CODE>XSHUTDWN.LOG</CODE>,
+use either <CODE>LOG</CODE> or <CODE>NOLOG</CODE>.
+
+<P>To override the preconfigured animation settings, use either
+<CODE>ANIMATE</CODE> or <CODE>NOANIMATE</CODE>.
+
+<P>To override the preconfigured confirmation setting, use either
+<CODE>CONFIRM</CODE> or <CODE>NOCONFIRM</CODE>. Note that if confirmations are on
+(either because <CODE>CONFIRM</CODE> was specified or because it was preconfigured
+and not overridden), most of the settings specified with <CODE>XSHUTDOWNNOW</CODE>
+will only cause the confirmation dialog to display different defaults.
+
+<P>If you do not want to override any settings, specify <CODE>DEFAULT</CODE>.
+
+<P>Examples:
+
+<BR><UL><LI><CODE>XSHUTDOWNNOW=DEFAULT</CODE> will start XShutdown with the current
+settings.
+
+<P><LI><CODE>XSHUTDOWNNOW=RESTARTWPS,NOCONFIRM,LOG</CODE> will restart the WPS now
+without confirmation, but enable logging this one time.
+
+</UL>
+
+</DL>
+</BODY>
+</HTML>
+

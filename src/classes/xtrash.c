@@ -716,23 +716,6 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
 }
 
 /*
- *@@ wpSetup:
- *      this instance method is called to allow the newly
- *      created object to initialize itself based on an input
- *      setup string.
- *
- *      We need to support the new XWPTrashCan settings strings here.
- */
-
-SOM_Scope BOOL  SOMLINK xtrc_wpSetup(XWPTrashCan *somSelf, PSZ pszSetupString)
-{
-    /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
-    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpSetup");
-
-    return (XWPTrashCan_parent_WPFolder_wpSetup(somSelf, pszSetupString));
-}
-
-/*
  *@@ wpSaveState:
  *      this WPObject instance method saves an object's state
  *      persistently so that it can later be re-initialized

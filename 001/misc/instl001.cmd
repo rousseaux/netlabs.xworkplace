@@ -34,6 +34,8 @@ Mouse               = "Mouse";
 Keyboard            = "Keyboard";
 Sound               = "Sound";
 XShutdown           = "eXtended Shutdown...";
+/* font folder added with V0.9.7 */
+FontFolder          = "Fonts";
 
 /* DO NOT CHANGE the following */
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
@@ -49,8 +51,10 @@ dir = pdir||"bin\";
 OnlineReferenceFile = "xfldr"LanguageCode".inf";
 XFolderIntroFile    = "xfldr"LanguageCode".sgs";
 
+HelpLibrary = "HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;"
+
 /* main folder */
-rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;HELPPANEL=84;OBJECTID=<XWP_MAINFLDR>;", "U");
+rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;"HelpLibrary"HELPPANEL=84;OBJECTID=<XWP_MAINFLDR>;", "U");
 
 /* "SmartGuide" introduction: removed V0.9.7 (2000-12-10) [umoeller] */
 /* if (SysSearchPath("PATH", "sguide.exe") \= "") then
@@ -70,6 +74,12 @@ rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID=<XWORKPLA
 
 /* create XCenter (V0.9.7) */
 rc = SysCreateObject("XCenter", "XCenter", "<XWP_MAINFLDR>", "OBJECTID=<XWP_XCENTER>;", "U");
+
+/* "Font folder" ... added with V0.9.7 */
+rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_CONFIG>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
+if (\rc) then
+    rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_DESKTOP>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
+rc = SysCreateObject("WPShadow", FontFolder, "<XWP_MAINFLDR>", "SHADOWID=<XWP_FONTFOLDER>;OBJECTID=<XWP_FONTFOLDERSHADOW>;", "U");
 
 /* create "Workplace Shell" */
 rc = SysCreateObject("XFldWPS", WorkplaceShell, "<WP_CONFIG>", "OBJECTID=<XWP_WPS>;", "U");
@@ -112,8 +122,8 @@ rc = SysCreateObject("WPShadow", XWPClassList, "<XWP_MAINFLDR>", "SHADOWID=<XWP_
 /* create "Setup String" template (added V0.9.5) */
 rc = SysCreateObject("XWPString", String, "<XWP_MAINFLDR>", "TEMPLATE=YES;OBJECTID=<XWP_STRINGTPL>;", "U");
 
-/* XSHUTDWN.EXE */
-rc = SysCreateObject("WPProgram", XShutdown, "<XWP_MAINFLDR>", "EXENAME="dir"xshutdwn.exe;OBJECTID=<XWP_XSHUTDOWN>;", "U");
+/* XShutdown... changed with V0.9.7 */
+rc = SysCreateObject("WPProgram", XShutdown, "<XWP_MAINFLDR>", "EXENAME="dir"xshutdwn.cmd;MINIMIZED=YES;"HelpLibrary"HELPPANEL=17;OBJECTID=<XWP_XSHUTDOWN>;", "U");
 
 "@call "idir"crobj"LanguageCode
 

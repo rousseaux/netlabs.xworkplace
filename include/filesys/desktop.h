@@ -27,19 +27,22 @@
     #define SETPAGES_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   Query setup strings                                            *
-     *                                                                  *
+     *
+     *   Setup strings
+     *
      ********************************************************************/
 
     ULONG dtpQuerySetup(WPDesktop *somSelf,
                         PSZ pszSetupString,
                         ULONG cbSetupString);
 
+    BOOL dtpSetup(WPDesktop *somSelf,
+                  const char *pcszSetupString);
+
     /* ******************************************************************
-     *                                                                  *
-     *   Desktop menus                                                  *
-     *                                                                  *
+     *
+     *   Desktop menus
+     *
      ********************************************************************/
 
     #define DEBUG_MENUID_LISTHEAP       WPMENUID_USER
@@ -59,9 +62,9 @@
                              PULONG pulMenuId);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFldDesktop notebook settings pages callbacks (notebook.c)     *
-     *                                                                  *
+     *
+     *   XFldDesktop notebook settings pages callbacks (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

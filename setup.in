@@ -266,7 +266,8 @@ CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /W
 
 # compiler options which are the same with debug and release code
 CC_SHARED    = icc $(ANIMATED_MOUSE_POINTERS_STRING) \
-$(REPLHANDLES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
+$(REPLHANDLES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /g5
+# V0.9.9 (2001-01-29) [umoeller]: added /g5, finally
 
 !ifdef XWP_DEBUG
 # debug code
@@ -281,7 +282,7 @@ CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol- /tn+
 
 # DLL code (multi-threaded)
 CC_DLL_MT = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS)
-# DLL code (single-threaded)
+# DLL code (single-threaded, subsystem libraries)
 CC_DLL_SUBSYS = $(CC_TEMP) /ge- /rn $(CC_WARNINGS)
 # EXE code (multi-threaded)
 CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS)

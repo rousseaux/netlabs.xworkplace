@@ -87,6 +87,8 @@ interface XFldDesktop : WPDesktop
      *
      */
 
+    wpSetup: override;
+
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
 

@@ -63,8 +63,8 @@
  *@@added V0.9.7 (2001-01-21) [umoeller]
  */
 
-PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
-                             PVOID *ppListNode)
+PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,         // in: window to find
+                             PVOID *ppListNode)     // out: list node (ptr can be NULL)
 {
     PPGMGWININFO pReturn = NULL;
 
@@ -100,7 +100,7 @@ PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
 
 VOID pgmwClearWinInfos(VOID)
 {
-    // now clear the list... it's in auto-free mode,
+    // clear the list... it's in auto-free mode,
     // so this will clear the WININFO structs as well
     lstClear(&G_llWinInfos);
 }
@@ -200,11 +200,11 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                     if (hswitch == NULLHANDLE)
                     {
                         // V0.9.7 (2001-01-23) [dk]
-                        /* ULONG ulQ = WinQueryWindowULong(pWinInfo->hwnd, QWL_STYLE);
+                        ULONG ulQ = WinQueryWindowULong(pWinInfo->hwnd, QWL_STYLE);
                         if (
                                 (!(ulQ & WS_VISIBLE))
                              || (ulQ & FCF_SCREENALIGN)  // netscape dialog
-                           ) */
+                           )
                             pWinInfo->bWindowType = WINDOW_RESCAN;
                     }
                     else if (pWinInfo->swp.fl & SWP_MINIMIZE)
@@ -222,7 +222,6 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                             strncpy(pWinInfo->szSwitchName,
                                     swctl.szSwtitle,
                                     sizeof(pWinInfo->szSwitchName) - 1);
-                        // strcpy(pWinInfo->szSwitchName, swctl.szSwtitle);
 
                         if (pgmwStickyCheck(swctl.szSwtitle))
                              pWinInfo->bWindowType = WINDOW_STICKY;
@@ -248,10 +247,10 @@ BOOL pgmwWinInfosEqual(PPGMGWININFO pWinInfo1,
 {
     BOOL brc = FALSE;
     if (    (pWinInfo1->bWindowType == pWinInfo2->bWindowType)
-         && (0 == memcmp(&pWinInfo1->swp, &pWinInfo2->swp, sizeof(SWP)))
+         && (!memcmp(&pWinInfo1->swp, &pWinInfo2->swp, sizeof(SWP)))
        )
     {
-        brc = (0 == strcmp(pWinInfo2->szSwitchName, pWinInfo2->szSwitchName));
+        brc = (!strcmp(pWinInfo2->szSwitchName, pWinInfo2->szSwitchName));
     }
 
     return (brc);

@@ -162,9 +162,9 @@ BOOL pgmmMoveIt(LONG lXDelta,
                         // update window pos in winlist's SWP
                         PSWP pswpThis = &pEntryThis->swp;
 
-                        /* if (     (strcmp(pEntryThis->szClassName, "#1")
-                              && (0 == WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
-                                       & FS_NOMOVEWITHOWNER)
+                        if (     (!strcmp(pEntryThis->szClassName, "#1")
+                              && (!(WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
+                                    & FS_NOMOVEWITHOWNER))
                                  )
                            )
                         {
@@ -172,7 +172,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
                             WinSetWindowBits(pEntryThis->hwnd, QWL_STYLE,
                                              FS_NOMOVEWITHOWNER,
                                              FS_NOMOVEWITHOWNER);
-                        } */
+                        }
 
                         WinQueryWindowPos(pEntryThis->hwnd, pswpThis);
 

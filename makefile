@@ -185,7 +185,7 @@ all: idl cpl_main link
     @echo ----- Leaving $(MAKEDIR)
 
 # "really_all" references "all".
-really_all: all treesize netscdde xshutdwn tools nls
+really_all: all treesize netscdde xfix tools nls
     @echo ----- Leaving $(MAKEDIR)
 
 # If you add a subdirectory to SRC\, add a target to
@@ -316,9 +316,9 @@ pointers:
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
-xshutdwn:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\xshutdwn
-    @cd src\xshutdwn
+xfix:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\xfix
+    @cd src\xfix
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
@@ -634,8 +634,8 @@ dlgedit:
     @cd $(XWP_LANG_CODE)\dll
 # rebuild RES file in bin
     @nmake -nologo all "MAINMAKERUNNING=YES"
-# copy RES file to frontend.res so dlgedit finds it
-    @cmd.exe /c copy ..\..\bin\xfldr$(XWP_LANG_CODE).res
+# copy RES file to 001\dll so dlgedit finds it
+    @cmd.exe /c copy $(PROJECT_OUTPUT_DIR)\xfldr$(XWP_LANG_CODE).res
     @cmd.exe /c copy ..\..\include\dlgids.h
 # invoke DLGEDIT
     dlgedit xfldr$(XWP_LANG_CODE).res
@@ -688,7 +688,7 @@ release: really_all
     @echo $(MAKEDIR)\makefile: Now copying files to $(XWPRELEASE).
     $(COPY) release\* $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
-    $(COPY) $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
     $(COPY) BUGS $(XWPRELEASE_NLSDOC)
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
@@ -707,7 +707,7 @@ release: really_all
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\netscdde.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\treesize.exe $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\xshutdwn.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xfix.exe     $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.sym $(XWPRELEASE_MAIN)\bin
@@ -731,7 +731,7 @@ release: really_all
     $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
-    $(COPY) $(XWP_LANG_CODE)\xwphelp\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
 # 5) icons
 !if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
 !endif

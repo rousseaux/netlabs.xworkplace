@@ -4,66 +4,24 @@
         Shutting Down from the Command Line
     </TITLE>
 </HEAD>
-<!-- Changes for V0.83/0.84: see notes at bottom -->
-<!-- Changes for V0.9.0: replace XFolder with XWorkplace -->
-<!-- Changed with V0.9.0: see notes below -->
+<!-- completely rewritten with V0.9.7 -->
 <BODY>
-<!-- V0.9.0: add the following line -->
-<B>Class: XFldObject</B><HR>
-Starting with V0.80, XWorkplace contains a little program in the <CODE>BIN</CODE>
-subdirectory of the
-installation directory to initiate the eXtended Shutdown from the command line.
-This program is called <CODE>XSHUTDWN.EXE</CODE>.
-<P>Please note that this program alone is not capable of shutting down your system.
-All it does is to tell XWorkplace that and how shutdown should be performed. As a result,
-it will only function if:
-<!-- the following line changed with V0.9.0 -->
-<UL><LI>XWorkplace (or XFolder V0.80 or greater) is installed;
-<BR><LI>the WPS is up and running
-<BR><LI>and no other errors occur. ;-)
+<B>Classes: XFldObject, XFldDesktop</B><HR>
 
-</UL>On the other hand, you can put XSHUTDWN.EXE in any directory you like, for example
-some directory along your PATH, to be able to access XShutdown from any command line.
-XSHUTDWN.EXE does not require the XWorkplace DLLs or any other XWorkplace resource, because
-it contacts XShutdown via inter-process communication.
-<P>XSHUTDWN.EXE overrides most of the <B>settings</B> you have specified for XShutdown. If you
-simply call it without parameters, certain default values will be used, no matter what
-your WPS settings are for XShutdown.
-<P>However, you can specify something different on the <B>command line</B>
-(these switches will not affect your WPS settings for XShutdown, but only
-one execution of it):
-<DL>
-<DT><CODE>-r</CODE>
-<DD>will cause XShutdown to <B>reboot</B> your computer,
-using the built-in reboot function. The default is not to reboot.
-<DT><CODE>  -R &lt;cmd&gt;</CODE>
-<DD>will cause XShutdown to reboot your computer using the
-<B>user-defined reboot</B> action &lt;cmd&gt;.
-<!-- the following two paragraphzs added with V0.9.5 -->
-<DT><CODE>  -p </CODE> (new with V0.9.5)
-<DD>will do an <B>APM power-off</B>, if supported.
-<DT><CODE>  -P </CODE> (new with V0.9.5)
-<DD>will do an <B>APM power-off</B>, if supported, but delayed for a few seconds.
-<DT><CODE>  -v      </CODE>
-<DD>will <B>auto-close VIO</B> windows. Default is not to close them.
-<DT><CODE>  -a      </CODE>
-<DD>will show an <B>animation</B> when XShutdown is done. Default is not
-to show the animation.
-<DT><CODE>  -f      </CODE>
-<DD>will show <B>no confirmation</B> window. Default is to have
-XShutdown confirmed.
-<!-- this paragraph added with V0.83 -->
-<DT><CODE>  -l </CODE> (new with V0.83)
-<DD>will turn on shutdown logging in the <CODE>XSHUTDWN.LOG</CODE> file.
-<!-- the following added with V0.84 -->
-<DT><CODE>  -w </CODE> (new with V0.84)
-<DD>will do a WPS restart instead of a "real" shutdown.
-This can be used in conjunction with -f.
-<DT><CODE>  -W </CODE> (new with V0.84)
-<DD>will also do a WPS restart instead of a "real" shutdown, but also close all
-open windows and reuse the startup folder after the WPS restart.
-This can be used in conjunction with -f and -v.
-</DL>
+It is possible to start the extended shutdown procedure from the command line as well.
+From version 0.80 to 0.9.6, XFolder/XWorkplace used to contain an external executable
+for this task. This has been removed with V0.9.7 because it caused too much confusion
+since all those command line parameters were not easy to use.
+
+<P>Instead, with V0.9.7, XWorkplace supports external shutdown with the use of
+new WPS setup strings for the desktop. In summary, you can invoke the
+<CODE>XSHUTDOWNNOW=DEFAULT</CODE> setup string on your desktop, and your system will
+be shut down as if you had selected the "Shutdown" menu item from the desktop's
+context menu.
+
+<P>For a detailed description of the setup strings available, see the setup strings
+for XFldDesktop in the <A HREF="099appendices.html">appendices</A> of this book.
+
 <BR>
 </BODY>
 </HTML>

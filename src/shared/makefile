@@ -156,7 +156,7 @@ $(OUTPUTDIR)\common.obj: \
      $(INC)\setup.h \
      $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
             $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\tmsgfile.h \
-            $(HLPINC)\textview.h $(HLPINC)\undoc.h $(HLPINC)\winh.h \
+            $(HLPINC)\textview.h $(HLPINC)\undoc.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfldr.h $(INC)\classes\xtrash.ih \
      $(INC)\bldlevel.h $(INC)\dlgids.h \
      $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\xsetup.h \

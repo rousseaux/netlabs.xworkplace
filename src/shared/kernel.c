@@ -184,49 +184,61 @@ const char  *G_pcszReqFunction = NULL;
  *      Returns TRUE if the semaphore could be accessed
  *      within the specified timeout.
  *
- *      Note: this requires the existence of a message
+ *      As parameters to this function, pass the caller's
+ *      source file, line number, and function name.
+ *      This is stored internally so that the xwplog.log
+ *      file can report error messages properly if the
+ *      mutex is not released.
+ *
+ *      The string pointers must be static const strings.
+ *      Use "__FILE__, __LINE__, __FUNCTION__" always.
+ *
+ *      Note: This requires the existence of a message
  *      queue since we use WinRequestMutexSem. Also
  *      make sure that your code is properly protected
  *      with exception handlers (see helpers\except.c
  *      for remarks about that).
  *
- *      Usage:
+ *      Proper usage:
  *
- +      BOOL fLocked = FALSE;
- +      ULONG ulNesting;
- +      DosEnterMustComplete(&ulNesting);
- +      TRY_LOUD(excpt1)
- +      {
- +          fLocked = krnLock(5000);
- +          if (fLocked)
+ +          BOOL fLocked = FALSE;
+ +          ULONG ulNesting;
+ +          DosEnterMustComplete(&ulNesting);
+ +          TRY_LOUD(excpt1)
  +          {
- +              // ... precious code here
+ +              fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+ +              if (fLocked)
+ +              {
+ +                  // ... precious code here
+ +              }
  +          }
- +      }
- +      CATCH(excpt1) { } END_CATCH();
+ +          CATCH(excpt1) { } END_CATCH();
  +
- +      if (fLocked)
- +          krnUnlock();        // NEVER FORGET THIS!!
- +      DosExitMustComplete(&ulNesting);
+ +          if (fLocked)
+ +              krnUnlock();        // NEVER FORGET THIS!!
+ +          DosExitMustComplete(&ulNesting);
  *
  *@@added V0.9.0 (99-11-14) [umoeller]
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype to trace locks
  */
 
-BOOL krnLock(const char *pcszSourceFile,
-             ULONG ulLine,
-             const char *pcszFunction)
+BOOL krnLock(const char *pcszSourceFile,        // in: __FILE__
+             ULONG ulLine,                      // in: __LINE__
+             const char *pcszFunction)          // in: __FUNCTION__
 {
     if (G_hmtxCommonLock == NULLHANDLE)
-        DosCreateMutexSem(NULL,         // unnamed
-                          &G_hmtxCommonLock,
-                          0,            // unshared
-                          FALSE);       // unowned
+        // first call:
+        return (DosCreateMutexSem(NULL,         // unnamed
+                                  &G_hmtxCommonLock,
+                                  0,            // unshared
+                                  TRUE)         // request now
+                    == NO_ERROR);
 
+    // subsequent calls:
     if (WinRequestMutexSem(G_hmtxCommonLock, 10*1000) == NO_ERROR)
     {
-        // store owner
+        // store owner (these are const strings, this is safe)
         G_pcszReqSourceFile = pcszSourceFile;
         G_ulReqLine = ulLine;
         G_pcszReqFunction = pcszFunction;
@@ -234,6 +246,7 @@ BOOL krnLock(const char *pcszSourceFile,
     }
     else
     {
+        // request failed within ten seconds:
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "krnLock mutex request failed!!\n"
                "    First requestor: %s (%s, line %d))\n"
@@ -1852,6 +1865,7 @@ const char **G_appszXFolderKeys[]
 VOID krnShowStartupDlgs(VOID)
 {
     ULONG   cbData = 0;
+    BOOL    fRepeat = FALSE;
 
     // check if XWorkplace was just installed
     if (PrfQueryProfileInt(HINI_USER,
@@ -1915,8 +1929,11 @@ VOID krnShowStartupDlgs(VOID)
      *
      */
 
-    if (doshQueryShiftState())
+    while (    (doshQueryShiftState())
+            || (fRepeat)       // set to TRUE after xfix V0.9.7 (2001-01-24) [umoeller]
+          )
     {
+        ULONG   ulrc = 0;
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // shift pressed: show "panic" dialog
         HWND    hwndPanic = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
@@ -1924,6 +1941,8 @@ VOID krnShowStartupDlgs(VOID)
                                        cmnQueryNLSModuleHandle(FALSE),
                                        ID_XFD_STARTUPPANIC,
                                        NULL);
+
+        fRepeat = FALSE;
 
         winhCenterWindow(hwndPanic);
 
@@ -1939,62 +1958,135 @@ VOID krnShowStartupDlgs(VOID)
         WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                          (xmmQueryStatus() == MMSTAT_WORKING));
 
-        if (WinProcessDlg(hwndPanic) == DID_OK)
+        ulrc = WinProcessDlg(hwndPanic);
+
+        switch (ulrc)
         {
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
-                G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
-                G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
-                G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
+            case DID_OK:        // continue
             {
-                PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
-                // disable "check archives" flag
-                pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
-            }
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
-            {
-                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                if (pGlobalSettings2)
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
+                    G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
+                    G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
+                    G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
                 {
-                    pGlobalSettings2->fReplaceIcons = FALSE;
-                    cmnUnlockGlobalSettings();
+                    PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
+                    // disable "check archives" flag
+                    pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
+                }
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
+                {
+                    GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings2)
+                    {
+                        pGlobalSettings2->fReplaceIcons = FALSE;
+                        cmnUnlockGlobalSettings();
+                        cmnStoreGlobalSettings();
+                    }
+                }
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
+                {
+                    GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings2)
+                    {
+                        pGlobalSettings2->fEnablePageMage = FALSE;  // ###
+                        cmnUnlockGlobalSettings();
+                        cmnStoreGlobalSettings();
+                    }
+                }
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
+                {
+                    xmmDisable();
+                }
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
+                {
+                    cmnLoadGlobalSettings(TRUE);        // reset defaults
                     cmnStoreGlobalSettings();
                 }
-            }
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
+                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
+                    PrfWriteProfileData(HINI_USER,
+                                        INIAPP_XWPHOOK,
+                                        INIKEY_HOOK_HOTKEYS,
+                                        0, 0);      // delete INI key
+            break; }
+
+            case DID_UNDO:      // run xfix:
             {
-                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                if (pGlobalSettings2)
+                CHAR        szXfix[CCHMAXPATH];
+                PROGDETAILS pd = {0};
+                HAPP        happXFix;
+                cmnQueryXWPBasePath(szXfix);
+                strcat(szXfix, "\\bin\\xfix.exe");
+
+                pd.Length = sizeof(pd);
+                pd.progt.progc = PROG_PM;
+                pd.progt.fbVisible = SHE_VISIBLE;
+                pd.pszExecutable = szXfix;
+                happXFix = winhStartApp(G_KernelGlobals.hwndThread1Object,
+                                        &pd);
+
+                if (!happXFix)
                 {
-                    pGlobalSettings2->fEnablePageMage = FALSE;  // ###
-                    cmnUnlockGlobalSettings();
-                    cmnStoreGlobalSettings();
+                    // error:
+                    PSZ apsz[] = {szXfix};
+                    cmnMessageBoxMsgExt(NULLHANDLE,
+                                        121,       // xwp
+                                        apsz,
+                                        1,
+                                        206,       // error
+                                        MB_OK);
                 }
-            }
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
-            {
-                xmmDisable();
-            }
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
-            {
-                cmnLoadGlobalSettings(TRUE);        // reset defaults
-                cmnStoreGlobalSettings();
-            }
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
-                PrfWriteProfileData(HINI_USER,
-                                    INIAPP_XWPHOOK,
-                                    INIKEY_HOOK_HOTKEYS,
-                                    0, 0);      // delete INI key
-        }
-        else
-        {
-            // "Shutdown" pressed:
-            WinShutdownSystem(WinQueryAnchorBlock(HWND_DESKTOP),
-                              WinQueryWindowULong(HWND_DESKTOP, QWL_HMQ));
-            while (TRUE)
-                DosSleep(1000);
+                else
+                {
+                    // xfix started:
+                    // enter a modal message loop until we get the
+                    // WM_APPTERMINATENOTIFY for G_happXFix. Then we
+                    // know xfix is done.
+                    HAB     hab = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
+                    QMSG    qmsg;
+                    ULONG   ulXFixReturnCode = 0;
+                    while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+                    {
+                        if (    (qmsg.msg == WM_APPTERMINATENOTIFY)
+                             && (qmsg.hwnd == G_KernelGlobals.hwndThread1Object)
+                             && (qmsg.mp1 == (MPARAM)happXFix)
+                           )
+                        {
+                            // xfix has terminated:
+                            // get xfix return code from mp2... this is:
+                            // -- 0: everything's OK, continue.
+                            // -- 1: handle section was rewritten, restart WPS
+                            //       now.
+                            ulXFixReturnCode = (ULONG)qmsg.mp2;
+                            // do not dispatch this
+                            break;
+                        }
+
+                        WinDispatchMsg(hab, &qmsg);
+                    }
+
+                    if (ulXFixReturnCode == 1)
+                    {
+                        // handle section changed:
+                        cmnMessageBoxMsg(NULLHANDLE,
+                                         121,       // xwp
+                                         205,       // restart wps now.
+                                         MB_OK);
+                        DosExit(EXIT_PROCESS, 0);
+                    }
+                }
+
+                fRepeat = TRUE;
+            break; }
+
+            case DID_CANCEL:        // shutdown
+                // "Shutdown" pressed:
+                WinShutdownSystem(WinQueryAnchorBlock(HWND_DESKTOP),
+                                  WinQueryWindowULong(HWND_DESKTOP, QWL_HMQ));
+                while (TRUE)
+                    DosSleep(1000);
         }
 
         WinDestroyWindow(hwndPanic);
@@ -2123,9 +2215,6 @@ VOID krnInitializeXWorkplace(VOID)
                          krnExceptError,
                          !pGlobalSettings->fNoExcptBeeps);
 
-        // if shift is pressed, show "Panic" dialog
-        krnShowStartupDlgs();
-
         // create thread-1 object window
         WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
                          (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
@@ -2139,6 +2228,12 @@ VOID krnInitializeXWorkplace(VOID)
         if (G_KernelGlobals.hwndThread1Object == NULLHANDLE)
             winhDebugBox(HWND_DESKTOP, "XFolder: Error",
                      "XFolder failed to create the XFolder Workplace object window.");
+
+        // if shift is pressed, show "Panic" dialog
+        // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
+        // of thread-1 window... we need this for starting xfix from
+        // the "panic" dlg
+        krnShowStartupDlgs();
     }
 
     // set up config.sys path

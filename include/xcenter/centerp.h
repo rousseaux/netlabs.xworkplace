@@ -271,10 +271,6 @@
                              ULONG ulClass,
                              LONG lDelta);
 
-        ULONG ctrpQuerySetup(XCenter *somSelf,
-                             PSZ pszSetupString,
-                             ULONG cbSetupString);
-
         BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                                 HWND hwndMenu);
 
@@ -331,11 +327,35 @@
 
     /* ******************************************************************
      *
+     *   XCenter setup set (ctr_notebook.c)
+     *
+     ********************************************************************/
+
+    #ifdef SOM_XCenter_h
+
+        VOID ctrpInitData(XCenter *somSelf);
+
+        ULONG ctrpQuerySetup(XCenter *somSelf,
+                             PSZ pszSetupString,
+                             ULONG cbSetupString);
+
+        BOOL ctrpSetup(XCenter *somSelf,
+                       PSZ pszSetupString);
+
+        BOOL ctrpRestoreState(XCenter *somSelf);
+
+        BOOL ctrpSaveState(XCenter *somSelf);
+
+    #endif
+
+    /* ******************************************************************
+     *
      *   XCenter notebook callbacks (notebook.c)
      *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
+
         VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG flFlags);
 

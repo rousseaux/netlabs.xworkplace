@@ -17,7 +17,15 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.7 (January 8, 2001)</B>
+<P><B>XWorkplace 0.9.9 (January 26, 2001)</B>
+<H6>Miscellaneous changes:
+<UL><LI>XWorkplace is finally compiled with Pentium optimizations. I had always feared
+that this would break the code for 386 and 486 processors, but the VAC documentation
+now says this is not the case. If this information is incorrect, please notify me.
+
+<P><B>XWorkplace 0.9.8 (January 26, 2001)</B>
+<P>V0.9.7 was never officially released, but since some people got hold of it
+anyway, that version number was skipped to avoid confusion.
 <H6>New features:
 <UL><LI>Added the <A HREF="066xcenter.html">XCenter,</A> a WarpCenter replacement.
 <P><LI>Added more items to the context menus on the "File types" page in
@@ -92,22 +100,20 @@ folder. Preventing template creation now.
 <P><LI>Extended system sounds broke completely with V0.9.6. Fixed. Duh.
 <P><LI>Pages in "Multimedia" hung the system if the object was closed while the
 data was still being inserted by the background threads. Fixed.
-<P><LI>Dmitry Kubov fixed bugs in PageMage, most notably that switch list titles were
-never updated. Thanks very much, Dmitry.
-<P><LI>PageMage would sometimes hang when its internal window list was full. The entire
-window handling was rewritten to remove that limit; this can no longer overflow.
-<P><LI>PageMage would always make Odin windows sticky. Fixed.
-<P><LI>PageMage would sometimes not recognize new windows and make them sticky when
-switching desktops. Fixed.
-<P><LI>PageMage would sometimes hide maximized windows forever. Maximized windows handling
-has been completely rewritten and should work now.
+<P><LI>PageMage has been rewritten in considerable parts.
+We are now using a linked list instead of a global array for the internal window list;
+wrong sticky windows (newly created ones, Odin and EPM windows) have been fixed;
+maximized window handling has been redone.
+Dmitry Kubov helped doing all this -- thanks very much, Dmitry.
+<P><LI>PageMage "move thread" now has a higher priority. This should fix problems
+during desktop switches when other processes hog the CPU.
 <P><LI>XShutdown would sometimes crash if "Empty trash" was enabled. Fixed.
 
 </UL></H6><B>XWorkplace 0.9.6 (November 25, 2000)</B>
 
 <H6>New features:
 <UL><LI>Added QUICKOPEN=IMMEDIATE
-<A HREF="xices_31xfldstrings.html">setup string</A> for folders.
+<A HREF="xices_30wpsstrings.html">setup string</A> for folders.
 <P><LI>Added new <A HREF="0632intro_statbars.html">status bar codes</A>
 for automatic unit selection depending on the size of the data displayed.
 Thanks, Paul Ratcliffe.

@@ -188,10 +188,66 @@ VOID xsdFinishUserReboot(HAB hab, HPS hpsScreen);
 VOID xsdFinishAPMPowerOff(HAB hab, HPS hpsScreen);
 
 /* ******************************************************************
- *                                                                  *
- *   Shutdown interface                                             *
- *                                                                  *
+ *
+ *   Shutdown interface
+ *
  ********************************************************************/
+
+/*
+ *@@ xsdQueryShutdownSettings:
+ *      this fills the specified SHUTDOWNPARAMS array with
+ *      the current shutdown settings, as specified by the
+ *      user in the desktop's settings notebooks.
+ *
+ *      Notes:
+ *
+ *      -- psdp->optAnimate is set to the animation setting
+ *         which applies according to whether reboot is enabled
+ *         or not.
+ *
+ *      -- There is no "current setting" for the user reboot
+ *         command. As a result, psdp->szRebootCommand is
+ *         zeroed.
+ *
+ *      -- Neither is there a "current setting" for whether
+ *         to use "restart WPS" or "logoff" instead. To later use
+ *         "restart WPS", set psdp->ulRestartWPS and maybe
+ *         psdp->optWPSReuseStartupFolder also.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
+{
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+
+    memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
+    psdp->optReboot = ((pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
+    psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
+    psdp->optDebug = FALSE;
+
+    psdp->ulRestartWPS = 0;         // no, do shutdown
+
+    psdp->optWPSCloseWindows = TRUE;
+    psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
+    psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+    if (psdp->optReboot)
+        // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
+        psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
+    else
+        psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+    psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+                      && (apmPowerOffSupported())
+                     );
+    psdp->optAPMDelay = ((pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
+    psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
+
+    psdp->optEmptyTrashCan = ((pGlobalSettings->ulXShutdownFlags & XSD_EMPTY_TRASH) != 0);
+
+    psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
+
+    psdp->szRebootCommand[0] = 0;
+}
 
 /*
  *@@ xsdInitiateShutdown:
@@ -228,27 +284,25 @@ BOOL xsdInitiateShutdown(VOID)
     ULONG               ulSpooled = 0;
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdp = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
-    memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
 
+    PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+    if (pKernelGlobals)
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            if (    (pKernelGlobals->fShutdownRunning)
-                 || (thrQueryID(&pKernelGlobals->tiShutdownThread))
-               )
-                // shutdown thread already running: return!
-                fStartShutdown = FALSE;
+        if (    (pKernelGlobals->fShutdownRunning)
+             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
+           )
+            // shutdown thread already running: return!
+            fStartShutdown = FALSE;
 
-            // lock shutdown menu items
-            pKernelGlobals->fShutdownRunning = TRUE;
+        // lock shutdown menu items
+        pKernelGlobals->fShutdownRunning = TRUE;
 
-            krnUnlockGlobals();
-        }
+        krnUnlockGlobals();
     }
 
     if (fStartShutdown)
     {
+        memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot = ((pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
         psdp->ulRestartWPS = 0;
         psdp->optWPSCloseWindows = TRUE;
@@ -303,27 +357,25 @@ BOOL xsdInitiateShutdown(VOID)
         }
     }
 
+    pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+    if (pKernelGlobals)
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
+        if (fStartShutdown)
         {
-            if (fStartShutdown)
-            {
-                // everything OK: create shutdown thread,
-                // which will handle the rest
-                thrCreate(&(pKernelGlobals->tiShutdownThread),
-                            fntShutdownThread,
-                            NULL, // running flag
-                            0,    // no msgq
-                            (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
-                cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
-            }
-            else
-                free(psdp);     // fixed V0.9.1 (99-12-12)
-
-            pKernelGlobals->fShutdownRunning = fStartShutdown;
-            krnUnlockGlobals();
+            // everything OK: create shutdown thread,
+            // which will handle the rest
+            thrCreate(&(pKernelGlobals->tiShutdownThread),
+                      fntShutdownThread,
+                      NULL, // running flag
+                      0,    // no msgq
+                      (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
+            cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
         }
+        else
+            free(psdp);     // fixed V0.9.1 (99-12-12)
+
+        pKernelGlobals->fShutdownRunning = fStartShutdown;
+        krnUnlockGlobals();
     }
 
     return (fStartShutdown);
@@ -342,6 +394,7 @@ BOOL xsdInitiateShutdown(VOID)
  *@@changed V0.9.1 (99-12-10) [umoeller]: fixed KERNELGLOBALS locks
  *@@changed V0.9.1 (99-12-12) [umoeller]: fixed memory leak when shutdown was cancelled
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added logoff support
+ *@@changed V0.9.7 (2001-01-25) [umoeller]: this played the wrong sound, fixed
  */
 
 BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff also
@@ -349,27 +402,25 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
     BOOL                fStartShutdown = TRUE;
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdp = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
-    memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
 
+    PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+    if (pKernelGlobals)
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            if (    (pKernelGlobals->fShutdownRunning)
-                 || (thrQueryID(&pKernelGlobals->tiShutdownThread))
-               )
-                // shutdown thread already running: return!
-                fStartShutdown = FALSE;
+        if (    (pKernelGlobals->fShutdownRunning)
+             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
+           )
+            // shutdown thread already running: return!
+            fStartShutdown = FALSE;
 
-            // lock shutdown menu items
-            pKernelGlobals->fShutdownRunning = TRUE;
+        // lock shutdown menu items
+        pKernelGlobals->fShutdownRunning = TRUE;
 
-            krnUnlockGlobals();
-        }
+        krnUnlockGlobals();
     }
 
     if (fStartShutdown)
     {
+        memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot =  FALSE;
         psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
         psdp->optWPSCloseWindows = ((pGlobalSettings->ulXShutdownFlags & XSD_WPS_CLOSEWINDOWS) != 0);
@@ -392,27 +443,27 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
         }
     }
 
+    pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+    if (pKernelGlobals)
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
+        if (fStartShutdown)
         {
-            if (fStartShutdown)
-            {
-                // everything OK: create shutdown thread,
-                // which will handle the rest
-                thrCreate(&(pKernelGlobals->tiShutdownThread),
-                            fntShutdownThread,
-                            NULL, // running flag
-                            0,    // no msgq
-                            (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
-                cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
-            }
-            else
-                free(psdp);     // fixed V0.9.1 (99-12-12)
-
-            pKernelGlobals->fShutdownRunning = fStartShutdown;
-            krnUnlockGlobals();
+            // everything OK: create shutdown thread,
+            // which will handle the rest
+            thrCreate(&(pKernelGlobals->tiShutdownThread),
+                      fntShutdownThread,
+                      NULL, // running flag
+                      0,    // no msgq
+                      (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
+            cmnPlaySystemSound(MMSOUND_XFLD_RESTARTWPS);
+                        // fixed, this was MMSOUND_XFLD_SHUTDOWN
+                        // V0.9.7 (2001-01-25) [umoeller]
         }
+        else
+            free(psdp);     // fixed V0.9.1 (99-12-12)
+
+        pKernelGlobals->fShutdownRunning = fStartShutdown;
+        krnUnlockGlobals();
     }
 
     return (fStartShutdown);
@@ -431,30 +482,28 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
  *      not released by this function.
  *
  *@@changed V0.9.2 (2000-02-28) [umoeller]: fixed KERNELGLOBALS locks
+ *@@changed V0.9.7 (2001-01-25) [umoeller]: rearranged for setup strings
  */
 
 BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 {
     BOOL                fStartShutdown = TRUE;
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    PSHUTDOWNPARAMS     psdpNew = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
-    memset(psdpNew, 0, sizeof(SHUTDOWNPARAMS));
+    PSHUTDOWNPARAMS     psdpNew = NULL;
 
+    PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+    if (pKernelGlobals)
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            if (    (pKernelGlobals->fShutdownRunning)
-                 || (thrQueryID(&pKernelGlobals->tiShutdownThread))
-               )
-                // shutdown thread already running: return!
-                fStartShutdown = FALSE;
+        if (    (pKernelGlobals->fShutdownRunning)
+             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
+           )
+            // shutdown thread already running: return!
+            fStartShutdown = FALSE;
 
-            // lock shutdown menu items
-            pKernelGlobals->fShutdownRunning = TRUE;
+        // lock shutdown menu items
+        pKernelGlobals->fShutdownRunning = TRUE;
 
-            krnUnlockGlobals();
-        }
+        krnUnlockGlobals();
     }
 
     if (psdpShared == NULL)
@@ -462,54 +511,49 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 
     if (fStartShutdown)
     {
-        psdpNew->optReboot = psdpShared->optReboot;
-        psdpNew->ulRestartWPS = psdpShared->ulRestartWPS;
-                    // supports logoff as well
-        psdpNew->optWPSCloseWindows = psdpShared->optWPSCloseWindows;
-        psdpNew->optConfirm = psdpShared->optConfirm;
-        psdpNew->optAutoCloseVIO = psdpShared->optAutoCloseVIO;
-        // psdpNew->optWarpCenterFirst = psdpShared->optWarpCenterFirst;
-        psdpNew->optLog = psdpShared->optLog;
-        psdpNew->optAnimate = psdpShared->optAnimate;
-
-        psdpNew->optDebug = psdpShared->optDebug;
-
-        strcpy(psdpNew->szRebootCommand, psdpShared->szRebootCommand);
-
-        if (psdpNew->optConfirm)
+        psdpNew = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
+        if (!psdpNew)
+            fStartShutdown = FALSE;
         {
-            ULONG ulReturn;
-            if (psdpNew->ulRestartWPS)
-                ulReturn = xsdConfirmRestartWPS(psdpNew);
-            else
-                ulReturn = xsdConfirmShutdown(psdpNew);
+            memcpy(psdpNew, psdpShared, sizeof(SHUTDOWNPARAMS));
 
-            if (ulReturn != DID_OK)
-                fStartShutdown = FALSE;
+            if (psdpNew->optConfirm)
+            {
+                // confirmations are on: display proper
+                // confirmation dialog
+                ULONG ulReturn;
+                if (psdpNew->ulRestartWPS)
+                    ulReturn = xsdConfirmRestartWPS(psdpNew);
+                else
+                    ulReturn = xsdConfirmShutdown(psdpNew);
+
+                if (ulReturn != DID_OK)
+                    fStartShutdown = FALSE;
+            }
+
         }
     }
 
+    pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+    if (pKernelGlobals)
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
+        if (fStartShutdown)
         {
-            if (fStartShutdown)
-            {
-                // everything OK: create shutdown thread,
-                // which will handle the rest
-                thrCreate(&(pKernelGlobals->tiShutdownThread),
-                            fntShutdownThread,
-                            NULL, // running flag
-                            0,    // no msgq
-                            (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
-                cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
-            }
-            else
+            // everything OK: create shutdown thread,
+            // which will handle the rest
+            thrCreate(&(pKernelGlobals->tiShutdownThread),
+                      fntShutdownThread,
+                      NULL, // running flag
+                      0,    // no msgq
+                      (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
+            cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
+        }
+        else
+            if (psdpNew)
                 free(psdpNew);     // fixed V0.9.1 (99-12-12)
 
-            pKernelGlobals->fShutdownRunning = fStartShutdown;
-            krnUnlockGlobals();
-        }
+        pKernelGlobals->fShutdownRunning = fStartShutdown;
+        krnUnlockGlobals();
     }
 
     return (TRUE);

@@ -283,9 +283,10 @@ SOM_Scope void  SOMLINK xms_wpUnInitData(XWPMouse *somSelf)
 
 /*
  *@@ wpSetup:
- *      this instance method is called to allow the newly
- *      created object to initialize itself based on an input
- *      setup string.
+ *      this WPObject instance method is called to allow an
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
  */
 
 SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)

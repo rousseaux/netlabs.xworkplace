@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.7 README
+XWorkplace 0.9.8 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated January 8, 2001
+Last updated January 26, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -20,7 +20,7 @@ Last updated January 8, 2001
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.7.
+    Welcome to XWorkplace V0.9.8.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -38,12 +38,17 @@ Last updated January 8, 2001
     ------------------
 
     This version fixes a number of bugs reported for V0.9.6.
-    Many people will be pleased to hear that PageMage is
-    finally becoming more usable.
+    V0.9.7 was never officially released, but since some
+    people managed to get hold of it anyway, that version
+    number was skipped to avoid confusion.
 
-    In addition, you get the prototype for the XCenter, a
-    WarpCenter replacement. After installation, you should
-    find an XCenter in the XWorkplace installation folder.
+    Many people will be pleased to hear that PageMage is
+    finally becoming more usable. In addition, you get the
+    prototype for the XCenter, a WarpCenter replacement.
+    After installation, you should find an XCenter in the
+    XWorkplace installation folder. Third, you get a font
+    folder for viewing, installing, and deinstalling PM
+    fonts.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
@@ -57,7 +62,7 @@ Last updated January 8, 2001
 
     ---> In any case, before installing, MAKE A WPS BACKUP.
 
-    Note: Use WarpIN V0.9.7 or higher to install this archive.
+    Note: Use WarpIN V0.9.8 or higher to install this archive.
     Version 0.9.6 had a nasty bug with target paths which was
     kind of annoying.
 
@@ -178,7 +183,7 @@ Last updated January 8, 2001
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2001 Ulrich M”ller, Christian Langanke, and others.
+    Copyright (C) 1997-2001 Ulrich M”ller and others.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in

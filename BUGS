@@ -53,19 +53,34 @@ CHECK ON A CLEAN SYSTEM
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
-I think there are some problems (not severe) probably with variables
-initialisation somewhere in XWPS. I have "Folder menu bars" as well as
-"Status bars" permanently turned on. When I try to turn them on/off
-from the "View" menu on a folder menu bar, it has no effect. Now when I
-go to the folder properties and disable both features (Menu bars and
-status bars) and then enable them again by :
-"Folder system menu"->"View"->"Menu bars"/"Status bars" these option in
-the "View" menu on the _menu_bar_ start to work as expected.
-When I close and reopen the folder these options in the "View" menu of
-the "Menu bar" do not work again.
+--  xcenter:
+    stays visible with lockup screen and stay-on-top.
+
+I discovered the following: In XWP 0.9.4, when I shut down (extended
+shutdown) while a print job is in the queue (forgotten, printer turned
+off), then XWP asks if the print job shall be killed. If I click "yes",
+it will hang on shutdown for quite some time. Then, when turning the
+machine on, it will not start properly but hang at the first or second
+object in the startup-folder. Acitivity is still possible, but at some
+later point, the machine hangs completely. The print job is still found
+in the queue! Once the print job is killed manually, everything works
+fine.
+
+--  system sounds changing... trap in speedy thread?!?
+
+--    I think there are some problems (not severe) probably with variables
+    initialisation somewhere in XWPS. I have "Folder menu bars" as well as
+    "Status bars" permanently turned on. When I try to turn them on/off
+    from the "View" menu on a folder menu bar, it has no effect. Now when I
+    go to the folder properties and disable both features (Menu bars and
+    status bars) and then enable them again by :
+    "Folder system menu"->"View"->"Menu bars"/"Status bars" these option in
+    the "View" menu on the _menu_bar_ start to work as expected.
+    When I close and reopen the folder these options in the "View" menu of
+    the "Menu bar" do not work again.
 
 XCenter:
-    -- >No, I meant when you d'n'd an icon from the desktop for example to the
+    -- when you d'n'd an icon from the desktop for example to the
        >XCenter. If you drop it (almost) anywhere on the grey bar, it gets
        >added to the extreme left of everything on the XCenter. If you drop it
        >right next to the rightmost icon, then it goes on the right where you
@@ -75,8 +90,14 @@ XCenter:
 
     -- add option for tooltip shadows.
 
+    -- winlist: truncate titles with "..."
+
+    -- make object buttons droppable
+
 extended assocs:
+
     --  break SysOpenObject REXX API?
+
     --  multiple associations with the same app (object) should not be shown
         in the file-open menu. (if HTML is text/html as well for instance)
 
@@ -93,6 +114,7 @@ sounds:
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
+
     -- shadows missing if "always sort" and "folders first" are enabled
 
 file exists dlg:
@@ -104,7 +126,9 @@ file exists dlg:
         >new name is not in that folder!
 
 trash can:
-    -- sorting doesn't work right
+
+    -- sorting doesn't work right... i need to rewrite sorting anyway.
+
     -- When you delete an object, it probably retains its object ID, because
        if a program tries to UPDATE the object that has been deleted, it
        effectively updates the object in the TrashCan, while it should
@@ -114,13 +138,9 @@ NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
        what to display - the '„' (german Umlaut) gets lost.
 
-PageMage:
-    -- I'm using xworkplace 0.95 and find that the os/2 enhanced
-       editor, EPM, acts as a sticky app in PageMage
-
 OS/2 Kernel:
-    Set Path -> Browse will not work (Standard file dialog doesn't react when
-    OK is pressed -> nothing happens.
+    -- Set Path -> Browse will not work (Standard file dialog doesn't react when
+       OK is pressed -> nothing happens.
 
 hotkeys:
     > > >There's one more problem - my batchfiles should start in

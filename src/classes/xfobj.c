@@ -1123,53 +1123,6 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
 }
 
 /*
- *@@ wpDisplayMenu:
- *      this WPObject instance method creates and displays
- *      an object's popup menu, which is returned.
- *
- *      From my testing (after overriding _all_ WPDataFile methods...),
- *      I found out that wpDisplayMenu calls the following methods
- *      in this order:
- *
- *      --  wpFilterMenu (Warp-4-specific);
- *      --  wpFilterPopupMenu;
- *      --  wpModifyPopupMenu;
- *      --  wpModifyMenu (Warp-4-specific).
- *
- *      Normally, this method does not need to be overridden
- *      to modify menus. HOWEVER, with Warp 4, IBM was kind
- *      enough to ignore all changes to the list of associated
- *      programs added to the "Open" submenu, because most
- *      apparently, Warp 4 no longer adds the programs in
- *      the wpModifyPopupMenu method, but in the Warp-4-specific
- *      wpModifyMenu method, which is called too late for me.
- *
- *      Unfortunately, it is thus impossible to prevent the WPS
- *      from adding program objects to the "Open" submenu, except
- *      for overriding this method and removing them all again, or
- *      breaking compatibility with Warp 3. Duh.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
-                                            HWND hwndOwner, HWND hwndClient,
-                                            POINTL* ptlPopupPt,
-                                            ULONG ulMenuType,
-                                            ULONG ulReserved)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpDisplayMenu");
-
-    return (XFldObject_parent_WPObject_wpDisplayMenu(somSelf,
-                                                     hwndOwner,
-                                                     hwndClient,
-                                                     ptlPopupPt,
-                                                     ulMenuType,
-                                                     ulReserved));
-}
-
-/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.

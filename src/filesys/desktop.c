@@ -74,15 +74,13 @@
 #include "helpers\animate.h"            // icon and other animations
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\gpih.h"               // GPI helper routines
-// #include "helpers\memdebug.h"           // memory debugging
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
-#pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include "xfdesk.h"
+#include "xfdesk.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -97,12 +95,153 @@
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // other SOM headers
+#pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Query setup strings                                            *
- *                                                                  *
+ *
+ *   Query setup strings
+ *
  ********************************************************************/
+
+/*
+ *@@ dtpSetup:
+ *      implementation of XFldDesktop::wpSetup.
+ *
+ *      This parses the XSHUTDOWNNOW setup string to
+ *      start XShutdown now, if needed.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+BOOL dtpSetup(WPDesktop *somSelf,
+              const char *pcszSetupString)
+{
+    BOOL brc = TRUE;
+
+    CHAR szValue[500];
+    ULONG cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pcszSetupString,
+                           "XSHUTDOWNNOW",
+                           szValue,
+                           &cbValue))
+    {
+        // XSHUTDOWNNOW setup string present:
+        // well, start shutdown now.
+        // This is a bit tricky, because we want to support
+        // overriding the default shutdown settings for this
+        // one time... as a result, we fill a SHUTDOWNPARAMS
+        // structure with the current settings and override
+        // them when parsing szValue now.
+
+            /* typedef struct _SHUTDOWNPARAMS
+            {
+                BOOL        optReboot,
+                            optConfirm,
+                            optDebug;
+                ULONG       ulRestartWPS;
+                    // changed V0.9.5 (2000-08-10) [umoeller]:
+                    // restart WPS flag, meaning:
+                    // -- 0: no, do shutdown
+                    // -- 1: yes, restart WPS
+                    // -- 2: yes, restart WPS, but logoff also
+                    //          (only if XWPSHELL is running)
+                BOOL        optWPSCloseWindows,
+                            optAutoCloseVIO,
+                            optLog,
+                            optAnimate,
+                            optAPMPowerOff,
+                            optAPMDelay,
+                            optWPSReuseStartupFolder,
+                            optEmptyTrashCan,
+                            optWarpCenterFirst;
+                CHAR        szRebootCommand[CCHMAXPATH];
+            } SHUTDOWNPARAMS, *PSHUTDOWNPARAMS; */
+
+        SHUTDOWNPARAMS xsd;
+        PSZ pszToken;
+        xsdQueryShutdownSettings(&xsd);
+
+        // convert params to upper case
+        strupr(szValue);
+
+        pszToken = strtok(szValue, ", ");
+        if (pszToken)
+            do
+            {
+                if (!strcmp(pszToken, "HALT"))
+                {
+                    xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.optReboot = FALSE;
+                    xsd.optAPMPowerOff = FALSE;
+                }
+                else if (!strcmp(pszToken, "REBOOT"))
+                {
+                    xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.optReboot = TRUE;
+                    xsd.optAPMPowerOff = FALSE;
+                }
+                else if (!strncmp(pszToken, "USERREBOOT(", 11))
+                {
+                    PSZ p = strchr(pszToken, ')');
+                    if (p)
+                    {
+                        PSZ pszCmd = strhSubstr(pszToken + 11,
+                                                p);
+                        if (pszCmd)
+                        {
+                            strhncpy0(xsd.szRebootCommand,
+                                      pszCmd,
+                                      sizeof(xsd.szRebootCommand));
+                            free(pszCmd);
+                        }
+                    }
+                    xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.optReboot = TRUE;
+                    xsd.optAPMPowerOff = FALSE;
+                }
+                else if (!strcmp(pszToken, "POWEROFF"))
+                {
+                    xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.optReboot = FALSE;
+                    xsd.optAPMPowerOff = TRUE;
+                }
+                else if (!strcmp(pszToken, "RESTARTWPS"))
+                {
+                    xsd.ulRestartWPS = 1;           // restart WPS
+                    xsd.optWPSCloseWindows = FALSE;
+                    xsd.optWPSReuseStartupFolder = FALSE;
+                }
+                else if (!strcmp(pszToken, "FULLRESTARTWPS"))
+                {
+                    xsd.ulRestartWPS = 1;           // restart WPS
+                    xsd.optWPSCloseWindows = TRUE;
+                    xsd.optWPSReuseStartupFolder = TRUE;
+                }
+                else if (!strcmp(pszToken, "NOAUTOCLOSEVIO"))
+                    xsd.optAutoCloseVIO = FALSE;
+                else if (!strcmp(pszToken, "AUTOCLOSEVIO"))
+                    xsd.optAutoCloseVIO = TRUE;
+                else if (!strcmp(pszToken, "NOLOG"))
+                    xsd.optLog = FALSE;
+                else if (!strcmp(pszToken, "LOG"))
+                    xsd.optLog = TRUE;
+                else if (!strcmp(pszToken, "NOANIMATE"))
+                    xsd.optAnimate = FALSE;
+                else if (!strcmp(pszToken, "ANIMATE"))
+                    xsd.optAnimate = TRUE;
+                else if (!strcmp(pszToken, "NOCONFIRM"))
+                    xsd.optConfirm = FALSE;
+                else if (!strcmp(pszToken, "CONFIRM"))
+                    xsd.optConfirm = TRUE;
+
+            } while (pszToken = strtok(NULL, ", "));
+
+        brc = xsdInitiateShutdownExt(&xsd);
+    }
+
+    return (brc);
+}
 
 /*
  *@@ dtpQuerySetup:
@@ -187,9 +326,9 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Desktop menus                                                  *
- *                                                                  *
+ *
+ *   Desktop menus
+ *
  ********************************************************************/
 
 /*
@@ -501,9 +640,9 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFldDesktop notebook settings pages callbacks (notebook.c)     *
- *                                                                  *
+ *
+ *   XFldDesktop notebook settings pages callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*

@@ -140,7 +140,7 @@ typedef struct _FEATURESITEM
 
 /*
  * FeatureItemsList:
- *      array of FEATURESITEM which are inserted into
+ *      array of FEATURESITEM's which are inserted into
  *      the container on the "Features" page.
  *
  *added V0.9.1 (99-12-19) [umoeller]
@@ -220,59 +220,59 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDLAST  214      // last object menu ID, inclusive
 
 // array of objects for "Standard WPS objects" menu button
-static STANDARDOBJECT  G_WPSObjects[] =
-                                {
-                                    &WPOBJID_KEYB, "WPKeyboard", "", 100, 0,
-                                    &WPOBJID_MOUSE, "WPMouse", "", 101, 0,
-                                    &WPOBJID_CNTRY, "WPCountry", "", 102, 0,
-                                    &WPOBJID_SOUND, "WPSound", "", 103, 0,
-                                    &WPOBJID_POWER, "WPPower", "", 104, 0,
-                                    &WPOBJID_WINCFG, "WPWinConfig", "", 105, 0,
+static STANDARDOBJECT
+    G_WPSObjects[] = {
+            &WPOBJID_KEYB, "WPKeyboard", "", 100, 0,
+            &WPOBJID_MOUSE, "WPMouse", "", 101, 0,
+            &WPOBJID_CNTRY, "WPCountry", "", 102, 0,
+            &WPOBJID_SOUND, "WPSound", "", 103, 0,
+            &WPOBJID_POWER, "WPPower", "", 104, 0,
+            &WPOBJID_WINCFG, "WPWinConfig", "", 105, 0,
 
-                                    &WPOBJID_HIRESCLRPAL, "WPColorPalette", "", 110, 0,
-                                    &WPOBJID_LORESCLRPAL, "WPColorPalette", "", 111, 0,
-                                    &WPOBJID_FNTPAL, "WPFontPalette", "", 112, 0,
-                                    &WPOBJID_SCHPAL96, "WPSchemePalette", "", 113, 0,
+            &WPOBJID_HIRESCLRPAL, "WPColorPalette", "", 110, 0,
+            &WPOBJID_LORESCLRPAL, "WPColorPalette", "", 111, 0,
+            &WPOBJID_FNTPAL, "WPFontPalette", "", 112, 0,
+            &WPOBJID_SCHPAL96, "WPSchemePalette", "", 113, 0,
 
-                                    &WPOBJID_LAUNCHPAD, "WPLaunchPad", "", 120, 0,
-                                    &WPOBJID_WARPCENTER, "SmartCenter", "", 121, 0,
+            &WPOBJID_LAUNCHPAD, "WPLaunchPad", "", 120, 0,
+            &WPOBJID_WARPCENTER, "SmartCenter", "", 121, 0,
 
-                                    &WPOBJID_SPOOL, "WPSpool", "", 130, 0,
-                                    &WPOBJID_VIEWER, "WPMinWinViewer", "", 131, 0,
-                                    &WPOBJID_SHRED, "WPShredder", "", 132, 0,
-                                    &WPOBJID_CLOCK, "WPClock", "", 133, 0,
+            &WPOBJID_SPOOL, "WPSpool", "", 130, 0,
+            &WPOBJID_VIEWER, "WPMinWinViewer", "", 131, 0,
+            &WPOBJID_SHRED, "WPShredder", "", 132, 0,
+            &WPOBJID_CLOCK, "WPClock", "", 133, 0,
 
-                                    &WPOBJID_START, "WPStartup", "", 140, 0,
-                                    &WPOBJID_TEMPS, "WPTemplates", "", 141, 0,
-                                    &WPOBJID_DRIVES, "WPDrives", "", 142, 0
-                               },
+            &WPOBJID_START, "WPStartup", "", 140, 0,
+            &WPOBJID_TEMPS, "WPTemplates", "", 141, 0,
+            &WPOBJID_DRIVES, "WPDrives", "", 142, 0
+    },
 
 // array of objects for "XWorkplace objects" menu button
-                G_XWPObjects[] = {
-                                    &XFOLDER_WPSID, "XFldWPS", "", 200, 0,
-                                    &XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
-                                    &XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
-                                    &XFOLDER_MEDIAID, "XWPMedia", "", 204, 0,
-                                    &XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
+    G_XWPObjects[] = {
+            &XFOLDER_WPSID, "XFldWPS", "", 200, 0,
+            &XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
+            &XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
+            &XFOLDER_MEDIAID, "XWPMedia", "", 204, 0,
+            &XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
 
-                                    &XFOLDER_CONFIGID, "WPFolder",
-                                            "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
-                                            210, 0,
-                                    &XFOLDER_STARTUPID, "XFldStartup",
-                                            "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
-                                            211, 0,
-                                    &XFOLDER_SHUTDOWNID, "XFldShutdown",
-                                            "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
-                                            212, 0,
+            &XFOLDER_CONFIGID, "WPFolder",
+                    "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
+                    210, 0,
+            &XFOLDER_STARTUPID, "XFldStartup",
+                    "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
+                    211, 0,
+            &XFOLDER_SHUTDOWNID, "XFldShutdown",
+                    "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
+                    212, 0,
 
-                                    &XFOLDER_TRASHCANID, "XWPTrashCan",
-                                            "DETAILSCLASS=XWPTrashObject;"
-                                            "SORTCLASS=XWPTrashObject;",
-                                            213, 0,
-                                    &XFOLDER_XCENTERID, "XCenter",
-                                            "",
-                                            214, 0
-                               };
+            &XFOLDER_TRASHCANID, "XWPTrashCan",
+                    "DETAILSCLASS=XWPTrashObject;"
+                    "SORTCLASS=XWPTrashObject;",
+                    213, 0,
+            &XFOLDER_XCENTERID, "XCenter",
+                    "",
+                    214, 0
+    };
 
 /* ******************************************************************
  *                                                                  *

@@ -1,7 +1,7 @@
 
 /*
  *@@sourcefile ctr_notebook.c:
- *      XCenter notebook pages.
+ *      XCenter instance setup and notebook pages.
  *
  *      Function prefix for this file:
  *      --  ctrp* also.
@@ -37,6 +37,9 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
@@ -54,16 +57,22 @@
 
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
+#include "xfobj.ih"                     // XFldObject
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
@@ -72,9 +81,675 @@
 
 /* ******************************************************************
  *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// class name for wpSaveState/wpRestoreState
+static const char           *G_pcszXCenter = "XCenter";
+
+/* ******************************************************************
+ *
+ *   XCenter setup set (see XWPSETUPENTRY)
+ *
+ ********************************************************************/
+
+/*
+ *@@ G_XCenterSetupSet:
+ *      setup set of the XCenter. See XWPSETUPENTRY.
+ *
+ *      Presently used key values:
+ *
+ +          1: holds the packed setup string.
+ +          2: _ulWindowStyle,
+ +          3: _ulAutoHide,
+ +          4: _flDisplayStyle,
+ +          5: _fHelpDisplayed,
+ +          6: _ulPriorityClass,
+ +          7: _lPriorityDelta,        // this is a LONG
+ +          8: _ulPosition,
+ +          9: _ul3DBorderWidth,
+ +          10: _ulBorderSpacing,
+ +          11: _ulWidgetSpacing,
+ +          12: _fReduceDesktopWorkarea
+ +
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+static XWPSETUPENTRY    G_XCenterSetupSet[] =
+    {
+        /*
+         * ulWindowStyle bitfield... first a LONG, then the bitfields
+         *
+         */
+
+        // type,  setup string,     offset,
+        STG_LONG,    NULL,           FIELDOFFSET(XCenterData, ulWindowStyle),
+        //     key for wpSaveState/wpRestoreState
+               2,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               0,       WS_TOPMOST,         0,   0,
+
+        // type,  setup string,     offset,
+        STG_BITFLAG, "ALWAYSONTOP",  FIELDOFFSET(XCenterData, ulWindowStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               0,       WS_TOPMOST,         0,   0,
+
+        // type,  setup string,     offset,
+        STG_BITFLAG, "ANIMATE",     FIELDOFFSET(XCenterData, ulWindowStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               0,       WS_ANIMATE,         0,   0,
+
+        /*
+         * flDisplayStyle bitfield... first a LONG, then the bitfields
+         *
+         */
+
+        // type,  setup string,     offset,
+        STG_LONG,    NULL,             FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               4,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               XCS_FLATBUTTONS | XCS_SUNKBORDERS | XCS_SIZINGBARS, 0, 0, 0,
+
+        // type,  setup string,     offset,
+        STG_BITFLAG, "FLATBUTTONS",    FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               XCS_FLATBUTTONS, XCS_FLATBUTTONS, 0,   0,
+
+        // type,  setup string,     offset,
+        STG_BITFLAG, "SUNKBORDERS",    FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               XCS_SUNKBORDERS, XCS_SUNKBORDERS, 0,   0,
+
+        // type,  setup string,     offset,
+        STG_BITFLAG, "SIZINGBARS",    FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               XCS_SIZINGBARS, XCS_SIZINGBARS, 0,   0,
+
+        // type,  setup string,     offset,
+        STG_BITFLAG, "ALL3DBORDERS",    FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, bitflag,            min, max
+               0, XCS_ALL3DBORDERS, 0,   0,
+
+        /*
+         * other LONGs
+         *
+         */
+
+        // type,  setup string,     offset,
+        STG_LONG,    "AUTOHIDE",    FIELDOFFSET(XCenterData, ulAutoHide),
+        //     key for wpSaveState/wpRestoreState
+               3,
+        //     default, bitflag,            min, max
+               0,       0,                  0,   4000,
+
+        // type,  setup string,     offset,
+        STG_BOOL, NULL,               FIELDOFFSET(XCenterData, fHelpDisplayed),
+        //     key for wpSaveState/wpRestoreState
+               5,
+        //     default, bitflag,            min, max
+               FALSE,   0,                  0,   1,
+
+        // type,  setup string,     offset,
+        STG_LONG, "PRIORITYCLASS",    FIELDOFFSET(XCenterData, ulPriorityClass),
+        //     key for wpSaveState/wpRestoreState
+               6,
+        //     default, bitflag,            min, max
+               PRTYC_REGULAR, 0,            1,   4,
+                                            // PRTYC_IDLETIME == 1
+                                            // PRTYC_FOREGROUNDSERVER = 4
+
+        // type,  setup string,     offset,
+        STG_LONG, "PRIORITYDELTA",    FIELDOFFSET(XCenterData, lPriorityDelta),
+        //     key for wpSaveState/wpRestoreState
+               7,
+        //     default, bitflag,            min, max
+               0,       0,                  0,   31,
+
+        // type,  setup string,     offset,
+        STG_LONG, NULL,               FIELDOFFSET(XCenterData, ulPosition),
+        //     key for wpSaveState/wpRestoreState
+               8,
+        //     default, bitflag,            min, max
+               XCENTER_BOTTOM, 0,           0,   3,
+
+        // type,  setup string,     offset,
+        STG_LONG, "3DBORDERWIDTH",    FIELDOFFSET(XCenterData, ul3DBorderWidth),
+        //     key for wpSaveState/wpRestoreState
+               9,
+        //     default, bitflag,            min, max
+               1,       0,                  0,   10,
+
+        // type,  setup string,     offset,
+        STG_LONG, "BORDERSPACING",    FIELDOFFSET(XCenterData, ulBorderSpacing),
+        //     key for wpSaveState/wpRestoreState
+               10,
+        //     default, bitflag,            min, max
+               1,       0,                  0,   10,
+
+        // type,  setup string,     offset,
+        STG_LONG, "WIDGETSPACING",    FIELDOFFSET(XCenterData, ulWidgetSpacing),
+        //     key for wpSaveState/wpRestoreState
+               11,
+        //     default, bitflag,            min, max
+               2,       0,                  1,   10,
+
+        // type,  setup string,     offset,
+        STG_BOOL,    "REDUCEDESKTOP",  FIELDOFFSET(XCenterData, fReduceDesktopWorkarea),
+        //     key for wpSaveState/wpRestoreState
+               12,
+        //     default, bitflag,            min, max
+               FALSE,   0,                  0,   0
+
+    };
+
+/*
+ *@@ ctrpInitData:
+ *      part of the implementation for XCenter::wpInitData.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+VOID ctrpInitData(XCenter *somSelf)
+{
+    XCenterData *somThis = XCenterGetData(somSelf);
+    cmnSetupInitData(G_XCenterSetupSet,
+                     ARRAYITEMCOUNT(G_XCenterSetupSet),
+                     somThis);
+}
+
+/*
+ *@@ ctrpQuerySetup:
+ *      implementation for XCenter::xwpQuerySetup2.
+ *
+ *@@added V0.9.7 (2000-12-09) [umoeller]
+ */
+
+ULONG ctrpQuerySetup(XCenter *somSelf,
+                     PSZ pszSetupString,
+                     ULONG cbSetupString)
+{
+    ULONG ulReturn = 0;
+
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        // method pointer for parent class
+        somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
+
+        // compose setup string
+
+        TRY_LOUD(excpt1)
+        {
+            // flag defined in
+            #define WP_GLOBAL_COLOR         0x40000000
+
+            XCenterData *somThis = XCenterGetData(somSelf);
+
+            // temporary buffer for building the setup string
+            CHAR szTemp[100];
+            XSTRING strTemp;
+            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
+            PLISTNODE pNode;
+
+            xstrInit(&strTemp, 400);
+
+            /*
+             * build string
+             *
+             */
+
+            if (_ulPosition == XCENTER_TOP)
+                xstrcat(&strTemp, "POSITION=TOP;", 0);
+
+            // use array for the rest...
+            cmnSetupBuildString(G_XCenterSetupSet,
+                                ARRAYITEMCOUNT(G_XCenterSetupSet),
+                                somThis,
+                                &strTemp);
+
+            // now build widgets string... this is complex.
+            pNode = lstQueryFirstNode(pllSettings);
+            if (pNode)
+            {
+                BOOL    fFirstWidget = TRUE;
+                xstrcat(&strTemp, "WIDGETS=", 0);
+
+                // we have widgets:
+                // go thru all of them and list all widget classes and setup strings.
+                while (pNode)
+                {
+                    PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
+
+                    if (!fFirstWidget)
+                        // not first run:
+                        // add separator
+                        xstrcatc(&strTemp, ',');
+                    else
+                        fFirstWidget = FALSE;
+
+                    // add widget class
+                    xstrcat(&strTemp, pSetting->pszWidgetClass, 0);
+
+                    if (    (pSetting->pszSetupString)
+                         && (strlen(pSetting->pszSetupString))
+                       )
+                    {
+                        // widget has a setup string:
+                        // add that in brackets
+                        XSTRING strSetup2;
+
+                        // characters that must be encoded
+                        CHAR    achEncode[] = "%,();=";
+
+                        ULONG   ul = 0;
+
+                        // copy widget setup string to temporary buffer
+                        // for encoding... this has "=" and ";"
+                        // chars in it, and these should not appear
+                        // in the WPS setup string
+                        xstrInitCopy(&strSetup2,
+                                     pSetting->pszSetupString,
+                                     40);
+
+                        // add first separator
+                        xstrcatc(&strTemp, '(');
+
+                        // now encode the widget setup string...
+                        for (ul = 0;
+                             ul < strlen(achEncode);
+                             ul++)
+                        {
+                            CHAR        szFind[3] = "?",
+                                        szReplace[10] = "%xx";
+                            XSTRING     strFind,
+                                        strReplace;
+                            size_t  ShiftTable[256];
+                            BOOL    fRepeat = FALSE;
+                            ULONG ulOfs = 0;
+
+                            // search string:
+                            szFind[0] = achEncode[ul];
+                            xstrInitSet(&strFind, szFind);
+
+                            // replace string: ASCII encoding
+                            sprintf(szReplace, "%c%lX", '%', achEncode[ul]);
+                            xstrInitSet(&strReplace, szReplace);
+
+                            // replace all occurences
+                            while (xstrFindReplace(&strSetup2,
+                                                   &ulOfs,
+                                                   &strFind,
+                                                   &strReplace,
+                                                   ShiftTable,
+                                                   &fRepeat))
+                                    ;
+
+                        } // for ul; next encoding
+
+                        // now append encoded widget setup string
+                        xstrcat(&strTemp, strSetup2.psz, strSetup2.ulLength);
+
+                        // add terminator
+                        xstrcatc(&strTemp, ')');
+
+                        xstrClear(&strSetup2);
+                    } // end if (    (pSetting->pszSetupString)...
+
+                    pNode = pNode->pNext;
+                } // end for widgets
+
+                xstrcatc(&strTemp, ';');
+            }
+
+            /*
+             * append string
+             *
+             */
+
+            if (strTemp.ulLength)
+            {
+                // return string if buffer is given
+                if ((pszSetupString) && (cbSetupString))
+                    strhncpy0(pszSetupString,   // target
+                              strTemp.psz,      // source
+                              cbSetupString);   // buffer size
+
+                // always return length of string
+                ulReturn = strTemp.ulLength;
+            }
+
+            xstrClear(&strTemp);
+        }
+        CATCH(excpt1)
+        {
+            ulReturn = 0;
+        } END_CATCH();
+
+        // manually resolve parent method
+        pfn_xwpQuerySetup2
+            = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
+                                                             _somGetParent(_XCenter),
+                                                             "xwpQuerySetup2");
+        if (pfn_xwpQuerySetup2)
+        {
+            // now call parent method
+            if ( (pszSetupString) && (cbSetupString) )
+                // string buffer already specified:
+                // tell parent to append to that string
+                ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                               pszSetupString + ulReturn, // append to existing
+                                               cbSetupString - ulReturn); // remaining size
+            else
+                // string buffer not yet specified: return length only
+                ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+        }
+    }
+    wpshUnlockObject(&Lock);
+
+    return (ulReturn);
+}
+
+/*
+ *@@ ctrpSetup:
+ *      implementation for XCenter::wpSetup.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+BOOL ctrpSetup(XCenter *somSelf,
+               PSZ pszSetupString)
+{
+    XCenterData *somThis = XCenterGetData(somSelf);
+    ULONG   cSuccess = 0;
+
+    // scan the standard stuff from the table...
+    // this saves us a lot of work.
+    BOOL    brc = cmnSetupScanString(somSelf,
+                                     G_XCenterSetupSet,
+                                     ARRAYITEMCOUNT(G_XCenterSetupSet),
+                                     somThis,
+                                     pszSetupString,
+                                     &cSuccess);
+
+    // now comes the non-standard stuff:
+
+    if (brc)
+    {
+        CHAR    szValue[100];
+        ULONG   cb = sizeof(szValue);
+        if (_wpScanSetupString(somSelf,
+                               pszSetupString,
+                               "POSITION",
+                               szValue,
+                               &cb))
+        {
+            if (!stricmp(szValue, "TOP"))
+                _ulPosition = XCENTER_TOP;
+            else if (!stricmp(szValue, "BOTTOM"))
+                _ulPosition = XCENTER_BOTTOM;
+            else
+                brc = FALSE;
+        }
+    }
+
+    if (brc)
+    {
+        // WIDGETS can be very long, so query size first
+        ULONG   cb = 0;
+        if (_wpScanSetupString(somSelf,
+                               pszSetupString,
+                               "WIDGETS",
+                               NULL,
+                               &cb))
+        {
+            PSZ pszWidgets = malloc(cb);
+            if (    (pszWidgets)
+                 && (_wpScanSetupString(somSelf,
+                                        pszSetupString,
+                                        "WIDGETS",
+                                        pszWidgets,
+                                        &cb))
+               )
+            {
+                // now, off we go...
+
+                // now parse the WIDGETS string
+                // format is: "widget1,widget2,widget3"
+                PSZ pszToken = strtok(pszWidgets, ",");
+                if (pszToken)
+                {
+                    // first of all, remove all existing widgets,
+                    // we have a replacement here
+                    while (_xwpRemoveWidget(somSelf,
+                                            0))
+                               ;
+
+                    // now take the widgets
+                    do
+                    {
+                        // pszToken now has one widget
+                        PSZ pszWidgetClass = NULL;
+                        PSZ pszWidgetSetup = NULL;
+                        // check if this has brackets
+                        PSZ pBracket = strchr(pszToken, '(');
+                        if (pBracket)
+                        {
+                            pszWidgetClass = strhSubstr(pszToken, pBracket);
+                            // extract setup
+                            pszWidgetSetup = strhExtract(pszToken, '(', ')', NULL);
+                        }
+                        else
+                            // no setup string:
+                            pszWidgetClass = strdup(pszToken);
+
+                        // OK... set up the widget now
+
+                        if (!_xwpInsertWidget(somSelf,
+                                              -1,            // to the right
+                                              pszWidgetClass,
+                                              pszWidgetSetup))
+                        {
+                            brc = FALSE;
+                            break;
+                        }
+                    } while (pszToken = strtok(NULL, ","));
+
+                } // if (pszToken)
+
+                free(pszWidgets);
+            } // end if (    (pszWidgets)...
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ ctrpSaveState:
+ *      implementation for XCenter::wpSaveState.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+BOOL ctrpSaveState(XCenter *somSelf)
+{
+    BOOL brc = TRUE;
+
+    TRY_LOUD(excpt1)
+    {
+        XCenterData *somThis = XCenterGetData(somSelf);
+
+        /*
+         * key 1: widget settings
+         *
+         */
+
+        if (_pszPackedWidgetSettings)
+            // settings haven't even been unpacked yet:
+            // just store the packed settings
+            _wpSaveData(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        1,
+                        _pszPackedWidgetSettings,
+                        _cbPackedWidgetSettings);
+        else
+            // once the settings have been unpacked
+            // (i.e. XCenter needed access to them),
+            // we have to repack them on each save
+            if (_pllWidgetSettings)
+            {
+                // compose array
+                ULONG cbSettingsArray = 0;
+                PSZ pszSettingsArray = ctrpStuffSettings(somSelf,
+                                                         &cbSettingsArray);
+                if (pszSettingsArray)
+                {
+                    _wpSaveData(somSelf,
+                                (PSZ)G_pcszXCenter,
+                                1,
+                                pszSettingsArray,
+                                cbSettingsArray);
+                    free(pszSettingsArray);
+                }
+            }
+
+        /*
+         * other keys
+         *
+         */
+
+        cmnSetupSave(somSelf,
+                     G_XCenterSetupSet,
+                     ARRAYITEMCOUNT(G_XCenterSetupSet),
+                     G_pcszXCenter,     // class name
+                     somThis);
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
+}
+
+/*
+ *@@ ctrpRestoreState:
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+BOOL ctrpRestoreState(XCenter *somSelf)
+{
+    BOOL brc = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        XCenterData *somThis = XCenterGetData(somSelf);
+
+        /*
+         * key 1: widget settings
+         *
+         */
+
+        BOOL    fError = FALSE;
+
+        if (_pszPackedWidgetSettings)
+        {
+            free(_pszPackedWidgetSettings);
+            _pszPackedWidgetSettings = 0;
+        }
+
+        _cbPackedWidgetSettings = 0;
+        // get size of array
+        if (_wpRestoreData(somSelf,
+                           (PSZ)G_pcszXCenter,
+                           1,
+                           NULL,    // query size
+                           &_cbPackedWidgetSettings))
+        {
+            _pszPackedWidgetSettings = (PSZ)malloc(_cbPackedWidgetSettings);
+            if (_pszPackedWidgetSettings)
+            {
+                if (!_wpRestoreData(somSelf,
+                                   (PSZ)G_pcszXCenter,
+                                   1,
+                                   _pszPackedWidgetSettings,
+                                   &_cbPackedWidgetSettings))
+                    // error:
+                    fError = TRUE;
+            }
+            else
+                fError = TRUE;
+        }
+        else
+            // error:
+            fError = TRUE;
+
+        if (fError)
+        {
+            if (_pszPackedWidgetSettings)
+                free(_pszPackedWidgetSettings);
+            _pszPackedWidgetSettings = NULL;
+            _cbPackedWidgetSettings = 0;
+        }
+
+        /*
+         * other keys
+         *
+         */
+
+        cmnSetupRestore(somSelf,
+                        G_XCenterSetupSet,
+                        ARRAYITEMCOUNT(G_XCenterSetupSet),
+                        G_pcszXCenter,     // class name
+                        somThis);
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
  *   "View" page notebook callbacks (notebook.c)
  *
  ********************************************************************/
+
+// two arrays to specify the affected settings with
+// each "view" page; used with cmnSetupSetDefaults etc.
+
+static ULONG    G_aulView1SetupOffsets[]
+    = {
+            FIELDOFFSET(XCenterData, fReduceDesktopWorkarea),
+            FIELDOFFSET(XCenterData, ulPosition),
+            FIELDOFFSET(XCenterData, ulWindowStyle),
+            FIELDOFFSET(XCenterData, ulAutoHide)
+      };
+
+static ULONG    G_aulView2SetupOffsets[]
+    = {
+            FIELDOFFSET(XCenterData, flDisplayStyle),
+            FIELDOFFSET(XCenterData, ul3DBorderWidth),
+            FIELDOFFSET(XCenterData, ulBorderSpacing),
+            FIELDOFFSET(XCenterData, ulWidgetSpacing)
+      };
 
 /*
  *@@ ctrpView1InitPage:
@@ -84,6 +759,7 @@
  *      instance settings.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
  */
 
 VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -100,10 +776,8 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         {
             // copy data for "Undo"
             XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
-            memset(pBackup, 0, sizeof(*somThis));
-            // be careful about copying... we have some pointers in there!
-            pBackup->ulWindowStyle = _ulWindowStyle;
-            pBackup->ulAutoHide = _ulAutoHide;
+            memcpy(pBackup, somThis, sizeof(*somThis));
+            // be careful about using the copy... we have some pointers in there!
 
             // store in noteboot struct
             pcnbp->pUser = pBackup;
@@ -157,6 +831,7 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
  */
 
 MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -226,20 +901,21 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break; }
 
         case DID_DEFAULT:
-            _fReduceDesktopWorkarea = FALSE;
-            _ulPosition = XCENTER_BOTTOM;
-            _ulWindowStyle = WS_TOPMOST | WS_ANIMATE;
-            _ulAutoHide = 4000;
+            cmnSetupSetDefaults(G_XCenterSetupSet,
+                                ARRAYITEMCOUNT(G_XCenterSetupSet),
+                                G_aulView1SetupOffsets,
+                                ARRAYITEMCOUNT(G_aulView1SetupOffsets),
+                                somThis);
             fCallInitCallback = TRUE;
         break;
 
         case DID_UNDO:
         {
             XCenterData *pBackup = (XCenterData*)pcnbp->pUser;
-            _fReduceDesktopWorkarea = pBackup->fReduceDesktopWorkarea;
-            _ulPosition = pBackup->ulPosition;
-            _ulWindowStyle = pBackup->ulWindowStyle;
-            _ulAutoHide = pBackup->ulAutoHide;
+            cmnSetupRestoreBackup(G_aulView1SetupOffsets,
+                                  ARRAYITEMCOUNT(G_aulView1SetupOffsets),
+                                  somThis,
+                                  pBackup);
             fCallInitCallback = TRUE;
         break; }
 
@@ -278,6 +954,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      instance settings.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
  */
 
 VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -292,10 +969,8 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         {
             // copy data for "Undo"
             XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
-            memset(pBackup, 0, sizeof(*somThis));
-            // be careful about copying... we have some pointers in there!
-            pBackup->ulWindowStyle = _ulWindowStyle;
-            pBackup->ulAutoHide = _ulAutoHide;
+            memcpy(pBackup, somThis, sizeof(*somThis));
+            // be careful about using the copy... we have some pointers in there!
 
             // store in noteboot struct
             pcnbp->pUser = pBackup;
@@ -372,6 +1047,7 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
  */
 
 MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -434,10 +1110,11 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case DID_DEFAULT:
-            _flDisplayStyle = XCS_SUNKBORDERS | XCS_FLATBUTTONS | XCS_SIZINGBARS;
-            _ul3DBorderWidth = 1;
-            _ulBorderSpacing = 1;
-            _ulWidgetSpacing = 2;
+            cmnSetupSetDefaults(G_XCenterSetupSet,
+                                ARRAYITEMCOUNT(G_XCenterSetupSet),
+                                G_aulView2SetupOffsets,
+                                ARRAYITEMCOUNT(G_aulView2SetupOffsets),
+                                somThis);
             // call the init callback to refresh the page controls
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -445,10 +1122,10 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             XCenterData *pBackup = (XCenterData*)pcnbp->pUser;
-            _flDisplayStyle = pBackup->flDisplayStyle;
-            _ul3DBorderWidth = pBackup->ul3DBorderWidth;
-            _ulBorderSpacing = pBackup->ulBorderSpacing;
-            _ulWidgetSpacing = pBackup->ulWidgetSpacing;
+            cmnSetupRestoreBackup(G_aulView2SetupOffsets,
+                                  ARRAYITEMCOUNT(G_aulView2SetupOffsets),
+                                  somThis,
+                                  pBackup);
             // call the init callback to refresh the page controls
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
@@ -536,7 +1213,7 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // set group cnr title
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          "Wi~dgets");   // ###
+                          "Wi~dgets");   // ### NLS
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, ulIndex);
@@ -545,12 +1222,12 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
-        xfi[i].pszColumnTitle = "Class";
+        xfi[i].pszColumnTitle = "Class";      // ### NLS
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, pcszSetupString);
-        xfi[i].pszColumnTitle = "Setup";
+        xfi[i].pszColumnTitle = "Setup";    // ### NLS
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 

@@ -122,8 +122,6 @@ typedef struct _WPSAVELONGITEM
  *
  ********************************************************************/
 
-static const char *G_pcszXCenter = "XCenter";
-
 /* ******************************************************************
  *
  *   XCenter instance methods
@@ -249,6 +247,8 @@ SOM_Scope void  SOMLINK xctr_xwpFreeWidgetsBuf(XCenter *somSelf,
  *      An open view of this XCenter is automatically
  *      updated.
  *
+ *      Returns FALSE on errors.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -284,6 +284,8 @@ SOM_Scope BOOL  SOMLINK xctr_xwpInsertWidget(XCenter *somSelf,
  *      removes the widget at the position specified
  *      with ulIndex (with 0 being the leftmost widget).
  *
+ *      Returns FALSE on errors.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -291,7 +293,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpRemoveWidget(XCenter *somSelf,
                                              ULONG ulIndex)
 {
     BOOL brc = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpRemoveWidget");
 
     return (ctrpRemoveWidget(somSelf, ulIndex));
@@ -380,24 +382,9 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 
     XCenter_parent_WPAbstract_wpInitData(somSelf);
 
-    _fReduceDesktopWorkarea = FALSE;
-
-    _ulWindowStyle = 0; // WS_TOPMOST | WS_ANIMATE;
-    _ulAutoHide = 0; // 4000;
-
-    _ulPosition = XCENTER_BOTTOM;
-
-    _flDisplayStyle = XCS_SUNKBORDERS | XCS_FLATBUTTONS | XCS_SIZINGBARS;
-            // but not XCS_ALL3DBORDERS
-
-    _ul3DBorderWidth = 1;
-    _ulBorderSpacing = 1;
-    _ulWidgetSpacing = 2;
-
-    _ulPriorityClass = PRTYC_REGULAR;
-    _lPriorityDelta = 0; // PRTYD_MINIMUM;
-
-    _fHelpDisplayed = FALSE;
+    // initialize defaults from the table for those
+    // variables which are in there...
+    ctrpInitData(somSelf);
 
     _pvOpenView = NULL;
 
@@ -469,6 +456,32 @@ SOM_Scope void  SOMLINK xctr_wpObjectReady(XCenter *somSelf,
 }
 
 /*
+ *@@ wpSetup:
+ *      this instance method is called to allow the newly
+ *      created object to initialize itself based on an input
+ *      setup string.
+ *
+ *      We scan for the XCenter setup here. The implementation
+ *      is in ctrpSetup.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_wpSetup(XCenter *somSelf, PSZ pszSetupString)
+{
+    BOOL brc = FALSE;
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_wpSetup");
+
+    brc = XCenter_parent_WPAbstract_wpSetup(somSelf, pszSetupString);
+
+    ctrpSetup(somSelf,
+              pszSetupString);
+
+    return (brc);
+}
+
+/*
  *@@ wpSaveState:
  *      this WPObject instance method saves an object's state
  *      persistently so that it can later be re-initialized
@@ -482,138 +495,13 @@ SOM_Scope void  SOMLINK xctr_wpObjectReady(XCenter *somSelf,
 SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
 {
     BOOL brc = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSaveState");
 
     brc = XCenter_parent_WPAbstract_wpSaveState(somSelf);
 
-    TRY_LOUD(excpt1)
-    {
-        if (brc)
-        {
-            WPSAVELONGITEM aSaveItems[]
-                = {
-                        2, &_ulWindowStyle,
-                        3, &_ulAutoHide,
-                        4, &_flDisplayStyle,
-                        5, &_fHelpDisplayed,
-                        6, &_ulPriorityClass,
-                        7, (PULONG)&_lPriorityDelta,        // this is a LONG
-                        8, &_ulPosition,
-                        9, &_ul3DBorderWidth,
-                        10, &_ulBorderSpacing,
-                        11, &_ulWidgetSpacing,
-                        12, &_fReduceDesktopWorkarea
-                  };
-                        // this must match exactly the array in wpRestoreState
-            ULONG   ul;
-
-            /*
-             * key 1: widget settings
-             *
-             */
-
-            if (_pszPackedWidgetSettings)
-                // settings haven't even been unpacked yet:
-                // just store the packed settings
-                _wpSaveData(somSelf,
-                            (PSZ)G_pcszXCenter,
-                            1,
-                            _pszPackedWidgetSettings,
-                            _cbPackedWidgetSettings);
-            else
-                // once the settings have been unpacked
-                // (i.e. XCenter needed access to them),
-                // we have to repack them on each save
-                if (_pllWidgetSettings)
-                {
-                    // compose array
-                    ULONG cbSettingsArray = 0;
-                    PSZ pszSettingsArray = ctrpStuffSettings(somSelf,
-                                                             &cbSettingsArray);
-                    if (pszSettingsArray)
-                    {
-                        _wpSaveData(somSelf,
-                                    (PSZ)G_pcszXCenter,
-                                    1,
-                                    pszSettingsArray,
-                                    cbSettingsArray);
-                        free(pszSettingsArray);
-                    }
-                }
-
-            /*
-             * other keys
-             *
-             */
-
-            for (ul = 0;
-                 ul < sizeof(aSaveItems) / sizeof(aSaveItems[0]);
-                 ul++)
-            {
-                _wpSaveLong(somSelf,
-                            (PSZ)G_pcszXCenter,
-                            aSaveItems[ul].ulSaveKey,
-                            *(aSaveItems[ul].pul));
-            }
-
-            /* _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        2,
-                        _ulWindowStyle);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        3,
-                        _ulAutoHide);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        4,
-                        _flDisplayStyle);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        5,
-                        _fHelpDisplayed);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        6,
-                        _ulPriorityClass);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        7,
-                        _lPriorityDelta);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        8,
-                        _ulPosition);
-
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        9,
-                        _ul3DBorderWidth);
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        10,
-                        _ulBorderSpacing);
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        11,
-                        _ulWidgetSpacing);
-            _wpSaveLong(somSelf,
-                        (PSZ)G_pcszXCenter,
-                        12,
-                        _fReduceDesktopWorkarea); */
-        }
-    }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
+    if (brc)
+        brc = ctrpSaveState(somSelf);
 
     return (brc);
 }
@@ -631,160 +519,14 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                             ULONG ulReserved)
 {
     BOOL brc = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpRestoreState");
 
     brc = XCenter_parent_WPAbstract_wpRestoreState(somSelf,
                                                    ulReserved);
 
-    TRY_LOUD(excpt1)
-    {
-        if (brc)
-        {
-            WPSAVELONGITEM aSaveItems[]
-                = {
-                        2, &_ulWindowStyle,
-                        3, &_ulAutoHide,
-                        4, &_flDisplayStyle,
-                        5, &_fHelpDisplayed,
-                        6, &_ulPriorityClass,
-                        7, (PULONG)&_lPriorityDelta,        // this is a LONG
-                        8, &_ulPosition,
-                        9, &_ul3DBorderWidth,
-                        10, &_ulBorderSpacing,
-                        11, &_ulWidgetSpacing,
-                        12, &_fReduceDesktopWorkarea
-                  };
-                        // this must match exactly the array in wpSaveState
-            ULONG   ul;
-
-            /*
-             * key 1: widget settings
-             *
-             */
-
-            BOOL    fError = FALSE;
-
-            if (_pszPackedWidgetSettings)
-            {
-                free(_pszPackedWidgetSettings);
-                _pszPackedWidgetSettings = 0;
-            }
-
-            _cbPackedWidgetSettings = 0;
-            // get size of array
-            if (_wpRestoreData(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               1,
-                               NULL,    // query size
-                               &_cbPackedWidgetSettings))
-            {
-                _pszPackedWidgetSettings = (PSZ)malloc(_cbPackedWidgetSettings);
-                if (_pszPackedWidgetSettings)
-                {
-                    if (!_wpRestoreData(somSelf,
-                                       (PSZ)G_pcszXCenter,
-                                       1,
-                                       _pszPackedWidgetSettings,
-                                       &_cbPackedWidgetSettings))
-                        // error:
-                        fError = TRUE;
-                }
-                else
-                    fError = TRUE;
-            }
-            else
-                // error:
-                fError = TRUE;
-
-            if (fError)
-            {
-                if (_pszPackedWidgetSettings)
-                    free(_pszPackedWidgetSettings);
-                _pszPackedWidgetSettings = NULL;
-                _cbPackedWidgetSettings = 0;
-            }
-
-            /*
-             * other keys
-             *
-             */
-
-            for (ul = 0;
-                 ul < sizeof(aSaveItems) / sizeof(aSaveItems[0]);
-                 ul++)
-            {
-                ULONG ulTemp = 0;
-                if (_wpRestoreLong(somSelf,
-                                   (PSZ)G_pcszXCenter,
-                                   aSaveItems[ul].ulSaveKey,
-                                   &ulTemp))
-                    *(aSaveItems[ul].pul) = ulTemp;
-            }
-
-            /* if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               2,
-                               &ul))
-                _ulWindowStyle = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               3,
-                               &ul))
-                _ulAutoHide = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               4,
-                               &ul))
-                _flDisplayStyle = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               5,
-                               &ul))
-                _fHelpDisplayed = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               6,
-                               &ul))
-                _ulPriorityClass = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               7,
-                               &ul))
-                _lPriorityDelta = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               8,
-                               &ul))
-                _ulPosition = ul;
-
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               9,
-                               &ul))
-                _ul3DBorderWidth = ul;
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               10,
-                               &ul))
-                _ulBorderSpacing = ul;
-            if (_wpRestoreLong(somSelf,
-                               (PSZ)G_pcszXCenter,
-                               11,
-                               &ul))
-                _ulWidgetSpacing = ul; */
-        }
-    }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
+    if (brc)
+        brc = ctrpRestoreState(somSelf);
 
     return (brc);
 }

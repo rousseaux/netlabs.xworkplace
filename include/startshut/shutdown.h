@@ -30,9 +30,9 @@
     #define XSHUTDWN_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   Declarations                                                   *
-     *                                                                  *
+     *
+     *   Declarations
+     *
      ********************************************************************/
 
     /*
@@ -146,14 +146,16 @@
         } REBOOTWINDATA, *PREBOOTWINDATA;
         #endif
 
-    #endif
-    #endif
+    #endif // LINKLIST_HEADER_INCLUDED
+    #endif // SOM_WPObject_h
 
     /* ******************************************************************
-     *                                                                  *
-     *   Shutdown interface                                             *
-     *                                                                  *
+     *
+     *   Shutdown interface
+     *
      ********************************************************************/
+
+    VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp);
 
     BOOL xsdInitiateShutdown(VOID);
 
@@ -162,9 +164,9 @@
     BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdp);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Shutdown settings pages                                        *
-     *                                                                  *
+     *
+     *   Shutdown settings pages
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
@@ -178,9 +180,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Shutdown helper functions                                      *
-     *                                                                  *
+     *
+     *   Shutdown helper functions
+     *
      ********************************************************************/
 
     VOID xsdLoadAnimation(PSHUTDOWNANIM psda);
@@ -236,9 +238,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   XShutdown dialogs                                              *
-     *                                                                  *
+     *
+     *   XShutdown dialogs
+     *
      ********************************************************************/
 
     ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms);
@@ -250,9 +252,9 @@
     MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Shutdown thread                                                *
-     *                                                                  *
+     *
+     *   Shutdown thread
+     *
      ********************************************************************/
 
     #ifdef THREADS_HEADER_INCLUDED
@@ -260,9 +262,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Window list debugging (winlist.c)                              *
-     *                                                                  *
+     *
+     *   Window list debugging (winlist.c)
+     *
      ********************************************************************/
 
     HWND winlCreateWinListWindow(VOID);

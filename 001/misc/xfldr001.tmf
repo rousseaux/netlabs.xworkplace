@@ -268,11 +268,12 @@ Should we do this now?
 English National Language Support:
 Copyright (C) 1998-2001 Ulrich M”ller.
 
+Contains code (C) 2000-2001 Martin Lafaix.
+Contains code (C) 1999-2000 Christian Langanke.
 Contains code from APM/2 (C) 1997-1998 Roman Stangl (OpenSource); ported to XFolder 1998 by ARAKAWA Atsushi.
 Contains code from ProgramCommander/2 (C) 1993-1999 Roman Stangl (OpenSource).
 Contains code from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
 Contains code from the Standard Function Library (SFL) (C) 1991-99 iMatix Corporation (http://www.imatix.com).
-Contains code (C) 1999-2000 Christian Langanke.
 
 Compiled using IBM VisualAge C++ 3.08.
 
@@ -355,6 +356,16 @@ Do you wish to ignore this error and continue installing fonts?
 <--XFL0204-->: The font "%1" could not be unloaded at this point. An application might still be using it. However, after the next reboot it should be gone.
 
 Do you wish to ignore this error and continue removing fonts?
+
+<--XFL0205-->: The handle section in OS2SYS.INI has been rewritten. XWorkplace will restart the WPS now.
+
+<--XFL0206-->: Hmmmm. XWorkplace was unable to start xfix.
+
+The following path was attempted:
+
+%1
+
+
 
 ; ---------------------------------------------------------------------------------
 ;

@@ -94,6 +94,7 @@
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -116,9 +117,9 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 static CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
@@ -363,9 +364,9 @@ const char      *WNDCLASS_THREAD1OBJECT        = "XWPThread1Object";
 const char      *WNDCLASS_SUPPLOBJECT          = "XWPSupplFolderObject";
 
 /* ******************************************************************
- *                                                                  *
- *   Main module handling (XFLDR.DLL)                               *
- *                                                                  *
+ *
+ *   Main module handling (XFLDR.DLL)
+ *
  ********************************************************************/
 
 /*
@@ -547,9 +548,9 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Error logging                                                  *
- *                                                                  *
+ *
+ *   Error logging
+ *
  ********************************************************************/
 
 /*
@@ -596,9 +597,9 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWorkplace National Language Support (NLS)                     *
- *                                                                  *
+ *
+ *   XWorkplace National Language Support (NLS)
+ *
  ********************************************************************/
 
 /*
@@ -1956,9 +1957,9 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFolder Global Settings                                        *
- *                                                                  *
+ *
+ *   XFolder Global Settings
+ *
  ********************************************************************/
 
 /*
@@ -2516,9 +2517,510 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Trash can setup                                                *
- *                                                                  *
+ *
+ *   Object setup sets V0.9.9 (2001-01-29) [umoeller]
+ *
+ ********************************************************************/
+
+/*
+ *@@ cmnSetupInitData:
+ *      setup set helper to be used in a wpInitData override.
+ *      See XWPSETUPENTRY for an introduction.
+ *
+ *      This initializes each entry with the lDefault value
+ *      from the XWPSETUPENTRY.
+ *
+ *      This ONLY initializes STG_LONG and STG_BOOL entries,
+ *      but not STG_BITFLAG fields. For this reason, for bit
+ *      fields, always define a preceding STG_LONG entry.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
+                      ULONG cSettings,       // in: array item count (NOT array size)
+                      PVOID somThis)         // in: instance's somThis pointer
+{
+    ULONG   ul = 0;
+    CHAR    szTemp[100];
+
+    for (ul = 0;
+         ul < cSettings;
+         ul++)
+    {
+        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+
+        switch (pSettingThis->ulType)
+        {
+            case STG_LONG:
+            case STG_BOOL:
+            {
+                PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                *plData = pSettingThis->lDefault;
+            break; }
+
+            // ignore STG_BITFIELD
+        }
+    }
+}
+
+/*
+ *@@ cmnSetupBuildString:
+ *      setup set helper to be used in an xwpQuerySetup2 override.
+ *      See XWPSETUPENTRY for an introduction.
+ *
+ *      This adds new setup strings to the specified XSTRING, which
+ *      should be safely initialized. XWPSETUPENTRY's that have
+ *      (pcszSetupString == NULL) are skipped.
+ *
+ *      -- For STG_LONG, this appends "KEYWORD=%d;".
+ *
+ *      -- For STG_BOOL and STG_BITFLAG, this appends "KEYWORD={YES|NO};".
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
+                         ULONG cSettings,       // in: array item count (NOT array size)
+                         PVOID somThis,         // in: instance's somThis pointer
+                         PXSTRING pstr)         // out: setup string
+
+{
+    ULONG   ul = 0;
+    CHAR    szTemp[100];
+
+    for (ul = 0;
+         ul < cSettings;
+         ul++)
+    {
+        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+
+        // setup string supported for this?
+        if (pSettingThis->pcszSetupString)
+        {
+            // yes:
+
+            switch (pSettingThis->ulType)
+            {
+                case STG_LONG:
+                {
+                    PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    if (*plData != pSettingThis->lDefault)
+                    {
+                        sprintf(szTemp,
+                                "%s=%d;",
+                                pSettingThis->pcszSetupString,
+                                *plData);
+                        xstrcat(pstr, szTemp, 0);
+                    }
+                break; }
+
+                case STG_BOOL:
+                {
+                    PBOOL plData = (PBOOL)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    if (*plData != (BOOL)pSettingThis->lDefault)
+                    {
+                        sprintf(szTemp,
+                                "%s=%s;",
+                                pSettingThis->pcszSetupString,
+                                (*plData == TRUE)
+                                    ? "YES"
+                                    : "NO");
+                        xstrcat(pstr, szTemp, 0);
+                    }
+                break; }
+
+                case STG_BITFLAG:
+                {
+                    PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    if (    ((*pulData) & pSettingThis->ulBitflag)
+                         != (ULONG)pSettingThis->lDefault
+                       )
+                    {
+                        sprintf(szTemp,
+                                "%s=%s;",
+                                pSettingThis->pcszSetupString,
+                                ((*pulData) & pSettingThis->ulBitflag)
+                                    ? "YES"
+                                    : "NO");
+                        xstrcat(pstr, szTemp, 0);
+                    }
+                break; }
+            }
+        } // end if (pSettingThis->pcszSetupString)
+    }
+}
+
+/*
+ *@@ cmnSetupScanString:
+ *      setup set helper to be used in a wpSetup override.
+ *      See XWPSETUPENTRY for an introduction.
+ *
+ *      -- For STG_LONG, this expects "KEYWORD=%d;" strings.
+ *
+ *      -- For STG_BOOL and STG_BITFLAG, this expects
+ *         "KEYWORD={YES|NO};" strings.
+ *
+ *      Returns FALSE if values were not set properly.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+BOOL cmnSetupScanString(WPObject *somSelf,
+                        PXWPSETUPENTRY paSettings, // in: object's setup set
+                        ULONG cSettings,         // in: array item count (NOT array size)
+                        PVOID somThis,           // in: instance's somThis pointer
+                        PSZ pszSetupString,      // in: setup string from wpSetup
+                        PULONG pcSuccess)        // out: items successfully parsed and set
+{
+    BOOL    brc = TRUE;
+    CHAR    szValue[500];
+    ULONG   cbValue;
+    ULONG   ul = 0;
+
+    for (ul = 0;
+         ul < cSettings;
+         ul++)
+    {
+        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+
+        // setup string supported for this?
+        if (pSettingThis->pcszSetupString)
+        {
+            // yes:
+            cbValue = sizeof(szValue);
+            if (_wpScanSetupString(somSelf,
+                                   pszSetupString,
+                                   (PSZ)pSettingThis->pcszSetupString,
+                                   szValue,
+                                   &cbValue))
+            {
+                // setting found:
+                // see what to do with it
+                switch (pSettingThis->ulType)
+                {
+                    case STG_LONG:
+                    {
+                        LONG lValue = atoi(szValue);
+                        if (    (lValue >= pSettingThis->lMin)
+                             && (lValue <= pSettingThis->lMax)
+                           )
+                        {
+                            PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                            if (*plData != lValue)
+                            {
+                                // data changed:
+                                *plData = lValue;
+                                (*pcSuccess)++;
+                            }
+                        }
+                        else
+                            brc = FALSE;
+                    break; }
+
+                    case STG_BOOL:
+                    {
+                        BOOL fNew;
+                        if (!stricmp(szValue, "YES"))
+                            fNew = TRUE;
+                        else if (!stricmp(szValue, "NO"))
+                            fNew = FALSE;
+                        else
+                            brc = FALSE;
+
+                        if (brc)
+                        {
+                            PBOOL plData = (PBOOL)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                            if (*plData != fNew)
+                            {
+                                *plData = fNew;
+                                (*pcSuccess)++;
+                            }
+                        }
+                    break; }
+
+                    case STG_BITFLAG:
+                    {
+                        ULONG   ulNew = 0;
+                        if (!stricmp(szValue, "YES"))
+                            ulNew = pSettingThis->ulBitflag;
+                        else if (!stricmp(szValue, "NO"))
+                            ulNew = 0;
+                        else
+                            brc = FALSE;
+
+                        if (brc)
+                        {
+                            PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                            if (    ((*pulData) & pSettingThis->ulBitflag)
+                                 != ulNew
+                               )
+                            {
+                                *pulData = (  // clear the bit first:
+                                              ((*pulData) & ~pSettingThis->ulBitflag)
+                                              // set it if set
+                                            | ulNew);
+
+                                (*pcSuccess)++;
+                            }
+                        }
+                    break; }
+                }
+            }
+
+            if (!brc)
+                // error occured:
+                break;
+        } // end if (pSettingThis->pcszSetupString)
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ cmnSetupSave:
+ *      setup set helper to be used in a wpSaveState override.
+ *      See XWPSETUPENTRY for an introduction.
+ *
+ *      This invokes wpSaveLong on each setup set entry.
+ *
+ *      Returns FALSE if values were not saved properly.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+BOOL cmnSetupSave(WPObject *somSelf,
+                  PXWPSETUPENTRY paSettings, // in: object's setup set
+                  ULONG cSettings,         // in: array item count (NOT array size)
+                  const char *pcszClassName, // in: class name to be used with wpSave*
+                  PVOID somThis)           // in: instance's somThis pointer
+{
+    BOOL    brc = TRUE;
+    ULONG   ul = 0;
+
+    for (ul = 0;
+         ul < cSettings;
+         ul++)
+    {
+        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+
+        if (pSettingThis->ulKey)
+        {
+            switch (pSettingThis->ulType)
+            {
+                case STG_LONG:
+                case STG_BOOL:
+                case STG_BITFLAG:
+                {
+                    PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    if (!_wpSaveLong(somSelf,
+                                     (PSZ)pcszClassName,
+                                     pSettingThis->ulKey,
+                                     *pulData))
+                    {
+                        // error:
+                        brc = FALSE;
+                        break;
+                    }
+                break; }
+            }
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ cmnSetupRestore:
+ *      setup set helper to be used in a wpRestoreState override.
+ *      See XWPSETUPENTRY for an introduction.
+ *
+ *      This invokes wpRestoreLong on each setup set entry.
+ *
+ *      For each entry, only if wpRestoreLong succeeded,
+ *      the corresponding value in the instance data is
+ *      overwritten. Otherwise it is undefined, so this
+ *      does not replace the need to call cmnSetupInitData
+ *      on wpInitData.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+BOOL cmnSetupRestore(WPObject *somSelf,
+                     PXWPSETUPENTRY paSettings, // in: object's setup set
+                     ULONG cSettings,         // in: array item count (NOT array size)
+                     const char *pcszClassName, // in: class name to be used with wpRestore*
+                     PVOID somThis)           // in: instance's somThis pointer
+{
+    BOOL    brc = TRUE;
+    ULONG   ul = 0;
+
+    for (ul = 0;
+         ul < cSettings;
+         ul++)
+    {
+        PXWPSETUPENTRY pSettingThis = &paSettings[ul];
+
+        if (pSettingThis->ulKey)
+        {
+            switch (pSettingThis->ulType)
+            {
+                case STG_LONG:
+                case STG_BOOL:
+                case STG_BITFLAG:
+                {
+                    ULONG   ulTemp = 0;
+                    if (_wpRestoreLong(somSelf,
+                                       (PSZ)pcszClassName,
+                                       pSettingThis->ulKey,
+                                       &ulTemp))
+                    {
+                        // only if found,
+                        // replace value
+                        PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                        *pulData = ulTemp;
+                    }
+                break; }
+            }
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ cmnSetupSetDefaults:
+ *      resets part of an object's setup set to default
+ *      values. Useful for the "Default" button on a
+ *      notebook page.
+ *
+ *      This requires two arrays as input:
+ *
+ *      -- PXWPSETUPENTRY paSettings specifies the object's
+ *         setup set, as with the other cmnSetup* functions.
+ *         This is used to retrieve the default values.
+ *
+ *      -- PULONG paulOffsets specifies an array of ULONG's.
+ *         Each ULONG in that array must specify the
+ *         FIELDOFFSET matching one of the items in the
+ *         XWPSETUPENTRY array.
+ *
+ *      This function goes thru the "paulOffsets" array and
+ *      finds the corresponding offset in the "paSettings"
+ *      setup set array. If found, the corresponding value
+ *      (offset to the somThis pointer) is reset to the default.
+ *
+ *      Again, this ignores STG_BITFIELD entries.
+ *
+ *      Returns the no. of values successfully changed,
+ *      which should match cOffsets.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
+                          ULONG cSettings,          // in: array item count (NOT array size)
+                          PULONG paulOffsets,
+                          ULONG cOffsets,           // in: array item count (NOT array size)
+                          PVOID somThis)            // in: instance's somThis pointer
+{
+    ULONG   ulrc = 0,
+            ulOfsThis = 0;
+
+    // go thru the offsets array
+    for (ulOfsThis = 0;
+         ulOfsThis < cOffsets;
+         ulOfsThis++)
+    {
+        PULONG pulOfsOfDataThis = &paulOffsets[ulOfsThis];
+
+        // now go thru the setup set and find the first entry
+        // which matches this offset
+        ULONG ulSettingThis = 0;
+        for (ulSettingThis = 0;
+             ulSettingThis < cSettings;
+             ulSettingThis++)
+        {
+            PXWPSETUPENTRY pSettingThis = &paSettings[ulSettingThis];
+
+            if (    (pSettingThis->ulType == STG_LONG)
+                 || (pSettingThis->ulType == STG_BOOL)
+                 // but skip STG_BITFLAG
+               )
+            {
+                if (pSettingThis->ulOfsOfData == *pulOfsOfDataThis)
+                {
+                    // found:
+                    // reset value
+                    PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    *plData = pSettingThis->lDefault;
+                    // raise return count
+                    ulrc++;
+                    // and quit inner search block... we'll only modify
+                    // the first entry, since there may be others following
+                    break; // for (ulSettingThis = 0;
+                }
+            }
+        } // for (ulSettingThis = 0;
+    } // for (ulOfsThis = 0;
+
+    return (ulrc);
+}
+
+/*
+ *@@ cmnSetupRestoreBackup:
+ *      resets part of an object's setup set to values
+ *      that have been backed up before.
+ *      Useful for the "Undo" button on a notebook page.
+ *
+ *      As opposed to cmnSetupSetDefaults, this only needs
+ *      the "paulOffsets" array.
+ *
+ *      As with cmnSetupSetDefaults, "PULONG paulOffsets"
+ *      specifies an array of ULONG's. Each ULONG in that
+ *      array must specify the FIELDOFFSET of a setting
+ *      from somThis.
+ *
+ *      This function goes thru the "paulOffsets" array and
+ *      copies the value at each offset from pBackup to
+ *      somThis.
+ *
+ *      Returns the no. of values successfully changed,
+ *      which should match cOffsets.
+ *
+ *@@added V0.9.9 (2001-01-29) [umoeller]
+ */
+
+ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
+                            ULONG cOffsets,           // in: array item count (NOT array size)
+                            PVOID somThis,            // in: instance's somThis pointer
+                            PVOID pBackup)            // in: backup of somThis
+{
+    ULONG   ulrc = 0,
+            ulOfsThis = 0;
+
+    // go thru the offsets array
+    for (ulOfsThis = 0;
+         ulOfsThis < cOffsets;
+         ulOfsThis++)
+    {
+        PULONG pulOfsOfDataThis = &paulOffsets[ulOfsThis];
+
+        // restore value
+        PLONG plTarget = (PLONG)((PBYTE)somThis + *pulOfsOfDataThis);
+        PLONG plSource = (PLONG)((PBYTE)pBackup + *pulOfsOfDataThis);
+        *plTarget = *plSource;
+        // raise return count
+        ulrc++;
+    } // for (ulOfsThis = 0;
+
+    return (ulrc);
+}
+
+/* ******************************************************************
+ *
+ *   Trash can setup
+ *
  ********************************************************************/
 
 /*
@@ -2722,9 +3224,9 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Miscellaneae                                                   *
- *                                                                  *
+ *
+ *   Miscellaneae
+ *
  ********************************************************************/
 
 /*

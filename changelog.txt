@@ -35,6 +35,7 @@ Changes for V0.9.7
     --  ID_XCD_XWPINSTALLEDCLASSES changed.
     --  ID_XSD_DTP_MENUITEMS changed.
     --  ID_NDD_EXPLAIN changed.
+    --  ID_XFD_STARTUPPANIC changed.
 
 
 Changes for V0.9.6
