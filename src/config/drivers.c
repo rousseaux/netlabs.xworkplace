@@ -812,6 +812,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-17) [umoeller]: added error messages display
+ *@@changed V0.9.12 (2001-04-28) [umoeller]: fixed vendor display
  */
 
 MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -880,7 +881,6 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         cmnGetString(ID_XSSI_DRIVERVENDOR),  0); // pszDriverVendor
                                 xstrcat(&strText2MLE,
                                          precc->szVendor, 0);
-                                xstrcatc(&strText2MLE, 'n');
                             }
                             else
                             {
@@ -890,6 +890,8 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 xstrcat(&strText2MLE, pszErr, 0);
                                 free(pszErr);
                             }
+
+                            xstrcatc(&strText2MLE, '\n'); // fixed V0.9.12 (2001-04-28) [umoeller]
 
                             // enable "Configure" button if dialog defined
                             if (precc->pDriverSpec->idConfigDlg)

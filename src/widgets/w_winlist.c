@@ -1010,6 +1010,8 @@ VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
  *      This is the one place which is used by
  *      all other parts to determine whether the
  *      specified switch control is filtered.
+ *
+ *@@changed V0.9.12 (2001-04-28) [umoeller]: now matching first chars of filter only
  */
 
 BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
@@ -1031,7 +1033,10 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
         while (pNode)
         {
             PSZ pszFilterThis = (PSZ)pNode->pItemData;
-            if (strcmp(pCtrl->szSwtitle, pszFilterThis) == 0)
+            if (!strncmp(pCtrl->szSwtitle,
+                         pszFilterThis,
+                         strlen(pszFilterThis)))    // match length of filter only
+                                                    // V0.9.12 (2001-04-28) [umoeller]
             {
                 // filtered:
                 brc = TRUE;
@@ -1174,6 +1179,7 @@ PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
  *      -- 0: no repaint necessary.
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
+ *@@changed V0.9.12 (2001-04-28) [umoeller]: didn't pick up changes in the filters, fixed
  */
 
 ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
@@ -1181,6 +1187,8 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
 {
     ULONG       flReturn = 0;
     PSWBLOCK    pswBlock = pwinhQuerySwitchList(pPrivate->pWidget->habWidget);
+
+    PLINKLIST   pllFilters = &pPrivate->Setup.llFilters;
 
     if (pswBlock)
     {
@@ -1196,50 +1204,53 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
         while (pNode)
         {
             PSWCNTRL    pCtrlInList = (PSWCNTRL)pNode->pItemData;
-            BOOL        fRemove = FALSE;
+            BOOL        fRemove = TRUE;
             PLISTNODE   pNodeNext = pNode->pNext;
 
-            // skip this check if we're redrawing all already
-            if (0 == (flReturn & SCANF_REDRAWALL))
+            // check if this is still in the current switchlist
+            for (ul = 0;
+                 ul < pswBlock->cswentry;
+                 ul++)
             {
-                // check if this is still in here
-                fRemove = TRUE;
-
-                for (ul = 0;
-                     ul < pswBlock->cswentry;
-                     ul++)
+                PSWCNTRL pCtrlThis = &pswBlock->aswentry[ul].swctl;
+                if (    (pCtrlThis->hwnd == pCtrlInList->hwnd)
+                     && (pCtrlThis->idProcess == pCtrlInList->idProcess)
+                     && (pCtrlThis->idSession == pCtrlInList->idSession)
+                     && (pCtrlThis->bProgType == pCtrlInList->bProgType)
+                   )
                 {
-                    PSWCNTRL pCtrlThis = &pswBlock->aswentry[ul].swctl;
-                    if (    (pCtrlThis->hwnd == pCtrlInList->hwnd)
-                         && (pCtrlThis->idProcess == pCtrlInList->idProcess)
-                         && (pCtrlThis->idSession == pCtrlInList->idSession)
-                         && (pCtrlThis->bProgType == pCtrlInList->bProgType)
-                       )
+                    HWND hwndIcon;
+                    BOOL fDirty = FALSE;
+
+                    // OK, this list node is still in the switchlist:
+                    // check if all the data is still valid
+                    if (strcmp(pCtrlThis->szSwtitle, pCtrlInList->szSwtitle))
                     {
-                        HWND hwndIcon;
-                        BOOL fDirty = FALSE;
+                        // session title changed:
+                        memcpy(pCtrlInList->szSwtitle,
+                               pCtrlThis->szSwtitle,
+                               sizeof(pCtrlThis->szSwtitle));
+                        fDirty = TRUE;
+                    }
 
-                        // OK, this list node is still in the switchlist:
-                        // check if all the data is still valid
-                        if (strcmp(pCtrlThis->szSwtitle, pCtrlInList->szSwtitle))
-                        {
-                            // session title changed:
-                            memcpy(pCtrlInList->szSwtitle,
-                                   pCtrlThis->szSwtitle,
-                                   sizeof(pCtrlThis->szSwtitle));
-                            fDirty = TRUE;
-                        }
+                    // check icon
+                    hwndIcon = (HWND)WinSendMsg(pCtrlInList->hwnd,
+                                                WM_QUERYICON, 0, 0);
+                    if (hwndIcon != pCtrlInList->hwndIcon)
+                    {
+                        // icon changed:
+                        pCtrlInList->hwndIcon = hwndIcon;
+                        fDirty = TRUE;
+                    }
 
-                        // check icon
-                        hwndIcon = (HWND)WinSendMsg(pCtrlInList->hwnd,
-                                                    WM_QUERYICON, 0, 0);
-                        if (hwndIcon != pCtrlInList->hwndIcon)
-                        {
-                            // icon changed:
-                            pCtrlInList->hwndIcon = hwndIcon;
-                            fDirty = TRUE;
-                        }
-
+                    // check if this item is now filtered;
+                    // maybe filters changed, or the title changed
+                    // in a way that a filter now applies
+                    // V0.9.12 (2001-04-28) [umoeller]
+                    if (!IsCtrlFiltered(pllFilters,
+                                        pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
+                                        pCtrlThis))
+                    {
                         if (fDirty)
                         {
                             if (pllDirty)
@@ -1250,22 +1261,24 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
 
                         // so do not remove this list node
                         fRemove = FALSE;
-                        break;      // for switch list
                     }
-                }
+                    // else item filtered now: fRemove is still FALSE
 
-                if (fRemove)
-                {
-                    if (pCtrlInList == pPrivate->pCtrlActive)
-                        // this was marked as active:
-                        pPrivate->pCtrlActive = NULL;
-
-                    // alright, remove this
-                    plstRemoveNode(&pPrivate->llSwitchEntries,
-                                   pNode);           // auto-free
-                    flReturn = SCANF_REDRAWALL;
+                    break;      // for switch list
                 }
-            } // end if (0 == (flReturn & SCANF_REDRAWALL))
+            }
+
+            if (fRemove)
+            {
+                if (pCtrlInList == pPrivate->pCtrlActive)
+                    // this was marked as active:
+                    pPrivate->pCtrlActive = NULL;
+
+                // alright, remove this
+                plstRemoveNode(&pPrivate->llSwitchEntries,
+                               pNode);           // auto-free
+                flReturn = SCANF_REDRAWALL;
+            }
 
             // remember currently active switch entry
             if (pCtrlInList->hwnd == hwndCurrentActive)
@@ -1293,7 +1306,7 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                 PSWCNTRL pCtrlThis = &pswBlock->aswentry[ul].swctl;
 
                 // apply filter
-                if (!IsCtrlFiltered(&pPrivate->Setup.llFilters,
+                if (!IsCtrlFiltered(pllFilters,
                                     pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
                                     pCtrlThis))
                 {
@@ -1325,7 +1338,7 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                                 pPrivate->pCtrlActive = pNew;
                         }
                     } // end if (!FindSwitchNodeFromHWND(pPrivate,
-                } // end if (!IsCtrlFiltered(&pPrivate->Setup.llFilters,
+                } // end if (!IsCtrlFiltered(pllFilters,
             } // end for (ul = 0; ul < pswBlock->cswentry;
 
             if (0 == (flReturn & SCANF_REDRAWALL))
@@ -1615,86 +1628,6 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
         }
     } // end if (cWins)
 }
-
-/*
- *@@ RedrawActiveChanged:
- *      gets called to repaint the buttons only which
- *      are affected by an active window change. We
- *      don't want to redraw the entire bar all the time.
- *
- *      This repaints and stores the new active window in pPrivate.
- *
- *@@changed V0.9.7 (2001-01-03) [umoeller]: fixed active redraw problems
- */
-
-/* VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
-                         HWND hwndActive)       // new active window
-{
-    BOOL fChanged = TRUE;
-
-    if (pPrivate->pCtrlActive)
-        if (pPrivate->pCtrlActive->hwnd == hwndActive)
-            // active window not changed:
-            fChanged = FALSE;
-
-    if (fChanged)
-    {
-        HWND hwndWidget = pPrivate->pWidget->hwndWidget;
-        HPS hps = WinGetPS(hwndWidget);
-        if (hps)
-        {
-            RECTL rclSubclient;
-            pgpihSwitchToRGB(hps);
-            GetPaintableRect(pPrivate, &rclSubclient);
-
-            if (pPrivate->pCtrlActive)
-            {
-                // unpaint old active
-                DrawOneCtrl(pPrivate,
-                            hps,
-                            &rclSubclient,
-                            pPrivate->pCtrlActive,
-                            hwndActive,
-                            NULL);
-                // unset old active... this may change below
-                pPrivate->pCtrlActive = NULL;
-            }
-
-            if (hwndActive)
-            {
-                // we now have an active window:
-                // mark that in the list...
-                // ULONG   cEntries = pPrivate->pswBlock->cswentry;
-                PLISTNODE pNode;
-                for (pNode = plstQueryFirstNode(&pPrivate->llSwitchEntries);
-                     pNode;
-                     pNode = pNode->pNext)
-                {
-                    PSWCNTRL pCtrlThis = (PSWCNTRL)pNode->pItemData;
-                    // was this item marked as paintable?
-                    if (    (pCtrlThis->hwnd == hwndActive)
-                         // && (pCtrlThis->fbJump & WLF_SHOWBUTTON)
-                       )
-                    {
-                        // store currently active in pPrivate,
-                        // so we can detect changes quickly
-                        pPrivate->pCtrlActive = pCtrlThis;
-                        // repaint active
-                        DrawOneCtrl(pPrivate,
-                                    hps,
-                                    &rclSubclient,
-                                    pCtrlThis,
-                                    hwndActive,
-                                    NULL);
-                        break;
-                    }
-                }
-            }
-
-            WinReleasePS(hps);
-        } // end if (hps)
-    } // end if (fChanged)
-} */
 
 /*
  *@@ UpdateSwitchList:

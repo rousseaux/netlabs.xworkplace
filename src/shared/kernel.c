@@ -1794,6 +1794,44 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                 }
             break;
 
+            /*
+             *@@ T1M_INITIATEXSHUTDOWN:
+             *      posted from the XCenter X-button widget
+             *      to have XShutdown initiated with the
+             *      current settings.
+             *
+             *      (ULONG)mp1 must be one of the following:
+             *      --  ID_CRMI_LOGOFF: logoff.
+             *      --  ID_CRMI_RESTARTWPS: restart WPS.
+             *      --  ID_CRMI_SHUTDOWN: "real" shutdown.
+             *
+             *      These are the menu item IDs from the
+             *      X-button menu.
+             *
+             *      We have this message here now because
+             *      initiating XShutdown from an XCenter
+             *      thread means asking for trouble.
+             *
+             *@@added V0.9.12 (2001-04-28) [umoeller]
+             */
+
+            case T1M_INITIATEXSHUTDOWN:
+                switch ((ULONG)mp1)
+                {
+                    case ID_CRMI_LOGOFF:
+                        xsdInitiateRestartWPS(TRUE);    // logoff
+                    break;
+
+                    case ID_CRMI_RESTARTWPS:
+                        xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
+                    break;
+
+                    case ID_CRMI_SHUTDOWN:
+                        xsdInitiateShutdown();
+                    break;
+                }
+            break;
+
             #ifdef __DEBUG__
             case XM_CRASH:          // posted by debugging context menu of XFldDesktop
                 CRASH;

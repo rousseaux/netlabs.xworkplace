@@ -369,6 +369,7 @@ void WgtScanSetup(const char *pcszSetupString,
     if(p)
     {
         pSetup->chDrive = ValidateDrive(*p);  // V0.9.11 (2001-04-19) [pr]: Validate drive letter
+        pctrFreeSetupValue(p);
     }
     else
         pSetup->chDrive = '*';
@@ -880,13 +881,14 @@ void WgtPaint(HWND hwnd,
                                 (rclWin.yTop-rclWin.yBottom-11)/2+1,
                                 21,
                                 11,
-                                pPrivate->hptrDrive,
+                                pPrivate->hptrDrives[pPrivate->bFSIcon],
                                 DP_NORMAL);
                                                            // pPrivate->dAktDriveSize/1024/1024...100%
               // print drive-data                             pPrivate->dAktDriveFree/1024/1024...x%
               // V0.9.11 (2001-04-19) [pr]: Fixed show drive type
               if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
                 sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                                                                pPrivate->szAktDriveType,
                                                                 pPrivate->dAktDriveFree/1024/1024,
                                                                 dPercentFree);
               else
@@ -909,6 +911,7 @@ void WgtPaint(HWND hwnd,
 
               if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
                 sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
+                                                   pPrivate->szAktDriveType,
                                                    pPrivate->dAktDriveFree/1024/1024);
               else
                 sprintf(szText, "%c:  %.fMB", pPrivate->chAktDrive,
@@ -1222,27 +1225,33 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                 mrc = WgtCreate(hwnd, pWidget);
             else
                 // stop window creation!!
-                mrc = (MPARAM)TRUE;
+                mrc = (MRESULT)TRUE;
         break;
 
         case WM_CONTROL:
-            mrc = (MPARAM)WgtControl(hwnd, mp1, mp2);
+            mrc = (MRESULT)WgtControl(hwnd, mp1, mp2);
         break;
 
         case WM_MOUSEMOVE:
         {
+            // This was wrong. You must call the default window procedure unless you
+            // handle all cases.  V0.9.11 (2001-04-27) [pr]
             if(pWidget)
             {
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
 
                 if(pPrivate->Setup.chDrive=='*')
+                {
                     WinSetPointer(HWND_DESKTOP, pPrivate->hptrHand);
+                    mrc = (MRESULT)TRUE;        // V0.9.11 (2001-04-18) [umoeller]
+                }
             }
+            if (!mrc)
+                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
 
-            mrc = (MRESULT)TRUE;        // V0.9.11 (2001-04-18) [umoeller]
-                                        // you processed the msg, so return TRUE
         break; }
 
+        case WM_BUTTON1CLICK:
         case WM_BUTTON1DBLCLK:  // V0.9.11 (2001-04-19) [pr]
         {
             if(pWidget)

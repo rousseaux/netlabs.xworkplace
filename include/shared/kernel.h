@@ -350,6 +350,8 @@
 
     #define T1M_PAGEMAGECTXTMENU        (WM_USER+289)    // V0.9.11 (2001-04-25) [umoeller]
 
+    #define T1M_INITIATEXSHUTDOWN       (WM_USER+290)    // V0.9.12 (2001-04-28) [umoeller]
+
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);

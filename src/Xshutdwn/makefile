@@ -26,6 +26,15 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in. $(XWP_OUTPUT_ROOT) is set by
+# setup.in to point to \bin from the XWorkplace sources root,
+# but this can be modified by setting an external environment
+# variable. This approach has the advantage that
+# 1) all build files are in a common dir tree and the entire
+#    tree can be removed completely;
+# 2) the build tree can be on a different physical drive for
+#    speed.
 BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_st
 !if [@echo       OUTPUTDIR is $(OUTPUTDIR)]

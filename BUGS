@@ -39,6 +39,10 @@ tooltips:
     -- rewrite auto-pop
 
 XCenter:
+    -- do not use XCenter thread for starting shutdown etc.
+
+    -- check wpClose again... this hangs the system somewhere
+
     -- put menus on object buttons on top of the bar, not on top of the button.
 
     -- add option for tooltip shadows.

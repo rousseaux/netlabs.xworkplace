@@ -996,6 +996,7 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *@@changed V0.9.9 (2001-03-07) [umoeller]: added "run" to X-button
  *@@changed V0.9.11 (2001-04-18) [umoeller]: now opening objects on thread 1 always
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed broken standard widget menu items
+ *@@changed V0.9.12 (2001-04-28) [umoeller]: moved XShutdown init to thread 1 object window
  */
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
@@ -1051,15 +1052,14 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                     break;
 
                     case ID_CRMI_LOGOFF:
-                        xsdInitiateRestartWPS(TRUE);    // logoff
-                    break;
-
                     case ID_CRMI_RESTARTWPS:
-                        xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
-                    break;
-
                     case ID_CRMI_SHUTDOWN:
-                        xsdInitiateShutdown();
+                        // do this on thread 1, or otherwise we'll
+                        // get problems with the XCenter thread
+                        // V0.9.12 (2001-04-28) [umoeller]
+                        krnPostThread1ObjectMsg(T1M_INITIATEXSHUTDOWN,
+                                                (MPARAM)ulMenuId,
+                                                0);
                     break;
 
                     case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]

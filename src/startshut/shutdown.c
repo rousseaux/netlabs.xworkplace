@@ -183,15 +183,18 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
     psdp->optWPSCloseWindows = TRUE;
     psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
     psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+
     if (psdp->optReboot)
         // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
         psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
     else
         psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+
     psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                       && (apmPowerOffSupported())
                      );
     psdp->optAPMDelay = ((pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
+
     psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
 
     psdp->optEmptyTrashCan = ((pGlobalSettings->ulXShutdownFlags & XSD_EMPTY_TRASH) != 0);
@@ -321,6 +324,7 @@ BOOL xsdInitiateShutdown(VOID)
             psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
         else
             psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+
         psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                           && (apmPowerOffSupported())
                          );
