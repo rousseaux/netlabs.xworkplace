@@ -228,7 +228,8 @@
 
     BOOL pgrIsShowing(PSWP pswp);
 
-    VOID pgrRecoverWindows(HAB hab);
+    VOID pgrRecoverWindows(HAB hab,
+                           BOOL fWPSOnly);
 
     BOOL pgrCreatePager(VOID);
 

@@ -205,8 +205,10 @@
                 // window list handle (frame)
                     hwndSwitchListCnr;
                 // window list's container
-        ULONG       pidPM;
+        ULONG       pidPM,
                 // process ID of first PMSHELL.EXE V0.9.7 (2001-01-21) [umoeller]
+                    pidWPS;
+                // process ID of second PMSHELL.EXE V0.9.20 (2002-08-10) [umoeller]
 
         HWND        hwndLockupFrame;
                 // current lockup window, if any

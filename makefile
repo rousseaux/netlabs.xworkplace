@@ -910,3 +910,4 @@ daily: release
     cmd.exe /c create_xwp_exe_daily.cmd
     cd $(CURRENT_DIR)
 
+

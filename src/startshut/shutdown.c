@@ -4308,12 +4308,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
         // tell XPager to recover all windows to the current screen
         // V0.9.12 (2001-05-15) [umoeller]
-        // but only if we're doing shutdown, not on restart wps
-        // V0.9.19 (2002-06-18) [umoeller]
-        if (    (pShutdownData->SDConsts.pKernelGlobals)
-             && (pShutdownData->sdParams.ulCloseMode == SHUT_SHUTDOWN)
-                                // not Desktop (1), not logoff (2)
-           )
+        if (pShutdownData->SDConsts.pKernelGlobals)
         {
             PXWPGLOBALSHARED pXwpGlobalShared;
 
@@ -4321,12 +4316,24 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                  && (pXwpGlobalShared->hwndDaemonObject)
                )
             {
+                BOOL fWPSOnly = FALSE;
+                // now, if we are doing a restart wps and not all
+                // sessions should be closed, we should still recover
+                // windows, but only those of the WPS process... so
+                // a flag has been added for that to XDM_RECOVERWINDOWS
+                // V0.9.20 (2002-08-10) [umoeller]
+                if (    (pShutdownData->sdParams.ulCloseMode != SHUT_SHUTDOWN)
+                                // not Desktop (1), not logoff (2)
+                     && (!pShutdownData->sdParams.optWPSCloseWindows)
+                   )
+                    fWPSOnly = TRUE;
+
                 doshWriteLogEntry(LogFile,
                        __FUNCTION__ ": Recovering all XPager windows...");
 
                 WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_RECOVERWINDOWS,
-                           0,
+                           (MPARAM)fWPSOnly,
                            0);
             }
         }

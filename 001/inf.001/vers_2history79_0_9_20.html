@@ -38,6 +38,9 @@ show icons much more quickly initially and loads the real object icons asynchron
 on a separate thread. This can be enabled in "Workplace Shell", "Folder Views" page
 and should work even if turbo folders or extended associations are disabled.
 
+<P><LI>&xcenter;: Window list widget has a "Filter" menu item in the button context
+menu now for quicker filtering.
+
 <P><LI>&pgr;: Selecting "Properties" from the pager context menu opens the "&pgr;"
 page in the "Screen" object directly now.
 
@@ -56,6 +59,8 @@ memory. Awake objects management is no longer done by the Worker thread either.
 <P><LI>Common: Optimized my object destruction mechanism to no longer use SOM name
 lookup method resolution, since I found a way to handle undocumented WPS methods better.
 
+<P><LI>File operations: Reworked replacement "File exists" dialog.
+
 <P><LI>Replacement refresh: Tweaked thread priorities a bit to catch more file-system
 notifications.
 
@@ -64,6 +69,12 @@ systems.
 
 <P><LI>Trash can: Is now smart enough to use DosForceDelete in order not to
 move all files to DELDIR (if enabled) on emptying the trash can.
+
+<P><LI>&xcenter;: Reworked all widget context menus to make them more accessible.
+
+<P><LI>&xshutdown;: On "Restart Desktop", if "close all sessions" is off, pager
+recovers only WPS windows to current screen, while others keep running on their
+own screens.
 
 </UL>Bugfixes:
 
@@ -84,16 +95,28 @@ views sometimes not updated properly.
 <P><LI>Common: Fixed a nasty object ID problem that would cause CHECKINI to report
 lots of bad object IDs when objects were created from the "Create new" folder menu.
 
+<P><LI>Common: Fixed a problem during object deletion that could cause the object to
+re-add information to the INI files. This was probably the cause for CHECKINI to
+report abstract objects that had been deleted by &xwp;.
+
+<P><LI>Common: All &xwp; message boxes were lacking the top-right "Close" button. Fixed.
+
 <P><LI>"Icon" page replacement: Fixed excessive rename when page was first opened.
 
 <P><LI>Program objects: Command line icons were broken (in "Command Prompts" folder),
 and batch files and Win-OS/2 full screen objects didn't work at all. Fixed.
 
-<P><LI>Replacement "File exists" dialog: Never respected the auto-rename or auto-replace
-settings on the "Title" page in "Workplace Shell". Fixed.
+<P><LI>File operations: Replacement "File exists" dialog never respected the
+auto-rename or auto-replace settings on the "Title" page in "Workplace Shell". Fixed.
+
+<P><LI>Folders: Hotkey for "Select by name" (per default, Ctrl+S) broke with V0.9.19.
+Fixed.
 
 <P><LI>Folders: "Batch rename" dialog had problems enabling the start rename button.
 Fixed.
+
+<P><LI>Folders: Folder hotkey descriptions were either wrong or missing in the items
+in the menu bar pulldowns. Fixed, hopefully.
 
 <P><LI>Extended associations: Got rid of the internal types cache that ate up lots
 of memory and had synchronization problems anyway, leading to wrong associations
@@ -115,6 +138,11 @@ at the same time. Fixed.
 
 <P><LI>Trash can: Failed on deleting FTP folders. Fixed.
 
+<P><LI>Trash can / replacement delete: Plugged another hole where the WPS kept
+producing file-system handles for objects just before deleting them. The handles
+stayed in OS2SYS.INI forever, of course.
+This was especially expensive when a folder with many subfolders was deleted.
+
 <P><LI>Fonts folder: Reported "already installed" when installing fonts if a font
 was previously deinstalled without rebooting the system. Fixed.
 
@@ -124,11 +152,20 @@ installing/deinstalling fonts. Fixed.
 <P><LI>Fonts folder: Had serialization problems when several views were populated
 at the same time. Fixed.
 
+<P><LI>Setup string objects: If the default object stored in the setup string
+object could not be resolved from handle, double-clicking on the setup string
+object crashed &xwp;. Fixed.
+
 <P><LI>Sound object: Sound scheme testing was case-sensitive, while sound schemes
 in OS2SYS.INI are case-insensitive. Fixed.
 
 <P><LI>Screen object: Special functions on screen border objects page had funny
 titles, fixed.
+
+<P><LI>&xcenter;: Diskfree (WarpCenter style) would never save its width, fixed.
+
+<P><LI>&xshutdown;: Partitions listed on the "Partitions" button in the user
+reboot actions dialog were truncated to 8 characters, but LVM allows 20. Fixed.
 
 <P><LI>Hook: Fixed raise window on MB1 clicks in certain situations. Also fixed
 a couple items with Mozilla menus. (Martin Lafaix)
@@ -141,9 +178,11 @@ dialog.
 
 <P><LI>&pgr;: Stay on top would never work, fixed.
 
-<P><LI>&pgr;: While Embellish was running, pager would stop switching. Fixed.
+<P><LI>&pgr;: If "Show secondary windows" was on, you couldn't click on them
+in the pager. Not sure when this broke or if this was even broken in 0.9.19,
+but it works now.
 
-<P><LI>&xcenter;: Diskfree (WarpCenter style) would never save its width, fixed.
+<P><LI>&pgr;: While Embellish was running, pager would stop switching. Fixed.
 
 </UL>
 </BODY>

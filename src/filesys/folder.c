@@ -2640,7 +2640,8 @@ VOID fdrShowBatchRename(HWND hwndFrame)
 
 typedef struct _PASTEDLGDATA
 {
-    HWND            hwndFrame;      // folder frame
+    HWND            hwndFrame,      // folder frame
+                    hwndDlg;        // paste dlg
 
     HAB             hab;
 
@@ -2780,7 +2781,7 @@ static BOOL PasteFillClassesForFormat(PPASTEDLGDATA pData)
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
 
-static BOOL PasteFillControls(HWND hwndDlg, PPASTEDLGDATA pData)
+static BOOL PasteFillControls(PPASTEDLGDATA pData)
 {
     BOOL    brc = FALSE,
             fClip = TRUE;
@@ -2879,13 +2880,91 @@ static BOOL PasteFillControls(HWND hwndDlg, PPASTEDLGDATA pData)
     if (fClip)
         WinCloseClipbrd(pData->hab);
 
-    WinEnableControl(hwndDlg, DID_OK, brc);
-
     return brc;
+}
+
+PFNWP G_pfnwpStaticOrig = NULL;
+
+/*
+ *@@ fnwpPreviewer:
+ *      window proc for the subclassed static control
+ *      that paints itself as text or bitmap depending
+ *      on the current clipboard format.
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
+ */
+
+static MRESULT EXPENTRY fnwpPreviewer(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_PAINT:
+        {
+            HPS hps;
+            if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
+            {
+                HAB hab = WinQueryAnchorBlock(hwnd);
+                if (WinOpenClipbrd(hab))
+                {
+                    RECTL   rcl;
+                    PSZ     pszText;
+                    HBITMAP hbm;
+
+                    WinQueryWindowRect(hwnd, &rcl);
+                    WinFillRect(hps, &rcl, CLR_WHITE);
+
+                    if (pszText = (PSZ)WinQueryClipbrdData(hab, CF_TEXT))
+                    {
+                        winhDrawFormattedText(hps,
+                                              &rcl,
+                                              pszText,
+                                              DT_TOP | DT_LEFT);
+                    }
+                    else if (hbm = (HBITMAP)WinQueryClipbrdData(hab, CF_BITMAP))
+                    {
+                        gpihStretchBitmap(hps,
+                                          hbm,
+                                          NULL,
+                                          &rcl,
+                                          TRUE);        // proportional
+                    }
+
+                    WinCloseClipbrd(hab);
+                }
+
+                WinEndPaint(hps);
+            }
+        }
+        break;
+
+        default:
+            mrc = G_pfnwpStaticOrig(hwnd, msg, mp1, mp2);
+    }
+
+    return mrc;
 }
 
 /*
  *@@ fnwpPaste:
+ *      window proc for the replacement "Paste" dialog.
+ *
+ *      This not only has the same fields as the WPS "Paste"
+ *      dialog, but remembers the values that were used
+ *      between several paste operations so that you don't
+ *      have to re-select the same format and class every
+ *      time. I found that especially annoying with pasting
+ *      URLs from the Mozilla URL bar.
+ *
+ *      We also remember the last ten object titles that
+ *      were used.
+ *
+ *      In addition, we set ourselves as the clipboard viewer
+ *      while we're visible. This is not only handy for the
+ *      user to see what he's pasting actually, but allows
+ *      us to detect when the clipboard data has changed
+ *      (which the WPS dialog simply won't know about).
  *
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
@@ -2908,10 +2987,16 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
             pData->hab = WinQueryAnchorBlock(hwndDlg);
 
+            pData->hwndDlg = hwndDlg;
+
             pData->hwndPreview = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_PREVIEW_PANE);
             pData->hwndObjTitle = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_OBJTITLE_DROP);
             pData->hwndFormat = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_FORMAT_DROP);
             pData->hwndClass = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_CLASS_DROP);
+
+            WinSetWindowPtr(pData->hwndPreview, QWL_USER, pData);
+            G_pfnwpStaticOrig = WinSubclassWindow(pData->hwndPreview,
+                                                  fnwpPreviewer);
 
             winhSetPresColor(pData->hwndPreview,
                              PP_BACKGROUNDCOLOR,
@@ -2923,7 +3008,7 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
                               "5.System VIO");
 
             // fill formats and classes
-            PasteFillControls(hwndDlg, pData);
+            PasteFillControls(pData);
 
             // fill titles
             FillDropDownFromIni(pData->hwndObjTitle,
@@ -2933,21 +3018,69 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
             WinSetFocus(HWND_DESKTOP, pData->hwndObjTitle);
             mrc = (MRESULT)TRUE;        // we changed focus
             winhEntryFieldSelectAll(pData->hwndObjTitle);
+
+            // set the previewer as the clipboard viewer
+            WinSetClipbrdViewer(pData->hab,
+                                hwndDlg);
+
+            WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+        }
+        break;
+
+        /*
+         * WM_DRAWCLIPBOARD:
+         *      since we're the clipboard viewer, we receive
+         *      this message whenever the clipboard changes.
+         */
+
+        case WM_DRAWCLIPBOARD:
+        {
+            PPASTEDLGDATA pData = WinQueryWindowPtr(hwndDlg, QWL_USER);
+
+            // refresh the drop-downs
+            PasteFillControls(pData);
+
+            // have the preview static repaint itself
+            WinInvalidateRect(pData->hwndPreview, NULL, FALSE);
         }
         break;
 
         case WM_CONTROL:
             switch (SHORT1FROMMP(mp1))
             {
+                case ID_XFDI_PASTE_OBJTITLE_DROP:
+                    if (SHORT2FROMMP(mp1) == CBN_EFCHANGE)
+                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+                break;
+
                 case ID_XFDI_PASTE_FORMAT_DROP:
-                    if (SHORT2FROMMP(mp1) == LN_SELECT)
+                    if (SHORT2FROMMP(mp1) == CBN_LBSELECT)
                     {
                         // refresh the classes if a new format is selected
                         PPASTEDLGDATA pData = WinQueryWindowPtr(hwndDlg, QWL_USER);
                         PasteFillClassesForFormat(pData);
+
+                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
                     }
                 break;
+
+                case ID_XFDI_PASTE_CLASS_DROP:
+                    if (SHORT2FROMMP(mp1) == CBN_LBSELECT)
+                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+                break;
             }
+        break;
+
+        case XM_ENABLEITEMS:
+        {
+            PPASTEDLGDATA pData = WinQueryWindowPtr(hwndDlg, QWL_USER);
+            WinEnableControl(hwndDlg,
+                             DID_OK,
+                                WinQueryWindowTextLength(pData->hwndObjTitle)
+                             && WinQueryWindowTextLength(pData->hwndFormat)
+                             && WinQueryWindowTextLength(pData->hwndClass)
+                            );
+        }
         break;
 
         case WM_HELP:
@@ -3003,17 +3136,30 @@ static const DLGHITEM G_dlgPaste[] =
 
 /*
  *@@ DoPaste:
+ *      pastes the clipboard contents to a new file
+ *      in the given folder.
+ *
+ *      This creates a new file of the given class
+ *      and calls _wpRenderFromClipboard (Warp 4
+ *      method) on it with the given ulFormat.
+ *
+ *      We also call _wpConfirmObjectTitle to have
+ *      title conflicts resolved.
+ *
+ *      Returns the new object that was created,
+ *      which has been locked once.
  *
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
 
-static BOOL DoPaste(WPFolder *pFolder,
-                    PSZ pszClass,
-                    PSZ pszFilename,
-                    ULONG cbFilename,           // in: buffer size
-                    ULONG ulFormat)
+static WPDataFile* DoPaste(WPFolder *pFolder,
+                           PSZ pszClass,               // in: WPS class to use for new file
+                           PSZ pszFilename,            // in: filename for new file
+                           ULONG cbFilename,           // in: filename buffer size (needed for _wpConfirmObjectTitle)
+                           ULONG ulFormat)             // in: clipboard format for _wpRenderFromClipboard
 {
-    BOOL    brc = FALSE;
+    WPObject *pobjNew = NULL;
+
     somId   somidClassName;
     RENDERFROMCLIPBOARD *_wpRenderFromClipboard;
 
@@ -3025,8 +3171,6 @@ static BOOL DoPaste(WPFolder *pFolder,
                                          0,
                                          0))
         {
-            WPObject *pobjNew;
-
             if (pobjNew = _wpclsNew(pClassObject,
                                     pszFilename,
                                     NULL,
@@ -3057,8 +3201,12 @@ static BOOL DoPaste(WPFolder *pFolder,
                                                                                        "wpRenderFromClipboard"))
                    )
                 {
-                    brc = _wpRenderFromClipboard(pobjNew,
-                                                 ulFormat);
+                    if (!_wpRenderFromClipboard(pobjNew,
+                                                ulFormat))
+                    {
+                        _wpFree(pobjNew);
+                        pobjNew = NULL;
+                    }
                 }
             }
         }
@@ -3066,11 +3214,15 @@ static BOOL DoPaste(WPFolder *pFolder,
         SOMFree(somidClassName);
     }
 
-    return brc;
+    return pobjNew;
 }
 
 /*
  *@@ fdrShowPasteDlg:
+ *      called from mnuMenuItemSelected when WPMENUID_PASTE
+ *      comes in to show our replacement "Paste" dialog.
+ *
+ *      See fnwpPaste.
  *
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
@@ -3120,10 +3272,17 @@ VOID fdrShowPasteDlg(WPFolder *pFolder,
                                (PVOID)pData,
                                cmnQueryDefaultFont()))
             {
+                ULONG ulrc;
+
                 winhPlaceBesides(G_hwndOpenPasteDlg,
                                  WinWindowFromID(hwndFrame, FID_CLIENT),
                                  PLF_SMART);
-                if (DID_OK == WinProcessDlg(G_hwndOpenPasteDlg))
+                ulrc = WinProcessDlg(G_hwndOpenPasteDlg);
+
+                WinSetClipbrdViewer(pData->hab,
+                                    NULLHANDLE);
+
+                if (DID_OK == ulrc)
                 {
                     CHAR    szFilename[CCHMAXPATH];
                     CHAR    szClass[100];

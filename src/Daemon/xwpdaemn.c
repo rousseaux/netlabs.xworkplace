@@ -494,7 +494,8 @@ VOID dmnKillXPager(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGERCLOSE
         // stop move thread
         WinPostMsg(G_pHookData->hwndPagerMoveThread, WM_QUIT, 0, 0);
 
-        pgrRecoverWindows(G_habDaemon);
+        pgrRecoverWindows(G_habDaemon,
+                          FALSE);           // not WPS only
 
         // set global window handles to NULLHANDLE;
         // the hook sees this and will stop processing
@@ -2390,6 +2391,13 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 if (G_pHookData)
                 {
                     G_pHookData->hwndWPSDesktop = (HWND)mp1;
+
+                    // store the pid too
+                    // V0.9.20 (2002-08-10) [umoeller]
+                    WinQueryWindowProcess((HWND)mp1,
+                                          &G_pHookData->pidWPS,
+                                          NULL);
+
 #ifndef __NOPAGER__
                     // give XPager a chance to recognize the Desktop
                     // V0.9.4 (2000-08-08) [umoeller]
@@ -2451,13 +2459,23 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      Posted during XShutdown to make sure that
              *      window positions are not saved off screen.
              *
+             *      Parameters:
+             *
+             *      BOOL mp1: if TRUE, only windows in the WPS process
+             *           are recovered. If FALSE, all windows are
+             *           recovered. This has been added with V0.9.20
+             *           for the "Restart WPS" feature when processes
+             *           should keep running on their own desktops.
+             *
              *@@added V0.9.12 (2001-05-15) [umoeller]
              *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed crash if hook wasn't active
+             *@@changed V0.9.20 (2002-08-10) [umoeller]: added BOOL mp1
              */
 
             case XDM_RECOVERWINDOWS:
                 if (G_pHookData)        // V0.9.13 (2001-06-14) [umoeller]
-                    pgrRecoverWindows(G_habDaemon);
+                    pgrRecoverWindows(G_habDaemon,
+                                      (BOOL)mp1);       // fWPSOnly
             break;
 
             /*

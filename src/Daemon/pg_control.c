@@ -314,17 +314,29 @@ BOOL pgrIsShowing(PSWP pswp)
  *@@ pgrRecoverWindows:
  *      recovers all windows (hopefully).
  *
- *      Gets called on WM_CLOSE in fnwpXPagerClient.
- *      This makes sure that when XPager terminates
- *      for whatever reason, the user isn't left with
- *      windows which are completely off the screen.
+ *      Gets called from several locations:
+ *
+ *      --  from dmnKillXPager because then we MUST
+ *          recover, since the pager is dying and the
+ *          user will be unable to retrieve windows back.
+ *
+ *      --  when XDM_RECOVERWINDOWS comes into
+ *          fnwpDaemonObject. Most importantly, this
+ *          gets posted from XShutdown before it starts
+ *          closing windows so that window positions are
+ *          not saved off-screen.
+ *
+ *          In the case of restart WPS, we now recover
+ *          WPS windows only. V0.9.20 (2002-08-10) [umoeller]
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.19 (2002-06-02) [umoeller]: rewritten to use linklist
  *@@changed V0.9.19 (2002-06-08) [umoeller]: no longer recovering XCenters
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: added fWPSOnly for better restart wps support
  */
 
-VOID pgrRecoverWindows(HAB hab)
+VOID pgrRecoverWindows(HAB hab,
+                       BOOL fWPSOnly)
 {
     LINKLIST    llSWPs;
     HENUM       henum;
@@ -332,6 +344,7 @@ VOID pgrRecoverWindows(HAB hab)
 
     ULONG       cWindows;
     PSWP        paswp;
+    PID         pid;
 
     lstInit(&llSWPs,
             TRUE);      // auto-free
@@ -342,6 +355,13 @@ VOID pgrRecoverWindows(HAB hab)
         CHAR    szClassName[30];
         SWP     swp;
         if (    (hwnd != G_pHookData->hwndWPSDesktop)
+                // if fWPSOnly is set, recover only windows
+                // in the WPS process V0.9.20 (2002-08-10) [umoeller]
+             && (    (!fWPSOnly)
+                  || (    (WinQueryWindowProcess(hwnd, &pid, NULL))
+                       && (pid == G_pHookData->pidWPS)
+                     )
+                )
              && (WinIsChild(hwnd, HWND_DESKTOP))
              && (!WinIsChild(hwnd, G_pHookData->hwndPagerFrame))
              && (WinQueryWindowPos(hwnd, &swp))

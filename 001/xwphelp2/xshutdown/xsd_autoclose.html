@@ -5,7 +5,9 @@
     </TITLE>
 </HEAD>
 <BODY>
-In this dialog, you can determine which non-PM sessions will be closed automatically
+In this dialog, you can determine which non-PM
+<!-- V0.9.20: added link -->
+<A HREF="glossary/gls_sessions.html">sessions</A> will be closed automatically
 during Desktop restart or the eXtended Shutdown and which method will be used to close them.
 
 <P>Note that whatever you specify here only applies
@@ -14,6 +16,8 @@ to non-PM sessions; PM windows will never be closed by the methods you specify h
 <P>"Non-PM sessions" is the term used here for all sessions which are not controlled
 by Presentation Manager, i.e. &os2; and DOS text-mode sessions in a VIO window or in full-screen
 mode as well as &winos2; sessions.
+<!-- V0.9.20: added this -->
+See <A HREF="glossary/gls_sessions.html">Session types</A> for more information.
 
 <P>The settings you specify here will override the "Auto-close non-PM sessions" setting
 on the Desktop's main notebook page.
@@ -26,14 +30,17 @@ on the Desktop's main notebook page.
 entry field. You must enter the title of the session exactly as it appears in the
 &os2; task list (or VIO window title), so the best method to achieve this is to open
 the session and to reproduce this title in the entry field.
+
 <P>You may however abbreviate the title, and the session title comparison during Shutdown
 or Desktop restart is NOT case-sensitive.
+
 <P>Here is an example: if you wish to close the session titled
 <CITE>"&os2; window (CMD.EXE)"</CITE>,
 you may enter either <CITE>"&os2;"</CITE>, <CITE>"os/2 window (cmd.exe)"</CITE>
 or <CITE>"&os2; WiNdOw"</CITE>. All of these entries will work. You should however enter
 more than just a few characters, because otherwise &xshutdown; might apply your settings
 to a different session which has the same leading characters.
+
 <BR><LI>You may then select what &xshutdown; should do with this session:
 
 <UL><BR><LI><B>"Skip session"</B> will <I>not close</I> the session, but skip it, as if you
