@@ -53,7 +53,7 @@
                                  PULONG pulSize);
     #endif
 
-    #ifdef DOSH_HEADER_INCLUDED
+    #ifdef EXEH_HEADER_INCLUDED
 
         ULONG progQueryProgType(PCSZ pszFullFile,
                                 PVOID pvExec);
@@ -146,4 +146,35 @@
         #define _wpSetProgDetails(pobj, p)                                      \
             REDEFINEMETHOD(wpSetProgDetails, pobj)(pobj, p)
     #endif
+
+    /* ******************************************************************
+     *
+     *   XWPProgramFile notebook callbacks (notebook.c)
+     *
+     ********************************************************************/
+
+    PCSZ progGetWinResourceTypeName(ULONG ulTypeThis);
+
+    PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType);
+
+#ifdef NOTEBOOK_HEADER_INCLUDED
+#ifndef __NOMODULEPAGES__
+        VOID XWPENTRY progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                       ULONG flFlags);
+
+        VOID XWPENTRY progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG flFlags);
+
+        BOOL XWPENTRY progResourcesMessage(PCREATENOTEBOOKPAGE pcnbp,
+                                           ULONG msg, MPARAM mp1, MPARAM mp2,
+                                           MRESULT *pmrc);
+
+        VOID XWPENTRY progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
+
+        VOID XWPENTRY progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
+#endif
+#endif
+
 #endif

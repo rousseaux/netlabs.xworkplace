@@ -249,30 +249,6 @@
         ULONG fsysInsertFilePages(WPObject *somSelf,
                                   HWND hwndNotebook);
 
-    /* ******************************************************************
-     *
-     *   XWPProgramFile notebook callbacks (notebook.c)
-     *
-     ********************************************************************/
-
-    PCSZ fsysGetWinResourceTypeName(ULONG ulTypeThis);
-
-    PCSZ fsysGetOS2ResourceTypeName(ULONG ulResourceType);
-
-#ifndef __NOMODULEPAGES__
-        VOID XWPENTRY fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                          ULONG flFlags);
-
-        VOID XWPENTRY fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                            ULONG flFlags);
-
-        VOID XWPENTRY fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                           ULONG flFlags);
-
-        VOID XWPENTRY fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                           ULONG flFlags);
-#endif
-
     #endif
 
 #endif

@@ -60,6 +60,19 @@
     #endif
 
     /*
+     *@@ ORDEREDLISTITEM:
+     *      linked list structure for the ordered list
+     *      of objects in a folder
+     *      (XFolder::xwpBeginEnumContent).
+     */
+
+    typedef struct _ORDEREDLISTITEM
+    {
+        WPObject                *pObj;
+        CHAR                    szIdentity[CCHMAXPATH];
+    } ORDEREDLISTITEM, *PORDEREDLISTITEM;
+
+    /*
      *@@ SORTBYICONPOS:
      *      structure for GetICONPOS.
      */
@@ -74,9 +87,9 @@
     // prototype for wpSetMenuBarVisibility;
     // this is resolved by name (fdrmenus.c)
 
-    typedef BOOL SOMLINK FN_WPSETMENUBARVISIBILITY(WPFolder *somSelf,
-                                                   ULONG ulVisibility);
-    #pragma linkage(FN_WPSETMENUBARVISIBILITY, system)
+    typedef BOOL _System xfTP_wpSetMenuBarVisibility(WPFolder *somSelf,
+                                                     ULONG ulVisibility);
+    typedef xfTP_wpSetMenuBarVisibility *xfTD_wpSetMenuBarVisibility;
 
     /* ******************************************************************
      *
@@ -450,12 +463,11 @@
 
         typedef VOID _System xfTP_wpclsReleaseNotifySem(M_WPFolder *somSelf);
         typedef xfTP_wpclsReleaseNotifySem *xfTD_wpclsReleaseNotifySem;
-
     #endif
 
     // wrappers
     ULONG fdrRequestFolderMutexSem(WPFolder *somSelf,
-                                    ULONG ulTimeout);
+                                   ULONG ulTimeout);
 
     ULONG fdrReleaseFolderMutexSem(WPFolder *somSelf);
 
@@ -464,7 +476,7 @@
     ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf);
 
     ULONG fdrRequestFindMutexSem(WPFolder *somSelf,
-                                    ULONG ulTimeout);
+                                 ULONG ulTimeout);
 
     ULONG fdrReleaseFindMutexSem(WPFolder *somSelf);
 
@@ -539,6 +551,38 @@
 
     BOOL fdrDeleteFromContent(WPFolder *somSelf,
                               WPObject *pObject);
+
+    /*
+     *@@ xfTP_wpQueryFldrFilter:
+     *      returns the WPFilter object for the given folder
+     *      or NULL if there's none (i.e. no filtering is
+     *      to be applied).
+     *
+     *@@added V0.9.16 (2002-01-05) [umoeller]
+     */
+
+    typedef WPObject* _System xfTP_wpQueryFldrFilter(WPFolder *somSelf);
+    typedef xfTP_wpQueryFldrFilter *xfTD_wpQueryFldrFilter;
+
+    /*
+     *@@ xfTP_wpMatchesFilter:
+     *      this WPFilter instance method returns TRUE if
+     *      pObject matches the filter and should therefore
+     *      not be visible.
+     *
+     *      somSelf must be a WPFilter object really, but
+     *      since that class isn't documented, we use
+     *      WPObject (since WPFilter is derived from
+     *      WPTransient).
+     *
+     *@@added V0.9.16 (2002-01-05) [umoeller]
+     */
+
+    typedef BOOL _System xfTP_wpMatchesFilter(WPObject *pFilter, WPObject *pObject);
+    typedef xfTP_wpMatchesFilter *xfTD_wpMatchesFilter;
+
+    BOOL fdrIsObjectFiltered(WPFolder *pFolder,
+                             WPObject *pObject);
 
     WPObject* fdrQueryContent(WPFolder *somSelf,
                               WPObject *pobjFind,

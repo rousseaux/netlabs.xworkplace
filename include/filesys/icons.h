@@ -46,8 +46,9 @@
                                    PULONG pcbIconData,
                                    PBYTE pbIconData);
 
-    #ifdef DOSH_HEADER_INCLUDED
+    #ifdef EXEH_HEADER_INCLUDED
         APIRET icoLoadExeIcon(PEXECUTABLE pExec,
+                              ULONG idResource,
                               HPOINTER *phptr,
                               PULONG pcbIconData,
                               PBYTE pbIconData);

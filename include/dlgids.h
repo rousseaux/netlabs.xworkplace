@@ -151,6 +151,7 @@
 #define ID_ICONXWPFONTOPEN     151
 #define ID_ICONXWPFONTOBJ      152
 #define ID_ICONXWPFONTFILE     153          // added V0.9.16 (2001-11-25) [umoeller]
+#define ID_ICONXWPVCARD        154          // added V0.9.16 (2002-01-05) [umoeller]
 
 // icons used by "diskfree" widget
 #define ID_ICON_DRIVE          160

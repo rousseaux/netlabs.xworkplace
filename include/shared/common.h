@@ -142,11 +142,7 @@
 
     typedef unsigned long XCRET;
 
-    #define ICONERR_INVALID_OFFSET              (ICONS_FIRST_CODE + 1)
     #define ICONERR_BUILDPTR_FAILED             (ICONS_FIRST_CODE + 2)
-    #define ICONERR_EXPANDPAGE1_TOOSMALL        (ICONS_FIRST_CODE + 3)
-    #define ICONERR_EXPANDPAGE1_OUTOFBOUND      (ICONS_FIRST_CODE + 4)
-    #define ICONERR_EXPANDPAGE2_BADDATA         (ICONS_FIRST_CODE + 5)
 
     /********************************************************************
      *
@@ -343,6 +339,7 @@
     DECLARE_CMN_STRING(G_pcszXFldDisk, "XFldDisk");
     DECLARE_CMN_STRING(G_pcszXFldDesktop, "XFldDesktop");
     DECLARE_CMN_STRING(G_pcszXFldDataFile, "XFldDataFile");
+    DECLARE_CMN_STRING(G_pcszXWPVCard, "XWPVCard");
     DECLARE_CMN_STRING(G_pcszXWPProgramFile, "XWPProgramFile");
     DECLARE_CMN_STRING(G_pcszXWPSound, "XWPSound");
     DECLARE_CMN_STRING(G_pcszXWPMouse, "XWPMouse");
@@ -380,7 +377,6 @@
     DECLARE_CMN_STRING(G_pcszXWPNetwork, "XWPNetwork");
     DECLARE_CMN_STRING(G_pcszXWPNetServer, "XWPNetServer");
 
-    // @@todo
     DECLARE_CMN_STRING(G_pcszXWPProgram, "XWPProgram");
 
     DECLARE_CMN_STRING(G_pcszWPObject, "WPObject");
@@ -696,7 +692,7 @@
 
     // shutdown settings bits: composed by the
     // Shutdown settings pages, stored in
-    // pGlobalSettings->XShutdown,
+    // cmnQuerySetting(sfXShutdown,)
     // passed to xfInitiateShutdown
 
     /* the following removed with V0.9.0;
@@ -733,527 +729,300 @@
     #define STBF_DEREFSHADOWS_MULTIPLE      0x02
 
     /*
-     *@@ XWPFEATURE:
+     *@@ XWPSETTING:
      *      enumeration for checking if XWorkplace features
-     *      are enabled.
+     *      are enabled. This replaces the global settings
+     *      present before V0.9.16.
      *
      *@@added V0.9.16 (2001-10-11) [umoeller]
      */
 
-    typedef enum _XWPFEATURE
+    typedef enum _XWPSETTING
     {
 #ifndef __NOICONREPLACEMENTS__
-        IconReplacements,
+        sfIconReplacements,
 #endif
 #ifndef __NOMOVEREFRESHNOW__
-        MoveRefreshNow,
+        sfMoveRefreshNow,
 #endif
 #ifndef __ALWAYSSUBCLASS__
-        NoSubclassing,
+        sfNoSubclassing,
 #endif
 #ifndef __NOFOLDERCONTENTS__
-        AddFolderContentItem,
-        FolderContentShowIcons,
+        sfAddFolderContentItem,
+        sfFolderContentShowIcons,
+#endif
+#ifndef __NOFDRDEFAULTDOCS__
+        sfFdrDefaultDoc,
+            // folder default documents enabled?
+            // "Workplace Shell" "View" page
+        sfFdrDefaultDocView,
+            // "default doc = folder default view"
+            // "Workplace Shell" "View" page
 #endif
 #ifndef __NOBOOTLOGO__
-        BootLogo,
+        sfBootLogo,
+        sulBootLogoStyle,
+            // XFldDesktop "Startup" page:
+            // boot logo style:
+            //      0 = transparent
+            //      1 = blow-up
 #endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
-        ReplaceFilePage,
+        sfReplaceFilePage,
 #endif
 #ifndef __NOCFGSTATUSBARS__
-        StatusBars,
+        sfStatusBars,
 #endif
 #ifndef __NOSNAPTOGRID__
-        Snap2Grid,
-#endif
-#ifndef __ALWAYSFDRHOTKEYS__
-        FolderHotkeys,
-#endif
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-        ResizeSettingsPages,
-#endif
-#ifndef __ALWAYSREPLACEICONPAGE__
-        ReplaceIconPage,
-#endif
-#ifndef __ALWAYSREPLACEFILEEXISTS__
-        ReplaceFileExists,
-#endif
-#ifndef __ALWAYSFIXCLASSTITLES__
-        FixClassTitles,
-#endif
-#ifndef __ALWAYSREPLACEARCHIVING__
-        ReplaceArchiving,
-#endif
-#ifndef __NEVERNEWFILEDLG__
-        NewFileDlg,
-#endif
-#ifndef __NOXSHUTDOWN__
-        XShutdown,
-        RestartDesktop,
-#endif
-#ifndef __ALWAYSEXTSORT__
-        ExtendedSorting,
-#endif
-#ifndef __ALWAYSHOOK__
-        XWPHook,
-#endif
-#ifndef __NEVEREXTASSOCS__
-        ExtAssocs,
-#endif
-#ifndef __NEVERREPLACEDRIVENOTREADY__
-        ReplaceDriveNotReady,
-#endif
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-        TrashDelete,
-        ReplaceTrueDelete,
-#endif
-        TurboFolders,            // warning: this will return the setting
-                                 // that was once determined on WPS startup
-        ___dummy
-    } XWPFEATURE;
-
-    BOOL cmnIsFeatureEnabled(XWPFEATURE f);
-
-    #pragma pack(4)     // just to make sure;
-                        // the following is stored as binary in OS2.INI
-
-    /*
-     *@@ GLOBALSETTINGS:
-     *      this is the massive global settings structure
-     *      used by all parts of XWorkplace. This holds
-     *      all kinds of configuration data.
-     *
-     *      This structure is stored in OS2.INI, in the
-     *      key specified by the INIAPP_XWORKPLACE / INIKEY_GLOBALSETTINGS
-     *      strings above. This is loaded once at WPS
-     *      startup (in M_XFldObject::wpclsInitData)
-     *      and remains in a global variable in common.c
-     *      while the WPS is running.
-     *
-     *      Only use cmnQueryGlobalSettings to get a pointer
-     *      to that global variable.
-     *
-     *      The items in this structure are modified by
-     *      the various XWorkplace settings pages. Whenever
-     *      a settings page changes anything, it should
-     *      write the settings back to OS2.INI by calling
-     *      cmnStoreGlobalSettings.
-     *
-     *      Usage notes:
-     *
-     *      a) Do not change this structure definition. This has
-     *         existed since XFolder 0.20 or something, and
-     *         has always been extended to the bottom only.
-     *         Since this gets loaded in one flush from OS2.INI,
-     *         users can preserve their settings when upgrading
-     *         from an old XFolder version. If anything is removed
-     *         from this structure, this would break compatibility
-     *         and probably lead to really strange behavior, since
-     *         the settings could then mean anything.
-     *
-     *         If you need to store your own global settings,
-     *         use some other INI key, and maintain your settings
-     *         yourself. This structure has only been moved
-     *         to the shared\ directories so you can _read_
-     *         certain settings if you need them.
-     *
-     *      b) Never load this structure from the INIs yourself.
-     *         Always use cmnQueryGlobalSettings to get a "const"
-     *         pointer to the up-to-date version, because
-     *         this thing is saved to the INIs asynchronously
-     *         by the File thread (xthreads.c).
-     */
-
-    typedef struct _GLOBALSETTINGS
-    {
-        ULONG       __fIconReplacements,
-                    MenuCascadeMode,
-                    FullPath,
-                        // enable "full path in title"
-                    KeepTitle,
-                        // "full path in title": keep existing title
-                    RemoveX,
-                    AppdParam,
-                    __fMoveRefreshNow;
-                        // move "Refresh now" to main context menu
-
-        ULONG       MaxPathChars,
-                        // maximum no. of chars for "full path in title"
-                    DefaultMenuItems;
-                        // ready-made CTXT_* flags for wpFilterPopupMenu
-
-        LONG        VarMenuOffset;
-                        // variable menu offset, "Paranoia" page
-
-        ULONG       fAddSnapToGridDefault;
-                        // V0.9.0, was: AddSnapToGridItem
-                        // default setting for adding "Snap to grid";
-                        // can be overridden in XFolder instance settings
+        sfSnap2Grid,
+        sfAddSnapToGridDefault,
+            // V0.9.0, was: AddSnapToGridItem
+            // default setting for adding "Snap to grid";
+            // can be overridden in XFolder instance settings
 
         // "snap to grid" values
-        LONG        GridX,
-                    GridY,
-                    GridCX,
-                    GridCY;
-
-        ULONG       fFolderHotkeysDefault,
-                        // V0.9.0, was: FolderHotkeysDefault
-                        // default setting for enabling folder hotkeys;
-                        // can be overridden in XFolder instance settings
-                    TemplatesOpenSettings;
-                        // open settings after creating from template;
-                        // 0: do nothing after creation
-                        // 1: open settings notebook
-                        // 2: make title editable
-    /* XFolder 0.52 */
-        ULONG       RemoveLockInPlaceItem,
-                        // XFldObject, Warp 4 only
-                    RemoveFormatDiskItem,
-                        // XFldDisk
-                    RemoveCheckDiskItem,
-                        // XFldDisk
-                    RemoveViewMenu,
-                        // XFolder, Warp 4 only
-                    RemovePasteItem,
-                        // XFldObject, Warp 4 only
-
-                    ulRemoved1,             // was: DebugMode,
-                    AddCopyFilenameItem;
-                        // default setting for "Copy filename" (XFldDataFile)
-                        // can be overridden in XFolder instance settings
-        ULONG       __flXShutdown;
-                        // XSD_* shutdown settings
-        ULONG       __ulRemoved3, // was: NoWorkerThread,
-                        // "Paranoia" page
-                    __fNoSubclassing,
-                        // "Paranoia" page
-                    TreeViewAutoScroll,
-                        // XFolder
-                    ShowStartupProgress;
-                        // XFldStartup
-        ULONG       ulStartupObjectDelay;
-                        // was: ulStartupDelay;
-                        // there's a new ulStartupInitialDelay with V0.9.4 (bottom)
-                        // XFldStartup
-
-    /* XFolder 0.70 */
-        ULONG       __fAddFolderContentItem,
-                        // general "Folder content" submenu; this does
-                        // not affect favorite folders, which are set
-                        // for each folder individually
-                    __fFolderContentShowIcons,
-                        // show icons in folder content menus (both
-                        // "folder content" and favorite folders)
-                    fDefaultStatusBarVisibility,
-                        // V0.9.0, was: StatusBar;
-                        // default visibility of status bars (XFldWPS),
-                        // can be overridden in XFolder instance settings
-                        // (unlike fEnableStatusBars below, XWPSetup)
-                    SBStyle;
-                        // status bar style
-        LONG        lSBBgndColor,
-                    lSBTextColor;
-                        // status bar colors; can be changed via drag'n'drop
-        ULONG       TemplatesReposition;
-                        // reposition new objects after creating from template
-        USHORT      __usLastRebootExt;
-                        // XShutdown: last extended reboot item
-        ULONG       AddSelectSomeItem,
-                        // XFolder: enable "Select by name"
-                    __fExtFolderSort,
-                        // V0.9.0, was: ReplaceSort;
-                        // enable XFolder extended sorting (XWPSetup)
-                    AlwaysSort,
-                        // default "always sort" flag (BOOL)
-                    _removed1, // DefaultSort,
-                        // default sort criterion
-                        // moved this down V0.9.12 (2001-05-18) [umoeller]
-                    __disabled1, // CleanupINIs,
-                        // disabled for now V0.9.12 (2001-05-15) [umoeller]
-
-    /* XFolder 0.80  */
-                    _fShowBootupStatus,
-                    ulRemoved3;
-                        // V0.9.0, was: WpsShowClassInfo;
-        ULONG       SBForViews,
-                        // XFldWPS: SBV_xxx flags
-                    __fReplFileExists,
-                        // V0.9.0, was: ReplConfirms;
-                        // XFldWPS, replace "File Exists" dialog
-                    __fBootLogo,
-                        // V0.9.0, was: ShowXFolderAnim
-                        // XFldDesktop "Startup" page: show boot logo
-                    FileAttribs,
-                        // XFldDataFile: show "File attributes" submenu
-                    __fReplaceIconPage,
-                        // V0.9.0, was: ShowInternals
-                        // XFldObject: add "Object" page to all settings notebooks
-                        // V0.9.16 (2001-10-15) [umoeller]: now replacing icon
-                        // page instead, renamed also
-                    ExtendFldrViewMenu;
-                        // XFolder: extend Warp 4 "View" submenu
-
-    /* XWorkplace 0.9.0 */
-        BOOL        fNoExcptBeeps,
-                        // XWPSetup "Paranoia": disable exception beeps
-                    fUse8HelvFont,
-                        // XWPSetup "Paranoia": use "8.Helv" font for dialogs;
-                        // on Warp 3, this is enabled per default
-                    __fReplaceFilePage,
-                        // XFolder/XFldDataFile: replace three "File" pages
-                        // into one
-                    __fExtAssocs,
-                        // XFldDataFile/XFldWPS: extended associations
-
-                    // Desktop menu items
-                    fDTMSort,
-                    fDTMArrange,
-                    fDTMSystemSetup,
-                    fDTMLockup,
-                    fDTMShutdown,
-                    fDTMShutdownMenu,
-
-                    _ulRemoved4, // fIgnoreFilters,
-                        // XFldDataFile/XFldWPS: extended associations
-                    fMonitorCDRoms,
-                    __fRestartWPS,
-                        // XWPSetup: enable "Restart Desktop"
-                    __fXShutdown,
-                        // XWPSetup: enable XShutdown
-
-                    __fEnableStatusBars,
-                        // XWPSetup: whether to enable the status bars at all;
-                        // unlike fDefaultStatusBarVisibility above
-                    __fEnableSnap2Grid,
-                        // XWPSetup: whether to enable "Snap to grid" at all;
-                        // unlike fAddSnapToGridDefault above
-                    __fEnableFolderHotkeys;
-                        // XWPSetup: whether to enable folder hotkeys at all;
-                        // unlike fFolderHotkeysDefault above
-
-        BYTE        bDefaultWorkerThreadPriority,
-                        // XWPSetup "Paranoia": default priority of Worker thread:
-                        //      0: idle +/-0
-                        //      1: idle +31
-                        //      2: regular +/-0
-
-                    fXSystemSounds,
-                        // XWPSetup: enable extended system sounds
-                    fWorkerPriorityBeep,
-                        // XWPSetup "Paranoia": beep on priority change
-
-                    _bBootLogoStyle,
-                        // XFldDesktop "Startup" page:
-                        // boot logo style:
-                        //      0 = transparent
-                        //      1 = blow-up
-
-                    bDereferenceShadows,
-                        // XFldWPS "Status bars" page 2:
-                        // deference shadows flag
-                        // changed V0.9.5 (2000-10-07) [umoeller]: now bit flags...
-                        // -- STBF_DEREFSHADOWS_SINGLE        0x01
-                        // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
-
-        // trashcan settings
-                    __fTrashDelete,
-                    __fRemoved1, // fTrashEmptyStartup,
-                    __fRemoved2; // fTrashEmptyShutdown;
-        ULONG       ulTrashConfirmEmpty;
-                        // TRSHEMPTY_* flags
-
-        BYTE        __fReplDriveNotReady;
-                        // XWPSetup: replace "Drive not ready" dialog
-
-        ULONG       ulIntroHelpShown;
-                        // HLPS_* flags for various classes, whether
-                        // an introductory help page has been shown
-                        // the first time it's been opened
-
-        BYTE        __fEnableXWPHook;
-                        // XWPSetup: enable hook (enables object hotkeys,
-                        // mouse movement etc.)
-
-        BYTE        __fReplaceArchiving;
-                        // XWPSetup: enable Desktop archiving replacement
-
-        BYTE        fAniMouse;
-                        // XWPSetup: enable "animated mouse pointers" page in XWPMouse
-
-        BYTE        fNumLockStartup;
-                        // XFldDesktop "Startup": set NumLock to ON on Desktop startup
-
-        BYTE        fEnablePageMage;
-                        // XWPSetup "PageMage virtual desktops"; this will cause
-                        // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
-
-        BYTE        fShowHotkeysInMenus;
-                        // on XFldWPS "Hotkeys" page
-
-    /* XWorkplace 0.9.3 */
-
-        BYTE        fNoFreakyMenus;
-                        // on XWPSetup "Paranoia" page
-
-        BYTE        __fReplaceTrueDelete;
-                        // replace "true delete" also?
-                        // on XWPSetup "Features" page
-
-    /* XWorkplace 0.9.4 */
-        BYTE        _fFdrDefaultDoc,
-                        // folder default documents enabled?
-                        // "Workplace Shell" "View" page
-                    _fFdrDefaultDocView;
-                        // "default doc = folder default view"
-                        // "Workplace Shell" "View" page
-
-        BYTE        __fResizeSettingsPages;
-                        // XWPSetup: allow resizing of WPS notebook pages?
-
-        ULONG       ulStartupInitialDelay;
-                        // XFldStartup: initial delay
-
-    /* XWorkplace 0.9.5 */
-
-#ifdef __REPLHANDLES__
-        BYTE        fReplaceHandles;
-                        // XWPSetup: replace handles management?
-#else
-        BYTE        fDisabled2;
+        sulGridX,
+        sulGridY,
+        sulGridCX,
+        sulGridCY,
 #endif
-        BYTE        _bSaveINIS;
-                        // XShutdown: save-INIs method:
-                        // -- 0: new method (xprf* APIs)
-                        // -- 1: old method (Prf* APIs)
-                        // -- 2: do not save
+#ifndef __ALWAYSFDRHOTKEYS__
+        sfFolderHotkeys,
+        sfFolderHotkeysDefault,
+            // V0.9.0, was: FolderHotkeysDefault
+            // default setting for enabling folder hotkeys;
+            // can be overridden in XFolder instance settings
+#endif
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+        sfResizeSettingsPages,
+#endif
+#ifndef __ALWAYSREPLACEICONPAGE__
+        sfReplaceIconPage,
+#endif
+#ifndef __ALWAYSREPLACEFILEEXISTS__
+        sfReplaceFileExists,
+#endif
+#ifndef __ALWAYSFIXCLASSTITLES__
+        sfFixClassTitles,
+#endif
+#ifndef __ALWAYSREPLACEARCHIVING__
+        sfReplaceArchiving,
+#endif
+#ifndef __NEVERNEWFILEDLG__
+        sfNewFileDlg,
+#endif
+#ifndef __NOXSHUTDOWN__
+        sfXShutdown,
+        sfRestartDesktop,
+        sflXShutdown,
+            // XSD_* shutdown settings
+        sulSaveINIS,
+            // XShutdown: save-INIs method:
+            // -- 0: new method (xprf* APIs)
+            // -- 1: old method (Prf* APIs)
+            // -- 2: do not save
+#endif
+#ifndef __ALWAYSEXTSORT__
+        sfExtendedSorting,
+#endif
+#ifndef __ALWAYSHOOK__
+        sfXWPHook,
+#endif
+#ifndef __NOPAGEMAGE__
+        sfEnablePageMage,
+            // XWPSetup "PageMage virtual desktops"; this will cause
+            // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
+#endif
+#ifndef __NEVEREXTASSOCS__
+        sfExtAssocs,
+#endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+        sfReplaceDriveNotReady,
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        sfTrashDelete,
+        sfReplaceTrueDelete,
+#endif
+#ifndef __NOBOOTUPSTATUS__
+        sfShowBootupStatus,
+#endif
+        sfTurboFolders,            // warning: this will return the setting
+                                 // that was once determined on WPS startup
 
-    /* XWorkplace 0.9.7 */
-        BYTE        fFixLockInPlace;
-                        // "Workplace Shell" menus p3: submenu, checkmark
-        BYTE        fDTMLogoffNetwork;
-                        // "Logoff network now" desktop menu item (XFldDesktop)
+        // menu settings
+        sulVarMenuOffset,
+            // variable menu offset, "Paranoia" page
 
-    /* XWorkplace 0.9.9 */
-        BYTE        fFdrAutoRefreshDisabled;
-                        // "Folder auto-refresh" on "Workplace Shell" "View" page;
-                        // this only has an effect if folder auto-refresh has
-                        // been replaced in XWPSetup in the first place
-    /* XWOrkplace V0.9.12 */
-        BYTE        bDefaultFolderView;
-                        // "default folder view" on XFldWPS "View" page:
-                        // -- 0: inherit from parent (default, standard WPS)
-                        // -- OPEN_CONTENTS (1): icon view
-                        // -- OPEN_TREE (101): tree view
-                        // -- OPEN_DETAILS (102): details view
+        sfMenuCascadeMode,
+        sflDefaultMenuItems,
+            // ready-made CTXT_* flags for wpFilterPopupMenu
 
-        BYTE        fFoldersFirst;
-                        // global sort setting for "folders first"
-                        // (TRUE or FALSE)
-        LONG        lDefSortCrit;
-                        // new global sort criterion (moved this down here
-                        // because the value is incompatible with the earlier
-                        // setting above, which has been disabled);
-                        // this is a LONG because it can have negative values
-                        // (see XFolder::xwpSetFldrSort)
+        sfFileAttribs,
+            // add attributes menu
 
-        BYTE        __fFixClassTitles;
-                        // XWPSetup: override wpclsQueryTitle?
+        sfRemoveLockInPlaceItem,
+            // XFldObject, Warp 4 only
+        sfRemoveFormatDiskItem,
+            // XFldDisk
+        sfRemoveCheckDiskItem,
+            // XFldDisk
+        sfRemoveViewMenu,
+            // XFolder, Warp 4 only
+        sfRemovePasteItem,
+            // XFldObject, Warp 4 only
+        sfAddCopyFilenameItem,
+            // default setting for "Copy filename" (XFldDataFile)
+            // can be overridden in XFolder instance settings
+        sfAddSelectSomeItem,
+            // XFolder: enable "Select by name"
+        sfExtendFldrViewMenu,
+            // XFolder: extend Warp 4 "View" submenu
+        sfFixLockInPlace,
+            // "Workplace Shell" menus p3: submenu, checkmark
+        // Desktop menu items
+        sfDTMSort,
+        sfDTMArrange,
+        sfDTMSystemSetup,
+        sfDTMLockup,
+        sfDTMShutdown,
+        sfDTMShutdownMenu,
+        sfDTMLogoffNetwork,
+            // "Logoff network now" desktop menu item (XFldDesktop)
 
-        BYTE        fExtendCloseMenu;
-                        // XFldWPS "View" page
+        // folder view settings
+        sfFullPath,
+            // enable "full path in title"
+        sfKeepTitle,
+            // "full path in title": keep existing title
+        sulMaxPathChars,
+            // maximum no. of chars for "full path in title"
+        sfRemoveX,
+        sfAppdParam,
+        sulTemplatesOpenSettings,
+            // open settings after creating from template;
+            // 0: do nothing after creation
+            // 1: open settings notebook
+            // 2: make title editable
+        sfTemplatesReposition,
+            // reposition new objects after creating from template
+        sfTreeViewAutoScroll,
+            // XFolder
 
-        BYTE        fWriteXWPStartupLog;
-                        // V0.9.14 (2001-08-21) [umoeller]
+        // status bar settings
+        sfDefaultStatusBarVisibility,
+            // V0.9.0, was: StatusBar;
+            // default visibility of status bars (XFldWPS),
+            // can be overridden in XFolder instance settings
+            // (unlike fEnableStatusBars below, XWPSetup)
+        sulSBStyle,
+            // status bar style
+        slSBBgndColor,
+        slSBTextColor,
+            // status bar colors; can be changed via drag'n'drop
+        sflSBForViews,
+            // XFldWPS: SBV_xxx flags
+        sflDereferenceShadows,
+            // XFldWPS "Status bars" page 2:
+            // deference shadows flag
+            // changed V0.9.5 (2000-10-07) [umoeller]: now bit flags...
+            // -- STBF_DEREFSHADOWS_SINGLE        0x01
+            // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
 
-    /* V0.9.16 */
-        BYTE        __fTurboFolders;
-                        // V0.9.16 (2001-10-25) [umoeller]
-        BYTE        __fNewFileDlg;
-                        // V0.9.16 (2001-12-02) [umoeller]
+        // startup settings
+        sfShowStartupProgress,
+            // XFldStartup
+        sulStartupInitialDelay,
+            // XFldStartup: initial delay
+        sulStartupObjectDelay,
+            // was: ulStartupDelay;
+            // there's a new ulStartupInitialDelay with V0.9.4 (bottom)
+            // XFldStartup
+        sfNumLockStartup,
+            // XFldDesktop "Startup": set NumLock to ON on Desktop startup
+        sfWriteXWPStartupLog,
+            // V0.9.14 (2001-08-21) [umoeller]
 
-    } GLOBALSETTINGS;
+        // folder sort settings
+        sfAlwaysSort,
+            // default "always sort" flag (BOOL)
+        sfFoldersFirst,
+            // global sort setting for "folders first"
+            // (TRUE or FALSE)
+        slDefSortCrit,
+            // new global sort criterion (moved this down here
+            // because the value is incompatible with the earlier
+            // setting above, which has been disabled);
+            // this is a LONG because it can have negative values
+            // (see XFolder::xwpSetFldrSort)
 
-    typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
+        // paranoia settings
+        sfNoExcptBeeps,
+            // XWPSetup "Paranoia": disable exception beeps
+        sfUse8HelvFont,
+            // XWPSetup "Paranoia": use "8.Helv" font for dialogs;
+            // on Warp 3, this is enabled per default
+        sulDefaultWorkerThreadPriority,
+            // XWPSetup "Paranoia": default priority of Worker thread:
+            //      0: idle +/-0
+            //      1: idle +31
+            //      2: regular +/-0
+        sfWorkerPriorityBeep,
+            // XWPSetup "Paranoia": beep on priority change
+        sfNoFreakyMenus,
+            // on XWPSetup "Paranoia" page
 
-    #pragma pack()
+        // misc
+        sfXSystemSounds,
+            // XWPSetup: enable extended system sounds
+        susLastRebootExt,
+            // XShutdown: last extended reboot item
+        sflTrashConfirmEmpty,
+            // TRSHEMPTY_* flags
+        sflIntroHelpShown,
+            // HLPS_* flags for various classes, whether
+            // an introductory help page has been shown
+            // the first time it's been opened
+        sfShowHotkeysInMenus,
+            // on XFldWPS "Hotkeys" page
+        sfFdrAutoRefreshDisabled,
+            // "Folder auto-refresh" on "Workplace Shell" "View" page;
+            // this only has an effect if folder auto-refresh has
+            // been replaced in XWPSetup in the first place
 
-    #ifdef SOM_WPObject_h
+        sulDefaultFolderView,
+            // "default folder view" on XFldWPS "View" page:
+            // -- 0: inherit from parent (default, standard WPS)
+            // -- OPEN_CONTENTS (1): icon view
+            // -- OPEN_TREE (101): tree view
+            // -- OPEN_DETAILS (102): details view
 
-        /*
-         *@@ ORDEREDLISTITEM:
-         *      linked list structure for the ordered list
-         *      of objects in a folder
-         *      (XFolder::xwpBeginEnumContent).
-         */
+        ___LAST_SETTING
+    } XWPSETTING;
 
-        typedef struct _ORDEREDLISTITEM
-        {
-            WPObject                *pObj;
-            CHAR                    szIdentity[CCHMAXPATH];
-        } ORDEREDLISTITEM, *PORDEREDLISTITEM;
-
-        /*
-         * PROCESSCONTENTINFO:
-         *      structure needed for processing the ordered content
-         *      of a folder (Startup, Shutdown folders).
-         *
-         *changed V0.9.0 [umoeller]: updated for new XFolder::xwpBeginEnumContent
-         *  removed V0.9.12 (2001-04-29) [umoeller]
-         */
-
-        /* typedef struct _PROCESSCONTENTINFO
-        {
-            ULONG          henum;     // xwpBeginEnumContent handle
-            WPObject       *pObject;  // current object in this folder
-            HWND           hwndView;  // hwnd of this object, if opened succfly.
-            ULONG          ulObjectNow,
-                           ulObjectMax;
-            ULONG          ulTiming;
-            ULONG          ulFirstTime;
-            PFNWP          pfnwpCallback;
-            ULONG          ulCallbackParam;
-            BOOL           fStartAll;
-            WPFolder        *pFolder;
-            BOOL           fCancelled;
-            ULONG          tid;         // tid of poc threaed V0.9.12 (2001-04-29) [umoeller]
-        } PROCESSCONTENTINFO, *PPROCESSCONTENTINFO;
-        */
+    #ifndef __DEBUG__
+        ULONG cmnQuerySetting(XWPSETTING s);
+    #else
+        #define cmnQuerySetting(s) cmnQuerySettingDebug(s, __FILE__, __LINE__, __FUNCTION__)
+        ULONG cmnQuerySettingDebug(XWPSETTING s,
+                                   const char *pcszSourceFile,
+                                   ULONG ulLine,
+                                   const char *pcszFunction);
     #endif
 
-    #ifdef SOM_WPFolder_h
-        /*
-         *@@ CONTENTMENULISTITEM:
-         *      additional linked list item for
-         *      "folder content" menus
-         */
+    BOOL cmnSetSetting(XWPSETTING s, ULONG ulValue);
 
-        typedef struct _CONTENTMENULISTITEM
-        {
-            WPFolder                    *pFolder;
-            SHORT                       sMenuId;
-        } CONTENTMENULISTITEM, *PCONTENTMENULISTITEM;
-    #endif
-
-/*     typedef enum _XWPFEATURE
+    typedef struct _SETTINGSBACKUP
     {
-#ifndef __NOICONREPLACEMENTS__
-        IconReplacements,
-#endif
-#ifndef __NOSNAPTOGRID__
-        SnapToGrid,
-#endif
-#ifndef __NOFOLDERCONTENTS__
-        FolderContentsShowIcons,
-#endif
-#ifndef __NOMOVEREFRESHNOW__
-        MoveRefreshNow,
-#endif
-        _____dummyX
-    } XWPFEATURE;
+        XWPSETTING      s;
+        ULONG           ul;
+    } SETTINGSBACKUP, *PSETTINGSBACKUP;
 
-    BOOL cmnIsFeatureEnabled(XWPFEATURE f);
-   */
+    PSETTINGSBACKUP cmnBackupSettings(XWPSETTING *paSettings,
+                                      ULONG cItems);
+
+    VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
+                            ULONG cItems);
 
     /* ******************************************************************
      *
@@ -1399,7 +1168,7 @@
 
     ULONG XWPENTRY cmnQueryStatusBarHeight(VOID);
 
-    PCGLOBALSETTINGS XWPENTRY cmnLoadGlobalSettings(BOOL fResetDefaults);
+    /* PCGLOBALSETTINGS XWPENTRY cmnLoadGlobalSettings(BOOL fResetDefaults);
 
     const GLOBALSETTINGS* XWPENTRY cmnQueryGlobalSettings(VOID);
 
@@ -1407,9 +1176,10 @@
                                                    ULONG ulLine,
                                                    const char *pcszFunction);
 
-    VOID XWPENTRY cmnUnlockGlobalSettings(VOID);
+    VOID XWPENTRY // cmnUnlockGlobalSettings(VOID);
 
     BOOL XWPENTRY cmnStoreGlobalSettings(VOID);
+       */
 
     BOOL XWPENTRY cmnSetDefaultSettings(USHORT usSettingsPage);
 

@@ -94,6 +94,18 @@
                                                 // and this is another list of CONTENTLISTITEMs
         } CONTENTLISTITEM, *PCONTENTLISTITEM;
 
+        /*
+         *@@ CONTENTMENULISTITEM:
+         *      additional linked list item for
+         *      "folder content" menus.
+         */
+
+        typedef struct _CONTENTMENULISTITEM
+        {
+            WPFolder                    *pFolder;
+            SHORT                       sMenuId;
+        } CONTENTMENULISTITEM, *PCONTENTMENULISTITEM;
+
     #endif // SOM_WPObject_h
 
     /* ******************************************************************
@@ -119,7 +131,7 @@
      *
      ********************************************************************/
 
-    VOID cmnuInitItemCache(PCGLOBALSETTINGS pGlobalSettings);
+    VOID cmnuInitItemCache(VOID); // PCGLOBALSETTINGS pGlobalSettings);
 
     BOOL cmnuAppendMi2List(WPObject *pObject, ULONG ulObjType);
 
@@ -156,10 +168,9 @@
 
     VOID cmnuPrepareOwnerDraw(HWND hwndMenuMsg);
 
-    MRESULT cmnuMeasureItem(POWNERITEM poi,
-                            PCGLOBALSETTINGS pGlobalSettings);
+    MRESULT cmnuMeasureItem(POWNERITEM poi);
+                            // PCGLOBALSETTINGS pGlobalSettings);
 
-    BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,
-                      MPARAM mp1, MPARAM mp2);
+    BOOL cmnuDrawItem(MPARAM mp1, MPARAM mp2);
 
 #endif

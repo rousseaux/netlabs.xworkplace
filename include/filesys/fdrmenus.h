@@ -64,8 +64,7 @@
      *
      ********************************************************************/
 
-    VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,
-                                 HWND hwndSortMenu,
+    VOID mnuCheckDefaultSortItem(HWND hwndSortMenu,
                                  ULONG ulDefaultSort);
 
     BOOL mnuInsertFldrViewItems(WPFolder *somSelf,

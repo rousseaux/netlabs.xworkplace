@@ -790,6 +790,7 @@
      ********************************************************************/
 
     VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
+    VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #endif
 
