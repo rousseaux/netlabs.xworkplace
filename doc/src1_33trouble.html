@@ -13,6 +13,20 @@ Troubleshooting
 <P><LI>Same thing if the compiler cannot find an include file, or the linker
 cannot find libraries.
 
+<P><LI>Make sure your <CODE>TEMP</CODE>, <CODE>TMP</CODE>, and <CODE>TMPDIR</CODE>
+directories are set correctly. Most importantly, when using <CODE>RAMFS.IFS</CODE>,
+do not use a root directory because apparently RC chokes on that. I have the following
+in <CODE>CONFIG.SYS</CODE>:
+
+<PRE>
+IFS=J:\common\ifs\RAMFS64.IFS
+CALL=J:\common\ifs\RAMDISK.EXE Z:
+RUN=I:\OS2\CMD.EXE /C md Z:\temp
+SET TMP=Z:\temp
+SET TEMP=Z:\temp
+SET TMPDIR=Z:\temp
+</PRE>
+
 <P><LI>Also, you need to check out the "xwphelpers" CVS archive from Netlabs for the
 <A HREF="src1_5helpers.html">helpers</A> code. Make sure that this code
 is not outdated (I usually update it together with the main XWorkplace code).

@@ -1121,6 +1121,10 @@ APIRET ctrpCreateWidgetSetting(XCenter *somSelf,
  *          e.g. because it is in a tray that is not currently
  *          switched to.
  *
+ *      Preconditions:
+ *
+ *      --  Caller must lock the XCenter.
+ *
  *      Returns:
  *
  *      --  NO_ERROR
@@ -1279,35 +1283,60 @@ VOID ctrpFreeSettingData(PPRIVATEWIDGETSETTING *ppSetting)
 }
 
 /*
- *@@ ctrpDeleteWidgetSetting:
- *      deletes the specified subwidget from its
- *      owning tray.
+ *@@ ctrpRemoveWidgetSetting:
+ *      deletes the specified widget setting,
+ *      which can either be a subwidget or a
+ *      root widget.
  *
  *      This does not save the widget settings.
  *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  XCERR_INTEGRITY
+ *
  *      Preconditions:
  *
- *      -- The subwidget's window must have been destroyed first.
+ *      --  Caller must hold the XCenter's mutex.
  *
- *@@added V0.9.13 (2001-06-21) [umoeller]
+ *      --  The (sub)widget's window must have been destroyed first.
+ *
+ *@@added V0.9.19 (2002-05-04) [umoeller]
  */
 
-BOOL ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget)     // in: subwidget to delete
+APIRET ctrpRemoveWidgetSetting(XCenter *somSelf,
+                               PPRIVATEWIDGETSETTING *ppSetting)     // in: widget to delete
 {
-    if (    (pSubwidget)
-         && (pSubwidget->pOwningTray)
-            // remove subwidget from owning tray's list
-         && (lstRemoveItem(&pSubwidget->pOwningTray->llSubwidgetSettings,
-                           pSubwidget))
-       )
-    {
-        // now clean up
-        ctrpFreeSettingData(&pSubwidget);
+    APIRET arc = NO_ERROR;
+    PPRIVATEWIDGETSETTING pSetting;
 
-        return (TRUE);
+    if (!(pSetting = *ppSetting))
+        return ERROR_INVALID_PARAMETER;
+
+    if (pSetting->pOwningTray)
+    {
+        // this is a subwidget:
+        if (!lstRemoveItem(&pSetting->pOwningTray->llSubwidgetSettings,
+                           pSetting))
+            arc = XCERR_INTEGRITY;
+    }
+    else
+    {
+        // this is a root widget:
+        PLINKLIST   pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+        if (!lstRemoveItem(pllWidgetSettings,
+                           pSetting))
+            arc = XCERR_INTEGRITY;
     }
 
-    return (FALSE);
+    if (!arc)
+        // now clean up
+        ctrpFreeSettingData(ppSetting);
+
+    return (arc);
 }
 
 /* ******************************************************************
@@ -1447,7 +1476,7 @@ APIRET ctrpFindTraySetting(XCenter *somSelf,
 }
 
 /*
- *@@ ctrpDeleteTray:
+ *@@ ctrpDeleteTraySetting:
  *      deletes the specified tray completely, including
  *      all its subwidgets.
  *
@@ -1458,10 +1487,12 @@ APIRET ctrpFindTraySetting(XCenter *somSelf,
  *      This does not save the widget settings.
  *
  *@@added V0.9.13 (2001-06-21) [umoeller]
+ *@@changed V0.9.19 (2002-05-04) [umoeller]: prototype changed, renamed
  */
 
-BOOL ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
-                    ULONG ulIndex)             // in: tray to delete
+BOOL ctrpDeleteTraySetting(XCenter *somSelf,
+                           PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
+                           ULONG ulIndex)             // in: tray to delete
 {
     if (ppws)
     {
@@ -1477,8 +1508,10 @@ BOOL ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setti
             while (pSubwidgetNode)
             {
                 PLISTNODE pNext = pSubwidgetNode->pNext;
+                PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData;
 
-                ctrpDeleteWidgetSetting((PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData);
+                ctrpRemoveWidgetSetting(somSelf,
+                                        &pSetting);
 
                 pSubwidgetNode = pNext;
             }
@@ -1583,88 +1616,6 @@ VOID ctrpFreeWidgets(XCenter *somSelf)
 
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
-}
-
-/*
- *@@ ctrpQueryWidgets:
- *      implementation for XCenter::xwpQueryWidgets.
- *
- *@@added V0.9.7 (2000-12-08) [umoeller]
- */
-
-PVOID ctrpQueryWidgets(XCenter *somSelf,
-                       PULONG pulCount)
-{
-    PXCENTERWIDGETSETTING paSettings = NULL;
-
-    WPSHLOCKSTRUCT Lock = {0};
-    TRY_LOUD(excpt1)
-    {
-        if (LOCK_OBJECT(Lock, somSelf))
-        {
-            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
-            PLISTNODE pNode = lstQueryFirstNode(pllSettings);
-            ULONG cSettings = lstCountItems(pllSettings);
-            if (paSettings = malloc(sizeof(XCENTERWIDGETSETTING) * cSettings))
-            {
-                ULONG ul = 0;
-                for (;
-                     ul < cSettings;
-                     ul++)
-                {
-                    PPRIVATEWIDGETSETTING pSource = (PPRIVATEWIDGETSETTING)pNode->pItemData;
-                    paSettings[ul].pszWidgetClass = strhdup(pSource->Public.pszWidgetClass, NULL);
-                    paSettings[ul].pszSetupString = strhdup(pSource->Public.pszSetupString, NULL);
-
-                    pNode = pNode->pNext;
-                }
-            }
-        }
-        else
-        {
-            // we get here on crashes
-            if (paSettings)
-            {
-                free(paSettings);
-                paSettings = NULL;
-            }
-        }
-    }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
-
-    return (paSettings);
-}
-
-/*
- *@@ ctrpFreeWidgetsBuf:
- *      implementation for XCenter::FreeWidgetsBuf.
- *
- *      May run on any thread.
- *
- *@@added V0.9.7 (2000-12-08) [umoeller]
- */
-
-VOID ctrpFreeWidgetsBuf(PVOID pBuf,
-                        ULONG ulCount)
-{
-    // no semaphore needed here, we created a copy above
-    ULONG ul = 0;
-    PXCENTERWIDGETSETTING paSettings = (PXCENTERWIDGETSETTING)pBuf;
-    for (;
-         ul < ulCount;
-         ul++)
-    {
-        PXCENTERWIDGETSETTING pThis = &paSettings[ul];
-        if (pThis->pszWidgetClass)
-            free(pThis->pszWidgetClass);
-        if (pThis->pszSetupString)
-            free(pThis->pszSetupString);
-    }
-
-    free(paSettings);
 }
 
 /* ******************************************************************

@@ -27,8 +27,8 @@ $(OUTPUTDIR)\xfwps.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\xfstart.obj \
 $(OUTPUTDIR)\xmmcdplay.obj \
-$(OUTPUTDIR)\xmmvolume.obj \
 !endif
+$(OUTPUTDIR)\xmmvolume.obj \
 $(OUTPUTDIR)\xtrash.obj \
 $(OUTPUTDIR)\xtrashobj.obj \
 !ifndef XWPLITE
@@ -117,9 +117,7 @@ $(OUTPUTDIR)\mmcdplay.obj \
 !endif
 $(OUTPUTDIR)\mmhelp.obj \
 $(OUTPUTDIR)\mmthread.obj \
-!ifndef XWPLITE
 $(OUTPUTDIR)\mmvolume.obj
-!endif
 
 # code from startshut\
 XFLDR_OBJS_STARTSHUT = \

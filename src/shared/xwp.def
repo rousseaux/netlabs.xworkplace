@@ -102,8 +102,8 @@ EXPORTS
     nlsThousandsULong
     strhDateTime
     strhThousandsULong
-    tmrStartTimer
-    tmrStopTimer
+;    tmrStartTimer
+;    tmrStopTimer
     tmrStartXTimer
     tmrStopXTimer
     winhAdjustDlgItemSpinData

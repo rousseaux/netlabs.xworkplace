@@ -1355,6 +1355,20 @@ BEGIN
     ID_XFD_RUN_SEPARATE                 "~Separate session"
     ID_XFD_RUN_STARTUPDIR_TXT           "~Working directory:"
 
+    /* strings formerly in ID_CRD_SETTINGS_VIEW */
+    ID_XRDI_VIEW_FRAMEGROUP             "XCenter frame"
+    ID_CRDI_VIEW_REDUCEWORKAREA         "~Reduce desktop workarea"
+    ID_CRDI_VIEW_ALWAYSONTOP            "~Always on top"
+    ID_CRDI_VIEW_ANIMATE                "A~nimate"
+    ID_CRDI_VIEW_AUTOHIDE               "Auto-h~ide"
+    ID_CRDI_VIEW_AUTOHIDE_TXT1          "D~elay:"
+    ID_CRDI_VIEW_AUTOHIDE_CLICK         "Hide i~mmediately on mouse click"
+    ID_CRDI_VIEW_PRTY_GROUP             "~View thread priority"
+    ID_CRDI_VIEW_POSITION_GROUP         "XCenter position"
+    ID_CRDI_VIEW_TOPOFSCREEN            "~Top of screen"
+    ID_CRDI_VIEW_BOTTOMOFSCREEN         "~Bottom of screen"
+    ID_CRDI_VIEW_AUTOSCREENBORDER       "Automatically add to ~screen border"
+
     /* strings for XFldWPS menu pages  (all new with V0.9.19) */
     ID_XSDI_MENU_SETTINGS               "Common menu settings"
     ID_XSDI_MENU_ITEMS                  "Menu items"

@@ -125,10 +125,14 @@
  +          13: _pszClientFont          // V0.9.9 (2001-03-07) [umoeller]
  +          14: _lcolClientBackground
  +          15: _fHideOnClick           // V0.9.14 (2001-08-21) [umoeller]
+ +          16: _ulHeight               // thanks for mentioning your changes here, martin
+ +          17: _ulWidth
+ +          18: _fAutoScreenBorder      // V0.9.19 (2002-05-07) [umoeller]
  +
  *@@added V0.9.9 (2001-01-29) [umoeller]
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  *@@changed V0.9.16 (2001-10-15) [umoeller]: changed defaults
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: added "auto screen border"
  */
 
 static XWPSETUPENTRY    G_XCenterSetupSet[] =
@@ -298,6 +302,14 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     default, ulExtra,            min, max
                FALSE,   0,                  0,   0,
 
+        // V0.9.19 (2002-05-07) [umoeller]
+        // type,  setup string,     offset,
+        STG_BOOL,    "AUTOSCREENBORDER", FIELDOFFSET(XCenterData, fAutoScreenBorder),
+        //     key for wpSaveState/wpRestoreState
+               18,
+        //     default, ulExtra,            min, max
+               TRUE,    0,                  0,   0,
+
         // V0.9.19 (2002-04-16) [lafaix]
         // type,  setup string,     offset,
         STG_LONG_DEC,    "HEIGHT", FIELDOFFSET(XCenterData, ulHeight),
@@ -349,8 +361,114 @@ VOID ctrpInitData(XCenter *somSelf)
                      somThis);
 }
 
+static VOID AppendWidgetSettings(PXSTRING pstrSetup,
+                                 PLINKLIST pllSettings);
+
+/*
+ *@@ ctrpAppendWidgetSettings:
+ *      appends the given widget setting as a
+ *      setup string to the given XSTRING.
+ *
+ *      Used by AppendWidgetSettings (into which
+ *      this will also recurse), but also by
+ *      drag'n'drop to drop trays across XCenters
+ *      correctly.
+ *
+ *      pstrSetup is assumed to be initialized.
+ *
+ *      In addition, you must pass in a BOOL variable
+ *      in pfFirstWidget that must be set to FALSE.
+ *
+ *      Finally, this uses pstrTemp as a temp buffer
+ *      for speed, which must be initialized and
+ *      cleared after use also.
+ *
+ *@@added V0.9.19 (2002-05-04) [umoeller]
+ */
+
+VOID ctrpAppendWidgetSettings(PXSTRING pstrSetup,
+                              PPRIVATEWIDGETSETTING pSetting,
+                              PBOOL pfFirstWidget,
+                              PXSTRING pstrTemp)
+{
+    ULONG ulSetupLen;
+
+    if (!*pfFirstWidget)
+        // not first run:
+        // add separator
+        xstrcatc(pstrSetup, ',');
+    else
+        *pfFirstWidget = FALSE;
+
+    // add widget class
+    xstrcat(pstrSetup, pSetting->Public.pszWidgetClass, 0);
+
+    // add first separator
+    xstrcatc(pstrSetup, '(');
+
+    if (    (pSetting->Public.pszSetupString)
+         && (ulSetupLen = strlen(pSetting->Public.pszSetupString))
+       )
+    {
+        // widget has a setup string:
+        // copy widget setup string to temporary buffer
+        // for encoding... this has "=" and ";"
+        // chars in it, and these should not appear
+        // in the WPS setup string
+        xstrcpy(pstrTemp,
+                pSetting->Public.pszSetupString,
+                ulSetupLen);
+
+        xstrEncode(pstrTemp,
+                   "%,{}[]();=");
+                        // added {}[] V0.9.19 (2002-04-25) [umoeller]
+
+        // now append encoded widget setup string
+        xstrcats(pstrSetup, pstrTemp);
+
+    } // end if (    (pSetting->pszSetupString)...
+
+    // add terminator
+    xstrcatc(pstrSetup, ')');
+
+    // add trays in round brackets, if we have any
+    if (pSetting->pllTraySettings)
+    {
+        PLISTNODE pTrayNode = lstQueryFirstNode(pSetting->pllTraySettings);
+
+        xstrcatc(pstrSetup, '{');
+
+        while (pTrayNode)
+        {
+            PTRAYSETTING pTraySetting = (PTRAYSETTING)pTrayNode->pItemData;
+
+            // "Tray(setupstring){Tray1[widget1,widget],Tray2[widget]}"
+
+            xstrcat(pstrSetup,
+                    pTraySetting->pszTrayName,
+                    0);
+
+            // add subwidgets in square brackets
+            xstrcatc(pstrSetup, '[');
+
+            // recurse
+            AppendWidgetSettings(pstrSetup,
+                                 &pTraySetting->llSubwidgetSettings);
+
+            xstrcatc(pstrSetup, ']');
+
+            pTrayNode = pTrayNode->pNext;
+        }
+
+        xstrcatc(pstrSetup, '}');
+    }
+}
+
 /*
  *@@ AppendWidgetSettings:
+ *      appends all widgets in pllSettings to the
+ *      given XSTRING, including trays and subwidgets,
+ *      if any.
  *
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
@@ -367,78 +485,8 @@ static VOID AppendWidgetSettings(PXSTRING pstrSetup,
     while (pNode)
     {
         PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
-        ULONG ulSetupLen;
 
-        if (!fFirstWidget)
-            // not first run:
-            // add separator
-            xstrcatc(pstrSetup, ',');
-        else
-            fFirstWidget = FALSE;
-
-        // add widget class
-        xstrcat(pstrSetup, pSetting->Public.pszWidgetClass, 0);
-
-        // add first separator
-        xstrcatc(pstrSetup, '(');
-
-        if (    (pSetting->Public.pszSetupString)
-             && (ulSetupLen = strlen(pSetting->Public.pszSetupString))
-           )
-        {
-            // widget has a setup string:
-            // copy widget setup string to temporary buffer
-            // for encoding... this has "=" and ";"
-            // chars in it, and these should not appear
-            // in the WPS setup string
-            xstrcpy(&strSetup2,
-                    pSetting->Public.pszSetupString,
-                    ulSetupLen);
-
-            xstrEncode(&strSetup2,
-                       "%,{}[]();=");
-                            // added {}[] V0.9.19 (2002-04-25) [umoeller]
-
-            // now append encoded widget setup string
-            xstrcats(pstrSetup, &strSetup2);
-
-        } // end if (    (pSetting->pszSetupString)...
-
-        // add terminator
-        xstrcatc(pstrSetup, ')');
-
-        // add trays in round brackets, if we have any
-        if (pSetting->pllTraySettings)
-        {
-            PLISTNODE pTrayNode = lstQueryFirstNode(pSetting->pllTraySettings);
-
-            xstrcatc(pstrSetup, '{');
-
-            while (pTrayNode)
-            {
-                PTRAYSETTING pTraySetting = (PTRAYSETTING)pTrayNode->pItemData;
-
-                // "Tray(setupstring){Tray1[widget1,widget],Tray2[widget]}"
-
-                xstrcat(pstrSetup,
-                        pTraySetting->pszTrayName,
-                        0);
-
-                // add subwidgets in square brackets
-                xstrcatc(pstrSetup, '[');
-
-                // recurse
-                AppendWidgetSettings(pstrSetup,
-                                     &pTraySetting->llSubwidgetSettings);
-
-                xstrcatc(pstrSetup, ']');
-
-                pTrayNode = pTrayNode->pNext;
-            }
-
-            xstrcatc(pstrSetup, '}');
-        }
-
+        ctrpAppendWidgetSettings(pstrSetup, pSetting, &fFirstWidget, &strSetup2);
 
         pNode = pNode->pNext;
     } // end for widgets
@@ -532,21 +580,27 @@ static BOOL CreateWidgetFromString(XCenter *somSelf,
                                    PULONG pcWidgets,
                                    PBOOL pfIsTray)
 {
+    WIDGETPOSITION pos2;
+    APIRET arc;
+
     _Pmpf((__FUNCTION__ ": creating \"%s\", \"%s\"",
                 STRINGORNULL(pcszClass),
                 STRINGORNULL(pcszSetup)));
 
-    if (_xwpCreateWidget(somSelf,
-                         (PSZ)pcszClass,
-                         (PSZ)pcszSetup,
-                         ulTrayWidgetIndex,
-                         ulTrayIndex,
-                         -1)) // to the right
+    pos2.ulTrayWidgetIndex = ulTrayWidgetIndex;
+    pos2.ulTrayIndex = ulTrayIndex;
+    pos2.ulWidgetIndex = -1;        // to the right
+    if (arc = _xwpCreateWidget(somSelf,
+                               (PSZ)pcszClass,
+                               (PSZ)pcszSetup,
+                               &pos2))
     {
         // error:
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Creating widget \"%s\" (\"%s\") failed.",
-               pcszClass, pcszSetup);
+               "Creating widget \"%s\" (\"%s\") failed, rc = %d.",
+               pcszClass,
+               pcszSetup,
+               arc);
         return FALSE;
     }
 
@@ -976,20 +1030,26 @@ BOOL ctrpSetup(XCenter *somSelf,
                 {
                     // first of all, remove all existing widgets,
                     // we have a replacement here
+                    WIDGETPOSITION pos;
+                    pos.ulTrayWidgetIndex = -1;
+                    pos.ulTrayIndex = -1;
+                    pos.ulWidgetIndex = 0;      // leftmost widget
                     while (ctrpQueryWidgetsCount(somSelf))       // V0.9.16 (2001-10-15) [umoeller]
-                        if (!_xwpRemoveWidget(somSelf,
-                                              0))
+                        if (_xwpDeleteWidget(somSelf,
+                                             &pos))
                         {
                             // error:
                             brc = FALSE;
                             break;
                         }
 
-                    if (_wpScanSetupString(somSelf,
-                                           pszSetupString,
-                                           "WIDGETS",
-                                           pszWidgets,
-                                           &cb))
+                    if (    (brc)
+                         && (_wpScanSetupString(somSelf,
+                                                pszSetupString,
+                                                "WIDGETS",
+                                                pszWidgets,
+                                                &cb))
+                       )
                         // allow "CLEAR" to just nuke the widgets
                         // V0.9.19 (2002-04-25) [umoeller]
                         if (!stricmp(pszWidgets, "CLEAR"))
@@ -1500,6 +1560,90 @@ static ULONG    G_aulView2SetupOffsets[]
 
 static BOOL     G_fSetting = FALSE;
 
+static SLDCDATA
+        DelaySliderCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     60,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             },
+        PrioritySliderCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     32,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             };
+
+#define VIEW_WIDTH              200
+
+static const CONTROLDEF
+    FrameGroup = LOADDEF_GROUP(ID_XRDI_VIEW_FRAMEGROUP, VIEW_WIDTH),
+    ReduceDesktopCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_REDUCEWORKAREA),
+    AlwaysOnTopCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_ALWAYSONTOP),
+    AnimateCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_ANIMATE),
+    AutoHideCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOHIDE),
+    DelayTxt1 = LOADDEF_TEXT(ID_CRDI_VIEW_AUTOHIDE_TXT1),
+    DelaySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_AUTOHIDE_SLIDER, 108, 14, &DelaySliderCData),
+    DelayTxt2 = CONTROLDEF_TEXT("TBR", ID_CRDI_VIEW_AUTOHIDE_TXT2, SZL_AUTOSIZE, SZL_AUTOSIZE),
+    AutoHideClickCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOHIDE_CLICK),
+    AutoScreenBorderCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOSCREENBORDER),
+    PriorityGroup = LOADDEF_GROUP(ID_CRDI_VIEW_PRTY_GROUP, VIEW_WIDTH),
+    PrioritySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_PRTY_SLIDER, 96, 16, &PrioritySliderCData),
+    PriorityTxt2 = CONTROLDEF_TEXT("TBR", ID_CRDI_VIEW_PRTY_TEXT, SZL_AUTOSIZE, SZL_AUTOSIZE),
+    PositionGroup = LOADDEF_GROUP(ID_CRDI_VIEW_POSITION_GROUP, VIEW_WIDTH),
+    TopOfScreenRadio = LOADDEF_FIRST_AUTORADIO(ID_CRDI_VIEW_TOPOFSCREEN),
+    BottomOfScreenRadio = LOADDEF_NEXT_AUTORADIO(ID_CRDI_VIEW_BOTTOMOFSCREEN);
+
+static const DLGHITEM G_dlgXCenterView[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&FrameGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&ReduceDesktopCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AlwaysOnTopCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AnimateCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AutoHideCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&DelayTxt1),
+                        CONTROL_DEF(&DelaySlider),
+                        CONTROL_DEF(&DelayTxt2),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&AutoHideClickCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AutoScreenBorderCB),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&PriorityGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PrioritySlider),
+                        CONTROL_DEF(&PriorityTxt2),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&PositionGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&TopOfScreenRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&BottomOfScreenRadio),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
 /*
  *@@ ctrpView1InitPage:
  *      notebook callback function (notebook.c) for the
@@ -1511,6 +1655,8 @@ static BOOL     G_fSetting = FALSE;
  *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: now using dlg formatter
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: added auto screen border
  */
 
 VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1527,6 +1673,12 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             // be careful about using the copy... we have some pointers in there!
         // store in notebook struct
         pnbp->pUser = pBackup;
+
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-05-07) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgXCenterView,
+                      ARRAYITEMCOUNT(G_dlgXCenterView));
 
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW_AUTOHIDE_SLIDER),
@@ -1571,6 +1723,10 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
                               _fHideOnClick);
+
+        // V0.9.19 (2002-05-07) [umoeller]
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOSCREENBORDER,
+                              _fAutoScreenBorder);
 
         // priority
         winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage,
@@ -1707,6 +1863,11 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_CRDI_VIEW_AUTOHIDE_CLICK:
             _fHideOnClick = ulExtra;
+        break;
+
+        // V0.9.19 (2002-05-07) [umoeller]
+        case ID_CRDI_VIEW_AUTOSCREENBORDER:
+            _fAutoScreenBorder = ulExtra;
         break;
 
         case ID_CRDI_VIEW_PRTY_SLIDER:
@@ -1887,7 +2048,7 @@ static const CONTROLDEF
     SunkBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SUNKBORDERS),
     HatchInUseCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_HATCHINUSE);
 
-static const DLGHITEM dlgXCenterStyle[] =
+static const DLGHITEM G_dlgXCenterStyle[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -1963,8 +2124,8 @@ VOID ctrpView2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // insert the controls using the dialog formatter
         // V0.9.16 (2001-10-24) [umoeller]
         ntbFormatPage(pnbp->hwndDlgPage,
-                      dlgXCenterStyle,
-                      ARRAYITEMCOUNT(dlgXCenterStyle));
+                      G_dlgXCenterStyle,
+                      ARRAYITEMCOUNT(G_dlgXCenterStyle));
 
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW2_3DBORDER_SLIDER),
@@ -2281,7 +2442,7 @@ DosBeep(100, 100);
                )
             {
                 if (prec->ulRootIndex != -1)        // @@todo
-                    _xwpRemoveWidget(pnbp->inbp.somSelf,
+                    _xwpDeleteWidget(pnbp->inbp.somSelf,
                                      prec->ulRootIndex);
                           // this saves the instance data
                           // and updates the view
@@ -2823,15 +2984,18 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                                             }
                                             if (ulIndex != -2)
                                             {
+                                                WIDGETPOSITION pos2;
+                                                pos2.ulTrayWidgetIndex = -1;
+                                                pos2.ulTrayIndex = -1;
+                                                pos2.ulWidgetIndex = ulIndex;
+
                                                 *pszSetupString = 0;
                                                 pszSetupString += 2;
 
                                                 _xwpCreateWidget(pnbp->inbp.somSelf,
                                                                  pszBuff,
                                                                  pszSetupString,
-                                                                 -1,
-                                                                 -1,
-                                                                 ulIndex);
+                                                                 &pos2);
                                             }
                                         }
 
@@ -2947,10 +3111,10 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
         {
             PWIDGETRECORD prec;
             if (    (prec = (PWIDGETRECORD)pnbp->preccSource)
-                 && (prec->Position.ulTrayWidgetIndex == -1)    // @@todo
+                 // && (prec->Position.ulTrayWidgetIndex == -1)    // @@todo
                )
-                _xwpRemoveWidget(pnbp->inbp.somSelf,
-                                 prec->Position.ulWidgetIndex); // ulRootIndex);
+                _xwpDeleteWidget(pnbp->inbp.somSelf,
+                                 &prec->Position);
                       // this saves the instance data
                       // and updates the view
                       // and also calls the init callback

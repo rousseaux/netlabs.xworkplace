@@ -435,8 +435,6 @@ static PLINKLIST InsertDriverCategories(HWND hwndCnr,
         // category found:
         // go for the drivers
 
-        // PSZ     p1 = pSearch;
-                // pStartOfBlock = NULL;
         PSZ     pszCategoryTitle = strhQuote(pSearch,
                                              '"',     // extract title string
                                              &pSearch); // out: char after closing char
@@ -444,10 +442,10 @@ static PLINKLIST InsertDriverCategories(HWND hwndCnr,
         PSZ     pszBlock = strhExtract(pSearch,
                                        '{',
                                        '}',
-                                       &pSearch); // out: char after closing char
+                                       (PCSZ*)&pSearch); // out: char after closing char
         if (pszBlock)
         {
-            PSZ pSearch2 = pszBlock;
+            PCSZ pSearch2 = pszBlock;
 
             // create linked list of DRIVERSPEC's;
             // this list gets in turn stored in
@@ -1196,10 +1194,10 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                             // "file written" msg
                             PCSZ apsz = szBackup;
                             cmnMessageBoxExt(pnbp->hwndFrame, // inbp.hwndPage,
-                                                100,
-                                                &apsz, 1,
-                                                136,
-                                                MB_OK);
+                                             100,
+                                             &apsz, 1,
+                                             136,
+                                             MB_OK);
                         }
                         else
                             winhDebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");

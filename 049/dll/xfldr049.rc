@@ -1347,6 +1347,20 @@ BEGIN
     ID_XFD_RUN_SEPARATE                 "Getrennte ~Sitzung"
     ID_XFD_RUN_STARTUPDIR_TXT           "Arbe~itsverzeichnis:"
 
+    /* strings formerly in ID_CRD_SETTINGS_VIEW */
+    ID_XRDI_VIEW_FRAMEGROUP             "XCenter-Leiste"
+    ID_CRDI_VIEW_REDUCEWORKAREA         "Arbeitsbereich ~reduzieren"
+    ID_CRDI_VIEW_ALWAYSONTOP            "Immer im ~Vordergrund"
+    ID_CRDI_VIEW_ANIMATE                "A~nimieren"
+    ID_CRDI_VIEW_AUTOHIDE               "Automat~isches Verstecken"
+    ID_CRDI_VIEW_AUTOHIDE_TXT1          "V~erzîgerung:"
+    ID_CRDI_VIEW_AUTOHIDE_CLICK         "Sofort nach ~Mausklick verstecken"
+    ID_CRDI_VIEW_PRTY_GROUP             "~PrioritÑt des Anzeigethreads"
+    ID_CRDI_VIEW_POSITION_GROUP         "XCenter-Position"
+    ID_CRDI_VIEW_TOPOFSCREEN            "~Oben auf der Anzeige"
+    ID_CRDI_VIEW_BOTTOMOFSCREEN         "~Unten auf der Anzeige"
+    ID_CRDI_VIEW_AUTOSCREENBORDER       "Automatically add to screen border"
+
     /* strings for XFldWPS menu pages  (all new with V0.9.19) */
     ID_XSDI_MENU_SETTINGS               "Gemeinsame MenÅeinstellungen"
     ID_XSDI_MENU_ITEMS                  "MenÅeintrÑge"

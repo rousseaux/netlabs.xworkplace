@@ -2617,14 +2617,23 @@ SOM_Scope ULONG  SOMLINK xo_wpConfirmObjectTitle(XFldObject *somSelf,
  *      work.
  *
  *@@added V0.9.14 (2001-07-30) [umoeller]
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: reversed call order to fix XCenter object button display
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpCnrSetEmphasis(XFldObject *somSelf,
                                             ULONG ulEmphasisAttr,
                                             BOOL fTurnOn)
 {
+    BOOL brc;
+
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpCnrSetEmphasis");
+
+    // moved parent call to top
+    // V0.9.19 (2002-05-07) [umoeller]
+    brc = XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
+                                                      ulEmphasisAttr,
+                                                      fTurnOn);
 
     if (    (ulEmphasisAttr & CRA_INUSE)
          && (_pvllWidgetNotifies)
@@ -2644,9 +2653,7 @@ SOM_Scope BOOL  SOMLINK xo_wpCnrSetEmphasis(XFldObject *somSelf,
         }
     }
 
-    return (XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
-                                                        ulEmphasisAttr,
-                                                        fTurnOn));
+    return brc;
 }
 
 

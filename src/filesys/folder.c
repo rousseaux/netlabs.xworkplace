@@ -1574,7 +1574,8 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
             // select entire string in drop-down
             winhEntryFieldSelectAll(hwndDropDown);
 
-            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            // return TRUE because we've set the focus
+            mrc = (MPARAM)TRUE;
         }
         break;
 

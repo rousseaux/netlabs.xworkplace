@@ -176,7 +176,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     inbp.pfncbItemChanged = ctrpClassesItemChanged;
     ntbInsertPage(&inbp);
 
-    // add the "View2" page on top
+    // add the "Style" page on top
     memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndNotebook;
@@ -191,7 +191,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     inbp.pfncbItemChanged = ctrpView2ItemChanged;
     ntbInsertPage(&inbp);
 
-    // add the "View1" page on top
+    // add the "View" page on top
     memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndNotebook;
@@ -199,7 +199,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     inbp.usPageStyleFlags = BKA_MAJOR;
     inbp.fEnumerate = TRUE;
     inbp.pcszName = cmnGetString(ID_XSSI_VIEWPAGE);  // pszViewPage
-    inbp.ulDlgID = ID_CRD_SETTINGS_VIEW;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_CRD_SETTINGS_VIEW; V0.9.19 (2002-05-07) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW1;
     inbp.ulPageID = SP_XCENTER_VIEW1;
     inbp.pfncbInitPage    = ctrpView1InitPage;
@@ -225,10 +225,51 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
 SOM_Scope PVOID  SOMLINK xctr_xwpQueryWidgets(XCenter *somSelf,
                                               PULONG pulCount)
 {
+    PXCENTERWIDGETSETTING paSettings = NULL;
+    BOOL    fLocked = FALSE;
+
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpQueryWidgets");
 
-    return (ctrpQueryWidgets(somSelf, pulCount));
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
+            PLISTNODE pNode = lstQueryFirstNode(pllSettings);
+            ULONG cSettings = lstCountItems(pllSettings);
+            if (paSettings = malloc(sizeof(XCENTERWIDGETSETTING) * cSettings))
+            {
+                ULONG ul = 0;
+                for (;
+                     ul < cSettings;
+                     ul++)
+                {
+                    PPRIVATEWIDGETSETTING pSource = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+                    paSettings[ul].pszWidgetClass = strdup(pSource->Public.pszWidgetClass);
+                    if (pSource->Public.pszSetupString)
+                        paSettings[ul].pszSetupString = strdup(pSource->Public.pszSetupString);
+                    else
+                        paSettings[ul].pszSetupString = NULL;
+
+                    pNode = pNode->pNext;
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        if (paSettings)
+        {
+            free(paSettings);
+            paSettings = NULL;
+        }
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (paSettings);
 }
 
 /*
@@ -243,12 +284,28 @@ SOM_Scope PVOID  SOMLINK xctr_xwpQueryWidgets(XCenter *somSelf,
  */
 
 SOM_Scope void  SOMLINK xctr_xwpFreeWidgetsBuf(XCenter *somSelf,
-                                               PVOID pBuf, ULONG ulCount)
+                                               PVOID pBuf,
+                                               ULONG ulCount)
 {
+    // no semaphore needed here, we created a copy above
+    ULONG ul = 0;
+    PXCENTERWIDGETSETTING paSettings = (PXCENTERWIDGETSETTING)pBuf;
+
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpFreeWidgetsBuf");
 
-    ctrpFreeWidgetsBuf(pBuf, ulCount);
+    for (;
+         ul < ulCount;
+         ul++)
+    {
+        PXCENTERWIDGETSETTING pThis = &paSettings[ul];
+        if (pThis->pszWidgetClass)
+            free(pThis->pszWidgetClass);
+        if (pThis->pszSetupString)
+            free(pThis->pszSetupString);
+    }
+
+    free(paSettings);
 }
 
 /*
@@ -279,6 +336,12 @@ SOM_Scope void  SOMLINK xctr_xwpFreeWidgetsBuf(XCenter *somSelf,
  *
  *      --  NO_ERROR
  *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_PROTECTION_VIOLATION
+ *
  *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: ulWidgetIndex
  *          does not exist.
  *
@@ -291,59 +354,48 @@ SOM_Scope void  SOMLINK xctr_xwpFreeWidgetsBuf(XCenter *somSelf,
  *      --  XCERR_INVALID_SUBWIDGET_INDEX: ulTrayWidgetIndex
  *          is invalid.
  *
- *      --  ERROR_PROTECTION_VIOLATION
- *
- *      This method replaces xwpInsertWidget (V0.9.19).
+ *      This method replaces xwpInsertWidget (V0.9.19) and
+ *      can now correctly handle all cases with trays and
+ *      subwidgets. As a result, the ugly hack messages to
+ *      the tray widget are no longer needed.
  *
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-
-/*
- * SOM_Scope APIRET SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
- *                                               PSZ pszWidgetClass,
- *                                               PSZ pszSetupString,
- *                                               ULONG ulTrayWidgetIndex,
- *                                               ULONG ulTrayIndex,
- *                                               ULONG ulWidgetIndex)
- */
-
-/*
- * The prototype for xctr_xwpCreateWidget was replaced by the following prototype:
- */
-SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf, 
-                                              PSZ pszWidgetClass, 
-                                              PSZ pszSetupString, 
-                                              ULONG ulTrayWidgetIndex, 
-                                              ULONG ulTrayIndex, 
-                                              ULONG ulWidgetIndex)
+SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
+                                              PSZ pszWidgetClass,
+                                              PSZ pszSetupString,
+                                              XCenter_PWIDGETPOSITION pPosition)
 {
     APIRET      arc = NO_ERROR;
     BOOL        fLocked = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
 
     XCenterMethodDebug("XCenter","xctr_xwpInsertWidget");
+
+    if (!pPosition || !pszWidgetClass)
+        return ERROR_INVALID_PARAMETER;
 
     TRY_LOUD(excpt1)
     {
         if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
-            PPRIVATEWIDGETSETTING pNewSetting;
-            ULONG   ulNewItemCount = 0,
-                    ulNewWidgetIndex = 0;
-            PTRAYSETTING pTraySetting = NULL;
-            PPRIVATEWIDGETSETTING pTrayWidgetSetting = NULL;
-            PXCENTERWIDGET pTrayWidgetView = NULL;
+            XCenterData *somThis = XCenterGetData(somSelf);
+            PPRIVATEWIDGETSETTING   pNewSetting;
+            ULONG                   ulNewItemCount = 0,
+                                    ulNewWidgetIndex = 0;
+            PTRAYSETTING            pTraySetting = NULL;
+            PPRIVATEWIDGETSETTING   pTrayWidgetSetting = NULL;
+            PXCENTERWIDGET          pTrayWidgetView = NULL;
 
             ctrpLoadClasses();
 
-            if (ulTrayWidgetIndex != -1)
+            if (pPosition->ulTrayWidgetIndex != -1)
             {
                 // create subwidget in tray:
                 // find the specified tray then
                 arc = ctrpFindTraySetting(somSelf,
-                                          ulTrayWidgetIndex,
-                                          ulTrayIndex,
+                                          pPosition->ulTrayWidgetIndex,
+                                          pPosition->ulTrayIndex,
                                           &pTrayWidgetSetting,
                                                 // receives tray widget setting always
                                           &pTraySetting,
@@ -360,13 +412,17 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
                                                      pTraySetting,   // can be NULL for root
                                                      pszWidgetClass,
                                                      pszSetupString,
-                                                     ulWidgetIndex,
+                                                     pPosition->ulWidgetIndex,
                                                      &pNewSetting,
                                                      &ulNewItemCount,
                                                      &ulNewWidgetIndex)))
                )
             {
                 // added successfully:
+
+                // do not hold the mutex while sending
+                _wpReleaseObjectMutexSem(somSelf);
+                fLocked = FALSE;
 
                 // if this is a tray widget, add a default empty tray
                 // V0.9.19 (2002-04-25) [umoeller]
@@ -394,9 +450,6 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
                     // we must send msg instead of calling ctrpCreateWidgetWindow
                     // directly, because that func may only run on the
                     // XCenter GUI thread
-                    // and do not hold the mutex while sending
-                    _wpReleaseObjectMutexSem(somSelf);
-                    fLocked = FALSE;
 
                     if (!pTraySetting)
                     {
@@ -417,7 +470,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
                     {
                         // either client or tray widget needs refresh:
                         WinSendMsg(hwndRefresh,
-                                   XCM_CREATEWIDGET,
+                                   XCM_CREATEWIDGETWINDOW,
                                    (MPARAM)pNewSetting,
                                    (MPARAM)ulNewWidgetIndex);
                                 // new widget is invisible, and at a random position
@@ -432,6 +485,9 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
 
                 // save instance data (with that linked list)
                 _wpSaveDeferred(somSelf);
+
+                // update the "widgets" notebook page, if open
+                ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
             }
 
             ctrpFreeClasses();
@@ -459,41 +515,38 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
  *
  *      --  NO_ERROR
  *
- *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: ulWidgetIndex
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_PROTECTION_VIOLATION
+ *
+ *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: ulTrayWidgetIndex
  *          does not exist.
  *
- *      --  XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY: ulWidgetIndex
+ *      --  XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY: ulTrayWidgetIndex
  *          is valid, but does not point to a tray widget.
  *
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-
-/*
- * SOM_Scope APIRET  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
- *                                              ULONG ulTrayWidgetIndex,
- *                                              PSZ pszTrayName)
- */
-
-/*
- * The prototype for xctr_xwpCreateTray was replaced by the following prototype:
- */
-SOM_Scope ULONG  SOMLINK xctr_xwpCreateTray(XCenter *somSelf, 
-                                            ULONG ulTrayWidgetIndex, 
+SOM_Scope ULONG  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
+                                            ULONG ulTrayWidgetIndex,
                                             PSZ pszTrayName)
 {
     APIRET      arc = NO_ERROR;
     BOOL        fLocked = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
 
     XCenterMethodDebug("XCenter","xctr_xwpCreateTray");
 
+    if (!pszTrayName)
+        return ERROR_INVALID_PARAMETER;
+
     TRY_LOUD(excpt1)
     {
-        if (!pszTrayName)
-            arc = ERROR_INVALID_PARAMETER;
-        else if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
+            XCenterData *somThis = XCenterGetData(somSelf);
             PPRIVATEWIDGETSETTING pTrayWidgetSetting;
             PXCENTERWIDGET pTrayWidget;
 
@@ -519,21 +572,23 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
                         arc = ERROR_NOT_ENOUGH_MEMORY;
                     else
                     {
+                        // do not hold the mutex while sending
+                        _wpReleaseObjectMutexSem(somSelf);
+                        fLocked = FALSE;
+
                         if (pTrayWidget)
                         {
-                            _wpReleaseObjectMutexSem(somSelf);
-                            fLocked = FALSE;
-
                             WinSendMsg(pTrayWidget->hwndWidget,
                                        XCM_TRAYSCHANGED,
                                        0,
                                        0);
                         }
+
+                        // update the "widgets" notebook page, if open
+                        ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
                     }
                 }
             }
-
-            _Pmpf((__FUNCTION__ ": returning %d", arc));
         }
     }
     CATCH(excpt1)
@@ -549,38 +604,52 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateTray(XCenter *somSelf,
 
 /*
  *@@ xwpRenameTray:
+ *      gives the specified tray a new name.
+ *
+ *      ulTrayWidgetIndex must specify the index of the
+ *      tray widget, and ulTrayIndex the index of the
+ *      tray to rename in that widget.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_PROTECTION_VIOLATION
+ *
+ *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: ulTrayWidgetIndex
+ *          does not exist.
+ *
+ *      --  XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY: ulTrayWidgetIndex
+ *          is valid, but does not point to a tray widget.
+ *
+ *      --  XCERR_INVALID_TRAY_INDEX: ulTrayIndex is
+ *          invalid.
  *
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-
-/*
- * SOM_Scope APIRET  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
- *                                              ULONG ulTrayWidgetIndex,
- *                                              ULONG ulTrayIndex,
- *                                              PSZ pszNewTrayName)
- */
-
-/*
- * The prototype for xctr_xwpRenameTray was replaced by the following prototype:
- */
-SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf, 
-                                            ULONG ulTrayWidgetIndex, 
-                                            ULONG ulTrayIndex, 
+SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
+                                            ULONG ulTrayWidgetIndex,
+                                            ULONG ulTrayIndex,
                                             PSZ pszNewTrayName)
 {
     APIRET      arc = NO_ERROR;
     BOOL        fLocked = FALSE;
-    XCenterData *somThis = XCenterGetData(somSelf);
 
     XCenterMethodDebug("XCenter","xctr_xwpRenameTray");
 
+    if (!pszNewTrayName)
+        return ERROR_INVALID_PARAMETER;
+
     TRY_LOUD(excpt1)
     {
-        if (!pszNewTrayName)
-            arc = ERROR_INVALID_PARAMETER;
-        else if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
+            XCenterData *somThis = XCenterGetData(somSelf);
             PPRIVATEWIDGETSETTING pTrayWidgetSetting;
             PTRAYSETTING pTraySetting;
             PXCENTERWIDGET pTrayWidget;
@@ -622,22 +691,214 @@ SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
 }
 
 /*
- *@@ xwpRemoveWidget:
- *      removes the widget at the position specified
- *      with ulIndex (with 0 being the leftmost widget).
+ *@@ xwpDeleteWidget:
+ *      removes the widget at the given position.
  *
- *      Returns FALSE on errors.
+ *      This operates in two modes:
+ *
+ *      --  If ulTrayWidgetIndex and ulTrayIndex are both
+ *          -1, this removes the root widget at ulWidgetIndex,
+ *          where 0 specifies the leftmost widget. If this
+ *          is a tray widget, all trays and subwidgets are
+ *          removed as well.
+ *
+ *      --  If ulTrayWidget and ulTrayIndex are not -1, they
+ *          specify the index of an existing tray widget and
+ *          of an existing tray in that widget. This then
+ *          removes the subwidget at ulWidgetIndex in the
+ *          given tray widget and tray, where, again, 0
+ *          specifies the leftmost subwidget.
+ *
+ *      If the XCenter is currently open, its view is
+ *      refreshed if necessary.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_PROTECTION_VIOLATION
+ *
+ *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: ulWidgetIndex
+ *          does not exist.
+ *
+ *      --  XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY: in tray
+ *          mode, ulWidgetIndex is not a tray widget.
+ *
+ *      --  XCERR_INVALID_TRAY_INDEX: ulTrayIndex is
+ *          invalid.
+ *
+ *      --  XCERR_INVALID_SUBWIDGET_INDEX: ulTrayWidgetIndex
+ *          is invalid.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
+ *@@changed V0.9.19 (2002-05-04) [umoeller]: prototype changed, rewritten to support trays
  */
 
-SOM_Scope BOOL  SOMLINK xctr_xwpRemoveWidget(XCenter *somSelf,
-                                             ULONG ulIndex)
+SOM_Scope ULONG SOMLINK xctr_xwpDeleteWidget(XCenter *somSelf,
+                                             XCenter_PWIDGETPOSITION pPosition)
 {
-    // XCenterData *somThis = XCenterGetData(somSelf);
-    XCenterMethodDebug("XCenter","xctr_xwpRemoveWidget");
+    APIRET arc = NO_ERROR;
+    BOOL        fLocked = FALSE;
 
-    return (ctrpRemoveWidget(somSelf, ulIndex));
+    if (!pPosition)
+        return ERROR_INVALID_PARAMETER;
+
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpDeleteWidget");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            XCenterData *somThis = XCenterGetData(somSelf);
+            PPRIVATEWIDGETSETTING   pSetting = NULL;
+            PXCENTERWIDGET          pViewData = NULL;
+            HWND                    hwndClient = NULLHANDLE;
+
+            if (!(arc = ctrpFindWidgetSetting(somSelf,
+                                              pPosition,
+                                              &pSetting,
+                                              &pViewData)))
+            {
+                // widget or subwidget found:
+                PXCENTERWINDATA pXCenterData;
+
+                // we must _first_ refresh the view before nuking
+                // the widget setting, so check if we found one
+
+                if (    (pViewData)
+                     && (pXCenterData = (PXCENTERWINDATA)_pvOpenView)
+                   )
+                {
+                    // mark for refresh below:
+                    if (pSetting->pOwningTray)
+                    {
+                        // this is a subwidget in a tray and it is
+                        // currently displaying:
+                        PPRIVATEWIDGETVIEW pOwningTrayWidget;
+                        if (pOwningTrayWidget = ((PPRIVATEWIDGETVIEW)pViewData)->pOwningTrayWidget)
+                            // this widget resides in a tray:
+                            hwndClient = pOwningTrayWidget->Widget.hwndWidget;
+                    }
+                    else
+                        // root widget:
+                        hwndClient = pXCenterData->Globals.hwndClient;
+                }
+
+                // do not hold the mutex while sending
+                _wpReleaseObjectMutexSem(somSelf);
+                fLocked = FALSE;
+
+                if (hwndClient)
+                {
+                    // we must send a msg instead of doing WinDestroyWindow
+                    // directly because only the XCenter GUI thread can
+                    // destroy the window
+
+                    WinSendMsg(hwndClient,
+                               XCM_DESTROYWIDGETWINDOW,
+                               (MPARAM)pViewData->hwndWidget,
+                               0);
+                    // msg behavior depends on whether this is sent
+                    // to client or tray widget
+                }
+
+                if (!_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                {
+                    fLocked = TRUE;
+
+                    // now we can kill the widget setting
+                    if (!(arc = ctrpRemoveWidgetSetting(somSelf,
+                                                        &pSetting)))
+                        _wpSaveDeferred(somSelf);
+
+                    if (hwndClient)
+                        // we found the open view above:
+                        WinPostMsg(hwndClient,
+                                   XCM_REFORMAT,
+                                   (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
+                                   0);
+
+                    // do not hold the mutex while sending
+                    _wpReleaseObjectMutexSem(somSelf);
+                    fLocked = FALSE;
+
+                    // update the "widgets" notebook page, if open
+                    ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
+                }
+            }
+
+            /*
+            PLISTNODE   pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
+            HWND        hwndXCenterClient = NULLHANDLE;
+
+            if (!pSettingsNode)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Invalid widget index 0x%lX.", ulIndex);
+            else
+            {
+                // widget exists:
+
+                PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSettingsNode->pItemData;
+
+                if (_pvOpenView)
+                {
+                    // XCenter view currently open:
+                    PPRIVATEWIDGETVIEW pView;
+                    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+
+                    // store XCenter client so we can update the client
+                    // at the bottom
+                    hwndXCenterClient = pGlobals->hwndClient;
+
+                    if (pView = lstItemFromIndex(&pXCenterData->llWidgets,
+                                                 ulIndex))
+                    {
+                    }
+                } // end if (_hwndOpenView)
+
+                brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
+
+                // no auto-free...
+                // clear all the setting members, including
+                // tray and subwidget stuff
+                ctrpFreeSettingData(&pSetting);      // V0.9.13 (2001-06-21) [umoeller]
+
+                if (brc)
+                    // save instance data (with that linked list)
+                    _wpSaveDeferred(somSelf);
+
+                // update the "widgets" notebook page, if open
+                ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
+
+            } // end if (pSettingsNode)
+
+            if (hwndXCenterClient)
+            {
+                // we found the open view above:
+                WinPostMsg(hwndXCenterClient,
+                           XCM_REFORMAT,
+                           (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
+                           0);
+            }
+
+            */
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return arc;
 }
 
 /*
@@ -675,15 +936,46 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
  *      An open XCenter thread is updated.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
+ *@@changed V0.9.19 (2002-05-04) [umoeller]: moved impl. back here, fixed missing save
  */
 
 SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
                                             ULONG ulClass, long lDelta)
 {
+    BOOL    brc = FALSE;
+    BOOL    fLocked = FALSE;
+
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpSetPriority");
 
-    return (ctrpSetPriority(somSelf, ulClass, lDelta));
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            XCenterData *somThis = XCenterGetData(somSelf);
+            _ulPriorityClass = ulClass;
+            _lPriorityDelta = lDelta;
+
+            if (_pvOpenView)
+            {
+                // PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                DosSetPriority(PRTYS_THREAD,
+                               ulClass,
+                               lDelta,
+                               _tidRunning);   // tid of XCenter GUI thread
+            }
+
+            _wpSaveDeferred(somSelf); // V0.9.19 (2002-05-04) [umoeller]
+        }
+        else
+            brc = FALSE;
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (brc);
 }
 
 /*

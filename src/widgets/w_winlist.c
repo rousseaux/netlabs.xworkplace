@@ -1786,106 +1786,105 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            USHORT  usID = SHORT1FROMMP(mp1),
-                    usNotifyCode = SHORT2FROMMP(mp1);
+        USHORT  usID = SHORT1FROMMP(mp1),
+                usNotifyCode = SHORT2FROMMP(mp1);
 
-            if (usID == ID_XCENTER_CLIENT)
+        if (usID == ID_XCENTER_CLIENT)
+        {
+            switch (usNotifyCode)
+            {
+                /*
+                 * XN_QUERYSIZE:
+                 *      XCenter wants to know our size.
+                 */
+
+                case XN_QUERYSIZE:
+                {
+                    PSIZEL pszl = (PSIZEL)mp2;
+                    pszl->cx = -1;
+                    pszl->cy = 2 * WIDGET_BORDER        // thin border
+                               + 2                      // space around icon
+                               + pWidget->pGlobals->cxMiniIcon;
+                    if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
+                        // raised buttons
+                        pszl->cy += 2 * THICK_BUTTON_BORDER;
+                    else
+                        // flat buttons
+                        pszl->cy += 2;      // 2*1 pixel for thin border
+                    brc = TRUE;
+                }
+                break;
+
+                /*
+                 * XN_SETUPCHANGED:
+                 *      XCenter has a new setup string for
+                 *      us in mp2.
+                 */
+
+                case XN_SETUPCHANGED:
+                {
+                    PCSZ pcszNewSetupString = (const char*)mp2;
+
+                    // reinitialize the setup data
+                    WwgtClearSetup(&pPrivate->Setup);
+                    WwgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
+
+                    // rescan switch list, because filters might have changed
+                    ScanSwitchList(pPrivate,
+                                   NULL);
+                    WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                }
+                break;
+            }
+        } // if (usID == ID_XCENTER_CLIENT)
+        else
+        {
+            if (usID == ID_XCENTER_TOOLTIP)
             {
                 switch (usNotifyCode)
                 {
-                    /*
-                     * XN_QUERYSIZE:
-                     *      XCenter wants to know our size.
-                     */
-
-                    case XN_QUERYSIZE:
+                    case TTN_NEEDTEXT:
                     {
-                        PSIZEL pszl = (PSIZEL)mp2;
-                        pszl->cx = -1;
-                        pszl->cy = 2 * WIDGET_BORDER        // thin border
-                                   + 2                      // space around icon
-                                   + pWidget->pGlobals->cxMiniIcon;
-                        if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
-                            // raised buttons
-                            pszl->cy += 2 * THICK_BUTTON_BORDER;
+                        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                        RECTL       rclSubclient;
+                        POINTL      ptlPointer;
+                        PSWCNTRL    pCtrlClicked = 0;
+
+                        // find the winlist item under the mouse
+                        WinQueryPointerPos(HWND_DESKTOP,
+                                           &ptlPointer);
+                        WinMapWindowPoints(HWND_DESKTOP,    // from
+                                           hwnd,
+                                           &ptlPointer,
+                                           1);
+                        GetPaintableRect(pPrivate, &rclSubclient);
+                        pCtrlClicked = FindCtrlFromPoint(pPrivate,
+                                                         &ptlPointer,
+                                                         &rclSubclient);
+                        pxstrClear(&pPrivate->strTooltip);
+                        if (pCtrlClicked)
+                            pxstrcpy(&pPrivate->strTooltip,
+                                     pCtrlClicked->szSwtitle,
+                                     0);
                         else
-                            // flat buttons
-                            pszl->cy += 2;      // 2*1 pixel for thin border
-                        brc = TRUE;
+                            pxstrcpy(&pPrivate->strTooltip,
+                                     "Window list",
+                                     0);
+
+                        pttt->pszText = pPrivate->strTooltip.psz;
+                        pttt->ulFormat = TTFMT_PSZ;
                     }
                     break;
-
-                    /*
-                     * XN_SETUPCHANGED:
-                     *      XCenter has a new setup string for
-                     *      us in mp2.
-                     */
-
-                    case XN_SETUPCHANGED:
-                    {
-                        PCSZ pcszNewSetupString = (const char*)mp2;
-
-                        // reinitialize the setup data
-                        WwgtClearSetup(&pPrivate->Setup);
-                        WwgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
-
-                        // rescan switch list, because filters might have changed
-                        ScanSwitchList(pPrivate,
-                                       NULL);
-                        WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
-                    }
-                    break;
-                }
-            } // if (usID == ID_XCENTER_CLIENT)
-            else
-            {
-                if (usID == ID_XCENTER_TOOLTIP)
-                {
-                    switch (usNotifyCode)
-                    {
-                        case TTN_NEEDTEXT:
-                        {
-                            PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                            RECTL       rclSubclient;
-                            POINTL      ptlPointer;
-                            PSWCNTRL    pCtrlClicked = 0;
-
-                            // find the winlist item under the mouse
-                            WinQueryPointerPos(HWND_DESKTOP,
-                                               &ptlPointer);
-                            WinMapWindowPoints(HWND_DESKTOP,    // from
-                                               hwnd,
-                                               &ptlPointer,
-                                               1);
-                            GetPaintableRect(pPrivate, &rclSubclient);
-                            pCtrlClicked = FindCtrlFromPoint(pPrivate,
-                                                             &ptlPointer,
-                                                             &rclSubclient);
-                            pxstrClear(&pPrivate->strTooltip);
-                            if (pCtrlClicked)
-                                pxstrcpy(&pPrivate->strTooltip,
-                                         pCtrlClicked->szSwtitle,
-                                         0);
-                            else
-                                pxstrcpy(&pPrivate->strTooltip,
-                                         "Window list",
-                                         0);
-
-                            pttt->pszText = pPrivate->strTooltip.psz;
-                            pttt->ulFormat = TTFMT_PSZ;
-                        }
-                        break;
-                    }
                 }
             }
-        } // end if (pPrivate)
-    } // end if (pWidget)
+        }
+    } // end if (pPrivate)
 
     return (brc);
 }
@@ -1897,43 +1896,42 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID WwgtPaint(HWND hwnd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
+        if (hps)
         {
-            HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
-            if (hps)
+            RECTL       rclWin;
+
+            // now paint frame
+            WinQueryWindowRect(hwnd,
+                               &rclWin);        // exclusive
+            pgpihSwitchToRGB(hps);
+
+            // if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
             {
-                RECTL       rclWin;
+                rclWin.xRight--;
+                rclWin.yTop--;
+                pgpihDraw3DFrame(hps,
+                                 &rclWin,           // inclusive
+                                 WIDGET_BORDER,
+                                 pWidget->pGlobals->lcol3DDark,
+                                 pWidget->pGlobals->lcol3DLight);
 
-                // now paint frame
-                WinQueryWindowRect(hwnd,
-                                   &rclWin);        // exclusive
-                pgpihSwitchToRGB(hps);
-
-                // if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
-                {
-                    rclWin.xRight--;
-                    rclWin.yTop--;
-                    pgpihDraw3DFrame(hps,
-                                     &rclWin,           // inclusive
-                                     WIDGET_BORDER,
-                                     pWidget->pGlobals->lcol3DDark,
-                                     pWidget->pGlobals->lcol3DLight);
-
-                    rclWin.xLeft++;
-                    rclWin.yBottom++;
-                }
-
-                // now paint buttons in the middle
-                DrawAllCtrls(pPrivate,
-                             hps,
-                             &rclWin);
-
-                WinEndPaint(hps);
+                rclWin.xLeft++;
+                rclWin.yBottom++;
             }
+
+            // now paint buttons in the middle
+            DrawAllCtrls(pPrivate,
+                         hps,
+                         &rclWin);
+
+            WinEndPaint(hps);
         }
     }
 }
@@ -1947,17 +1945,16 @@ VOID WwgtPaint(HWND hwnd)
 
 VOID WwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            if ((USHORT)mp1 == 1)
-                UpdateSwitchList(hwnd, pPrivate);
-            else
-                pWidget->pfnwpDefWidgetProc(hwnd, WM_TIMER, mp1, mp2);
-        } // end if (pPrivate)
+        if ((USHORT)mp1 == 1)
+            UpdateSwitchList(hwnd, pPrivate);
+        else
+            pWidget->pfnwpDefWidgetProc(hwnd, WM_TIMER, mp1, mp2);
     }
 }
 
@@ -1972,124 +1969,123 @@ VOID WwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
 VOID WwgtButton1Down(HWND hwnd,
                      MPARAM mp1)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        POINTL      ptlClick;
+        PSWCNTRL    pCtrlClicked = 0;
+        RECTL       rclSubclient;
+
+        ptlClick.x = SHORT1FROMMP(mp1);
+        ptlClick.y = SHORT2FROMMP(mp1);
+        GetPaintableRect(pPrivate, &rclSubclient);
+
+        // find the button the user clicked on
+        pCtrlClicked = FindCtrlFromPoint(pPrivate,
+                                         &ptlClick,
+                                         &rclSubclient);
+        if (pCtrlClicked)
         {
-            POINTL      ptlClick;
-            PSWCNTRL    pCtrlClicked = 0;
-            RECTL       rclSubclient;
-
-            ptlClick.x = SHORT1FROMMP(mp1);
-            ptlClick.y = SHORT2FROMMP(mp1);
-            GetPaintableRect(pPrivate, &rclSubclient);
-
-            // find the button the user clicked on
-            pCtrlClicked = FindCtrlFromPoint(pPrivate,
-                                             &ptlClick,
-                                             &rclSubclient);
-            if (pCtrlClicked)
+            // check the window's state...
+            SWP swp;
+            BOOL fRedrawActive = FALSE;
+            if (WinQueryWindowPos(pCtrlClicked->hwnd, &swp))
             {
-                // check the window's state...
-                SWP swp;
-                BOOL fRedrawActive = FALSE;
-                if (WinQueryWindowPos(pCtrlClicked->hwnd, &swp))
+                if (swp.fl & (SWP_HIDE | SWP_MINIMIZE))
                 {
-                    if (swp.fl & (SWP_HIDE | SWP_MINIMIZE))
+                    // window is hidden or minimized:
+                    // restore and activate
+                    /* if (WinSetWindowPos(pCtrlClicked->hwnd,
+                                        HWND_TOP,
+                                        0, 0, 0, 0,
+                                        SWP_SHOW | SWP_RESTORE | SWP_ACTIVATE | SWP_ZORDER)) */
+
+                    // the above never worked for maximized windows which
+                    // were minimized... the trick is to switch to the
+                    // program instead! V0.9.11 (2001-04-18) [umoeller]
+                    HSWITCH hsw = WinQuerySwitchHandle(pCtrlClicked->hwnd,
+                                                       pCtrlClicked->idProcess);
+                    if (hsw)
                     {
-                        // window is hidden or minimized:
-                        // restore and activate
-                        /* if (WinSetWindowPos(pCtrlClicked->hwnd,
+                        // first check if the thing is hidden V0.9.12 (2001-05-12) [umoeller]
+                        if (swp.fl & SWP_HIDE)
+                            // yes: show V0.9.12 (2001-05-12) [umoeller]
+                            WinSetWindowPos(pCtrlClicked->hwnd,
+                                            0, 0, 0, 0, 0,
+                                            SWP_SHOW);
+
+                        if (!WinSwitchToProgram(hsw))   // this returns 0 on success... sigh
+                        {
+                            // OK, now we have the program active, but it's
+                            // probably in the background...
+                            WinSetWindowPos(pCtrlClicked->hwnd,
                                             HWND_TOP,
                                             0, 0, 0, 0,
-                                            SWP_SHOW | SWP_RESTORE | SWP_ACTIVATE | SWP_ZORDER)) */
-
-                        // the above never worked for maximized windows which
-                        // were minimized... the trick is to switch to the
-                        // program instead! V0.9.11 (2001-04-18) [umoeller]
-                        HSWITCH hsw = WinQuerySwitchHandle(pCtrlClicked->hwnd,
-                                                           pCtrlClicked->idProcess);
-                        if (hsw)
-                        {
-                            // first check if the thing is hidden V0.9.12 (2001-05-12) [umoeller]
-                            if (swp.fl & SWP_HIDE)
-                                // yes: show V0.9.12 (2001-05-12) [umoeller]
-                                WinSetWindowPos(pCtrlClicked->hwnd,
-                                                0, 0, 0, 0, 0,
-                                                SWP_SHOW);
-
-                            if (!WinSwitchToProgram(hsw))   // this returns 0 on success... sigh
-                            {
-                                // OK, now we have the program active, but it's
-                                // probably in the background...
-                                WinSetWindowPos(pCtrlClicked->hwnd,
-                                                HWND_TOP,
-                                                0, 0, 0, 0,
-                                                SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
-                                fRedrawActive = TRUE;
-                            }
+                                            SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
+                            fRedrawActive = TRUE;
                         }
-                    }
-                    else
-                    {
-                        // not minimized:
-                        // see if it's active
-                        HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
-
-                        if (hwndActive == pCtrlClicked->hwnd)
-                        {
-                            // window is active:
-                            // try minimize...
-                            // we better not use WinSetWindowPos directly,
-                            // because this solidly messes up some windows;
-                            // SC_MINIMIZE will only minimize the window
-                            // if the window actually supports that (usually
-                            // the PM frame class ignores this if the window
-                            // doesn't have the minimize button).
-                            if (WinPostMsg(pCtrlClicked->hwnd,
-                                           WM_SYSCOMMAND,
-                                           (MPARAM)SC_MINIMIZE,
-                                           MPFROM2SHORT(CMDSRC_OTHER, TRUE)))
-                                fRedrawActive = TRUE;
-                        }
-                        else
-                            // not minimized, not active:
-                            if (WinSetActiveWindow(HWND_DESKTOP, pCtrlClicked->hwnd))
-                                fRedrawActive = TRUE;
                     }
                 }
-
-                if (fRedrawActive)
+                else
                 {
-                    HPS hps = WinGetPS(hwnd);
-                    if (hps)
+                    // not minimized:
+                    // see if it's active
+                    HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+
+                    if (hwndActive == pCtrlClicked->hwnd)
                     {
-                        PSWCNTRL    pOldActive = pPrivate->pCtrlActive;
-                        pgpihSwitchToRGB(hps);
+                        // window is active:
+                        // try minimize...
+                        // we better not use WinSetWindowPos directly,
+                        // because this solidly messes up some windows;
+                        // SC_MINIMIZE will only minimize the window
+                        // if the window actually supports that (usually
+                        // the PM frame class ignores this if the window
+                        // doesn't have the minimize button).
+                        if (WinPostMsg(pCtrlClicked->hwnd,
+                                       WM_SYSCOMMAND,
+                                       (MPARAM)SC_MINIMIZE,
+                                       MPFROM2SHORT(CMDSRC_OTHER, TRUE)))
+                            fRedrawActive = TRUE;
+                    }
+                    else
+                        // not minimized, not active:
+                        if (WinSetActiveWindow(HWND_DESKTOP, pCtrlClicked->hwnd))
+                            fRedrawActive = TRUE;
+                }
+            }
 
-                        // store new active ctrl
-                        pPrivate->pCtrlActive = pCtrlClicked;
+            if (fRedrawActive)
+            {
+                HPS hps = WinGetPS(hwnd);
+                if (hps)
+                {
+                    PSWCNTRL    pOldActive = pPrivate->pCtrlActive;
+                    pgpihSwitchToRGB(hps);
 
-                        if (pOldActive)
-                            // un-activate old button
-                            DrawOneCtrl(pPrivate,
-                                        hps,
-                                        &rclSubclient,
-                                        pOldActive,         // old active
-                                        pCtrlClicked->hwnd,     // active wnd
-                                        NULL);
+                    // store new active ctrl
+                    pPrivate->pCtrlActive = pCtrlClicked;
 
+                    if (pOldActive)
+                        // un-activate old button
                         DrawOneCtrl(pPrivate,
                                     hps,
                                     &rclSubclient,
-                                    pCtrlClicked,       // new active
+                                    pOldActive,         // old active
                                     pCtrlClicked->hwnd,     // active wnd
                                     NULL);
 
-                        WinReleasePS(hps);
-                    }
+                    DrawOneCtrl(pPrivate,
+                                hps,
+                                &rclSubclient,
+                                pCtrlClicked,       // new active
+                                pCtrlClicked->hwnd,     // active wnd
+                                NULL);
+
+                    WinReleasePS(hps);
                 }
             }
         }
@@ -2492,72 +2488,71 @@ VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
 VOID WwgtPresParamChanged(HWND hwnd,
                           ULONG ulAttrChanged)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        BOOL fInvalidate = TRUE;
+        switch (ulAttrChanged)
         {
-            BOOL fInvalidate = TRUE;
-            switch (ulAttrChanged)
-            {
-                case 0:     // layout palette thing dropped
-                case PP_BACKGROUNDCOLOR:
-                case PP_FOREGROUNDCOLOR:
-                    pPrivate->Setup.lcolBackground
-                        = pwinhQueryPresColor(hwnd,
-                                              PP_BACKGROUNDCOLOR,
-                                              FALSE,
-                                              SYSCLR_DIALOGBACKGROUND);
-                    pPrivate->Setup.lcolForeground
-                        = pwinhQueryPresColor(hwnd,
-                                              PP_FOREGROUNDCOLOR,
-                                              FALSE,
-                                              SYSCLR_WINDOWSTATICTEXT);
-                break;
+            case 0:     // layout palette thing dropped
+            case PP_BACKGROUNDCOLOR:
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWSTATICTEXT);
+            break;
 
-                case PP_FONTNAMESIZE:
+            case PP_FONTNAMESIZE:
+            {
+                PSZ pszFont = 0;
+                if (pPrivate->Setup.pszFont)
                 {
-                    PSZ pszFont = 0;
-                    if (pPrivate->Setup.pszFont)
-                    {
-                        free(pPrivate->Setup.pszFont);
-                        pPrivate->Setup.pszFont = NULL;
-                    }
-
-                    pszFont = pwinhQueryWindowFont(hwnd);
-                    if (pszFont)
-                    {
-                        // we must use local malloc() for the font
-                        pPrivate->Setup.pszFont = strdup(pszFont);
-                        pwinhFree(pszFont);
-                    }
+                    free(pPrivate->Setup.pszFont);
+                    pPrivate->Setup.pszFont = NULL;
                 }
-                break;
 
-                default:
-                    fInvalidate = FALSE;
+                pszFont = pwinhQueryWindowFont(hwnd);
+                if (pszFont)
+                {
+                    // we must use local malloc() for the font
+                    pPrivate->Setup.pszFont = strdup(pszFont);
+                    pwinhFree(pszFont);
+                }
             }
+            break;
 
-            if (fInvalidate)
-            {
-                XSTRING strSetup;
-                WinInvalidateRect(hwnd, NULL, FALSE);
+            default:
+                fInvalidate = FALSE;
+        }
 
-                WwgtSaveSetup(&strSetup,
-                              &pPrivate->Setup);
-                if (strSetup.ulLength)
-                    // changed V0.9.13 (2001-06-21) [umoeller]:
-                    // post it to parent instead of fixed XCenter client
-                    // to make this trayable
-                    WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
-                               XCM_SAVESETUP,
-                               (MPARAM)hwnd,
-                               (MPARAM)strSetup.psz);
-                pxstrClear(&strSetup);
-            }
-        } // end if (pPrivate)
-    }
+        if (fInvalidate)
+        {
+            XSTRING strSetup;
+            WinInvalidateRect(hwnd, NULL, FALSE);
+
+            WwgtSaveSetup(&strSetup,
+                          &pPrivate->Setup);
+            if (strSetup.ulLength)
+                // changed V0.9.13 (2001-06-21) [umoeller]:
+                // post it to parent instead of fixed XCenter client
+                // to make this trayable
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
+                           XCM_SAVESETUP,
+                           (MPARAM)hwnd,
+                           (MPARAM)strSetup.psz);
+            pxstrClear(&strSetup);
+        }
+    } // end if (pPrivate)
 }
 
 /*
@@ -2568,27 +2563,29 @@ VOID WwgtPresParamChanged(HWND hwnd,
 MRESULT WwgtDestroy(HWND hwnd)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            WwgtClearSetup(&pPrivate->Setup);
+        if (pPrivate->ulTimerID)
+            ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
+                           hwnd,
+                           pPrivate->ulTimerID);
 
-            pxstrClear(&pPrivate->strTooltip);
+        if (pPrivate->hwndContextMenuHacked)
+            WinDestroyWindow(pPrivate->hwndContextMenuHacked);
 
-            if (pPrivate->hwndContextMenuHacked)
-                WinDestroyWindow(pPrivate->hwndContextMenuHacked);
-            if (pPrivate->ulTimerID)
-                ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
-                              hwnd,
-                              pPrivate->ulTimerID);
-            plstClear(&pPrivate->llSwitchEntries);      // auto-free
-            free(pPrivate);
-                    // pWidget is cleaned up by DestroyWidgets
+        plstClear(&pPrivate->llSwitchEntries);      // auto-free
 
-        }
+        WwgtClearSetup(&pPrivate->Setup);
+
+        pxstrClear(&pPrivate->strTooltip);
+
+        free(pPrivate);
+                // pWidget is cleaned up by DestroyWidgets
 
         mrc = pWidget->pfnwpDefWidgetProc(hwnd, WM_DESTROY, 0, 0);
     }

@@ -38,6 +38,41 @@ interface M_XCenter;            // forward reference to metaclass
 interface XCenter : WPAbstract
 {
     /*
+     * SOM typedef definitions:
+     *      declaring types here is similar to
+     *      passing them thru to the .H file,
+     *      but the difference is that we can also
+     *      use them in this .IDL file.
+     */
+
+    /*
+     *@@ WIDGETPOSITION:
+     *      specifies a widget position in an XCenter.
+     *
+     *      If the widget is a "root" widget (i.e. not
+     *      in a tray, the first two fields are -1,
+     *      and ulWidgetIndex specifies the index of
+     *      the widget in the XCenter (with 0 being the
+     *      leftmost widget).
+     *
+     *      Otherwise (if the widget is in a tray),
+     *      the first two fields specify the index of
+     *      the tray widget and the tray, and ulWidgetIndex
+     *      specifies the index of the widget in that tray.
+     *
+     *@@added V0.9.16 (2001-12-31) [umoeller]
+     */
+
+    struct WIDGETPOSITION
+    {
+        ULONG   ulTrayWidgetIndex;      // tray widget index or -1
+        ULONG   ulTrayIndex;            // tray index or -1
+        ULONG   ulWidgetIndex;          // index of widget in tray or in XCenter
+    };
+
+    typedef WIDGETPOSITION *PWIDGETPOSITION;
+
+    /*
      * New instance methods for XCenter:
      *
      */
@@ -51,9 +86,7 @@ interface XCenter : WPAbstract
 
     ULONG xwpCreateWidget(in PSZ pszWidgetClass,
                           in PSZ pszSetupString,
-                          in ULONG ulTrayWidgetIndex,
-                          in ULONG ulTrayIndex,
-                          in ULONG ulWidgetIndex);
+                          in PWIDGETPOSITION pPosition);
 
     ULONG xwpCreateTray(in ULONG ulTrayWidgetIndex,
                         in PSZ pszTrayName);
@@ -62,7 +95,7 @@ interface XCenter : WPAbstract
                         in ULONG ulTrayIndex,
                         in PSZ pszNewTrayName);
 
-    BOOL xwpRemoveWidget(in ULONG ulIndex);
+    ULONG xwpDeleteWidget(in PWIDGETPOSITION pPosition);
 
     BOOL xwpMoveWidget(in ULONG ulIndex2Move,
                        in ULONG ulBeforeIndex);
@@ -83,7 +116,7 @@ interface XCenter : WPAbstract
                   xwpCreateWidget,
                   xwpCreateTray,
                   xwpRenameTray,
-                  xwpRemoveWidget,
+                  xwpDeleteWidget,
                   xwpMoveWidget,
                   xwpSetPriority,
                   xwpQuerySetup2,
@@ -113,6 +146,10 @@ interface XCenter : WPAbstract
 
     BOOL fHideOnClick;              // if auto-hide is on, whether to hide on mouse click
                                     // V0.9.14 (2001-08-21) [umoeller]
+
+    BOOL fAutoScreenBorder;         // if enabled, automatically add the XCenter
+                                    // to the current screen border on each open
+                                    // V0.9.19 (2002-05-07) [umoeller]
 
     ULONG ulWindowStyle;            // XCenter frame's window style;
                                     // defaults to 0, but can be WS_TOPMOST | WS_ANIMATE

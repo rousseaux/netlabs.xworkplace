@@ -1281,12 +1281,15 @@
  *
  ********************************************************************/
 
-#define ID_CRD_SETTINGS_VIEW            3600
+// #define ID_CRD_SETTINGS_VIEW            3600 removed V0.9.19 (2002-05-07) [umoeller]
+#define ID_XRDI_VIEW_FRAMEGROUP         3600    // added V0.9.19 (2002-05-07) [umoeller]
 #define ID_CRDI_VIEW_TOPOFSCREEN        3601
 #define ID_CRDI_VIEW_BOTTOMOFSCREEN     3602
 #define ID_CRDI_VIEW_ALWAYSONTOP        3603
 #define ID_CRDI_VIEW_ANIMATE            3604
 #define ID_CRDI_VIEW_AUTOHIDE           3605
+#define ID_CRDI_VIEW_POSITION_GROUP     3606    // added V0.9.19 (2002-05-07) [umoeller]
+#define ID_CRDI_VIEW_PRTY_GROUP         3607    // added V0.9.19 (2002-05-07) [umoeller]
 #define ID_CRDI_VIEW_PRTY_SLIDER        3608
 #define ID_CRDI_VIEW_PRTY_TEXT          3609
 #define ID_CRDI_VIEW_REDUCEWORKAREA     3610
@@ -1294,6 +1297,7 @@
 #define ID_CRDI_VIEW_AUTOHIDE_SLIDER    3612    // added V0.9.9 (2001-03-09) [umoeller]
 #define ID_CRDI_VIEW_AUTOHIDE_TXT2      3613    // added V0.9.9 (2001-03-09) [umoeller]
 #define ID_CRDI_VIEW_AUTOHIDE_CLICK     3614    // added V0.9.14 (2001-08-21) [umoeller]
+#define ID_CRDI_VIEW_AUTOSCREENBORDER   3615    // added V0.9.14 (2001-08-21) [umoeller]
 
 // #define ID_CRD_SETTINGS_VIEW2           3650 // removed V0.9.16 (2001-10-24) [umoeller]
 #define ID_CRDI_VIEW2_3DBORDER_GROUP    3650

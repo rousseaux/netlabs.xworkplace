@@ -651,13 +651,39 @@ static VOID YwgtSaveSetupAndSend(PTRAYWIDGETPRIVATE pPrivate)
  *      tray widget interface for creating a subwidget
  *      setting and a view at the same time. Also
  *      called from the XCenter engine during d'n'd.
+ *
+ *@@changed V0.9.19 (2002-05-04) [umoeller]: rewritten to use public method
  */
 
-PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
-                                          PCSZ pcszWidgetClass,
-                                          PCSZ pcszSetupString,
-                                          ULONG ulIndex)       // in: index or -1
+APIRET YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
+                           PCSZ pcszWidgetClass,
+                           PCSZ pcszSetupString,
+                           ULONG ulIndex)       // in: index or -1
 {
+    APIRET arc;
+    XCenter *somSelf = pPrivate->pXCenterData->somSelf;
+
+    WIDGETPOSITION pos;
+
+    if (!(arc = ctrpQueryWidgetIndexFromHWND(somSelf,
+                                             pPrivate->pWidget->hwndWidget,
+                                             &pos)))
+    {
+        // ulWidgetIndex now has the index of the tray widget...
+        pos.ulTrayWidgetIndex = pos.ulWidgetIndex;
+        pos.ulTrayIndex = pPrivate->Setup.pPrivateSetting->ulCurrentTray;
+        pos.ulWidgetIndex = ulIndex;
+
+        arc = _xwpCreateWidget(somSelf,
+                               (PSZ)pcszWidgetClass,
+                               (PSZ)pcszSetupString,
+                               &pos);
+    }
+
+    return arc;
+
+
+    /*
     PPRIVATEWIDGETSETTING pSubwidget = NULL;
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
     PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
@@ -693,6 +719,7 @@ PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
     }
 
     return (pSubwidget);
+    */
 }
 
 /* ******************************************************************
@@ -1412,11 +1439,11 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     PCSZ apsz = pCurrentTray->pszTrayName;
                     if (cmnMessageBoxExt(pGlobals->hwndClient,
-                                            220,        // delete tray
-                                            &apsz,
-                                            1,
-                                            221,        // delete tray %1?
-                                            MB_YESNO)
+                                         220,        // delete tray
+                                         &apsz,
+                                         1,
+                                         221,        // delete tray %1?
+                                         MB_YESNO)
                             == MBID_YES)
                     {
                         // alright, nuke it
@@ -1426,8 +1453,9 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         // (this destroys the subwidget windows)
                         SwitchToTray(pPrivate,
                                      -1);         // new tray: none
-                        ctrpDeleteTray((PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
-                                       ulIndex);
+                        ctrpDeleteTraySetting(somSelf,
+                                              (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
+                                              ulIndex);
                         // try to switch to first tray on list
                         SwitchToTray(pPrivate,
                                      0);
@@ -1599,14 +1627,17 @@ static BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
 }
 
 /*
- *@@ YwgtRemoveSubwidget:
+ * YwgtRemoveSubwidget:
  *      implementation for XCM_REMOVESUBWIDGET in fnwpTrayWidget.
  *      This is a private message sent from ctrDefWidgetProc
  *      when the ID_CRMI_REMOVEWGT menu item is
  *      received from a subwidget. We then destroy
  *      that and update our lists.
+ *
+ * removed V0.9.19 (2002-05-04) [umoeller]
  */
 
+/*
 static MRESULT YwgtRemoveSubwidget(HWND hwnd,
                                    PPRIVATEWIDGETVIEW pWidget2Remove)
 {
@@ -1654,7 +1685,8 @@ static MRESULT YwgtRemoveSubwidget(HWND hwnd,
                  && (pllSubwidgets = &pCurrentTray->llSubwidgetSettings)
                  && (pThis = lstItemFromIndex(pllSubwidgets,
                                               ulIndex))
-                 && (ctrpDeleteWidgetSetting(pThis))
+                 && (ctrpRemoveWidgetSetting(pPrivate->pXCenterData->somSelf,
+                                             &pThis))
                )
             {
                 // found it:
@@ -1675,6 +1707,7 @@ static MRESULT YwgtRemoveSubwidget(HWND hwnd,
 
     return ((MRESULT)FALSE);
 }
+*/
 
 /*
  *@@ YwgtSwitchToTray:
@@ -1741,6 +1774,8 @@ static VOID YwgtDestroy(HWND hwnd)
 /*
  *@@ fnwpTrayWidget:
  *      window procedure for the "Tray" widget class.
+ *
+ *@@changed V0.9.19 (2002-05-04) [umoeller]: removed all the ugly hack msgs since xwpCreateWidget can now handle everything correctly
  */
 
 MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1930,14 +1965,15 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         /*
-         * XCM_CREATEWIDGET:
-         *      sent by new
+         * XCM_CREATEWIDGETWINDOW:
+         *      mirror of the implementation of this msg
+         *      in fnwpXCenterMainClient.
          *
          *      mp1 has new PPRIVATEWIDGETSETTING,
          *      mp2 has widget index.
          */
 
-        case XCM_CREATEWIDGET:  // V0.9.19 (2002-04-25) [umoeller]
+        case XCM_CREATEWIDGETWINDOW:  // V0.9.19 (2002-04-25) [umoeller]
         {
             PXCENTERWIDGET pWidget;
             PTRAYWIDGETPRIVATE pPrivate;
@@ -1950,6 +1986,63 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                        pWidget,        // owning tray widget
                                        (PPRIVATEWIDGETSETTING)mp1,
                                        (ULONG)mp2);        // ulWidgetIndex
+        }
+        break;
+
+        /*
+         * XCM_DESTROYWIDGETWINDOW:
+         *      mirror of the implementation of this msg
+         *      in fnwpXCenterMainClient.
+         *
+         *      While the main client will simply call
+         *      WinDestroyWindow and ctrDefWidgetProc
+         *      will do the cleanup of the widgets list,
+         *      we have to do the cleanup manually here
+         *      because otherwise we run into trouble
+         *      with tray switching... at least I can't
+         *      get this to work otherwise.
+         *
+         *      Still, we now have the same msg for both
+         *      the client and trays, finally.
+         *
+         *      (HWND)mp1 is the subwidget window.
+         *
+         *added here V0.9.19 (2002-05-04) [umoeller]
+         */
+
+        case XCM_DESTROYWIDGETWINDOW:
+        {
+            PXCENTERWIDGET pWidget;
+            PTRAYWIDGETPRIVATE pPrivate;
+            HWND hwndSubwidget;
+            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
+                 && (hwndSubwidget = (HWND)mp1)
+               )
+            {
+                // look up the subwidget window in our list
+                // if we can't find it, we shouldn't destroy
+                // anything!
+                PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
+                PLISTNODE pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
+                while (pNode)
+                {
+                    PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
+                    if (pView->Widget.hwndWidget == hwndSubwidget)
+                    {
+                        WinDestroyWindow(hwndSubwidget);
+                        lstRemoveNode(pTrayWidgetView->pllSubwidgetViews, pNode);
+                        break;
+                    }
+
+                    pNode = pNode->pNext;
+                }
+
+                if (!pNode)
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "XCM_DESTROYWIDGETWINDOW: cannot find subwidget HWND 0x%lX",
+                           hwndSubwidget);
+            }
         }
         break;
 
@@ -1983,9 +2076,9 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          * XCM_REMOVESUBWIDGET:
          */
 
-        case XCM_REMOVESUBWIDGET:
+        /* case XCM_REMOVESUBWIDGET:
             mrc = YwgtRemoveSubwidget(hwnd, (PPRIVATEWIDGETVIEW)mp1);
-        break;
+        break; */      // removed V0.9.19 (2002-05-04) [umoeller]
 
         /*
          * XCM_TRAYSCHANGED:
@@ -2016,7 +2109,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             YwgtSwitchToTray(hwnd, (ULONG)mp1);
         break;
 
-        case XCM_CREATEOBJECTBUTTON:
+        /* case XCM_CREATEOBJECTBUTTON: // removed V0.9.19 (2002-05-04) [umoeller]
         {
             PXCENTERWIDGET pWidget;
             PTRAYWIDGETPRIVATE pPrivate;
@@ -2030,9 +2123,10 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                     (ULONG)mp2);
             }
         }
-        break;
+        break; */
 
-        case XCM_CREATESUBWIDGET:
+        /*
+        case XCM_CREATESUBWIDGET: // removed V0.9.19 (2002-05-04) [umoeller]
             // process later, as we may still be answering
             // a dnd sequence
             #define UM_CREATESUBWIDGET (WM_USER + 600)
@@ -2043,7 +2137,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                        mp2);
         break;
 
-        case UM_CREATESUBWIDGET:
+        case UM_CREATESUBWIDGET: // removed V0.9.19 (2002-05-04) [umoeller]
         {
             PXCENTERWIDGET pWidget;
             PTRAYWIDGETPRIVATE pPrivate;
@@ -2067,6 +2161,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             free((PSZ)mp1);
         }
         break;
+        */
 
         /*
          * WM_DESTROY:

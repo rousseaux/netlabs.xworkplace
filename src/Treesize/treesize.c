@@ -1807,8 +1807,9 @@ int main(int argc, char *argv[])
 
         // append path to title
         WinQueryWindowText(G_hwndMain, sizeof(szTitle), szTitle);
-        strcat(szTitle, " V" BLDLEVEL_VERSION);
-        sprintf(szTitle+strlen(szTitle), " - %s", G_szRootDir);
+        // strcat(szTitle, " V" BLDLEVEL_VERSION);
+                // removed version number V0.9.19 (2002-05-04) [umoeller]
+        sprintf(szTitle + strlen(szTitle), " - %s", G_szRootDir);
         WinSetWindowText(G_hwndMain, szTitle);
 
         // give the dlg an icon

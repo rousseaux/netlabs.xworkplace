@@ -886,9 +886,9 @@ static VOID DwgtCommand(HWND hwnd,
                 // widget has a settings dialog:
                 // PPRIVATEWIDGETVIEW pOwningTray = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTray;
                 WIDGETPOSITION Pos;
-                if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                 pWidget->hwndWidget,
-                                                 &Pos))
+                if (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                  pWidget->hwndWidget,
+                                                  &Pos))
                 {
                     // have the widget show it with the XCenter frame
                     // as its owner
@@ -928,11 +928,14 @@ static VOID DwgtCommand(HWND hwnd,
             /*
              * ID_CRMI_REMOVEWGT:
              *      "remove widget" menu item.
+             *
+             *      Works for both subwidgets and root widgets
+             *      now. V0.9.19 (2002-05-04) [umoeller]
              */
 
             case ID_CRMI_REMOVEWGT:
             {
-                PPRIVATEWIDGETVIEW pOwningTrayWidget;
+                /* PPRIVATEWIDGETVIEW pOwningTrayWidget;
                 if (pOwningTrayWidget = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTrayWidget)
                 {
                     // this widget resides in a tray:
@@ -941,14 +944,14 @@ static VOID DwgtCommand(HWND hwnd,
                                (MPARAM)pWidget,     // ptr is same as PPRIVATEWIDGETVIEW
                                0);
                 }
-                else
+                else V0.9.19 (2002-05-04) [umoeller] */
                 {
                     WIDGETPOSITION Pos;
-                    if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                     hwnd,
-                                                     &Pos))
-                        _xwpRemoveWidget(pXCenterData->somSelf,
-                                         Pos.ulWidgetIndex);
+                    if (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                      hwnd,
+                                                      &Pos))
+                        _xwpDeleteWidget(pXCenterData->somSelf,
+                                         &Pos);
                 }
             }
             break;
@@ -1002,8 +1005,8 @@ static MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
 
 static VOID DwgtDestroy(HWND hwnd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
         HWND hwndClient = pWidget->pGlobals->hwndClient;
         PXCENTERWINDATA pXCenterData;
@@ -1023,13 +1026,12 @@ static VOID DwgtDestroy(HWND hwnd)
                     {
                         // remove the widget from the list of open
                         // views in the XCenter, but only if this is
-                        // not part of a tray;
+                        // not a subwidget in a tray;
                         // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
                         // so this typecast works
-                        PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pWidget;
-                        if (!pView->pOwningTrayWidget)
+                        if (!((PPRIVATEWIDGETVIEW)pWidget)->pOwningTrayWidget)
                             if (!lstRemoveItem(&pXCenterData->llWidgets,
-                                               pView))
+                                               pWidget))
                                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                        "lstRemoveItem failed.");
                     }
@@ -1126,9 +1128,9 @@ static BOOL DwgtRender(HWND hwnd,
                           ulWidgetIndex = 0;
                     PPRIVATEWIDGETSETTING pSetting;
                     WIDGETPOSITION Pos;
-                    if (    (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                          pWidget->hwndWidget,
-                                                          &Pos))
+                    if (    (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                           pWidget->hwndWidget,
+                                                           &Pos))
                          && (!ctrpFindWidgetSetting(pXCenterData->somSelf,
                                                     &Pos,
                                                     &pSetting,

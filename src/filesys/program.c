@@ -989,7 +989,8 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                                                     // (for VIEWFILE item)
 {
     BOOL    brc = FALSE;
-    BOOL    fSemOwned = FALSE;
+    BOOL    fRunningLocked = FALSE;
+    WPObject *pobjLocked = NULL;
 
     TRY_LOUD(excpt1)
     {
@@ -1003,21 +1004,26 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                 // allocate view item
                 PUSEITEM pUseItemView = 0,
                          pUseItemFile = 0;
-                WPObject *pObjEmph = 0;
+                WPObject *pobjEmph = 0;
 
                 if (pDataFile == NULL)
                     // object to work on is program object
-                    pObjEmph = pProgram;
+                    pobjEmph = pProgram;
                 else
                     // object to work on is datafile object
-                    pObjEmph = pDataFile;
+                    pobjEmph = pDataFile;
 
-                if (pObjEmph)
+                if (    (pobjEmph)
+                     && (!_wpRequestObjectMutexSem(pobjEmph, SEM_INDEFINITE_WAIT))
+                            // semaphore added V0.9.19 (2002-05-04) [umoeller]
+                   )
                 {
                     ULONG ulDummy;
 
+                    pobjLocked = pobjEmph;
+
                     // in any case, add "in-use" emphasis to the object
-                    if (pUseItemView = (PUSEITEM)_wpAllocMem(pObjEmph,
+                    if (pUseItemView = (PUSEITEM)_wpAllocMem(pobjEmph,
                                                              sizeof(USEITEM) + sizeof(VIEWITEM),
                                                              &ulDummy))
                     {
@@ -1029,13 +1035,13 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         pViewItem->view = OPEN_RUNNING;
                         pViewItem->handle = happ;
 
-                        if (brc = _wpAddToObjUseList(pObjEmph,
+                        if (brc = _wpAddToObjUseList(pobjEmph,
                                                      pUseItemView))
                         {
                             // success:
                             // for data file associations, add VIEWFILE
                             // structure as well
-                            if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pObjEmph,
+                            if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pobjEmph,
                                                                       sizeof(USEITEM) + sizeof(VIEWFILE),
                                                                       &ulDummy))
                             {
@@ -1047,7 +1053,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                                 pViewFile->ulMenuId = ulMenuID;
                                 pViewFile->handle  = happ;
 
-                                brc = _wpAddToObjUseList(pObjEmph,
+                                brc = _wpAddToObjUseList(pobjEmph,
                                                          pUseItemFile);
                             }
                             else
@@ -1055,30 +1061,31 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         }
                     }
 
-                    if (brc)
+                    if (    (brc)
+                         && (fRunningLocked = LockRunning())
+                       )
                     {
-                        // moved the lock down V0.9.18 (2002-02-13) [umoeller]
-                        if (fSemOwned = LockRunning())
-                        {
-                            // store this in our internal list
-                            // so we can find the object
-                            // in progAppTerminateNotify
-                            pRunning->pObjEmphasis = pObjEmph;
-                            pRunning->pUseItemView = pUseItemView;
-                            pRunning->pUseItemFile = pUseItemFile; // can be 0
-                            lstAppendItem(&G_llRunning,
-                                          pRunning);
+                        // store this in our internal list
+                        // so we can find the object
+                        // in progAppTerminateNotify
+                        pRunning->pObjEmphasis = pobjEmph;
+                        pRunning->pUseItemView = pUseItemView;
+                        pRunning->pUseItemFile = pUseItemFile; // can be 0
+                        lstAppendItem(&G_llRunning,
+                                      pRunning);
 
-                            // set list-notify flag on the object
-                            // so that XFldObject will call
-                            // progRunningAppDestroyed if
-                            // the object is destroyed
-                            _xwpModifyListNotify(pObjEmph,
-                                                 OBJLIST_RUNNINGSTORED,
-                                                 OBJLIST_RUNNINGSTORED);
-                        }
+                        UnlockRunning();
+                        fRunningLocked = FALSE;
+
+                        // set list-notify flag on the object
+                        // so that XFldObject will call
+                        // progRunningAppDestroyed if
+                        // the object is destroyed
+                        _xwpModifyListNotify(pobjEmph,
+                                             OBJLIST_RUNNINGSTORED,
+                                             OBJLIST_RUNNINGSTORED);
                     }
-                } // end if (pObjEmph)
+                } // end if (pobjEmph)
 
                 if (!brc)
                     free(pRunning);
@@ -1091,8 +1098,11 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
         brc = FALSE;
     } END_CATCH();
 
-    if (fSemOwned)
+    if (fRunningLocked)
         UnlockRunning();
+
+    if (pobjLocked)
+        _wpReleaseObjectMutexSem(pobjLocked);
 
     return (brc);
 }
@@ -1139,26 +1149,34 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
                    )
                 {
                     // yes, this is ours:
+                    PUSEITEM pUseFile = pRunning->pUseItemFile,
+                             pUseView = pRunning->pUseItemView;
+                    WPObject *pobjEmph = pRunning->pObjEmphasis;
+
+                    // remove run item first to get out of the mutex
+                    // V0.9.19 (2002-05-04) [umoeller]
+                    lstRemoveNode(&G_llRunning, pNode);
+                            // auto-free
+
+                    UnlockRunning();
+                    fSemOwned = FALSE;
 
                     // check if we also have a VIEWFILE item
-                    if (pRunning->pUseItemFile)
+                    if (pUseFile)
                     {
                         // yes:
-                        _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
-                                                pRunning->pUseItemFile);
-                        _wpFreeMem(pRunning->pObjEmphasis,
-                                   (PBYTE)pRunning->pUseItemFile);
+                        _wpDeleteFromObjUseList(pobjEmph,
+                                                pUseFile);
+                        _wpFreeMem(pobjEmph,
+                                   (PBYTE)pUseFile);
                     }
 
                     // now remove "view" useitem from the object's use list
                     // (this always exists)
-                    _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
-                                            pRunning->pUseItemView);
-                    _wpFreeMem(pRunning->pObjEmphasis,
-                               (PBYTE)pRunning->pUseItemView);
-
-                    // remove this thing (auto-free!)
-                    lstRemoveNode(&G_llRunning, pNode);
+                    _wpDeleteFromObjUseList(pobjEmph,
+                                            pUseView);
+                    _wpFreeMem(pobjEmph,
+                               (PBYTE)pUseView);
 
                     brc = TRUE;
 
@@ -1200,7 +1218,7 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed list search error
  */
 
-BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
+BOOL progRunningAppDestroyed(WPObject *pobjEmphasis)    // in: destroyed object
 {
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
@@ -1215,7 +1233,7 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
             {
                 PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)pNode->pItemData;
                 PLISTNODE pNext = pNode->pNext;         // V0.9.12 (2001-05-22) [umoeller]
-                if (pRunning->pObjEmphasis == pObjEmphasis)
+                if (pRunning->pObjEmphasis == pobjEmphasis)
                 {
                     // found:
                     // remove this thing (auto-free!)

@@ -111,7 +111,13 @@
     #define XCERR_INVALID_CLASS_NAME            (ERROR_XWP_FIRST + 105)
     #define XCERR_CLASS_NOT_TRAYABLE            (ERROR_XWP_FIRST + 106)
                     // V0.9.19 (2002-04-25) [umoeller]
-    #define ERROR_XCENTER_LAST                  (ERROR_XWP_FIRST + 106)
+    #define XCERR_INTEGRITY                     (ERROR_XWP_FIRST + 107)
+                    // V0.9.19 (2002-05-04) [umoeller]
+    #define XCERR_NO_OPEN_VIEW                  (ERROR_XWP_FIRST + 108)
+                    // V0.9.19 (2002-05-04) [umoeller]
+    #define XCERR_INVALID_HWND                  (ERROR_XWP_FIRST + 109)
+                    // V0.9.19 (2002-05-04) [umoeller]
+    #define ERROR_XCENTER_LAST                  (ERROR_XWP_FIRST + 109)
 
     // typedef unsigned long XCRET;     removed V0.9.19 (2002-04-17) [umoeller]
 

@@ -203,8 +203,7 @@ APIRET fonGetFontDescription(HAB hab,
         {
             ULONG cb = cFonts * sizeof(FFDESCS)
                             + 100; // for some reason, this crashes otherwise
-            pffd = malloc(cb);
-            if (pffd)
+            if (pffd = malloc(cb))
             {
                 // ZERO the memory block... or we get garbage later
                 memset(pffd, 0, cb);
@@ -563,8 +562,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
         HAB hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
                             // how can we get the HAB of the populate thread?!?
 
-        fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
-        if (fFolderLocked)
+        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             APIRET arc = NO_ERROR;
             PSZ pszFontKeys = NULL;
@@ -606,12 +604,10 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
                         CHAR    szTitle[200] = "unknown";
                         CHAR    szStatus[100] = "";       // font is OK
 
-                        arc = fonGetFontDescription(hab,
-                                                    pszFilename,
-                                                    szFamily,
-                                                    szTitle);    // face
-
-                        if (arc != NO_ERROR)
+                        if (arc = fonGetFontDescription(hab,
+                                                        pszFilename,
+                                                        szFamily,
+                                                        szTitle))    // face
                             // file doesn't exist:
                             // pass APIRET to object creation
                             sprintf(szStatus, "FONTFILEERROR=%d;", arc);

@@ -187,31 +187,6 @@
      *
      ********************************************************************/
 
-    /*
-     *@@ WIDGETPOSITION:
-     *      specifies a widget position in an XCenter.
-     *
-     *      If the widget is a "root" widget (i.e. not
-     *      in a tray, the first two fields are -1,
-     *      and ulWidgetIndex specifies the index of
-     *      the widget in the XCenter (with 0 being the
-     *      leftmost widget).
-     *
-     *      Otherwise (if the widget is in a tray),
-     *      the first two fields specify the index of
-     *      the tray widget and the tray, and ulWidgetIndex
-     *      specifies the index of the widget in that tray.
-     *
-     *@@added V0.9.16 (2001-12-31) [umoeller]
-     */
-
-    typedef struct _WIDGETPOSITION
-    {
-        ULONG   ulTrayWidgetIndex,      // tray widget index or -1
-                ulTrayIndex,            // tray index or -1
-                ulWidgetIndex;          // index of widget in tray or in XCenter
-    } WIDGETPOSITION, *PWIDGETPOSITION;
-
     APIRET ctrpCheckClass(PCSZ pcszWidgetClass,
                           BOOL fMustBeTrayable);
 
@@ -233,7 +208,8 @@
 
         VOID XWPENTRY ctrpFreeSettingData(PPRIVATEWIDGETSETTING *ppSetting);
 
-        BOOL XWPENTRY ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget);
+        APIRET ctrpRemoveWidgetSetting(XCenter *somSelf,
+                                       PPRIVATEWIDGETSETTING *ppSetting);
 
         PTRAYSETTING XWPENTRY ctrpCreateTraySetting(PPRIVATEWIDGETSETTING ppws,
                                                     PCSZ pcszTrayName,
@@ -246,8 +222,9 @@
                                    PTRAYSETTING *ppTraySetting,
                                    PXCENTERWIDGET *ppTrayWidget);
 
-        BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
-                                     ULONG ulIndex);
+        BOOL XWPENTRY ctrpDeleteTraySetting(XCenter *somSelf,
+                                            PPRIVATEWIDGETSETTING ppws,
+                                            ULONG ulIndex);
 
         PLINKLIST ctrpQuerySettingsList(XCenter *somSelf);
 
@@ -256,12 +233,6 @@
     ULONG ctrpQueryWidgetsCount(XCenter *somSelf);
 
     VOID ctrpFreeWidgets(XCenter *somSelf);
-
-    PVOID ctrpQueryWidgets(XCenter *somSelf,
-                           PULONG pulCount);
-
-    VOID ctrpFreeWidgetsBuf(PVOID pBuf,
-                            ULONG ulCount);
 
     PSZ ctrpStuffSettings(XCenter *somSelf,
                           PULONG pcbSettingsArray);
@@ -572,9 +543,9 @@
      *
      ********************************************************************/
 
-    ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
-                                       HWND hwndWidget,
-                                       PWIDGETPOSITION pPosition);
+    APIRET ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
+                                        HWND hwndWidget,
+                                        PWIDGETPOSITION pPosition);
 
     APIRET ctrpCreateWidget(XCenter *somSelf,
                             PCSZ pcszWidgetClass,
@@ -583,16 +554,9 @@
                             ULONG ulTrayIndex,
                             ULONG ulWidgetIndex);
 
-    BOOL ctrpRemoveWidget(XCenter *somSelf,
-                          ULONG ulIndex);
-
     BOOL ctrpMoveWidget(XCenter *somSelf,
                         ULONG ulIndex2Move,
                         ULONG ulBeforeIndex);
-
-    BOOL ctrpSetPriority(XCenter *somSelf,
-                         ULONG ulClass,
-                         LONG lDelta);
 
     BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                             HWND hwndMenu);
@@ -608,8 +572,10 @@
      *
      ********************************************************************/
 
+    // WM_USER to WM_USER + 2 are used by shared\center.h
+
     /*
-     *@@ XCM_CREATEWIDGET:
+     *@@ XCM_CREATEWIDGETWINDOW:
      *      creates a widget window. This must be _sent_
      *      to the client... it's an internal message
      *      and may only be sent after the widget setting
@@ -623,15 +589,31 @@
      *      -- ULONG mp2: widget index.
      *
      *@@added V0.9.7 (2001-01-03) [umoeller]
+     *@@changed V0.9.19 (2002-05-04) [umoeller]: msg renamed
      */
 
-    #define XCM_CREATEWIDGET            (WM_USER + 3)
+    #define XCM_CREATEWIDGETWINDOW      (WM_USER + 3)
 
     /*
-     *@@ XCM_DESTROYWIDGET:
+     *@@ XCM_DESTROYWIDGETWINDOW:
      *      destroys a widget window. This is an internal
-     *      message and must only be sent after a widget
-     *      setting has already been destroyed.
+     *      message and must only be sent when a widget
+     *      setting is being been destroyed.
+     *
+     *      What this does depends on where it is sent to:
+     *
+     *      --  If sent to the XCenter client, this simply
+     *          calls WinDestroyWindow on the GUI thread.
+     *          ctrDefWindowProc does additional cleanup
+     *          on destroy then.
+     *
+     *      --  If sent to a tray widget, this calls
+     *          WinDestroyWindow on the specified subwidget
+     *          and cleans up the subwidget views list
+     *          in fnwpTrayWidget.
+     *
+     *      This does _not_ reformat the client or the
+     *      tray.
      *
      *      NEVER send this yourself.
      *      Use XCenter::xwpRemoveWidget instead.
@@ -643,12 +625,13 @@
      *      -- mp2: reserved, must be 0.
      *
      *@@added V0.9.7 (2001-01-03) [umoeller]
+     *@@changed V0.9.19 (2002-05-04) [umoeller]: msg renamed
      */
 
-    #define XCM_DESTROYWIDGET           (WM_USER + 4)
+    #define XCM_DESTROYWIDGETWINDOW     (WM_USER + 4)
 
     /*
-     *@@ XCM_REMOVESUBWIDGET:
+     * XCM_DELETESUBWIDGET:
      *      removes a subwidget from a tray and also
      *      destroys the window. This may only be sent
      *      to a tray widget.
@@ -661,10 +644,11 @@
      *
      *      Returns TRUE if the widget was found and destroyed.
      *
-     *@@added V0.9.13 (2001-06-19) [umoeller]
+     *added V0.9.13 (2001-06-19) [umoeller]
+     *changed V0.9.19 (2002-05-04) [umoeller]: msg removed
      */
 
-    #define XCM_REMOVESUBWIDGET         (WM_USER + 5)
+    // #define XCM_DELETESUBWIDGET         (WM_USER + 5)
 
     /*
      *@@ XCM_SWITCHTOTRAY:
@@ -684,7 +668,7 @@
     #define XCM_SWITCHTOTRAY            (WM_USER + 6)
 
     /*
-     *@@ XCM_CREATEOBJECTBUTTON:
+     * XCM_CREATEOBJECTBUTTON:
      *      sent to a tray widget by the engine's d'n'd
      *      code if an object button widget should be
      *      created in the current tray.
@@ -697,10 +681,11 @@
      *      -- ULONG mp2: index where to insert (-1
      *         for rightmost).
      *
-     *@@added V0.9.13 (2001-06-23) [umoeller]
+     *added V0.9.13 (2001-06-23) [umoeller]
+     *removed V0.9.19 (2002-05-04) [umoeller]
      */
 
-    #define XCM_CREATEOBJECTBUTTON      (WM_USER + 7)
+    // #define XCM_CREATEOBJECTBUTTON      (WM_USER + 7)
 
     /*
      *@@ XCM_CREATESUBWIDGET:
@@ -721,7 +706,7 @@
      *@@added V0.9.14 (2001-07-31) [lafaix]
      */
 
-    #define XCM_CREATESUBWIDGET      (WM_USER + 8)
+    // #define XCM_CREATESUBWIDGET      (WM_USER + 8)
 
     /*
      *@@ XCM_MOUSECLICKED:
@@ -755,6 +740,15 @@
      ********************************************************************/
 
     VOID ctrpInitData(XCenter *somSelf);
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+    #ifdef XSTRING_HEADER_INCLUDED
+        VOID ctrpAppendWidgetSettings(PXSTRING pstrSetup,
+                                      PPRIVATEWIDGETSETTING pSetting,
+                                      PBOOL pfFirstWidget,
+                                      PXSTRING pstrTemp);
+    #endif
+    #endif
 
     BOOL ctrpQuerySetup(XCenter *somSelf,
                          PVOID pstrSetup);

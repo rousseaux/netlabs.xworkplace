@@ -299,8 +299,8 @@
 
 #ifndef __XWPLITE__
     DECLARE_CMN_STRING(G_pcszXMMCDPlayer, "XMMCDPlayer");
-    DECLARE_CMN_STRING(G_pcszXMMVolume, "XMMVolume");
 #endif
+    DECLARE_CMN_STRING(G_pcszXMMVolume, "XMMVolume");
 
     DECLARE_CMN_STRING(G_pcszXWPNetwork, "XWPNetwork");
     DECLARE_CMN_STRING(G_pcszXWPNetServer, "XWPNetServer");
