@@ -1,0 +1,94 @@
+<HTML SUBLINKS="xxxxx"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        New Default Icons
+    </TITLE>
+</HEAD>
+<!-- This used to be fldr1_icons.html and has been completely rewritten for V0.84.
+     There's also a new screenshot in "065icons.gif".
+     You may remove the old screenshots (icon*.gif files). -->
+<!-- changed with V0.85 -->
+<!-- Changed with V0.9.0: replace XFolder with XWorkplace; also see notes below -->
+<BODY>
+<!-- V0.9.0: add the following line -->
+<B>Classes: XFldDataFile, XFolder, XFldDesktop, XFldProgramFile</B><HR>
+XWorkplace allows you to freely replace a number of default WPS
+icons. This is an improvement over previous versions, where only the default folder
+icons could be replaced with new fixed XFolder icons; this can now be done more freely,
+and for more WPS default icons.
+<P>The icon replacements are turned on per default. Icon replacements can be
+<B>configured</B> as follows:
+<OL><LI>If you don't want the icons to be replaced at all, uncheck the corresponding
+setting in the <A HREF="sys_2global.html">"Workplace Shell" object</A>, page 1.
+<P><LI>If you'd like default icons different from the ones that XWorkplace provides,
+you need to replace the icons in the <CODE>/ICONS</CODE> subdirectory of the
+XWorkplace installation directory and rebuild the <CODE>ICONS.DLL</CODE> file.
+This is explained below.
+</OL><B>Note:</B> All these changes require a WPS restart because it is impossible
+to replace icons which are already in use by the WPS.
+<P>
+Now, replacing the default icons with your own favorites is fairly easy. Look into
+the <CODE>/ICONS</CODE> subdirectory of the XWorkplace installation directory, and
+you will find a number of icon files:
+<P><IMG SRC="065icons.gif">
+<P>Replace any of these files with your own favorites and execute the
+<CODE>ICONS.CMD</CODE> script in the same directory. This will create a file
+<CODE>ICONS.DLL</CODE>, which will be copied by XWorkplace to its <CODE>/BIN</CODE>
+subdirectory at the next WPS restart.
+<P><B>Notes:</B> The script expects the icon file names to be exactly as they are now.
+Also, you cannot replace <CODE>ICONS.DLL</CODE> in <CODE>/BIN</CODE> yourself,
+because once the WPS has started, that DLL is locked. So always use <CODE>ICONS.CMD</CODE>.
+<!-- this item added with V0.85 -->
+<P>Third, <CODE>ICONS.CMD</CODE> requires <CODE>RC.EXE</CODE> to be on your PATH. This
+little program is shipped with every OS/2 version and should be in your <CODE>\OS2</CODE>
+directory. If it is not, you must install it using OS/2's "Selective Install". Make
+sure that "Link object modules" is checked under the "Option System Utilities" group
+("More..." button).
+
+<P>The icons which can be replaced are the following:
+
+<UL><LI><B>Program files</B> (WPProgramFile class). These are the files in the
+top row in the above screenshot. They represent the following executable types:
+
+<BR><UL><LI><CODE>default.ico</CODE> will be used for program files whose executable
+type cannot be determined by XWorkplace. This shouldn't happen very often.
+<P><LI><CODE>dll.ico</CODE> will be used for Dynamic Link Libraries (DLL's).
+Note that not all <CODE>.DLL</CODE> files will be given this icon (especially not
+Windows DLL files), and some files will be given this icon even though they have
+a different extension. XWorkplace actually reads the file header of a file to
+determine whether the file is actually a DLL.
+<P><LI><CODE>dosfull.ico</CODE> and <CODE>doswin.ico</CODE> will be used for
+DOS executables in full-screen and windowed mode, respectively.
+<P><LI><CODE>driver.ico</CODE> will be used for virtual and physical device
+drivers. Not all device drivers will be given this icon however, since many of
+them are assembled as DLL files, and will therefore carry the DLL icon.
+<P><LI><CODE>os2full.ico</CODE> and <CODE>os2win.ico</CODE> will be used for
+OS/2 text-mode (VIO) programs in full-screen and windowed mode, respectively.
+</UL>
+
+<LI><B>Data files</B> (WPDataFile class). These is the <CODE>xfdataf.ico</CODE> file.
+Note that this icon is only used for files which have no programs associated with them;
+otherwise the program icon will be used. (That's just the default WPS behavior.)
+
+<P><LI><B>Desktop</B> (WPDesktop class). These are the <CODE>xfdesk1.ico</CODE>
+and <CODE>xfdesk2.ico</CODE> files, for closed and open desktops, respectively.
+(While the WPS uses the same icon for both closed and open desktops, you can now
+use a different one for an open desktop.)
+
+<P><LI><B>Folders</B> (WPFolder class). These are the <CODE>xfldr1.ico</CODE>
+and <CODE>xfldr2.ico</CODE> files, for closed and open folders, respectively.
+</UL>
+
+<B>Known limitations.</B> Some default icons presently cannot be changed.
+Most notably, PM programs
+without a built-in icon will always be given some dull default icon for PM programs.
+<P>Also, XWorkplace can only change the icons as they are displayed in folders. Icons
+of running programs will not be affected, i.e. those in the title bar of a program
+window or when a program is minimized to the Desktop.
+<P>This might improve in a future XWorkplace release.
+
+<BR>
+</BODY>
+</HTML>
+
+

@@ -1,0 +1,80 @@
+<HTML SUBLINKS="xxx" WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        New System Sounds
+    </TITLE>
+</HEAD>
+<!-- Changed with V0.9.0: almost completely rewritten -->
+<BODY>
+<!-- V0.9.0: add the following line -->
+<B>Classes: XWPSound, XFolder, XFldDesktop</B><HR>
+If you have the OS/2 multimedia subsystem (MMPM/2) with any sound card installed,
+XWorkplace can enhance your system sounds in several ways:
+
+<OL><P><LI><IMG SRC="config_8sounds.gif">
+For one, XWorkplace can <B>enhance the "Sound" object itself</B> by replacing
+the "Sound" page in that object to allow changing and organizing system sounds
+more easily.
+<P>In order to use this feature, you need to have the <B>XWPSound</B>
+replacement class installed.
+<P>The main enhancement to the "Sound" page is the support for <B>"sound schemes",</B>
+which IBM half-introduced with OS/2 Warp 4. The main problem with sound schemes was
+however that it was nearly impossible to define one's own schemes without messing
+with the system INI files directly.
+<P>XWorkplace's new "Sound" page has a new interface which allows you to quickly
+select a sound scheme, save your current system sounds as a new sound scheme,
+and delete existing schemes. I have designed this interface to be similar to that
+of Windows 95, which, in this one case, I consider quite well done. Since the
+new "Sound" page handles sound schemes already, the original Warp 4 "Sound schemes"
+page is no longer displayed.
+<P><B>Warp 3 users</B> might be happy to find out that these sound schemes now
+work on their operating system too. To be more precise, the "Sound" page lets you
+<I>organize</I> your sounds on Warp 3 as well; however, you still won't get sound scheme
+support in your Layout Palette
+(which, on Warp 4, allows you to specify different sounds for each folder).
+<P>Press <B>"Help"</B> on the new "Sound" page to receive more detailed instructions.
+<P><B>Note:</B> System sounds are stored in the <CODE>MMPM.INI</CODE> file in
+your <CODE>MMOS2</CODE> directory, while sound schemes (for some reason only IBM knows)
+are stored in <CODE>OS2SYS.INI</CODE>. I have stuck to this in order not to break
+compatibility. As a consequence, however, all users on your system share the same
+system sounds and sound schemes, even if you have different Desktops
+(and <CODE>OS2.INI</CODE> files) for each user. Sorry, complain at IBM (as if that helped).
+
+<P><LI>XWorkplace continues to support <B>new system sounds</B> as well, as XFolder
+versions before V0.9.0 did already. If you enable the "Extended system sounds" in
+"XWorkplace Setup", XWorkplace will add new events to the "Sound" page in the
+"Sound" object.
+<P><B>Note:</B> To actually interface MMPM/2 (to play a sound), XWorkplace uses
+a separate DLL (<CODE>SOUND.DLL</CODE> in the <CODE>BIN</CODE> subdirectory of
+the XWorkplace installation directory). If you're running into problems with
+XWorkplace sound support, you can simply delete that DLL, and the new sounds will
+automatically be disabled. If, on the "XWorkplace Status" page in "XWorkplace Setup",
+"XSound status" diplays "OK", this means that <CODE>SOUND.DLL</CODE> has been
+successfully loaded.
+<P>Please note also that the XWorkplace system sounds will make your system slower, just
+as the regular system sounds do too. Even on my Pentium-133 with 32 MB RAM, this is
+noticeable, even though XWorkplace uses a separate thread to play its sounds.
+<P>Configuring these sounds is not too spectacular: XWorkplace just adds a few more items
+to the events list box on the "Sounds" page.
+All the XWorkplace items start with "XWorkplace", so you'll be able to view them grouped
+together.
+<P>
+You can find a few small sounds in the <CODE>WAV</CODE> subdirectory of
+the XWorkplace installation directory to get you started. <CODE>;-)</CODE>
+
+</OL><B>Implementation.</B> To introduce these features, several components of
+XWorkplace are interacting. The WPSound class is replaced with XWPSound to enhance
+the "Sound" page. This however does not play any sounds yet; to intercept system
+events for the new system sounds, the XFolder and XFldDesktop classes also need
+to be installed. Third, <CODE>SOUND.DLL</CODE> must be present and working
+(again, which can be checked in "XWorkplace Setup").
+<P>If you want the "Sound" object replacement only, without the new system sounds,
+simply disable the "Extended system sounds" setting
+on the "Features" page in <A HREF="sys_2global.html">"XWorkplace Setup"</A>.
+<P>If you want the new system sounds only, without the "Sound" page replacement,
+deinstall the XWPSound class in the "XWorkplace Classes" dialog.
+<BR>
+</BODY>
+</HTML>
+
+

@@ -1,0 +1,53 @@
+This is the list of people who have offered to translate XFolder
+(updated Dec. 14, 1998):
+
+Chinese:
+"Chun-Hung Chen" <u840201@oz.nthu.edu.tw>
+
+Dutch:
+"Arjen Meijer" <arjen@hacom.nl>
+
+French:
+Jean-Marc SPAGGIARI <jmspaggi@caramail.com>
+    (new with V0.9.0)
+"Philippe Guerreiro" <guerfyld@yahoo.fr>
+    (new with V0.9.0)
+
+Italian:
+"Andrea Penna" <apenna@dns.4net.it>
+"Glauco Ippolitoni" <glauco@mclink.it>
+"Riccardo Battistini" <rickb@gyral.com>
+"super keyby" <skeyby@usa.net>
+
+Japanese:
+"ARAKAWA Atsushi" <arakaw@ibm.net>
+
+Polish:
+"Artur Flinta" <aflinta@student.uci.agh.edu.pl>
+    (address changed, V0.82)
+"Dominik Czechowski" <domcio@student.uci.agh.edu.pl>
+    (new with V0.82)
+
+Portuguese:
+"Pedro Cardoso" <pcardoso@excite.com>
+    (new with V0.9.0)
+"Andre da Rosa Vollino" <sonic@cpovo.net>
+    (new with V0.9.0)
+
+
+Russian:
+"Dmitry A. Kuminov" <dmik@sch79.alien.ru>
+"Andrew Cherepivsky" <skayer@muctr.edu.ru>
+
+Spanish:
+"Alfredo Fernandez Diaz" <x4717395@fedro.ugr.es>
+"Juan Miguel" <theoden@arrakis.es>
+"Lmaqui" <lmaqui@cgt.es>
+"Xavier Caballe" <xavi@caballe.com>
+
+Swedish:
+"Simon Gr”nlund" <simgron@ibm.net>
+    (new with V0.83)
+"Roger Lindmark" <roger-li@algonet.se>
+
+

@@ -1,0 +1,145 @@
+
+/*
+ * xfdisk.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFldDisk
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfdisk.c for details.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpdisk.idl>           // this is SOM for WPDisk
+
+/*
+   CLASS: XFldDisk
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject = XFldObject
+               ÀÄÄ WPAbstract
+                     ÀÄÄ WPDisk
+                           ÀÄÄ XFldDisk
+*/
+
+interface M_XFldDisk;            // forward reference to metaclass
+
+interface XFldDisk : WPDisk
+{
+
+    /*
+     * New instance methods for XFldDisk:
+     *
+     */
+
+#ifdef __SOMIDL__
+  implementation {
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfdisk_;
+    externalstem = xfdisk;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfdisk;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFldDisk;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XFldDisk:
+     *
+     */
+
+    /*
+     * WPDisk methods overridden by XFldDisk:
+     *
+     */
+
+    wpInitData: override;
+    wpObjectReady: override;
+
+    wpAddDiskDetailsPage: override;
+
+    wpFilterPopupMenu: override;
+    wpModifyPopupMenu: override;
+    wpMenuItemSelected: override;
+    wpMenuItemHelpSelected: override;
+
+    wpViewObject: override;
+    wpOpen: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFldDisk : M_WPDisk
+{
+
+    /*
+     * New class methods for M_XFldDisk:
+     *
+     */
+
+    XFldDisk xwpclsQueryDiskObject(in WPObject pObject);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: xwpclsQueryDiskObject;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfdiskM_;
+    externalstem = xfdiskM;
+    functionprefix = xfdiskM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfdisk;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFldDisk:
+     *
+     */
+
+    /*
+     * M_WPDisk methods overridden by M_XFldDisk:
+     *
+     */
+
+    wpclsInitData: override;
+  };
+#endif /* __SOMIDL__ */
+};
+
+

@@ -1,0 +1,163 @@
+
+/*
+ * xfdesk.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFldDesktop
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfdesk.c for details.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpdesk.idl>           // this is SOM for WPDesktop
+
+/*
+   CLASS: XFldDesktop
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject = XFldObject
+               ÀÄÄ WPFileSystem
+                     ÀÄÄ WPFolder = XFolder
+                           ÀÄÄ WPDesktop
+                                 ÀÄÄ XFldDesktop
+*/
+
+interface M_XFldDesktop;            // forward reference to metaclass
+
+interface XFldDesktop : WPDesktop
+{
+
+    /*
+     * New instance methods for XFldDesktop:
+     *
+     */
+
+    ULONG xwpInsertXFldDesktopMenuItemsPage(in HWND hwndNotebook);
+    ULONG xwpInsertXFldDesktopStartupPage(in HWND hwndNotebook);
+    ULONG xwpInsertXFldDesktopArchivesPage(in HWND hwndNotebook);
+    ULONG xwpInsertXFldDesktopShutdownPage(in HWND hwndNotebook);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder:
+            xwpInsertXFldDesktopMenuItemsPage,
+            xwpInsertXFldDesktopStartupPage,
+            xwpInsertXFldDesktopArchivesPage,
+            xwpInsertXFldDesktopShutdownPage;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfdesk_;
+    externalstem = xfdesk;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfdesk;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFldDesktop;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XFldDesktop:
+     *
+     */
+
+    BOOL    fDesktopOpen,
+            fInsertArchivesPageNow;
+
+    /*
+     * WPDesktop methods overridden by XFldDesktop:
+     *
+     */
+
+    wpFilterPopupMenu: override;
+    wpModifyPopupMenu: override;
+
+    wpMenuItemSelected: override;
+
+    wpAddDesktopArcRest1Page: override;
+    wpAddSettingsPages: override;
+
+    wpPopulate: override;
+
+    wpInitData: override;
+
+#ifdef __PRIVATE__
+
+    //# Data Modifiers
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFldDesktop : M_WPDesktop
+{
+
+    /*
+     * New class methods for M_XFldDesktop:
+     *
+     */
+
+#ifdef __SOMIDL__
+  implementation {
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfdeskM_;
+    externalstem = xfdeskM;
+    functionprefix = xfdeskM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfdesk;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFldDesktop:
+     *
+     */
+
+    /*
+     * M_WPDesktop methods overridden by M_XFldDesktop:
+     *
+     */
+
+    wpclsInitData: override;
+
+    wpclsQuerySettingsPageSize: override;
+
+    wpclsQueryIconData: override;
+    wpclsQueryIconDataN: override;
+
+  };
+#endif /* __SOMIDL__ */
+};
+
+

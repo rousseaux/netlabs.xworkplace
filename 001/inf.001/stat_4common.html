@@ -1,0 +1,50 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Common Codes for All Modes
+    </TITLE>
+</HEAD>
+<!-- This file is all new with V0.84 and contains the status bar codes
+     previously described in fldr_32statusbars.html. Nothing else has changed. -->
+<!-- Changed with V0.9.0: see notes below -->
+<BODY>
+<!-- V0.9.0: add the following line -->
+<B>Class: XFolder</B><HR>
+The following codes work <B>in all three modes:</B>
+<BR><DL>
+<DT><CITE>  $c      </CITE><DD>number of currently selected objects
+<DT><CITE>  $C      </CITE><DD>total number of objects in folder
+<BR><DT><CITE>  $sb     </CITE><DD>total size of selected objects in bytes
+<DT><CITE>  $sk     </CITE><DD>total size of selected objects in kBytes, i.e. bytes / 1000
+<DT><CITE>  $sK     </CITE><DD>total size of selected objects in KBytes, i.e. bytes / 1024
+<DT><CITE>  $sm     </CITE><DD>total size of selected objects in mBytes, i.e. bytes / 1000000
+<DT><CITE>  $sM     </CITE><DD>total size of selected objects in MBytes, i.e. bytes / 1048576
+<BR><DT><CITE>  $Sb     </CITE><DD>total size of folder content in bytes
+<DT><CITE>  $Sk     </CITE><DD>total size of folder content in kBytes, i.e. bytes / 1000
+<DT><CITE>  $SK     </CITE><DD>total size of folder content in KBytes, i.e. bytes / 1024
+<DT><CITE>  $Sm     </CITE><DD>total size of folder content in mBytes, i.e. bytes / 1000000
+<DT><CITE>  $SM     </CITE><DD>total size of folder content in MBytes, i.e. bytes / 1048576
+<BR><DT><CITE>  $fb     </CITE><DD>free space on drive in bytes
+<DT><CITE>  $fk     </CITE><DD>free space on drive in kBytes, i.e. bytes / 1000
+<DT><CITE>  $fK     </CITE><DD>free space on drive in KBytes, i.e. bytes / 1024
+<DT><CITE>  $fm     </CITE><DD>free space on drive in mBytes, i.e. bytes / 1000000
+<DT><CITE>  $fM     </CITE><DD>free space on drive in MBytes, i.e. bytes / 1048576
+<BR><DT><CITE>  $x(xxx) </CITE><DD>Left-oriented tabulator:
+print the following information at X position "xxx" (relative to the left border of
+the status bar).
+<BR>Example: <CITE>$x(300)$sK</CITE> will always print the total size of the selected
+objects at X position 300.
+<DT><CITE>  $x(-xxx) </CITE><DD>like before, but relative to the right border of
+the status bar.
+<BR>Example: <CITE>$x(-150)$sK</CITE> will print the total size of the selected objects
+at X position 100, if the status bar is currently 250 pixels wide.
+<DT><CITE>  $x(xx%) </CITE><DD>like before, but the X position will be calculated
+using "xx" as a percentage relative to the current width of the status bar.
+<BR>Example: <CITE>$x(50%)$sK</CITE> will always print the total size of the selected
+objects in the center of the status bar.
+</DL>
+<BR>
+</BODY>
+</HTML>
+
+

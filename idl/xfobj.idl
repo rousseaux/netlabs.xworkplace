@@ -1,0 +1,167 @@
+
+/*
+ * xfobj.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFldObject
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfobj.c for details.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpobject.idl>         // this is SOM for WPObject
+
+/*
+   CLASS: XFldObject
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject
+               ÀÄÄ XFldObject
+*/
+
+interface M_XFldObject;            // Forward Reference to XFldObject metaclass
+
+interface XFldObject : WPObject
+{
+
+    /*
+     * New instance methods for XFldObject:
+     *
+     */
+
+    ULONG xwpAddObjectInternalsPage(in HWND hwndNotebook);
+
+    BOOL xwpQueryDeletion(in CDATE* pcdateDeleted, in CTIME* pctimeDeleted);
+    BOOL xwpSetDeletion(in BOOL fSet);
+
+    BOOL xwpQueryObjectHotkey(in PUSHORT pusFlags,
+                              in PUCHAR  pucScanCode,
+                              in PUSHORT pusKeyCode);
+    BOOL xwpSetObjectHotkey(in USHORT usFlags,
+                            in UCHAR ucScanCode,
+                            in USHORT usKeyCode);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: xwpAddObjectInternalsPage,
+                  xwpQueryDeletion,
+                  xwpSetDeletion,
+                  xwpQueryObjectHotkey,
+                  xwpSetObjectHotkey;
+
+    //# Class Modifiers
+    externalprefix = xfobj_;
+    externalstem = xfobj;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfobj;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFldObject;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XFldObject:
+     *
+     */
+
+    // the following have been added with V0.9.0
+    BOOL        fDeleted;       // if TRUE, the following two fields are valid
+    CDATE       cdateDeleted;   // data for xwpQueryDeletion
+    CTIME       ctimeDeleted;   // data for xwpQueryDeletion
+
+    /*
+     * The following is forced into the .H file:
+     *
+     */
+
+    /*
+     * WPObject methods overridden by XFldObject:
+     *
+     */
+
+    wpInitData: override;
+    wpObjectReady: override;
+
+    wpUnInitData: override;
+
+    wpSaveState: override;
+    wpRestoreState: override;
+
+    wpDisplayMenu: override;
+    wpFilterPopupMenu: override;
+    wpModifyPopupMenu: override;
+    wpMenuItemSelected: override;
+
+    wpAddSettingsPages: override;
+
+    wpConfirmObjectTitle: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFldObject : M_WPObject
+{
+
+    /*
+     * New class methods  for M_XFldObject:
+     *
+     */
+
+    BOOL xwpclsRemoveObjectHotkey(in HOBJECT hobj);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    //# Class Modifiers
+    externalprefix = xfobjM_;
+    externalstem = xfobjM;
+    functionprefix = xfobjM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfobj;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFldObject:
+     *
+     */
+
+    /*
+     * M_WPObject methods overridden by M_XFldObject:
+     *
+     */
+
+    wpclsInitData: override;
+    wpclsNew: override;
+    wpclsMakeAwake: override;
+  };
+#endif /* __SOMIDL__ */
+};
+
+

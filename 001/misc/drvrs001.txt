@@ -1,0 +1,210 @@
+
+/*
+ * drvrs001.txt:
+ *      driver specifications for the "Drivers" page in
+ *      the "OS/2 Kernel" object, English version (001).
+ *
+ *      This file uses a syntax similar to the C language,
+ *      but not quite the same. This gets parsed by
+ *      XWorkplace when the "Drivers" page is selected.
+ *
+ *      Each group of drivers (which will have a category
+ *      in the driver tree view on the page) must be
+ *      introduced by the "CATEGORY" keyword (case-sensitive),
+ *      followed by a block in block brackets ("{...}").
+ *
+ *      In that block, each "driver" (which may actually
+ *      consist of several CONFIG.SYS statements) must
+ *      be introduced by a DRIVER statement:
+ *
+ *      DRIVER (    "command=", "param",
+ *                  "title",
+ *                  flags
+ *             ),
+ *      DRIVER ( ... )
+ *
+ *      In each DRIVER block, specify one or more parameters
+ *      separated by commas. The order of parameters is not
+ *      important.
+ *
+ *      1)  A DRIVER statement requires two parameters first,
+ *          being the CONFIG.SYS keyname to search for (e.g.
+ *          "BASEDEV=", "DEVICE=", "IFS=" etc), and the driver
+ *          file name _without_ path specification.
+ *          Both are _not_ case-sensitive.
+ *
+ *          At least one CONFIG statement must be present per
+ *          DRIVER statement.
+ *
+ *      2)  The third parameter  is considered the driver
+ *          description, which appears on the "Drivers" page
+ *          when the driver gets selected in the tree view.
+ *
+ *          There must be exactly one driver title per DRIVER
+ *          statement.
+ *
+ *      4)  _Optionally_, you can specify a driver flags parameter:
+ *
+ *          DRVF_CMDREF   item has entry in CMDREF.INF (enables
+ *                        the context menu item)
+ *
+ *          DRVF_NOPARAMS driver accepts no parameters at all
+ *                        (disables "Parameters" entry field)
+ *
+ *      Note: Support for the "Configure" button (with the
+ *            driver's configuration dialog) is hard-coded
+ *            into XWorkplace and cannot be changed using
+ *            this file. The "Configure" button is enabled
+ *            automatically based on the driver's filename
+ *            if a corresponding dialog exists in XWorkplace.
+ *            To create a "Configure" dialog, you must create
+ *            and modify code in "src\config\drivdlgs.c".
+ */
+
+CATEGORY "Hard disk drivers"
+    {
+        DRIVER ( "BASEDEV=", "IBM1S506.ADD",
+                 "IBM IDE driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "DANIS506.ADD",
+                 "Daniela Engert's replacement IDE driver",
+                 0),
+        DRIVER ( "BASEDEV=", "IBMINT13.I13",
+                 "IBM driver for BIOS storage devices",
+                 DRVF_CMDREF | DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "OS2DASD.DMD",
+                 "IBM general storage device manager",
+                 DRVF_CMDREF)
+    }
+
+CATEGORY "CD-ROM drivers"
+    {
+        DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
+                 "IBM ATAPI CD-ROM driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "MITFX001.ADD",
+                 "IBM Mitsumi CD-ROM driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "SBCD2.ADD",
+                 "IBM Sound Blaster CD-ROM driver",
+                 DRVF_CMDREF | DRVF_NOPARAMS),
+        DRIVER ( "DEVICE=", "OS2CDROM.DMD",
+                 "IBM CD-ROM manager",
+                 DRVF_CMDREF)
+    }
+
+CATEGORY "SCSI drivers"
+    {
+        DRIVER ( "BASEDEV=", "TMSCSIM.ADD",
+                 "Tekram DC-390 SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "OS2SCSI.DMD",
+                 "OS/2 SCSI manager",
+                 DRVF_CMDREF | DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "OS2ASPI.DMD",
+                 "OS/2 ASPI interface",
+                DRVF_CMDREF),
+        DRIVER ( "DEVICE=", "ASPIROUT.SYS",
+                 "ASPI router",
+                 DRVF_NOPARAMS)
+    }
+
+CATEGORY "Installable File Systems"
+    {
+        DRIVER ( "IFS=", "HPFS.IFS",
+                 "IBM High Performance File System",
+                 DRVF_CMDREF),
+        DRIVER ( "IFS=", "HPFS386.IFS",
+                 "IBM 386 High Performance File System",
+                 0),
+        DRIVER ( "IFS=", "CDFS.IFS",
+                 "IBM CD-ROM file system",
+                 DRVF_CMDREF)
+        DRIVER ( "IFS=", "RAMFS.IFS",
+                 "RAM disk file system",
+                 0),
+        DRIVER ( "IFS=", "RAMFS64.IFS",
+                 "RAM disk file system (64 MB version)",
+                 0),
+        DRIVER ( "IFS=", "VFAT-OS2.IFS",
+                 "Win95 VFAT file system",
+                 0),
+        DRIVER ( "RUN=", "VFAT_LW.EXE",
+                 "Win95 VFAT cache daemon",
+                 0),
+        DRIVER ( "BASEDEV=", "EXT2FLT.FLT",
+                 "Linux ext2fs partition filter",
+                 0),
+        DRIVER ( "IFS=", "EXT2-OS2.IFS",
+                 "Linux ext2fs file system",
+                 0)
+        DRIVER ( "RUN=", "EXT2_LW.EXE",
+                 "Linux ext2fs cache daemon",
+                 0)
+    }
+
+CATEGORY "Peripherals"
+    {
+        DRIVER ( "BASEDEV=", "IBM1FLPY.ADD",
+                 "IBM non-Microchannel floppy driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "IBM2FLPY.ADD",
+                 "IBM Microchannel floppy driver",
+                 DRVF_CMDREF | DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "XDFLOPPY.FLT",
+                 "IBM 1.8MB floppy support",
+                 DRVF_CMDREF | DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "PRINT01.SYS",
+                 "IBM non-Microchannel printer driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "PRINT02.SYS",
+                 "IBM non-Microchannel printer driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "IBMKBD.SYS",
+                 "IBM generic keyboard driver",
+                 DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "MOUSE.SYS",
+                 "IBM generic mouse driver",
+                 DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "COM.SYS",
+                 "IBM generic serial port driver (COM ports)",
+                 DRVF_CMDREF)
+    }
+
+CATEGORY "Multimedia"
+    {
+        DRIVER ( "DEVICE=", "SB16D2.SYS",
+                 "IBM Soundblaster 16 driver",
+                 0),
+        DRIVER ( "DEVICE=", "AUDIOVDD.SYS",
+                 "IBM MMPM/2 sound sharing driver",
+                 0),
+        DRIVER ( "BASEDEV=", "TIMER0.SYS",
+                 "IBM High-resolution timer driver",
+                 0),
+        DRIVER ( "DEVICE=", "MIDI.SYS",
+                 "IBM MIDI driver",
+                 0),
+    }
+
+CATEGORY "Network"
+    {
+        DRIVER ( "DEVICE=", "EL90X.OS2",
+                 "3Com Fast EtherLink/EtherLink XL Family driver",
+                 0),
+    }
+
+CATEGORY "System extensions"
+    {
+        DRIVER ( "BASEDEV=", "MWDD32.SYS",
+                 "Matthieu Wilm's 32-bit device driver support",
+                 0),
+        DRIVER ( "DEVICE=", "XF86SUP.SYS",
+                 "XFree/2 support driver",
+                 0)
+        DRIVER ( "DEVICE=", "CPPOPA3.SYS",
+                 "IBM VisualAge C++ 3.0 debugger driver",
+                 0)
+    }
+
+

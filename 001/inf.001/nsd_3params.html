@@ -1,0 +1,70 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Command Line Parameters
+    </TITLE>
+</HEAD>
+<BODY>
+The Netscape DDE Interface is configured by using command line parameters. This
+is not very intuitive, but flexible. Besides, it means less work for me. ;-)
+The command line syntax is (simply double-click on NETSCDDE.EXE for a summary):
+<P><CITE>netscdde [-[x|X]n]] [-p &lt;exe&gt;] [-P &lt;params&gt;] [-m[h]] &lt;URL&gt;</CITE>
+<P>As you can see, <CITE>&lt;URL&gt;</CITE> is the only required parameter.
+<P>The parameters mean the following:
+<DL>
+<DT><CITE>&lt;URL&gt;  </CITE><DD>a Uniform Resource Locator; you can even open files
+on the Internet with NETSCDDE by specifying http://
+or ftp:// and such. This is why NETSCDDE also works with URL objects.
+For local HTML files, Netscape
+tolerates the plain path and file name, so that
+a simple C:\docs\text.html will open this file in
+Netscape. Example:
+<P><CITE>NETSCDDE C:\docs\text.html</CITE>
+</DL>
+<BR>Options:
+<DL>
+<DT><CITE>-x      </CITE><DD>If Netscape is not running yet, do NOT open a new
+instance of it. NETSCDDE will then simply exit.
+<DT><CITE>-X      </CITE><DD>If Netscape is not running yet, DO open a new
+instance of it without asking.
+<P>If neither <CITE>-x</CITE> nor <CITE>-X</CITE> is specified,
+NETSCDDE will prompt you for whether you wish
+to open a new instance of Netscape.
+
+<DT><CITE>-n      </CITE><DD>Request a new browser window for &lt;URL&gt; from Netscape,
+if it's already running. (If Netscape is not yet
+running and a new instance is opened, a new window
+will always be opened, of course.) Per default, &lt;URL&gt;
+will be opened in the last active Netscape browser
+window.
+
+<DT><CITE>-p &lt;exe&gt;</CITE><DD>
+Here you can specify the full path of <CITE>NETSCAPE.EXE</CITE>,
+if it's not on your PATH. This is only evaluated if
+Netscape is not yet running and needs to be started. Per default, NETSCDDE
+will search the PATH for NETSCAPE.EXE. Example:
+<P><CITE>NETSCDDE -p "C:\NETSCAPE\NETSCAPE.EXE" &lt;URL&gt;</CITE>
+<P>The use of quotes is only necessary for paths which
+contain spaces, but never hurts.
+<P>For an interesting side-effect of this option, check the
+<A HREF="nsd_4tips.html">"Tips &amp; Tricks"</A> section.
+
+<DT><CITE>-P &lt;params&gt;</CITE><DD>
+Here you can specify command line parameters for
+a newly opened instance of Netscape, such as "-3"
+for Netscape 3.0 identification (see the Netscape
+documentation for details.) Example:
+<P><CITE>-P "-3"</CITE>
+<P>Again, the use of quotes is only necessary if the
+parameter list contains spaces, but never hurts.
+
+<DT><CITE>-m      </CITE><DD>start Netscape minimized.
+
+<DT><CITE>-mh     </CITE><DD>start Netscape minimized and hidden
+(see the <A HREF="nsd_4tips.html">"Tips &amp; Tricks"</A> section).
+</DL>
+<BR>
+</BODY>
+</HTML>
+
+

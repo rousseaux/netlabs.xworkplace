@@ -1,0 +1,113 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        The OS/2 Scheduler
+    </TITLE>
+</HEAD>
+<!-- Changed with V0.9.0: replace XFolder with XWorkplace -->
+<BODY>
+<!-- V0.9.0: add the following line -->
+<B>Class: XFldSystem</B>
+<IMG SRC="xfsys.gif" ALIGN=right>
+<HR>
+The Scheduler is a part of the OS/2 kernel and as such works on the lowest level
+of the system (for more on this, see the explanations on the
+<A HREF="xsd_1restartwps.html">Restart WPS</A> page).
+
+<P>The Scheduler is responsible for multitasking and multithreading in OS/2. Since you
+normally have only one processor, but expect several programs to run at the same time,
+the Scheduler switches between these programs several dozen times a second, so that these
+programs appear to run in parallel.
+
+<P>To understand the different settings on the "Scheduler" page in the "OS/2 Kernel"
+object, the following explanations about how OS/2 manages processes and threads
+might be helpful. On that settings page, you will receive more specific information
+on the different settings if you press the <B>"Help"</B> button there.
+
+<P>A <B>thread</B> is the smallest unit for administrating program switches which
+OS/2 provides. A program can contain several threads, but needs to have at least one
+thread. The term "thread" was chosen because <I>within</I> one thread program instructions
+are executed sequentially, while <I>between</I> threads you may never be sure which
+instruction of one thread will be executed before or after an instruction of another
+thread, because it is OS/2 which keeps switching between threads without the thread
+even knowing about it (or, on SMP systems, threads might actually run concurrently
+on several processors).
+<P>Well-programmed OS/2 software uses several threads to ensure that the user gets a
+quick response to his input and mouse actions. For example, if you execute a command
+in a program which will take a long time, a program should start a secondary thread
+for this task. While this new thread is working in the background, the user interface
+(on the main thread of the program) is ready again for new input.
+<P>Not-so-well-programmed OS/2 software uses only one thread for both the user interface
+and executing tasks. As a result, while executing a task, the user interface is blocked.
+A good example of this stems from IBM themselves: in VIEW.EXE, if you search
+the whole bookshelf, your computer is blocked completely until the search is completed.
+This task would have been perfect for multithreading.
+
+<P>Now, threads can have different <B>priorities.</B> In general, a thread with a
+higher priority gets more processor time that one with lower priority. This is
+especially true if several threads actually have work to do, i.e. compete for processor
+time; this does not apply for threads that are "blocked" because they currently have
+nothing to do. A blocked thread needs no processor time and its priority thus doesn't
+matter.
+
+<P>OS/2 is capable of controlling thread priorities in a very refined way.
+It differentiates between four <B>priority classes:</B>
+<OL><LI><B>"Idle time priority"</B> is the lowest priority class.
+This means that a thread only gets processor time
+if no threads of higher priority classes require it. Such threads are helpful for
+offloading work that needs to be done, but can be delayed until the computer has
+time for it. An example of such a thread is the XWorkplace Worker thread which keeps
+track of the awake WPS objects on your system. This is fairly time-consuming, but
+not time-critical, so it's done with idle-time priority.
+<BR><LI><B>"Regular priority"</B> is the priority class that most threads use.
+It is also the default OS/2 priority class if nothing different is specified.
+Between threads of this class, OS/2 dynamically varies priority levels (more on this
+below) to make sure that no thread of this class "starves", i.e. gets no processor time.
+<BR><LI><B>"Fixed-high priority"</B> is the second-highest priority class for threads
+that need to prepare data for "regular" threads, if that needs to be
+done quickly without being influenced by the dynamic priority variations for "regular"
+threads. This is sometimes used for message dispatchers.
+<BR><LI><B>"Time-critical priority"</B> is the highest priority class for threads that
+need to be executed immediately when there's work to do. Such a thread will be given
+processor time immediately and will not be interrupted until its work is done. This
+priority class is frequently used for time-critical tasks, for example by network
+and other communications software, or CD writers, or MP3 players.
+
+</OL>Within each priority class one can now set a <B>priority level.</B> This is a value
+from -31 to +31 which determines the precedence of a thread <I>within</I> a
+priority class.
+<P>A few examples:
+<UL><LI>A "regular" thread with priority level +31 supercedes a "regular" thread with
+priority level 0.
+<P>Within the "regular priority" class however OS/2 ensures that no thread "starves",
+i.e. never gets processor time, by dynamically raising each thread's priorities after
+a certain time automatically. This period of time is determined by the
+<CITE>MAXWAIT</CITE> CONFIG.SYS setting.
+Moreover, OS/2 raises a thread's priority
+if it is to receive keyboard input, if the process of the thread runs in the foreground,
+or if the thread is currently accessing devices.
+<P>These dynamic adjustments are only then performed if CONFIG.SYS does not contain
+the command <CITE>PRIORITY=ABSOLUTE</CITE>, which is not recommended. (This is why
+you will not find that setting in the "OS/2 Kernel" object.)
+<BR><LI>A "time-critical" thread with priority level -31 still supercedes a "regular"
+thread with priority level +31 because it belongs to a higher priority class. For this
+case, the dynamic priority adjustments will have no effect, because they only affect
+the execution of "regular" threads.
+<BR><LI>The same applies, for example, to a "regular thread" with priority level 0 and an
+"idle-time" thread with priority level +31.
+<BR><LI>Two threads with exactly the same priority however run "against" each other,
+i.e. they alternate with respect to processor usage.
+
+</UL>On the other hand side, a <B>process</B> is the OS/2 term for an application which
+has been loaded into memory. Each process must have at least one thread.
+Each process contains common data as well as controls access to system resources.
+Processes are protected against each other in that OS/2 prohibits access to memory
+which does not belong to the process attempting to access it ("memory protection").
+By contrast, several threads within a process may all access the process's memory,
+because memory is administered on a per-process basis. The same applies to other
+system resources such as open files.
+<BR>
+</BODY>
+</HTML>
+
+

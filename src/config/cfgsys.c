@@ -1,0 +1,2943 @@
+
+/*
+ *@@sourcefile cfgsys.c:
+ *      implementation code for the CONFIG.SYS pages
+ *      in the "OS/2 Kernel" object (filesys\xfsys.c).
+ *
+ *      This file is ALL new with V0.9.0. The code in
+ *      this file used to be in filesys\xfsys.c.
+ *
+ *      Function prefix for this file:
+ *      --  cfg*
+ *
+ *      Most of the functions in this file starting with fncb* are
+ *      callbacks specified with ntbInsertPage (notebook.c). There are
+ *      two callbacks for each notebook page in "OS/2 Kernel", one
+ *      for (re)initializing the page's controls and one for reacting
+ *      to controls being changed by the user.
+ *      These callbacks are specified in xfsys::xwpAddXFldSystemPages.
+ *      These callbacks are all new with V0.82 and replace the awful
+ *      dialog procedures which were previously used, because these
+ *      became hard to maintain over time.
+ *
+ *@@added V0.9.0 [umoeller]
+ *@@header "cfgsys.h"
+ */
+
+/*
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+/*
+ *  Suggested #include order:
+ *  1)  os2.h
+ *  2)  C library headers
+ *  3)  setup.h (code generation and debugging options)
+ *  4)  headers in helpers\
+ *  5)  at least one SOM implementation header (*.ih)
+ *  6)  dlgids.h, headers in shared\ (as needed)
+ *  7)  headers in implementation dirs (e.g. filesys\, as needed)
+ *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
+ */
+
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSERRORS
+#define INCL_DOSMISC
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WINMENUS
+#define INCL_WINDIALOGS
+#define INCL_WINPOINTERS
+#define INCL_WINENTRYFIELDS
+#define INCL_WINBUTTONS
+#define INCL_WINLISTBOXES
+#define INCL_WINMLE
+#define INCL_WINSTDSPIN
+#define INCL_WINSTDSLIDER
+#define INCL_WINSTDFILE
+#define INCL_WINSTDCNR
+#define INCL_WINSTDDRAG
+
+#define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+
+#include <os2.h>
+
+// C library headers
+#include <stdio.h>              // needed for except.h
+#include <ctype.h>
+
+// generic headers
+#include "setup.h"                      // code generation and debugging options
+
+// headers in /helpers
+#include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\procstat.h"           // DosQProcStat handling
+#include "helpers\stringh.h"            // string helper routines
+#include "helpers\winh.h"               // PM helper routines
+
+// SOM headers which don't crash with prec. header files
+#include "xfsys.ih"
+
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\cnrsort.h"             // container sort comparison functions
+#include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
+
+#include "filesys\xthreads.h"           // extra XWorkplace threads
+
+#include "config\cfgsys.h"              // XFldSystem CONFIG.SYS pages implementation
+#include "config\drivdlgs.h"            // driver configuration dialogs
+
+// other SOM headers
+#pragma hdrstop                 // VAC++ keeps crashing otherwise
+
+/* ******************************************************************
+ *                                                                  *
+ *   Notebook callbacks (notebook.c)                                *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *  All the following functions starting with fncbConfig* are callbacks
+ *  for the common notebook dlg function in notebook.c. There are
+ *  two callbacks for each notebook page in "OS/2 Kernel", one
+ *  for (re)initializing the page's controls and one for reacting
+ *  to controls being changed by the user.
+ *  These callbacks are specified in xfsys::xwpAddXFldSystemPages.
+ *  These callbacks are all new with V0.82 and replace the awful
+ *  dialog procedures which were previously used, because these
+ *  became hard to maintain over time.
+ */
+
+/* some global variables for "Kernel" pages */
+CHAR    szOrigSwapPath[CCHMAXPATH] = "";
+CHAR    aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
+PSZ     apszAllDrives[30];    // 30 pointers to the buffers
+LONG    lDriveCount = 0;
+
+#define SYSPATHCOUNT 5
+PSZ apszPathNames[SYSPATHCOUNT] =
+        {
+            "LIBPATH=",
+            "SET PATH=",
+            "SET DPATH=",
+            "SET BOOKSHELF=",
+            "SET HELP="
+        };
+
+typedef struct _SYSPATH
+{
+    PSZ         pszPathType;            // "LIBPATH", "SET PATH", etc.
+    PLINKLIST   pllPaths;               // linked list of PSZs with the path entries
+} SYSPATH, *PSYSPATH;
+
+/*
+ * pllPathsList:
+ *      this is cool: a linked list of linked lists.
+ *      Each item in this list is a SYSPATH structure,
+ *      which in turn contains a linked list of path entries.
+ */
+
+PLINKLIST pllPathsList;
+
+// the currently selected SYSPATH
+PSYSPATH  pSysPathSelected = 0;
+
+/*
+ *@@ fnwpNewSystemPathDlg:
+ *      dialog proc for "New system path" dialog, which
+ *      pops up when the "New" button is pressed on the
+ *      "System paths" page (cfgConfigItemChanged).
+ *
+ *      This dlg procedure expects a pointer to a buffer
+ *      as a creation parameter (pCreateParams with
+ *      WinLoadDlg). When "OK" is pressed, this func
+ *      copies the path that was entered into that buffer,
+ *      which should be CCHMAXPATH in size.
+ */
+
+MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
+                                      ULONG msg,
+                                      MPARAM mp1,
+                                      MPARAM mp2)
+{
+    MRESULT mrc = (MRESULT)0;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+            winhEnableDlgItem(hwndDlg, DID_OK, FALSE);
+            WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
+                              EM_SETTEXTLIMIT,
+                              (MPARAM)250,
+                              MPNULL);
+
+            // store pointer to buffer in window words
+            // for later
+            WinSetWindowPtr(hwndDlg, QWL_USER,
+                            mp2);           // pCreateParam == pszBuffer here
+
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+        break;
+
+        /*
+         * WM_CONTROL:
+         *
+         */
+
+        case WM_CONTROL:
+            switch (SHORT1FROMMP(mp1))  // source id
+            {
+                case ID_XSDI_FT_ENTRYFIELD:
+                    if (SHORT2FROMMP(mp1) == EN_CHANGE)
+                    {
+                        // content of entry field has changed:
+                        // update "OK" button, if path exists
+                        CHAR szNewSysPath[CCHMAXPATH];
+                        WinQueryDlgItemText(hwndDlg,
+                                            ID_XSDI_FT_ENTRYFIELD,
+                                            sizeof(szNewSysPath)-1, szNewSysPath);
+                        winhEnableDlgItem(hwndDlg,
+                                          DID_OK,
+                                          doshQueryDirExist(szNewSysPath));
+                    }
+                break;
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
+        break;
+
+        /*
+         * WM_COMMAND:
+         *
+         */
+
+        case WM_COMMAND:
+            switch (SHORT1FROMMP(mp1))  // source id
+            {
+                // "Browse..." button: show file dlg
+                case ID_XLDI_BROWSE:
+                {
+                    FILEDLG fd;
+                    memset(&fd, 0, sizeof(FILEDLG));
+                    fd.cbSize = sizeof(FILEDLG);
+                    fd.fl = FDS_OPEN_DIALOG
+                              | FDS_CENTER;
+                    // fd.pfnDlgProc = fnwpOpenFilter;
+                    strcpy(fd.szFullFile, "*");
+                    if (    WinFileDlg(HWND_DESKTOP,    // parent
+                                       hwndDlg,
+                                       &fd)
+                        && (fd.lReturn == DID_OK)
+                       )
+                    {
+                        WinSetDlgItemText(hwndDlg, ID_XLDI_CLASSMODULE,
+                                    fd.szFullFile);
+                    }
+                break; }
+
+                case DID_OK:
+                {
+                    PSZ pszBuffer = WinQueryWindowPtr(hwndDlg, QWL_USER);
+                    if (pszBuffer)
+                        WinQueryDlgItemText(hwndDlg,
+                                            ID_XSDI_FT_ENTRYFIELD,
+                                            CCHMAXPATH,     // expected size of buffer
+                                            pszBuffer);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+                break; }
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ FILERECORD:
+ *      extended record core used on "Double files"
+ *      dialog (fnwpDoubleFilesDlg).
+ */
+
+typedef struct _FILERECORD
+{
+    RECORDCORE  recc;               // standard record core
+    PSZ         pszFilename;        // filename
+    PSZ         pszDirName;         // directory name
+    ULONG       ulSize;             // file size
+    CDATE       cDate;              // file date
+    CTIME       cTime;              // file time
+} FILERECORD, *PFILERECORD;
+
+/*
+ *@@ DOUBLEFILESWINDATA:
+ *      stored in QWL_USER of fnwpDoubleFilesDlg.
+ */
+
+typedef struct _DOUBLEFILESWINDATA
+{
+    DOUBLEFILES     df;
+    XADJUSTCTRLS    xac;
+} DOUBLEFILESWINDATA, *PDOUBLEFILESWINDATA;
+
+/*
+ * ampDoubleFilesControls:
+ *      array of controls flags for winhAdjustControls.
+ */
+
+MPARAM ampDoubleFilesControls[] =
+    {
+        MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH1,  XAC_MOVEY),
+        MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH2,  XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_OSDI_FILELISTCNR,       XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(DID_OK,                    XAC_MOVEX)
+    };
+
+/*
+ *@@ fnwpDoubleFilesDlg:
+ *      window procedure for "Double files" dialog
+ *      opened when the "Double files" button is
+ *      pressed on the "System paths" page
+ *      (cfgConfigItemChanged).
+ *
+ *      This thing interoperates with the File thread
+ *      to have the double files collected.
+ */
+
+MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
+                                    ULONG msg,
+                                    MPARAM mp1,
+                                    MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        /*
+         * WM_INITDLG:
+         *
+         */
+
+        case WM_INITDLG:
+        {
+            XFIELDINFO      xfi[5];
+            PFIELDINFO      pfi = NULL;
+            int             i = 0;
+
+            HWND            hwndCnr = WinWindowFromID(hwndDlg, ID_OSDI_FILELISTCNR);
+
+            PDOUBLEFILESWINDATA pWinData = malloc(sizeof(DOUBLEFILESWINDATA));
+            memset(pWinData, 0, sizeof(DOUBLEFILESWINDATA));
+            WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
+
+            // set up cnr details view
+            xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
+            xfi[i].pszColumnTitle = "File name";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, pszDirName);
+            xfi[i].pszColumnTitle = "Directory";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, ulSize);
+            xfi[i].pszColumnTitle = "Size";
+            xfi[i].ulDataType = CFA_ULONG;
+            xfi[i++].ulOrientation = CFA_RIGHT;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, cDate);
+            xfi[i].pszColumnTitle = "Date";
+            xfi[i].ulDataType = CFA_DATE;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, cTime);
+            xfi[i].pszColumnTitle = "Time";
+            xfi[i].ulDataType = CFA_TIME;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            pfi = cnrhSetFieldInfos(hwndCnr,
+                                    xfi,
+                                    i,             // array item count
+                                    TRUE,          // draw lines
+                                    0);            // return first column
+
+            BEGIN_CNRINFO()
+            {
+                cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+                cnrhSetSplitBarAfter(pfi);
+                cnrhSetSplitBarPos(100);
+                cnrhSetSortFunc(fnCompareName);
+            } END_CNRINFO(hwndCnr);
+
+            // set title
+            WinSetDlgItemText(hwndDlg, ID_OSDI_FILELISTSYSPATH2,
+                              pSysPathSelected->pszPathType);
+
+            // have file thread collect the files
+            pWinData->df.pllDirectories = pSysPathSelected->pllPaths;
+            pWinData->df.hwndNotify = hwndDlg;
+            pWinData->df.ulNotifyMsg = WM_UPDATE;
+            xthrPostFileMsg(FIM_DOUBLEFILES,
+                           (MPARAM)&(pWinData->df),
+                           (MPARAM)0);
+
+            // set clip children flag
+            WinSetWindowBits(hwndDlg,
+                             QWL_STYLE,
+                             WS_CLIPCHILDREN,         // unset bit
+                             WS_CLIPCHILDREN);
+
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+        break; }
+
+        /*
+         * WM_UPDATE:
+         *      posted back to us from the File thread
+         *      when it's done collecting the files.
+         */
+
+        case WM_UPDATE:
+        {
+            PDOUBLEFILESWINDATA pWinData = (PDOUBLEFILESWINDATA)WinQueryWindowPtr(hwndDlg,
+                                                                                  QWL_USER);
+            ULONG           ulItems = lstCountItems(pWinData->df.pllDoubleFiles);
+            PLISTNODE       pNode = lstQueryFirstNode(pWinData->df.pllDoubleFiles);
+            HWND            hwndCnr = WinWindowFromID(hwndDlg, ID_OSDI_FILELISTCNR);
+            PFILERECORD     preccFirst = (PFILERECORD)cnrhAllocRecords(hwndCnr,
+                                                                       sizeof(FILERECORD),
+                                                                       ulItems),
+                            preccThis = preccFirst;
+            if (preccThis)
+            {
+                while (pNode)
+                {
+                    PFILELISTITEM pfli = (PFILELISTITEM)pNode->pItemData;
+                    preccThis->recc.pszIcon = pfli->szFilename;
+                    preccThis->pszDirName = pfli->pszDirectory;
+                    preccThis->ulSize = pfli->ulSize;
+                    cnrhDateDos2Win(&pfli->fDate, &preccThis->cDate);
+                    cnrhTimeDos2Win(&pfli->fTime, &preccThis->cTime);
+
+                    pNode = pNode->pNext;
+                    preccThis = (PFILERECORD)preccThis->recc.preccNextRecord;
+                }
+
+                cnrhInsertRecords(hwndCnr,
+                                  NULL,
+                                  (PRECORDCORE)preccFirst,
+                                  NULL,
+                                  CRA_RECORDREADONLY,
+                                  ulItems);
+            }
+        break; }
+
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *      posted _after_ the window has been moved
+         *      or resized.
+         *      Since we have a sizeable dlg, we need to
+         *      update the controls' sizes also, or PM
+         *      will display garbage. This is the trick
+         *      how to use sizeable dlgs, because these do
+         *      _not_ get sent WM_SIZE messages.
+         */
+
+        case WM_WINDOWPOSCHANGED:
+        {
+            // this msg is passed two SWP structs:
+            // one for the old, one for the new data
+            // (from PM docs)
+            PSWP pswpNew = PVOIDFROMMP(mp1);
+            PSWP pswpOld = pswpNew + 1;
+
+            // resizing?
+            if (pswpNew->fl & SWP_SIZE)
+            {
+                PDOUBLEFILESWINDATA pWinData = (PDOUBLEFILESWINDATA)WinQueryWindowPtr(hwndDlg,
+                                                                                      QWL_USER);
+                if (pWinData)
+                {
+                    PXADJUSTCTRLS pxac = &pWinData->xac;
+
+                    winhAdjustControls(hwndDlg,
+                                       ampDoubleFilesControls,
+                                       sizeof(ampDoubleFilesControls) / sizeof(MPARAM),
+                                       pswpNew,
+                                       pxac);
+                }
+            }
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+        break; }
+
+        /*
+         * WM_DESTROY:
+         *
+         */
+
+        case WM_DESTROY:
+        {
+            PDOUBLEFILESWINDATA pWinData = (PDOUBLEFILESWINDATA)WinQueryWindowPtr(hwndDlg,
+                                                                                  QWL_USER);
+            lstFree(pWinData->df.pllDoubleFiles);
+            winhAdjustControls(hwndDlg,
+                               NULL, // cleanup
+                               sizeof(ampDoubleFilesControls) / sizeof(MPARAM),
+                               0,
+                               &pWinData->xac);
+            free(pWinData);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+        break; }
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ cfgConfigInitPage:
+ *      common notebook callback function (notebook.c) for
+ *      all the notebook pages dealing with CONFIG.SYS settings.
+ *      Sets the controls on the page according to the CONFIG.SYS
+ *      statements.
+ *
+ *      Since this callback is shared among all the CONFIG.SYS
+ *      pages, pcnbp->ulPageID is used for telling them apart by
+ *      using the SP_* identifiers.
+ *
+ *@@changed V0.9.0 [umoeller]: added "System paths" page
+ *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ */
+
+VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                        ULONG flFlags)  // notebook info struct
+{
+    PSZ     pszConfigSys = NULL;
+
+    if (flFlags & CBI_INIT)
+    {
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
+        sprintf(pKernelGlobals->szConfigSys, "%c:\\config.sys", doshQueryBootDrive());
+
+        winhEnableDlgItem(pcnbp->hwndPage, DID_APPLY, TRUE);
+
+        // on the "HPFS" page:
+        // if the system has any HPFS drives,
+        // we disable the "HPFS installed" item
+        if (pcnbp->ulPageID == SP_HPFS)
+        {
+            CHAR szHPFSDrives[30];
+            doshEnumDrives(szHPFSDrives, "HPFS");
+            if (strlen(szHPFSDrives) > 0)
+                winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_FSINSTALLED, FALSE);
+        }
+        else if (pcnbp->ulPageID == SP_ERRORS)
+        {
+            CHAR szAllDrives[30];
+            PSZ p = szAllDrives;
+            ULONG ul = 0;
+            doshEnumDrives(szAllDrives, NULL); // all drives
+
+            while (*p)
+            {
+                aszAllDrives[ul][0] = szAllDrives[ul];
+                aszAllDrives[ul][1] = '\0';
+                apszAllDrives[ul] = &(aszAllDrives[ul][0]);
+                p++;
+                ul++;
+            }
+
+            aszAllDrives[ul][0] = '0';
+            aszAllDrives[ul][1] = 0;
+            apszAllDrives[ul] = &(aszAllDrives[ul][0]);
+            lDriveCount = ul;
+            ul++;
+            WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_SUPRESSP_DRIVE,
+                              SPBM_SETARRAY,
+                              (MPARAM)apszAllDrives,
+                              (MPARAM)ul);
+        }
+        krnUnlockGlobals();
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+
+        HPOINTER hptrOld = winhSetWaitPointer();
+
+        // now read CONFIG.SYS file to initialize the dlg items
+        if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
+            DebugBox((PSZ)pKernelGlobals->szConfigSys, "XFolder was unable to open the CONFIG.SYS file.");
+        else
+        {
+            // OK, file read successfully:
+            switch (pcnbp->ulPageID)
+            {
+                /*
+                 * SP_SCHEDULER:
+                 *
+                 */
+
+                case SP_SCHEDULER:
+                {
+                    PSZ     p = 0;
+                    ULONG   ul = 0;
+                    BOOL    bl = TRUE;
+                    if (p = strhGetParameter(pszConfigSys, "THREADS=", NULL, 0))
+                        sscanf(p, "%d", &ul);
+                    else // default
+                        ul = 64;
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MAXTHREADS, 64, 4096, ul);
+
+                    if (p = strhGetParameter(pszConfigSys, "MAXWAIT=", NULL, 0))
+                        sscanf(p, "%d", &ul);
+                    else // default
+                        ul = 3;
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MAXWAIT, 1, 10, ul);
+
+                    if (p = strhGetParameter(pszConfigSys, "PRIORITY_DISK_IO=", NULL, 0))
+                        bl = (strncmp(p, "YES", 3) == 0);
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage,
+                                          ID_OSDI_PRIORITYDISKIO,
+                                          bl);      // defaults to YES
+                break; }
+
+                /*
+                 * SP_MEMORY:
+                 *
+                 */
+
+                case SP_MEMORY:
+                {
+                    // installed physical memory
+                    CHAR    szMemory[30];
+                    ULONG   aulSysInfo[QSV_MAX] = {0};
+                    PSZ     p = 0;
+
+                    DosQuerySysInfo(1L, QSV_MAX,
+                                        (PVOID)aulSysInfo, sizeof(ULONG)*QSV_MAX);
+                    sprintf(szMemory, "%d",
+                               (aulSysInfo[QSV_TOTPHYSMEM-1] + (512*1000)) / 1024 / 1024);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_PHYSICALMEMORY, szMemory);
+
+                    // parse SWAPPATH command
+                    if (p = strhGetParameter(pszConfigSys, "SWAPPATH=", NULL, 0))
+                    {
+                        CHAR    szSwapPath[CCHMAXPATH] = "Error";
+                        ULONG   ulMinFree = 2048, ulMinSize = 2048;
+                        // int     iScanned;
+                        sscanf(p, "%s %d %d",
+                                    &szSwapPath, &ulMinFree, &ulMinSize);
+
+                        WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_SWAPPATH, szSwapPath);
+                        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MINSWAPSIZE,
+                                2, 100, (ulMinSize / 1024));
+                        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MINSWAPFREE,
+                                2, 1000, (ulMinFree / 1024));
+
+                        if (strlen(szOrigSwapPath) == 0)
+                        {
+                            if (szSwapPath[strlen(szSwapPath)-1] != '\\')
+                                sprintf(szOrigSwapPath, "%s\\swapper.dat", szSwapPath);
+                            else
+                                sprintf(szOrigSwapPath, "%sswapper.dat", szSwapPath);
+                        }
+                    }
+                break; }
+
+                /*
+                 * SP_HPFS:
+                 *
+                 */
+
+                case SP_HPFS:
+                {
+                    PSZ     p = 0;
+                    CHAR    szParameter[300] = "",
+                            // szTemp[300] = "",
+                            szSearchKey[100],
+                            szAutoCheck[200] = "";
+                    ULONG   ulCacheSize = 0,
+                            ulThreshold = 4,
+                            ulMaxAge = 5000,
+                            ulDiskIdle = 1000,
+                            ulBufferIdle = 500;
+                    BOOL    fLazyWrite = TRUE;
+
+                    szAutoCheck[0] = doshQueryBootDrive();  // default value
+
+                    // evaluate IFS=...\HPFS.IFS
+                    sprintf(szSearchKey, "IFS=%c:\\OS2\\HPFS.IFS ", doshQueryBootDrive());
+                    p = strhGetParameter(pszConfigSys, szSearchKey,
+                            szParameter, sizeof(szParameter));
+
+                    if (p)
+                    {
+                        PSZ p2;
+                        if (p2 = strhistr(szParameter, "/CACHE:"))
+                            sscanf(p2+7, "%d", &ulCacheSize);
+                        if (p2 = strhistr(szParameter, "/CRECL:"))
+                            sscanf(p2+7, "%d", &ulThreshold);
+                        if (p2 = strhistr(szParameter, "/AUTOCHECK:"))
+                            sscanf(p2+11, "%s", &szAutoCheck);
+                    }
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED,
+                                          (p != 0));
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO,
+                                          (ulCacheSize == 0));
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                           0, 2048, ulCacheSize);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                           4, 64, ulThreshold);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, szAutoCheck);
+
+                    // evaluate
+                    // RUN=...\CACHE.EXE /MAXAGE:60000 /DISKIDLE:1000 /BUFFERIDLE:40000
+                    sprintf(szSearchKey, "RUN=%c:\\OS2\\CACHE.EXE ", doshQueryBootDrive());
+                    p = strhGetParameter(pszConfigSys, szSearchKey,
+                                szParameter, sizeof(szParameter));
+
+                    if (p)
+                    {
+                        PSZ p2;
+                        if (p2 = strhistr(szParameter, "/MAXAGE:"))
+                            sscanf(p2+8,  "%d", &ulMaxAge);
+                        if (p2 = strhistr(szParameter, "/DISKIDLE:"))
+                            sscanf(p2+10, "%d", &ulDiskIdle);
+                        if (p2 = strhistr(szParameter, "/BUFFERIDLE:"))
+                            sscanf(p2+12, "%d", &ulBufferIdle);
+                        if (strhistr(szParameter, "/LAZY:OFF"))
+                            fLazyWrite = FALSE;
+                    }
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE,
+                                fLazyWrite);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_MAXAGE,
+                                500, 100*1000, ulMaxAge);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_BUFFERIDLE,
+                                500, 100*1000, ulBufferIdle);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_DISKIDLE,
+                                500, 100*1000, ulDiskIdle);
+
+                break; }
+
+                /*
+                 * SP_FAT:
+                 *
+                 */
+
+                case SP_FAT:
+                {
+                    CHAR    szParameter[300] = "",
+                            szAutoCheck[200] = "";
+                    ULONG   ulCacheSize = 512,
+                            ulThreshold = 4;
+                    PSZ     p2 = 0;
+
+                    // evaluate DISKCACHE
+                    p2 = strhGetParameter(pszConfigSys, "DISKCACHE=",
+                            szParameter, sizeof(szParameter));
+
+                    // enable "Cache installed" item if DISKCACHE= found
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED,
+                                          (p2 != NULL));
+
+                    // now set the other items according to the DISKCACHE
+                    // parameters; if that was not found, the default values
+                    // above will be used
+                    if (szParameter[0] == 'D')
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO,
+                                    TRUE);
+                    else
+                        sscanf(szParameter, "%d", &ulCacheSize);
+
+                    p2 = strchr(szParameter, ','); // get next parameter
+                    // optional "LW" parameter (lazy write)
+                    if (p2)
+                    {
+                        if (strncmp(p2+1, "LW", 2) == 0)
+                        {
+                            winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE,
+                                        TRUE);
+                            p2 = strchr(p2+1, ','); // get next parameter
+                        }
+                    }
+                    // optional threshold parameter
+                    if (p2)
+                    {
+                        sscanf(p2+1, "%d", &ulThreshold);
+                        p2 = strchr(p2+1, ','); // get next parameter
+                    }
+                    // optional "autocheck" parameter
+                    if (p2)
+                    {
+                        if (strncmp(p2+1, "AC:", 3) == 0)
+                            strcpy(szAutoCheck, p2+4);
+                    }
+
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                0, 14400, ulCacheSize);
+                    // the threshold param is in sectors of 512 bytes
+                    // each, so for getting KB, we need to divide by 2
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                4, 64, ulThreshold / 2);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, szAutoCheck);
+
+                break; }
+
+                /*
+                 * SP_WPS:
+                 *
+                 */
+
+                case SP_WPS:
+                {
+                    CHAR    szParameter[300] = "";
+                    PSZ p = strhGetParameter(pszConfigSys, "SET AUTOSTART=",
+                                             szParameter, sizeof(szParameter));
+                    BOOL fAutoRefreshFolders = TRUE;
+                    if (p)
+                    {
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_PROGRAMS,
+                            (strhistr(szParameter, "PROGRAMS") != NULL));
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_TASKLIST,
+                            (strhistr(szParameter, "TASKLIST") != NULL));
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_CONNECTIONS,
+                            (strhistr(szParameter, "CONNECTIONS") != NULL));
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_LAUNCHPAD,
+                            (strhistr(szParameter, "LAUNCHPAD") != NULL));
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER,
+                            (strhistr(szParameter, "WARPCENTER") != NULL));
+                    }
+
+                    p = strhGetParameter(pszConfigSys, "SET RESTARTOBJECTS=",
+                            szParameter, sizeof(szParameter));
+                    if ( (p == NULL) || (strhistr(szParameter, "YES")) )
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_YES, TRUE);
+                    else if (strhistr(szParameter, "NO"))
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_NO, TRUE);
+                    else if (strhistr(szParameter, "STARTUPFOLDERSONLY"))
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_FOLDERS, TRUE);
+
+                    if (strhistr(szParameter, "REBOOTONLY"))
+                        winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_REBOOT, TRUE);
+
+                    // auto-refresh folders: cannot be disabled on Warp 3
+                    p = strhGetParameter(pszConfigSys, "SET AUTOREFRESHFOLDERS=",
+                            szParameter, sizeof(szParameter));
+                    if (p)
+                        if (strhistr(szParameter, "NO"))
+                            fAutoRefreshFolders = FALSE;
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS,
+                                fAutoRefreshFolders);
+                break; }
+
+                /*
+                 * SP_ERRORS:
+                 *
+                 */
+
+                case SP_ERRORS:
+                {
+                    CHAR    szParameter[300] = "";
+                    BOOL fAutoFail = FALSE,
+                         fReIPL = FALSE;
+                    PSZ p = strhGetParameter(pszConfigSys, "AUTOFAIL=",
+                            szParameter, sizeof(szParameter));
+                    if (p)
+                        if (strhistr(szParameter, "YES"))
+                            fAutoFail = TRUE;
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOFAIL, fAutoFail);
+
+                    p = strhGetParameter(pszConfigSys, "REIPL=",
+                            szParameter, sizeof(szParameter));
+                    if (p)
+                        if (strhistr(szParameter, "ON"))
+                            fReIPL = TRUE;
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_REIPL, fReIPL);
+
+                    p = strhGetParameter(pszConfigSys, "SUPPRESSPOPUPS=",
+                            szParameter, sizeof(szParameter));
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_SUPRESSPOPUPS,
+                            (p != NULL));
+                    if (p)
+                    {
+                        LONG lIndex = 0;           // default for "0" param
+                        if (*p != '0')
+                        {
+                            CHAR c = toupper(*p);
+                            lIndex = c-'C'; // 0 for C, 1 for D etc.
+                        } else
+                            // "0" character:
+                            lIndex = lDriveCount;
+
+                        WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_SUPRESSP_DRIVE,
+                                SPBM_SETCURRENTVALUE,
+                                (MPARAM)lIndex,
+                                (MPARAM)NULL);
+                    }
+
+                break; }
+
+                /*
+                 * SP_SYSPATHS:
+                 *      new with V0.9.0
+                 */
+
+                case SP_SYSPATHS:
+                {
+                    ULONG ul;
+
+                    if (pllPathsList)       // added V0.9.1 (99-12-14)
+                    {
+                        lstFree(pllPathsList);
+                        pllPathsList = NULL;
+                    }
+
+                    pllPathsList = lstCreate(TRUE); // items are freeable
+
+                    for (ul = 0;
+                         ul < SYSPATHCOUNT;
+                         ul++)
+                    {
+                        PSYSPATH pSysPath = malloc(sizeof(SYSPATH));
+                        CHAR szPaths[1000] = {0};
+                        PSZ p;
+
+                        memset(szPaths, 0, sizeof(szPaths));
+
+                        p = strhGetParameter(pszConfigSys, apszPathNames[ul],
+                                    szPaths, sizeof(szPaths));
+                        if (p)
+                        {
+                            // now szPaths has the path list
+                            PSZ pStart = szPaths;
+                            BOOL fContinue = TRUE;
+
+                            // skip "="
+                            while ((*pStart) && (*pStart == '='))
+                                pStart++;
+                            // skip leading spaces
+                            while ((*pStart) && (*pStart == ' '))
+                                pStart++;
+
+                            pSysPath->pszPathType = apszPathNames[ul];
+                            pSysPath->pllPaths = lstCreate(TRUE);
+
+                            do {
+                                PSZ pEnd = strchr(pStart, ';'),
+                                    pszPath = 0;
+
+                                if (pEnd == 0)
+                                {
+                                    pEnd = pStart + strlen(pStart);
+                                    fContinue = FALSE;
+                                }
+
+                                pszPath = strhSubstr(pStart, pEnd);
+
+                                if (pszPath)
+                                    if (strlen(pszPath))
+                                    {
+                                        lstAppendItem(pSysPath->pllPaths, pszPath);
+                                        pStart = pEnd+1;
+                                    }
+                            } while (fContinue);
+
+                            lstAppendItem(pllPathsList, pSysPath);
+
+                            WinSendDlgItemMsg(pcnbp->hwndPage,
+                                              ID_OSDI_PATHDROPDOWN,
+                                              LM_INSERTITEM,
+                                              (MPARAM)LIT_END,
+                                              (MPARAM)pSysPath->pszPathType);
+                        }
+                    }
+
+                    WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_PATHDROPDOWN,
+                                      LM_SELECTITEM,
+                                      (MPARAM)0,        // select first
+                                      (MPARAM)TRUE);    // select
+
+                break; }
+
+            } // end switch
+
+            free(pszConfigSys);
+            pszConfigSys = NULL;
+        } // end else if (doshReadTextFile(szConfigSys, &pszConfigSys))
+
+        WinSetPointer(HWND_DESKTOP, hptrOld);
+    }
+
+    if (flFlags & CBI_ENABLE)
+    {
+        // enable items
+        if (pcnbp->ulPageID == SP_HPFS)
+        {
+            BOOL fLazyWrite = winhIsDlgItemChecked(pcnbp->hwndPage,
+                            ID_OSDI_CACHE_LAZYWRITE);
+            winhEnableDlgItem(pcnbp->hwndPage,
+                        ID_OSDI_CACHE_MAXAGE, fLazyWrite);
+            winhEnableDlgItem(pcnbp->hwndPage,
+                        ID_OSDI_CACHE_BUFFERIDLE, fLazyWrite);
+            winhEnableDlgItem(pcnbp->hwndPage,
+                        ID_OSDI_CACHE_DISKIDLE, fLazyWrite);
+        }
+
+        if (    (pcnbp->ulPageID == SP_HPFS)
+            ||  (pcnbp->ulPageID == SP_FAT)
+           )
+        {
+            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                        !winhIsDlgItemChecked(pcnbp->hwndPage,
+                            ID_OSDI_CACHESIZE_AUTO));
+        }
+        else if (pcnbp->ulPageID == SP_WPS)
+        {
+            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER, (doshIsWarp4()));
+            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS, (doshIsWarp4()));
+        }
+        else if (pcnbp->ulPageID == SP_ERRORS)
+        {
+            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_SUPRESSP_DRIVE,
+                winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_SUPRESSPOPUPS));
+        }
+        else if (pcnbp->ulPageID == SP_SYSPATHS)
+        {
+            ULONG   ulSelCount = 0;
+            ULONG   ulLastSel = LIT_FIRST;
+            CHAR    szTemp[300];
+            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+            do {
+                // find out how many items are selected
+                ULONG ulSel = (ULONG)WinSendDlgItemMsg(
+                            pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                            LM_QUERYSELECTION,
+                            (MPARAM)ulLastSel,
+                            MPNULL);
+                if (ulSel == LIT_NONE)
+                    break;
+
+                ulLastSel = ulSel;
+                ulSelCount++;
+            } while (TRUE);
+
+            sprintf(szTemp, pNLSStrings->pszItemsSelected, ulSelCount);
+            WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_PATHINFOTXT, szTemp);
+
+            switch (ulSelCount)
+            {
+                case 0:
+                    // no items selected:
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDELETE, FALSE);
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHUP, FALSE);
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDOWN, FALSE);
+                break;
+
+                case 1:
+                    // exactly one item selected:
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDELETE, TRUE);
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHUP,
+                            (ulLastSel > 0));
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDOWN,
+                            (ulLastSel < lstCountItems(pSysPathSelected->pllPaths)-1));
+                break;
+
+                default:
+                    // more than one item selected:
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDELETE, TRUE);
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHUP, FALSE);
+                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDOWN, FALSE);
+                break;
+            }
+        }
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        if (pcnbp->ulPageID == SP_SYSPATHS)
+        {
+            PLISTNODE pListsNode = lstQueryFirstNode(pllPathsList);
+            while (pListsNode)
+            {
+                PLINKLIST pListThis = (PLINKLIST)pListsNode->pItemData;
+                lstFree(pListThis);
+                pListsNode = pListsNode->pNext;
+            }
+            lstFree(pllPathsList);
+            pllPathsList = NULL;
+        }
+    }
+}
+
+/*
+ *@@ cfgConfigItemChanged:
+ *      common notebook callback function (notebook.c) for
+ *      all the notebook pages dealing with CONFIG.SYS settings.
+ *      This monster function reacts to changes of any of the
+ *      dialog controls and reads/writes CONFIG.SYS settings.
+ *      Since this callback is shared among all the CONFIG.SYS
+ *      pages, pcnbp->ulPageID is used for telling them apart by
+ *      using the SP_* identifiers.
+ *
+ *@@changed V0.9.0 [umoeller]: added "System paths" page handling
+ *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ */
+
+MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                              USHORT usItemID,
+                              USHORT usNotifyCode,
+                              ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = (MPARAM)0;
+    LONG    lGrid = 0;
+
+    switch (usItemID)
+    {
+
+        case ID_OSDI_MAXTHREADS:
+            // "Scheduler" page; 64 steps
+            lGrid = 64;
+            goto adjustspin;
+
+        case ID_OSDI_MINSWAPSIZE:
+        case ID_OSDI_MINSWAPFREE:
+            lGrid = 2;
+            goto adjustspin;
+
+        case ID_OSDI_CACHESIZE:
+            // HPFS and FAT pages; 64 KB steps
+            lGrid = 64;
+            goto adjustspin;
+
+        case ID_OSDI_CACHE_THRESHOLD:
+            // HPFS and FAT pages; 4 KB steps
+            lGrid = 4;
+            goto adjustspin;
+
+        case ID_OSDI_CACHE_MAXAGE:
+        case ID_OSDI_CACHE_BUFFERIDLE:
+        case ID_OSDI_CACHE_DISKIDLE:
+            // HPFS page; 1000 ms steps
+            lGrid = 1000;
+
+            adjustspin:
+            if (   (usNotifyCode == SPBN_UPARROW)
+                || (usNotifyCode == SPBN_DOWNARROW)
+               )
+            {
+                winhAdjustDlgItemSpinData(pcnbp->hwndPage, usItemID,
+                            lGrid, usNotifyCode);
+            }
+        break;
+
+        case ID_OSDI_AUTOCHECK_PROPOSE:
+        {
+            // "Propose" button for auto-chkdsk (HPFS/FAT pages):
+            // enumerate all HPFS or FAT drives on the system
+            CHAR szHPFSDrives[30];
+            doshEnumDrives(szHPFSDrives,
+                    (pcnbp->ulPageID == SP_HPFS) ? "HPFS" : "FAT");
+            WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, szHPFSDrives);
+        break; }
+
+        /*
+         * ID_OSDI_PATHDROPDOWN:
+         *      "system paths" drop-down (V0.9.0)
+         */
+
+        case ID_OSDI_PATHDROPDOWN:
+        {
+            if (usNotifyCode == LN_SELECT)
+            {
+                // system path selection changed:
+                // update the listbox below
+                ULONG ulSelection = (ULONG)WinSendDlgItemMsg(
+                            pcnbp->hwndPage,  ID_OSDI_PATHDROPDOWN,
+                            LM_QUERYSELECTION,
+                            MPNULL,
+                            MPNULL);
+
+                if (ulSelection != LIT_NONE)
+                {
+                    pSysPathSelected = lstItemFromIndex(pllPathsList, ulSelection);
+                    // clear listbox
+                    WinSendDlgItemMsg(
+                                pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                                LM_DELETEALL,
+                                MPNULL, MPNULL);
+
+                    if (pSysPathSelected)
+                    {
+                        PLISTNODE pPathNode = lstQueryFirstNode(pSysPathSelected->pllPaths);
+                        // insert new items
+                        while (pPathNode)
+                        {
+                            WinSendDlgItemMsg(
+                                    pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                                    LM_INSERTITEM,
+                                    (MPARAM)LIT_END,
+                                    (MPARAM)pPathNode->pItemData);
+                                            // item data is the path string (PSZ)
+                            pPathNode = pPathNode->pNext;
+                        }
+                    }
+                }
+            }
+        break; }
+
+        /*
+         * ID_OSDI_PATHLISTBOX:
+         *      "system paths" listbox (V0.9.0)
+         */
+
+        case ID_OSDI_PATHLISTBOX:
+        {
+            if (usNotifyCode == LN_SELECT)
+                cfgConfigInitPage(pcnbp, CBI_ENABLE); // re-enable items
+        break; }
+
+        /*
+         * buttons on "System path" page:
+         *
+         */
+
+        case ID_OSDI_PATHNEW:
+        {
+            CHAR szNewPath[CCHMAXPATH];
+            if (WinDlgBox(HWND_DESKTOP,         // parent
+                          pcnbp->hwndPage,
+                          fnwpNewSystemPathDlg,
+                          cmnQueryNLSModuleHandle(FALSE),
+                          ID_OSD_NEWSYSPATH,
+                          szNewPath)            // pass buffer as create param;
+                                                // this will have the directory
+                == DID_OK)
+            {
+                PSZ     pszPathCopy = strdup(szNewPath);
+                SHORT   sInserted = 0;
+                // insert the item
+                lstAppendItem(pSysPathSelected->pllPaths,
+                              pszPathCopy);
+                sInserted = (SHORT)WinSendDlgItemMsg(
+                             pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                             LM_INSERTITEM,
+                             (MPARAM)LIT_END,
+                             (MPARAM)pszPathCopy);
+                WinSendDlgItemMsg(
+                             pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                             LM_SELECTITEM,
+                             (MPARAM)sInserted,
+                             (MPARAM)TRUE); // select flag
+            }
+        break; }
+
+        case ID_OSDI_PATHDELETE:
+        {
+            do {
+                // go thru all selected items (for "delete", this can be several)
+                ULONG ulNextSel = (ULONG)WinSendDlgItemMsg(
+                            pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                            LM_QUERYSELECTION,
+                            (MPARAM)LIT_FIRST,
+                            MPNULL);
+                if (ulNextSel == LIT_NONE)
+                    break;
+
+                // delete selected from listbox
+                WinSendDlgItemMsg(
+                            pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                            LM_DELETEITEM,
+                            (MPARAM)ulNextSel,
+                            MPNULL);
+
+                // and from linked list
+                lstRemoveNode(pSysPathSelected->pllPaths,
+                                lstNodeFromIndex(pSysPathSelected->pllPaths, ulNextSel));
+
+            } while (TRUE);
+
+            cfgConfigInitPage(pcnbp, 100); // re-enable items
+        break; }
+
+        case ID_OSDI_PATHUP:
+        case ID_OSDI_PATHDOWN:
+        {
+            // move item up / down
+            PLISTNODE pNode = 0;
+            ULONG ulSel = (ULONG)WinSendDlgItemMsg(
+                        pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                        LM_QUERYSELECTION,
+                        (MPARAM)LIT_FIRST,
+                        MPNULL);
+                // this can only be one selection here
+
+            // delete selected from listbox
+            WinSendDlgItemMsg(
+                        pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                        LM_DELETEITEM,
+                        (MPARAM)ulSel,
+                        MPNULL);
+
+            pNode = lstNodeFromIndex(pSysPathSelected->pllPaths, ulSel);
+            if (pNode)
+            {
+                // make a backup of the item
+                PSZ pszPathCopy = strdup(pNode->pItemData);
+                // remove it from the linked list
+                lstRemoveNode(pSysPathSelected->pllPaths,
+                            pNode);
+
+                // new position to insert at
+                if (usItemID == ID_OSDI_PATHUP)
+                    ulSel--;
+                else
+                    ulSel++;
+
+                // and insert the item again
+                lstInsertItemBefore(pSysPathSelected->pllPaths,
+                                    pszPathCopy,
+                                    ulSel);
+                WinSendDlgItemMsg(
+                             pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                             LM_INSERTITEM,
+                             (MPARAM)ulSel,
+                             (MPARAM)pszPathCopy);
+                WinSendDlgItemMsg(
+                             pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                             LM_SELECTITEM,
+                             (MPARAM)ulSel,
+                             (MPARAM)TRUE); // select flag
+            }
+        break; }
+
+        /*
+         * ID_OSDI_VALIDATE:
+         *      "select invalid" button ("System paths" page).
+         */
+
+        case ID_OSDI_VALIDATE:
+        {
+            PLISTNODE pNode = lstQueryFirstNode(pSysPathSelected->pllPaths);
+            ULONG     ulCount = 0;
+            HPOINTER hptrOld = winhSetWaitPointer();
+
+            while (pNode)
+            {
+                BOOL fSelect = (!doshQueryDirExist(pNode->pItemData));
+                    // if dir doesn't exist, select it
+
+                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
+                                  LM_SELECTITEM,
+                                  (MPARAM)ulCount,
+                                  (MPARAM)fSelect);
+
+                ulCount++;
+                pNode = pNode->pNext;
+            }
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+        break; }
+
+        /*
+         * ID_OSDI_DOUBLEFILES:
+         *      "Double files.." button ("System paths" page).
+         */
+
+        case ID_OSDI_DOUBLEFILES:
+        {
+            if (pSysPathSelected)
+            {
+                HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,        // parent
+                                          pcnbp->hwndPage,     // owner
+                                          fnwpDoubleFilesDlg,
+                                          cmnQueryNLSModuleHandle(FALSE),
+                                          ID_OSD_FILELIST,
+                                          pSysPathSelected);
+                if (hwndDlg)
+                {
+                    winhCenterWindow(hwndDlg);
+                    cmnSetControlsFont(hwndDlg, 0, 5000);
+                    WinProcessDlg(hwndDlg);
+                    WinDestroyWindow(hwndDlg);
+                }
+            }
+
+        break; }
+
+        /*
+         * DID_APPLY:
+         *      "Apply" button
+         */
+
+        case DID_APPLY:
+        {
+            PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
+            // have the user confirm this
+            if (cmnMessageBoxMsg(pcnbp->hwndPage,
+                    100, 101,
+                    MB_YESNO | MB_DEFBUTTON2)
+                 == MBID_YES)
+            {
+                PSZ     pszConfigSys = NULL;
+
+                if (pszConfigSys == NULL)
+                {
+                    if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys))
+                        DebugBox((PSZ)pKernelGlobals->szConfigSys, "XFolder was unable to open the CONFIG.SYS file.");
+                }
+
+                if (pszConfigSys)
+                {
+                    // PSZ     p;
+                    ULONG   ul = 0, ulMinFree = 0, ulMinSize = 0;
+                    CHAR    szSwapPath[CCHMAXPATH];
+
+                    switch (pcnbp->ulPageID)
+                    {
+                        /*
+                         * SP_SCHEDULER:
+                         *      write "Scheduler" settings back to CONFIG.SYS
+                         */
+
+                        case SP_SCHEDULER:
+                        {
+                            CHAR    szTemp[100];
+                            WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_MAXTHREADS,
+                                  SPBM_QUERYVALUE,
+                                  (MPARAM)&ul,
+                                  MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                            sprintf(szTemp, "%d", ul);
+                            strhSetParameter(&pszConfigSys, "THREADS=", szTemp,
+                                        TRUE); // convert to upper case if necessary
+
+                            WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_MAXWAIT,
+                                  SPBM_QUERYVALUE,
+                                  (MPARAM)&ul,
+                                  MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                            sprintf(szTemp, "%d", ul);
+                            strhSetParameter(&pszConfigSys, "MAXWAIT=", szTemp,
+                                        TRUE); // convert to upper case if necessary
+
+                            strhSetParameter(&pszConfigSys, "PRIORITY_DISK_IO=",
+                                    (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_PRIORITYDISKIO)
+                                            ? "yes" : "no"),
+                                    TRUE); // convert to upper case if necessary
+                        break; }
+
+                        /*
+                         * SP_MEMORY:
+                         *      write "Memory" settings back to CONFIG.SYS
+                         */
+
+                        case SP_MEMORY:
+                        {
+                            CHAR    szTemp[500];
+                            WinQueryDlgItemText(pcnbp->hwndPage, ID_OSDI_SWAPPATH,
+                                            sizeof(szSwapPath)-1, szSwapPath);
+                            WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_MINSWAPSIZE,
+                                  SPBM_QUERYVALUE,
+                                  (MPARAM)&ulMinSize,
+                                  MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                            WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_MINSWAPFREE,
+                                  SPBM_QUERYVALUE,
+                                  (MPARAM)&ulMinFree,
+                                  MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                            sprintf(szTemp, "%s %d %d", szSwapPath, ulMinFree*1024, ulMinSize*1024);
+                            strhSetParameter(&pszConfigSys, "SWAPPATH=", szTemp,
+                                    TRUE); // convert to upper case if necessary
+
+                        break; }
+
+                        /*
+                         * SP_HPFS:
+                         *      write HPFS settings back to CONFIG.SYS
+                         */
+
+                        case SP_HPFS:
+                        {
+                            CHAR    szTemp[300] = "",
+                                    szAutoCheck[200] = "",
+                                    szSearchKey[100] = "";
+                            ULONG   ulCacheSize = 0,
+                                    ulThreshold = 4,
+                                    ulMaxAge = 5000,
+                                    ulDiskIdle = 1000,
+                                    ulBufferIdle = 500;
+                            // BOOL    fLazyWrite = TRUE;
+
+                            WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                  SPBM_QUERYVALUE,
+                                  (MPARAM)&ulThreshold,
+                                  MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                            WinQueryDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK,
+                                            sizeof(szAutoCheck)-1, szAutoCheck);
+
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO))
+                            {
+                                // auto-size cache: leave out /CACHE
+                                sprintf(szTemp,
+                                        "/crecl:%d /autocheck:%s",
+                                        doshQueryBootDrive(),
+                                        ulThreshold,
+                                        szAutoCheck);
+                            }
+                            else
+                            {
+                                // no auto-size cache
+                                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                      SPBM_QUERYVALUE,
+                                      (MPARAM)&ulCacheSize,
+                                      MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                sprintf(szTemp,
+                                        "/cache:%d /crecl:%d /autocheck:%s",
+                                        ulCacheSize,
+                                        ulThreshold,
+                                        szAutoCheck);
+                            }
+                            sprintf(szSearchKey, "IFS=%c:\\OS2\\HPFS.IFS ",
+                                        doshQueryBootDrive());
+                            strhSetParameter(&pszConfigSys, szSearchKey, szTemp,
+                                    TRUE); // convert to upper case if necessary
+
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE))
+                            {
+                                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHE_MAXAGE,
+                                      SPBM_QUERYVALUE,
+                                      (MPARAM)&ulMaxAge,
+                                      MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHE_DISKIDLE,
+                                      SPBM_QUERYVALUE,
+                                      (MPARAM)&ulDiskIdle,
+                                      MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHE_BUFFERIDLE,
+                                      SPBM_QUERYVALUE,
+                                      (MPARAM)&ulBufferIdle,
+                                      MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                sprintf(szTemp,
+                                        "/maxage:%d /diskidle:%d /bufferidle:%d "
+                                        "/readahead:on /lazy:1",
+                                        ulMaxAge,
+                                        ulDiskIdle,
+                                        ulBufferIdle);
+                            }
+                            else
+                                strcpy(szTemp, "/lazy:off");
+
+                            // compose the key with CACHE;
+                            sprintf(szSearchKey, "RUN=%c:\\OS2\\CACHE.EXE ",
+                                        doshQueryBootDrive());
+                            strhSetParameter(&pszConfigSys, szSearchKey, szTemp,
+                                    TRUE); // convert to upper case if necessary
+
+                        break; }
+
+                        /*
+                         * SP_FAT:
+                         *      write FAT settings back to CONFIG.SYS
+                         */
+
+                        case SP_FAT:
+                        {
+                            // "Cache installed" checked?
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED))
+                            {
+                                CHAR    // szParameter[300] = "",
+                                        szTemp[300] = "",
+                                        szAutoCheck[200] = "";
+                                ULONG   ulCacheSize = 512,
+                                        ulThreshold = 4;
+                                // PSZ     p2;
+
+                                if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO))
+                                    strcpy(szTemp, "d");
+                                else
+                                {
+                                    // no auto-size cache
+                                    WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                          SPBM_QUERYVALUE,
+                                          (MPARAM)&ulCacheSize,
+                                          MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                    sprintf(szTemp, "%d", ulCacheSize);
+                                }
+
+                                if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE))
+                                    strcat(szTemp, ",lw");
+
+                                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                      SPBM_QUERYVALUE,
+                                      (MPARAM)&ulThreshold,
+                                      MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                // again, convert KB to sectors for the threshold
+                                sprintf(szTemp+strlen(szTemp), ",%d", ulThreshold*2);
+
+                                WinQueryDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK,
+                                                sizeof(szAutoCheck)-1, szAutoCheck);
+                                if (strlen(szAutoCheck))
+                                    sprintf(szTemp+strlen(szTemp), ",ac:%s", szAutoCheck, TRUE);
+
+                                strhSetParameter(&pszConfigSys, "DISKCACHE=", szTemp,
+                                    TRUE); // convert to upper case if necessary
+
+                            }
+                            else
+                            {
+                                // no "Cache installed":
+                                strhDeleteLine(pszConfigSys, "DISKCACHE=");
+                            }
+                        break; }
+
+                        /*
+                         * SP_WPS:
+                         *      write WPS settings to CONFIG.SYS
+                         */
+
+                        case SP_WPS:
+                        {
+                            CHAR   szTemp[300] = "";
+                            BOOL   fCopied = FALSE;
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_PROGRAMS))
+                            {
+                                strcpy(szTemp, "programs");
+                                fCopied = TRUE;
+                            }
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_TASKLIST))
+                            {
+                                if (fCopied)
+                                    strcat(szTemp, ",");
+                                strcat(szTemp, "tasklist");
+                                fCopied = TRUE;
+                            }
+                            if (fCopied)
+                                strcat(szTemp, ",");
+                            strcat(szTemp, "folders");
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_CONNECTIONS))
+                            {
+                                strcat(szTemp, ",connections");
+                            }
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_LAUNCHPAD))
+                            {
+                                strcat(szTemp, ",launchpad");
+                            }
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER))
+                            {
+                                strcat(szTemp, ",warpcenter");
+                            }
+                            strhSetParameter(&pszConfigSys, "SET AUTOSTART=", szTemp,
+                                    TRUE); // convert to upper case if necessary
+
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_FOLDERS))
+                                strcpy(szTemp, "STARTUPFOLDERSONLY");
+                            else if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_NO))
+                                strcpy(szTemp, "no");
+                            else
+                                strcpy(szTemp, "yes");
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_REBOOT))
+                                strcat(szTemp, ",rebootonly");
+                            strhSetParameter(&pszConfigSys, "SET RESTARTOBJECTS=", szTemp,
+                                    TRUE); // convert to upper case if necessary
+
+                            if (doshIsWarp4())
+                                if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS))
+                                    strhDeleteLine(pszConfigSys, "SET AUTOREFRESHFOLDERS=");
+                                else
+                                    strhSetParameter(&pszConfigSys, "SET AUTOREFRESHFOLDERS=",
+                                            "no",
+                                            TRUE); // convert to upper case if necessary
+                        break; }
+
+                        /*
+                         * SP_ERRORS:
+                         *      write error settings to CONFIG.SYS
+                         */
+
+                        case SP_ERRORS:
+                        {
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOFAIL))
+                                strhSetParameter(&pszConfigSys, "AUTOFAIL=", "yes",
+                                    TRUE); // convert to upper case if necessary
+                            else
+                                strhDeleteLine(pszConfigSys, "AUTOFAIL=");
+
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_REIPL))
+                                strhSetParameter(&pszConfigSys, "REIPL=", "on",
+                                    TRUE); // convert to upper case if necessary
+                            else
+                                strhDeleteLine(pszConfigSys, "REIPL=");
+
+                            if (winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_SUPRESSPOPUPS)) {
+                                CHAR szSpinButtonValue[5];
+                                WinSendDlgItemMsg(pcnbp->hwndPage, ID_OSDI_SUPRESSP_DRIVE,
+                                        SPBM_QUERYVALUE,
+                                        (MPARAM)szSpinButtonValue,
+                                        MPFROM2SHORT(sizeof(szSpinButtonValue)-1,
+                                            SPBQ_UPDATEIFVALID));
+                                strhSetParameter(&pszConfigSys, "SUPPRESSPOPUPS=",
+                                        szSpinButtonValue,
+                                        TRUE); // convert to upper case if necessary
+                            } else
+                                strhDeleteLine(pszConfigSys, "SUPPRESSPOPUPS=");
+
+
+                        break; }
+
+                        /*
+                         * SP_SYSPATHS:
+                         *      write _all_ system paths to CONFIG.SYS
+                         */
+
+                        case SP_SYSPATHS:
+                        {
+                            PLISTNODE pSysPathNode = lstQueryFirstNode(pllPathsList);
+
+                            while (pSysPathNode)
+                            {
+                                PSYSPATH pSysPathThis = pSysPathNode->pItemData;
+                                CHAR szPathType[100] = "";
+                                CHAR szPaths[1000] = {0};
+                                PLISTNODE pPathNode = lstQueryFirstNode(pSysPathThis->pllPaths);
+                                PSZ p = szPaths;
+                                ULONG ulCount = 0;
+
+                                strcpy(szPathType, pSysPathThis->pszPathType);
+
+                                while (pPathNode)
+                                {
+                                    if (ulCount)
+                                    {
+                                        *p = ';';
+                                        p++;
+                                    }
+                                    p += sprintf(p, "%s", pPathNode->pItemData);
+                                    pPathNode = pPathNode->pNext;
+                                    ulCount++;
+                                }
+
+                                strhSetParameter(&pszConfigSys, szPathType,
+                                                 szPaths,
+                                                 FALSE); // never convert to upper case
+                                // next path
+                                pSysPathNode = pSysPathNode->pNext;
+                            }
+
+                        break; }
+                    } // end switch
+
+                    // write file!
+                    doshWriteTextFile((PSZ)pKernelGlobals->szConfigSys,
+                                      pszConfigSys,
+                                      TRUE);        // backup
+                    // "file written" msg
+                    cmnMessageBoxMsg(pcnbp->hwndPage, 100, 136, MB_OK);
+
+                    if (pszConfigSys)
+                    {
+                        free(pszConfigSys);
+                        pszConfigSys = NULL;
+                    }
+                }
+            }
+        break; }
+
+        /*
+         * DID_OPTIMIZE:
+         *      "Optimize" button
+         */
+
+        case DID_OPTIMIZE:
+        {
+            switch (pcnbp->ulPageID)
+            {
+                case SP_SCHEDULER:
+                {
+                    // THREADS=
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MAXTHREADS,
+                            128, 4096,
+                            // get current thread count, add 50% for safety,
+                            // and round up to the next multiple of 128
+                            (( (    (prcQueryThreadCount(0)  // whole system
+                                  * 3) / 2) + 127 ) / 128) * 128
+                    );
+
+                    // MAXWAIT=2
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MAXWAIT, 1, 10,
+                        2);
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_PRIORITYDISKIO,
+                        TRUE);
+                break; }
+
+                case SP_MEMORY:
+                {
+                    // minsize: get current size, add 50% and
+                    // round up to the next multiple of 2 MB
+                    if (strlen(szOrigSwapPath) != 0) {
+                        ULONG ulSize = doshQueryPathSize(szOrigSwapPath)/1024/1024;
+                        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MINSWAPSIZE,
+                                2, 100,
+                                ( (((ulSize*3)/2)+1) / 2 ) * 2
+                        );
+                    }
+
+                    // minfree = 2
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MINSWAPFREE,
+                            2, 1000,
+                            2);
+                break; }
+
+                case SP_HPFS:
+                {
+                    ULONG   aulSysInfo[QSV_MAX] = {0},
+                            ulInstalledMB;
+                    CHAR szHPFSDrives[30];
+                    DosQuerySysInfo(1L, QSV_MAX,
+                                        (PVOID)aulSysInfo, sizeof(ULONG)*QSV_MAX);
+                    ulInstalledMB =
+                               (aulSysInfo[QSV_TOTPHYSMEM-1] + (512*1000)) / 1024 / 1024;
+                    doshEnumDrives(szHPFSDrives, "HPFS");
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED,
+                                (strlen(szHPFSDrives) > 0));
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO,
+                                FALSE);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                0, 2048,
+                                (ulInstalledMB > 16) ? 2048 : 1024);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                4, 64, 64);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, szHPFSDrives);
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE,
+                                TRUE);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_MAXAGE,
+                                500, 100*1000, 60*1000);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_BUFFERIDLE,
+                                500, 100*1000, 30*1000);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_DISKIDLE,
+                                500, 100*1000, 60*1000);
+
+                break; }
+
+                case SP_FAT:
+                {
+                    ULONG   aulSysInfo[QSV_MAX] = {0},
+                            ulInstalledMB;
+                    CHAR szFATDrives[30];
+                    DosQuerySysInfo(1L, QSV_MAX,
+                                        (PVOID)aulSysInfo, sizeof(ULONG)*QSV_MAX);
+                    ulInstalledMB =
+                               (aulSysInfo[QSV_TOTPHYSMEM-1] + (512*1000)) / 1024 / 1024;
+                    doshEnumDrives(szFATDrives, "FAT");
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED,
+                                (strlen(szFATDrives) > 0));
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE, TRUE);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                0, 14400,
+                                (ulInstalledMB > 16) ? 2048 : 1024);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                4, 64, 64);
+                    // do not auto-check FAT drives
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, "");
+
+                break; }
+
+                case SP_WPS:
+                {
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_PROGRAMS, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_TASKLIST, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_CONNECTIONS, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_LAUNCHPAD, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_FOLDERS, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_REBOOT, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS,
+                                FALSE);
+                break; }
+
+                case SP_ERRORS:
+                {
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOFAIL, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_REIPL, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_SUPRESSPOPUPS, FALSE);
+                break; }
+            } // end switch
+
+            cfgConfigInitPage(pcnbp, 100); // re-enable items
+        break; }
+
+        /*
+         * DID_DEFAULT:
+         *      "Default" button
+         */
+
+        case DID_DEFAULT:
+        {
+            switch (pcnbp->ulPageID)
+            {
+                case SP_SCHEDULER:
+                {
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MAXTHREADS,
+                            128, 4096, (doshIsWarp4()) ? 512 : 256);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MAXWAIT, 1, 10,
+                        3);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_PRIORITYDISKIO,
+                        TRUE);
+                break; }
+
+                case SP_MEMORY:
+                {
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MINSWAPSIZE,
+                            2, 100, 2);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_MINSWAPFREE,
+                            2, 1000, 2);
+                break; }
+
+                case SP_HPFS:
+                {
+                    CHAR szHPFSDrives[30];
+                    doshEnumDrives(szHPFSDrives, "HPFS");
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO, FALSE);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                0, 2048, 1024);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                4, 64, 4);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, szHPFSDrives);
+
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE,
+                                TRUE);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_MAXAGE,
+                                500, 100*1000, 5*1000);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_BUFFERIDLE,
+                                500, 100*1000, 500);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_DISKIDLE,
+                                500, 100*1000, 1000);
+
+                break; }
+
+                case SP_FAT:
+                {
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_FSINSTALLED, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHESIZE_AUTO, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_CACHE_LAZYWRITE, TRUE);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+                                0, 14400, 1024);
+                    winhSetDlgItemSpinData(pcnbp->hwndPage, ID_OSDI_CACHE_THRESHOLD,
+                                4, 64, 4);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_AUTOCHECK, "");
+                break; }
+
+                case SP_WPS:
+                {
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_PROGRAMS, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_TASKLIST, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_CONNECTIONS, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_LAUNCHPAD, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER,
+                                    (doshIsWarp4()));
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_YES, TRUE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_RESTART_REBOOT, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS,
+                                    (doshIsWarp4()));
+                break; }
+
+                case SP_ERRORS:
+                {
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_AUTOFAIL, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_REIPL, FALSE);
+                    winhSetDlgItemChecked(pcnbp->hwndPage, ID_OSDI_SUPRESSPOPUPS, FALSE);
+                break; }
+            } // end switch
+
+            cfgConfigInitPage(pcnbp, 100); // re-enable items
+        break; }
+
+    } // end switch (usItemID)
+
+    if (    (usNotifyCode == SPBN_CHANGE)
+         || (usNotifyCode == BN_CLICKED)
+       )
+       // if we had any changes, we might need to
+       // re-enable controls
+       cfgConfigInitPage(pcnbp, 100);
+
+    return (mrc);
+}
+
+/*
+ *@@ cfgConfigTimer:
+ *      common callback func for the "Memory" and "Scheduler"
+ *      pages, which have a 2-sec timer set for updating the
+ *      display.
+ *
+ *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ */
+
+VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
+                     ULONG ulTimer)
+{
+    CHAR szTemp[50];
+
+    switch (pcnbp->ulPageID)
+    {
+        case SP_SCHEDULER:
+            sprintf(szTemp, "%d", prcQueryThreadCount(0));
+            WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_CURRENTTHREADS, szTemp);
+        break;
+
+        case SP_MEMORY:
+            if (strlen(szOrigSwapPath) != 0)
+            {
+                ULONG ulSize = doshQueryPathSize(szOrigSwapPath)/1024/1024;
+                if (ulSize)
+                {
+                    sprintf(szTemp, "%d", ulSize);
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_CURRENTSWAPSIZE,
+                        (szTemp));
+                } else
+                    WinSetDlgItemText(pcnbp->hwndPage, ID_OSDI_CURRENTSWAPSIZE, "???");
+            }
+        break;
+    }
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   OS/2 Kernel "Drivers" page                                     *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ DRIVERRECORD:
+ *      extended RECORDCORE structure for the
+ *      container on the "Drivers" page.
+ *
+ *      This is used for both the actual driver
+ *      records as well as the categories. Of
+ *      course, all the extra fields are not
+ *      used with categories, except for szParams.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+typedef struct _DRIVERRECORD
+{
+    RECORDCORE  recc;
+    CHAR        szDriverNameOnly[CCHMAXPATH];
+            // extracted filename (w/out path)
+    CHAR        szDriverNameFound[CCHMAXPATH];
+            // as in CONFIG.SYS
+    CHAR        szDriverNameFull[CCHMAXPATH];
+            // as in CONFIG.SYS
+    CHAR        szParams[500];
+            // for drivers: parameters as in CONFIG.SYS;
+            // for categories: buffer used for category title
+    CHAR        szConfigSysLine[500];
+            // full copy of CONFIG.SYS line
+    CHAR        szVersion[100];
+    CHAR        szVendor[100];
+    PDRIVERSPEC pDriverSpec;
+} DRIVERRECORD, *PDRIVERRECORD;
+
+/*
+ *@@ InsertDrivers:
+ *      called from InsertDriverCategories for each driver
+ *      category to be inserted into the "Drivers drivers"
+ *      container.
+ *
+ *      pszHeading must have the heading for the new category
+ *      (e.g. "CD-ROM drivers").
+ *
+ *      This function checks whether any driver is mentioned
+ *      in *paDrivers; if so, the driver is appended under
+ *      the header.
+ *
+ *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
+ */
+
+void InsertDrivers(HWND hwndCnr,              // in: container
+                   PDRIVERRECORD preccRoot,   // in: root record core ("Drivers drivers")
+                   PSZ pszHeading,            // in: heading for new category;
+                                              // this is freed after this call, so this must
+                                              // be copied
+                   PSZ pszConfigSys,          // in: CONFIG.SYS file contents
+                   PLINKLIST pllDriverSpecs)  // in: linked list of DRIVERSPEC structures
+{
+    // create category record
+    PDRIVERRECORD preccHeading = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
+                                                                   sizeof(DRIVERRECORD),
+                                                                   1);
+    // we'll use the params buffer for the heading title
+    strcpy(preccHeading->szParams, pszHeading);
+    cnrhInsertRecords(hwndCnr,
+                      (PRECORDCORE)preccRoot, // parent
+                      (PRECORDCORE)preccHeading,
+                      preccHeading->szParams,
+                      CRA_RECORDREADONLY | CRA_COLLAPSED,
+                      1);
+
+    if (pszConfigSys)
+    {
+        ULONG       ulSpec = 0;
+        // walk thru drivers list
+        PLISTNODE   pSpecNode = lstQueryFirstNode(pllDriverSpecs);
+        while (pSpecNode)
+        {
+            // search CONFIG.SYS for driver spec's keyword
+            BOOL fInsert = FALSE;
+            PDRIVERSPEC pDriverSpec2Store = 0;
+            CHAR szRestOfLine[CCHMAXPATH] = "";
+
+            PDRIVERSPEC pSpecThis = (PDRIVERSPEC)pSpecNode->pItemData;
+
+            PSZ p = pszConfigSys;  // search pointer
+            while (p)
+            {
+                if (p = strhGetParameter(p,
+                                         pSpecThis->pszKeyword,
+                                         szRestOfLine,
+                                         sizeof(szRestOfLine)))
+                {
+                    // keyword found:
+                    // extract first word after keyword (e.g. "F:\OS2\HPFS.IFS")
+                    PSZ pEODriver = strchr(szRestOfLine, ' '),
+                        pszFilename = 0;
+                    if (pEODriver)
+                        pszFilename = strhSubstr(szRestOfLine, pEODriver);
+                    else
+                        pszFilename = strdup(szRestOfLine);
+                                // free'd below
+
+                    if (pszFilename)
+                    {
+                        // extract pure filename w/out path
+                        PSZ pLastBackslash = strrchr(pszFilename, '\\'),
+                            pComp;
+                        if (pLastBackslash)
+                            // path specified: compare filename only
+                            pComp = pLastBackslash + 1;
+                        else
+                            // no path specified: compare all
+                            pComp = pszFilename;
+
+                        if (stricmp(pComp,
+                                    pSpecThis->pszFilename)
+                               == 0)
+                        {
+                            // yup: mark to insert
+                            fInsert = TRUE;
+                            pDriverSpec2Store = pSpecThis;
+                            p = 0; // break;
+                        }
+
+                        free(pszFilename);
+                    } // end if (pszFilename)
+                } // end if if (p = strhGetParameter(p, ...
+            } // end while (p)
+
+            if (fInsert)
+            {
+                PEXECUTABLE pExec = NULL;
+                APIRET      arc = NO_ERROR;
+
+                // insert driver into cnr:
+                PDRIVERRECORD precc = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
+                                                                        sizeof(DRIVERRECORD),
+                                                                        1);
+
+                // extract full file name
+                PSZ pEODriver = strchr(szRestOfLine, ' ');
+                if (pEODriver)
+                {
+                    PSZ pSpace2 = pEODriver;
+                    strhncpy0(precc->szDriverNameFound,
+                              szRestOfLine,
+                              (pEODriver - szRestOfLine));
+
+                    // skipp addt'l spaces
+                    while (*pSpace2 == ' ')
+                        pSpace2++;
+                    // copy params
+                    strcpy(precc->szParams, pSpace2);
+                }
+                else
+                {
+                    strcpy(precc->szDriverNameFound,
+                           szRestOfLine);
+                    precc->szParams[0] = 0;
+                }
+
+                // extract file name only from full name
+                pEODriver = strrchr(precc->szDriverNameFound, '\\');
+                if (pEODriver)
+                    strcpy(precc->szDriverNameOnly, pEODriver + 1);
+                else
+                    // no path given: copy all
+                    strcpy(precc->szDriverNameOnly, precc->szDriverNameFound);
+
+                // create full name
+                if (pDriverSpec2Store->ulFlags & DRVF_BASEDEV)
+                    // BASEDEVs have no path, so we provide this
+                    sprintf(precc->szDriverNameFull,
+                            "%c:\\OS2\\BOOT\\",
+                            doshQueryBootDrive());
+                strcat(precc->szDriverNameFull,
+                       precc->szDriverNameFound);
+
+                // compose full line as in CONFIG.SYS,
+                // for replacing the line later maybe
+                sprintf(precc->szConfigSysLine,
+                        "%s%s",
+                        pDriverSpec2Store->pszKeyword,
+                        szRestOfLine);
+
+                // get BLDLEVEL
+                if ((arc = doshExecOpen(precc->szDriverNameFull,
+                                        &pExec))
+                            == NO_ERROR)
+                {
+                    if ((arc = doshExecQueryBldLevel(pExec))
+                                    == NO_ERROR)
+                    {
+                        if (pExec->pszVersion)
+                            strcpy(precc->szVersion, pExec->pszVersion);
+
+                        if (pExec->pszVendor)
+                            strcpy(precc->szVendor, pExec->pszVendor);
+                    }
+                    doshExecClose(pExec);
+                }
+
+                // store driver specs
+                precc->pDriverSpec = pDriverSpec2Store;
+
+                cnrhInsertRecords(hwndCnr,
+                                  (PRECORDCORE)preccHeading, // parent
+                                  (PRECORDCORE)precc,
+                                  precc->szDriverNameOnly,
+                                  CRA_RECORDREADONLY | CRA_COLLAPSED,
+                                  1);
+            }
+
+            // next driver spec in list
+            pSpecNode = pSpecNode->pNext;
+        } // end while (pSpecNode)
+    } // end if (pszConfigSys)
+}
+
+/*
+ *@@ InsertDriverCategories:
+ *      this gets called ONCE from cfgDriversInitPage
+ *      with the contents of the DRVRSxxx.TXT file.
+ *      This calls InsertDrivers in turn for each
+ *      driver category which was found.
+ *
+ *      At this point, cfgDriversInitPage has only
+ *      created the root ("Driver categories") record
+ *      in hwndCnr.
+ *
+ *      We use pcnbp->pUser as a PLINKLIST, which
+ *      holds other PLINKLIST's in turn which in
+ *      turn hold the DRIVERSPEC's. Only this way
+ *      we can properly free the items.
+ *
+ *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
+ */
+
+PLINKLIST InsertDriverCategories(HWND hwndCnr,
+                                 PDRIVERRECORD preccRoot,
+                                        // in: root record core ("Drivers drivers")
+                                 PSZ pszConfigSys,
+                                        // in: CONFIG.SYS file contents
+                                 PSZ pszDriverSpecsFile)
+                                        // in: DRVRSxxx.TXT file contents
+{
+    // linked list of PLINKLIST items to return
+    PLINKLIST pllReturn = lstCreate(FALSE);
+
+    PSZ     pSearch = pszDriverSpecsFile;
+
+    // parse the thing
+    while (pSearch = strstr(pSearch, "CATEGORY"))
+    {
+        // category found:
+        // go for the drivers
+
+        PSZ     p1 = pSearch,
+                pStartOfBlock = NULL;
+        PSZ     pszCategoryTitle = strhQuote(pSearch,
+                                             '"',     // extract title string
+                                             &pSearch); // out: char after closing char
+        // extract stuff between "{...}"
+        PSZ     pszBlock = strhExtract(pSearch,
+                                       '{',
+                                       '}',
+                                       &pSearch); // out: char after closing char
+        if (pszBlock)
+        {
+            PSZ pSearch2 = pszBlock;
+
+            // create linked list of DRIVERSPEC's;
+            // this list gets in turn stored in
+            // pllReturn, so all the DRIVERSPEC's
+            // can be freed in cfgDriversInitPage
+            PLINKLIST   pllDriverSpecsForCategory = lstCreate(FALSE);
+            ULONG       ulDriversFound = 0;
+
+            // for-each-DRIVER loop
+            while (pSearch2)
+            {
+                PSZ pszDriverSpec = strhExtract(pSearch2,
+                                                '(',
+                                                ')',
+                                                &pSearch2);
+                if (pszDriverSpec)
+                do {
+                    // (...) block found (after "DRIVER" keyword):
+                    // tokenize that
+                    BOOL        fOK = TRUE;
+                    PSZ         pSearch3 = pszDriverSpec;
+                    PDRIVERSPEC pSpec = malloc(sizeof(DRIVERSPEC));
+
+                    pSpec->ulFlags = 0;
+
+                    // get BASEDEV etc.
+                    pSpec->pszKeyword = strhQuote(pSearch3,
+                                                  '"',
+                                                  &pSearch3);
+                    if (!pSpec->pszKeyword)
+                        break;  // do
+
+                    // get driver filename
+                    pSpec->pszFilename = strhQuote(pSearch3,
+                                                   '"',
+                                                   &pSearch3);
+                    if (!pSpec->pszFilename)
+                        break;  // do
+
+                    // get driver description
+                    pSpec->pszDescription = strhQuote(pSearch3,
+                                                      '"',
+                                                      &pSearch3);
+                    if (!pSpec->pszDescription)
+                        break;  // do
+
+                    if (stricmp(pSpec->pszKeyword, "BASEDEV=") == 0)
+                        pSpec->ulFlags |= DRVF_BASEDEV;
+                    else if (stricmp(pSpec->pszKeyword, "DEVICE=") == 0)
+                        pSpec->ulFlags |= DRVF_DEVICE;
+                    else if (stricmp(pSpec->pszKeyword, "IFS=") == 0)
+                        pSpec->ulFlags |= DRVF_IFS;
+                    else
+                        pSpec->ulFlags |= DRVF_OTHER;
+
+                    // the following routine sets up
+                    // the driver configuration dialog
+                    // based on the filename, if one
+                    // exists; this is in drivdlgs.c
+                    // so it can be extended more easily
+                    drvConfigSupported(pSpec);
+
+                    lstAppendItem(pllDriverSpecsForCategory, pSpec);
+
+                    ulDriversFound++;
+
+                    free(pszDriverSpec);
+                } while (FALSE);
+                else
+                    // (...) block not found:
+                    pSearch2 = 0;
+
+            } // end while (pSearch2) (DRIVER loop)
+
+            if (ulDriversFound)
+            {
+                // any drivers found for this category:
+                // insert into container
+                InsertDrivers(hwndCnr,
+                              preccRoot,
+                              (pszCategoryTitle)
+                                    ? pszCategoryTitle
+                                    : "Syntax error with CATEGORY title",
+                              pszConfigSys,
+                              pllDriverSpecsForCategory);
+
+                // store the linked list of DRIVERSPEC's
+                // in pllReturn
+                lstAppendItem(pllReturn, pllDriverSpecsForCategory);
+            }
+            else
+                // no drivers found: destroy the list
+                // again, it's empty anyways
+                lstFree(pllDriverSpecsForCategory);
+
+            free(pszBlock);
+
+        } // end if (pszBlock)
+        else
+        {
+            DebugBox("Drivers", "Block after DRIVERSPEC not found.");
+            pSearch++;
+        }
+
+        // free category title; this has
+        // been copied to the DRIVERRECORD by InsertDrivers
+        if (pszCategoryTitle)
+            free(pszCategoryTitle);
+
+    } // while (pSearch = strstr(pSearch, "CATEGORY"))
+
+    return (pllReturn);
+}
+
+/*
+ *@@ cfgDriversInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      "Drivers" page in the "OS/2 Kernel" object.
+ *      Sets the controls on the page according to the CONFIG.SYS
+ *      statements.
+ *
+ *      See cfgDriversItemChanged for information how the
+ *      driver dialogs must interact with the main "Drivers"
+ *      settings page.
+ *
+ *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
+ */
+
+VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                        ULONG flFlags)  // notebook info struct
+{
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndPage, ID_OSDI_DRIVR_CNR);
+
+    if (flFlags & CBI_INIT)
+    {
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT
+                            | CA_OWNERDRAW);
+            cnrhSetTreeIndent(20);
+            // cnrhSetSortFunc(fnCompareName);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PSZ             pszConfigSys = NULL;
+        PDRIVERRECORD   preccRoot = 0,
+                        precc = 0;
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        PKERNELGLOBALS  pKernelGlobals = krnLockGlobals(5000);
+        HPOINTER hptrOld = winhSetWaitPointer();
+
+        WinSendMsg(hwndCnr,
+                   CM_REMOVERECORD,
+                   (MPARAM)0,
+                   MPFROM2SHORT(0, // all records
+                                CMA_FREE | CMA_INVALIDATE));
+
+        // root record; freed automatically
+        preccRoot = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
+                                                     sizeof(DRIVERRECORD),
+                                                     1);
+        cnrhInsertRecords(hwndCnr,
+                          NULL,  // parent
+                          (PRECORDCORE)preccRoot,
+                          pNLSStrings->pszDriverCategories,
+                          CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
+                          1);
+
+        // load CONFIG.SYS text; freed below
+        sprintf(pKernelGlobals->szConfigSys, "%c:\\config.sys", doshQueryBootDrive());
+        if (doshReadTextFile(pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
+            DebugBox(pKernelGlobals->szConfigSys, "XFolder was unable to open the CONFIG.SYS file.");
+        else
+        {
+            // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
+            CHAR    szDriverSpecsFilename[CCHMAXPATH];
+            PSZ     pszDriverSpecsFile = NULL;
+
+            cmnQueryXFolderBasePath(szDriverSpecsFilename);
+            sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
+                    "\\help\\drvrs%s.txt",
+                    cmnQueryLanguageCode());
+
+            // load drivers.txt file; freed below
+            if (doshReadTextFile(szDriverSpecsFilename, &pszDriverSpecsFile) != NO_ERROR)
+                DebugBox(szDriverSpecsFilename,
+                         "XWorkplace was unable to open the driver specs file.");
+            else
+            {
+                // drivers file successfully loaded:
+                // parse file
+                pcnbp->pUser = InsertDriverCategories(hwndCnr,
+                                                      preccRoot,
+                                                      pszConfigSys,
+                                                      pszDriverSpecsFile);
+                    // this returns a PLINKLIST containing LINKLIST's
+                    // containing DRIVERSPEC's
+
+                free(pszDriverSpecsFile);
+            }
+
+            free(pszConfigSys);
+
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+        }
+
+        krnUnlockGlobals();
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        // clean up the linked list of linked lists
+        // which was created above
+        PLINKLIST pllLists = (PLINKLIST)pcnbp->pUser;
+        if (pllLists)
+        {
+            PLISTNODE pListNode = lstQueryFirstNode(pllLists);
+            while (pListNode)
+            {
+                PLINKLIST pllSpecsForCategory = (PLINKLIST)pListNode->pItemData;
+                if (pllSpecsForCategory)
+                {
+                    PLISTNODE pSpecNode = lstQueryFirstNode(pllSpecsForCategory);
+                    while (pSpecNode)
+                    {
+                        PDRIVERSPEC pSpecThis = (PDRIVERSPEC)pSpecNode->pItemData;
+                        if (pSpecThis)
+                        {
+                            if (pSpecThis->pszKeyword)
+                                free(pSpecThis->pszKeyword);
+                            if (pSpecThis->pszFilename)
+                                free(pSpecThis->pszFilename);
+                            if (pSpecThis->pszDescription)
+                                free(pSpecThis->pszDescription);
+
+                            free (pSpecThis);
+                        }
+
+                        pSpecNode = pSpecNode->pNext;
+                    }
+
+                    lstFree(pllSpecsForCategory);
+                }
+                pListNode = pListNode->pNext;
+            }
+
+            lstFree(pllLists);
+        }
+        pcnbp->pUser = NULL;        // avoid notebook.c freeing this
+    }
+}
+
+/*
+ *@@ cfgDriversItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      "Drivers" page in the "OS/2 Kernel" object.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *      When the "Configure" button is pressed on this
+ *      page, this function attempts to load the dialog
+ *      which is specified with the DRIVERSPEC structure
+ *      of the currently selected driver (initialized
+ *      by cfgDriversInitPage). In that structure, we
+ *      have entries for the dialog template as well as
+ *      the dialog func.
+ *
+ *      Currently, all the driver dialog funcs are in
+ *      the drivdlgs.c file. See remarks there for
+ *      details.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                              USHORT usItemID,
+                              USHORT usNotifyCode,
+                              ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = (MPARAM)0;
+
+    switch (usItemID)
+    {
+        /*
+         * ID_OSDI_DRIVR_CNR:
+         *      drivers container
+         */
+
+        case ID_OSDI_DRIVR_CNR:
+            switch (usNotifyCode)
+            {
+
+                /*
+                 * CN_EMPHASIS:
+                 *      container record selection changed
+                 *      (new driver selected):
+                 *      update the other fields on the page
+                 */
+
+                case CN_EMPHASIS:
+                {
+                    PSZ pszBldLevel = "",
+                        pszFilename = "",
+                        pszParams = "",
+                        pszText2MLE = NULL;
+                    BOOL fEnable = FALSE,
+                         fAcceptsParams = FALSE;
+
+                    if (pcnbp->preccLastSelected)
+                    {
+                        PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+
+                        // filename
+                        pszParams = precc->szParams;
+
+                        if (precc->pDriverSpec)
+                        {
+                            // driver description
+                            strhxcpy(&pszText2MLE,
+                                     precc->pDriverSpec->pszDescription);
+                            strhxcat(&pszText2MLE,
+                                     "\n");
+                            strhxcat(&pszText2MLE,
+                                     "File: ");
+                            strhxcat(&pszText2MLE,
+                                     precc->szDriverNameFull);
+
+                            strhxcat(&pszText2MLE,
+                                     "\n");
+                            strhxcat(&pszText2MLE,
+                                     "Version: ");
+                            strhxcat(&pszText2MLE,
+                                     precc->szVersion);
+
+                            strhxcat(&pszText2MLE,
+                                     "\n");
+                            strhxcat(&pszText2MLE,
+                                     "Vendor: ");
+                            strhxcat(&pszText2MLE,
+                                     precc->szVendor);
+
+                            // enable "Configure" button if dialog defined
+                            if (precc->pDriverSpec->idConfigDlg)
+                                fEnable = TRUE;
+                            // accepts parameters?
+                            if ((precc->pDriverSpec->ulFlags & DRVF_NOPARAMS) == 0)
+                                fAcceptsParams = TRUE;
+                        }
+
+                        // disable "Apply" button
+                        winhEnableDlgItem(pcnbp->hwndPage,
+                                          ID_OSDI_DRIVR_APPLYTHIS,
+                                          FALSE);
+                    }
+
+                    if (pszText2MLE)
+                    {
+                        WinSetDlgItemText(pcnbp->hwndPage,
+                                          ID_OSDI_DRIVR_STATICDATA,
+                                          pszText2MLE);
+                        free(pszText2MLE);
+                    }
+                    else
+                        WinSetDlgItemText(pcnbp->hwndPage,
+                                          ID_OSDI_DRIVR_STATICDATA,
+                                          "");
+
+                    WinSetDlgItemText(pcnbp->hwndPage,
+                                      ID_OSDI_DRIVR_PARAMS,
+                                      pszParams);
+                    winhEnableDlgItem(pcnbp->hwndPage,
+                                      ID_OSDI_DRIVR_PARAMS,
+                                      fAcceptsParams);
+                    winhEnableDlgItem(pcnbp->hwndPage,
+                                      ID_OSDI_DRIVR_CONFIGURE,
+                                      fEnable);
+                break; } // CN_EMPHASIS
+
+                /*
+                 * CN_ENTER:
+                 *      enter or double-click on record
+                 */
+
+                case CN_ENTER:
+                {
+                    PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+                    if (precc)
+                        if (precc->pDriverSpec->idConfigDlg)
+                            // simulate "configure" button
+                            WinPostMsg(pcnbp->hwndPage,
+                                       WM_COMMAND,
+                                       (MPARAM)ID_OSDI_DRIVR_CONFIGURE,
+                                       MPFROM2SHORT(CMDSRC_OTHER, TRUE));
+                break; }
+
+                /*
+                 * CN_CONTEXTMENU:
+                 *      cnr context menu requested
+                 *      for driver
+                 */
+
+                case CN_CONTEXTMENU:
+                {
+                    HWND    hPopupMenu;
+
+                    // we store the container and recc.
+                    // in the CREATENOTEBOOKPAGE structure
+                    // so that the notebook.c function can
+                    // remove source emphasis later automatically
+                    pcnbp->hwndCnr = pcnbp->hwndControl;
+                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
+                    if (pcnbp->preccSource)
+                    {
+                        BOOL fEnableCmdref = FALSE;
+                        PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccSource;
+                        if (precc->pDriverSpec)
+                            if (precc->pDriverSpec->ulFlags & DRVF_CMDREF)
+                                // help available in CMDREF.INF:
+                                fEnableCmdref = TRUE;
+                        // popup menu on container recc:
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_DRIVERS_SEL);
+                        if (!fEnableCmdref)
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_XSMI_DRIVERS_CMDREFHELP, FALSE);
+
+                    }
+                    else
+                    {
+                        // popup menu on cnr whitespace
+                    }
+
+                    if (hPopupMenu)
+                        cnrhShowContextMenu(pcnbp->hwndControl,  // cnr
+                                            (PRECORDCORE)pcnbp->preccSource,
+                                            hPopupMenu,
+                                            pcnbp->hwndPage);    // owner
+                break; } // CN_CONTEXTMENU
+            }
+        break;
+
+        /*
+         * ID_OSDI_DRIVR_CONFIGURE:
+         *      "Configure..." button (only enabled
+         *      if dialog has been set up in DRIVERSPECs):
+         *      open that dialog then
+         */
+
+        case ID_OSDI_DRIVR_CONFIGURE:
+            if (pcnbp->preccLastSelected)
+            {
+                PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+                if (precc->pDriverSpec)
+                    if (    (precc->pDriverSpec->idConfigDlg)
+                         && (precc->pDriverSpec->pfnwpConfigure)
+                       )
+                    {
+                        // OK, we have a valid dialog specification:
+                        DRIVERDLGDATA ddd;
+                        HWND hwndDlg,
+                             hwndMLE = WinWindowFromID(pcnbp->hwndPage,
+                                                       ID_OSDI_DRIVR_PARAMS);
+                        PSZ  pszParamsBackup = NULL;
+                        CHAR szTitle[300];
+
+                        // set up DRIVERDLGDATA structure
+                        ddd.pDriverSpec = precc->pDriverSpec;
+                        WinQueryWindowText(hwndMLE,
+                                           sizeof(ddd.szParams),
+                                           ddd.szParams);
+
+                        // backup parameters
+                        pszParamsBackup = strdup(ddd.szParams);
+
+                        if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+                                                 pcnbp->hwndPage,  // owner
+                                                 precc->pDriverSpec->pfnwpConfigure,
+                                                    // dlg proc as in DRIVERSPEC
+                                                 precc->pDriverSpec->hmodConfigDlg,
+                                                    // dlg module as in DRIVERSPEC
+                                                 precc->pDriverSpec->idConfigDlg,
+                                                    // resource ID as in DRIVERSPEC
+                                                 &ddd))
+                                                    // pass DRIVERDLGDATA as create param
+                        {
+                            // successfully loaded:
+                            // set dialog title to driver name
+                            sprintf(szTitle, "%s: %s",
+                                    _wpQueryTitle(pcnbp->somSelf),
+                                    ddd.pDriverSpec->pszFilename);
+                            WinSetWindowText(hwndDlg, szTitle);
+                            winhCenterWindow(hwndDlg);
+                            cmnSetControlsFont(hwndDlg, 0, 5000);
+                            // go!!
+                            if (WinProcessDlg(hwndDlg) == DID_OK)
+                                // "OK" pressed:
+                                // the dialog func should have modified
+                                // szParams now,
+                                // transfer szParams to MLE on page
+                                if (strcmp(pszParamsBackup, ddd.szParams) != 0)
+                                {
+                                    // something changed:
+                                    WinSetWindowText(hwndMLE,
+                                                     ddd.szParams);
+                                    // re-enable the "Apply" button also
+                                    winhEnableDlgItem(pcnbp->hwndPage,
+                                                      ID_OSDI_DRIVR_APPLYTHIS,
+                                                      TRUE);
+                                }
+                            WinDestroyWindow(hwndDlg);
+                        }
+
+                        free(pszParamsBackup);
+                    }
+            }
+        break;
+
+        /*
+         * ID_OSDI_DRIVR_PARAMS:
+         *      "Parameters" MLE
+         */
+
+        case ID_OSDI_DRIVR_PARAMS:
+            if (usNotifyCode == MLN_CHANGE)
+                // enable "Apply" button
+                winhEnableDlgItem(pcnbp->hwndPage,
+                                  ID_OSDI_DRIVR_APPLYTHIS,
+                                  TRUE);
+        break;
+
+        /*
+         * ID_XSMI_DRIVERS_CMDREFHELP:
+         *      "show CMDREF help" context menu item
+         */
+
+        case ID_XSMI_DRIVERS_CMDREFHELP:
+        {
+            CHAR szParams[200] = "cmdref.inf ";
+            PROGDETAILS pd;
+            memset(&pd, 0, sizeof(PROGDETAILS));
+            pd.Length = sizeof(PROGDETAILS);
+            pd.progt.progc = PROG_PM;
+            pd.progt.fbVisible = SHE_VISIBLE;
+            pd.pszExecutable = "view.exe";
+            // append short driver name to params (cmdref.inf)
+            strcat(szParams, ((PDRIVERRECORD)pcnbp->preccSource)->szDriverNameOnly);
+
+            WinStartApp(NULLHANDLE,         // hwndNotify
+                        &pd,
+                        szParams,
+                        NULL,               // reserved
+                        0);                 // options
+        break; }
+
+        /*
+         * ID_OSDI_DRIVR_APPLYTHIS:
+         *      "Apply" button: write current item
+         *      back to CONFIG.SYS
+         */
+
+        case ID_OSDI_DRIVR_APPLYTHIS:
+        {
+            PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+            PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
+            CHAR szNewParams[500];
+            CHAR szNewLine[1500];
+            WinQueryDlgItemText(pcnbp->hwndPage, ID_OSDI_DRIVR_PARAMS,
+                                sizeof(szNewParams),
+                                szNewParams);
+            sprintf(szNewLine, "%s%s %s",
+                    precc->pDriverSpec->pszKeyword,
+                    precc->szDriverNameFound,
+                    szNewParams);
+
+            if (strcmp(precc->szConfigSysLine, szNewLine) == 0)
+            {
+                // no changes made:
+                PSZ  apszTable = precc->szDriverNameOnly;
+                cmnMessageBoxMsgExt(pcnbp->hwndPage,
+                                    100,
+                                    &apszTable,
+                                    1,
+                                    156,        // "no changes made"
+                                    MB_OK);
+            }
+            else
+            {
+                PSZ  apszTable[2];
+                // have the user confirm this
+                apszTable[0] = precc->szConfigSysLine;
+                apszTable[1] = szNewLine;
+
+                if (cmnMessageBoxMsgExt(pcnbp->hwndPage,
+                                        100,
+                                        apszTable,
+                                        2,   // entries
+                                        155, // "sure?"
+                                        MB_YESNO | MB_DEFBUTTON2)
+                     == MBID_YES)
+                {
+                    PSZ     pszConfigSys = NULL;
+
+                    if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys))
+                        DebugBox((PSZ)pKernelGlobals->szConfigSys, "XFolder was unable to open the CONFIG.SYS file.");
+                    else
+                    {
+                        strhxrpl(&pszConfigSys,
+                                 0, // offset
+                                 precc->szConfigSysLine,
+                                 szNewLine,
+                                 0);
+                        // update record core
+                        strcpy(precc->szConfigSysLine, szNewLine);
+                        strcpy(precc->szParams, szNewParams);
+                        // write file!
+                        doshWriteTextFile(pKernelGlobals->szConfigSys, pszConfigSys, TRUE);
+                        // "file written" msg
+                        cmnMessageBoxMsg(pcnbp->hwndPage, 100, 136, MB_OK);
+
+                        free(pszConfigSys);
+                    }
+                }
+            }
+        break; }
+    }
+
+    return (mrc);
+}
+
+

@@ -1,0 +1,12 @@
+NAME NETSCDDE WINDOWAPI
+
+Description '@#Ulrich M”ller:0.9.0#@ XWorkplace Treesize Utility'
+
+CODE  MOVEABLE
+DATA  MOVEABLE MULTIPLE
+
+STACKSIZE   24576
+HEAPSIZE    10240
+
+PROTMODE
+

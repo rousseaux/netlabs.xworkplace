@@ -1,0 +1,294 @@
+#
+# setup.in:
+#       this is included from all makefiles in the subdirectories
+#       (via the NMAKE !INCLUDE directive) to set up variables
+#       common to all makefiles, such as compiler options and
+#       directory specifications.
+#
+#       Notes:
+#
+#       --  This include file is for makefile options only.
+#           There is another generic include file (include\setup.h),
+#           which is for generic _code_ includes (thru C #include).
+#
+#       --  All environment variables are modified in here ONLY
+#           if they haven't been set externally. So, instead of
+#           modifying this file, put these values into, e.g.,
+#           CONFIG.SYS.
+#
+#           As a result, there is NORMALLY NO NEED to modify this
+#           file. Set external variables instead (see MAKE.CMD for
+#           a list).
+
+!ifndef PROJECT_BASE_DIR
+!error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
+!endif
+
+# DEBUG CODE
+# ----------
+
+# If XWPDEBUG is set to anything, we will produce debug code.
+# Otherwise, release code will be produced, and all debugging
+# #define's in include\setup.h will automagically be disabled.
+# This overrides the environment variable which you might have set
+# in MAKE.CMD.
+#
+# Also, if XWPDEBUG is on, the compiler settings below will be
+# changed to use debug heaps for detecting memory leaks. Also,
+# this will compile extra heap checking functions into XWorkplace.
+
+XWPDEBUG=YES
+
+
+# DYNAMIC TRACE
+# -------------
+
+# If DYNAMIC_TRACE is set to your boot drive letter, we will
+# automatically generate TSF, TDF, and TFF files for the OS/2
+# TRACE facility and the trace formatter (TRACEFMT.EXE). The
+# TFF file will then be copied to $(DYNAMIC_TRACE):\os2\system\trace,
+# the TDF file will be copied to $(XWPRUNNING)\bin (where XFLDR.DLL
+# is also copied to).
+#
+# Note: This has only been tested with the most recent enhancements
+# to the trace facility (Warp 4 FP 10 or later). Comment out the
+# following statement if you run into trouble. Also, this takes
+# quite a bit of time at compile time and slows down execution also.
+
+# DYNAMIC_TRACE=F
+
+
+# RUNNING XWORKPLACE
+# ------------------
+
+# If XWPRUNNING is defined, the makefiles will copy all created
+# files to that directory. Change this to your existing XFolder
+# installation, or comment this out, if you don't want this to
+# happen. In any case, the files which were built are copied
+# to the INSTALL\ subdirs in our source tree.
+
+!ifndef XWPRUNNING
+XWPRUNNING = J:\Tools\WPS\XWorkplace
+!endif
+
+# RUNNING XWORKPLACE
+# ------------------
+
+!ifndef XWPRELEASE
+XWPRELEASE = K:\projects\distrib\XFolder\current
+!endif
+
+# HELPERS DIRECTORIES
+# -------------------
+
+# XWorkplace uses lots of generic OS/2 helpers code, which
+# I have developed over time. Unfortunately, WarpIN uses
+# that code too. So to keep this code in sync, XWorkplace
+# incorporates that code from the WarpIN source tree
+# (since WarpIN was on the Netlabs CVS server first).
+
+# Specify the root of the WarpIN source tree here (the
+# directory where src\helpers and include\helpers can
+# be reached from. The XWorkplace and WarpIN makefiles
+# will take care of the rest (that is, the XWorkplace
+# makefile calls the makefile in src\helpers of the
+# WarpIN tree, which writes the OBJs into the XWorkplace
+# bin\ directory then).
+
+!ifndef HELPERS_BASE
+HELPERS_BASE = K:\projects\cvs\warpin
+!endif
+
+
+# PRECOMPILED HEADERS
+# -------------------
+
+# The following is the directory for precompiled header files.
+# This is a feature of VAC++ 3.0 to speed up compilation.
+#
+# If the PRECH variable is defined (which should point to a
+# valid directory), precompiled headers will automatically be
+# enabled for all compilations. This dramatically speeds up
+# repetitive compilations (up to three times, especially with
+# the extremely complex SOM header files).
+#
+# If the PRECH variable is not defined, precompiled header files
+# will not be used. Uncomment the below statement if you have
+# trouble. This will work fine, but slower.
+#
+# I strongly recommend using a RAM disk for this. This makes sure
+# that the prech's won't use space on your disks forever.
+# I use RAMFS.IFS for the RAM disk, which is much more reliable
+# than OS/2's VDISK.SYS.
+# I have TEMP set to "R:\temp", which I create at each bootup
+# from CONFIG.SYS. VAC++ and the SOM compiler crash when specifying
+# a root directory (e.g. "R:\") as a temp/prech directory.
+#
+# Note that we create a _separate_ precompiled header file for each
+# source file (in the $(PRECH) directory). This eats up a lot
+# of space (I have about 30 MBs after a complete XWorkplace build!!),
+# but makes sure that the precompiled header does not get recreated
+# for each source file, which is a lot faster.
+#
+# So be warned: if you have TEMP on a RAM disk, this better be
+# able to hold more than 30 MBs. If you're using a RAM disk, you
+# should have 128 MBs of RAM on your system, or otherwise you'll
+# only hear the swap file rattle.
+#
+# Here are compile times for "nmake -a compile" on the main makefile
+# (PII-400, 128 MB RAM, using RAMFS.IFS, code of 99-10-22):
+# -- without PRECH:     2:01 minutes
+# -- with PRECH:        1:08 minutes
+#
+# Decide for yourself. ;-)
+
+PRECH = $(TEMP)
+
+
+# INCLUDES
+# --------
+
+# Extend the include path for the compiler.
+# This is only used from the subdirectories of SRC and TOOLS,
+# so the relative paths are relative to the respective
+# subdirectories (e.g. src\main, tools\strrpl).
+# We must include include\classes\ also because otherwise the
+# headers generated by the SOM compiler won't work.
+#
+# This does not modify INCLUDE, but defines a new variable,
+# which is passed to the compiler with the "CC" macros below.
+#
+# No need to change this. Change the variables above instead.
+#
+!ifndef MAINMAKERUNNING
+PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include
+!endif
+
+
+# COMPILER OPTIONS
+# ----------------
+
+# Compiler macro. This is used for each .OBJ file to be created.
+# If the XWPDEBUG environment variable was set to anything, we
+# will use debugging compiler options.
+# XWPDEBUG is set by MAKE.CMD or above.
+#
+# No need to change this. Change the variables above instead.
+
+CC = error_in_setup_in_do_not_use_CC_directly
+
+!ifdef XWPDEBUG
+# debug code
+CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /gm+ /q+ /se /ss /o- /oi- /ol- /ti+ /tm+ /tn+ /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru /Wuse- /D__XWPDEBUG__=1
+!else
+# release code
+CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /gm+ /q+ /se /ss /o+ /oi- /ol- /Tn+ /W2
+!endif
+
+# DLL code
+CC_DLL = $(CC_TEMP) /ge-
+# EXE code
+CC_EXE = $(CC_TEMP) /ge+
+
+# compiler options for WarpIN helpers;
+# this is necessary because WarpIN uses a different compiler
+# setup to compile the helpers
+CC_HELPERS = $(CC_DLL)
+
+# /oi- /w2 /fi+ /Tn+
+#/ti+
+
+# Some VisualAge C++ compiler options explained:
+# /c:   compile only, no link (we'll call the linker explicitly)
+# /fi+: precompile header files
+# /g3|4|5: optimize for 386/486/Pentium
+# /gd-: link runtime statically
+# /ge-: create DLL code
+# /gi+: fast integer execution
+# /Gl+: remove unreferenced functions (when comp.+link in 1 step)
+# /gm+: multithread libraries
+# /kc+: produce preprocessor warnings
+# /o+:  optimization (inlining etc.)
+# /oi-: no inlining (?)
+# /ol+: use intermediate linker; do _not_ use with debug code
+# /q+:  suppress icc logo
+# /Re : don't use subsystem libraries (!= Rn)
+# /se:  all language extensions
+# /si+: allow use of precompiled header files
+# /ss:  allow double slashes comments in C too
+# /ti+: debug code
+# /tdp: compile everything as C++, even if it has a .C suffix
+# /Tm:  use debug memory management (malloc etc.)
+# /Tn:  add source line numbers to object files (for mapfile)
+# /Wcls: class problems
+# /Wcnd: conditional exprs problems (= / == etc.)
+# /Wcmp: possible unsigned comparison redundancies
+# /Wcns: operations involving constants
+# /Wcnv: conversions
+# /Wcpy: copy constructor problems
+# /Weff: statements with no effect (annoying)
+# /Wgen: generic debugging msgs
+# /Wobs: obsolete features
+# /Word: unspecified evaluation order
+# /Wpar: list non-referenced parameters (annoying)
+# /Wppc: list possible preprocessor problems (.h dependencies)
+# /Wpro: warn if funcs have not been prototyped
+# /Wrea: mark code that cannot be reached
+# /Wret: check consistency of return levels
+# /Wuni: uninitialized variables
+# /Wuse: unused variables
+# /w2:   produce error and warning messages, but no infos
+
+
+# LINK OPTIONS
+# ------------
+#
+# Link macro. This is used for final linking.
+# If we're supposed to do the release version, we'll turn
+# off debugging and optimize and pack the resulting files.
+#
+# No need to change this. Change the variables above instead.
+
+LINK_BASE = ilink /nologo /noe /map:$(OUTPUTDIR)\$(@B).map /linenumbers
+
+!ifdef XWPDEBUG
+LINK =  $(LINK_BASE) /linenumbers /debug
+!else
+LINK =  $(LINK_BASE) /optfunc /exepack:2
+!endif
+
+# Some LINK386 cmd line options
+# (Visual Age ILINK understands these too if /nofree is specified):
+# /align:  executable pages align factor (in bytes)
+# /noe:    no extended dictionary. Required for replacing _DLL_InitTerm,
+#          which we're doing in SRC\MAIN\MODULE.C.
+# /noi:    no ignore case (necc. for C)
+# /map:    list public symbols (create MAP file); we always need this,
+#          because we produce a .SYM file later.
+# /linenumbers: include linenumbers in MAP file
+# /nod:    no default library search (explicitly specify libs)
+# /nol:    no logo (link386 startup)
+# /packcode: group neighboring code segments
+# /packdata: group neighboring data segments
+# /debug:  include debug code
+# /optfunc: optimize code arrangement (takes some extra time)
+# /exepack:2 use Warp 3 executable compression
+
+
+# RESOURCE COMPILER
+# -----------------
+
+RC      = rc -p -x2 -n -i $(PROJECT_BASE_DIR)\include
+
+# RC options:
+# -p       pack (64K boundaries)
+# -x2      Warp 3 compression
+# -n       no logo
+
+
+# COPY COMMAND
+# ------------
+
+COPY = cmd.exe /c copy
+
+

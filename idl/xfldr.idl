@@ -1,0 +1,455 @@
+
+/*
+ * xfldr.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFolder
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfldr.c for details.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpfolder.idl>         // this is SOM for WPFolder
+
+/*
+   CLASS: XFolder
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject = XFldObject
+               ÀÄÄ WPFileSystem
+                     ÀÄÄ WPFolder
+                           ÀÄÄ XFolder
+*/
+
+interface M_XFolder;            // forward reference to metaclass
+
+interface XFolder : WPFolder
+{
+
+    /*
+     * SOM typedef definitions:
+     *      declaring types here is similar to
+     *      passing them thru to the .H file,
+     *      but the difference is that we can also
+     *      use them in this .IDL file.
+     */
+
+    // FDRSORTINFO:
+    // original WPS structure stored in folder instance data for
+    // remembering folder sort settings; it is into this structure
+    // that wpRestoreData writes IDKEY_FDRSORTINFO data
+    // V0.9.0: changed all types to ULONG to ensure four-byte packing
+    struct FDRSORTINFO
+    {
+        ULONG   ulDefaultSort;
+            // the sort criterion that has the check mark in
+            // the "Sort" submenu; one of the WPSORTKEY_*
+            // things defined in the passthru_h stuff below
+        ULONG   fAlwaysSort;
+        ULONG   ulCurrentSort;
+            // apparently, ulCurrentSort is only used by the WPS
+            // if fAlwaysSort == TRUE; in that case, it contains
+            // the current sort criterion, which may be different
+            // than the default one
+        ULONG   ulZero1;
+        ULONG   ulZero2;
+        ULONG   ulZero3;
+    };
+    typedef FDRSORTINFO *PFDRSORTINFO;
+
+    /* struct WPSRGB {
+        BYTE bBlue,
+             bGreen,
+             bRed,
+             bExtra;
+    }; */
+
+    // FDRLONGARRAY:
+    // original WPS structure stored in folder instance data for
+    // storing various folder view data; it is into this structure
+    // that wpRestoreData writes IDKEY_FDRLONGARRAY data.
+    // On Warp 4, apparently the structure always has a size of 84 bytes
+    // == 21 longs.
+    // On Warp 3, four long's are missing; where therefore have 68 bytes
+    // == 17 longs.
+    // V0.9.0: changed all types to ULONG to ensure four-byte packing
+    struct FDRLONGARRAY
+    {
+        /* container view attributes */
+            // offset 0x0000
+        ULONG   ulIconViewCnrAttrs;
+        ULONG   ulTreeViewCnrAttrs;
+            // offset 0x0008
+        ULONG   ulDetlViewCnrAttrs;    // Henk says, always 28 80 30 00
+        ULONG   ulFolderFlag;          // Henk says, always 03 02 00 00
+            // offset 0x0010
+        ULONG   ulTreeStyle;           // Henk says, always 00 00 00 00
+        ULONG   ulDetailsStyle;        // Henk says, always FF FF FF FF
+            // offset 0x0018
+        ULONG   rgbTextBkgndCol;      // BB GG RR 00;
+                // this is the same for all views, but it is copied from
+                // some folder background data I don't know; byte 4 is also
+                // used for "transparency" when changed from Details view (duh)
+        ULONG   ul7;      // unknown, always EF FF FF FF
+            // offset 0x0020
+        ULONG   ul8;      // unknown, always EF FF FF FF
+
+        /* text colors */
+        ULONG   rgbIconViewTextCol;
+            // offset 0x0028
+        ULONG   ul10;     // unknown, always EF FF FF FF
+        ULONG   rgbTreeViewTextCol;
+            // offset 0x0030
+        ULONG   rgbDetlViewTextCol;
+
+        ULONG   ul13;     // unknown, always 00 00 00 40
+            // offset 0x0038
+        ULONG   ulIconViewTextVisibility; // 00 00 00 40: standard,
+                                        // 00 00 00 00: invisible,
+                                        // 01 00 00 00: not transparent
+                // Note that the "transparency" flag is always the same for
+                // all views. rgbTextBkgndCol Byte 4 will be 00 if transparency
+                // is off also.
+        ULONG   ulTreeViewTextVisibility; // the same
+
+            // offset 0x0040
+        ULONG   ul16;     // unknown, always 00 00 00 00
+
+        // end of structure on Warp 3
+        // the following long's are only available on Warp 4:
+
+        ULONG ulMenuBarVisibility;    // 0 = off, 1 = on, 2 = default
+
+        /* Shadow text colors */
+            // offset 0x0048
+        ULONG  rgbIconViewShadowCol;
+        ULONG  rgbTreeViewShadowCol;
+            // offset 0x0050
+        ULONG  rgbDetlViewShadowCol;
+    };
+    typedef FDRLONGARRAY *PFDRLONGARRAY;
+
+    // FDRBACKGROUND:
+    // original WPS structure stored in folder instance data for
+    // storing folder background data; I don't know which IDKEY_*
+    // corresponds to this, because on Warp 4, something else
+    // seems to be used. This information is from Henk Kelder.
+    // That's 14 bytes altogether.
+    struct FDRBACKGROUND
+    {
+        ULONG   ul1;
+        ULONG   rgbColor;
+        BYTE   bColorOnly; // 0x28 Image, 0x27 Color only
+        BYTE   b9;
+        BYTE   bImageType; // 2=Normal,3=tiled,4=scaled
+        BYTE   b10;
+        BYTE   bScaleFactor;
+        BYTE   b12;
+    };
+    typedef FDRBACKGROUND *PFDRBACKGROUND;
+
+    // REALSORTINFO:
+    // structure used internally by the WPS
+    // for sorting. This is undocumented and
+    // has been provided by Chris Wohlgemuth.
+    struct REALSORTINFO
+    {
+       LONG       lDefaultSort;     // default sort column index
+       BOOL       fAlwaysSort;      // "always maintain sort order"
+       LONG       lCurrentSort;     // current sort column index
+       PFNCOMPARE pfnCompare;       // container comparison func
+       ULONG      ulFieldOffset;    // ?!?
+       M_WPObject *Class;
+    };
+    typedef REALSORTINFO *PREALSORTINFO;
+
+    /*
+     * New instance methods for XFolder:
+     *
+     */
+
+    BOOL xwpQueryFldrSort(in PUSHORT pusDefaultSort, in PUSHORT pusAlwaysSort);
+    BOOL xwpSetFldrSort(in USHORT usDefaultSort, in USHORT usAlwaysSort);
+    BOOL xwpSortViewOnce(in HWND hwndFrame, in USHORT usSort);
+
+    BOOL xwpGetIconPos(in WPObject pObject,
+                      in PBYTE pICONPOS,
+                      in USHORT usICONPOSSize,
+                      in PICONPOS pipReturn);
+
+    ULONG xwpBeginEnumContent();
+    WPObject xwpEnumNext(in ULONG henum);
+    BOOL xwpEndEnumContent(in ULONG henum);
+
+    ULONG xwpBeginProcessOrderedContent(in ULONG ulTiming,
+                                       in PFNWP pfnwpCallback,
+                                       in ULONG ulCallbackParam);
+    BOOL xwpCancelProcessOrderedContent(in ULONG hPOC);
+
+    ULONG xwpMakeFavoriteFolder(in BOOL fInsert);
+    BOOL xwpIsFavoriteFolder();
+
+    ULONG xwpSetQuickOpen(in BOOL fQuickOpen);
+    BOOL xwpQueryQuickOpen();
+
+    BOOL xwpQueryMenuBarVisibility();
+
+    BOOL xwpSetStatusBarVisibility(in ULONG ulVisibility, in BOOL fUpdate);
+    ULONG xwpQueryStatusBarVisibility();
+
+    BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+
+    BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
+
+    ULONG xwpAddXFolderPages(in HWND hwndDlg);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder:
+        xwpQueryFldrSort,
+        xwpSetFldrSort,
+        xwpSortViewOnce,
+        xwpGetIconPos,
+        xwpBeginProcessOrderedContent,
+        xwpCancelProcessOrderedContent,
+        xwpMakeFavoriteFolder,
+        xwpIsFavoriteFolder,
+        xwpSetQuickOpen,
+        xwpQueryQuickOpen,
+        xwpSetStatusBarVisibility,
+        xwpQueryStatusBarVisibility,
+        xwpForEachOpenView,
+        xwpAddXFolderPages,
+        xwpUpdateStatusBar,
+        xwpQueryMenuBarVisibility,
+        xwpBeginEnumContent,
+        xwpEnumNext,
+        xwpEndEnumContent;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xf_;
+    externalstem = xf;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfldr;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFolder;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XFolder:
+     *
+     */
+
+    // the following four correspond to the "XFolder" instance
+    // settings page. Each of these can have one of the following
+    // three values:
+    //  0:  setting always disabled (ignore corresponding global setting)
+    //  1:  setting always enabled (ignore corresponding global setting)
+    //  2:  use global setting (default)
+    BYTE            bSnapToGridInstance,
+                    bFolderHotkeysInstance,
+                    bFullPathInstance,
+                    bStatusBarInstance;
+
+    // the following two are for XFolder's replacement sort
+    // settings; these have a transparent default value also
+    BYTE            bAlwaysSortInstance,
+                    bDefaultSortInstance;
+
+    LONG            MenuMousePosX,
+                    MenuMousePosY;
+
+    ULONG           ulDummy;
+
+    BOOL            fUnInitCalled;
+                            // flag for wpUnInitData, which seems
+                            // to get called more than once sometimes
+
+    HWND            hwndCnrSaved;
+                            // workaround for wpModifyPopupMenu bug,
+                            // which often gets hwndCnr as NULLHANDLE
+
+    PVOID           pfnUpdateStatusBar;
+                            // resolved function pointer to
+                            // xwpUpdateStatusbar (name-lookup resolution)
+
+    // the following pointers are all initialized in wpRestoreData
+    // when the original WPFolder restores its instance data
+    // and point to WPS-internal memory (WPFolder instance variables).
+    // This is an ugly hack to access some folder settings for which
+    // no methods are defined...
+
+    // pointer to WPFolder's sort data struct
+    PFDRSORTINFO    pFldrSortInfo;
+    // pointer to WPFolder's "long array"
+    PFDRLONGARRAY   pFldrLongArray;
+    // pointer to WPFolder's "string array"
+    PSZ             pszFldrStrArray;
+    // pointer to WPFolder's folder background info
+    PUSHORT         pusFldrBackground;
+    // size of those structures
+    ULONG           cbFldrStrArray,
+                    cbFldrLongArray;
+    // pointer to WPFolder's "SHOWALLINTREEVIEW" flag
+    // (Warp 4 only); this is queried in wpRestoreLong
+    PULONG          pulShowAllInTreeView;
+
+    /*
+     * The following is forced into the .H file:
+     *
+     */
+
+     // passthru C_h_after =     "";
+
+    /*
+     * WPFolder methods overridden by XFolder:
+     *
+     */
+
+    wpInitData: override;
+    wpObjectReady: override;
+
+    wpUnInitData: override;
+    wpFree: override;
+
+    wpSetup: override;
+
+    wpSaveState: override;
+    wpRestoreState: override;
+    wpRestoreLong: override;
+    wpRestoreData: override;
+
+    wpAddFile1Page: override;
+    wpAddFile2Page: override;
+    wpAddFile3Page: override;
+
+    wpAddFolderBackgroundPage: override;
+    wpAddFolderSortPage: override;
+
+    wpAddSettingsPages: override;
+
+    wpFilterPopupMenu: override;
+    wpModifyPopupMenu: override;
+    wpMenuItemSelected: override;
+    wpMenuItemHelpSelected: override;
+
+    wpOpen: override;
+    wpPopulate: override;
+    wpRefresh: override;
+
+    wpSetFldrFlags: override;
+    wpQueryFldrFlags: override;
+
+    wpSetFldrAttr: override;
+    wpQueryFldrAttr: override;
+
+    wpAddToContent: override;
+    wpDeleteFromContent: override;
+
+    wpStoreIconPosData: override;
+
+    wpMoveObject: override;
+    wpSetTitle: override;
+
+    wpSetFldrSort: override;
+
+    wpQueryDefaultHelp: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFolder : M_WPFolder
+{
+
+    /*
+     * New class methods for M_XFolder:
+     *
+     */
+
+    BOOL xwpclsForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
+    XFolder xwpclsQueryConfigFolder();
+    XFolder xwpclsQueryFavoriteFolder(in XFolder pFolder);
+    XFolder xwpclsQueryQuickOpenFolder(in XFolder pFolder);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder:
+                    xwpclsForEachOpenView,
+                    xwpclsQueryFavoriteFolder,
+                    xwpclsQueryQuickOpenFolder,
+                    xwpclsQueryConfigFolder;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfM_;
+    externalstem = xfM;
+    functionprefix = xfM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfldr;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFolder:
+     *
+     */
+
+    // class default icons
+    HPOINTER    hptrClosed;
+    HPOINTER    hptrOpen;
+
+    /*
+     * M_WPFolder methods overridden by M_XFolder:
+     *
+     */
+
+    wpclsInitData: override;
+    wpclsCreateDefaultTemplates: override;
+
+//# wpclsQueryTitle: override;
+//# wpclsQueryTitle:
+//# removed (V0.9.0)
+
+    wpclsQueryIconData: override;
+    wpclsQueryIconDataN: override;
+  };
+#endif /* __SOMIDL__ */
+};
+
+
+

@@ -1,0 +1,525 @@
+/*
+ * xfldr001.rc:
+ *      this is the main resource file for the English NLS DLL.
+ *
+ *      Translate all the strings in this file. If you encounter
+ *      any "~" characters: these are for underlining characters
+ *      in menus so that the menu item can be accessed using the
+ *      keyboard.
+ *
+ *      The dialog templates (xfldr001.dlg) are #include'd. You
+ *      may either translate that text file "manually" or open
+ *      the resulting .RES file with the Toolkit dialog editor.
+ *      This will then recreate the .RES and .DLG files, but leave
+ *      the .RC file untouched.
+ *
+ *      The dialog editor has a "Translate mode" in its "Options"
+ *      menu which disables a lot of menu items to allow you to
+ *      only change strings. This is very helpful to avoid
+ *      accidentally ruining the dialogs.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#define INCL_PM
+#include <os2.h>
+
+/* this is new with V0.85; this define is actually the only reason
+   why wpobject.h was needed. Since that file is only in the Toolkit,
+   I'll just add the define here so everyone can compile. */
+#define WPMENUID_USER          0x6500
+/* #include <wpobject.h> */
+#include "..\..\include\dlgids.h"
+
+/* icons, bitmaps */
+POINTER ID_ICONDLG LOADONCALL MOVEABLE DISCARDABLE xfldrdlg.ico
+POINTER ID_SDICON LOADONCALL MOVEABLE DISCARDABLE xfldshut.ico
+
+BITMAP ID_XFLDRBITMAP LOADONCALL MOVEABLE DISCARDABLE xfolder.bmp
+
+/* Context menus for the "WPS Class List" object */
+/* these two MENUs have been changed with V0.9.0 */
+MENU ID_XLM_CLASS_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Create object...", ID_XLMI_CREATEOBJECT
+    MENUITEM "~Deregister...", ID_XLMI_DEREGISTER
+    MENUITEM "~Replace with subclass...", ID_XLMI_REPLACE
+    MENUITEM "~Undo replacement...", ID_XLMI_UNREPLACE
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Register new class...", ID_XLMI_REGISTER
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+// the following two have been added with V0.9.0 */
+MENU ID_XLM_METHOD_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Sort", ID_XLM_METHOD_SORT, MIS_SUBMENU
+    BEGIN
+        MENUITEM "by method ~index", ID_XLMI_METHOD_SORT_INDEX
+        MENUITEM "by method ~name", ID_XLMI_METHOD_SORT_NAME
+        MENUITEM "by i~ntroducing class", ID_XLMI_METHOD_SORT_INTRO
+        MENUITEM "by ~overriding class", ID_XLMI_METHOD_SORT_OVERRIDE
+    END
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+/* Context menus for the "File types" notebook page;
+   new with V0.9.0 */
+MENU ID_XSM_FILETYPES_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Delete type", ID_XSMI_FILETYPES_DELETE
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Pickup", ID_XSMI_FILETYPES_PICKUP
+    MENUITEM "~Drop", ID_XSMI_FILETYPES_DROP
+    MENUITEM "~Cancel drag", ID_XSMI_FILETYPES_CANCELDRAG
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+MENU ID_XSM_FILETYPES_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~New type...", ID_XSMI_FILETYPES_NEW
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Drop", ID_XSMI_FILETYPES_DROP
+    MENUITEM "~Cancel drag", ID_XSMI_FILETYPES_CANCELDRAG
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+MENU ID_XSM_FILEFILTER_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Delete filter", ID_XSMI_FILEFILTER_DELETE
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+MENU ID_XSM_FILEFILTER_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~New filter...", ID_XSMI_FILEFILTER_NEW
+    MENUITEM "~Import WPS filters...", ID_XSMI_FILEFILTER_IMPORTWPS
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+MENU ID_XSM_FILEASSOC_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Delete association", ID_XSMI_FILEASSOC_DELETE
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+MENU ID_XSM_FILEASSOC_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Import WPS filters...", ID_XSMI_FILEFILTER_IMPORTWPS
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_XFMI_HELP
+END
+
+/* Button menus in XWPSetup "Objects" page;
+   new with V0.9.0  */
+MENU ID_XSM_OBJECTS_SYSTEM LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Keyboard settings", 100
+    MENUITEM "~Mouse settings", 101
+    MENUITEM "~Country settings", 102
+    MENUITEM "~Sound settings", 103
+    MENUITEM "Ener~gy settings", 104
+    MENUITEM "W~in-OS/2 settings", 105
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "Color palette ~1", 110
+    MENUITEM "Color palette ~2", 111
+    MENUITEM "~Font palette", 112
+    MENUITEM "Schemes ~palette", 113
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Launchpad", 120
+    MENUITEM "~WarpCenter", 121
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "Sp~ooler", 130
+    MENUITEM "~Minimized Windows viewer", 131
+    MENUITEM "S~hredder", 132
+    MENUITEM "S~ystem clock", 133
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "S~tartup folder", 140
+    MENUITEM "T~emplates fol~der", 141
+    MENUITEM "Dri~ves folder", 142
+END
+
+MENU ID_XSM_OBJECTS_XWORKPLACE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Workplace Shell settings", 200
+    MENUITEM "~OS/2 Kernel settings", 201
+    MENUITEM "W~PS Class List", 202
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Configuration folder", 210
+    MENUITEM "~Startup folder", 211
+    MENUITEM "S~hutdown folder", 212
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Trash can", 213
+END
+
+/* Context menus on XFldSystem "Drivers" page;
+   new with V0.9.0  */
+MENU ID_XSM_DRIVERS_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Show help in OS/2 Command Reference", ID_XSMI_DRIVERS_CMDREFHELP
+END
+
+/* Context menus on XWPKeyboard "Hotkeys" page
+   new with V0.9.0  */
+MENU ID_XSM_HOTKEYS_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Object ~properties", ID_XSMI_HOTKEYS_PROPERTIES
+    MENUITEM "Open folder", ID_XSMI_HOTKEYS_OPENFOLDER
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Remove hotkey", ID_XSMI_HOTKEYS_REMOVE
+END
+
+/* here come lots of little strings which XWorkplace uses in all kinds
+   of places. XWorkplace loads all these strings at once when the
+   WPS is being started (see cmnQueryNLSStrings in common.c). */
+STRINGTABLE
+BEGIN
+    /* miscellaneous menu items */
+    ID_XSSI_NOTDEFINED              "[not defined]"
+    ID_XSSI_PRODUCTINFO             "~XWorkplace product information"
+    ID_XSSI_REFRESHNOW              "~Refresh now"
+    ID_XSSI_SNAPTOGRID              "~Snap to grid"
+
+    /* language of this DLL;
+       displayed on the "XWorkplace Configuration" notebook page */
+    ID_XSSI_DLLLANGUAGE             "US English"
+
+    /* author of National Language Support (new with V0.9.0);
+       displayed on the "XWorkplace Configuration" notebook page */
+    ID_XSSI_NLS_AUTHOR              "Ulrich M”ller"
+
+    /* XFOLDER_VERSION is in dlgids.h; this is checked by the
+       XWorkplace NLS DLL loader so that no DLLs are loaded which
+       are older than the main DLL. No change needed. */
+    ID_XSSI_XFOLDERVERSION          XFOLDER_VERSION
+
+    ID_XSSI_FLDRCONTENT             "F~older contents"
+    ID_XSSI_COPYFILENAME            "~Copy filename"
+    ID_XSSI_BORED                   "[Configuration folder is empty]"
+    ID_XSSI_FLDREMPTY               "[empty]"
+    ID_XSSI_SELECTSOME              "Select by ~name..."
+    ID_XSSI_PROCESSCONTENT          "Start folder ~content..."
+
+    /* title of "Quick open" status window at bootup */
+    ID_XFSI_QUICKSTATUS             "Quick Open"
+
+    /* status bar strings */
+    ID_XSSI_POPULATING              "Collecting objects..."
+
+    /* default status bar mnemonics */
+    ID_XSSI_SBTEXTNONESEL           "$C objects$x(50%)$SK KB total, $fK KB free"
+    ID_XSSI_SBTEXTMULTISEL          "$c of $C objects selected$x(50%)$sK KB selected"
+    ID_XSSI_SBTEXTWPDATAFILE        """$r"" ($w)$x(55%)$sK KB $x(70%)$D $T"
+    ID_XSSI_SBTEXTWPDISK            "$t ($fM MB free)"
+    ID_XSSI_SBTEXTWPPROGRAM         "$t $x(30%)""$p $P"""
+    ID_XSSI_SBTEXTWPOBJECT          "$t (Class: $W)"
+
+    /* hotkey descriptions */
+    ID_XSSI_KEY_CTRL                "Ctrl+"
+    ID_XSSI_KEY_Alt                 "Alt+"
+    ID_XSSI_KEY_SHIFT               "Shift+"
+
+    ID_XSSI_KEY_BACKSPACE           "Backspace"
+    ID_XSSI_KEY_TAB                 "Tab"
+    ID_XSSI_KEY_BACKTABTAB          "Backtab"
+    ID_XSSI_KEY_ENTER               "Enter"
+    ID_XSSI_KEY_ESC                 "Esc"
+    ID_XSSI_KEY_SPACE               "Space"
+    ID_XSSI_KEY_PAGEUP              "Page up"
+    ID_XSSI_KEY_PAGEDOWN            "Page down"
+    ID_XSSI_KEY_END                 "End"
+    ID_XSSI_KEY_HOME                "Home"
+    ID_XSSI_KEY_LEFT                "Left"
+    ID_XSSI_KEY_UP                  "Up"
+    ID_XSSI_KEY_RIGHT               "Right"
+    ID_XSSI_KEY_DOWN                "Down"
+    ID_XSSI_KEY_PRINTSCRN           "Printscrn"
+    ID_XSSI_KEY_INSERT              "Insert"
+    ID_XSSI_KEY_DELETE              "Delete"
+    ID_XSSI_KEY_SCRLLOCK            "ScrlLock"
+    ID_XSSI_KEY_NUMLOCK             "NumLock"
+
+    ID_XSSI_KEY_WINLEFT             "Win95 left"
+    ID_XSSI_KEY_WINRIGHT            "Win95 right"
+    ID_XSSI_KEY_WINMENU             "Win95 menu"
+
+    /* and the corresponding list box items on the
+       "Hotkeys" notebook page */
+    ID_XSSI_LB_REFRESHNOW           "Refresh now"
+    ID_XSSI_LB_SNAPTOGRID           "Snap to grid"
+    ID_XSSI_LB_SELECTALL            "Select all"
+    ID_XSSI_LB_OPENPARENTFOLDER     "Open parent folder"
+    ID_XSSI_LB_OPENSETTINGSNOTEBOOK "Open settings notebook"
+    ID_XSSI_LB_OPENNEWDETAILSVIEW   "Open new Details view"
+    ID_XSSI_LB_OPENNEWICONVIEW      "Open new Icon view"
+    ID_XSSI_LB_DESELECTALL          "De-select all"
+    ID_XSSI_LB_OPENNEWTREEVIEW      "Open new Tree view"
+    ID_XSSI_LB_FIND                 "Find..."
+    ID_XSSI_LB_PICKUP               "Pickup"
+    ID_XSSI_LB_PICKUPCANCELDRAG     "Pickup (Cancel drag)"
+    ID_XSSI_LB_SORTBYNAME           "Sort by name"
+    ID_XSSI_LB_SORTBYSIZE           "Sort by size"
+    ID_XSSI_LB_SORTBYTYPE           "Sort by type"
+    ID_XSSI_LB_SORTBYREALNAME       "Sort by real name"
+    ID_XSSI_LB_SORTBYWRITEDATE      "Sort by write date"
+    ID_XSSI_LB_SORTBYACCESSDATE     "Sort by access date"
+    ID_XSSI_LB_SORTBYCREATIONDATE   "Sort by creation date"
+    ID_XSSI_LB_SWITCHTOICONVIEW     "Switch to Icon view (Warp 4 only)"
+    ID_XSSI_LB_SWITCHTODETAILSVIEW  "Switch to Details view (Warp 4 only)"
+    ID_XSSI_LB_SWITCHTOTREEVIEW     "Switch to Tree view (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEDEFAULT       "Arrange (default)"
+    ID_XSSI_LB_ARRANGEFROMTOP       "Arrange from top (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEFROMLEFT      "Arrange from left (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEFROMRIGHT     "Arrange from right (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Arrange from bottom (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEPERIMETER     "Arrange Perimeter (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Arrange horizontally (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEVERTICALLY    "Arrange vertically (Warp 4 only)"
+    ID_XSSI_LB_INSERT               "Paste... (Warp 4 only)"
+    ID_XSSI_LB_SORTBYEXTENSION      "Sort by extension"
+    ID_XSSI_LB_SORTFOLDERSFIRST     "Sort, folders first"
+    ID_XSSI_LB_SORTBYCLASS          "Sort by object class"
+    ID_XSSI_LB_OPENPARENTFOLDERANDCLOSE     "Open parent folder and close current folder"
+    ID_XSSI_LB_SELECTSOME           "Select by name..."
+    ID_XSSI_LB_CLOSEWINDOW          "Close window"
+    ID_XSSI_LB_CONTEXTMENU          "Show context menu"
+    ID_XSSI_LB_TASKLIST             "Show task list"
+    ID_XSSI_LB_COPYFILENAME_SHORT   "Copy filename (without path)"
+    ID_XSSI_LB_COPYFILENAME_FULL    "Copy filename (including path)"
+
+    /* XShutdown: context menu items and messages for the
+       status window. Do not change the %d and %s keys, or
+       XShutdown might crash. These are needed for inserting
+       variable data (sprintf). */
+    ID_SDSI_SHUTDOWN                "~Shutdown"
+    ID_SDSI_RESTARTWPS              "~Restart WPS..."
+    ID_SDSI_RESTARTINGWPS           "Restarting WPS..."
+    ID_SDSI_SAVINGDESKTOP           "Saving %d WPS objects..."
+    ID_SDSI_SAVINGPROFILES          "Saving INI files..."
+    ID_SDSI_STARTING                "Starting ""%s""..."
+    ID_SDSI_FLUSHING                "Releasing filesystems..."
+    ID_SDSI_CAD                     "Shutdown complete."
+    ID_SDSI_REBOOTING               "Computer is being restarted..."
+    ID_SDSI_CLOSING                 "Closing"
+    ID_SDSI_DEFAULT                 "Default"
+
+    /* titles for XWorkplace notebook pages */
+    ID_XSSI_1GENERIC                "~XFolder"
+    ID_XSSI_25ADDITEMS              "Context ~menus"
+    ID_XSSI_26CONFIGITEMS           "Config folder items"
+    ID_XSSI_2REMOVEITEMS            "Standard menu items"
+    ID_XSSI_27STATUSBAR             "Status bars"
+    ID_XSSI_3SNAPTOGRID             "Grid"
+    ID_XSSI_4ACCELERATORS           "Folder hotkeys"
+    ID_XSSI_5INTERNALS              "XFolder Internals"
+    ID_XSSI_FILEOPS                 "File ~operations"
+    ID_XSSI_INTERNALS               "~Object" /* changed V0.9.0 */
+    ID_XSSI_SORT                    "~Sort"
+    /* the following are new with V0.9.0 */
+    ID_XSSI_XWPSTATUS               "~XWorkplace Status"
+    ID_XSSI_FEATURES                "~Features"
+    ID_XSSI_PARANOIA                "~Paranoia"
+    ID_XSSI_OBJECTS                 "~Objects"
+    ID_XSSI_FILEPAGE                "~File"
+    ID_XSSI_DETAILSPAGE             "~Details"
+    ID_XSSI_XSHUTDOWNPAGE           "~XShutdown"
+    ID_XSSI_STARTUPPAGE             "~Startup"
+    ID_XSSI_DTPMENUPAGE             "~Menu items"
+    ID_XSSI_FILETYPESPAGE           "~File types"
+    ID_XSSI_SOUNDSPAGE              "~Sounds"
+    ID_XSSI_VIEWPAGE                "~View"
+    ID_XSSI_ARCHIVESPAGE            "~Archives"
+    ID_XSSI_PGMFILE_MODULE          "~Module"
+    ID_XSSI_OBJECTHOTKEYSPAGE       "~Hotkeys"
+    ID_XSSI_MOUSEHOOKPAGE           "~Movement"
+
+    /* sort strings */
+    ID_XSSI_SV_NAME                 "Name"
+    ID_XSSI_SV_TYPE                 "Type"
+    ID_XSSI_SV_CLASS                "Object class"
+    ID_XSSI_SV_REALNAME             "Real name"
+    ID_XSSI_SV_SIZE                 "Size"
+    ID_XSSI_SV_WRITEDATE            "Last write date"
+    ID_XSSI_SV_ACCESSDATE           "Last access date"
+    ID_XSSI_SV_CREATIONDATE         "Creation date"
+    ID_XSSI_SV_EXT                  "File name extension"
+    ID_XSSI_SV_FOLDERSFIRST         "Folders first"
+
+    ID_XSSI_SV_ALWAYSSORT           "Always maintain sort order"
+
+    /* XWorkplace standard dialog box (cmnMessageBox in common.c) */
+    ID_XSSI_DLG_YES                     "~Yes"
+    ID_XSSI_DLG_NO                      "~No"
+    ID_XSSI_DLG_OK                      "~OK"
+    ID_XSSI_DLG_CANCEL                  "~Cancel"
+    ID_XSSI_DLG_ABORT                   "~Abort"
+    ID_XSSI_DLG_RETRY                   "~Retry"
+    ID_XSSI_DLG_IGNORE                  "~Ignore"
+
+    /* "WPS Classes" notebook page */
+    ID_XSSI_SB_CLASSMNEMONICS           "Status bar info of this class:"
+    ID_XSSI_SB_CLASSNOTSUPPORTED        "This class does not introduce new status bar info."
+    ID_XSSI_WPSCLASSES                  "WPS Classes"
+    ID_XSSI_WPSCLASSLOADED              "Class loaded."
+    ID_XSSI_WPSCLASSLOADINGFAILED       "Class loading failed."
+    ID_XSSI_WPSCLASSREPLACEDBY          "Class replaced with %s."
+    ID_XSSI_WPSCLASSORPHANS             "Orphaned classes"
+    ID_XSSI_WPSCLASSORPHANSINFO         "The classes in this tree could not be loaded. You should remove them from the WPS class list."
+
+    /* OS/2 Kernel notebook pages */
+    ID_XSSI_SCHEDULER                   "~Scheduler"
+    ID_XSSI_MEMORY                      "~Memory"
+    ID_XSSI_ERRORS                      "E~rrors"
+    ID_XSSI_WPS                         "~WPS"
+    /* the following are new with V0.9.0 */
+    ID_XSSI_SYSPATHS                    "~System Paths"
+    ID_XSSI_DRIVERS                     "D~rivers"
+    ID_XSSI_DRIVERCATEGORIES            "Driver categories"
+
+    /* extended settings submenus */
+    ID_XFSI_SETTINGS                    "~Properties"
+    ID_XFSI_SETTINGSNOTEBOOK            "~Notebook"
+    ID_XFSI_ATTRIBUTES                  "File attributes"
+    ID_XFSI_ATTR_ARCHIVED               "Archived"
+    ID_XFSI_ATTR_SYSTEM                 "System"
+    ID_XFSI_ATTR_HIDDEN                 "Hidden"
+    ID_XFSI_ATTR_READONLY               "Read-only"
+
+    ID_XFSI_FLDRSETTINGS                "~View"
+    ID_XFSI_SMALLICONS                  "~Small icons"
+    ID_XFSI_FLOWED                      "~Flowed"
+    ID_XFSI_NONFLOWED                   "~Non-flowed"
+    ID_XFSI_NOGRID                      "~As placed"
+
+    /* the following added with V0.9.0 */
+    ID_XFSI_WARP4MENUBAR                "~Menu bar"
+
+    ID_XFSI_SHOWSTATUSBAR               "~Status bar"
+
+    /* the following are all new with V0.9.0 */
+
+    /* entry in XWPClassList's "Open" submenu */
+    ID_XFSI_OPENCLASSLIST               "~Class list"
+    /* default title for object */
+    ID_XFSI_XWPCLASSLIST                "WPS class list"
+
+    /* strings for XWPSound */
+    ID_XSSI_SOUNDSCHEMENONE             "<none>"
+
+    /* "System paths" page in OS/2 Kernel" */
+    ID_XSSI_ITEMSSELECTED               "%d items selected"
+
+    /* Trash can menu items */
+    ID_XTSI_TRASHEMPTY                  "~Empty trashcan"
+    ID_XTSI_TRASHRESTORE                "~Restore object"
+    ID_XTSI_TRASHDESTROY                "~Destroy object"
+
+    ID_XTSI_TRASHCAN                    "Trash can"
+    ID_XTSI_TRASHOBJECT                 "Trash object"
+
+    ID_XTSI_TRASHSETTINGS               "~Trash can"
+
+    ID_XTSI_ORIGFOLDER                  "Original folder"
+    ID_XTSI_DELDATE                     "Deletion date"
+    ID_XTSI_DELTIME                     "Deletion time"
+    ID_XTSI_SIZE                        "Size"
+
+    /* the following added with V0.9.1 */
+
+    /* Details view columns on XWPKeyboard "Hotkeys" page */
+    ID_XSSI_HOTKEY_TITLE                "Object title"
+    ID_XSSI_HOTKEY_FOLDER               "in folder"
+    ID_XSSI_HOTKEY_HANDLE               "Object handle"
+    ID_XSSI_HOTKEY_HOTKEY               "Hotkey"
+
+    /* Method info columns for XWPClassList; V0.9.1 (99-12-03) */
+    ID_XSSI_CLSLIST_INDEX               "No."
+    ID_XSSI_CLSLIST_METHOD              "Method"
+    ID_XSSI_CLSLIST_ADDRESS             "Resolved"
+    ID_XSSI_CLSLIST_CLASS               "Class"
+    ID_XSSI_CLSLIST_OVERRIDDENBY        "Overridden by"
+
+END
+
+/* Strings for XWPSetup "Features" page
+    (added V0.9.0) */
+STRINGTABLE
+BEGIN
+    ID_XCSI_GENERALFEATURES             "General features"
+    ID_XCSI_REPLACEICONS                "Replace Icons"
+    ID_XCSI_ADDOBJECTPAGE               "Add ""Object"" page to all settings notebooks"
+    ID_XCSI_XWPHOOK                     "Enable mouse and keyboard features (XWorkplace Hook)"
+    ID_XCSI_REPLACEFILEPAGE             "Replace ""File"" and ""Details"" pages"
+    ID_XCSI_XSYSTEMSOUNDS               "Extended system sounds"
+    ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
+
+    ID_XCSI_FOLDERFEATURES              "Folder features"
+    ID_XCSI_ENABLESTATUSBARS            "Enable folder status bars"
+    ID_XCSI_ENABLESNAP2GRID             "Enable folder ""Snap to grid"""
+    ID_XCSI_ENABLEFOLDERHOTKEYS         "Enable folder hotkeys"
+    ID_XCSI_EXTFOLDERSORT               "Extended folder sorting"
+
+    ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
+    ID_XCSI_ARCHIVING                   "Replace WPS archiving"
+    ID_XCSI_RESTARTWPS                  "Enable ""Restart WPS"""
+    ID_XCSI_XSHUTDOWN                   "Enable eXtended Shutdown"
+
+    ID_XCSI_FILEOPERATIONS              "File operations"
+    ID_XCSI_EXTASSOCS                   "Extended file type associations"
+    ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries"
+    ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
+    ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
+    ID_XCSI_DELETEINTOTRASHCAN          "Trash can ""Delete"" support"
+END
+
+/* Treesize definitions */
+
+POINTER ID_TS_ICON LOADONCALL MOVEABLE DISCARDABLE treesize.ico
+
+MENU ID_TSM_CONTEXT  LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Sort", ID_TSM_SORT, MIS_SUBMENU
+    BEGIN
+        MENUITEM "by ~name", ID_TSMI_SORTBYNAME
+        MENUITEM "by ~file size", ID_TSMI_SORTBYSIZE
+        MENUITEM "by ~files count", ID_TSMI_SORTBYFILESCOUNT
+        MENUITEM "by ~EA size", ID_TSMI_SORTBYEASIZE
+    END
+    MENUITEM "~Display sizes in", ID_TSM_SIZES, MIS_SUBMENU
+    BEGIN
+        MENUITEM "~bytes", ID_TSMI_SIZE_BYTES
+        MENUITEM "~KBytes", ID_TSMI_SIZE_KBYTES
+        MENUITEM "~MBytes", ID_TSMI_SIZE_MBYTES
+    END
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "Collect e~xtended attributes", ID_TSMI_COLLECTEAS
+    MENUITEM "Low-priority search", ID_TSMI_LOWPRTY
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "Product info and ~help", ID_TSMI_PRODINFO
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Close", 1000
+END
+
+rcinclude "xfldr001.dlg"
+

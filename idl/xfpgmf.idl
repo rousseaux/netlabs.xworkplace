@@ -1,0 +1,162 @@
+
+/*
+ * xfpgmf.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFldProgramFile
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfpgmf.c for details.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wppgmf.idl>         // this is SOM for WPProgramFile
+
+/*
+   CLASS: XFldProgramFile
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject = XFldObject
+               ÀÄÄ WPFileSystem
+                     ÀÄÄ WPDataFile = XFldDataFile
+                           ÀÄÄ WPProgramFile
+                                 ÀÄÄ XFldProgramFile
+*/
+
+interface M_XFldProgramFile;            // Forward Reference to XFldProgramFile metaclass
+
+interface XFldProgramFile : WPProgramFile
+{
+
+    /*
+     * New instance methods for XFldProgramFile:
+     *
+     */
+
+    ULONG xwpQueryProgType();
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: xwpQueryProgType;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfpgmf_;
+    externalstem = xfpgmf;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfpgmf;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFldProgramFile;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+     passthru C_h =
+"// additional PROG_* flags for _ulAppType in XFldProgramFile instance data;"
+"// these are only used by XFldProgramFile to determine the correct icons"
+"#define PROG_XF_DLL        998 // dynamic link library"
+"#define PROG_XF_DRIVER     999 // virtual or physical dev' drivers"
+"";
+
+    /*
+     * Internal instance variables for XFldProgramFile:
+     *
+     */
+
+    HPOINTER    hptrThis;        // set by wpSetIcon
+    BOOL        fProgIconSet;    // TRUE if the current icon was set
+                                 // using wpSetProgIcon
+    ULONG       ulDosAppType;    // return value from DosQueryAppType
+    ULONG       ulAppType;       // XFPGMF_* flag
+
+    /*
+     * WPProgramFile methods overridden by XFldProgramFile:
+     *
+     */
+
+    wpInitData: override;
+    wpObjectReady: override;
+
+    wpQueryStyle: override;
+
+    wpSetIcon: override;
+    wpSetProgIcon: override;
+
+    wpQueryDefaultView: override;
+
+    wpAddProgramSessionPage: override;
+
+    wpFilterPopupMenu: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFldProgramFile : M_WPProgramFile
+{
+
+    /*
+     * New class methods for M_XFldProgramFile:
+     *
+     */
+
+#ifdef __SOMIDL__
+  implementation {
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfpgmfM_;
+    externalstem = xfpgmfM;
+    functionprefix = xfpgmfM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfpgmf;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFldProgramFile:
+     *
+     */
+
+    /*
+     * M_WPProgramFile methods overridden by M_XFldProgramFile:
+     *
+     */
+
+    wpclsInitData: override;
+
+    wpclsQueryInstanceFilter: override;
+  };
+#endif /* __SOMIDL__ */
+};
+
+

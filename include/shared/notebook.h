@@ -1,0 +1,259 @@
+
+/*
+ *@@sourcefile notebook.h:
+ *      header file for notebook.c. See notes there. New with V0.82.
+ *
+ *      All the functions in this file have the ntb* prefix.
+ *
+ *@@include #define INCL_DOSMODULEMGR
+ *@@include #define INCL_WINWINDOWMGR
+ *@@include #define INCL_WINSTDCNR
+ *@@include #include <os2.h>
+ *@@include #include <wpobject.h>
+ *@@include #include "shared\notebook.h"
+ */
+
+/*
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#ifndef NOTEBOOK_HEADER_INCLUDED
+    #define NOTEBOOK_HEADER_INCLUDED
+
+    /********************************************************************
+     *                                                                  *
+     *   Declarations                                                   *
+     *                                                                  *
+     ********************************************************************/
+
+    // forward-declare the CREATENOTEBOOKPAGE types, because
+    // these are needed by the function prototypes below
+    typedef struct _CREATENOTEBOOKPAGE *PCREATENOTEBOOKPAGE;
+
+    // some callback function prototypes:
+
+    // 1)  init-page callback
+    typedef VOID (FNCBACTION)(PCREATENOTEBOOKPAGE, ULONG);
+    typedef FNCBACTION *PFNCBACTION;
+
+    // 2)  item-changed callback
+    typedef MRESULT (FNCBITEMCHANGED)(PCREATENOTEBOOKPAGE,
+                                      USHORT,   // usItemID
+                                      USHORT,   // usNotifyCode
+                                      ULONG);   // ulExtra
+    typedef FNCBITEMCHANGED *PFNCBITEMCHANGED;
+
+    // 3)  message callback
+    typedef BOOL (FNCBMESSAGE)(PCREATENOTEBOOKPAGE, ULONG, MPARAM, MPARAM, MRESULT*);
+    typedef FNCBMESSAGE *PFNCBMESSAGE;
+
+    /*
+     *  here come the ORed flags which are passed to
+     *  the INIT callback
+     */
+
+    #define CBI_INIT        0x01        // only set on first call (WM_INITDLG)
+    #define CBI_SET         0x02        // controls should be set
+    #define CBI_ENABLE      0x04        // controls should be en/disabled
+    #define CBI_DESTROY     0x08        // notebook page is destroyed
+    #define CBI_SHOW        0x10        // notebook page is turned to
+    #define CBI_HIDE        0x20        // notebook page is turned away from
+
+    #ifndef BKA_MAJOR
+       #define BKA_MAJOR                0x0040
+    #endif
+
+    #ifndef BKA_MINOR
+       #define BKA_MINOR                0x0080
+    #endif
+
+    /*
+     *@@ CREATENOTEBOOKPAGE:
+     *      this structure must be passed to ntbInsertPage
+     *      and specifies lots of data according to which
+     *      ntb_fnwpNotebookCommon will react.
+     *
+     *      Always zero the entire structure and then fill
+     *      in only the fields that you need. The top fields
+     *      listed below are required, all the others are
+     *      optional and have safe defaults.
+     *
+     *@@changed V0.9.0 [umoeller]: typedef was missing, thanks Rdiger Ihle
+     */
+
+    typedef struct _CREATENOTEBOOKPAGE
+    {
+        // 1) REQUIRED input to ntbInsertPage
+        HWND        hwndNotebook;   // hwnd of Notebook control; set this to the
+                                    // (misnamed) hwndDlg parameter in the
+                                    // _wpAddSettingsPages method
+        WPObject    *somSelf;       // object whose Settings notebook is opened;
+                                    // set this to somSelf of _wpAddSettingsPages
+        HMODULE     hmod;           // module of dlg resource
+        ULONG       ulDlgID;        // ID of dlg resource (in hmod)
+        PSZ         pszName;        // title of page (in notebook tab)
+
+        // 2) OPTIONAL input to ntbInsertPage; all of these can be null
+        USHORT      usPageStyleFlags; // any combination or none of the following:
+                                    // -- BKA_MAJOR
+                                    // -- BKA_MINOR
+                                    // BKA_STATUSTEXTON will always be added.
+        // BOOL        fMajorTab,      // if TRUE: give the page a major tab
+        BOOL        fEnumerate;     // if TRUE: add "page 1 of 3"-like thingies
+        ULONG       ulPageID;       // the page identifier, which should be set to
+                                    // uniquely identify the notebook page (e.g. for
+                                    // ntbQueryOpenPages); XWorkplace uses the SP_*
+                                    // IDs def'd in common.h.
+        ULONG       ulDefaultHelpPanel; // default help panel ID for the whole page
+                                    // in the XFolder help file;
+                                    // this will be displayed when WM_HELP comes in
+                                    // and if no subpanel could be found
+        USHORT      usFirstControlID; // the first control ID and
+        ULONG       ulFirstSubpanel; // the help panel ID of the first subpanel
+                                    // if the user presses "F1" while a dialog item
+                                    // on the page has the keyboard focus; see
+                                    // ntbDisplayFocusHelp for details how this works.
+                                    // Set this to 0 if you don't want subpanels.
+                                    // In that case, ulDefaultHelpPanel will always
+                                    // be displayed.
+        ULONG       ulTimer;        // if !=0, a timer will be started and pfncbTimer
+                                    // will be called with this frequency (in ms)
+        PVOID       pUser,
+                    pUser2;         // user data; since you can access this structure
+                // from the "pcnbp" parameter which is always passed to the notebook
+                // callbacks, you can use this for backing up data for the "Undo" button
+                // in the INIT callback, or for whatever other data you might need.
+                // Simply allocate memory using malloc() and store it here.
+                // When the notebook page is destroyed, both pointers are checked and
+                // will automatically be free()'d if != NULL.
+
+        // 3)  Here follow the callback functions. If any of these is NULL,
+        //     it will not be called. As a result, you may selectively install
+        //     callbacks, depending on how much functionality you need.
+
+        PFNCBACTION pfncbInitPage;
+                // callback function for initializing the page.
+                // This is required and gets called (at least) when
+                // the page is initialized (WM_INITDLG comes in).
+                // See ntbInsertPage for details.
+
+        PFNCBITEMCHANGED pfncbItemChanged;
+                // callback function if an item on the page has changed; you
+                // should update your data in memory then.
+                // See ntbInsertPage for details.
+
+        PFNCBACTION pfncbTimer;
+                // optional callback function if CREATENOTEBOOKPAGE.ulTimer != 0;
+                // this callback gets called every CREATENOTEBOOKPAGE.ulTimer
+                // milliseconds then.
+
+        PFNCBMESSAGE pfncbMessage;
+                // optional callback function thru which all dialog messages are going.
+                // You can use this if you need additional handling which the above
+                // callbacks do not provide for. This gets really all the messages
+                // which go thru ntb_fnwpNotebookCommon.
+                //
+                // This callback gets called _after_ all other message processing
+                // (i.e. the "item changed" and "timer" callbacks).
+                //
+                // Parameters:
+                //     PCREATENOTEBOOKPAGE pcnbp notebook info struct
+                //     msg, mp1, mp2            usual message parameters.
+                //     MRESULT* pmrc            return value, if TRUE is returned.
+                //
+                // If the callback returns TRUE, *pmrc is returned from the
+                // common notebook page proc.
+
+        // 4) The following fields are not intended for _input_ to ntbInsertPage.
+        //    Instead, these contain additional data which can be evaluated from
+        //    the callbacks. These fields are only set by ntb_fnwpNotebookCommon
+        //    _after_ the page has been initialized.
+        ULONG       ulNotebookPageID; // the PM notebook page ID, as returned by
+                                      // wpInsertSettingsPage
+        BOOL        fPageVisible;     // TRUE if the page is currently visible
+        HWND        hwndPage;         // hwnd of dlg page in notebook; this
+                                      // is especially useful to get control HWND's:
+                                      // use WinWindowFromID(pcnbp->hwndPage, YOUR_ID).
+        HWND        hwndControl;      // this always has the current control window handle
+                                      // when the "item changed" callback is called.
+                                      // In the callback, this is equivalent to
+                                      // calling WinWindowFromID(pcnbp->hwndPage, usControlID).
+        HWND        hwndCnr;          // see next
+        PRECORDCORE preccSource;      // this can be set to a container record
+                                      // core in hwndCnr which will be removed
+                                      // source emphasis from when WM_MENUEND
+                                      // is received; useful for CN_CONTEXTMENU.
+                                      // This gets initialized to -1, because
+                                      // NULL means container whitespace.
+        POINTL      ptlMenuMousePos;  // for CN_CONTEXTMENU, this has the
+                                      // last mouse position (in Desktop coords).
+        BOOL        fPageInitialized; // TRUE only after the first call to the INIT
+                                      // callback with CBI_INIT set. Useful if you
+                                      // want to find out if a control should respond
+                                      // to something yet.
+        BOOL        fShowWaitPointer; // while TRUE, ntb_fnwpNotebookCommon shows the "Wait" pointer;
+                                      // only meaningful if another thread is preparing data
+
+        // 5) Internal use only, do not mess with these.
+        PVOID       pnbli;
+        PRECORDCORE preccLastSelected;
+        PRECORDCORE preccExpanded;      // for tree-view auto scroll
+        HWND        hwndExpandedCnr;    // for tree-view auto scroll
+
+    } CREATENOTEBOOKPAGE;
+
+    /*
+     *@@ NOTEBOOKPAGELISTITEM:
+     *      list item structure (linklist.c) for maintaining
+     *      a list of currently open notebook pages.
+     */
+
+    typedef struct _NOTEBOOKPAGELISTITEM
+    {
+        // struct _NOTEBOOKPAGELISTITEM *pNext,
+           //                      *pPrevious;
+        ULONG                   ulSize;
+        PCREATENOTEBOOKPAGE     pcnbp;
+    } NOTEBOOKPAGELISTITEM, *PNOTEBOOKPAGELISTITEM;
+
+    /*
+     *@@ SUBCLNOTEBOOKLISTITEM:
+     *      list item structure (linklist.c) for
+     *      maintaining subclassed notebooks controls.
+     *
+     *@@added V0.9.1 (99-12-06) [umoeller]
+     */
+
+    typedef struct _SUBCLNOTEBOOKLISTITEM
+    {
+        HWND            hwndNotebook;
+        PFNWP           pfnwpNotebookOrig;
+    } SUBCLNOTEBOOKLISTITEM, *PSUBCLNOTEBOOKLISTITEM;
+
+    /********************************************************************
+     *                                                                  *
+     *   Prototypes                                                     *
+     *                                                                  *
+     ********************************************************************/
+
+    ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp);
+
+    PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp);
+
+    ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID);
+
+    BOOL ntbDisplayFocusHelp(WPObject *somSelf,
+                             USHORT usFirstControlID,
+                             ULONG ulFirstSubpanel,
+                             ULONG ulPanelIfNotFound);
+
+#endif

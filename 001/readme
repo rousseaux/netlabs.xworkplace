@@ -1,0 +1,53 @@
+
+
+XWorkplace (w) (c) 1997-99 Ulrich M”ller **
+
+
+INTRODUCTION
+============
+
+    XWorkplace is a complex set of replacement classes for the
+    OS/2 Workplace Shell. It can add features to pretty much all
+    parts of the system, such as generic object features, folder
+    enhancements, replacement icons, CONFIG.SYS settings, and
+    much, much more.
+
+    All parts of XWorkplace are fully configurable and can be
+    selectively enabled.
+
+    For an introduction to XWorkplace's many features, please
+    open the "XWorkplace User Guide" (XFLDR001.INF).
+
+
+INSTALLATION
+============
+
+    This is described thoroughly in XFolder's Online Reference.
+
+    Please double-click on "XFLDR001.INF" in the XFolder directory and read
+    through the "Installation" subsection.
+
+
+LICENSE, COPYRIGHT, DISCLAIMER
+==============================
+
+    Copyright (C) 1997-99 Ulrich M”ller.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as contained in
+    the file COPYING in this directory.
+
+    The full source code is available from the author's homepage (see below).
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+    For details, refer to the "Notices" section in XFLDR001.INF.
+
+
+CONTACT
+=======
+
+    See "Notices" --> "Contact" in XFLDR001.INF.
+

@@ -1,0 +1,209 @@
+
+<sguide low-res-size=(.8,.9) med-res-size=(.7,.6) high-res-size=(.6,.6)>
+<title>XFolder Introduction
+.****** Intro panel ***********************
+<panel name=main
+       next=ContextMenus
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Welcome to XFolder!</title>
+<P>XFolder was written to add a number of features to the Workplace Shell for
+which IBM has shown no interest so far and probably never will.
+<p>These pages are supposed to give you a quick, interactive introduction to
+the many features of XFolder.
+<p>For details about certain XFolder features, please read the
+<i>XFolder Online Reference,</i> for which the XFolder install program has created
+an object in the "XFolder Installation" folder on your Desktop.
+<p>Now click on the button below to continue.
+</panel>
+
+.****** Context menus ***********************
+<panel name=ContextMenus
+       next=CreatingObjects
+       previous=main
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Context Menus</title>
+<p>Many of the new XFolder features either modify the default context menu items
+or are accessible by using them.
+<p>As an example, please click on the Desktop with mouse button 2. Its context
+menu will open, where you will see many new options. If you wish to know what the
+meaning of a certain menu item is, click on it, keep holding the mouse button down
+and press the F1 key. A help window will appear, explaining this menu item.
+</panel>
+
+.****** Creating objects ***********************
+<panel name=CreatingObjects
+       next=ConfigFolder
+       previous=ContextMenus
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Creating Objects</title>
+<p>XFolder also allows you to quickly create objects using context menus.
+<p>Click with mouse button 2 on the Desktop. In the context menu you'll see a submenu
+called <b>"Create another"</b>. Select one of the menu items in it, and XFolder will create
+the respective object directly at the mouse position.
+</p>
+</panel>
+
+.****** Config folder***********************
+<panel name=ConfigFolder
+       next=GlobalSettings
+       previous=ContextMenus
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Configuring Menus</title>
+<p>You can modify the new menus and menu items in folder context menus as you desire.
+<p>This is done using the "XFolder Configuration Folder", which was created by the
+install program in the "XFolder Installation" folder on your Desktop.
+Everything you put into this special folder will appear as menu items in folder
+context menus. If you put templates into this folder, you'll be able to create
+objects from them using context menus.
+<P>Click on the Desktop with mouse button 2 and select <b>XFolder Configuration Folder</b>
+in the <b>XFolder</b> menu.
+<p>You will see that each subfolder of that folder corresponds to a submenu, and that
+each other object appears as a menu item in the context menus.
+</panel>
+
+.****** Global settings ***********************
+<panel name=GlobalSettings
+       next=FolderSettings
+       previous=ConfigFolder
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>XFolder Settings</title>
+<p>The other XFolder features are freely configurable too. To accomplish this, XFolder
+has created a new object called <b>"Workplace Shell"</b> in your "System setup" folder.
+In this object you'll find both the standard "System" settings pages dealing with
+the Workplace Shell as well as the new XFolder settings.
+<p>Open your "System setup" folder and therein the "Workplace Shell" object to take
+a look at the new pages.
+<p>On each of the new pages you can always receive extensive help by pressing the "Help"
+button.
+</panel>
+
+.****** Folder settings ***********************
+<panel name=FolderSettings
+       next=DesktopSettings
+       previous=GlobalSettings
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Folder Settings</title>
+<p>While the "Workplace Shell" object deals with settings which affect the whole system,
+there are certain settings which apply to single folders only. For this, XFolder adds
+a new settings page to all folder settings notebooks also.
+<p>Open the settings notebook for any folder. There will be a new "XFolder" settings
+page in that notebook, for which you will find more help also.
+
+.****** Desktop settings ***********************
+<panel name=DesktopSettings
+       next=OS2Kernel
+       previous=FolderSettings
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Desktop Settings</title>
+<p>XFolder adds more settings to the Desktop also. On the <b>"XDesktop"</b> page
+in the Desktop's settings notebook you will find more menu options, but most importantly,
+the settings for the new <b>eXtended Shutdown,</b> with which XFolder can replace
+and enhance the
+default OS/2 shutdown routines.
+<p>The eXtended Shutdown allows you to automatically reboot your computer, define
+your own reboot options, not to close certain programs, cancel shutdown, and more.
+<p>In addition, XFolder allows you to <b>restart the WPS</b> only without having to reboot
+the whole computer.
+<p>Please look into the <i>XFolder Online Reference</i> to read a more detailed
+introduction to these features.
+
+.****** OS/2 Kernel, new with V0.84; note that you'll have to update the next and
+.****** previous flags of DesktopSettings and StatusBars
+<panel name=OS2Kernel
+       next=StatusBars
+       previous=DesktopSettings
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>OS/2 Kernel</title>
+<p>Another object has been created in your "System setup" folder, which is called
+<b>"OS/2 Kernel".</b> As opposed to the "Workplace Shell" object, which deals with
+WPS settings which take effect immediately, the "OS/2 Kernel" contains those settings
+which require a reboot to take effect.
+<p>This object offers you an easy-to-use interface for the most important CONFIG.SYS
+settings. There is extensive help available for all these settings. Since changing
+the CONFIG.SYS is always a bit dangerous, XFolder tries to assist you in finding
+settings which won't ruin your system and can also optimize some of the values
+for your computer.
+<p>A shortcut to that object can also be found in the <b>"XFolder"</b> menu in
+every folder's context menu.
+</panel>
+
+.****** Status Bars ***********************
+<panel name=StatusBars
+       next=FolderHotkeys
+       previous=OS2Kernel
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Folder Status Bars</title>
+<p>XFolder can add status bars to all open folder views. In these status bars you will
+see detailed and very flexible information about the objects which are currently selected.
+<p>Since other WPS software also provides status bars, this feature is disabled per default.
+In the new "Workplace Shell" object you may enable this feature on the "Status bars"
+page.
+<p>The status bar display can be configured very freely.
+<p>Please look into the <i>XFolder Online Reference</i> to read a more detailed
+introduction to these features.
+</panel>
+
+.****** Folder Hotkeys ***********************
+<panel name=FolderHotkeys
+       next=Misc
+       previous=Statusbars
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>Folder Hotkeys</title>
+<p>XFolder also allows you to define folder hotkeys for many folder functions.
+<p>As an example, open any folder and press <b>Ctrl+S</b>. You will see a new
+window which allows you to select defined objects in that folder.
+<p>There are more than 30 different folder functions to which you may assign
+folder hotkeys, such as sorting, opening the parent folder, refresh now etc.
+<p>This is also explained in detail in the
+<i>XFolder Online Reference.</i>
+</panel>
+
+.****** "More features", new with V0.84; note that you'll have to update the next and
+.****** previous flags of FolderHotkeys and LastPanel
+<panel name=Misc
+       next=LastPanel
+       previous=FolderHotkeys
+       enable-done hide-undo hide-help
+       image-lib=xfldr049.dll image-id=120>
+<title>More features</title>
+<p><b>New system sounds</b> - there are now a few more events which you can assign
+sounds to.
+<p><b>New default icons</b> for the most common WPS classes.
+<p><b>Netscape DDE interface</b> - you can now choose to only use the Netscape
+which is already running.
+<p><b>Treesize</b> - find out how much disk space is consumed by a folder and all of its
+subfolders.
+<p><b>Auto-scroll in Tree View</b> - scroll down a Tree View automatically
+when it is expanded to make the new items visible.
+<p><b>Quick Open</b> makes your most frequently used folders
+show their content instantaneously.
+</panel>
+
+.****** last panel ***********************
+<panel name=LastPanel
+       previous=Misc
+       enable-done hide-undo hide-help
+       image-lib=xfldr001.dll image-id=120>
+<title>What's Next?</title>
+<p>This should suffice for a short introduction to XFolder's potential.
+<p>The <i>XFolder Online Reference</i> contains detailed descriptions for all the
+XFolder features, including those that were not described here, and for how to
+configure them.
+<p>You may open this reference either by double-clicking on the object which the
+XFolder install program has created in the "XFolder Installation" folder on your
+Desktop, or by selecting the respective menu item in the "XFolder" menu in each
+folder's context menu.
+<p>And now, have fun with XFolder!
+</panel>
+
+</sguide>

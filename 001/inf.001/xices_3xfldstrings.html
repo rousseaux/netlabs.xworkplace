@@ -1,0 +1,96 @@
+<HTML XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        New XFolder Setup Strings
+    </TITLE>
+</HEAD>
+<!-- Note for V0.9.0: Do not change "XFolder" to "XWorkplace" on this page,
+     because this deals with the XFolder class only. -->
+<!-- Changed with V0.9.0: see notes below -->
+<BODY>
+<!-- V0.9.0: add the following line -->
+<B>Class: XFolder</B><HR>
+The following setup strings can be used the same way as the regular folder setup strings
+described on the <A HREF="xices_3wpsstrings.html">previous page</A>;
+however, they work only when XFolder is properly installed.
+
+<P><CITE><STRONG>ACCELERATORS</STRONG>={YES|NO|DEFAULT}</CITE>
+<BR>Sets for an individual folder whether it will respond to folder hotkeys.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the Global Settings value.
+See <A HREF="fldr_5xelerators.html">"Folder hotkeys"</A> for details.
+
+<P><CITE><STRONG>ALWAYSSORT</STRONG>={YES|NO|DEFAULT}</CITE>
+<BR>Sets for an individual folder whether it will always maintain its sort order.
+As opposed to the <A HREF="xices_3wpsstrings.html">standard WPS folder setup string</A>,
+XFolder's new interpretation also accepts "DEFAULT" as a parameter, which will reset
+the setting to what you specified on the "Sort" page in the "System" object.
+
+<P><CITE><STRONG>DEFAULTSORT</STRONG>=&lt;crit&gt;</CITE>
+<BR>This will set the default sort criterion for an individual folder to something
+different from the global sort criterion.
+<CITE>&lt;crit&gt;</CITE> may be one of the following:
+<BR><CITE>  0    </CITE>sort by name
+<BR><CITE>  1    </CITE>sort by type
+<BR><CITE>  2    </CITE>sort by object class
+<BR><CITE>  3    </CITE>sort by real name
+<BR><CITE>  4    </CITE>sort by size
+<BR><CITE>  5    </CITE>sort by last write date
+<BR><CITE>  6    </CITE>sort by last access date
+<BR><CITE>  7    </CITE>sort by creation date
+<BR><CITE>  8    </CITE>sort by file name extension
+<BR><CITE>  9    </CITE>sort folders first
+<BR><CITE>  255  </CITE>reset to global default sort criterion
+
+<P><CITE><STRONG>FAVORITEFOLDER</STRONG>={YES|NO}</CITE>
+<BR>Sets for an individual folder whether its contents can be viewed from
+all context menus on your system.
+Default is NO. There is no global value for this setting.
+See <A HREF="menu_6favorite.html">"Folder content functions"</A> for details.
+
+<P><CITE><STRONG>FULLPATH</STRONG>={YES|NO|DEFAULT}</CITE>
+<BR>Sets for an individual folder whether its full path will be displayed in its window title.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the Global Settings value.
+See <A HREF="fldr_2fullpath.html">"Full path in window titles"</A> for details.
+
+<P><CITE><STRONG>SNAPTOGRID</STRONG>={YES|NO|DEFAULT|EXEC}</CITE>
+<BR>Sets for an individual folder whether the "Snap to grid" item will appear
+in the folder's context menu.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the Global Settings value.
+EXEC will execute the "Snap to grid" function on the folder, just as if you had
+selected it from the context menu. EXEC is thus no setting, but a command to be performed
+on a folder.
+See <A HREF="menu_8snaptogrid.html">"Snap to grid"</A> for details.
+
+<P><CITE><STRONG>SORTNOW</STRONG>=&lt;crit&gt;</CITE>
+<BR>This will sort all currently open views of an individual folder without changing
+a folder's setting (as opposed to <CITE>DEFAULTSORT</CITE>). This is not really a
+"setting", but rather a command to be performed on a folder.
+<BR><CITE>&lt;crit&gt;</CITE> may be one of the following:
+<BR><CITE>  0    </CITE>sort by name
+<BR><CITE>  1    </CITE>sort by type
+<BR><CITE>  2    </CITE>sort by object class
+<BR><CITE>  3    </CITE>sort by real name
+<BR><CITE>  4    </CITE>sort by size
+<BR><CITE>  5    </CITE>sort by last write date
+<BR><CITE>  6    </CITE>sort by last access date
+<BR><CITE>  7    </CITE>sort by creation date
+<BR><CITE>  8    </CITE>sort by file name extension
+<BR><CITE>  9    </CITE>sort folders first
+<BR><CITE>  255  </CITE>use default sort criterion
+
+<P><CITE><STRONG>STATUSBAR</STRONG>={YES|NO|DEFAULT}</CITE>
+<BR>Sets the visibility state for an individual folder status bar.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the Global Settings value.
+See <A HREF="stat_1intro.html">"Folder status bars"</A> for details.
+<BR>
+</BODY>
+</HTML>
+

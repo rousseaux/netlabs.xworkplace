@@ -1,0 +1,165 @@
+
+/*
+ * xfdataf.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFldDataFile
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfdataf.c for details.
+ *
+ *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpdataf.idl>          // this is SOM for WPDataFile
+
+/*
+   CLASS: XFldDataFile
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject = XFldObject
+               ÀÄÄ WPFileSystem
+                     ÀÄÄ WPDataFile
+                           ÀÄÄ  XFldDataFile
+*/
+
+interface M_XFldDataFile;            // forward reference to metaclass
+
+interface XFldDataFile : WPDataFile
+{
+
+    /*
+     * New instance methods for XFldDataFile:
+     *
+     */
+
+#ifdef __SOMIDL__
+  implementation {
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfdataf_;
+    externalstem = xfdataf;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfdataf;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFldDataFile;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XFldDataFile:
+     *
+     */
+
+    PVOID   pvAssocObjectsList;
+                // this is really a PLINKLIST, pointing
+                // to a list of WPObject's (really:
+                // WPProgram or WPProgramFile instances),
+                // containing all the associations for
+                // this data file.
+                // This is declared as PVOID because SOM
+                // knows nothing about LINKLIST's.
+                // This is NULL initially (wpInitData).
+
+    BOOL    fAssocObjectsListReady;
+                // TRUE if the assocs list has been built
+                // already; initially FALSE (wpInitData).
+
+    /*
+     * The following is forced into the .H file:
+     *
+     */
+
+    /*
+     * WPDataFile methods overridden by XFldDataFile:
+     *
+     */
+
+    wpInitData: override;
+    wpUnInitData: override;
+
+    wpAddFile1Page: override;
+    wpAddFile2Page: override;
+    wpAddFile3Page: override;
+
+    wpFilterPopupMenu: override;
+    wpModifyPopupMenu: override;
+    wpDisplayMenu: override;
+
+    wpMenuItemHelpSelected: override;
+
+    wpQueryAssociatedFileIcon: override;
+    wpQueryAssociatedProgram: override;
+
+    wpSetAssociatedFileIcon: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFldDataFile : M_WPDataFile
+{
+
+#ifdef __SOMIDL__
+  implementation {
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xfdatafM_;
+    externalstem = xfdatafM;
+    functionprefix = xfdatafM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfdataf;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFldDataFile:
+     *
+     */
+
+    CHAR    szTitle[100];
+
+    /*
+     * M_WPDataFile methods overridden by M_XFldDataFile:
+     *
+     */
+
+    wpclsInitData: override;
+    wpclsCreateDefaultTemplates: override;
+    wpclsQueryIconData: override;
+
+  };
+#endif /* __SOMIDL__ */
+};
+
+

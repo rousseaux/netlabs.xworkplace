@@ -1,0 +1,80 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Introduction
+    </TITLE>
+</HEAD>
+<!-- changed V0.9.0: see notes below -->
+<BODY>
+<!-- V0.9.0: add the following line -->
+<B>Classes: XWPSetup, XFldWPS, XFldSystem, XWPClassList</B>
+<HR>
+<!-- V0.9.0: rewritten the following paragraph -->
+After XWorkplace has been installed, you will find a number of new settings
+objects in your "System setup" folder. Also, most of the new XWorkplace objects
+have some new settings pages too. This might seem a bit overwhelming at first,
+but I did try to follow a certain logic when implementing all the settings.
+<UL>
+<!-- the following two paragraphs are new with V0.9.0 -->
+<P><LI><IMG SRC="xwsetup.gif"> Starting with V0.9.0, XWorkplace introduces a new global settings object called
+<B>"XWorkplace Setup"</B>. This has a number of settings pages to monitor the status
+of some XWorkplace internals, globally enable or disable the major XWorkplace
+features that you might or might not be interested in, and some more troubleshooting
+settings.
+<P>Those items are explained in detail when you press the "Help" button on those
+new settings pages.
+
+<P><LI><IMG SRC="xfwps.gif"> The new <B>"Workplace Shell"</B> object contains those pages
+from the old "System" object which deal with the Workplace Shell only. I felt these
+are not really "System" settings and deserve a separate object.
+<P>XWorkplace also adds most
+of its own settings pages here, because these mostly affect the Workplace Shell.
+This is described in more detail on the
+<A HREF="sys_2global.html">"Global Settings"</A> page in this reference.
+
+<!-- V0.9.0: remove this: In this object you will also find the "WPS Classes" page with
+which you may manipulate the WPS class list. You will find an introduction to WPS
+classes on a separate page -->
+
+<!-- the following paragraph is new with V0.9.0 -->
+<P><LI><IMG SRC="xclslist.gif"> There is another new object which contains the <B>"WPS Class List"</B>.
+This used to be on a settings page in the "Workplace Shell" object before XWorkplace
+V0.9.0, but that page proved to be a bit small to get all the information in there.
+See <A HREF="sys_4wpsclasses.html">"The WPS Class List"</A> for more information.
+
+<P><LI><IMG SRC="xfsys.gif"> The new <B>"OS/2 Kernel"</B> object contains those pages from
+the old "System" object which deal with OS/2's internals, e.g. the "Screen" settings.
+<P>In this object you'll find several new settings pages to change a number of
+settings in the CONFIG.SYS file in the root directory of your boot drive. Since
+these settings are a bit hard to remember and since erroneous settings in this file
+might even lead to OS/2 not booting any more, XWorkplace tries to help you by setting
+this up automatically.
+<P>On each of these new settings pages, which will be explained in more detail
+on the following pages, you will find a button called "Update CONFIG.SYS" instead
+of the usual "Undo" and "Default" buttons. Pressing this button will cause the
+CONFIG.SYS file to be rewritten according to the settings you've changed.
+
+<P>The different settings are explained in detail when you press the <B>"Help"</B> button
+on one of the settings pages. Please read the following pages to obtain a general
+introduction of what these settings do with certain parts of the OS/2 kernel:
+<BR><UL><LI><A HREF="sys_5scheduler.html">The OS/2 Scheduler</A>
+<LI><A HREF="sys_6memory.html">OS/2 memory management</A>
+<LI><A HREF="sys_7filesys.html">File-system caches</A>
+
+</UL></UL>The <B>old "System" object</B> continues to work,
+in case other WPS enhancers try to
+insert anything into this object. Such extensions will also appear in the new
+"OS/2 Kernel" object, which inherits the "System" characteristics.
+<P>Please note that you should not open the old "System" object and one of the new
+objects together to change settings. The settings pages are not prepared for this, and
+this might mess up the WPS settings.
+<!-- the following added with V0.9.0 -->
+<P>Additional settings pages can be found in the settings notebooks of each folder,
+the Desktop, the <A HREF="xsd_3folders.html">XWorkplace startup folder</A>,
+and the <A HREF="file_2trashcan.html">XWorkplace trash can</A>.
+
+<BR>
+</BODY>
+</HTML>
+
+

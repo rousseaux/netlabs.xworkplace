@@ -1,0 +1,51 @@
+<HTML NOSUBLINKS="config" WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Updating from a Previous Version of XWorkplace
+    </TITLE>
+</HEAD>
+<!-- changes for V0.9.0: see notes below -->
+<BODY>
+<!-- the following has changed with V0.9.0 -->
+XWorkplace V0.9.0 can be installed over old versions of XFolder without any problems.
+WarpIN is capable of overwriting files which are currently in use (as the XFolder/XWorkplace
+files are by the WPS), so we have no problem there.
+<P>
+<B>Important notes:</B> A few things change with every XFolder version, sometimes
+causing incompatibilities when updating XFolder.
+
+<!-- the following has not changed -->
+<OL><LI>Do not be surprised that since V0.60, the "Recreate default configuration"
+item has been
+removed from the install program. If you wish to
+recreate the default configuration folder, simply delete your existing one, and
+XFolder will offer you to recreate it.
+
+<BR><LI>Starting with version 0.50, the XFolder Global Settings have been moved into
+OS/2's System notebook. Please see <A HREF="sys_2global.html">Global Settings</A>
+for details. The "XFolder Global Settings" program (XFSETUP.EXE) which was provided with XFolder
+0.4x will have no effect on settings of this version. In other words, you can start it,
+but whatever you configure in there will not influence this version of XFolder in any way.
+
+<!-- V0.9.0: remove this paragraph: -->
+<!-- Unfortunately, since the internal settings format changes with every new version, -->
+<!-- your existing settings will be lost when you're upgrading from a previous version. -->
+
+<BR><LI>Starting with version 0.30, XFolder has changed the
+way program objects are handled. The name of the folder whose context menu was used is now
+by default sent as an additional parameter to the started application.
+<P>If you're updating from XFolder V0.21 and
+the applications defined in your existing configuration folder start displaying
+error messages, you may need to put an extra <CITE>"%"</CITE>
+sign into the parameters list of the corresponding
+program object in the configuration folder. See
+<A HREF="menu_4wpprogram.html">"Program Objects"</A> for details on this.
+
+</OL>If you experience anything unexpected with your new version of XWorkplace,
+please look in the <A HREF="vers_2history.html">"Revision history"</A> section to find
+out what has been added to XFolder.
+<BR>
+</BODY>
+</HTML>
+
+

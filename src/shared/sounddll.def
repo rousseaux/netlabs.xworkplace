@@ -1,0 +1,30 @@
+
+;
+; sounddll.def:
+;       module definition file for XWorkplace SOUND.DLL.
+;
+;       Copyright (C) 1997-99 Ulrich M”ller.
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software; you can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the XWorkplace main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY; without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
+;
+
+LIBRARY sound INITGLOBAL TERMGLOBAL
+Description '@#Ulrich M”ller:0.9.1#@ XWorkplace Sound Support Module'
+PROTMODE
+
+DATA              SINGLE READWRITE LOADONCALL SHARED
+
+CODE              LOADONCALL
+
+
+EXPORTS           sndOpenSound
+                  sndPlaySound
+                  sndStopSound
+

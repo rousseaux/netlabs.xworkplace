@@ -1,0 +1,12 @@
+NAME NETSCDDE WINDOWAPI
+
+Description '@#Ulrich M”ller:1.00#@ XWorkplace Netscape DDE Interface'
+
+CODE  MOVEABLE
+DATA  MOVEABLE MULTIPLE
+
+STACKSIZE   24576
+HEAPSIZE    10240
+
+PROTMODE
+

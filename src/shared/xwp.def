@@ -1,0 +1,148 @@
+
+;
+; xwp.def:
+;       XWorkplace module definition file.
+;       Created manually from all the other .def files
+;       because the SOM compiler fails to do so if
+;       several IDL files result in a single DLL.
+;
+;       Copyright (C) 1997-99 Ulrich M”ller.
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software; you can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the XWorkplace main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY; without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
+;
+;  Generated using:
+;      SOM Precompiler somipc: 2.29.1.2
+;      SOM Emitter emitdef: 2.41
+
+LIBRARY xfldr INITGLOBAL TERMGLOBAL
+Description '@#Ulrich M”ller:0.9.1#@ XWorkplace Main WPS Classes Module'
+PROTMODE
+DATA MULTIPLE NONSHARED LOADONCALL
+
+IMPORTS
+    DOSQPROCSTATUS = DOSCALLS.154
+    DOSSYSTRACE =    DOSCALLS.90
+
+EXPORTS
+   XFldDataFileCClassData
+   XFldDataFileClassData
+   XFldDataFileNewClass
+   M_XFldDataFileCClassData
+   M_XFldDataFileClassData
+   M_XFldDataFileNewClass
+
+   XFldDesktopCClassData
+   XFldDesktopClassData
+   XFldDesktopNewClass
+   M_XFldDesktopCClassData
+   M_XFldDesktopClassData
+   M_XFldDesktopNewClass
+
+   XFldDiskCClassData
+   XFldDiskClassData
+   XFldDiskNewClass
+   M_XFldDiskCClassData
+   M_XFldDiskClassData
+   M_XFldDiskNewClass
+
+   XFolderCClassData
+   XFolderClassData
+   XFolderNewClass
+   M_XFolderCClassData
+   M_XFolderClassData
+   M_XFolderNewClass
+   XFldStartupCClassData
+   XFldStartupClassData
+   XFldStartupNewClass
+   M_XFldStartupCClassData
+   M_XFldStartupClassData
+   M_XFldStartupNewClass
+   XFldShutdownCClassData
+   XFldShutdownClassData
+   XFldShutdownNewClass
+   M_XFldShutdownCClassData
+   M_XFldShutdownClassData
+   M_XFldShutdownNewClass
+
+   XFldObjectCClassData
+   XFldObjectClassData
+   XFldObjectNewClass
+   M_XFldObjectCClassData
+   M_XFldObjectClassData
+   M_XFldObjectNewClass
+
+   XFldSystemCClassData
+   XFldSystemClassData
+   XFldSystemNewClass
+   M_XFldSystemCClassData
+   M_XFldSystemClassData
+   M_XFldSystemNewClass
+   XFldWPSCClassData
+   XFldWPSClassData
+   XFldWPSNewClass
+   M_XFldWPSCClassData
+   M_XFldWPSClassData
+   M_XFldWPSNewClass
+
+   XFldProgramFileCClassData
+   XFldProgramFileClassData
+   XFldProgramFileNewClass
+   M_XFldProgramFileCClassData
+   M_XFldProgramFileClassData
+   M_XFldProgramFileNewClass
+
+   XWPSetupCClassData
+   XWPSetupClassData
+   XWPSetupNewClass
+   M_XWPSetupCClassData
+   M_XWPSetupClassData
+   M_XWPSetupNewClass
+
+   XWPClassListCClassData
+   XWPClassListClassData
+   XWPClassListNewClass
+   M_XWPClassListCClassData
+   M_XWPClassListClassData
+   M_XWPClassListNewClass
+
+   XWPTrashCanCClassData
+   XWPTrashCanClassData
+   XWPTrashCanNewClass
+   M_XWPTrashCanCClassData
+   M_XWPTrashCanClassData
+   M_XWPTrashCanNewClass
+   XWPTrashObjectCClassData
+   XWPTrashObjectClassData
+   XWPTrashObjectNewClass
+   M_XWPTrashObjectCClassData
+   M_XWPTrashObjectClassData
+   M_XWPTrashObjectNewClass
+
+   XWPSoundCClassData
+   XWPSoundClassData
+   XWPSoundNewClass
+   M_XWPSoundCClassData
+   M_XWPSoundClassData
+   M_XWPSoundNewClass
+
+   XWPMouseCClassData
+   XWPMouseClassData
+   XWPMouseNewClass
+   M_XWPMouseCClassData
+   M_XWPMouseClassData
+   M_XWPMouseNewClass
+
+   XWPKeyboardCClassData
+   XWPKeyboardClassData
+   XWPKeyboardNewClass
+   M_XWPKeyboardCClassData
+   M_XWPKeyboardClassData
+   M_XWPKeyboardNewClass
+
