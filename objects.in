@@ -108,6 +108,7 @@ $(OUTPUTDIR)\iconmgr.obj \
 $(OUTPUTDIR)\iconpage.obj \
 $(OUTPUTDIR)\icons.obj \
 $(OUTPUTDIR)\object.obj \
+$(OUTPUTDIR)\object_dtl.obj \
 $(OUTPUTDIR)\program.obj \
 $(OUTPUTDIR)\refresh.obj \
 $(OUTPUTDIR)\statbars.obj \

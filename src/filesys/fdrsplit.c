@@ -1786,13 +1786,6 @@ VOID fdrPostFillFolder(PFDRSPLITVIEW psv,
                        PMINIRECORDCORE prec,       // in: record with folder to populate
                        ULONG fl)                   // in: FFL_* flags
 {
-    WPFileSystem    *pFolder;
-
-    _PmpfF(("        posting FM_FILLFOLDER %s",
-                prec->pszIcon
-            ));
-    DumpFlags(fl);
-
     WinPostMsg(psv->hwndMainControl,
                FM_FILLFOLDER,
                (MPARAM)prec,
@@ -3053,7 +3046,8 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
 /*
  *@@ fdrCreateSplitView:
  *      creates a frame window with a split window and
- *      registers it as a folder view.
+ *      does the usual "register view and pass a zillion
+ *      QWL_USER pointers everywhere" stuff.
  *
  *      Returns the frame window or NULLHANDLE on errors.
  *
@@ -3220,6 +3214,10 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                                 pos.cx,
                                 pos.cy,
                                 SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
+
+                // and set focus to the tree view
+                WinSetFocus(HWND_DESKTOP,
+                            psvd->sv.hwndTreeCnr);
 
                 psvd->sv.fFileDlgReady = TRUE;
 
