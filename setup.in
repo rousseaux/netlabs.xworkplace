@@ -371,8 +371,8 @@ LINK_ALWAYSPACK = $(LINK)
 # Some LINK386 cmd line options
 # (Visual Age ILINK understands these too if /nofree is specified):
 # /align:  executable pages align factor (in bytes)
-# /noe:    no extended dictionary. Required for replacing _DLL_InitTerm,
-#          which we're doing in SRC\MAIN\MODULE.C.
+# /noe:    no extended dictionary. Required for replacing _DLL_InitTerm.
+#          Can slightly increase executable's size.
 # /noi:    no ignore case (necc. for C)
 # /map:    list public symbols (create MAP file); we always need this,
 #          because we produce a .SYM file later.
