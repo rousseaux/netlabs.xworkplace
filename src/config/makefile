@@ -51,7 +51,9 @@ OUTPUTDIR = ..\..\bin
 OBJS = $(OUTPUTDIR)\cfgsys.obj \
        $(OUTPUTDIR)\classlst.obj \
        $(OUTPUTDIR)\drivdlgs.obj \
+       $(OUTPUTDIR)\drivers.obj \
        $(OUTPUTDIR)\hookintf.obj \
+       $(OUTPUTDIR)\pagemage.obj \
        $(OUTPUTDIR)\partitions.obj \
        $(OUTPUTDIR)\sound.obj
 
@@ -147,19 +149,39 @@ $(OUTPUTDIR)\drivdlgs.obj: \
     $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\drivers.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
+            $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\threads.h \
+            $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xfsys.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\classes.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+    $(INC)\config\drivdlgs.h \
+    $(@B).c $(MYOWNINC)\cfgsys.h
+
 $(OUTPUTDIR)\hookintf.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\hook\xwphook.h \
     $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\pagemage.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\gpih.h $(HLPINC)\winh.h \
+    $(INC)\classes\xwpscreen.h \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+    $(INC)\hook\xwphook.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\partitions.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\gpih.h \
             $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\threads.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h \
@@ -171,7 +193,7 @@ $(OUTPUTDIR)\sound.obj: \
     $(INC)\classes\xwpsound.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-    $(INC)\filesys\xthreads.h \
+    $(INC)\media\media.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 

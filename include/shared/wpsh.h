@@ -94,6 +94,9 @@
     ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
                                  WPObject **ppObjectFound);
 
+    MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
+                                      HOBJECT *phObject);
+
     #ifdef __DEBUG__
         PSZ wpshIdentifyRestoreID(PSZ pszClass,
                                   ULONG ulKey);

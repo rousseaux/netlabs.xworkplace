@@ -10,10 +10,17 @@
  *      -- Replacement "File exists" dialog implementation
  *         (fopsConfirmObjectTitle).
  *
+ *      -- Expanding objects to hold all sub-objects if the
+ *         object is a folder. See fopsExpandObjectDeep
+ *         for details.
+ *
  *      -- Generic file-operations framework to process
  *         files (actually, any objects) on the XWorkplace
- *         File thread. See fopsCreateFileTaskList and
- *         fopsPrepareCommon for details.
+ *         File thread. The common functionality of this code
+ *         is to build a list of objects which need to be processed
+ *         and pass that list to the XWorkplace File thread, which
+ *         will then do the actual processing.
+ *         See fopsCreateFileTaskList and fopsStartTaskFromCnr for details.
  *
  *         The actual file operation calls are then made on the
  *         XWorkplace File thread (xthreads.c) which calls
@@ -21,7 +28,7 @@
  *
  *         Concrete implementations currently are
  *         fopsStartCnrDelete2Trash, fopsStartCnrRestoreFromTrash,
- *         and fopsPrepareDestroyTrashObjects for the XWorkplace
+ *         and fopsStartCnrDestroyTrashObjects for the XWorkplace
  *         trash can (XWPTrashCan class).
  *
  *      This file is ALL new with V0.9.0.
@@ -278,16 +285,17 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
  *      creates a LINKLIST of EXPANDEDOBJECT items
  *      for the given folder's contents.
  *
- *      Gets called by fopsExpandObject if that
+ *      Gets called by fopsExpandObjectDeep if that
  *      function has been invoked on a folder.
- *      This calls fopsExpandObject in turn for
+ *      This calls fopsExpandObjectDeep in turn for
  *      each object found, so this may be called
  *      recursively.
  *
- *      See fopsExpandObject for an introduction
+ *      See fopsExpandObjectDeep for an introduction
  *      what these things are good for.
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
 PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
@@ -298,34 +306,47 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     BOOL fFolderLocked = FALSE;
 
-    _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
+    #endif
 
     // lock folder for querying content
-    fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
-    if (fFolderLocked)
+    TRY_LOUD(excpt1, NULL)
     {
-        WPObject *pObject;
-
-        wpshCheckIfPopulated(pFolder);
-
-        // now collect all objects in folder
-        for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
-             pObject;
-             pObject = _wpQueryContent(pFolder, pObject, QC_Next))
+        fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
+        if (fFolderLocked)
         {
-            PEXPANDEDOBJECT fSOI = NULL;
+            WPObject *pObject;
 
-            _Pmpf(("creating SOI for \"%s\" in folder \"%d\"",
-                    _wpQueryTitle(pObject),
-                    _wpQueryTitle(pFolder) ));
-            // create a list item for this object;
-            // if pObject is a folder, that function will
-            // call ourselves again...
-            fSOI = fopsExpandObject(pObject);
-            ulSizeContents += fSOI->ulSizeThis;
-            lstAppendItem(pll, fSOI);
+            // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                    = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
+            wpshCheckIfPopulated(pFolder);
+
+            // now collect all objects in folder
+            for (pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+                 pObject;
+                 pObject = rslv_wpQueryContent(pFolder, pObject, QC_Next))
+            {
+                PEXPANDEDOBJECT fSOI = NULL;
+
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("creating SOI for \"%s\" in folder \"%d\"",
+                            _wpQueryTitle(pObject),
+                            _wpQueryTitle(pFolder) ));
+                #endif
+
+                // create a list item for this object;
+                // if pObject is a folder, that function will
+                // call ourselves again...
+                fSOI = fopsExpandObjectDeep(pObject);
+                ulSizeContents += fSOI->ulSizeThis;
+                lstAppendItem(pll, fSOI);
+            }
         }
     }
+    CATCH(excpt1) {} END_CATCH();
 
     if (fFolderLocked)
     {
@@ -339,7 +360,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 }
 
 /*
- *@@ fopsExpandObject:
+ *@@ fopsExpandObjectDeep:
  *      creates a EXPANDEDOBJECT for the given
  *      object. If the object is a folder, the
  *      member list is automatically filled with
@@ -352,7 +373,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
  *
  *      This function is useful for having a uniform
  *      interface which represents an object and all
- *      subobjects if that object represents a folder.
+ *      subobjects even if that object represents a folder.
  *      After calling this function,
  *      EXPANDEDOBJECT.ulSizeThis has the total size
  *      of pObject and all objects which reside in
@@ -361,7 +382,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
  *@@added V0.9.2 (2000-02-28) [umoeller]
  */
 
-PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject)
+PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject)
 {
     PEXPANDEDOBJECT pSOI = NULL;
     if (wpshCheckObject(pObject))
@@ -370,7 +391,10 @@ PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject)
         pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT));
         if (pSOI)
         {
-            _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
+            #endif
+
             pSOI->pObject = pObject;
             if (_somIsA(pObject, _WPFolder))
             {
@@ -391,7 +415,10 @@ PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject)
                     // abstract object:
                     pSOI->ulSizeThis = 0;
             }
-            _Pmpf(("End of SOI for object %s", _wpQueryTitle(pObject) ));
+
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("End of SOI for object %s", _wpQueryTitle(pObject) ));
+            #endif
         }
     }
 
@@ -427,7 +454,7 @@ VOID fopsFreeExpandedList(PLINKLIST pllSFL)
 /*
  *@@ fopsFreeExpandedObject:
  *      this frees a EXPANDEDOBJECT previously
- *      created by fopsExpandObject. This calls
+ *      created by fopsExpandObjectDeep. This calls
  *      fopsFreeExpandedList, possibly recursively,
  *      if the object contains a list (ie. is a
  *      folder).
@@ -446,6 +473,106 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
 
         free(pSOI);
     }
+}
+
+/*
+ *@@ fopsExpandObjectFlat:
+ *      similar to fopsExpandObjectDeep, this builds
+ *      a list of pObject and, if pObject is a folder,
+ *      of all contained folders and objects. However,
+ *      this creates a simple linked list containing
+ *      the objects, so the hierarchy is lost.
+ *
+ *      After the call, pllObjects contains all the
+ *      plain WPObject* pointers, so the list should
+ *      have been created with lstCreate(FALSE) in
+ *      order not to invoke free() on it.
+ *
+ *      If folders are found, contained objects are
+ *      appended to the list before the folder itself.
+ *      Otherwise, objects are returned in the order
+ *      in which wpQueryContent returns them, which
+ *      is dependent on the underlying file system.
+ *      and should not be relied upon.
+ *
+ *      For example, see the following folder/file hierarchy:
+ +
+ +          folder1
+ +             +--- folder2
+ +             |      +---- text1.txt
+ +             |      +---- text2.txt
+ +             +--- text3.txt
+ *
+ *      If fopsExpandObjectFlat(folder1) is invoked,
+ *      you get the following order in the list:
+ *
+ +      text1.txt, text2.txt, folder2, text3.txt, folder1.
+ *
+ *      pllObjects is not cleared by this function,
+ *      so you can call this several times with the
+ *      same list.
+ *
+ *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ */
+
+FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to
+                             WPObject *pObject)     // in: object to start with
+{
+    FOPSRET frc = FOPSERR_OK;
+    if (_somIsA(pObject, _WPFolder))
+    {
+        // it's a folder:
+        // lock it and build a list from its contents
+        BOOL fFolderLocked = FALSE;
+
+        TRY_LOUD(excpt1, NULL)
+        {
+            fFolderLocked = !_wpRequestObjectMutexSem(pObject, 5000);
+            if (fFolderLocked)
+            {
+                WPObject *pSubObject;
+
+                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = SOM_Resolve(pObject, WPFolder, wpQueryContent);
+
+                wpshCheckIfPopulated(pObject);
+
+                // now collect all objects in folder
+                for (pSubObject = rslv_wpQueryContent(pObject, NULL, QC_FIRST);
+                     pSubObject;
+                     pSubObject = rslv_wpQueryContent(pObject, pSubObject, QC_Next))
+                {
+                    // recurse!
+                    // this will add pSubObject to pllObjects
+                    frc = fopsExpandObjectFlat(pllObjects,
+                                                  pSubObject);
+                    if (frc != FOPSERR_OK)
+                        // error:
+                        break;
+                } // end for
+            }
+            else
+                frc = FOPSERR_LOCK_FAILED;
+
+        }
+        CATCH(excpt1) {} END_CATCH();
+
+        if (fFolderLocked)
+        {
+            _wpReleaseObjectMutexSem(pObject);
+            fFolderLocked = FALSE;
+        }
+    }
+
+    // append this object to the list;
+    // since we have recursed first, the folder
+    // contents come before the folder in the list
+    _Pmpf(("Appending %s", _wpQueryTitle(pObject) ));
+    lstAppendItem(pllObjects, pObject);
+
+    return (frc);
 }
 
 /********************************************************************
@@ -639,6 +766,7 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
  *@@changed V0.9.1 (2000-01-08) [umoeller]: added mutex protection for folder queries
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
 BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
@@ -724,10 +852,14 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
             fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
             if (fFolderLocked)
             {
+                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
                 fFileExists = FALSE;
-                for (   pExistingFile2 = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                for (   pExistingFile2 = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pExistingFile2);
-                        pExistingFile2 = _wpQueryContent(pFolder, pExistingFile2, (ULONG)QC_NEXT)
+                        pExistingFile2 = rslv_wpQueryContent(pFolder, pExistingFile2, (ULONG)QC_NEXT)
                     )
                 {
                     fFileExists = (stricmp(_wpQueryTitle(pExistingFile2),
@@ -787,6 +919,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     if (    (_somIsA(somSelf, _WPFileSystem))
          && (menuID != 0x13C) // "create shadow" code
          && (menuID != 0x0065) // "create another" code; V0.9.3 (2000-04-08) [umoeller]
+                        // wrong, still not working ###
        )
     {
         CHAR            szFolder[CCHMAXPATH],
@@ -1065,6 +1198,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
  *      Returns TRUE if the object has been moved.
  *
  *@@added V0.9.2 (2000-03-04) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: "replace" destroyed pObject; fixed
  */
 
 BOOL fopsMoveObjectConfirmed(WPObject *pObject,
@@ -1100,10 +1234,14 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
         break;
 
         case NAMECLASH_REPLACE:
-            fDoMove = FALSE;
+            // delete the object to be replaced;
+            // if this was successfull, move pObject there
+            fDoMove = _wpFree(pReplaceThis);
+            /* fDoMove = FALSE;
             fDidMove = _wpReplaceObject(pObject,
                                         pReplaceThis,       // set by wpConfirmObjectTitle
                                         TRUE);              // move and replace
+               */
                     // ### after this pObject is deleted, so
                     // this cannot be used any more
         break;
@@ -1188,7 +1326,10 @@ typedef struct _FILETASKLIST
  *      The following are supported for ulOperation:
  *
  *      -- XFT_MOVE2TRASHCAN: move list items into trash can.
- *          In that case, pSourceFolder has the source folder;
+ *          In that case, pSourceFolder has the source folder.
+ *          This isn't really needed for processing, but the
+ *          progress dialog should display this, so to speed
+ *          up processing, pass it with this call.
  *          pTargetFolder is ignored because the default trash
  *          can is determined automatically.
  *
@@ -1199,6 +1340,10 @@ typedef struct _FILETASKLIST
  *          to the trash object's original location.
  *          If (pTargetFolder != NULL), the objects will all be moved
  *          to that folder.
+ *
+ *      -- XFT_DESTROYTRASHOBJECTS: destroy trash objects.
+ *          This will invoke XWPTrashObject::xwpDestroyTrashObject
+ *          on every object on the list.
  *
  *      -- XFT_DELETE: delete list items without moving them
  *          into the trash can first.
@@ -1242,6 +1387,7 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
         pftl->pfnErrorCallback = pfnErrorCallback;
         pftl->ulUser = ulUser;
         return ((HFILETASKLIST)pftl);
+                // do not unlock pSourceFolder!
     }
 
     // error
@@ -1253,56 +1399,81 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
 
 /*
  *@@ fopsValidateObjOperation:
- *      returns TRUE only if ulOperation is valid
- *      on pObject. If an error has been found and
- *      (pfnErrorCallback != NULL), that callback
- *      gets called and its return value is returned.
- *      If the callback is NULL, FALSE is returned
- *      always.
+ *      returns 0 (FOPSERR_OK) only if ulOperation is valid
+ *      on pObject.
  *
- *      This is usually called on the thread of the folder view
- *      from which the file operation was started (mostly
- *      thread 1).
+ *      If an error has been found and (pfnErrorCallback != NULL),
+ *      that callback gets called and its return value is returned.
+ *      If the callback is NULL, some meaningfull error gets
+ *      returned if the operation is invalid, but there's no chance
+ *      to fix it.
+ *
+ *      This is usually called from fopsAddObjectToTask on the thread
+ *      of the folder view from which the file operation was started
+ *      (mostly thread 1) while objects are added to a file task list.
+ *
+ *      This can also be called at any time. For example, the trash can
+ *      uses this from XWPTrashCan::wpDragOver to validate the objects
+ *      being dragged.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  */
 
-BOOL fopsValidateObjOperation(ULONG ulOperation,        // in: operation
-                              FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback or NULL
-                              WPObject *pObject)        // in: current object
+FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
+                                 FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback or NULL
+                                 WPObject *pObject)        // in: current object to check
 {
-    BOOL    brc = TRUE;
-    ULONG   ulError = 0;
+    FOPSRET frc = FOPSERR_OK;
+    BOOL    fPromptUser = TRUE;
 
     // error checking
     switch (ulOperation)
     {
         case XFT_MOVE2TRASHCAN:
             // prohibit "move to trash" for trash objects themselves
-            if (_somIsA(pObject, _XWPTrashObject))
-                ulError = FOPSERR_NODELETETRASHOBJECT;
+            /* if (_somIsA(pObject, _XWPTrashObject))
+            {
+                frc = FOPSERR_NODELETETRASHOBJECT;
+                fPromptUser = FALSE;
+            }
             // prohibit "move to trash" for no-delete objects
-            else if (_wpQueryStyle(pObject) & OBJSTYLE_NODELETE)
-                ulError = FOPSERR_OBJSTYLENODELETE;
+            else */
+            if (!_wpIsDeleteable(pObject))
+                // this includes trash objects
+                if (_somIsA(pObject, _WPFileSystem))
+                    // this is recoverable, but prompt the user:
+                    frc = FOPSERR_MOVE2TRASH_READONLY;
+                else
+                {
+                    // abort right away
+                    frc = FOPSERR_MOVE2TRASH_NOT_DELETABLE;
+                    fPromptUser = FALSE;
+                }
             else if (!trshIsOnSupportedDrive(pObject))
-                ulError = FOPSERR_TRASHDRIVENOTSUPPORTED;
+                frc = FOPSERR_TRASHDRIVENOTSUPPORTED;
         break;
 
-        case XFT_DESTROYTRASHOBJECTS:
+        /* case XFT_DESTROYTRASHOBJECTS:
             // allow "destroy trash object" only for trash objects
             if (!_somIsA(pObject, _XWPTrashObject))
-                ulError = FOPSERR_DESTROYNONTRASHOBJECT;
+                frc = FOPSERR_DESTROYNONTRASHOBJECT;
+        break; */
+
+        case XFT_TRUEDELETE:
+            // ###
         break;
     }
 
-    if (ulError)
-        if (pfnErrorCallback)
-            brc = (pfnErrorCallback)(pObject, ulError);
-        else
-            brc = FALSE;
+    if (frc != FOPSERR_OK)
+        if ((pfnErrorCallback) && (fPromptUser))
+            // prompt user:
+            // this can recover
+            frc = (pfnErrorCallback)(ulOperation, pObject, frc);
+        // else: return error code
 
-    return (brc);
+    return (frc);
 }
 
 /*
@@ -1320,36 +1491,34 @@ BOOL fopsValidateObjOperation(ULONG ulOperation,        // in: operation
  *
  *      This calls fopsValidateObjOperation on the object.
  *
- *      This returns FALSE if an error occured. Error
- *      conditions can be:
- *
- *      -- Internal list processing error.
- *      -- Invalid operation for pObject (fopsValidateObjOperation
- *         returned FALSE).
+ *      This returns the error code of fopsValidateObjOperation.
  *
  *@@added V0.9.1 (2000-01-26) [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  */
 
-BOOL fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
-                         WPObject *pObject)
+FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
+                            WPObject *pObject)
 {
-    BOOL brc = TRUE;
+    FOPSRET frc = FOPSERR_OK;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
-    brc = fopsValidateObjOperation(pftl->ulOperation,
+    frc = fopsValidateObjOperation(pftl->ulOperation,
                                    pftl->pfnErrorCallback,
                                    pObject);
 
-    if (brc)
+    if (frc == FOPSERR_OK)
         // proceed:
-        brc = (lstAppendItem(&pftl->llObjects, pObject) != NULL);
+        if (lstAppendItem(&pftl->llObjects, pObject) == NULL)
+            // error:
+            frc = FOPSERR_INTEGRITY_ABORT;
 
-    return (brc);
+    return (frc);
 }
 
 /*
- *@@ fopsStartProcessingTasks:
+ *@@ fopsStartTaskAsync:
  *      this starts processing the tasks which have
  *      been previously added to the file tasks lists
  *      using fopsAddFileTask.
@@ -1364,9 +1533,10 @@ BOOL fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
  *      automatically when done.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: renamed from fopsStartProcessingTasks
  */
 
-BOOL fopsStartProcessingTasks(HFILETASKLIST hftl)
+BOOL fopsStartTaskAsync(HFILETASKLIST hftl)
 {
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
     // unlock the folders so the file thread
@@ -1384,6 +1554,133 @@ BOOL fopsStartProcessingTasks(HFILETASKLIST hftl)
                             (MPARAM)NULL));
 }
 
+/********************************************************************
+ *                                                                  *
+ *   File thread processing                                         *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ fopsFileThreadTrueDelete:
+ *      gets called from fopsFileThreadProcessing with
+ *      XFT_TRUEDELETE for every object on the list.
+ *      This checks if pObject is a folder and will
+ *      recurse, if necessary.
+ *      This finally allows cancelling a "delete"
+ *      operation when a subfolder is currently
+ *      processed.
+ *
+ *@@added V0.9.3 (2000-04-27) [umoeller]
+ */
+
+FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
+                                 FOPSUPDATE *pfu,       // in: update structure in fopsFileThreadProcessing
+                                 WPObject **ppObject)   // in: object to delete;
+                                                        // out: failing object if error
+{
+    FOPSRET frc = FOPSERR_OK;
+    PFILETASKLIST pftl = (PFILETASKLIST)hftl;
+
+    // list of WPObject* pointers
+    LINKLIST llObjects;
+    lstInit(&llObjects,
+             FALSE);    // no free, we have WPObject* pointers
+
+    // say "collecting objects
+    if (pftl->pfnProgressCallback)
+    {
+        pfu->ulStatus = FOPSUPD_EXPANDINGOBJECT;
+                // all the other fields have been set by the caller
+        if ((pftl->pfnProgressCallback)(pfu,
+                                        pftl->ulUser)
+                == FALSE)
+        {
+            // FALSE means abort:
+            frc = FOPSERR_CANCELLEDBYUSER;
+        }
+    }
+
+    if (frc == FOPSERR_OK)
+    {
+        // build list of all objects to be deleted;
+        // this can take a loooong time
+        frc = fopsExpandObjectFlat(&llObjects,
+                                   *ppObject);
+        if (frc == FOPSERR_OK)
+        {
+            // all objects collected:
+            // go thru the whole list and start deleting.
+            // Note that folder contents come before the
+            // folder ("bottom-up" directory list).
+            PLISTNODE pNode = lstQueryFirstNode(&llObjects);
+            pfu->ulStatus = FOPSUPD_SUBOBJECT;
+            while (pNode)
+            {
+                WPObject *pObjThis = (WPObject*)pNode->pItemData;
+
+                // call callback
+                if (pftl->pfnProgressCallback)
+                {
+                    pfu->pObject = pObjThis;
+                    if ((pftl->pfnProgressCallback)(pfu,
+                                                    pftl->ulUser)
+                            == FALSE)
+                    {
+                        // FALSE means abort:
+                        frc = FOPSERR_CANCELLEDBYUSER;
+                        *ppObject = pObjThis;
+                        break;      // no prompt
+                    }
+                }
+
+                if (!_wpIsDeleteable(pObjThis))
+                {
+                    BOOL fIsFileSystem = _somIsA(pObjThis, _WPFileSystem);
+                    if (fIsFileSystem)
+                        frc = FOPSERR_DELETE_READONLY;      // non-fatal
+                    else
+                        frc = FOPSERR_DELETE_NOT_DELETABLE; // fatal
+
+                    if (pftl->pfnErrorCallback)
+                        // prompt user:
+                        // this can recover, but should have
+                        // changed the problem (read-only)
+                        frc = (pftl->pfnErrorCallback)(pftl->ulOperation,
+                                                       pObjThis,
+                                                       frc);
+                    if (frc == NO_ERROR)
+                        if (fIsFileSystem)
+                            _wpSetAttr(pObjThis, FILE_NORMAL);
+
+                }
+
+                if (frc == FOPSERR_OK)
+                {
+                    // either no problem or problem fixed:
+                    if (!_wpFree(pObjThis))
+                    {
+                        frc = FOPSERR_WPFREE_FAILED;
+                        *ppObject = pObjThis;
+                        break;
+                    }
+                }
+                else
+                {
+                    // error:
+                    *ppObject = pObjThis;
+                    break;
+                }
+
+                pNode = pNode->pNext;
+            }
+        }
+    }
+
+    lstClear(&llObjects);
+
+    return (frc);
+}
+
 /*
  *@@ fopsFileThreadProcessing:
  *      this actually performs the file operations
@@ -1398,10 +1695,13 @@ BOOL fopsStartProcessingTasks(HFILETASKLIST hftl)
  *      This runs on the File thread.
  *
  *@@added V0.9.1 (2000-01-29) [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: added "true delete" support
  */
 
 VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
 {
+    BOOL frc = FOPSERR_OK;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     #ifdef DEBUG_TRASHCAN
@@ -1412,18 +1712,34 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
     {
         if (pftl)
         {
+            /*
+             * 1) preparations before collecting objects
+             *
+             */
+
             // get first node
             PLISTNODE   pNode = lstQueryFirstNode(&pftl->llObjects);
             FOPSUPDATE  fu;
-
             memset(&fu, 0, sizeof(fu));
 
-            if (pftl->ulOperation == XFT_MOVE2TRASHCAN)
+            switch (pftl->ulOperation)
             {
-                // move to trash can:
-                // in that case, pTargetFolder is NULL,
-                // so query the target folder first
-                pftl->pTargetFolder = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
+                case XFT_MOVE2TRASHCAN:
+                {
+                    // move to trash can:
+                    // in that case, pTargetFolder is NULL,
+                    // so query the target folder first
+                    pftl->pTargetFolder = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
+
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("  target trash can is %s", _wpQueryTitle(pftl->pTargetFolder) ));
+                    #endif
+                break; }
+
+                case XFT_TRUEDELETE:
+                {
+                    // true delete (destroy objects):
+                break; }
             }
 
             fu.ulOperation = pftl->ulOperation;
@@ -1432,23 +1748,48 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
             fu.ulCurrentObject = 0;
             fu.ulTotalObjects = lstCountItems(&pftl->llObjects);
 
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("    %d items on list", fu.ulTotalObjects));
+            #endif
+
+            /*
+             * 2) process objects on list
+             *
+             */
+
             while (pNode)
             {
-                WPObject *pObjectThis = (WPObject*)pNode->pItemData;
+                WPObject    *pObjectThis = (WPObject*)pNode->pItemData;
 
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("    checking object 0x%lX", pObjectThis));
+                #endif
+
+                // check if object is still valid
                 if (wpshCheckObject(pObjectThis))
                 {
                     // call progress callback with this object
                     if (pftl->pfnProgressCallback)
                     {
-                        fu.pCurrentObject = pObjectThis;
+                        fu.ulStatus = FOPSUPD_SOURCEOBJECT;
+                        fu.pObject = pObjectThis;
                         if ((pftl->pfnProgressCallback)(&fu,
                                                         pftl->ulUser)
                                 == FALSE)
+                        {
                             // FALSE means abort:
+                            frc = FOPSERR_CANCELLEDBYUSER;
                             break;
+                        }
                     }
                 }
+                else
+                    // error:
+                    break;
+
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("    processing %s", _wpQueryTitle(pObjectThis) ));
+                #endif
 
                 // now, for each object, perform
                 // the desired operation
@@ -1464,8 +1805,9 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                             _Pmpf(("  fopsFileThreadProcessing: trashmove %s",
                                         _wpQueryTitle(pObjectThis) ));
                         #endif
-                        _xwpDeleteIntoTrashCan(pftl->pTargetFolder, // default trash can
-                                               pObjectThis);
+                        if (!_xwpDeleteIntoTrashCan(pftl->pTargetFolder, // default trash can
+                                                    pObjectThis))
+                            frc = FOPSERR_NOT_HANDLED_ABORT;
                     break;
 
                     /*
@@ -1478,8 +1820,10 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                             _Pmpf(("  fopsFileThreadProcessing: restoring %s",
                                     _wpQueryTitle(pObjectThis) ));
                         #endif
-                        _xwpRestoreFromTrashCan(pObjectThis,       // trash object
-                                                pftl->pTargetFolder); // can be NULL
+                        if (!_xwpRestoreFromTrashCan(pObjectThis,       // trash object
+                                                     pftl->pTargetFolder)) // can be NULL
+                            frc = FOPSERR_NOT_HANDLED_ABORT;
+                        // after this pObjectThis is invalid!
                     break;
 
                     /*
@@ -1487,13 +1831,44 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                      *
                      */
 
-                    case XFT_DESTROYTRASHOBJECTS:
+                    /* case XFT_DESTROYTRASHOBJECTS:
                         #ifdef DEBUG_TRASHCAN
                             _Pmpf(("  fopsFileThreadProcessing: destroying %s",
                                     _wpQueryTitle(pObjectThis) ));
                         #endif
-                        _xwpDestroyTrashObject(pObjectThis); // trash object
+                        if (!_xwpDestroyTrashObject(pObjectThis)) // trash object
+                            frc = FOPSERR_NOT_HANDLED_ABORT;
+
+                        // after this pObjectThis is invalid!
+                    break; */
+
+                    /*
+                     * XFT_TRUEDELETE:
+                     *
+                     */
+
+                    case XFT_TRUEDELETE:
+                        #ifdef DEBUG_TRASHCAN
+                            _Pmpf(("  fopsFileThreadProcessing: wpFree'ing %s",
+                                    _wpQueryTitle(pObjectThis) ));
+                        #endif
+                        frc = fopsFileThreadTrueDelete(hftl,
+                                                       &fu,
+                                                       &pObjectThis);
+                                           // after this pObjectThis is invalid!
                     break;
+                }
+
+                if (frc != FOPSERR_OK)
+                {
+                    CHAR szMsg[1000];
+                    sprintf(szMsg,
+                            "Error %d with object %s",
+                            frc,
+                            _wpQueryTitle(pObjectThis));
+                    DebugBox(NULLHANDLE,
+                             "XWorkplace File thread",
+                             szMsg);
                 }
 
                 pNode = pNode->pNext;
@@ -1577,16 +1952,18 @@ BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl)
 typedef struct _GENERICPROGRESSWINDATA
 {
     HWND        hwndProgress;               // progress window handle
+    HWND        hwndProgressBar;            // progress bar control (cached for speed)
     BOOL        fCancelPressed;             // TRUE after Cancel has been
                                             // pressed; the File thread is then
                                             // halted while a confirmation is
                                             // displayed
+    ULONG       ulIgnoreFlags;              // initially 0; later set to ...
 } GENERICPROGRESSWINDATA, *PGENERICPROGRESSWINDATA;
 
 /*
  *@@ fopsGenericProgressCallback:
  *      progress callback which gets specified when
- *      fopsPrepareCommon calls fopsCreateFileTaskList.
+ *      fopsStartTaskFromCnr calls fopsCreateFileTaskList.
  *      This assumes that a progress window using
  *      fops_fnwpGenericProgress has been created and
  *      ulUser is a PGENERICPROGRESSWINDATA.
@@ -1613,40 +1990,72 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
 /*
  *@@ fopsGenericErrorCallback:
  *      error callback which gets specified when
- *      fopsPrepareCommon calls fopsCreateFileTaskList.
+ *      fopsStartTaskFromCnr calls fopsCreateFileTaskList.
  *
  *      This is usually called on the thread of the folder view
  *      from which the file operation was started (mostly
  *      thread 1).
  *
+ *      This thing displays a confirmation box only for errors
+ *      which apply to a single trash object and are not recoverable.
+ *      For other errors, the error code is simply returned to the
+ *      caller, which in turn passes the error code to its caller(s).
+ *
  *@@added V0.9.2 (2000-03-04) [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  */
 
-BOOL APIENTRY fopsGenericErrorCallback(WPObject *pObject,
-                                       ULONG ulError)
+FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
+                                          WPObject *pObject,
+                                          FOPSRET frError)
 {
-    BOOL    brc = TRUE;
+    FOPSRET frc = FOPSERR_OK;
     CHAR    szMsg[1000];
     PSZ     apsz[5] = {0};
     ULONG   cpsz = 0,
             ulMsg = 0,
             flFlags = 0;
 
-    switch (ulError)
+    switch (frError)
     {
-        case FOPSERR_NODELETETRASHOBJECT:
+        /* case FOPSERR_NODELETETRASHOBJECT:
         case FOPSERR_DESTROYNONTRASHOBJECT:
             ulMsg = 174;        // "invalid for XWPTrashObject"
             flFlags = MB_CANCEL;
+        break; */
+
+        case FOPSERR_MOVE2TRASH_READONLY:
+            // this comes in for a "move2trash" operation
+            // on read-only WPFileSystems
+            ulMsg = 179;
+            flFlags = MB_YESNO | MB_DEFBUTTON2;
+            apsz[0] = _wpQueryTitle(pObject);
+            cpsz = 1;
         break;
 
-        case FOPSERR_OBJSTYLENODELETE:
-            return (FALSE);
+        case FOPSERR_DELETE_READONLY:
+            // this comes in for a "delete" operation
+            // on read-only WPFileSystems
+            ulMsg = 184;
+            flFlags = MB_YESNO | MB_DEFBUTTON2;
+            apsz[0] = _wpQueryTitle(pObject);
+            cpsz = 1;
+                // if we return FOPSERR_OK after this,
+                // the fileops engine unlocks the file
+        break;
 
-        case FOPSERR_TRASHDRIVENOTSUPPORTED:
+        case FOPSERR_DELETE_NOT_DELETABLE:
+            // object not deleteable:
+            ulMsg = 185;
+            flFlags = MB_CANCEL;
+            apsz[0] = _wpQueryTitle(pObject);
+            cpsz = 1;
+        break;
+
+        /* case FOPSERR_TRASHDRIVENOTSUPPORTED: pass this to caller
             ulMsg = 176;
             flFlags = MB_CANCEL;
-        break;
+        break; */
     }
 
     if (flFlags)
@@ -1657,11 +2066,13 @@ BOOL APIENTRY fopsGenericErrorCallback(WPObject *pObject,
                                          cpsz,
                                          ulMsg,
                                          flFlags);
-        if ((ulrc == MBID_OK) || (ulrc == MBID_YES))
-            return (TRUE);
+        if (    (ulrc == MBID_OK)
+             || (ulrc == MBID_YES)
+           )
+            return (FOPSERR_OK);
     }
 
-    return (FALSE);
+    return (frError);
 }
 
 /*
@@ -1722,46 +2133,69 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
 
             if (pfu)
             {
-                // update target folder
-                if (pfu->ulOperation == XFT_RESTOREFROMTRASHCAN)
-                    // restore from trash can: update for every object
-                    WinSetDlgItemText(hwndProgress,
-                                      ID_XSDI_TARGETFOLDER,
-                                      _xwpQueryRelatedPath(pfu->pCurrentObject));
+                BOOL        fGetSourceFolder = FALSE;
+                PSZ         pszTargetFolder = NULL;
+                BOOL        fGetTargetFolder = FALSE;
 
-                // other operations: only on first call
-                if (pfu->ulCurrentObject == 0)
+                switch (pfu->ulOperation)
                 {
-                    CHAR szPath[CCHMAXPATH] = "";
+                    case XFT_RESTOREFROMTRASHCAN:
+                        // restore from trash can:
+                        // update target folder for every object,
+                        // because this might change
+                        pszTargetFolder = _xwpQueryRelatedPath(pfu->pObject);
+                        // and don't use
+                    break;
 
-                    // first call: set folders
-                    if (pfu->pSourceFolder)
-                        _wpQueryFilename(pfu->pSourceFolder, szPath, TRUE);
-
-                    WinSetDlgItemText(hwndProgress,
-                                      ID_XSDI_SOURCEFOLDER,
-                                      szPath);
-
-                    if (pfu->ulOperation != XFT_RESTOREFROMTRASHCAN)
-                    {
-                        szPath[0] = 0;
-                        if (pfu->pTargetFolder)
-                            _wpQueryFilename(pfu->pTargetFolder, szPath, TRUE);
-
-                        WinSetDlgItemText(hwndProgress,
-                                          ID_XSDI_TARGETFOLDER,
-                                          szPath);
-                    }
+                    default:
+                        if (    (pfu->ulCurrentObject == 0)
+                             && (pfu->ulStatus == FOPSUPD_SOURCEOBJECT)
+                           )
+                        {
+                            // first call: set folders
+                            fGetSourceFolder = TRUE;
+                            fGetTargetFolder = TRUE;
+                        }
+                    break;
                 }
 
                 // update current object
                 WinSetDlgItemText(hwndProgress,
                                   ID_XSDI_CURRENTOBJECT,
-                                  _wpQueryTitle(pfu->pCurrentObject));
-                WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
-                           WM_UPDATEPROGRESSBAR,
-                           (MPARAM)pfu->ulCurrentObject,
-                           (MPARAM)pfu->ulTotalObjects);
+                                  _wpQueryTitle(pfu->pObject));
+
+                // now update controls
+                if (fGetSourceFolder)
+                {
+                    CHAR        szSourceFolder[CCHMAXPATH] = "";
+                    if (pfu->pSourceFolder)
+                        _wpQueryFilename(pfu->pSourceFolder, szSourceFolder, TRUE);
+                    WinSetDlgItemText(hwndProgress,
+                                      ID_XSDI_SOURCEFOLDER,
+                                      szSourceFolder);
+                }
+
+                if (fGetTargetFolder)
+                {
+                    CHAR        szTargetFolder[CCHMAXPATH] = "";
+                    if (pfu->pTargetFolder)
+                    {
+                        _wpQueryFilename(pfu->pTargetFolder, szTargetFolder, TRUE);
+                        pszTargetFolder = pszTargetFolder;
+                    }
+                }
+                if (pszTargetFolder)
+                    WinSetDlgItemText(hwndProgress,
+                                      ID_XSDI_TARGETFOLDER,
+                                      pszTargetFolder);
+
+                if (pfu->ulStatus == FOPSUPD_SOURCEOBJECT)
+                    // source object changed:
+                    // update status bar
+                    WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
+                               WM_UPDATEPROGRESSBAR,
+                               (MPARAM)pfu->ulCurrentObject,
+                               (MPARAM)pfu->ulTotalObjects);
 
                 if (ppwd->fCancelPressed)
                 {
@@ -1787,15 +2221,15 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     if (pszTitle)
                         free(pszTitle);
                 }
-            }
+            } // end if (pfu)
             else
             {
-                // done:
+                // pfu == NULL means done:
                 // disable "Cancel"
                 WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
                 if (!ppwd->fCancelPressed)
                     // set progress to 100%
-                    WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
+                    WinSendMsg(ppwd->hwndProgressBar,
                                WM_UPDATEPROGRESSBAR,
                                (MPARAM)100,
                                (MPARAM)100);
@@ -1836,16 +2270,23 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
 
 /*
  *@@ fopsStartWithGenericProgress:
+ *      starts processing the given file task list
+ *      with the generic XWorkplace file progress
+ *      dialog (fops_fnwpGenericProgress).
  *
- *      Gets called by fopsPrepareCommon.
+ *      This calls fopsStartProcessingTasks in turn.
+ *
+ *      Gets called by fopsStartTaskFromCnr.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  */
 
 BOOL fopsStartWithGenericProgress(HFILETASKLIST hftl,
-                                  PGENERICPROGRESSWINDATA ppwd,
-                                  PSZ pszTitle)
+                                  PGENERICPROGRESSWINDATA ppwd)
 {
+    PSZ pszTitle = "unknown task";
+    PFILETASKLIST pftl = (PFILETASKLIST)hftl;
+
     // load progress dialog
     ppwd->hwndProgress = WinLoadDlg(HWND_DESKTOP,        // parent
                                     NULLHANDLE, // owner
@@ -1855,7 +2296,27 @@ BOOL fopsStartWithGenericProgress(HFILETASKLIST hftl,
                                     NULL);
 
     ppwd->fCancelPressed = FALSE;
+    ppwd->hwndProgressBar = WinWindowFromID(ppwd->hwndProgress,
+                                            ID_SDDI_PROGRESSBAR);
+    // store in window words
     WinSetWindowPtr(ppwd->hwndProgress, QWL_USER, ppwd);
+
+    // determine title for the progress window ###
+    switch (pftl->ulOperation)
+    {
+        case XFT_MOVE2TRASHCAN:
+            pszTitle = "Moving to Trash Can...";
+        break;
+
+        case XFT_RESTOREFROMTRASHCAN:
+            pszTitle = "Restoring from Trash Can...";
+        break;
+
+        // case XFT_DESTROYTRASHOBJECTS:
+        case XFT_TRUEDELETE:
+            pszTitle = "Deleting Objects...";
+        break;
+    }
 
     // set progress window title
     WinSetWindowText(ppwd->hwndProgress, pszTitle);
@@ -1870,11 +2331,11 @@ BOOL fopsStartWithGenericProgress(HFILETASKLIST hftl,
     // *** go!!!
     WinShowWindow(ppwd->hwndProgress, TRUE);
 
-    return (fopsStartProcessingTasks(hftl));
+    return (fopsStartTaskAsync(hftl));
 }
 
 /*
- *@@ fopsPrepareCommon:
+ *@@ fopsStartTaskFromCnr:
  *      this sets up the generic file operations progress
  *      dialog (fops_fnwpGenericProgress), creates a file
  *      task list for the given job (fopsCreateFileTaskList),
@@ -1887,7 +2348,7 @@ BOOL fopsStartWithGenericProgress(HFILETASKLIST hftl,
  *      fopsFileThreadProcessing in this file.
  *
  *      pSourceObject must have the first object which is to
- *      be deleted, that is, the object for which the context
+ *      be worked on, that is, the object for which the context
  *      menu had been opened. This should be the result of a
  *      previous wpshQuerySourceObject call while the context
  *      menu was open. This can be the object under the mouse
@@ -1898,18 +2359,44 @@ BOOL fopsStartWithGenericProgress(HFILETASKLIST hftl,
  *      wpshQueryNextSourceObject to get the other objects
  *      because several objects are to be deleted.
  *
+ *      If you want the operation confirmed, specify message
+ *      numbers with ulMsgSingle and ulMsgMultiple. Those numbers
+ *      must match a message in the XWorkplace NLS text message
+ *      file (XFLDRxxx.TMF).
+ *
+ *      -- If a single object is selected in the container,
+ *         ulMsgSingle will be used. The "%1" parameter in the
+ *         message will be replaced with the object's title.
+ *
+ *      -- If multiple objects are selected in the container,
+ *         ulMsgMultiple will be used. The "%1" parameter in
+ *         the message will then be replaced with the number
+ *         of objects to be worked on.
+ *
+ *      If both msg numbers are null, no confirmation is displayed.
+ *
+ *      This returns FOPSERR_OK if the task was successfully started
+ *      or some other error code if not.
+ *
  *@@added V0.9.1 (2000-01-31) [umoeller]
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: added confirmation messages
+ *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed memory leak when errors occured
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: added fRelatedObject
  */
 
-BOOL fopsStartCnrCommon(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
-                        PSZ pszTitle,            // in: title for status dialog
-                        WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
-                        WPFolder *pTargetFolder, // in: target folder, as required by fopsCreateFileTaskList
-                        WPObject *pSourceObject, // in: first object with source emphasis
-                        ULONG ulSelection,       // in: SEL_* flags
-                        HWND hwndCnr)            // in: container to get more source objects from
+FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
+                             WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
+                             WPFolder *pTargetFolder, // in: target folder, as required by fopsCreateFileTaskList
+                             WPObject *pSourceObject, // in: first object with source emphasis
+                             ULONG ulSelection,       // in: SEL_* flags
+                             BOOL fRelatedObjects,    // in: if TRUE, then the objects must be trash objects,
+                                                      // and their related objects will be collected instead
+                             HWND hwndCnr,            // in: container to get more source objects from
+                             ULONG ulMsgSingle,       // in: msg no. in TMF msg file for single object
+                             ULONG ulMsgMultiple)     // in: msg no. in TMF msg file for multiple objects
 {
-    BOOL    brc = FALSE;
+    FOPSRET frc = FOPSERR_OK;
 
     WPObject *pObject = pSourceObject;
 
@@ -1918,13 +2405,14 @@ BOOL fopsStartCnrCommon(ULONG ulOperation,       // in: operation; see fopsCreat
     PGENERICPROGRESSWINDATA ppwd = malloc(sizeof(GENERICPROGRESSWINDATA));
 
     #ifdef DEBUG_TRASHCAN
-        _Pmpf(("fopsStartCnrCommon ulSelection: %d", ulSelection));
+        _Pmpf(("fopsStartTaskFromCnr: first obj is %s", _wpQueryTitle(pObject)));
+        _Pmpf(("        ulSelection: %d", ulSelection));
     #endif
 
     if (ppwd)
     {
         HFILETASKLIST hftl = NULLHANDLE;
-        BOOL        fContinue = TRUE;
+        ULONG       cObjects = 0;
 
         // create task list for the desired task
         hftl = fopsCreateFileTaskList(ulOperation,      // as passed to us
@@ -1935,16 +2423,28 @@ BOOL fopsStartCnrCommon(ULONG ulOperation,       // in: operation; see fopsCreat
                                       (ULONG)ppwd);     // ulUser
              // this locks pSourceFolder
 
-        if (pObject)
+        if ((hftl) && (pObject))
         {
             // now add all objects to the task list
             while (pObject)
             {
+                FOPSRET     frc2;
+                WPObject    *pAddObject = pObject;
                 #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("fopsStartCnrCommon: got object %s", pObject));
+                    _Pmpf(("fopsStartTaskFromCnr: got object %s", _wpQueryTitle(pObject)));
                 #endif
-                if (fopsAddObjectToTask(hftl, pObject))
+
+                if (fRelatedObjects)
+                    // collect related objects instead:
+                    // then this better be a trash object
+                    pAddObject = _xwpQueryRelatedObject(pObject);
+
+                frc2 = fopsAddObjectToTask(hftl, pAddObject);
+                if (frc2 == FOPSERR_OK)
                 {
+                    // raise objects count
+                    cObjects++;
+
                     if (ulSelection == SEL_MULTISEL)
                         // more objects to go:
                         pObject = wpshQueryNextSourceObject(hwndCnr, pObject);
@@ -1954,32 +2454,78 @@ BOOL fopsStartCnrCommon(ULONG ulOperation,       // in: operation; see fopsCreat
                 else
                 {
                     // error:
-                    fContinue = FALSE;
+                    frc = frc2;
                     break;
                 }
             }
         }
         else
-            fContinue = FALSE;
+            frc = FOPSERR_INVALID_OBJECT;
 
-        if (fContinue)
-            // *** go!!!
-            brc = fopsStartWithGenericProgress(hftl,
-                                               ppwd,
-                                               pszTitle);
-        else
+        if (frc == FOPSERR_OK)
         {
+            // confirmations?
+
+            _Pmpf(("ulMsgSingle: %d", ulMsgSingle));
+
+            if (   (ulMsgSingle != 0)
+                && (ulMsgMultiple != 0)
+               )
+            {
+                CHAR    szObjectCount[30];
+                PSZ     apsz = NULL;
+                ULONG   ulMsg;
+                // yes:
+                _Pmpf(("Confirming..."));
+                if (cObjects == 1)
+                {
+                    // single object:
+                    apsz = _wpQueryTitle(pSourceObject);
+                    ulMsg = ulMsgSingle;
+                }
+                else
+                {
+                    sprintf(szObjectCount, "%d", cObjects);
+                    apsz = szObjectCount;
+                    ulMsg = ulMsgMultiple;
+                }
+
+                if (cmnMessageBoxMsgExt(NULLHANDLE,  // owner
+                                        121, // "XWorkplace"
+                                        &apsz,
+                                        1,
+                                        ulMsg,
+                                        MB_YESNO)
+                            != MBID_YES)
+                    frc = FOPSERR_CANCELLEDBYUSER;
+            }
+
+            if (frc == FOPSERR_OK)
+                // *** go!!!
+                if (!fopsStartWithGenericProgress(hftl,
+                                                  ppwd))
+                    // error:
+                    frc = FOPSERR_INTEGRITY_ABORT;
+        } // end if (frc == FOPSERR_OK)
+
+        if (frc != FOPSERR_OK)
+        {
+            // cancel or no success: clean up
             fopsDeleteFileTaskList(hftl);
-            brc = FALSE;
+            free(ppwd);     // V0.9.3 (2000-04-11) [umoeller]
         }
     }
 
-    return (brc);
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("    returning FOPSRET %d", frc));
+    #endif
+
+    return (frc);
 }
 
 /*
- *@@ fopsStartFdrContentsCommon:
- *      similar to fopsStartCnrCommon, but this
+ *@@ fopsStartTaskFromList:
+ *      similar to fopsStartTaskFromCnr, but this
  *      does not check for selected objects,
  *      but adds the objects from the specified
  *      list.
@@ -1990,24 +2536,31 @@ BOOL fopsStartCnrCommon(ULONG ulOperation,       // in: operation; see fopsCreat
  *      but read only.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  */
 
-BOOL fopsStartFromListCommon(ULONG ulOperation,
-                             PSZ pszTitle,
-                             WPFolder *pSourceFolder,
-                             WPFolder *pTargetFolder,
-                             PLINKLIST pllObjects)      // in: list with WPObject* pointers
+FOPSRET fopsStartTaskFromList(ULONG ulOperation,
+                              WPFolder *pSourceFolder,
+                              WPFolder *pTargetFolder,
+                              PLINKLIST pllObjects)      // in: list with WPObject* pointers
 {
-    BOOL    brc = FALSE;
+    FOPSRET frc = FOPSERR_OK;
 
     // allocate progress window data structure
     // this is passed to fopsCreateFileTaskList as ulUser
     PGENERICPROGRESSWINDATA ppwd = malloc(sizeof(GENERICPROGRESSWINDATA));
 
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("fopsStartTaskFromList, op: %d, source: %s, target: %s",
+                ulOperation,
+                (pSourceFolder) ? _wpQueryTitle(pSourceFolder) : "NULL",
+                (pTargetFolder) ? _wpQueryTitle(pTargetFolder) : "NULL"
+                ));
+    #endif
+
     if (ppwd)
     {
         HFILETASKLIST hftl = NULLHANDLE;
-        BOOL        fContinue = TRUE;
         PLISTNODE   pNode = NULL;
 
         // create task list for the desired task
@@ -2019,36 +2572,54 @@ BOOL fopsStartFromListCommon(ULONG ulOperation,
                                       (ULONG)ppwd);     // ulUser
              // this locks pSourceFolder
 
-        // add ALL objects from the list
-        pNode = lstQueryFirstNode(pllObjects);
-        while (pNode)
+        if (hftl)
         {
-            WPObject *pObject = (WPObject*)pNode->pItemData;
-
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("fopsStartFromListCommon: got object %s", _wpQueryTitle(pObject) ));
-            #endif
-            if (!fopsAddObjectToTask(hftl, pObject))
+            // add ALL objects from the list
+            pNode = lstQueryFirstNode(pllObjects);
+            while (pNode)
             {
-                fContinue = FALSE;
-                break;
-            }
-            pNode = pNode->pNext;
-        }
+                WPObject *pObject = (WPObject*)pNode->pItemData;
+                FOPSRET frc2;
 
-        if (fContinue)
-            // *** go!!!
-            brc = fopsStartWithGenericProgress(hftl,
-                                               ppwd,
-                                               pszTitle);
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("fopsStartTaskFromList: got object %s", _wpQueryTitle(pObject) ));
+                #endif
+
+                frc2 = fopsAddObjectToTask(hftl, pObject);
+                #ifdef DEBUG_TRASHCAN
+                    _Pmpf(("        got FOPSRET %d for that", frc2));
+                #endif
+                if (frc2 != FOPSERR_OK)
+                {
+                    frc = frc2;
+                    break;
+                }
+                pNode = pNode->pNext;
+            }
+        }
         else
+            frc = FOPSERR_INTEGRITY_ABORT;
+
+        if (frc == FOPSERR_OK)
+            // *** go!!!
+            if (!fopsStartWithGenericProgress(hftl,
+                                              ppwd))
+                // error:
+                frc = FOPSERR_INTEGRITY_ABORT;
+
+        if (frc != FOPSERR_OK)
         {
+            // cancel or no success: clean up
             fopsDeleteFileTaskList(hftl);
-            brc = FALSE;
+            free(ppwd);     // V0.9.3 (2000-04-11) [umoeller]
         }
     }
 
-    return (brc);
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("    returning FOPSRET %d", frc));
+    #endif
+
+    return (frc);
 }
 
 /********************************************************************
@@ -2058,85 +2629,145 @@ BOOL fopsStartFromListCommon(ULONG ulOperation,
  ********************************************************************/
 
 /*
- *@@ fopsStartCnrDelete2Trash:
+ *@@ fopsStartTrashDeleteFromCnr:
  *      this gets called from fdr_fnwpSubclassedFolderFrame
  *      if trash can "delete" support is on and WM_COMMAND
  *      with WPMENUID_DELETE has been intercepted.
  *
- *      This calls fopsStartCnrCommon with the proper parameters
+ *      This calls fopsStartTaskFromCnr with the proper parameters
  *      to start moving objects which are selected in pSourceFolder
  *      to the default trash can on the File thread.
  *
  *@@added V0.9.1 (2000-01-29) [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  */
 
-BOOL fopsStartCnrDelete2Trash(WPFolder *pSourceFolder, // in: folder with objects to be moved
-                              WPObject *pSourceObject, // in: first object with source emphasis
-                              ULONG ulSelection,       // in: SEL_* flag
-                              HWND hwndCnr)            // in: container
+FOPSRET fopsStartTrashDeleteFromCnr(WPFolder *pSourceFolder, // in: folder with objects to be moved
+                                    WPObject *pSourceObject, // in: first object with source emphasis
+                                    ULONG ulSelection,       // in: SEL_* flag
+                                    HWND hwndCnr,            // in: container to collect objects from
+                                    BOOL fTrueDelete)        // in: if TRUE, perform true delete; if FALSE, move to trash can
 {
-    return (fopsStartCnrCommon(XFT_MOVE2TRASHCAN,
-                               "Moving to Trash", // ###
+    FOPSRET frc;
+
+    ULONG   ulOperation = XFT_MOVE2TRASHCAN,
+            ulMsgSingle = 0,
+            ulMsgMultiple = 0;
+    ULONG   ulConfirmations = _wpQueryConfirmations(pSourceObject);
+    BOOL    fConfirm = FALSE;
+
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("fopsStartTrashDeleteFromCnr: first obj is %s", _wpQueryTitle(pSourceObject)));
+        _Pmpf(("ulConfirmations: 0x%lX", ulConfirmations));
+    #endif
+
+    if (ulConfirmations & CONFIRM_DELETE)
+        fConfirm = TRUE;
+
+    if (fTrueDelete)
+    {
+        ulOperation = XFT_TRUEDELETE;
+        if (fConfirm)
+        {
+            ulMsgSingle = 177;
+            ulMsgMultiple = 178;
+        }
+    }
+    else
+        // move to trash can:
+        if (fConfirm)
+        {
+            ulMsgSingle = 182;
+            ulMsgMultiple = 183;
+        }
+
+    frc = fopsStartTaskFromCnr(ulOperation,
                                pSourceFolder,
                                NULL,         // target folder: not needed
                                pSourceObject,
                                ulSelection,
-                               hwndCnr)
-                != NULLHANDLE);
+                               FALSE,       // no related objects
+                               hwndCnr,
+                               ulMsgSingle,
+                               ulMsgMultiple);
+
+    if (    (!fTrueDelete)      // delete into trashcan
+         && (frc == FOPSERR_TRASHDRIVENOTSUPPORTED) // and trash drive not supported
+       )
+    {
+        // source folder is not supported by trash can:
+        // start a "delete" job instead, with the proper
+        // confirmation messages ("Drive not supported, delete instead?")
+        frc = fopsStartTaskFromCnr(XFT_TRUEDELETE,
+                                   pSourceFolder,
+                                   NULL,         // target folder: not needed
+                                   pSourceObject,
+                                   ulSelection,
+                                   FALSE,       // no related objects
+                                   hwndCnr,
+                                   180, // ulMsgSingle
+                                   181); // ulMsgMultiple
+    }
+
+    return (frc);
 }
 
 /*
- *@@ fopsStartCnrRestoreFromTrash:
+ *@@ fopsStartTrashRestoreFromCnr:
  *      this gets called from trsh_fnwpSubclassedTrashCanFrame
  *      if WM_COMMAND with ID_XFMI_OFS_TRASHRESTORE has been intercepted.
  *
- *      This calls fopsStartCnrCommon with the proper parameters
+ *      This calls fopsStartTaskFromCnr with the proper parameters
  *      to start restoring the selected trash objects on the File thread.
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
  */
 
-BOOL fopsStartCnrRestoreFromTrash(WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
-                                  WPFolder *pTargetFolder, // in: specific target folder or NULL for
-                                                           // each trash object's original folder
-                                  WPObject *pSourceObject, // in: first object with source emphasis
-                                  ULONG ulSelection,       // in: SEL_* flag
-                                  HWND hwndCnr)            // in: container
+FOPSRET fopsStartTrashRestoreFromCnr(WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
+                                     WPFolder *pTargetFolder, // in: specific target folder or NULL for
+                                                              // each trash object's original folder
+                                     WPObject *pSourceObject, // in: first object with source emphasis
+                                     ULONG ulSelection,       // in: SEL_* flag
+                                     HWND hwndCnr)            // in: container to collect objects from
 {
-    return (fopsStartCnrCommon(XFT_RESTOREFROMTRASHCAN,
-                               "Restoring from Trash",
-                               pTrashSource,
-                               pTargetFolder, // can be NULL
-                               pSourceObject,
-                               ulSelection,
-                               hwndCnr)
-                != NULLHANDLE);
+    return (fopsStartTaskFromCnr(XFT_RESTOREFROMTRASHCAN,
+                                 pTrashSource,
+                                 pTargetFolder, // can be NULL
+                                 pSourceObject,
+                                 ulSelection,
+                                 FALSE,       // no related objects
+                                 hwndCnr,
+                                 0, 0)        // no confirmations
+            );
 }
 
 /*
- *@@ fopsStartCnrDestroyTrashObjects:
+ *@@ fopsStartTrashDestroyFromCnr:
  *      this gets called from trsh_fnwpSubclassedTrashCanFrame
  *      if WM_COMMAND with ID_XFMI_OFS_TRASHDESTROY has been intercepted.
  *
- *      This calls fopsStartCnrCommon with the proper parameters
+ *      This calls fopsStartTaskFromCnr with the proper parameters
  *      to start destroying the selected trash objects on the File thread.
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: switched implementation to "true delete"
  */
 
-BOOL fopsStartCnrDestroyTrashObjects(WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
+FOPSRET fopsStartTrashDestroyFromCnr(WPFolder *pTrashSource,  // in: XWPTrashCan* to restore from
                                      WPObject *pSourceObject, // in: first object with source emphasis
                                      ULONG ulSelection,       // in: SEL_* flag
-                                     HWND hwndCnr)            // in: container
+                                     HWND hwndCnr)            // in: container to collect objects from
 {
-    return (fopsStartCnrCommon(XFT_DESTROYTRASHOBJECTS,
-                               "Destroying Trash Objects",
-                               pTrashSource,
-                               NULL,             // no target folder
-                               pSourceObject,
-                               ulSelection,
-                               hwndCnr)
-                != NULLHANDLE);
+    return (fopsStartTaskFromCnr(XFT_TRUEDELETE,
+                                 pTrashSource,
+                                 NULL,             // no target folder
+                                 pSourceObject,
+                                 ulSelection,
+                                 TRUE,       // collect related objects instead
+                                 hwndCnr,
+                                 177,
+                                 178)
+            );
 }
 
 

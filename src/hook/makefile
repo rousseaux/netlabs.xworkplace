@@ -10,7 +10,7 @@
 #
 #       Input:          ./*.c
 #
-#       Output:         ../bin/*.obj
+#       Output:         ..\bin\exe_mt\*.obj
 #
 #       Edit "setup.in" to set up the make process.
 #
@@ -40,7 +40,7 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
 BASE_OUTPUTDIR = ..\..\bin
-EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exes
+EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 
 # create output directory
 !if [@md $(BASE_OUTPUTDIR) 2> NUL]
@@ -56,7 +56,6 @@ OBJS = $(EXE_OUTPUTDIR)\xwpdaemn.obj \
        $(EXE_OUTPUTDIR)\pgmg_move.obj \
        $(EXE_OUTPUTDIR)\pgmg_settings.obj \
        $(EXE_OUTPUTDIR)\pgmg_winscan.obj \
-       $(EXE_OUTPUTDIR)\threads.obj \
        $(BASE_OUTPUTDIR)\xwphook.obj
 
 # The main target:
@@ -85,6 +84,14 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 # our own corresponding include path
 MYOWNINC = $(INC)\hook
 
+.c.{$(EXE_OUTPUTDIR)}.obj:
+    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+!ifndef PRECH
+    $(CC_EXE_MT) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
+!else
+    $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
+!endif
+
 # Now define dependencies for all our .OBJ files by telling NMAKE
 # which .OBJ file depends on what. For each .OBJ we define what files
 # will enforce a recompilation when they've been changed.
@@ -100,61 +107,27 @@ MYOWNINC = $(INC)\hook
 
 $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\threads.h \
+        $(HLPINC)\except.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
         $(INC)\shared\kernel.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
-!ifndef PRECH
-    $(CC_EXE) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_EXE) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
 
 $(EXE_OUTPUTDIR)\pgmg_control.obj: \
         $(INC)\setup.h \
+        $(HLPINC)\gpih.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
-!ifndef PRECH
-    $(CC_EXE) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_EXE) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
+        $(HLPINC)\except.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
-!ifndef PRECH
-    $(CC_EXE) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_EXE) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
         $(INC)\setup.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
-!ifndef PRECH
-    $(CC_EXE) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_EXE) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
 
 $(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
         $(INC)\setup.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
-!ifndef PRECH
-    $(CC_EXE) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_EXE) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
-
-$(EXE_OUTPUTDIR)\threads.obj: \
-        $(INC)\setup.h \
-        $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
-    $(CC_EXE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico $(@B).rc
     $(RC) -r -i $(BASE_OUTPUTDIR) $(@B).rc $(EXE_OUTPUTDIR)\$(@B).res

@@ -79,6 +79,7 @@
 
 // C library headers
 #include <stdio.h>
+#include <string.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -119,11 +120,11 @@
  *                                                                  *
  ********************************************************************/
 
-CHAR    szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 
 // WPUrl class object; to preserve compatibility with Warp 3,
 // where this class does not exist, we call the SOM kernel
@@ -131,7 +132,7 @@ CHAR    szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 // The initial value of -1 means that we have not queried
 // this class yet. After the first query, this either points
 // to the class object or is NULL if the class does not exist.
-SOMClass    *_WPUrl = (SOMClass*)-1;
+SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 /* ******************************************************************
  *                                                                  *
@@ -156,7 +157,7 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
              || (pClassObject == _WPProgram)
              || (pClassObject == _WPDisk)
              || (pClassObject == _WPFileSystem)
-             || ( (_WPUrl != NULL) && (pClassObject == _WPUrl) )
+             || ( (G_WPUrl != NULL) && (pClassObject == G_WPUrl) )
            );
 }
 
@@ -186,24 +187,24 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
 BOOL stbSetClassMnemonics(SOMClass *pClassObject,
                           PSZ pszText)
 {
-    if (_WPUrl == (SOMClass*)-1)
+    if (G_WPUrl == (SOMClass*)-1)
     {
         // WPUrl class object not queried yet: do it now
         somId    somidWPUrl = somIdFromString("WPUrl");
-        _WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
+        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
         // _WPUrl now either points to the WPUrl class object
         // or is NULL if the class is not installed (Warp 3!).
         // In this case, the object will be treated as a regular
         // file-system object.
     }
 
-    if (_WPUrl)
+    if (G_WPUrl)
     {
-        if (_somDescendedFrom(pClassObject, _WPUrl))
+        if (_somDescendedFrom(pClassObject, G_WPUrl))
         {
             // provoke a reload of the settings
             // in stbQueryClassMnemonics
-            szWPUrlStatusBarMnemonics[0] = '\0';
+            G_szWPUrlStatusBarMnemonics[0] = '\0';
 
             // set the class mnemonics in OS2.INI; if
             // pszText == NULL, the key will be deleted,
@@ -220,7 +221,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     {
         // provoke a reload of the settings
         // in stbQueryClassMnemonics
-        szWPFileSystemStatusBarMnemonics[0] = '\0';
+        G_szWPFileSystemStatusBarMnemonics[0] = '\0';
 
         // set the class mnemonics in OS2.INI; if
         // pszText == NULL, the key will be deleted,
@@ -234,7 +235,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     {
         // provoke a reload of the settings
         // in stbQueryClassMnemonics
-        szWPDiskStatusBarMnemonics[0] = '\0';
+        G_szWPDiskStatusBarMnemonics[0] = '\0';
 
         // set the class mnemonics in OS2.INI; if
         // pszText == NULL, the key will be deleted,
@@ -248,7 +249,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     {
         // provoke a reload of the settings
         // in stbQueryClassMnemonics
-        szWPProgramStatusBarMnemonics[0] = '\0';
+        G_szWPProgramStatusBarMnemonics[0] = '\0';
 
         // set the class mnemonics in OS2.INI; if
         // pszText == NULL, the key will be deleted,
@@ -262,7 +263,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     {
         // provoke a reload of the settings
         // in stbQueryClassMnemonics
-        szXFldObjectStatusBarMnemonics[0] = '\0';
+        G_szXFldObjectStatusBarMnemonics[0] = '\0';
 
         // set the class mnemonics in OS2.INI; if
         // pszText == NULL, the key will be deleted,
@@ -301,112 +302,112 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
 {
     PSZ     pszReturn = NULL;
 
-    if (_WPUrl == (SOMClass*)-1)
+    if (G_WPUrl == (SOMClass*)-1)
     {
         // WPUrl class object not queried yet: do it now
         somId    somidWPUrl = somIdFromString("WPUrl");
-        _WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
+        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
         // _WPUrl now either points to the WPUrl class object
         // or is NULL if the class is not installed (Warp 3!).
     }
 
-    if (_WPUrl)
-        if (_somDescendedFrom(pClassObject, _WPUrl))
+    if (G_WPUrl)
+        if (_somDescendedFrom(pClassObject, G_WPUrl))
         {
-            if (szWPUrlStatusBarMnemonics[0] == '\0')
+            if (G_szWPUrlStatusBarMnemonics[0] == '\0')
                 // load string if this is the first time
                 if (PrfQueryProfileString(HINI_USERPROFILE,
                                           INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
                                           NULL,
-                                          &(szWPUrlStatusBarMnemonics),
-                                          sizeof(szWPUrlStatusBarMnemonics))
+                                          &(G_szWPUrlStatusBarMnemonics),
+                                          sizeof(G_szWPUrlStatusBarMnemonics))
                         == 0)
                     // string not found in profile: set default
-                    strcpy(szWPUrlStatusBarMnemonics, "\"$U\"$x(70%)$D $T");
+                    strcpy(G_szWPUrlStatusBarMnemonics, "\"$U\"$x(70%)$D $T");
 
-            pszReturn = szWPUrlStatusBarMnemonics;
+            pszReturn = G_szWPUrlStatusBarMnemonics;
             // get out of here
             return (pszReturn);
         }
 
     if (_somDescendedFrom(pClassObject, _WPFileSystem))
     {
-        if (szWPFileSystemStatusBarMnemonics[0] == '\0')
+        if (G_szWPFileSystemStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                         INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
-                        NULL, &(szWPFileSystemStatusBarMnemonics),
-                        sizeof(szWPFileSystemStatusBarMnemonics))
+                        NULL, &(G_szWPFileSystemStatusBarMnemonics),
+                        sizeof(G_szWPFileSystemStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
                               ID_XSSI_SBTEXTWPDATAFILE,
-                              sizeof(szWPFileSystemStatusBarMnemonics),
-                              szWPFileSystemStatusBarMnemonics);
+                              sizeof(G_szWPFileSystemStatusBarMnemonics),
+                              G_szWPFileSystemStatusBarMnemonics);
 
-        pszReturn = szWPFileSystemStatusBarMnemonics;
+        pszReturn = G_szWPFileSystemStatusBarMnemonics;
     }
     //
     else if (_somDescendedFrom(pClassObject, _WPDisk))
     {
-        if (szWPDiskStatusBarMnemonics[0] == '\0')
+        if (G_szWPDiskStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                                       INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
                                       NULL,
-                                      &(szWPDiskStatusBarMnemonics),
-                                      sizeof(szWPDiskStatusBarMnemonics))
+                                      &(G_szWPDiskStatusBarMnemonics),
+                                      sizeof(G_szWPDiskStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
                               ID_XSSI_SBTEXTWPDISK,
-                              sizeof(szWPDiskStatusBarMnemonics),
-                              szWPDiskStatusBarMnemonics);
+                              sizeof(G_szWPDiskStatusBarMnemonics),
+                              G_szWPDiskStatusBarMnemonics);
 
-        pszReturn = szWPDiskStatusBarMnemonics;
+        pszReturn = G_szWPDiskStatusBarMnemonics;
     }
     //
     else if (_somDescendedFrom(pClassObject, _WPProgram))  // fixed V0.85
     {
-        if (szWPProgramStatusBarMnemonics[0] == '\0')
+        if (G_szWPProgramStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                                       INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
                                       NULL,
-                                      &(szWPProgramStatusBarMnemonics),
-                                      sizeof(szWPProgramStatusBarMnemonics))
+                                      &(G_szWPProgramStatusBarMnemonics),
+                                      sizeof(G_szWPProgramStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
                               ID_XSSI_SBTEXTWPPROGRAM,
-                              sizeof(szWPProgramStatusBarMnemonics),
-                              szWPProgramStatusBarMnemonics);
+                              sizeof(G_szWPProgramStatusBarMnemonics),
+                              G_szWPProgramStatusBarMnemonics);
 
-        pszReturn = szWPProgramStatusBarMnemonics;
+        pszReturn = G_szWPProgramStatusBarMnemonics;
     }
     // subsidiarily: XFldObject
     else if (_somDescendedFrom(pClassObject, _XFldObject))
     {
         // should always be TRUE
-        if (szXFldObjectStatusBarMnemonics[0] == '\0')
+        if (G_szXFldObjectStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                                       INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
                                       NULL,
-                                      &(szXFldObjectStatusBarMnemonics),
-                                      sizeof(szXFldObjectStatusBarMnemonics))
+                                      &(G_szXFldObjectStatusBarMnemonics),
+                                      sizeof(G_szXFldObjectStatusBarMnemonics))
                         == 0)
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
                               ID_XSSI_SBTEXTWPOBJECT,
-                              sizeof(szXFldObjectStatusBarMnemonics),
-                              szXFldObjectStatusBarMnemonics);
+                              sizeof(G_szXFldObjectStatusBarMnemonics),
+                              G_szXFldObjectStatusBarMnemonics);
 
-        pszReturn = szXFldObjectStatusBarMnemonics;
+        pszReturn = G_szXFldObjectStatusBarMnemonics;
     } else
         pszReturn = "???";     // should not occur
 
@@ -458,17 +459,17 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
        URL objects also support the $U mnemonic for
        displaying the URL */
 
-    if (_WPUrl == (SOMClass*)-1)
+    if (G_WPUrl == (SOMClass*)-1)
     {
         // WPUrl class object not queried yet: do it now
         somId    somidWPUrl = somIdFromString("WPUrl");
-        _WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
+        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
         // _WPUrl now either points to the WPUrl class object
         // or is NULL if the class is not installed (Warp 3!).
     }
 
-    if (_WPUrl)
-        if (_somIsA(pObject, _WPUrl))
+    if (G_WPUrl)
+        if (_somIsA(pObject, G_WPUrl))
         {
             // yes, we have a URL object:
             if (p = strstr(*ppszText, "\tU")) // URL mnemonic
@@ -1408,7 +1409,7 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        BOOL fEnable = !(pGlobalSettings->NoSubclassing);
+        BOOL fEnable = !(pGlobalSettings->fNoSubclassing);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);

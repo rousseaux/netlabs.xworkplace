@@ -7,7 +7,8 @@
  *
  *      The driver dialogs have been exported to this file so that
  *      new driver dialogs can be added more easily without having
- *      to mess with the SOM interface.
+ *      to mess with the SOM interface. SO TO WRITE A DRIVER DIALOG,
+ *      YOU NEED NOT KNOW NOTHING ABOUT WPS PROGRAMMING. ;-)
  *
  *      Each driver dialog function can presently handle one CONFIG.SYS
  *      line with all the driver parameters. Presently, we have:
@@ -112,8 +113,8 @@
 #include <os2.h>
 
 // C library headers
-#include <stdio.h>              // needed for except.h
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 // generic headers
@@ -150,19 +151,16 @@
  *      to this function.
  *
  *@@added V0.9.1 (99-11-29) [umoeller]
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: added IBM1S506.ADD support
  */
 
 VOID drvConfigSupported(PDRIVERSPEC pSpec)
 {
     HMODULE hmodNLS = cmnQueryNLSModuleHandle(FALSE);
 
-    if (stricmp(pSpec->pszFilename, "IBM1S506.ADD") == 0)
-    {
-        pSpec->hmodConfigDlg = hmodNLS;
-        pSpec->idConfigDlg = ID_OSD_DRIVER_IBM1S506;
-        pSpec->pfnwpConfigure = drv_fnwpConfigIBM1S506;
-    }
-    if (stricmp(pSpec->pszFilename, "DANIS506.ADD") == 0)
+    if (    (stricmp(pSpec->pszFilename, "IBM1S506.ADD") == 0)
+         || (stricmp(pSpec->pszFilename, "DANIS506.ADD") == 0)
+       )
     {
         pSpec->hmodConfigDlg = hmodNLS;
         pSpec->idConfigDlg = ID_OSD_DRIVER_IBM1S506;
@@ -170,9 +168,9 @@ VOID drvConfigSupported(PDRIVERSPEC pSpec)
     }
     else if (stricmp(pSpec->pszFilename, "HPFS.IFS") == 0)
     {
-        pSpec->hmodConfigDlg = hmodNLS;
-        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS;
-        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS;
+        pSpec->hmodConfigDlg = hmodNLS;                 // module handle
+        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS;        // dialog ID
+        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS;     // window procedure
     }
     else if (stricmp(pSpec->pszFilename, "CDFS.IFS") == 0)
     {
@@ -214,8 +212,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
     {
         case WM_INITDLG:
         {
-            PSZ     pszParamsCopy = 0,
-                    pszToken = 0;
+            PSZ         pszParamsCopy = 0,
+                        pszToken = 0;
             ULONG   ulCache = 0,                // 10% of mem
                     ulCrecl = 4;
 
@@ -613,6 +611,9 @@ typedef struct _S506UNIT
     BYTE    b3Removeable;       // /[!]RMV
 } S506UNIT, *PS506UNIT;
 
+#define DRVT_IBM1S506            1
+#define DRVT_DANIS506            2
+
 /*
  *@@ S506ALL:
  *      structure for global IBM1S506 settings.
@@ -627,7 +628,12 @@ typedef struct _S506UNIT
 
 typedef struct _S506ALL
 {
-    BOOL        fDriverType;        // 0: IBM1S506.ADD, 1: DANIS506.ADD
+    ULONG       ulDriverType;
+                    // specifies the driver type we're dealing with:
+                    // -- DRVT_IBM1S506
+                    // -- DRVT_DANIS506
+    ULONG       ulVersionMajor,     // for IBM1S506: major version (9 or 10)
+                ulVersionMinor;     // for IBM1S506: minor version
 
     ULONG       bInit;              // 0: quiet, 1: verbose (/V), 2: wait (/W)
     ULONG       b3ScatterGather;    // /!DSG; tri-state
@@ -777,7 +783,311 @@ VOID SetS506Defaults(PS506ALL pS506All)
 }
 
 /*
- *@@ RecomposeS506ParamsString:
+ *@@ S506ParseParamsString:
+ *      This was extracted from drv_fnwpConfigIBM1S506
+ *      with V0.9.3.
+ *
+ *@@added V0.9.3 (2000-04-10) [umoeller]
+ */
+
+VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
+{
+    PSZ         pszParamsCopy = 0,
+                pszToken = 0;
+    PS506ALL    pS506All = (PS506ALL)pddd->pvUser;
+
+    // now parse the parameters
+    // and update the settings
+    pszParamsCopy = strdup(pddd->szParams);
+    if (pszParamsCopy)
+    {
+        LONG            lAdapter = -1,      // current adapter = none
+                        lUnit = -1;         // current unit = none
+        PS506ADAPTER    pS506AdapterThis = NULL; // current adapter = none
+        PS506UNIT       pS506UnitThis = NULL;    // current unit = none
+        PSZ             pszError = NULL,    // error message = none
+                        pszUnrecognized = NULL; // unrecognized params = none
+
+        // strtok loop
+        pszToken = strtok(pszParamsCopy, " ");
+        if (pszToken) do
+        {
+            // adapter spec?
+            if (memicmp(pszToken, "/A:", 3) == 0)
+            {
+                LONG lNew = strtoul(pszToken + 3, 0, 0);
+                if ((lNew < 0) || (lNew > 1))
+                    pszError = "Invalid adapter number specified (must be 0 or 1).";
+                else
+                {
+                    lAdapter = lNew;
+                    pS506AdapterThis = &pS506All->Adapters[lAdapter];
+                    if (pS506AdapterThis->fParsed)
+                        pszError = "Adapter specified twice.";
+                    else
+                    {
+                        pS506AdapterThis->fParsed = TRUE;
+                        // invalidate current unit
+                        pS506UnitThis = NULL;
+                    }
+                }
+            }
+
+            // unit spec?
+            else if (memicmp(pszToken, "/U:", 3) == 0)
+            {
+                if (lAdapter == -1)
+                    pszError = "Unit without previous adapter specified.";
+                else
+                {
+                    LONG lNew = strtoul(pszToken + 3, 0, 0);
+                    if ((lNew < 0) || (lNew > 1))
+                        pszError = "Invalid unit number specified (must be 0 or 1).";
+                    else
+                    {
+                        lUnit = lNew;
+                        if (lAdapter == 1)
+                            lUnit += 2;        // now we have a range of 0 thru 3
+                        pS506UnitThis = &pS506All->Units[lUnit];
+                        if (pS506UnitThis->fParsed)
+                            pszError = "Unit specified twice.";
+                        else
+                        {
+                            pS506UnitThis->fParsed = TRUE;
+                            // invalidate current adapter
+                            pS506AdapterThis = NULL;
+                        }
+                    }
+                }
+            }
+
+            // global settings
+            else if (stricmp(pszToken, "/V") == 0)
+                pS506All->bInit = 1;
+            else if (stricmp(pszToken, "/!V") == 0)
+                pS506All->bInit = 0;
+            else if (stricmp(pszToken, "/W") == 0)
+                pS506All->bInit = 2;
+            else if (stricmp(pszToken, "/DSG") == 0)
+                pS506All->b3ScatterGather = 1;
+            else if (stricmp(pszToken, "/!DSG") == 0)
+                pS506All->b3ScatterGather = 0;
+            else if (memicmp(pszToken, "/PCLK:", 6) == 0)
+            {
+                pS506All->fPCIClock = TRUE;
+                if (strcmp(pszToken+6, "25") == 0)
+                    pS506All->ulPCIClock = 0;
+                else if (strcmp(pszToken+6, "33") == 0)
+                    pS506All->ulPCIClock = 1;
+                else if (strcmp(pszToken+6, "37") == 0)
+                    pS506All->ulPCIClock = 2;
+                else
+                    pS506All->ulPCIClock = 3;
+            }
+            else if (stricmp(pszToken, "/GBM") == 0)
+                pS506All->fGBM = TRUE;
+            else if (stricmp(pszToken, "/FORCEGBM") == 0)
+                pS506All->fForceGBM = TRUE;
+            else if (stricmp(pszToken, "/MGAFIX") == 0)
+                pS506All->fMGAFix = TRUE;
+
+            // adapter settings
+            else if (stricmp(pszToken, "/I") == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                    pS506AdapterThis->fIgnore = TRUE;
+            else if (memicmp(pszToken, "/R", 2) == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                    pS506AdapterThis->b3AllowReset = 1;
+            else if (memicmp(pszToken, "/!R", 3) == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                    pS506AdapterThis->b3AllowReset = 0;
+            else if (memicmp(pszToken, "/P:", 3) == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                {
+                    pS506AdapterThis->fBaseAddress = TRUE;
+                    pS506AdapterThis->ulBaseAddress = strtoul(pszToken + 3, 0,
+                                                      16); // hex
+                }
+            else if (memicmp(pszToken, "/IRQ:", 5) == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                {
+                    pS506AdapterThis->fIRQ = TRUE;
+                    pS506AdapterThis->ulIRQ = strtoul(pszToken + 5, 0, 0);  // dec
+                }
+            else if (memicmp(pszToken, "/DC:", 4) == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                {
+                    pS506AdapterThis->fDMAChannel = TRUE;
+                    pS506AdapterThis->ulDMAChannel = strtoul(pszToken + 4, 0, 0);  // dec
+                }
+            else if (memicmp(pszToken, "/DSGP:", 6) == 0)
+                if (pS506AdapterThis == NULL)
+                    pszError = "Parameter out of adapter context.";
+                else
+                {
+                    pS506AdapterThis->fDMAScatterGatherAddr = TRUE;
+                    pS506AdapterThis->ulDMAScatterGatherAddr = strtoul(pszToken + 6, 0,
+                                                               16);  // hex
+                }
+            else if (memicmp(pszToken, "/BM", 3) == 0)
+                // busmaster: can be specified both
+                // as an adapter and user parameter
+                if (pS506AdapterThis == NULL)
+                    if (pS506UnitThis == NULL)
+                        pszError = "/[!]BM must be specified either with an adapter or unit.";
+                    else
+                        // unit:
+                        pS506UnitThis->b3BusMaster = 1;
+                else
+                    // adapter:
+                    pS506AdapterThis->b3BusMaster = 1;
+            else if (memicmp(pszToken, "/!BM", 3) == 0)
+                // busmaster: can be specified both
+                // as an adapter and user parameter
+                if (pS506AdapterThis == NULL)
+                    if (pS506UnitThis == NULL)
+                        pszError = "/[!]BM must be specified either with an adapter or unit.";
+                    else
+                        // unit:
+                        pS506UnitThis->b3BusMaster = 0;
+                else
+                    // adapter:
+                    pS506AdapterThis->b3BusMaster = 0;
+
+            // unit settings
+            else if (memicmp(pszToken, "/T:", 3) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                {
+                    pS506UnitThis->fRecoveryTime = TRUE;
+                    pS506UnitThis->ulRecoveryTime = strtoul(pszToken + 3, 0, 0); // dec
+                }
+            else if (memicmp(pszToken, "/GEO:", 5) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                {
+                    pS506UnitThis->fGeometry = TRUE;
+                    strcpy(pS506UnitThis->szGeometry, pszToken+5);
+                }
+            else if (memicmp(pszToken, "/SMS", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3SMS = 1;
+            else if (memicmp(pszToken, "/!SMS", 5) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3SMS = 0;
+            else if (memicmp(pszToken, "/LBA", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->fLBA = TRUE;
+            else if (memicmp(pszToken, "/DM", 3) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3DASD = 1;
+            else if (memicmp(pszToken, "/!DM", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3DASD = 0;
+            else if (memicmp(pszToken, "/F", 2) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->fForce = TRUE;
+            else if (memicmp(pszToken, "/ATAPI", 6) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3ATAPI = 1;
+            else if (memicmp(pszToken, "/!ATAPI", 6) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3ATAPI = 0;
+            else if (memicmp(pszToken, "/IT:", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                {
+                    pS506UnitThis->fTimeout = TRUE;
+                    pS506UnitThis->ulTimeout = strtoul(pszToken + 4, 0, 0);
+                }
+            else if (memicmp(pszToken, "/MR:", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                {
+                    pS506UnitThis->fLimitRate = TRUE;
+                    pS506UnitThis->bUDMA = *(pszToken + 4) - '0';
+                    pS506UnitThis->bMWDMA = *(pszToken + 5) - '0';
+                    pS506UnitThis->bPIO = *(pszToken + 6) - '0';
+                }
+            else if (memicmp(pszToken, "/RMV", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3Removeable = 1;
+            else if (memicmp(pszToken, "/!RMV", 4) == 0)
+                if (pS506UnitThis == NULL)
+                    pszError = "Parameter out of unit context.";
+                else
+                    pS506UnitThis->b3Removeable = 0;
+
+            else
+            {
+                // unrecognized param:
+                // append to string, which will be
+                // displayed later with a warning
+                xstrcat(&pszUnrecognized, pszToken);
+                xstrcat(&pszUnrecognized, " ");
+            }
+
+            if (pszError)
+            {
+                CHAR szMsg[500];
+                sprintf(szMsg, "Syntax error in parameters: %s\n\nCurrent token: %s"
+                               "\n\nWarning: All subsequent parameters have been discarded.\n",
+                        pszError, pszToken);
+                DebugBox(NULLHANDLE, "IBM1S506.ADD", szMsg);
+                break;
+            }
+        } while (pszToken = strtok(NULL, " "));
+
+        free(pszParamsCopy);
+
+        if (pszUnrecognized)
+        {
+            // anything unrecognized:
+            CHAR szMsg[500];
+            sprintf(szMsg, "Warning: The following parameters were not recognized and will be ignored:"
+                           "\n\n%s\n\n",
+                    pszUnrecognized);
+            DebugBox(NULLHANDLE, "IBM1S506.ADD", szMsg);
+        }
+    }
+}
+
+/*
+ *@@ RecomposeParamsString:
  *      returns a new complete S506 driver parameters
  *      string in a new buffer, based on the current
  *      dialog settings. The caller must free() the
@@ -1010,6 +1320,334 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
 }
 
 /*
+ *@@ S506Settings2Dlg:
+ *      sets the controls' data in the dialog according
+ *      to the current settings in S506ALL.
+ *      This was extracted from drv_fnwpConfigIBM1S506
+ *      with V0.9.3.
+ *
+ *@@added V0.9.3 (2000-04-10) [umoeller]
+ */
+
+VOID S506Settings2Dlg(HWND hwndDlg,
+                      PDRIVERDLGDATA pddd)
+{
+    CHAR            szTemp[30];
+    ULONG           ul = 0;
+    PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
+
+    // find current adapter pointer
+    PS506ADAPTER    pS506AdapterThis = &pS506All->Adapters[pS506All->bCurrentAdapter];
+    // find current unit pS506All->bCurrentUnit
+    PS506UNIT       pS506UnitThis = &pS506All->Units[pS506All->bCurrentUnit];
+
+    /*
+     *  global settings
+     */
+
+    switch (pS506All->bInit)
+    {
+        case 1:
+            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_INITVERBOSE, TRUE); break;
+        case 2:
+            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_INITWAIT, TRUE); break;
+        default:
+            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_INITQUIET, TRUE); break;
+    }
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_DSG,
+                          pS506All->b3ScatterGather);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_CLOCK_CHECK,
+                          pS506All->fPCIClock);
+    winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
+                                             ID_OSDI_DANIS506_CLOCK_SLIDER),
+                             SMA_INCREMENTVALUE, pS506All->ulPCIClock);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_GBM,
+                          pS506All->fGBM);
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_FORCEGBM,
+                          pS506All->fForceGBM);
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_MGAFIX,
+                          pS506All->fMGAFix);
+
+    /*
+     *  adapter settings
+     */
+
+    // /I
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_IGNORE,
+                          pS506AdapterThis->fIgnore);
+
+    // /!R; tri-state
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_RESET,
+                          pS506AdapterThis->b3AllowReset);
+
+    // /P
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_BASEADDR_CHECK,
+                          pS506AdapterThis->fBaseAddress);
+    sprintf(szTemp, "%lX",
+            pS506AdapterThis->ulBaseAddress);
+    WinSetDlgItemText(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY, szTemp);
+
+    // /IRQ
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_IRQ_CHECK,
+                          pS506AdapterThis->fIRQ);
+    winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
+                                             ID_OSDI_S506_A_IRQ_SLIDER),
+                             SMA_INCREMENTVALUE, pS506AdapterThis->ulIRQ);
+
+    // /DC
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_DMA_CHECK,
+                          pS506AdapterThis->fDMAChannel);
+    // spin button: ID_OSDI_S506_A_DMA_SPIN 3, 5, 6, 7
+    for (ul = 0;
+         ul < DMACHANNELS_COUNT;
+         ul++)
+        if (strtoul(apszDMAChannels[ul], 0, 0) == pS506AdapterThis->ulDMAChannel)
+        {
+            WinSendDlgItemMsg(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
+                              SPBM_SETCURRENTVALUE,
+                              (MPARAM)ul,
+                              (MPARAM)0);
+            break;
+        }
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_DSGADDR_CHECK,
+                          pS506AdapterThis->fDMAScatterGatherAddr);
+    sprintf(szTemp, "%lX",
+            pS506AdapterThis->ulDMAScatterGatherAddr);
+    WinSetDlgItemText(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY, szTemp);
+
+    // /!BM; tri-state (adapter)
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_BUSMASTER,
+                          pS506AdapterThis->b3BusMaster);
+
+    /*
+     *  unit settings
+     */
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_RECOVERY_CHECK,
+                          pS506UnitThis->fRecoveryTime);
+
+    winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
+                                             ID_OSDI_S506_U_RECOVERY_SLIDER),
+                             SMA_INCREMENTVALUE,
+                             pS506UnitThis->ulRecoveryTime - 5);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_GEO_CHECK,
+                          pS506UnitThis->fGeometry);
+    WinSetDlgItemText(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
+                      pS506UnitThis->szGeometry);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_SMS,
+                          pS506UnitThis->b3SMS);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_LBA,
+                          pS506UnitThis->fLBA);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_DASD,
+                          pS506UnitThis->b3DASD);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_FORCE,
+                          pS506UnitThis->fForce);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_ATAPI,
+                          pS506UnitThis->b3ATAPI);
+
+    // /!BM; tri-state (unit)
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_BUSMASTER,
+                          pS506UnitThis->b3BusMaster);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_CHECK,
+                          pS506UnitThis->fTimeout);
+    winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
+                           0, 60, pS506UnitThis->ulTimeout);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_RATE_CHECK,
+                          pS506UnitThis->fLimitRate);
+    winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
+                           0, 5, pS506UnitThis->bUDMA);
+    winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
+                           0, 3, pS506UnitThis->bMWDMA);
+    winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
+                           0, 4, pS506UnitThis->bPIO);
+
+    winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_REMOVEABLE,
+                          pS506UnitThis->b3Removeable);
+
+    WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+}
+
+/*
+ * ausNotSupportedByIBM:
+ *      array of dlg IDs which must be disabled when
+ *      this dialog is used for the IBM1S506.ADD
+ *      driver.
+ */
+
+USHORT ausNotSupportedByIBM[] =
+            {
+                ID_OSDI_DANIS506_CLOCK_CHECK,
+                ID_OSDI_DANIS506_CLOCK_SLIDER,
+                ID_OSDI_DANIS506_CLOCK_TXT,
+                ID_OSDI_DANIS506_GBM,
+                ID_OSDI_DANIS506_FORCEGBM,
+                ID_OSDI_DANIS506_MGAFIX,
+
+                ID_OSDI_DANIS506_U_TIMEOUT_CHECK,
+                ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
+                ID_OSDI_DANIS506_U_RATE_CHECK,
+                ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
+                ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
+                ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
+                ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
+                ID_OSDI_DANIS506_U_RATE_PIO_TXT,
+                ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
+                ID_OSDI_DANIS506_U_REMOVEABLE
+            };
+
+/*
+ * ausNotSupportedByOldIBM:
+ *      more dlg IDs which must be disabled for IBM
+ *      drivers with versions < 10.xxx.
+ */
+
+USHORT ausNotSupportedByOldIBM[] =
+            {
+                ID_OSDI_S506_INITWAIT,
+                ID_OSDI_S506_U_BUSMASTER
+            };
+
+/*
+ *@@ S506EnableItems:
+ *      enables/disables items in the dialog according
+ *      to the settings and the driver versions.
+ *      This was extracted from drv_fnwpConfigIBM1S506
+ *      with V0.9.3.
+ *
+ *@@added V0.9.3 (2000-04-10) [umoeller]
+ */
+
+VOID S506EnableItems(HWND hwndDlg,
+                     PDRIVERDLGDATA pddd)
+{
+    PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
+    // find current adapter pointer
+    PS506ADAPTER    pS506AdapterThis = &pS506All->Adapters[pS506All->bCurrentAdapter];
+    // find current unit pS506All->bCurrentUnit
+    PS506UNIT       pS506UnitThis = &pS506All->Units[pS506All->bCurrentUnit];
+    BOOL            fUnitDisabled = FALSE;
+
+    // global items
+    WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_SLIDER,
+                      pS506All->fPCIClock);
+    WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_TXT,
+                      pS506All->fPCIClock);
+
+    // adapter items:
+    // disable all if adapter is disabled
+    winhEnableControls(hwndDlg,
+                       ID_OSDI_S506_A_RESET,            // first
+                       ID_OSDI_S506_A_DSGADDR_ENTRY,    // last
+                       !pS506AdapterThis->fIgnore);
+
+    if (!pS506AdapterThis->fIgnore)
+    {
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY,
+                          pS506AdapterThis->fBaseAddress);
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_SLIDER,
+                          pS506AdapterThis->fIRQ);
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_TXT,
+                          pS506AdapterThis->fIRQ);
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
+                          pS506AdapterThis->fDMAChannel);
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY,
+                          pS506AdapterThis->fDMAScatterGatherAddr);
+    }
+
+    // unit radio buttons
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT0,
+                      !pS506All->Adapters[0].fIgnore);
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT1,
+                      !pS506All->Adapters[0].fIgnore);
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT2,
+                      !pS506All->Adapters[1].fIgnore);
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT3,
+                      !pS506All->Adapters[1].fIgnore);
+
+    // unit items:
+    // disable all if corresponding adapter is disabled
+    fUnitDisabled = (   (   (pS506All->Adapters[0].fIgnore)
+                         && (   (pS506All->bCurrentUnit == 0)
+                             || (pS506All->bCurrentUnit == 1)
+                            )
+                        )
+                     || (   (pS506All->Adapters[1].fIgnore)
+                         && (   (pS506All->bCurrentUnit == 2)
+                             || (pS506All->bCurrentUnit == 3)
+                            )
+                        )
+                    );
+    winhEnableControls(hwndDlg,
+                       ID_OSDI_S506_U_BUSMASTER,        // first
+                       ID_OSDI_DANIS506_U_REMOVEABLE,   // last
+                       !fUnitDisabled);
+    if (!fUnitDisabled)
+    {
+        WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_SLIDER,
+                          pS506UnitThis->fRecoveryTime);
+        WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_TXT,
+                          pS506UnitThis->fRecoveryTime);
+        WinEnableControl(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
+                          pS506UnitThis->fGeometry);
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
+                          pS506UnitThis->fTimeout);
+
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
+                          pS506UnitThis->fLimitRate);
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
+                          pS506UnitThis->fLimitRate);
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
+                          pS506UnitThis->fLimitRate);
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
+                          pS506UnitThis->fLimitRate);
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_TXT,
+                          pS506UnitThis->fLimitRate);
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
+                          pS506UnitThis->fLimitRate);
+    }
+
+    if (pS506All->ulDriverType == DRVT_IBM1S506)
+    {
+        // IBM driver: disable DANIS506.ADD features
+        ULONG ul;
+        for (ul = 0;
+             ul < sizeof(ausNotSupportedByIBM) / sizeof(ausNotSupportedByIBM[0]);
+             ul++)
+        {
+            WinEnableControl(hwndDlg,
+                             ausNotSupportedByIBM[ul],
+                             FALSE);
+        }
+
+        if (pS506All->ulVersionMajor < 10)
+        {
+            // for old IBM1S506 drivers, disable newer
+            // features
+            for (ul = 0;
+                 ul < sizeof(ausNotSupportedByOldIBM) / sizeof(ausNotSupportedByOldIBM[0]);
+                 ul++)
+            {
+                WinEnableControl(hwndDlg,
+                                 ausNotSupportedByOldIBM[ul],
+                                 FALSE);
+            }
+        }
+    }
+}
+
+/*
  *@@ drv_fnwpConfigIBM1S506:
  *      monster dialog procedure for the "Configure IBM1S506.ADD"
  *      dialog.
@@ -1043,6 +1681,8 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
  *      which was longer than this one.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: crashed on OK if no params were set; fixed
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: added IBM1S506.ADD support
  */
 
 MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1061,12 +1701,12 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 
         case WM_INITDLG:
         {
-            PSZ         pszParamsCopy = 0,
-                        pszToken = 0;
             PS506ALL    pS506All = malloc(sizeof(S506ALL));
             ULONG       ul = 0;
             // LONG        lColor;
             // CHAR        szFont[] = "8.Helv";
+
+            memset(pS506All, 0, sizeof(S506ALL));
 
             // store DRIVERDLGDATA in window words
             pddd = (PDRIVERDLGDATA)mp2;
@@ -1080,9 +1720,19 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 
             // initialize dialog data
             if (stricmp(pddd->pDriverSpec->pszFilename, "DANIS506.ADD") == 0)
-                pS506All->fDriverType = 1;
+                pS506All->ulDriverType = DRVT_DANIS506;
             else
-                pS506All->fDriverType = 0;
+            {
+                pS506All->ulDriverType = DRVT_IBM1S506;
+
+                if (pddd->pDriverSpec->pszVersion)
+                {
+                    sscanf(pddd->pDriverSpec->pszVersion,
+                           "%d.%d",
+                           &pS506All->ulVersionMajor,
+                           &pS506All->ulVersionMinor);
+                }
+            }
 
             pS506All->bCurrentAdapter = 0;
             pS506All->bCurrentUnit = 0;
@@ -1090,293 +1740,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             // set driver, adapter, unit defaults
             SetS506Defaults(pS506All);
 
-            // now parse the parameters
-            // and update the settings
-            pszParamsCopy = strdup(pddd->szParams);
-            if (pszParamsCopy)
-            {
-                LONG            lAdapter = -1,      // current adapter = none
-                                lUnit = -1;         // current unit = none
-                PS506ADAPTER    pS506AdapterThis = NULL; // current adapter = none
-                PS506UNIT       pS506UnitThis = NULL;    // current unit = none
-                PSZ             pszError = NULL,    // error message = none
-                                pszUnrecognized = NULL; // unrecognized params = none
-
-                // strtok loop
-                pszToken = strtok(pszParamsCopy, " ");
-                do {
-                    // adapter spec?
-                    if (memicmp(pszToken, "/A:", 3) == 0)
-                    {
-                        LONG lNew = strtoul(pszToken + 3, 0, 0);
-                        if ((lNew < 0) || (lNew > 1))
-                            pszError = "Invalid adapter number specified (must be 0 or 1).";
-                        else
-                        {
-                            lAdapter = lNew;
-                            pS506AdapterThis = &pS506All->Adapters[lAdapter];
-                            if (pS506AdapterThis->fParsed)
-                                pszError = "Adapter specified twice.";
-                            else
-                            {
-                                pS506AdapterThis->fParsed = TRUE;
-                                // invalidate current unit
-                                pS506UnitThis = NULL;
-                            }
-                        }
-                    }
-
-                    // unit spec?
-                    else if (memicmp(pszToken, "/U:", 3) == 0)
-                    {
-                        if (lAdapter == -1)
-                            pszError = "Unit without previous adapter specified.";
-                        else
-                        {
-                            LONG lNew = strtoul(pszToken + 3, 0, 0);
-                            if ((lNew < 0) || (lNew > 1))
-                                pszError = "Invalid unit number specified (must be 0 or 1).";
-                            else
-                            {
-                                lUnit = lNew;
-                                if (lAdapter == 1)
-                                    lUnit += 2;        // now we have a range of 0 thru 3
-                                pS506UnitThis = &pS506All->Units[lUnit];
-                                if (pS506UnitThis->fParsed)
-                                    pszError = "Unit specified twice.";
-                                else
-                                {
-                                    pS506UnitThis->fParsed = TRUE;
-                                    // invalidate current adapter
-                                    pS506AdapterThis = NULL;
-                                }
-                            }
-                        }
-                    }
-
-                    // global settings
-                    else if (stricmp(pszToken, "/V") == 0)
-                        pS506All->bInit = 1;
-                    else if (stricmp(pszToken, "/!V") == 0)
-                        pS506All->bInit = 0;
-                    else if (stricmp(pszToken, "/W") == 0)
-                        pS506All->bInit = 2;
-                    else if (stricmp(pszToken, "/DSG") == 0)
-                        pS506All->b3ScatterGather = 1;
-                    else if (stricmp(pszToken, "/!DSG") == 0)
-                        pS506All->b3ScatterGather = 0;
-                    else if (memicmp(pszToken, "/PCLK:", 6) == 0)
-                    {
-                        pS506All->fPCIClock = TRUE;
-                        if (strcmp(pszToken+6, "25") == 0)
-                            pS506All->ulPCIClock = 0;
-                        else if (strcmp(pszToken+6, "33") == 0)
-                            pS506All->ulPCIClock = 1;
-                        else if (strcmp(pszToken+6, "37") == 0)
-                            pS506All->ulPCIClock = 2;
-                        else
-                            pS506All->ulPCIClock = 3;
-                    }
-                    else if (stricmp(pszToken, "/GBM") == 0)
-                        pS506All->fGBM = TRUE;
-                    else if (stricmp(pszToken, "/FORCEGBM") == 0)
-                        pS506All->fForceGBM = TRUE;
-                    else if (stricmp(pszToken, "/MGAFIX") == 0)
-                        pS506All->fMGAFix = TRUE;
-
-                    // adapter settings
-                    else if (stricmp(pszToken, "/I") == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                            pS506AdapterThis->fIgnore = TRUE;
-                    else if (memicmp(pszToken, "/R", 2) == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                            pS506AdapterThis->b3AllowReset = 1;
-                    else if (memicmp(pszToken, "/!R", 3) == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                            pS506AdapterThis->b3AllowReset = 0;
-                    else if (memicmp(pszToken, "/P:", 3) == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                        {
-                            pS506AdapterThis->fBaseAddress = TRUE;
-                            pS506AdapterThis->ulBaseAddress = strtoul(pszToken + 3, 0,
-                                                              16); // hex
-                        }
-                    else if (memicmp(pszToken, "/IRQ:", 5) == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                        {
-                            pS506AdapterThis->fIRQ = TRUE;
-                            pS506AdapterThis->ulIRQ = strtoul(pszToken + 5, 0, 0);  // dec
-                        }
-                    else if (memicmp(pszToken, "/DC:", 4) == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                        {
-                            pS506AdapterThis->fDMAChannel = TRUE;
-                            pS506AdapterThis->ulDMAChannel = strtoul(pszToken + 4, 0, 0);  // dec
-                        }
-                    else if (memicmp(pszToken, "/DSGP:", 6) == 0)
-                        if (pS506AdapterThis == NULL)
-                            pszError = "Parameter out of adapter context.";
-                        else
-                        {
-                            pS506AdapterThis->fDMAScatterGatherAddr = TRUE;
-                            pS506AdapterThis->ulDMAScatterGatherAddr = strtoul(pszToken + 6, 0,
-                                                                       16);  // hex
-                        }
-                    else if (memicmp(pszToken, "/BM", 3) == 0)
-                        // busmaster: can be specified both
-                        // as an adapter and user parameter
-                        if (pS506AdapterThis == NULL)
-                            if (pS506UnitThis == NULL)
-                                pszError = "/[!]BM must be specified either with an adapter or unit.";
-                            else
-                                // unit:
-                                pS506UnitThis->b3BusMaster = 1;
-                        else
-                            // adapter:
-                            pS506AdapterThis->b3BusMaster = 1;
-                    else if (memicmp(pszToken, "/!BM", 3) == 0)
-                        // busmaster: can be specified both
-                        // as an adapter and user parameter
-                        if (pS506AdapterThis == NULL)
-                            if (pS506UnitThis == NULL)
-                                pszError = "/[!]BM must be specified either with an adapter or unit.";
-                            else
-                                // unit:
-                                pS506UnitThis->b3BusMaster = 0;
-                        else
-                            // adapter:
-                            pS506AdapterThis->b3BusMaster = 0;
-
-                    // unit settings
-                    else if (memicmp(pszToken, "/T:", 3) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                        {
-                            pS506UnitThis->fRecoveryTime = TRUE;
-                            pS506UnitThis->ulRecoveryTime = strtoul(pszToken + 3, 0, 0); // dec
-                        }
-                    else if (memicmp(pszToken, "/GEO:", 5) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                        {
-                            pS506UnitThis->fGeometry = TRUE;
-                            strcpy(pS506UnitThis->szGeometry, pszToken+5);
-                        }
-                    else if (memicmp(pszToken, "/SMS", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3SMS = 1;
-                    else if (memicmp(pszToken, "/!SMS", 5) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3SMS = 0;
-                    else if (memicmp(pszToken, "/LBA", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->fLBA = TRUE;
-                    else if (memicmp(pszToken, "/DM", 3) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3DASD = 1;
-                    else if (memicmp(pszToken, "/!DM", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3DASD = 0;
-                    else if (memicmp(pszToken, "/F", 2) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->fForce = TRUE;
-                    else if (memicmp(pszToken, "/ATAPI", 6) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3ATAPI = 1;
-                    else if (memicmp(pszToken, "/!ATAPI", 6) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3ATAPI = 0;
-                    else if (memicmp(pszToken, "/IT:", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                        {
-                            pS506UnitThis->fTimeout = TRUE;
-                            pS506UnitThis->ulTimeout = strtoul(pszToken + 4, 0, 0);
-                        }
-                    else if (memicmp(pszToken, "/MR:", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                        {
-                            pS506UnitThis->fLimitRate = TRUE;
-                            pS506UnitThis->bUDMA = *(pszToken + 4) - '0';
-                            pS506UnitThis->bMWDMA = *(pszToken + 5) - '0';
-                            pS506UnitThis->bPIO = *(pszToken + 6) - '0';
-                        }
-                    else if (memicmp(pszToken, "/RMV", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3Removeable = 1;
-                    else if (memicmp(pszToken, "/!RMV", 4) == 0)
-                        if (pS506UnitThis == NULL)
-                            pszError = "Parameter out of unit context.";
-                        else
-                            pS506UnitThis->b3Removeable = 0;
-
-                    else
-                    {
-                        // unrecognized param:
-                        // append to string, which will be
-                        // displayed later with a warning
-                        xstrcat(&pszUnrecognized, pszToken);
-                        xstrcat(&pszUnrecognized, " ");
-                    }
-
-                    if (pszError)
-                    {
-                        CHAR szMsg[500];
-                        sprintf(szMsg, "Syntax error in parameters: %s\n\nCurrent token: %s"
-                                       "\n\nWarning: All subsequent parameters have been discarded.\n",
-                                pszError, pszToken);
-                        DebugBox(hwndDlg, "IBM1S506.ADD", szMsg);
-                        break;
-                    }
-                } while (pszToken = strtok(NULL, " "));
-
-                free(pszParamsCopy);
-
-                if (pszUnrecognized)
-                {
-                    // anything unrecognized:
-                    CHAR szMsg[500];
-                    sprintf(szMsg, "Warning: The following parameters were not recognized and will be ignored:"
-                                   "\n\n%s\n\n",
-                            pszUnrecognized);
-                    DebugBox(hwndDlg, "IBM1S506.ADD", szMsg);
-                }
-            }
+            S506ParseParamsString(pddd);
 
             // entry fields
             winhSetEntryFieldLimit(WinWindowFromID(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY),
@@ -1488,153 +1852,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
          */
 
         case XM_SETTINGS2DLG:
-        {
-            CHAR            szTemp[30];
-            ULONG           ul = 0;
-            PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
-
-            // find current adapter pointer
-            PS506ADAPTER    pS506AdapterThis = &pS506All->Adapters[pS506All->bCurrentAdapter];
-            // find current unit pS506All->bCurrentUnit
-            PS506UNIT       pS506UnitThis = &pS506All->Units[pS506All->bCurrentUnit];
-
-            /*
-             *  global settings
-             */
-
-            switch (pS506All->bInit)
-            {
-                case 1:
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_INITVERBOSE, TRUE); break;
-                case 2:
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_INITWAIT, TRUE); break;
-                default:
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_INITQUIET, TRUE); break;
-            }
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_DSG,
-                                  pS506All->b3ScatterGather);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_CLOCK_CHECK,
-                                  pS506All->fPCIClock);
-            winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
-                                                     ID_OSDI_DANIS506_CLOCK_SLIDER),
-                                     SMA_INCREMENTVALUE, pS506All->ulPCIClock);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_GBM,
-                                  pS506All->fGBM);
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_FORCEGBM,
-                                  pS506All->fForceGBM);
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_MGAFIX,
-                                  pS506All->fMGAFix);
-
-            /*
-             *  adapter settings
-             */
-
-            // /I
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_IGNORE,
-                                  pS506AdapterThis->fIgnore);
-
-            // /!R; tri-state
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_RESET,
-                                  pS506AdapterThis->b3AllowReset);
-
-            // /P
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_BASEADDR_CHECK,
-                                  pS506AdapterThis->fBaseAddress);
-            sprintf(szTemp, "%lX",
-                    pS506AdapterThis->ulBaseAddress);
-            WinSetDlgItemText(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY, szTemp);
-
-            // /IRQ
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_IRQ_CHECK,
-                                  pS506AdapterThis->fIRQ);
-            winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
-                                                     ID_OSDI_S506_A_IRQ_SLIDER),
-                                     SMA_INCREMENTVALUE, pS506AdapterThis->ulIRQ);
-
-            // /DC
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_DMA_CHECK,
-                                  pS506AdapterThis->fDMAChannel);
-            // spin button: ID_OSDI_S506_A_DMA_SPIN 3, 5, 6, 7
-            for (ul = 0;
-                 ul < DMACHANNELS_COUNT;
-                 ul++)
-                if (strtoul(apszDMAChannels[ul], 0, 0) == pS506AdapterThis->ulDMAChannel)
-                {
-                    WinSendDlgItemMsg(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
-                                      SPBM_SETCURRENTVALUE,
-                                      (MPARAM)ul,
-                                      (MPARAM)0);
-                    break;
-                }
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_DSGADDR_CHECK,
-                                  pS506AdapterThis->fDMAScatterGatherAddr);
-            sprintf(szTemp, "%lX",
-                    pS506AdapterThis->ulDMAScatterGatherAddr);
-            WinSetDlgItemText(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY, szTemp);
-
-            // /!BM; tri-state (adapter)
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_A_BUSMASTER,
-                                  pS506AdapterThis->b3BusMaster);
-
-            /*
-             *  unit settings
-             */
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_RECOVERY_CHECK,
-                                  pS506UnitThis->fRecoveryTime);
-
-            winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
-                                                     ID_OSDI_S506_U_RECOVERY_SLIDER),
-                                     SMA_INCREMENTVALUE,
-                                     pS506UnitThis->ulRecoveryTime - 5);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_GEO_CHECK,
-                                  pS506UnitThis->fGeometry);
-            WinSetDlgItemText(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
-                              pS506UnitThis->szGeometry);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_SMS,
-                                  pS506UnitThis->b3SMS);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_LBA,
-                                  pS506UnitThis->fLBA);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_DASD,
-                                  pS506UnitThis->b3DASD);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_FORCE,
-                                  pS506UnitThis->fForce);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_ATAPI,
-                                  pS506UnitThis->b3ATAPI);
-
-            // /!BM; tri-state (unit)
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_S506_U_BUSMASTER,
-                                  pS506UnitThis->b3BusMaster);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_CHECK,
-                                  pS506UnitThis->fTimeout);
-            winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
-                                   0, 60, pS506UnitThis->ulTimeout);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_RATE_CHECK,
-                                  pS506UnitThis->fLimitRate);
-            winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
-                                   0, 5, pS506UnitThis->bUDMA);
-            winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
-                                   0, 3, pS506UnitThis->bMWDMA);
-            winhSetDlgItemSpinData(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
-                                   0, 4, pS506UnitThis->bPIO);
-
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_REMOVEABLE,
-                                  pS506UnitThis->b3Removeable);
-
-            WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
-        break; }
+            S506Settings2Dlg(hwndDlg, pddd);
+        break;
 
         /*
          * XM_ENABLEITEMS:
@@ -1644,93 +1863,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
          */
 
         case XM_ENABLEITEMS:
-        {
-            PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
-            // find current adapter pointer
-            PS506ADAPTER    pS506AdapterThis = &pS506All->Adapters[pS506All->bCurrentAdapter];
-            // find current unit pS506All->bCurrentUnit
-            PS506UNIT       pS506UnitThis = &pS506All->Units[pS506All->bCurrentUnit];
-            BOOL            fUnitDisabled = FALSE;
-
-            // global items
-            WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_SLIDER,
-                              pS506All->fPCIClock);
-            WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_TXT,
-                              pS506All->fPCIClock);
-
-            // adapter items:
-            // disable all if adapter is disabled
-            winhEnableControls(hwndDlg,
-                               ID_OSDI_S506_A_RESET,            // first
-                               ID_OSDI_S506_A_DSGADDR_ENTRY,    // last
-                               !pS506AdapterThis->fIgnore);
-
-            if (!pS506AdapterThis->fIgnore)
-            {
-                WinEnableControl(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY,
-                                  pS506AdapterThis->fBaseAddress);
-                WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_SLIDER,
-                                  pS506AdapterThis->fIRQ);
-                WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_TXT,
-                                  pS506AdapterThis->fIRQ);
-                WinEnableControl(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
-                                  pS506AdapterThis->fDMAChannel);
-                WinEnableControl(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY,
-                                  pS506AdapterThis->fDMAScatterGatherAddr);
-            }
-
-            // unit radio buttons
-            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT0,
-                              !pS506All->Adapters[0].fIgnore);
-            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT1,
-                              !pS506All->Adapters[0].fIgnore);
-            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT2,
-                              !pS506All->Adapters[1].fIgnore);
-            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT3,
-                              !pS506All->Adapters[1].fIgnore);
-
-            // unit items:
-            // disable all if corresponding adapter is disabled
-            fUnitDisabled = (   (   (pS506All->Adapters[0].fIgnore)
-                                 && (   (pS506All->bCurrentUnit == 0)
-                                     || (pS506All->bCurrentUnit == 1)
-                                    )
-                                )
-                             || (   (pS506All->Adapters[1].fIgnore)
-                                 && (   (pS506All->bCurrentUnit == 2)
-                                     || (pS506All->bCurrentUnit == 3)
-                                    )
-                                )
-                            );
-            winhEnableControls(hwndDlg,
-                               ID_OSDI_S506_U_BUSMASTER,        // first
-                               ID_OSDI_DANIS506_U_REMOVEABLE,   // last
-                               !fUnitDisabled);
-            if (!fUnitDisabled)
-            {
-                WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_SLIDER,
-                                  pS506UnitThis->fRecoveryTime);
-                WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_TXT,
-                                  pS506UnitThis->fRecoveryTime);
-                WinEnableControl(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
-                                  pS506UnitThis->fGeometry);
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
-                                  pS506UnitThis->fTimeout);
-
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
-                                  pS506UnitThis->fLimitRate);
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
-                                  pS506UnitThis->fLimitRate);
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
-                                  pS506UnitThis->fLimitRate);
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
-                                  pS506UnitThis->fLimitRate);
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_TXT,
-                                  pS506UnitThis->fLimitRate);
-                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
-                                  pS506UnitThis->fLimitRate);
-            }
-        break; }
+            S506EnableItems(hwndDlg, pddd);
+        break;
 
         /*
          * XM_DLG2SETTINGS:
@@ -2177,8 +2311,11 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     PSZ pszNewParams = RecomposeParamsString(hwndDlg,
                                                              (PS506ALL)pddd->pvUser);
                     WinSetDlgItemText(hwndDlg, ID_OSDI_S506_NEWPARAMS, pszNewParams);
-                    strcpy(pddd->szParams, pszNewParams);
-                    free(pszNewParams);
+                    if (pszNewParams)       // can be NULL V0.9.3 (2000-04-10) [umoeller]
+                    {
+                        strcpy(pddd->szParams, pszNewParams);
+                        free(pszNewParams);
+                    }
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break; }
 

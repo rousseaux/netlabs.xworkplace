@@ -1,7 +1,7 @@
 
 /*
  *@@sourcefile fdrsubclass.c:
- *      This file is ALL new with V0.9.3 and implements
+ *      This file is ALL new with V0.9.3 and now implements
  *      folder frame subclassing, which has been largely
  *      rewritten with V0.9.3.
  *
@@ -13,6 +13,9 @@
  *      class ("wpFolder window"), which is initially registered
  *      by the WPS somehow. No more global variables and mutex
  *      semaphores...
+ *
+ *      This hopefully fixes most folder serialization problems
+ *      which have occured with previous XFolder/XWorkplace versions.
  *
  *      Since I was unable to find out where WinRegisterClass
  *      gets called from in the WPS, I have implemented a local
@@ -119,7 +122,7 @@
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
-#include <wpdesk.h>                     // WPDesktop
+// #include <wpdesk.h>                     // WPDesktop
 #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
@@ -182,34 +185,33 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
 
     if (psmh->msg == WM_CREATE)
     {
-        CHAR    szClass[300];
-        WinQueryClassName(psmh->hwnd,
-                          sizeof(szClass),
-                          szClass);
-
-        if (strcmp(szClass, "wpFolder window") == 0)
+        // re-register the WPFolder window class if we haven't
+        // done this yet; this is needed because per default,
+        // the WPS "wpFolder window" class apparently uses
+        // QWL_USER for other purposes...
+        if (!G_WPFolderWinClassExtended)
         {
-            // it's a folder:
-            PFNWP   pfnwpOrig = NULL;
+            CHAR    szClass[300];
 
-            DosBeep(1000, 30);
+            _Pmpf(("fdr_SendMsgHook: checking WM_CREATE window class"));
 
-            // re-register the WPFolder window class if we haven't
-            // done this yet; this is needed because per default,
-            // the WPS "wpFolder window" class apparently uses
-            // QWL_USER for other purposes...
-            if (!G_WPFolderWinClassExtended)
+            WinQueryClassName(psmh->hwnd,
+                              sizeof(szClass),
+                              szClass);
+
+            _Pmpf(("    got %s", szClass));
+
+            if (strcmp(szClass, "wpFolder window") == 0)
             {
-                PTIB    ptib = NULL;          /* Thread information block structure  */
-                PPIB    ppib = NULL;          /* Process information block structure */
-                APIRET  rc   = NO_ERROR;      /* Return code                         */
-
+                // it's a folder:
+                // OK, we have the first WM_CREATE for a folder window
+                // after WPS startup now...
                 if (WinQueryClassInfo(hab,
                                       "wpFolder window",
                                       &G_WPFolderWinClassInfo))
                 {
-                    _Pmpf(("wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
-                    _Pmpf(("QWL_USER is: %d", QWL_USER));
+                    _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
+                    _Pmpf(("    QWL_USER is: %d", QWL_USER));
 
                     // replace original window class
                     if (WinRegisterClass(hab,
@@ -218,6 +220,8 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
                                          G_WPFolderWinClassInfo.flClassStyle,
                                          G_WPFolderWinClassInfo.cbWindowData + 16))
                     {
+                        _Pmpf(("    WinRegisterClass OK"));
+
                         // OK, window class successfully re-registered:
                         // store the offset of our window word for the
                         // SUBCLASSEDFOLDERVIEW's in a global variable
@@ -226,6 +230,8 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
                         // and don't do all this again...
                         G_WPFolderWinClassExtended = TRUE;
                     }
+                    else
+                        _Pmpf(("    WinRegisterClass failed"));
                 }
             }
         }
@@ -252,14 +258,13 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
  */
 
 PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
-                                  HWND hwndCnr,
-                                  WPFolder *somSelf,
-                                       // in: folder; either XFolder's somSelf
-                                       // or XFldDisk's root folder
-                                  WPObject *pRealObject)
-                                       // in: the "real" object; for XFolder, this is == somSelf,
-                                       // for XFldDisk, this is the disk object (needed for object handles)
-
+                                            HWND hwndCnr,
+                                            WPFolder *somSelf,
+                                                 // in: folder; either XFolder's somSelf
+                                                 // or XFldDisk's root folder
+                                            WPObject *pRealObject)
+                                                 // in: the "real" object; for XFolder, this is == somSelf,
+                                                 // for XFldDisk, this is the disk object (needed for object handles)
 {
     BOOL fSemOwned = FALSE;
     PSUBCLASSEDFOLDERVIEW psliNew = 0;
@@ -284,20 +289,14 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
         // set status bar hwnd to zero at this point;
         // this will be created elsewhere
         psliNew->hwndStatusBar = NULLHANDLE;
+
         // create a supplementary object window
         // for this folder frame (see
         // fdr_fnwpSupplFolderObject for details)
         psliNew->hwndSupplObject
-            = WinCreateWindow(HWND_OBJECT,
-                              WNDCLASS_SUPPLOBJECT, // class name
-                              (PSZ)"SupplObject",     // title
-                              0,           // style
-                              0,0,0,0,     // position
-                              0,           // owner
-                              HWND_BOTTOM, // z-order
-                              0,           // window id
-                              psliNew,    // pass the struct to WM_CREATE
-                              NULL);       // pres params
+            = winhCreateObjectWindow(WNDCLASS_SUPPLOBJECT,
+                                     psliNew);
+
         if (!psliNew->hwndSupplObject)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Unable to create suppl. folder object window..");
@@ -320,15 +319,11 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
 /*
  *@@ fdrQuerySFV:
  *      this retrieves the PSUBCLASSEDFOLDERVIEW from the
- *      global linked list of subclassed frame windows,
- *      according to a given frame wnd handle. One of these
+ *      specified subclassed folder frame. One of these
  *      structs is maintained for each open folder view
  *      to store window data which is needed everywhere.
  *
  *      Returns NULL if not found.
- *
- *      If pulIndex != NULL, the index of the item is stored
- *      in *pulIndex (counting from 0), if an item is returned.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: pulIndex added to function prototype
@@ -338,7 +333,7 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
  */
 
 PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to find
-                                 PULONG pulIndex)       // out: index in linked list if found
+                                  PULONG pulIndex)       // out: index in linked list if found
 {
     PSUBCLASSEDFOLDERVIEW psliFound = (PSUBCLASSEDFOLDERVIEW)WinQueryWindowPtr(hwndFrame,
                                                                            G_SFVOffset);
@@ -347,8 +342,8 @@ PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to 
 
 /*
  *@@ fdrRemoveSFV:
- *      reverse to fdrSubclassFolderFrame, this removes
- *      a PSUBCLASSEDFOLDERVIEW from the global list again.
+ *      reverse to fdrSubclassFolderView, this removes
+ *      a PSUBCLASSEDFOLDERVIEW from the folder frame again.
  *      Called upon WM_CLOSE in folder frames.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
@@ -367,8 +362,9 @@ VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv)
 /*
  *@@ fdrManipulateNewView:
  *      this gets called from XFolder::wpOpen
- *      when a new Icon, Tree, or Details view
- *      has been successfully opened.
+ *      after a new Icon, Tree, or Details view
+ *      has been successfully opened by the parent
+ *      method (WPFolder::wpOpen).
  *
  *      This manipulates the view according to
  *      our needs (subclassing, sorting, full
@@ -391,50 +387,53 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
-    // subclass the new folder frame window;
-    // this creates a SUBCLASSEDFOLDERVIEW for the view
-    psfv = fdrSubclassFolderView(hwndNewFrame,
-                         hwndCnr,
-                         somSelf,
-                         somSelf);  // "real" object; for folders, this is the folder too
-
-    // change the window title to full path, if allowed
-    if (    (_bFullPathInstance == 1)
-         || ((_bFullPathInstance == 2) && (pGlobalSettings->FullPath))
-       )
-        fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
-
-    // add status bar, if allowed:
-    // 1) status bar only if allowed for the current folder
-    if (   (pGlobalSettings->fEnableStatusBars)
-        && (    (_bStatusBarInstance == STATUSBAR_ON)
-             || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                 && (pGlobalSettings->fDefaultStatusBarVisibility)
-                )
-           )
-       )
-        // 2) no status bar for active Desktop
-        if (somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
-            // 3) check that subclassed list item is valid
-            if (psfv)
-                // 4) status bar only if allowed for the current view type
-                if (    (   (ulView == OPEN_CONTENTS)
-                         && (pGlobalSettings->SBForViews & SBV_ICON)
-                        )
-                     || (   (ulView == OPEN_TREE)
-                         && (pGlobalSettings->SBForViews & SBV_TREE)
-                        )
-                     || (   (ulView == OPEN_DETAILS)
-                         && (pGlobalSettings->SBForViews & SBV_DETAILS)
-                        )
-                    )
-                    fdrCreateStatusBar(somSelf, psfv, TRUE);
-
-    // replace sort stuff
-    if (pGlobalSettings->ExtFolderSort)
+    if (pGlobalSettings->fNoSubclassing == FALSE) // V0.9.3 (2000-04-26) [umoeller]
     {
-        if (hwndCnr)
-            fdrSetFldrCnrSort(somSelf, hwndCnr, FALSE);
+        // subclass the new folder frame window;
+        // this creates a SUBCLASSEDFOLDERVIEW for the view
+        psfv = fdrSubclassFolderView(hwndNewFrame,
+                                     hwndCnr,
+                                     somSelf,
+                                     somSelf);  // "real" object; for folders, this is the folder too
+
+        // change the window title to full path, if allowed
+        if (    (_bFullPathInstance == 1)
+             || ((_bFullPathInstance == 2) && (pGlobalSettings->FullPath))
+           )
+            fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
+
+        // add status bar, if allowed:
+        // 1) status bar only if allowed for the current folder
+        if (   (pGlobalSettings->fEnableStatusBars)
+            && (    (_bStatusBarInstance == STATUSBAR_ON)
+                 || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                     && (pGlobalSettings->fDefaultStatusBarVisibility)
+                    )
+               )
+           )
+            // 2) no status bar for active Desktop
+            if (somSelf != cmnQueryActiveDesktop())
+                // 3) check that subclassed list item is valid
+                if (psfv)
+                    // 4) status bar only if allowed for the current view type
+                    if (    (   (ulView == OPEN_CONTENTS)
+                             && (pGlobalSettings->SBForViews & SBV_ICON)
+                            )
+                         || (   (ulView == OPEN_TREE)
+                             && (pGlobalSettings->SBForViews & SBV_TREE)
+                            )
+                         || (   (ulView == OPEN_DETAILS)
+                             && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                            )
+                        )
+                        fdrCreateStatusBar(somSelf, psfv, TRUE);
+
+        // replace sort stuff
+        if (pGlobalSettings->ExtFolderSort)
+        {
+            if (hwndCnr)
+                fdrSetFldrCnrSort(somSelf, hwndCnr, FALSE);
+        }
     }
 }
 
@@ -664,7 +663,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
     if (    (sMenuIDMsg < 0x8000) // avoid system menu
          || (sMenuIDMsg == 0x8020) // but include context menu
        )
-        xthrPlaySystemSound(MMSOUND_XFLD_CTXTOPEN);
+        cmnPlaySystemSound(MMSOUND_XFLD_CTXTOPEN);
 
     // find out whether the menu of which we are notified
     // is a folder content menu; if so (and it is not filled
@@ -881,7 +880,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
             HWND hwndCnr = wpshQueryCnrFromFrame(psfv->hwndFrame);
 
             // play system sound
-            xthrPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
+            cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
 
             // Now check if we have a menu item which we don't
             // want to see dismissed.
@@ -976,17 +975,25 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
                                                 psfv->hwndCnr,
                                                 TRUE,       // keyboard mode
                                                 &ulSelection);
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("WM_CHAR delete: first obj is %s", _wpQueryTitle(pSelected)));
+    #endif
+
     if (    (pSelected)
          && (ulSelection != SEL_NONEATALL)
        )
     {
         // collect objects from cnr and start
         // moving them to trash can
-        fopsStartCnrDelete2Trash(psfv->somSelf, // source folder
-                                 pSelected,    // first selected object
-                                 ulSelection,  // can only be SEL_SINGLESEL
-                                                // or SEL_MULTISEL
-                                 psfv->hwndCnr);
+        FOPSRET frc = fopsStartTrashDeleteFromCnr(psfv->somSelf, // source folder
+                                                  pSelected,    // first selected object
+                                                  ulSelection,  // can only be SEL_SINGLESEL
+                                                                 // or SEL_MULTISEL
+                                                  psfv->hwndCnr,
+                                                  FALSE);   // move to trash can
+        #ifdef DEBUG_TRASHCAN
+            _Pmpf(("    got FOPSRET %d", frc));
+        #endif
     }
 }
 
@@ -1260,6 +1267,10 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
              *      this msg is sent for each item every time it
              *      needs to be redrawn. This gets sent to us for
              *      items in folder content menus (if icons are on).
+             *
+             *      ### Warning: Apparently we also get this for
+             *      the WPS's container owner draw. We should add
+             *      another check... V0.9.3 (2000-04-26) [umoeller]
              */
 
             case WM_DRAWITEM:
@@ -1274,10 +1285,12 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                                     mp1, mp2))
                         mrc = (MRESULT)TRUE;
                     else // error occured:
-                        mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                        fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
+                        // mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
                 }
                 else
-                    mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                    fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
+                    // mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
             break; }
 
             /* *************************
@@ -1302,26 +1315,59 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
             {
                 USHORT usCommand = SHORT1FROMMP(mp1);
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("fdr_fnwpSubclassedFolderFrame WM_COMMAND 0x%lX", usCommand));
-                #endif
                 if (usCommand == WPMENUID_DELETE)
                 {
                     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                    BOOL fCallXWPFops = FALSE;
+                    BOOL fTrueDelete = FALSE;
+
                     if (pGlobalSettings->fTrashDelete)
                     {
-                        fopsStartCnrDelete2Trash(psfv->somSelf,        // source folder
-                                                 psfv->pSourceObject,  // first source object
-                                                 psfv->ulSelection,
-                                                 psfv->hwndCnr);
+                        // delete to trash can enabled:
+                        if (doshQueryShiftState())
+                            // shift pressed also:
+                            fTrueDelete = TRUE;
+                        else
+                            // delete to trash can:
+                            fCallXWPFops = TRUE;
+                    }
+                    else
+                        // no delete to trash can:
+                        // do a real delete
+                        fTrueDelete = TRUE;
+
+                    if (fTrueDelete)
+                        // real delete:
+                        // is real delete also replaced?
+                        if (pGlobalSettings->fReplaceTrueDelete)
+                            fCallXWPFops = TRUE;
+
+                    if (fCallXWPFops)
+                    {
+                        // this is TRUE if
+                        // -- delete to trash can has been enabled and regular delete
+                        //    has been selected
+                        // -- delete to trash can has been enabled, but Shift was pressed
+                        // -- delete to trash can has been disabled, but regular delete
+                        //    was replaced
+
+                        // collect objects from container and start deleting
+                        FOPSRET frc = fopsStartTrashDeleteFromCnr(psfv->somSelf,
+                                                                    // source folder
+                                                                  psfv->pSourceObject,
+                                                                    // first source object
+                                                                  psfv->ulSelection,
+                                                                  psfv->hwndCnr,
+                                                                  fTrueDelete);
+                        #ifdef DEBUG_TRASHCAN
+                            _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
+                        #endif
                         break;
                     }
                 }
 
                 fCallDefault = TRUE;
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("    WM_COMMAND: calling default"));
-                #endif
+
             break; }
 
             /*
@@ -1334,9 +1380,6 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
             case WM_CHAR:
             {
                 USHORT usFlags    = SHORT1FROMMP(mp1);
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("fdr_fnwpSubclassedFolderFrame WM_CHAR usFlags = 0x%lX", usFlags));
-                #endif
                 // whatever happens, we're only interested
                 // in key-down messages
                 if ((usFlags & KC_KEYUP) == 0)
@@ -1385,9 +1428,6 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                     }
                 }
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("    WM_CHAR: calling default"));
-                #endif
                 fCallDefault = TRUE;
             break; }
 
@@ -1487,7 +1527,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                          */
 
                         case CN_ENTER:
-                            xthrPlaySystemSound(MMSOUND_XFLD_CNRDBLCLK);
+                            cmnPlaySystemSound(MMSOUND_XFLD_CNRDBLCLK);
                             mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
                         break;
 
@@ -1639,7 +1679,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
 /*
  *@@ fdr_fnwpSubclassedFolderFrame:
  *      New window proc for subclassed folder frame windows.
- *      Folder frame windows are subclassed in fdrSubclassFolderFrame
+ *      Folder frame windows are subclassed in fdrSubclassFolderView
  *      (which gets called from XFolder::wpOpen or XFldDisk::wpOpen
  *      for Disk views) with the address of this window procedure.
  *
@@ -1742,7 +1782,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
  *      messages which are not part of the normal message set,
  *      which is handled by fdr_fnwpSubclassedFolderFrame.
  *
- *      This window gets created in fdrSubclassFolderFrame, when
+ *      This window gets created in fdrSubclassFolderView, when
  *      the folder frame is also subclassed.
  *
  *      If we processed additional messages in fdr_fnwpSubclassedFolderFrame,
@@ -2015,7 +2055,7 @@ MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM
                            MPFROM2SHORT(0, FALSE));
                 sSelected = winhQueryItemUnderMouse(hwndMenu, &ptlMouse, &rtlItem);
 
-                xthrPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
+                cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
 
                 WinPostMsg(WinQueryWindow(hwndMenu, QW_OWNER),
                            WM_COMMAND,

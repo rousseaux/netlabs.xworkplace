@@ -145,7 +145,11 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
 /*
  *
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -168,7 +172,12 @@ SOM_Scope ULONG  SOMLINK xfstup_wpFilterPopupMenu(XFldStartup *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      add a "Process content" menu item to this
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We add a "Process content" menu item to this
  *      popup menu; the other menu items are inherited
  *      from XFolder.
  */
@@ -204,8 +213,11 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the "Process content"
- *      item we have inserted for the startup folder.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
+ *
+ *      We react to the "Process content" item we have
+ *      inserted for the startup folder.
  *
  *      Note that the WPS invokes this method upon every
  *      object which has been selected in the container.
@@ -234,6 +246,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                              MB_YESNO | MB_DEFBUTTON2)
                 == MBID_YES)
         {
+
             krnPostThread1ObjectMsg(T1M_BEGINSTARTUP, MPNULL, MPNULL);
         }
         return (TRUE);
@@ -285,9 +298,11 @@ SOM_Scope BOOL  SOMLINK xfstup_wpQueryDefaultHelp(XFldStartup *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method adds settings pages to
- *      an object's settings notebook. Starting with
- *      V0.9.0, we override this method too to add
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      Starting with V0.9.0, we override this method too to add
  *      the XWorkplace Startup folder's settings
  *      page.
  *

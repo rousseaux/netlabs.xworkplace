@@ -73,6 +73,7 @@
 #include <os2.h>
 
 // C library headers
+#include <stdlib.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -290,7 +291,11 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -334,9 +339,10 @@ SOM_Scope BOOL  SOMLINK xfsys_wpQueryDefaultHelp(XFldSystem *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method is overridden in order
- *      to add the new XWorkplace pages to the settings
- *      notebook.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
  *      In order to to this, unlike the procedure used in
  *      the "Workplace Shell" object, we will explicitly
  *      call the WPSystem methods which insert the

@@ -70,6 +70,11 @@ interface XWPMouse : WPMouse
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
+     * Internal instance variables for XWPMouse:
+     *
+     */
+
+    /*
      * WPMouse methods overridden by XWPMouse:
      *
      */

@@ -7,7 +7,7 @@
  *
  *@@include #include <os2.h>
  *@@include #include "shared\notebook.h"
- *@@include #include "filesys\disk.h"
+ *@@include #include "config\cfgsys.h"
  */
 
 /*
@@ -60,7 +60,7 @@
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);
     #else
-        #error "shared\notebook.h needs to be included before including disk.h".
+        #error "shared\notebook.h needs to be included before including cfgsys.h".
     #endif
 #endif
 

@@ -1,6 +1,6 @@
 
 LIBRARY XWPHOOK INITGLOBAL
-Description '@#Ulrich M”ller:0.9.2#@ XWorkplace PM Hook Module'
+Description '@#Ulrich M”ller:0.9.3#@ XWorkplace PM Hook Module'
 
 DATA SINGLE SHARED
 

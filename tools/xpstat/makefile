@@ -62,46 +62,46 @@ $(OUTPUTDIR)\xpstat.obj: $(@B).c $(@B).h \
         $(HLPINC)\memdebug.h $(HLPINC)\procstat.h $(HLPINC)\dosh.h $(HLPINC)\stringh.h \
         $(HLPINC)\textview.h $(HLPINC)\winh.h \
     ..\..\include\dlgids.h
-        $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 
 $(OUTPUTDIR)\procstat.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\comctl.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\cnrh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\debug.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\dosh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\except.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\gpih.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\linklist.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\memdebug.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\stringh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\winh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\textview.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\tmsgfile.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 # build targets
 xpstat.def: ..\..\include\bldlevel.h

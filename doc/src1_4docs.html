@@ -8,15 +8,14 @@ Creating the Code Documentation
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
 Starting with V0.9.0, you can have HTML documentation created for the whole
 XWorkplace code. This done using my own <CODE>xdoc</CODE> utility, which
-can be found in the <CODE>TOOLS\</CODE> directory after XWorkplace has
-been built for the first time.
+can be found in the <CODE>TOOLS\</CODE> directory of the WarpIN source tree.
 
 <P><CODE>xdoc</CODE> is capable of parsing C/CPP source code and header files
 to some extent. When certain codes are found in a comment in the sources
 (e.g. <CODE>@@</CODE>), that comment is assumed to document some function
 and will be considered for HTML output.
 
-<P>After XWorkplace has been built for the first time, call <CODE>createdoc.cmd</CODE>
+<P>Call <CODE>createdoc.cmd</CODE>
 in the main directory, which will create the HTML documentation in a new
 subdirectory of the code tree <CODE>HTML\</CODE>. Open
 <CODE>index.html</CODE> then to get an index of all XWorkplace source files.

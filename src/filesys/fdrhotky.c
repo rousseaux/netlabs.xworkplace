@@ -886,7 +886,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        BOOL fEnable = !(pGlobalSettings->NoSubclassing);
+        BOOL fEnable = !(pGlobalSettings->fNoSubclassing);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);

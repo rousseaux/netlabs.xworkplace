@@ -7,7 +7,7 @@
  BOOTMGR.CMD
     this script modifies the XWorkplace settings in OS2.INI so that
     XShutdown knows all your bootable partitions for the "Reboot
-    to" feature.
+    to" feature. Doesn't work with Aurora's LVM.
  DEFDETLS.CMD
     gets called by the corresponding folder context menu item;
     a program object for this exists in the Configuration folder.
@@ -37,8 +37,7 @@
     gets called by the corresponding folder context menu item;
     a program object for this exists in the Configuration folder.
  REPCLASS.EXE
-    used by the install script to replace WPS classes.
-    See the XWorkplace User Guide, "Related Files".
+    was used by the XFolder install script to replace WPS classes.
     Explains itself on the command line.
  SHOWALL.CMD
     gets called by the corresponding folder context menu item;
@@ -55,7 +54,7 @@
     gets called by the corresponding folder context menu item;
     a program object for this exists in the Configuration folder.
  WPSRESET.EXE
-    used by the install script to restart the WPS.
+    was used by the XFolder install script to restart the WPS.
  XFLDR.DLL
     the main XWorkplace DLL. This has all the "intelligence".
  XFLDR.SYM

@@ -31,10 +31,25 @@
  *
  *      There are two ways to delete an object using the trash can:
  *      1)  selecting "Delete" from an object's context menu;
- *          this behavior is implemented by the XFldObject class,
+ *          this behavior is implemented by the XFldObject class and the
+ *          XFolder subclassed folder frame procedure;
  *          if this feature has been enabled by the user;
  *      2)  dropping an object onto the trash can object or into
  *          an open trash can view (using XWPTrashCan::wpDrop).
+ *
+ *      When a trash object is then created (trshCreateTrashObject),
+ *      XFldObject::xwpSetTrashObject will get called automatically
+ *      on the related object so that it knows about its trash object.
+ *      We therefore have no concept of destroying a trash object
+ *      any more; instead, we simply delete the related object,
+ *      which will destroy the trash object automatically.
+ *      Use XWPTrashObject::xwpQueryRelatedObject to get the
+ *      related object from a trash object.
+ *
+ *      This is how the "empty trash can" and "destroy object" menu
+ *      items work as well, BTW, and this has been changed with
+ *      V0.9.3. This allows us to use the file operations engine
+ *      (filesys\fileops.c) more easily.
  *
  *@@somclass XWPTrashCan xtrc_
  *@@somclass M_XWPTrashCan xtrcM_
@@ -84,7 +99,9 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
@@ -99,6 +116,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
 
@@ -165,7 +183,7 @@ CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
  *      this new instance method takes any WPS object and
  *      "deletes" it into the trash can (somSelf).
  *
- *      See trshDeleteInfoTrashCan, which has the implementation.
+ *      See trshDeleteIntoTrashCan, which has the implementation.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
@@ -257,6 +275,63 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
 
     /* Return statement to be customized: */
     return (TRUE);
+}
+
+/*
+ *@@ xwpTrashCanBusy:
+ *      sets and/or queries whether the trash can
+ *      is considered "busy", that is, operations
+ *      on the trash can or the trash objects will
+ *      be disabled.
+ *
+ *      If (sBusy > 0), the trash can busy count
+ *      is incremented by 1.
+ *
+ *      If (sBusy < 0), the trash can busy count
+ *      is decremented by 1.
+ *
+ *      If (sBusy == 0), the trash can busy count
+ *      is not changed. Use this for querying the
+ *      busy flag only.
+ *
+ *      Returns TRUE if the trash can is "busy".
+ *
+ *@@added V0.9.3 (2000-04-26) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
+                                             SHORT sBusy)
+{
+    BOOL    brc = FALSE,
+            fTrashCanLocked = FALSE;
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpTrashCanBusy");
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        // make this thread-safe
+        fTrashCanLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fTrashCanLocked)
+        {
+            if (sBusy > 0)
+                // raise busy count:
+                _ulBusyCount++;
+            else if (sBusy < 0)
+                // lower busy count:
+                if (_ulBusyCount > 0)
+                    _ulBusyCount--;
+
+            brc = (    (_ulBusyCount != 0)
+                    || (_cDrivePopulating != 0)
+                  );
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fTrashCanLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (brc);
 }
 
 /*
@@ -374,9 +449,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
 
 /*
  *@@ xwpEmptyTrashCan:
- *      this will empty the trashcan by invoking
- *      XWPTrashObject::xwpDestroyTrashObject on
- *      each trash object.
+ *      this will empty the trashcan.
  *
  *      Note that this is done on the XWorkplace File
  *      thread so this function returns BEFORE the
@@ -428,11 +501,11 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpUpdateStatusBar");
 
-    if (_cCurrentDrivePopulating)
+    if (_cDrivePopulating)
         // populating drive:
         sprintf(szText,
                 pNLSStrings->pszStbPopulating,  // "Populating drive %c:",
-                _cCurrentDrivePopulating);
+                _cDrivePopulating);
     else
     {
         CHAR    szNum1[100],
@@ -450,27 +523,11 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
 }
 
 /*
- *@@ xwpIsCurrentlyPopulating:
- *      returns a non-zero value if the trash can is
- *      currently populating.
- *
- *@@added V0.9.2 (2000-03-05) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xtrc_xwpIsCurrentlyPopulating(XWPTrashCan *somSelf)
-{
-    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
-    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpIsCurrentlyPopulating");
-
-    /* Return statement to be customized: */
-    return (_cCurrentDrivePopulating);
-}
-
-/*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
@@ -485,7 +542,9 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
     _ulTrashObjectCount = 0;
     _dSizeOfAllObjects = 0;
 
-    _cCurrentDrivePopulating = 0;
+    _cDrivePopulating = 0;
+
+    _ulBusyCount = 0;
 
     if (G_pDefaultTrashCan == NULL)
         // this is the first trash can to be initialized:
@@ -519,9 +578,10 @@ SOM_Scope void  SOMLINK xtrc_wpObjectReady(XWPTrashCan *somSelf,
 
 /*
  *@@ wpUnInitData:
- *      this instance method is called to allow the object
- *      to free allocated resources.
- *
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant or being deleted. All allocated resources
+ *      should be freed here.
  *      The parent method must always be called last.
  */
 
@@ -556,7 +616,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetup(XWPTrashCan *somSelf, PSZ pszSetupString)
 /*
  *@@ wpSaveState:
  *      this WPObject instance method saves an object's state
- *      persistently.
+ *      persistently so that it can later be re-initialized
+ *      with wpRestoreState. This gets called during wpClose,
+ *      wpSaveImmediate or wpSaveDeferred processing.
+ *      All persistent instance variables should be stored here.
  *
  *      We store the trash can item count here so we don't have to
  *      populate the trash can at WPS startup already to set the
@@ -579,8 +642,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)
 /*
  *@@ wpRestoreState:
  *      this WPObject instance method gets called during object
- *      initialization to restore the data which was stored with
- *      wpSaveState.
+ *      initialization (after wpInitData) to restore the data
+ *      which was stored with wpSaveState.
  *
  *      We restore the trash can item count here so we don't have to
  *      populate the trash can at WPS startup already to set the
@@ -607,8 +670,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRestoreState(XWPTrashCan *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      this instance method allows the object to filter out
- *      unwanted menu items from the context menu.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
  *
  *      We remove the "Open tree view" and "Create another" items.
  *
@@ -632,10 +696,14 @@ SOM_Scope ULONG  SOMLINK xtrc_wpFilterPopupMenu(XWPTrashCan *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      this instance methods allows the object to manipulate
- *      its context menu.
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
  *
  *      We add the trash can menu items here.
+ *
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: now disabling menu items if trash can is busy
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
@@ -661,7 +729,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
         CHAR        szEmptyItem[200];
         ULONG       ulAttr = 0;
 
-        if (_cCurrentDrivePopulating)
+        if (_xwpTrashCanBusy(somSelf, 0))
             // currently populating:
             ulAttr = MIA_DISABLED;
 
@@ -670,8 +738,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
 
         // "empty trash can"
         strcpy(szEmptyItem, pNLSStrings->pszTrashEmpty);
-        if (pGlobalSettings->fTrashConfirmEmpty)
-            // confirmations on:
+        if (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
+            // confirm empty on:
             strcat(szEmptyItem, "...");
         winhInsertMenuItem(hwndMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHEMPTY),
@@ -687,8 +755,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the trash can
- *      items.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
+ *
+ *      We need to react to the trash can items.
  *
  *      Note that the WPS invokes this method upon every
  *      object which has been selected in the container.
@@ -714,7 +784,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
     if (ulMenuId2 == ID_XFMI_OFS_TRASHEMPTY)
     {
         _xwpEmptyTrashCan(somSelf,
-                          pGlobalSettings->fTrashConfirmEmpty);
+                          ((pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
+                                != 0)
+                         );
     }
     // swallow "open tree view"
     else if (ulMenuId == WPMENUID_TREE)
@@ -843,6 +915,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpPopulate");
 
+    // make trash can "busy)
+    _xwpTrashCanBusy(somSelf,
+                     +1);       // inc "busy"
+
     // we must call the parent first;
     // otherwise, we'll get a "Wait" pointer all the time
     if (XWPTrashCan_parent_WPFolder_wpPopulate(somSelf,
@@ -882,6 +958,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                             TRUE);      // always set icon, because wpPopulate gets
                                         // called quite frequently and the WPS keeps
                                         // resetting the icon then
+
+    _xwpTrashCanBusy(somSelf,
+                     -1);       // dec "busy"
 
     // save trash can's state; this will store
     // the trash object count in .CLASSINFO
@@ -994,44 +1073,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
  *      This corresponds to the DM_DRAGOVER message received by
  *      the object.
  *
- *      We check whether the object(s) are deleteable and
- *      return flags accordingly.
- *
- *      This must return the return values of DM_DRAGOVER,
- *      which is a MRFROM2SHORT.
- *
- *      -- USHORT 1 usDrop must be:
- *
- *          --  DOR_DROP (0x0001): Object can be dropped.
- *
- *          --  DOR_NODROP (0x0000): Object cannot be dropped at this time,
- *              but type and format are supported. Send DM_DRAGOVER again.
- *
- *          --  DOR_NODROPOP (0x0002):  Object cannot be dropped at this time,
- *              but only the current operation is not acceptable.
- *
- *          --  DOR_NEVERDROP (0x0003): Object cannot be dropped at all. Do
- *              not send DM_DRAGOVER again.
- *
- *      -- USHORT 2 usDefaultOp must specify the default operation, which can be:
- *
- *          --  DO_COPY 0x0010:
- *
- *          --  DO_LINK 0x0018:
- *
- *          --  DO_MOVE 0x0020:
- *
- *          --  DO_CREATE 0x0040: create object from template
- *
- *          --  DO_NEW: from PMREF:
- *              Default operation is create another.  Use create another to create
- *              an object that has default settings and data.  The result of using
- *              create another is identical to creating an object from a template.
- *              This value should be defined as DO_UNKNOWN+3 if it is not
- *              recognized in the current level of the toolkit.
- *
- *          --  Other: This value should be greater than or equal to (>=) DO_UNKNOWN
- *              but not DO_NEW.
+ *      See trshDragOver for the implementation.
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: re-implemented the damn thing; support for DRM_OS2FILE added
  */
@@ -1055,24 +1097,7 @@ SOM_Scope MRESULT  SOMLINK xtrc_wpDragOver(XWPTrashCan *somSelf,
  *      This corresponds to the DM_DROP message received by
  *      the object.
  *
- *      We delete the objects into the trash can by invoking
- *      XWPTrashCan::xwpDeleteIntoTrashCan.
- *
- *      This must return one of:
- *
- *      -- RC_DROP_DROPCOMPLETE 2: all objects processed; prohibit
- *         further wpDrop calls
- *
- *      -- RC_DROP_ERROR -1: error occured, terminate drop
- *
- *      -- RC_DROP_ITEMCOMPLETE 1: one item processed, call wpDrop
- *         again for subsequent items
- *
- *      -- RC_DROP_RENDERING 0: request source rendering for this
- *         object, call wpDrop for next object.
- *
- *      We process all items at once here and return RC_DROP_DROPCOMPLETE
- *      unless an error occurs.
+ *      See trshMoveDropped2TrashCan for the implementation.
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: re-implemented the damn thing; support for DRM_OS2FILE added
  */
@@ -1178,9 +1203,11 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderView2Page(XWPTrashCan *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method adds settings pages to
- *      an object's settings notebook, in this case.
- *      the "Trash can" settings page.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      We add the "Trash can" settings page.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpAddSettingsPages(XWPTrashCan *somSelf,
@@ -1579,6 +1606,8 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectData(XWPTrashObject *somSelf,
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectData");
 
+    // ### lock the object before doing this...
+
     _pvExpandedObject = pvData;
     _ulTotalSize = ulNewSize;
 
@@ -1650,9 +1679,17 @@ SOM_Scope APIRET  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
  *
  *      As a consequence, the somSelf pointer to the trash
  *      object is no longer valid if TRUE is returned here.
+ *
+ *      Note that there's no "Confirm" parameter here, since
+ *      this method always operates on a single object only
+ *      and the context menu operations are managed by the
+ *      subclassed trashcan frame window procedure
+ *      (trsh_fnwpSubclassedTrashCanFrame).
+ *
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: removed completely
  */
 
-SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
+/* SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
 {
     BOOL brc = FALSE;
     // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
@@ -1661,7 +1698,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
     brc = trshDestroyTrashObject(somSelf);
 
     return (brc);
-}
+} */
 
 /*
  *@@ xwpRestoreFromTrashCan:
@@ -1695,9 +1732,10 @@ SOM_Scope BOOL  SOMLINK xtro_xwpRestoreFromTrashCan(XWPTrashObject *somSelf,
 
 /*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
@@ -1709,67 +1747,19 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
     // wpSetup, which apparently sets up the Details data...
     _pRelatedObject = NULL;
     _pszSourcePath = NULL;
-    strcpy(_szTotalSize, "calculating...");
+    strcpy(_szTotalSize, "calculating..."); // ###
     _pvExpandedObject = 0;
 
     XWPTrashObject_parent_WPTransient_wpInitData(somSelf);
 }
 
 /*
- *@@ wpSetup:
- *      this instance method allows the object to set its
- *      state based on a setup string. This gets called
- *      whenever setup strings are set upon an object.
- *
- *      Most importantly to us, this method gets called
- *      during the processing of wpInitData, which in
- *      turn calls wpSetupOnce, which in turn calls this
- *      method.
- *
- *      This is where we need to set the "related object"
- *      which this trash object points to, because this
- *      must be done while the object is being initialized.
- *      For this, we use the RELATEDOBJECT setup string.
- *      If we do this later, wpQueryDetailsData would return
- *      garbage.
- *
- *      The syntax of RELATEDOBJECT is "RELATEDOBJECT=handle",
- *      with "handle" being the string representation of
- *      the hexadecimal, five-digit object handle of the
- *      related object.
- */
-
-/* SOM_Scope BOOL  SOMLINK xtro_wpSetup(XWPTrashObject *somSelf,
-                                     PSZ pszSetupString)
-{
-    CHAR    szHObject[100];
-    ULONG   cbHObject = sizeof(szHObject);
-
-    // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
-    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpSetup");
-
-    if (_wpScanSetupString(somSelf,
-                           pszSetupString,       // as passed to us
-                           "RELATEDOBJECT",
-                           szHObject,
-                           &cbHObject))
-    {
-        HOBJECT hobj = 0;
-        sscanf(szHObject, "%lX", &hobj);
-        _xwpSetRelatedObject(somSelf, _wpclsQueryObject(_WPObject, hobj));
-    }
-
-    return (XWPTrashObject_parent_WPTransient_wpSetup(somSelf,
-                                                      pszSetupString));
-}
-*/
-
-/*
  *@@ wpUnInitData:
- *      this instance method is called to allow the object
- *      to free allocated resources.
- *      The parent method must be called after our own
- *      processing.
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant or being deleted. All allocated resources
+ *      should be freed here.
+ *      The parent method must always be called last.
  */
 
 SOM_Scope void  SOMLINK xtro_wpUnInitData(XWPTrashObject *somSelf)
@@ -1779,6 +1769,46 @@ SOM_Scope void  SOMLINK xtro_wpUnInitData(XWPTrashObject *somSelf)
     trshUninitTrashObject(somSelf);
 
     XWPTrashObject_parent_WPTransient_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpSetupOnce:
+ *      this WPObject method allows an object which is being
+ *      created to parse its setup string. As opposed to
+ *      wpSetup, this only gets called during object creation.
+ *      If we return FALSE here, object creation is aborted.
+ *
+ *      This is where we need to set the "related object"
+ *      which this trash object points to, because this
+ *      must be done while the object is being initialized.
+ *      For this, we use the RELATEDOBJECT setup string.
+ *      If we do this later, wpQueryDetailsData would return
+ *      garbage, and we'd need an extra wpCnrRefreshDetails,
+ *      causing the details view to flicker like crazy.
+ *
+ *      The syntax of RELATEDOBJECT is "RELATEDOBJECT=xxx",
+ *      with "xxx" being the SOM object pointer as a plain
+ *      hex string... looks ugly, but there's no other way
+ *      to get this done.
+ *
+ *@@added V0.9.3 (2000-04-09) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtro_wpSetupOnce(XWPTrashObject *somSelf,
+                                         PSZ pszSetupString)
+{
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpSetupOnce");
+
+    // call parent first
+    if (XWPTrashObject_parent_WPTransient_wpSetupOnce(somSelf,
+                                                      pszSetupString))
+    {
+        // OK:
+        return (trshSetupOnce(somSelf, pszSetupString));
+    }
+
+    return (FALSE);
 }
 
 /*
@@ -1836,8 +1866,11 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      this instance method allows the object to filter out
- *      unwanted menu items from the context menu.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove "Open" and "Create another".
  *
  *@@changed V0.9.1 (2000-01-12) [umoeller]: now removing "Create another" as well
  */
@@ -1863,9 +1896,14 @@ SOM_Scope ULONG  SOMLINK xtro_wpFilterPopupMenu(XWPTrashObject *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      this instance methods allows the object to manipulate
- *      its context menu.
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
  *      We add the trash object menu items here.
+ *
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: now disabling menu items if trash can is busy
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
@@ -1891,7 +1929,9 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
         if (pTrashCan)
             if (_somIsA(pTrashCan, _XWPTrashCan))
             {
-                if (_xwpIsCurrentlyPopulating(pTrashCan))
+                CHAR    szDestroyItem[300];
+                if (_xwpTrashCanBusy(pTrashCan,
+                                     0))     // query busy
                     // currently populating:
                     ulAttr = MIA_DISABLED;
 
@@ -1904,14 +1944,18 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE),
                                    pNLSStrings->pszTrashRestore,
                                    MIS_TEXT,   // style
-                                   ulAttr);        // attributes
+                                   ulAttr);    // attributes, can be "disabled"
 
                 // insert "Destroy object"
+                strcpy(szDestroyItem, pNLSStrings->pszTrashDestroy);
+                if (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_DESTROYOBJ)
+                    // confirm destroy on:
+                    strcat(szDestroyItem, "...");
                 winhInsertMenuItem(hwndMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY),
-                                   pNLSStrings->pszTrashDestroy,
+                                   szDestroyItem,
                                    MIS_TEXT,   // style
-                                   ulAttr);        // attributes
+                                   ulAttr);    // attributes, can be "disabled"
             }
     }
 
@@ -1921,8 +1965,10 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the trash object
- *      items.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
+ *
+ *      We need to to support the trash object items.
  *
  *      Note that the WPS invokes this method upon every
  *      object which has been selected in the container.
@@ -1951,12 +1997,13 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
     {
         // "Restore object":
         brc = _xwpRestoreFromTrashCan(somSelf,
-                                       NULL);       // use original folder
+                                      NULL);       // use original folder
     }
     else if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
     {
         // "Destroy object":
-        brc = _xwpDestroyTrashObject(somSelf);
+        // brc = _xwpDestroyTrashObject(somSelf);   ###
+                // needs to be converted to freeing related object
     }
     // none of our menu items: call default
     else
@@ -2213,8 +2260,11 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this is called by the system to allow a class to
- *      create its default templates. The default WPS
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS
  *      behavior is to create new templates if the class
  *      default title is different from the existing
  *      templates, but since we never want templates for

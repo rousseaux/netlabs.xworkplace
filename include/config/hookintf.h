@@ -36,7 +36,7 @@
          *@@ HOTKEYRECORD:
          *      extended record core used for
          *      hotkey definitions in "Hotkeys"
-         *      settings page.
+         *      settings page of XWPKeyboard.
          */
 
         typedef struct _HOTKEYRECORD
@@ -63,6 +63,34 @@
             // object ptr
             WPObject    *pObject;
         } HOTKEYRECORD, *PHOTKEYRECORD;
+
+        /*
+         *@@ FUNCTIONKEYRECORD:
+         *      extended record core used for
+         *      function key definitions in
+         *      "Function keys" settings page
+         *      of XWPKeyboard.
+         *
+         *@@added V0.9.3 (2000-04-18) [umoeller]
+         */
+
+        typedef struct _FUNCTIONKEYRECORD
+        {
+            RECORDCORE  recc;
+
+            ULONG       ulIndex;
+
+            FUNCTIONKEY FuncKey;            // function key definition (xwphook.h)
+
+            PSZ         pszDescription;     // points to FUNCTIONKEY.szDescription
+
+            PSZ         pszScanCode;        // points to szScanCode
+            CHAR        szScanCode[40];
+
+            PSZ         pszModifier;        // points to static "x" string if key is a modifier string
+
+        } FUNCTIONKEYRECORD, *PFUNCTIONKEYRECORD;
+
     #endif
 
     /********************************************************************
@@ -77,6 +105,14 @@
 
     BOOL hifEnablePageMage(BOOL fEnable);
 
+    BOOL hifHookConfigChanged(PVOID pvdc);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   Object hotkeys interface                                       *
+     *                                                                  *
+     ********************************************************************/
+
     BOOL hifObjectHotkeysEnabled(VOID);
 
     VOID hifEnableObjectHotkeys(BOOL fEnable);
@@ -85,17 +121,44 @@
 
     VOID hifFreeObjectHotkeys(PVOID pvHotkeys);
 
-    BOOL hifSetObjectHotkeys(PVOID pvHotkeys, ULONG cHotkeys);
+    BOOL hifSetObjectHotkeys(PVOID pvHotkeys,
+                             ULONG cHotkeys);
 
-    BOOL hifHookConfigChanged(PVOID pvdc);
+    /* ******************************************************************
+     *                                                                  *
+     *   Function keys interface                                        *
+     *                                                                  *
+     ********************************************************************/
+
+    #ifdef XWPHOOK_HEADER_INCLUDED
+        PFUNCTIONKEY hifQueryFunctionKeys(PULONG pcFunctionKeys);
+
+        BOOL hifFreeFunctionKeys(PFUNCTIONKEY paFunctionKeys);
+
+        BOOL hifSetFunctionKeys(PFUNCTIONKEY paFunctionKeys,
+                                ULONG cFunctionKeys);
+
+        BOOL hifAppendFunctionKey(PFUNCTIONKEY pNewKey);
+
+        PFUNCTIONKEY hifFindFunctionKey(PFUNCTIONKEY paFunctionKeys,
+                                        ULONG cFunctionKeys,
+                                        UCHAR ucScanCode);
+
+        BOOL hifDeleteFunctionKey(PFUNCTIONKEY paFunctionKeys,
+                                  PULONG pcFunctionKeys,
+                                  ULONG ulDelete);
+    #endif
+
+    /* ******************************************************************
+     *                                                                  *
+     *   XWPKeyboard notebook callbacks (notebook.c)                    *
+     *                                                                  *
+     ********************************************************************/
+
+    VOID hifCollectHotkeys(MPARAM mp1,
+                           MPARAM mp2);
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-
-        /* ******************************************************************
-         *                                                                  *
-         *   XWPKeyboard notebook callbacks (notebook.c)                    *
-         *                                                                  *
-         ********************************************************************/
 
         VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                      ULONG flFlags);
@@ -103,6 +166,13 @@
         MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            USHORT usItemID, USHORT usNotifyCode,
                                            ULONG ulExtra);
+
+        VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                          ULONG flFlags);
+
+        MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                                USHORT usItemID, USHORT usNotifyCode,
+                                                ULONG ulExtra);
 
         /* ******************************************************************
          *                                                                  *

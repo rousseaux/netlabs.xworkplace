@@ -96,7 +96,7 @@
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpclsmgr.h>               // this includes SOMClassMgr
-#include <wpdesk.h>                 // WPDesktop
+// #include <wpdesk.h>                 // WPDesktop
 
 /* ******************************************************************
  *                                                                  *
@@ -793,7 +793,7 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         {
             if (pscd->ulHelpPanel)
             {
-                _wpDisplayHelp(_wpclsQueryActiveDesktop(_WPDesktop),
+                _wpDisplayHelp(cmnQueryActiveDesktop(),
                                pscd->ulHelpPanel,
                                (PSZ)pscd->pszHelpLibrary);
             }

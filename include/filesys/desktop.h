@@ -43,18 +43,19 @@
      ********************************************************************/
 
     #define DEBUG_MENUID_LISTHEAP       WPMENUID_USER
-    #define DEBUG_MENUID_CRASH_MENU     WPMENUID_USER + 1
-    #define DEBUG_MENUID_CRASH_THR1     WPMENUID_USER + 2
-    #define DEBUG_MENUID_CRASH_WORKER   WPMENUID_USER + 3
-    #define DEBUG_MENUID_CRASH_QUICK    WPMENUID_USER + 4
-    #define DEBUG_MENUID_CRASH_FILE     WPMENUID_USER + 5
+    #define DEBUG_MENUID_RELEASEFREED   WPMENUID_USER + 1
+    #define DEBUG_MENUID_CRASH_MENU     WPMENUID_USER + 2
+    #define DEBUG_MENUID_CRASH_THR1     WPMENUID_USER + 3
+    #define DEBUG_MENUID_CRASH_WORKER   WPMENUID_USER + 4
+    #define DEBUG_MENUID_CRASH_QUICK    WPMENUID_USER + 5
+    #define DEBUG_MENUID_CRASH_FILE     WPMENUID_USER + 6
 
     VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                             HWND hwndMenu);
 
     BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                              HWND hwndFrame,
-                             ULONG ulMenuId);
+                             PULONG pulMenuId);
 
     /* ******************************************************************
      *                                                                  *

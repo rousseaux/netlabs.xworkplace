@@ -27,8 +27,8 @@
      *                                                                  *
      ********************************************************************/
 
-    #define IDSHMEM_DAEMON          "\\SHAREMEM\\XWORKPLC\\DAEMON.DAT"
-            // DAEMONSHARED structure
+    #define SHMEM_DAEMON          "\\SHAREMEM\\XWORKPLC\\DMNSHARE.DAT"
+            // shared memory name of DAEMONSHARED structure
 
     /* ******************************************************************
      *                                                                  *
@@ -36,10 +36,11 @@
      *                                                                  *
      ********************************************************************/
 
-    #define INIAPP_XWPHOOK          "XWorkplace:Hook"   // added V0.9.0
-    #define INIKEY_HOOK_HOTKEYS     "Hotkeys"           // added V0.9.0
-    #define INIKEY_HOOK_CONFIG      "Config"            // added V0.9.0
-    #define INIKEY_HOOK_PGMGCONFIG  "PageMageConfig"    // V0.9.2 (2000-02-25) [umoeller]
+    #define INIAPP_XWPHOOK              "XWorkplace:Hook"   // added V0.9.0
+    #define INIKEY_HOOK_HOTKEYS         "Hotkeys"           // added V0.9.0
+    #define INIKEY_HOOK_CONFIG          "Config"            // added V0.9.0
+    #define INIKEY_HOOK_PGMGCONFIG      "PageMageConfig"    // V0.9.2 (2000-02-25) [umoeller]
+    #define INIKEY_HOOK_FUNCTIONKEYS    "FuncKeys"          // added V0.9.3 (2000-04-19) [umoeller]
 
     /* ******************************************************************
      *                                                                  *
@@ -68,31 +69,37 @@
 
     typedef struct _PAGEMAGECONFIG
     {
-        /* Misc 1 */
+        /* Desktops */
         POINTL       ptlMaxDesktops;
+                // no. of virtual Desktops (x and y)
         POINTL       ptlStartDesktop;
-        INT          iEdgeBoundary;
-        ULONG        ulSleepTime;
-        BOOL         bRepositionMouse;
-        BOOL         bClickActivate;
-
-        /* Misc 2 */
-        BOOL         _bHoldWPS;          // make WPS Desktop sticky
-        // CHAR         szWPSName[TEXTLEN];
-        LONG         lPriority;
-        LONG         lPriorityZero;
-        BOOL         bRecoverOnShutdown;
-        BOOL         bSwitchToFocus;
+                // initial desktop at startup (always (1, 2))
 
         /* Display */
-        BOOL         bShowTitlebar;
-        BOOL         bStartMin;
-        BOOL         bFlash;
-        ULONG        ulFlashDelay;
-        BOOL         bFloatToTop;
-        BOOL         bShowWindows;
-        BOOL         bShowWindowText;
+        BOOL         fShowTitlebar;
+                // if TRUE, PageMage has a titlebar
+        BOOL         _fStartMinimized;
+                // start minimized?
         BOOL         fPreserveProportions;
+                // preserve proportions of PageMage win when resizing?
+
+        BOOL         fStayOnTop;
+                // stay on top
+        BOOL         fFlash;
+        ULONG        ulFlashDelay;
+                // "flash" (temporarily show)
+
+        BOOL         fMirrorWindows;
+                // show windows in PageMage?
+
+        BOOL         fShowWindowText;
+                // show window titles in PageMage?
+
+        BOOL         fClick2Activate;
+                // allow activate/lower by mouse clicks?
+
+        BOOL         fRecoverOnShutdown;
+                // if TRUE, windows are restored when PageMage is exited
 
         /* Sticky */
         CHAR         aszSticky[MAX_STICKYS][TEXTLEN];
@@ -100,21 +107,17 @@
         HWND         hwndSticky2[MAX_STICKYS];
         SHORT        usSticky2Num;
 
-        /*  Colors 1 */
+        /*  Colors */
         LONG         lcNormal;
         LONG         lcCurrent;
         LONG         lcDivider;
-        CHAR         szNormal[20];
-        CHAR         szCurrent[20];
-        CHAR         szDivider[20];
 
-        /* Colors 2 */
         LONG         lcNormalApp;
         LONG         lcCurrentApp;
         LONG         lcAppBorder;
-        CHAR         szNormalApp[20];
-        CHAR         szCurrentApp[20];
-        CHAR         szAppBorder[20];
+
+        LONG         lcTxtNormalApp;
+        LONG         lcTxtCurrentApp;
 
         /* Panning */
         BOOL         bPanAtTop;
@@ -124,9 +127,10 @@
         BOOL         bWrapAround;
 
         /* Keyboard */
-        ULONG        ulKeyShift;
-        BOOL         bReturnKeystrokes;
-        BOOL         bHotkeyGrabFocus;
+        BOOL         fEnableArrowHotkeys;
+        ULONG        ulKeyShift;        // KC_* values
+        /* BOOL         bReturnKeystrokes;
+        BOOL         bHotkeyGrabFocus; */
     } PAGEMAGECONFIG, *PPAGEMAGECONFIG;
 
     /*
@@ -310,8 +314,22 @@
         USHORT  usFlags;
                         // Keyboard control codes:
                         // SHORT1FROMMP(mp1) of WM_CHAR, filtered.
+                        // Only the following flags will be set:
+                        // --   KC_CTRL
+                        // --   KC_ALT
+                        // --   KC_SHIFT
+                        // --   KC_VIRTUALKEY
+                        // --   KC_INVALIDCOMP: special flag used if the
+                        //      scan code represents one of the user-defined
+                        //      function keys in the XWPKeyboard object.
                         // KC_CTRL, KC_ALT, KC_SHIFT work always,
                         // no matter if we're in a PM or VIO session.
+                        // However, for some reason, KC_VIRTUALKEY is
+                        // never set in VIO sessions. We still store it
+                        // in this structure though to be able to display
+                        // the hotkey in the configuration pages.
+                        // The hook will filter that out since the scan
+                        // code is good enough to identify the key.
         UCHAR   ucScanCode;
                         // Hardware scan code:
                         // CHAR4FROMMP(mp1) of WM_CHAR.
@@ -334,8 +352,30 @@
                         // this is different between PM and VIO sessions.
         ULONG   ulHandle;
                         // handle to post to thread-1 object window (kernel.c);
-                        // this is normally a HOBJECT
+                        // this is normally the HOBJECT of the object to be
+                        // opened.
     } GLOBALHOTKEY, *PGLOBALHOTKEY;
+
+    /*
+     *@@ FUNCTIONKEY:
+     *      XWorkplace function key description.
+     *      An array of these is returned by
+     *      hifQueryFunctionKeys().
+     *
+     *@@added V0.9.3 (2000-04-19) [umoeller]
+     */
+
+    typedef struct _FUNCTIONKEY
+    {
+        UCHAR       ucScanCode;         // hardware scan code;
+                                        // CHAR4FROMMP(mp1) of WM_CHAR
+        CHAR        szDescription[30];  // key description (e.g. "Win left")
+        BOOL        fModifier;          // TRUE if the scan code represents
+                                        // a modifier key which can be pressed
+                                        // together with another key, similar
+                                        // to Ctrl or Alt or Del; this will
+                                        // allow us to do things like "WinLeft + C"
+    } FUNCTIONKEY, *PFUNCTIONKEY;
 
     /* ******************************************************************
      *                                                                  *
@@ -347,6 +387,10 @@
 
     #define XDM_PAGEMAGECONFIG      (WM_USER + 301)
 
+        // flags for XDM_PAGEMAGECONFIG:
+        #define PGMGCFG_REPAINT     0x0001
+        #define PGMGCFG_REFORMAT    0x0002
+
     #define XDM_HOOKINSTALL         (WM_USER + 302)
 
     #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 303)
@@ -357,11 +401,13 @@
 
     #define XDM_HOTKEYSCHANGED      (WM_USER + 306)
 
-    #define XDM_SLIDINGFOCUS        (WM_USER + 307)
+    #define XDM_FUNCTIONKEYSCHANGED (WM_USER + 307)
 
-    #define XDM_SLIDINGMENU         (WM_USER + 308)
+    #define XDM_SLIDINGFOCUS        (WM_USER + 308)
 
-    #define XDM_HOTCORNER           (WM_USER + 309)
+    #define XDM_SLIDINGMENU         (WM_USER + 309)
+
+    #define XDM_HOTCORNER           (WM_USER + 310)
 
 #endif
 

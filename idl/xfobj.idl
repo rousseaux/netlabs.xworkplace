@@ -91,6 +91,7 @@ interface XFldObject : WPObject
     releaseorder: xwpAddObjectInternalsPage,
                   xwpQueryDeletion,
                   xwpSetDeletion,
+                  xwpSetTrashObject,
                   xwpQueryObjectHotkey,
                   xwpSetObjectHotkey,
                   xwpQuerySetup,
@@ -136,6 +137,7 @@ interface XFldObject : WPObject
      */
 
     wpInitData: override;
+    wpCopyObject: override;
     wpObjectReady: override;
 
     wpUnInitData: override;

@@ -237,9 +237,10 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
 
 /*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xfpgmf_wpInitData(XFldProgramFile *somSelf)
@@ -258,12 +259,19 @@ SOM_Scope void  SOMLINK xfpgmf_wpInitData(XFldProgramFile *somSelf)
 
 /*
  *@@ wpObjectReady:
- *      this is called upon an object when its creation
- *      or awakening is complete. This is the last method
- *      which gets called during instantiation of a
- *      WPS object when it has completely initialized
- *      itself. ulCode signifies the cause of object
- *      instantiation.
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
+ *
+ *      Even though WPSREF doesn't really say so, this method
+ *      must be used similar to a C++ copy constructor
+ *      when the instance data contains pointers. Since when
+ *      objects are copied, SOM just copies the binary instance
+ *      data, you get two objects with instance pointers pointing
+ *      to the same object, which can only lead to problems.
+ *
  *      For XFldProgramFile, we need this notification to
  *      reset the icon data in our instance data, because
  *      otherwise we get wrong icons when copying program
@@ -276,21 +284,30 @@ SOM_Scope void  SOMLINK xfpgmf_wpObjectReady(XFldProgramFile *somSelf,
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpObjectReady");
 
-    // reset our app type flags, because when program files
-    // are _copied_, wpSetProgIcon gets called one time too early
-    // (between wpInitData and wpObjectReady; at this point,
-    // the PROGDETAILS have no meaningful values, and xwpQueryProgType
-    // has returned garbage data),
-    // and a second time in time (after wpObjectReady);
-    // for this second time we need to pretend that we haven't
-    // queried the app type yet, because for the second call
-    // of wpSetProgIcon, the icon will then be set correctly
-    _ulDosAppType = -1;
-    _ulAppType = -1;
-
     XFldProgramFile_parent_WPProgramFile_wpObjectReady(somSelf,
                                                        ulCode,
                                                        refObject);
+
+    if (ulCode & OR_REFERENCE)
+    {
+        // according to wpobject.h, this flag is set for
+        // OR_FROMTEMPLATE, OR_FROMCOPY, OR_SHADOW; this
+        // means that refObject is valid
+
+        // reset our app type flags, because when program files
+        // are _copied_, wpSetProgIcon gets called one time too early
+        // (between wpInitData and wpObjectReady; at this point,
+        // the PROGDETAILS have no meaningful values, and xwpQueryProgType
+        // has returned garbage data),
+        // and a second time in time (after wpObjectReady);
+        // for this second time we need to pretend that we haven't
+        // queried the app type yet, because for the second call
+        // of wpSetProgIcon, the icon will then be set correctly
+        _ulDosAppType = -1;
+        _ulAppType = -1;
+        _fProgIconSet = FALSE;
+        _hptrThis = NULLHANDLE;
+    }
 }
 
 /*
@@ -614,8 +631,12 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove the "Program" context menu entry for
- *      DLL's and drivers
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Program" context menu entry for
+ *      DLL's and drivers.
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_wpFilterPopupMenu(XFldProgramFile *somSelf,

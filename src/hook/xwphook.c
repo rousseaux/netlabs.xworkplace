@@ -128,6 +128,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// #include "setup.h"
+
 #include "helpers\undoc.h"
 
 #include "hook\xwphook.h"
@@ -160,16 +162,22 @@ HOOKDATA        G_HookData = {0};
     // returned from hookInit and stored within the
     // daemon to configure the hook
 
-PGLOBALHOTKEY   G_pGlobalHotkeysMain = NULL;
+PGLOBALHOTKEY   G_paGlobalHotkeys = NULL;
     // pointer to block of shared memory containing
-    // the hotkeys; allocated by hookInit, requested
-    // by hooks, changed by hookSetGlobalHotkeys
-
+    // the hotkeys; maintained by hookSetGlobalHotkeys,
+    // requested by the pre-accel hook
 ULONG           G_cGlobalHotkeys = 0;
     // count of items in that array (_not_ array size!)
 
+PFUNCTIONKEY    G_paFunctionKeys = NULL;
+    // pointer to block of shared memory containing
+    // the function keys; maintained by hookSetGlobalHotkeys,
+    // requested by the pre-accel hook
+ULONG           G_cFunctionKeys = 0;
+    // count of items in that array (_not_ array size!)
+
 HMTX            G_hmtxGlobalHotkeys = NULLHANDLE;
-    // mutex for protecting that array
+    // mutex for protecting the keys arrays
 
 /*
  * Prototypes:
@@ -598,73 +606,41 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject) // in: daemon object window (
 
         if (G_HookData.hmodDLL)       // initialized by _DLL_InitTerm
         {
+            BOOL fSuccess = FALSE;
+
             _Pmpf(("hookInit: hwndCaller = 0x%lX", hwndDaemonObject));
-            _Pmpf(("  Current HookData.fInputHooked: %d", HookData.fInputHooked));
 
             // initialize globals needed by the hook
             InitializeGlobalsForHooks();
 
-            // check if shared mem for hotkeys
-            // was already acquired
-            arc = DosGetNamedSharedMem((PVOID*)(&G_pGlobalHotkeysMain),
-                                       IDSHMEM_HOTKEYS,
-                                       PAG_READ | PAG_WRITE);
-            while (arc == NO_ERROR)
-            {
-                // exists already:
-                arc = DosFreeMem(G_pGlobalHotkeysMain);
-                _Pmpf(("DosFreeMem arc: %d", arc));
-            };
-
-            // initialize hotkeys
-            arc = DosAllocSharedMem((PVOID*)(&G_pGlobalHotkeysMain),
-                                    IDSHMEM_HOTKEYS,
-                                    sizeof(GLOBALHOTKEY), // rounded up to 4KB
-                                    PAG_COMMIT | PAG_READ | PAG_WRITE);
-            _Pmpf(("DosAllocSharedMem arc: %d", arc));
-
-            if (arc == NO_ERROR)
-            {
-                BOOL fSuccess = FALSE;
-
-                // one default hotkey, let's make this better
-                G_pGlobalHotkeysMain->usKeyCode = '#';
-                G_pGlobalHotkeysMain->usFlags = KC_CTRL | KC_ALT;
-                G_pGlobalHotkeysMain->ulHandle = 100;
-
-                G_cGlobalHotkeys = 1;
-
-                // install hooks, but only once...
-                if (!G_HookData.fSendMsgHooked)
-                    G_HookData.fSendMsgHooked = WinSetHook(G_HookData.habDaemonObject,
-                                                         NULLHANDLE, // system hook
-                                                         HK_SENDMSG, // send-message hook
-                                                         (PFN)hookSendMsgHook,
-                                                         G_HookData.hmodDLL);
-
-                if (!G_HookData.fLockupHooked)
-                    G_HookData.fLockupHooked = WinSetHook(G_HookData.habDaemonObject,
-                                                        NULLHANDLE, // system hook
-                                                        HK_LOCKUP,  // lockup hook
-                                                        (PFN)hookLockupHook,
-                                                        G_HookData.hmodDLL);
-
-                if (!G_HookData.fInputHooked)
-                    G_HookData.fInputHooked = WinSetHook(G_HookData.habDaemonObject,
+            // install hooks, but only once...
+            if (!G_HookData.fSendMsgHooked)
+                G_HookData.fSendMsgHooked = WinSetHook(G_HookData.habDaemonObject,
                                                        NULLHANDLE, // system hook
-                                                       HK_INPUT,    // input hook
-                                                       (PFN)hookInputHook,
+                                                       HK_SENDMSG, // send-message hook
+                                                       (PFN)hookSendMsgHook,
                                                        G_HookData.hmodDLL);
 
-                if (!G_HookData.fPreAccelHooked)
-                    G_HookData.fPreAccelHooked = WinSetHook(G_HookData.habDaemonObject,
-                                                          NULLHANDLE, // system hook
-                                                          HK_PREACCEL,  // pre-accelerator table hook (undocumented)
-                                                          (PFN)hookPreAccelHook,
-                                                          G_HookData.hmodDLL);
-            }
+            if (!G_HookData.fLockupHooked)
+                G_HookData.fLockupHooked = WinSetHook(G_HookData.habDaemonObject,
+                                                      NULLHANDLE, // system hook
+                                                      HK_LOCKUP,  // lockup hook
+                                                      (PFN)hookLockupHook,
+                                                      G_HookData.hmodDLL);
 
-            _Pmpf(("  New HookData.fInputHooked: %d", HookData.fInputHooked));
+            if (!G_HookData.fInputHooked)
+                G_HookData.fInputHooked = WinSetHook(G_HookData.habDaemonObject,
+                                                     NULLHANDLE, // system hook
+                                                     HK_INPUT,    // input hook
+                                                     (PFN)hookInputHook,
+                                                     G_HookData.hmodDLL);
+
+            if (!G_HookData.fPreAccelHooked)
+                G_HookData.fPreAccelHooked = WinSetHook(G_HookData.habDaemonObject,
+                                                        NULLHANDLE, // system hook
+                                                        HK_PREACCEL,  // pre-accelerator table hook (undocumented)
+                                                        (PFN)hookPreAccelHook,
+                                                        G_HookData.hmodDLL);
         }
 
         _Pmpf(("Leaving hookInit"));
@@ -684,6 +660,7 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject) // in: daemon object window (
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: fixed missing global updates
  *@@changed V0.9.2 (2000-02-21) [umoeller]: added new system hooks
+ *@@changed V0.9.3 (2000-04-20) [umoeller]: added function keys support
  */
 
 BOOL EXPENTRY hookKill(void)
@@ -736,9 +713,11 @@ BOOL EXPENTRY hookKill(void)
         G_HookData.fSendMsgHooked = FALSE;
     }
 
-    if (G_pGlobalHotkeysMain)
-        // free shared mem
-        DosFreeMem(G_pGlobalHotkeysMain);
+    // free shared mem
+    if (G_paGlobalHotkeys)
+        DosFreeMem(G_paGlobalHotkeys);
+    if (G_paFunctionKeys) // V0.9.3 (2000-04-20) [umoeller]
+        DosFreeMem(G_paFunctionKeys);
 
     if (G_hmtxGlobalHotkeys)
     {
@@ -752,11 +731,11 @@ BOOL EXPENTRY hookKill(void)
 /*
  *@@ hookSetGlobalHotkeys:
  *      this exported function gets called to update the
- *      hook's list of global hotkeys.
+ *      hook's lists of global hotkeys and XWP function keys.
  *
- *      This is the only interface to the global hotkeys
- *      list. If we wish to change any of the hotkeys,
- *      we must always pass a complete array of new
+ *      This is the only interface to the hotkeys lists.
+ *      If we wish to change any of the keys configurations,
+ *      we must always pass two complete arrays of new
  *      hotkeys to this function. This is not terribly
  *      comfortable, but we're dealing with global PM
  *      hooks here, so comfort is not really the main
@@ -767,14 +746,18 @@ BOOL EXPENTRY hookKill(void)
  *      automatically recompose the complete list when
  *      a single hotkey changes and call this func in turn.
  *
- *      This function copies the given list into a newly
- *      allocated block of shared memory, which is used
- *      by the hook. If a previous such block exists, it
- *      is freed. Access to this block is protected by
- *      a mutex semaphore internally in case WM_CHAR
- *      comes in while the list is being modified
- *      (the hook will not be running on the same thread
- *      as this function, which gets called by the daemon).
+ *      hifSetFunctionKeys can be used to reconfigure the
+ *      function keys.
+ *
+ *      This function copies the given lists into two newly
+ *      allocated blocks of shared memory, which are used
+ *      by the hook. If previous such blocks exist, they
+ *      are freed and reallocated. Access to those blocks
+ *      is protected by a mutex semaphore internally in case
+ *      WM_CHAR comes in while the lists are being modified,
+ *      which will cause the hook functions to be running
+ *      on some application thread, while this function
+ *      must only be called by the daemon.
  *
  *      Note: This function must only be called by the same
  *      process which called hookInit (that is, the
@@ -783,11 +766,14 @@ BOOL EXPENTRY hookKill(void)
  *
  *      This returns the DOS error code of the various
  *      semaphore and shared mem API calls.
+ *
+ *@@changed V0.9.3 (2000-04-20) [umoeller]: added function keys support; changed prototype
  */
 
 APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotkeys array
-                                     ULONG cNewHotkeys)         // in: count of items in array --
-                                                              // _not_ array size!!
+                                     ULONG cNewHotkeys,         // in: count of items in array -- _not_ array size!!
+                                     PFUNCTIONKEY pNewFunctionKeys, // in: new hotkeys array
+                                     ULONG cNewFunctionKeys)         // in: count of items in array -- _not_ array size!!
 {
     BOOL    fSemOpened = FALSE,
             fSemOwned = FALSE;
@@ -808,27 +794,49 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
     {
         fSemOwned = TRUE;
 
-        if (G_pGlobalHotkeysMain)
+        // 1) hotkeys
+
+        if (G_paGlobalHotkeys)
         {
             // hotkeys defined already: free the old ones
-            DosFreeMem(G_pGlobalHotkeysMain);
+            DosFreeMem(G_paGlobalHotkeys);
         }
 
-        arc = DosAllocSharedMem((PVOID*)(&G_pGlobalHotkeysMain),
-                                IDSHMEM_HOTKEYS,
+        arc = DosAllocSharedMem((PVOID*)(&G_paGlobalHotkeys),
+                                SHMEM_HOTKEYS,
                                 sizeof(GLOBALHOTKEY) * cNewHotkeys, // rounded up to 4KB
                                 PAG_COMMIT | PAG_READ | PAG_WRITE);
-        _Pmpf(("DosAllocSharedMem arc: %d", arc));
-
         if (arc == NO_ERROR)
         {
             // copy hotkeys to shared memory
-            memcpy(G_pGlobalHotkeysMain,
+            memcpy(G_paGlobalHotkeys,
                    pNewHotkeys,
                    sizeof(GLOBALHOTKEY) * cNewHotkeys);
             G_cGlobalHotkeys = cNewHotkeys;
         }
 
+        // 2) function keys V0.9.3 (2000-04-20) [umoeller]
+
+        if (G_paFunctionKeys)
+        {
+            // function keys defined already: free the old ones
+            DosFreeMem(G_paFunctionKeys);
+        }
+
+        arc = DosAllocSharedMem((PVOID*)(&G_paFunctionKeys),
+                                SHMEM_FUNCTIONKEYS,
+                                sizeof(FUNCTIONKEY) * cNewFunctionKeys, // rounded up to 4KB
+                                PAG_COMMIT | PAG_READ | PAG_WRITE);
+
+        if (arc == NO_ERROR)
+        {
+            // copy function keys to shared memory
+            memcpy(G_paFunctionKeys,
+                   pNewFunctionKeys,
+                   sizeof(FUNCTIONKEY) * cNewFunctionKeys);
+            G_cFunctionKeys = cNewFunctionKeys;
+            _Pmpf(("hookSetGlobalHotkeys: G_cFunctionKeys = %d", G_cFunctionKeys));
+        }
     }
 
     if (fSemOwned)
@@ -2468,14 +2476,68 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
  ******************************************************************/
 
 /*
+ *@@ WMChar_FunctionKeys:
+ *      returns TRUE if the specified key is one of
+ *      the user-defined XWP function keys.
+ *
+ *@@added V0.9.3 (2000-04-20) [umoeller]
+ */
+
+BOOL WMChar_FunctionKeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
+                         UCHAR ucScanCode) // in: CHAR4FROMMP(mp1) from WM_CHAR
+{
+    // set return value:
+    // per default, pass message on to next hook or application
+    BOOL brc = FALSE;
+
+    // scan code valid?
+    if (usFlags & KC_SCANCODE)
+    {
+        // request access to shared memory
+        // with function key definitions:
+        PFUNCTIONKEY paFunctionKeysShared = NULL;
+        APIRET arc = DosGetNamedSharedMem((PVOID*)(&paFunctionKeysShared),
+                                          SHMEM_FUNCTIONKEYS,
+                                          PAG_READ | PAG_WRITE);
+
+        // _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
+
+        _Pmpf(("WMChar_FunctionKeys: Searching for scan code 0x%lX", ucScanCode));
+
+        if (arc == NO_ERROR)
+        {
+            // search function keys array
+            ULONG   ul = 0;
+            PFUNCTIONKEY pKeyThis = paFunctionKeysShared;
+            for (ul = 0;
+                 ul < G_cFunctionKeys;
+                 ul++)
+            {
+                _Pmpf(("  funckey %d is scan code 0x%lX", ul, pKeyThis->ucScanCode));
+
+                if (pKeyThis->ucScanCode == ucScanCode)
+                {
+                    // scan codes match:
+                    // return "found" flag
+                    brc = TRUE;
+                    break;  // for
+                }
+
+                pKeyThis++;
+            }
+
+            DosFreeMem(paFunctionKeysShared);
+        } // end if DosGetNamedSharedMem
+
+    } // end if (usFlags & KC_SCANCODE)
+
+    return (brc);
+}
+
+/*
  *@@ WMChar_Hotkeys:
  *      this gets called from hookPreAccelHook to
  *      process WM_CHAR messages.
- *
- *      The WM_CHAR message is one of the most complicated
- *      messages which exists. This func only gets called
- *      after hookPreAccelHook has filtered out messages
- *      which we definitely won't need.
  *
  *      As opposed to folder hotkeys (folder.c),
  *      for the global object hotkeys, we need a more
@@ -2490,17 +2552,140 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
  *      Since we use a dynamically allocated array of
  *      GLOBALHOTKEY structures, to make this thread-safe,
  *      we have to use shared memory and a global mutex
- *      semaphore. See hookSetGlobalHotkeys.
+ *      semaphore. See hookSetGlobalHotkeys. While this
+ *      function is being called, the global mutex is
+ *      requested, so this is protected.
+ *
+ *      If this returns TRUE, the msg is swallowed. We
+ *      return TRUE if we found a hotkey.
+ *
+ *      This function gets called for BOTH the key-down and
+ *      the key-up message. As usual with PM, applications
+ *      should react to key-down messages only. However, since
+ *      we swallow the key-down message if a hotkey was found
+ *      (and post XDM_HOTKEYPRESSED to the daemon object window),
+ *      we should swallow the key-up msg also, because otherwise
+ *      the application gets a key-up msg without a previous
+ *      key-down event, which might lead to confusion.
+ *
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: moved debug code to hook
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: removed usch and usvk params
+ *@@changed V0.9.3 (2000-04-19) [umoeller]: added XWP function keys support
  */
 
-BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
-                    UCHAR ucScanCode, // in: CHAR4FROMMP(mp1) from WM_CHAR
-                    USHORT usch,     // in: SHORT1FROMMP(mp2) from WM_CHAR
-                    USHORT usvk)     // in: SHORT2FROMMP(mp2) from WM_CHAR
+BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
+                    UCHAR ucScanCode) // in: CHAR4FROMMP(mp1) from WM_CHAR
 {
     // set return value:
     // per default, pass message on to next hook or application
     BOOL brc = FALSE;
+
+    // request access to shared memory
+    // with hotkey definitions:
+    PGLOBALHOTKEY pGlobalHotkeysShared = NULL;
+    APIRET arc = DosGetNamedSharedMem((PVOID*)(&pGlobalHotkeysShared),
+                                      SHMEM_HOTKEYS,
+                                      PAG_READ | PAG_WRITE);
+
+    _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
+
+    if (arc == NO_ERROR)
+    {
+        // OK, we got the shared hotkeys:
+        USHORT  us;
+
+        PGLOBALHOTKEY pKeyThis = pGlobalHotkeysShared;
+
+        // filter out unwanted flags;
+        // we used to check for KC_VIRTUALKEY also, but this doesn't
+        // work with VIO sessions, where this is never set V0.9.3 (2000-04-10) [umoeller]
+        USHORT usFlags = usFlagsOrig & (KC_CTRL | KC_ALT | KC_SHIFT);
+
+        _Pmpf(("  Checking %d hotkeys for scan code 0x%lX",
+                G_cGlobalHotkeys,
+                ucScanCode));
+
+        // now go through the shared hotkey list and check
+        // if the pressed key was assigned an action to
+        us = 0;
+        for (us = 0;
+             us < G_cGlobalHotkeys;
+             us++)
+        {
+            _Pmpf(("    item %d: scan code %lX", us, pKeyThis->ucScanCode));
+
+            // when comparing,
+            // filter out KC_VIRTUALKEY, because this is never set
+            // in VIO sessions... V0.9.3 (2000-04-10) [umoeller]
+            if (   ((pKeyThis->usFlags & (KC_CTRL | KC_ALT | KC_SHIFT))
+                            == usFlags)
+                && (pKeyThis->ucScanCode == ucScanCode)
+               )
+            {
+                // hotkey found:
+
+                // only for the key-down event,
+                // notify daemon
+                if ((usFlagsOrig & KC_KEYUP) == 0)
+                    WinPostMsg(G_HookData.hwndDaemonObject,
+                               XDM_HOTKEYPRESSED,
+                               (MPARAM)(pKeyThis->ulHandle),
+                               (MPARAM)0);
+
+                // reset return code: swallow this message
+                // (both key-down and key-up)
+                brc = TRUE;
+                // get outta here
+                break; // for
+            }
+
+            // not found: go for next key to check
+            pKeyThis++;
+        } // end for
+
+        DosFreeMem(pGlobalHotkeysShared);
+    } // end if DosGetNamedSharedMem
+
+    return (brc);
+}
+
+/*
+ *@@ WMChar_Main:
+ *      WM_CHAR processing in hookPreAccelHook.
+ *      This has been extracted with V0.9.3 (2000-04-20) [umoeller].
+ *
+ *      This requests the global hotkeys semaphore to make the
+ *      whole thing thread-safe.
+ *
+ *      Then, we call WMChar_FunctionKeys to see if the key is
+ *      a function key. If so, the message is swallowed in any
+ *      case.
+ *
+ *      Then, we call WMChar_Hotkeys to check if some global hotkey
+ *      has been defined for the key (be it a function key or some
+ *      other key combo). If so, the message is swallowed.
+ *
+ *      Third, we check for the PageMage switch-desktop hotkeys.
+ *      If one of those is found, we swallow the msg also and
+ *      notify PageMage.
+ *
+ *      That is, the msg is swallowed if it's a function key or
+ *      a global hotkey or a PageMage hotkey.
+ *
+ *@@added V0.9.3 (2000-04-20) [umoeller]
+ */
+
+BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
+{
+    // set return value:
+    // per default, pass message on to next hook or application
+    BOOL brc = FALSE;
+
+    USHORT usFlags    = SHORT1FROMMP(pqmsg->mp1);
+    // UCHAR  ucRepeat   = CHAR3FROMMP(mp1);
+    UCHAR  ucScanCode = CHAR4FROMMP(pqmsg->mp1);
+    USHORT usch       = SHORT1FROMMP(pqmsg->mp2);
+    USHORT usvk       = SHORT2FROMMP(pqmsg->mp2);
 
     // request access to the hotkeys mutex:
     // first we need to open it, because this
@@ -2514,118 +2699,194 @@ BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
         arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
                                  SEM_TIMEOUT);
 
-        _Pmpf(("WM_CHAR WinRequestMutexSem arc: %d", arc));
+        // _Pmpf(("WM_CHAR WinRequestMutexSem arc: %d", arc));
 
         if (arc == NO_ERROR)
         {
             // OK, we got the mutex:
-            PGLOBALHOTKEY pGlobalHotkeysShared = NULL;
+            // search the list of function keys
+            BOOL    fIsFunctionKey = WMChar_FunctionKeys(usFlags, ucScanCode);
+                        // returns TRUE if ucScanCode represents one of the
+                        // function keys
 
-            // request access to shared memory
-            // with hotkey definitions:
-            arc = DosGetNamedSharedMem((PVOID*)(&pGlobalHotkeysShared),
-                                       IDSHMEM_HOTKEYS,
-                                       PAG_READ | PAG_WRITE);
-
-            _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
-
-            if (arc == NO_ERROR)
+            // global hotkeys enabled? This also gets called if PageMage hotkeys are on!
+            if (G_HookData.HookConfig.fGlobalHotkeys)
             {
-                // OK, we got the shared hotkeys:
-                USHORT  us;
+                if (    // process only key-down messages
+                        // ((usFlags & KC_KEYUP) == 0)
+                        // check flags:
+                        // do the list search only if the key could be
+                        // a valid hotkey, that is:
+                        (
+                            // 1) it's a function key
+                            (fIsFunctionKey)
 
-                PGLOBALHOTKEY pKeyThis = pGlobalHotkeysShared;
-
-                        /*
-                   In PM session:
-                                                usFlags         usvk usch       ucsk
-                        Ctrl alone              VK SC CTRL       0a   0          1d
-                        Ctrl-A                     SC CTRL        0  61          1e
-                        Ctrl-Alt                VK SC CTRL ALT   0b   0          38
-                        Ctrl-Alt-A                 SC CTRL ALT    0  61          1e
-
-                   In VIO session:
-                        Ctrl alone                 SC CTRL       07   0          1d
-                        Ctrl-A                     SC CTRL        0   1e01       1e
-                        Ctrl-Alt                   SC CTRL ALT   07   0          38
-                        Ctrl-Alt-A                 SC CTRL ALT   20   1e00       1e
-
-                        Alt-A                      SC      ALT   20   1e00
-                        Ctrl-E                     SC CTRL        0   3002
-
-                        */
-
-                #ifdef _PMPRINTF_
-                        CHAR    szFlags[2000] = "";
-                        if (usFlags & KC_CHAR)                      // 0x0001
-                            strcat(szFlags, "KC_CHAR ");
-                        if (usFlags & KC_VIRTUALKEY)                // 0x0002
-                            strcat(szFlags, "KC_VIRTUALKEY ");
-                        if (usFlags & KC_SCANCODE)                  // 0x0004
-                            strcat(szFlags, "KC_SCANCODE ");
-                        if (usFlags & KC_SHIFT)                     // 0x0008
-                            strcat(szFlags, "KC_SHIFT ");
-                        if (usFlags & KC_CTRL)                      // 0x0010
-                            strcat(szFlags, "KC_CTRL ");
-                        if (usFlags & KC_ALT)                       // 0x0020
-                            strcat(szFlags, "KC_ALT ");
-                        if (usFlags & KC_KEYUP)                     // 0x0040
-                            strcat(szFlags, "KC_KEYUP ");
-                        if (usFlags & KC_PREVDOWN)                  // 0x0080
-                            strcat(szFlags, "KC_PREVDOWN ");
-                        if (usFlags & KC_LONEKEY)                   // 0x0100
-                            strcat(szFlags, "KC_LONEKEY ");
-                        if (usFlags & KC_DEADKEY)                   // 0x0200
-                            strcat(szFlags, "KC_DEADKEY ");
-                        if (usFlags & KC_COMPOSITE)                 // 0x0400
-                            strcat(szFlags, "KC_COMPOSITE ");
-                        if (usFlags & KC_INVALIDCOMP)               // 0x0800
-                            strcat(szFlags, "KC_COMPOSITE ");
-
-                        _Pmpf(("  usFlags: 0x%lX -->", usFlags));
-                        _Pmpf(("    %s", szFlags));
-                        _Pmpf(("  ucScanCode: 0x%lX", ucScanCode));
-                        _Pmpf(("  usvk: 0x%lX", usvk));
-                        _Pmpf(("  usch: 0x%lX", usch));
-                #endif
-
-                // filter out unwanted flags
-                usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
-
-                _Pmpf(("  Checking %d hotkeys", cGlobalHotkeys));
-
-                // now go through the shared hotkey list and check
-                // if the pressed key was assigned an action to
-                us = 0;
-                for (us = 0;
-                     us < G_cGlobalHotkeys;
-                     us++)
+                            // or 2) it's a typical virtual key or Ctrl/alt/etc combination
+                        ||  (     ((usFlags & KC_VIRTUALKEY) != 0)
+                                  // Ctrl pressed?
+                               || ((usFlags & KC_CTRL) != 0)
+                                  // Alt pressed?
+                               || ((usFlags & KC_ALT) != 0)
+                                  // or one of the Win95 keys?
+                               || (   ((usFlags & KC_VIRTUALKEY) == 0)
+                                   && (     (usch == 0xEC00)
+                                        ||  (usch == 0xED00)
+                                        ||  (usch == 0xEE00)
+                                      )
+                                  )
+                            )
+                        )
+                        // always filter out those ugly composite key (accents etc.),
+                        // but make sure the scan code is valid V0.9.3 (2000-04-10) [umoeller]
+                   &&   ((usFlags & (KC_DEADKEY
+                                     | KC_COMPOSITE
+                                     | KC_INVALIDCOMP
+                                     | KC_SCANCODE))
+                          == KC_SCANCODE)
+                   )
                 {
-                    _Pmpf(("    item %d: scan code %lX", us, pKeyThis->ucScanCode));
+                      /*
+                 In PM session:
+                                              usFlags         usvk usch       ucsk
+                      Ctrl alone              VK SC CTRL       0a     0        1d
+                      Ctrl-A                     SC CTRL        0    61        1e
+                      Ctrl-Alt                VK SC CTRL ALT   0b     0        38
+                      Ctrl-Alt-A                 SC CTRL ALT    0    61        1e
 
-                    if (   (pKeyThis->usFlags == usFlags)
-                        && (pKeyThis->ucScanCode == ucScanCode)
-                       )
-                    {
-                        // hotkey found:
-                        // notify daemon
-                        WinPostMsg(G_HookData.hwndDaemonObject,
-                                   XDM_HOTKEYPRESSED,
-                                   (MPARAM)(pKeyThis->ulHandle),
-                                   (MPARAM)0);
+                      F11 alone               VK SC toggle     2a  8500        57
+                      Ctrl alone              VK SC CTRL       0a     0        1d
+                      Ctrl-Alt                VK SC CTRL ALT   0b     0        38
+                      Ctrl-Alt-F11            VK SC CTRL ALT   2a  8b00        57
 
-                        // reset return code: swallow this message
+                 In VIO session:
+                      Ctrl alone                 SC CTRL       07   0          1d
+                      Ctrl-A                     SC CTRL        0   1e01       1e
+                      Ctrl-Alt                   SC CTRL ALT   07   0          38
+                      Ctrl-Alt-A                 SC CTRL ALT   20   1e00       1e
+
+                      Alt-A                      SC      ALT   20   1e00
+                      Ctrl-E                     SC CTRL        0   3002
+
+                      F11 alone               ignored...
+                      Ctrl alone              VK SC CTRL       07!    0        1d
+                      Ctrl-Alt                VK SC CTRL ALT   07!    0        38
+                      Ctrl-Alt-F11            !! SC CTRL ALT   20! 8b00        57
+
+                      So apparently, for these keyboard combinations, in VIO
+                      sessions, the KC_VIRTUALKEY flag is missing. Strange.
+
+                      */
+
+                    #ifdef _PMPRINTF_
+                            CHAR    szFlags[2000] = "";
+                            if (usFlags & KC_CHAR)                      // 0x0001
+                                strcat(szFlags, "KC_CHAR ");
+                            if (usFlags & KC_VIRTUALKEY)                // 0x0002
+                                strcat(szFlags, "KC_VIRTUALKEY ");
+                            if (usFlags & KC_SCANCODE)                  // 0x0004
+                                strcat(szFlags, "KC_SCANCODE ");
+                            if (usFlags & KC_SHIFT)                     // 0x0008
+                                strcat(szFlags, "KC_SHIFT ");
+                            if (usFlags & KC_CTRL)                      // 0x0010
+                                strcat(szFlags, "KC_CTRL ");
+                            if (usFlags & KC_ALT)                       // 0x0020
+                                strcat(szFlags, "KC_ALT ");
+                            if (usFlags & KC_KEYUP)                     // 0x0040
+                                strcat(szFlags, "KC_KEYUP ");
+                            if (usFlags & KC_PREVDOWN)                  // 0x0080
+                                strcat(szFlags, "KC_PREVDOWN ");
+                            if (usFlags & KC_LONEKEY)                   // 0x0100
+                                strcat(szFlags, "KC_LONEKEY ");
+                            if (usFlags & KC_DEADKEY)                   // 0x0200
+                                strcat(szFlags, "KC_DEADKEY ");
+                            if (usFlags & KC_COMPOSITE)                 // 0x0400
+                                strcat(szFlags, "KC_COMPOSITE ");
+                            if (usFlags & KC_INVALIDCOMP)               // 0x0800
+                                strcat(szFlags, "KC_INVALIDCOMP ");
+                            if (usFlags & KC_TOGGLE)                    // 0x1000
+                                strcat(szFlags, "KC_TOGGLE ");
+                            if (usFlags & KC_INVALIDCHAR)               // 0x2000
+                                strcat(szFlags, "KC_INVALIDCHAR ");
+                            if (usFlags & KC_DBCSRSRVD1)                // 0x4000
+                                strcat(szFlags, "KC_DBCSRSRVD1 ");
+                            if (usFlags & KC_DBCSRSRVD2)                // 0x8000
+                                strcat(szFlags, "KC_DBCSRSRVD2 ");
+
+                            _Pmpf(("  usFlags: 0x%lX -->", usFlags));
+                            _Pmpf(("    %s", szFlags));
+                            _Pmpf(("  usvk: 0x%lX", usvk));
+                            _Pmpf(("  usch: 0x%lX", usch));
+                            _Pmpf(("  ucScanCode: 0x%lX", ucScanCode));
+                    #endif
+
+                    #ifdef __DEBUG__
+                        // debug code:
+                        // enable Ctrl+Alt+Delete emergency exit
+                        if (    (   (usFlags & (KC_CTRL | KC_ALT | KC_KEYUP))
+                                     == (KC_CTRL | KC_ALT)
+                                )
+                              && (ucScanCode == 0x0e)    // delete
+                           )
+                        {
+                            ULONG ul;
+                            for (ul = 5000;
+                                 ul > 100;
+                                 ul -= 200)
+                                DosBeep(ul, 20);
+
+                            WinPostMsg(G_HookData.hwndDaemonObject,
+                                       WM_QUIT,
+                                       0, 0);
+                            brc = TRUE;
+                        }
+                    #endif
+
+                    if (WMChar_Hotkeys(usFlags, ucScanCode))
+                        // returns TRUE (== swallow) if hotkey was found
                         brc = TRUE;
-                        // get outta here
-                        break; // for
+                }
+            }
+
+            // PageMage hotkeys:
+            if (!brc)       // message not swallowed yet:
+            {
+                if (    (G_HookData.PageMageConfig.fEnableArrowHotkeys)
+                            // arrow hotkeys enabled?
+                     && (G_HookData.hwndPageMageClient)
+                            // PageMage active?
+                   )
+                {
+                    // PageMage hotkeys enabled:
+                    // key-up only
+                    if ((usFlags & KC_KEYUP) == 0)
+                    {
+                        // check KC_CTRL etc. flags
+                        if (   (G_HookData.PageMageConfig.ulKeyShift | KC_SCANCODE)
+                                    == (usFlags & (G_HookData.PageMageConfig.ulKeyShift
+                                                   | KC_SCANCODE))
+                           )
+                            // OK: check scan codes
+                            if (    (ucScanCode == 0x61)
+                                 || (ucScanCode == 0x66)
+                                 || (ucScanCode == 0x63)
+                                 || (ucScanCode == 0x64)
+                               )
+                            {
+                                // cursor keys:
+                                ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
+                                                              ucScanCode,
+                                                              ucScanCode);
+                                WinPostMsg(G_HookData.hwndPageMageClient,
+                                           PGMG_PASSTHRU,
+                                           MPFROMLONG(ulRequest),
+                                           MPVOID);
+                                // swallow
+                                brc = TRUE;
+                            }
+
                     }
-
-                    // not found: go for next key to check
-                    pKeyThis++;
-                } // end for
-
-                DosFreeMem(pGlobalHotkeysShared);
-            } // end if DosGetNamedSharedMem
+                }
+            } // end if (!brc)       // message not swallowed yet
 
             DosReleaseMutexSem(G_hmtxGlobalHotkeys);
         } // end if WinRequestMutexSem
@@ -2666,6 +2927,11 @@ BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
  *      to be swallowed, or FALSE if the current application (or
  *      the next hook in the hook chain) should still receive the
  *      message.
+ *
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: added check for system lockup
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: added PageMage hotkeys
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: added KC_SCANCODE check
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: moved debug code to hook
  */
 
 BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
@@ -2674,19 +2940,10 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
     // per default, pass message on to next hook or application
     BOOL        brc = FALSE;
 
-    HWND        hwnd;
-    ULONG       msg;
-    MPARAM      mp1, mp2;
-
     if (pqmsg == NULL)
         return (FALSE);
 
-    hwnd = pqmsg->hwnd;
-    msg = pqmsg->msg;
-    mp1 = pqmsg->mp1;
-    mp2 = pqmsg->mp2;
-
-    switch(msg)
+    switch(pqmsg->msg)
     {
         /*
          * WM_CHAR:
@@ -2697,38 +2954,15 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
          */
 
         case WM_CHAR:
-            if (G_HookData.HookConfig.fGlobalHotkeys)
-            {
-                USHORT usFlags    = SHORT1FROMMP(mp1);
-                // UCHAR  ucRepeat   = CHAR3FROMMP(mp1);
-                UCHAR  ucScanCode = CHAR4FROMMP(mp1);
-                USHORT usch       = SHORT1FROMMP(mp2);
-                USHORT usvk       = SHORT2FROMMP(mp2);
-
-                if (    // process only key-down messages
-                        ((usFlags & KC_KEYUP) == 0)
-                        // check flags:
-                    &&  (     ((usFlags & KC_VIRTUALKEY) != 0)
-                              // Ctrl pressed?
-                           || ((usFlags & KC_CTRL) != 0)
-                              // Alt pressed?
-                           || ((usFlags & KC_ALT) != 0)
-                              // or one of the Win95 keys?
-                           || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                               && (     (usch == 0xEC00)
-                                    ||  (usch == 0xED00)
-                                    ||  (usch == 0xEE00)
-                                  )
-                              )
-                        )
-                        // filter out those ugly composite key (accents etc.)
-                   &&   ((usFlags & (KC_DEADKEY | KC_COMPOSITE | KC_INVALIDCOMP)) == 0)
+            if (   (    (G_HookData.HookConfig.fGlobalHotkeys)
+                    ||  (G_HookData.PageMageConfig.fEnableArrowHotkeys)
                    )
-                {
-                    brc = WMChar_Hotkeys(usFlags, ucScanCode, usch, usvk);
-                            // returns TRUE (== swallow) if hotkey was found
-                }
+               && (G_HookData.hwndLockupFrame == NULLHANDLE)    // system not locked up
+               )
+            {
+                brc = WMChar_Main(pqmsg);
             }
+
         break; // WM_CHAR
     } // end switch(msg)
 

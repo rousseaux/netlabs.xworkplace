@@ -58,6 +58,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSERRORS
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINPOINTERS
@@ -103,8 +104,8 @@
 #include "config\classlst.h"            // SOM logic for "WPS Classes" page
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-#include <wpclsmgr.h>               // this includes SOMClassMgr
-#include <wpdesk.h>                 // WPDesktop
+// #include <wpclsmgr.h>               // this includes SOMClassMgr
+// #include <wpdesk.h>                 // WPDesktop
 
 /* ******************************************************************
  *                                                                  *
@@ -434,7 +435,7 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
         {
             if (prcd->ulHelpPanel)
             {
-                _wpDisplayHelp(_wpclsQueryActiveDesktop(_WPDesktop),
+                _wpDisplayHelp(cmnQueryActiveDesktop(),
                                prcd->ulHelpPanel,
                                (PSZ)prcd->pszHelpLibrary);
             }
@@ -733,8 +734,8 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
             // class object exists:
             // start thread for collecting method info
             thrCreate(&pClientData->ptiMethodCollectThread,
-                      96000,
                       cll_fntMethodCollectThread,
+                      FALSE,        // no create msgq
                       (ULONG)pmti);
 
         } // end if (pwps->pClassObject)
@@ -1797,6 +1798,11 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                 // no selection: use default
                                 // "open view" context menu
                                 POINTL ptl = { 0, 0 };
+                                XWPClassListData *somThis
+                                    = XWPClassListGetData(pClassTreeCnrData->pClientData->somSelf);
+                                // set flag for wpModifyPoupMenu
+                                _fMenuCnrWhitespace = TRUE;
+
                                 WinQueryPointerPos(HWND_DESKTOP,
                                                    &ptl);
                                 // convert from screen to cnr coords
@@ -2878,6 +2884,7 @@ MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      WPAbstract parent method.
  *
  *@@added V0.9.1 (99-12-28) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: "register class" was missing frequently; fixed
  */
 
 BOOL cllModifyPopupMenu(XWPClassList *somSelf,
@@ -2885,9 +2892,10 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                         HWND hwndCnr,
                         ULONG iPosition)
 {
+    XWPClassListData *somThis = XWPClassListGetData(somSelf);
     MENUITEM mi;
     // get handle to the "Open" submenu in the
-    // the folder's popup menu
+    // the popup menu
     if (WinSendMsg(hwndMenu,
                    MM_QUERYITEM,
                    MPFROM2SHORT(WPMENUID_OPEN, TRUE),
@@ -2903,17 +2911,15 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                            MIS_TEXT, 0);
         // insert "register class" only if this is
         // for an open class list view
-        if (hwndCnr)
+        if (_fMenuCnrWhitespace)
         {
-            if (WinQueryWindowUShort(hwndCnr, QWS_ID) == ID_XLDI_CNR)
-            {
-                winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-                winhInsertMenuItem(hwndMenu, MIT_END,
-                                   ID_XLMI_REGISTER, // is above WPMENUID_USER
-                                   pNLSStrings->pszRegisterClass,
-                                   MIS_TEXT, 0);
-            }
+            winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+            winhInsertMenuItem(hwndMenu, MIT_END,
+                               ID_XLMI_REGISTER, // is above WPMENUID_USER
+                               pNLSStrings->pszRegisterClass,
+                               MIS_TEXT, 0);
+            _fMenuCnrWhitespace = FALSE;
         }
 
         return (TRUE);
@@ -2928,6 +2934,7 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
  *      If this returns FALSE, the parent gets called.
  *
  *@@added V0.9.1 (99-12-28) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: fixed hangs with register class
  */
 
 BOOL cllMenuItemSelected(XWPClassList *somSelf,
@@ -2970,35 +2977,48 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                           &rcd)
                     == DID_OK)
             {
-                PSZ pTable[1];
                 HPOINTER hptrOld = winhSetWaitPointer();
-                pTable[0] = rcd.szClassName;
+                CHAR    szErrorCode[10] = "?",
+                        szModuleError[500] = "none";
+                PSZ pTable[3] = {
+                            rcd.szClassName,
+                            szErrorCode,
+                            szModuleError
+                    };
+                APIRET arc;
 
-                WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
+                /* WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
                            CM_REMOVERECORD,
                            (MPARAM)NULL,
                            MPFROM2SHORT(0, // remove all records
-                                    CMA_FREE | CMA_INVALIDATE));
+                                        CMA_FREE | CMA_INVALIDATE));
                 clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
                 free(pszClassInfo);
-                pszClassInfo = NULL;
+                pszClassInfo = NULL; */
 
-                if (WinRegisterObjectClass(rcd.szClassName, rcd.szModName))
+                arc = winhRegisterClass(rcd.szClassName,
+                                        rcd.szModName,
+                                        szModuleError,
+                                        sizeof(szModuleError));
+                if (arc == NO_ERROR)
                     // success
                     cmnMessageBoxMsgExt(hwndDlg,
-                            121,
-                            pTable, 1, 131,
-                            MB_OK);
+                                        121,
+                                        pTable, 1, 131,
+                                        MB_OK);
                 else
-                    // error
+                {
+                    // error:
+                    sprintf(szErrorCode, "%d", arc);
                     cmnMessageBoxMsgExt(hwndDlg,
-                            104,
-                            pTable, 1, 132,
-                            MB_OK);
+                                        104,
+                                        pTable, 3, 132,
+                                        MB_OK);
+                }
 
                 // fill cnr again
-                WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
+                // WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
             }
             brc = TRUE;
         }

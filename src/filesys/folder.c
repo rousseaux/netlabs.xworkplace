@@ -104,7 +104,7 @@
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
-#include <wpdesk.h>
+// #include <wpdesk.h>
 #include <wpshadow.h>           // WPShadow
 #include "xfdisk.h"
 #include <wprootf.h>
@@ -135,485 +135,508 @@ HMTX                G_hmtxFolderLists = NULLHANDLE;
  *      setup string part only.
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: bitmaps on boot drive are returned with "?:\" now
  */
 
 ULONG fdrQuerySetup(WPObject *somSelf,
                     PSZ pszSetupString,
                     ULONG cbSetupString)
 {
-    // flag defined in
-    #define WP_GLOBAL_COLOR         0x40000000
-
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    // temporary buffer for building the setup string
-    PSZ     pszTemp = NULL,
-            pszView = NULL;
     ULONG   ulReturn = 0;
-    ULONG   ulValue = 0;
-    PSZ     pszValue = 0,
-            pszDefaultValue = 0;
-    SOMClass *pClassObject = 0;
-    BOOL    fTreeIconsInvisible = FALSE,
-            fIconViewColumns = FALSE;
 
-    CHAR    szTemp[1000] = "";
-
-    BOOL    fIsWarp4 = doshIsWarp4();
-
-    /* if (pszSetupString)
+    TRY_LOUD(excpt1, NULL)
     {
-        _Pmpf(("Dumping %s", _wpQueryTitle(somSelf)));
+        // flag defined in
+        #define WP_GLOBAL_COLOR         0x40000000
 
-        _Pmpf(("-- FldrLongArray (%d bytes)", _cbFldrLongArray));
-        cmnDumpMemoryBlock((PVOID)_pFldrLongArray,
-                           _cbFldrLongArray,
-                           8);
+        XFolderData *somThis = XFolderGetData(somSelf);
 
-        _Pmpf(("-- pszFdrCnrBackground"));
-        if (_pszFdrBkgndImageFile)
-            _Pmpf(("    %s", _pszFdrBkgndImageFile));
+        // temporary buffer for building the setup string
+        PSZ     pszTemp = NULL,
+                pszView = NULL;
+        ULONG   ulValue = 0;
+        PSZ     pszValue = 0,
+                pszDefaultValue = 0;
+        SOMClass *pClassObject = 0;
+        BOOL    fTreeIconsInvisible = FALSE,
+                fIconViewColumns = FALSE;
 
-        _Pmpf(("-- pFldrBackground (%d bytes)", _cbFldrBackground));
-        cmnDumpMemoryBlock((PVOID)_pFldrBackground,
-                           _cbFldrBackground,
-                           8);
-    } */
+        CHAR    szTemp[1000] = "";
 
-    // WORKAREA
-    if (_wpQueryFldrFlags(somSelf) & FOI_WORKAREA)
-        xstrcat(&pszTemp, "WORKAREA=YES;");
+        BOOL    fIsWarp4 = doshIsWarp4();
 
-    // MENUBAR
-    ulValue = _xwpQueryMenuBarVisibility(somSelf);
-    if (ulValue != _xwpclsQueryMenuBarVisibility(_XFolder))
-        // non-default value:
-        if (ulValue)
-            xstrcat(&pszTemp, "MENUBAR=YES;");
-        else
-            xstrcat(&pszTemp, "MENUBAR=NO;");
-
-    // SORTBYATTR
-
-    /*
-     * folder sort settings
-     *
-     */
-
-    // ALWAYSSORT
-    // DEFAULTSORT
-
-    // SORTCLASS
-    pClassObject = _wpQueryFldrSortClass(somSelf);
-    if (pClassObject != _WPFileSystem)
-    {
-        sprintf(szTemp, "SORTCLASS=%s;", _somGetName(pClassObject));
-        xstrcat(&pszTemp, szTemp);
-    }
-
-    /*
-     * folder view settings
-     *
-     */
-
-    // BACKGROUND
-    if ((_pszFdrBkgndImageFile) && (_pFldrBackground))
-    {
-        CHAR cType = 'S';
-
-        PBYTE pbRGB = ( (PBYTE)(&(_pFldrBackground->rgbColor)) );
-
-        switch (_pFldrBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
+        /* if (pszSetupString)
         {
-            case 2: cType = 'N'; break;
-            case 3: cType = 'T'; break;
-            default: /* 4 */ cType = 'S'; break;
-        }
+            _Pmpf(("Dumping %s", _wpQueryTitle(somSelf)));
 
-        sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
-                _pszFdrBkgndImageFile,  // image name
-                cType,                    // N = normal, T = tiled, S = scaled
-                _pFldrBackground->bScaleFactor,  // scaling factor
-                (_pFldrBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
-                    ? 'I'
-                    : 'C', // I = image, C = color only
-                *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
-        xstrcat(&pszTemp, szTemp);
-    }
+            _Pmpf(("-- FldrLongArray (%d bytes)", _cbFldrLongArray));
+            cmnDumpMemoryBlock((PVOID)_pFldrLongArray,
+                               _cbFldrLongArray,
+                               8);
 
-    // DEFAULTVIEW: already handled by XFldObject
+            _Pmpf(("-- pszFdrCnrBackground"));
+            if (_pszFdrBkgndImageFile)
+                _Pmpf(("    %s", _pszFdrBkgndImageFile));
 
-    /*
-     * Icon view
-     *
-     */
+            _Pmpf(("-- pFldrBackground (%d bytes)", _cbFldrBackground));
+            cmnDumpMemoryBlock((PVOID)_pFldrBackground,
+                               _cbFldrBackground,
+                               8);
+        } */
 
-    // ICONFONT
-    pszValue = _wpQueryFldrFont(somSelf, OPEN_CONTENTS);
-    pszDefaultValue = prfhQueryProfileData(HINI_USER,
-                                           "PM_SystemFonts",
-                                           "IconText", NULL);
-    if (pszDefaultValue)
-    {
-        if (strcmp(pszValue, pszDefaultValue) != 0)
+        // WORKAREA
+        if (_wpQueryFldrFlags(somSelf) & FOI_WORKAREA)
+            xstrcat(&pszTemp, "WORKAREA=YES;");
+
+        // MENUBAR
+        ulValue = _xwpQueryMenuBarVisibility(somSelf);
+        if (ulValue != _xwpclsQueryMenuBarVisibility(_XFolder))
+            // non-default value:
+            if (ulValue)
+                xstrcat(&pszTemp, "MENUBAR=YES;");
+            else
+                xstrcat(&pszTemp, "MENUBAR=NO;");
+
+        // SORTBYATTR
+
+        /*
+         * folder sort settings
+         *
+         */
+
+        // ALWAYSSORT
+        // DEFAULTSORT
+
+        // SORTCLASS
+        pClassObject = _wpQueryFldrSortClass(somSelf);
+        if (pClassObject != _WPFileSystem)
         {
-            sprintf(szTemp, "ICONFONT=%s;", pszValue);
+            sprintf(szTemp, "SORTCLASS=%s;", _somGetName(pClassObject));
             xstrcat(&pszTemp, szTemp);
         }
-        free(pszDefaultValue);
-    }
 
-    // ICONNFILE: cannot be retrieved!
-    // ICONFILE: cannot be retrieved!
-    // ICONNRESOURCE: cannot be retrieved!
+        /*
+         * folder view settings
+         *
+         */
 
-    // ICONVIEWPOS
-
-    // ICONGRIDSIZE
-
-    // ICONTEXTVISIBLE
-
-    // ICONVIEW
-    ulValue = _wpQueryFldrAttr(somSelf, OPEN_CONTENTS);
-    switch (ulValue & (CV_NAME | CV_FLOW | CV_ICON | CV_TEXT))
-    {
-        case (CV_NAME | CV_FLOW): // but not CV_ICON or CV_TEXT
-            xstrcat(&pszView, "FLOWED");
-            fIconViewColumns = TRUE;        // needed for colors below
-        break;
-
-        case (CV_NAME): // but not CV_ICON | CV_FLOW or CV_TEXT
-            xstrcat(&pszView, "NONFLOWED");
-            fIconViewColumns = TRUE;        // needed for colors below
-        break;
-
-        case (CV_TEXT): // but not CV_ICON
-            xstrcat(&pszView, "INVISIBLE");
-        break;
-    }
-
-    if (ulValue & CV_MINI)
-        // ICONVIEW=MINI
-        if (pszView)
-            xstrcat(&pszView, ",MINI");
-        else
-            xstrcat(&pszView, "MINI");
-
-    if (pszView)
-    {
-        sprintf(szTemp, "ICONVIEW=%s;", pszView);
-        xstrcat(&pszTemp, szTemp);
-        free(pszView);
-        pszView = NULL;
-    }
-
-    // ICONTEXTBACKGROUNDCOLOR
-
-    // ICONTEXTCOLOR
-    if (_pFldrLongArray)
-    {
-        BYTE bUseDefault = FALSE;
-        PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbIconViewTextColAsPlaced)) );
-        if (fIconViewColumns)
-            // FLOWED or NONFLOWED: use different field then
-            pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbIconViewTextColColumns)) );
-
-        bUseDefault = *(pbArrayField + 3);
-        if (!bUseDefault)
-        {
-            BYTE bRed   = *(pbArrayField + 2);
-            BYTE bGreen = *(pbArrayField + 1);
-            BYTE bBlue  = *(pbArrayField );
-
-            sprintf(szTemp, "ICONTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-            xstrcat(&pszTemp, szTemp);
-        }
-    }
-
-    // ICONSHADOWCOLOR
-    if (_pFldrLongArray)
-        // only Warp 4 has these fields, so check size of array
-        if (_cbFldrLongArray >= 84)
-        {
-            PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbIconViewShadowCol)) );
-
-            BYTE bUseDefault = *(pbArrayField + 3);
-            if (!bUseDefault)
+        // BACKGROUND
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if ((_pszWPFolderBkgndImageFile) && (_pWPFolderBackground))
             {
-                BYTE bRed   = *(pbArrayField + 2);
-                BYTE bGreen = *(pbArrayField + 1);
-                BYTE bBlue  = *(pbArrayField );
+                CHAR cType = 'S';
 
-                sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                PBYTE pbRGB = ( (PBYTE)(&(_pWPFolderBackground->rgbColor)) );
+
+                PSZ pszBitmapFile;
+                CHAR cBootDrive = doshQueryBootDrive();
+                pszBitmapFile = strupr(strdup(_pszWPFolderBkgndImageFile));
+                if (*pszBitmapFile == cBootDrive)
+                    // file on boot drive:
+                    // replace with '?' to make it portable
+                    *pszBitmapFile = '?';
+
+                switch (_pWPFolderBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
+                {
+                    case 2: cType = 'N'; break;
+                    case 3: cType = 'T'; break;
+                    default: /* 4 */ cType = 'S'; break;
+                }
+
+                sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
+                        pszBitmapFile,  // image name
+                        cType,                    // N = normal, T = tiled, S = scaled
+                        _pWPFolderBackground->bScaleFactor,  // scaling factor
+                        (_pWPFolderBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
+                            ? 'I'
+                            : 'C', // I = image, C = color only
+                        *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
+                xstrcat(&pszTemp, szTemp);
+
+                free(pszBitmapFile);
+            }
+
+        // DEFAULTVIEW: already handled by XFldObject
+
+        /*
+         * Icon view
+         *
+         */
+
+        // ICONFONT
+        pszValue = _wpQueryFldrFont(somSelf, OPEN_CONTENTS);
+        pszDefaultValue = prfhQueryProfileData(HINI_USER,
+                                               "PM_SystemFonts",
+                                               "IconText", NULL);
+        if (pszDefaultValue)
+        {
+            if (strcmp(pszValue, pszDefaultValue) != 0)
+            {
+                sprintf(szTemp, "ICONFONT=%s;", pszValue);
                 xstrcat(&pszTemp, szTemp);
             }
+            free(pszDefaultValue);
         }
 
-    /*
-     * Tree view
-     *
-     */
+        // ICONNFILE: cannot be retrieved!
+        // ICONFILE: cannot be retrieved!
+        // ICONNRESOURCE: cannot be retrieved!
 
-    // TREEFONT
-    pszValue = _wpQueryFldrFont(somSelf, OPEN_TREE);
-    pszDefaultValue = prfhQueryProfileData(HINI_USER,
-                                           "PM_SystemFonts",
-                                           "IconText", NULL);
-    if (pszDefaultValue)
-    {
-        if (strcmp(pszValue, pszDefaultValue) != 0)
+        // ICONVIEWPOS
+
+        // ICONGRIDSIZE
+
+        // ICONTEXTVISIBLE
+
+        // ICONVIEW
+        ulValue = _wpQueryFldrAttr(somSelf, OPEN_CONTENTS);
+        switch (ulValue & (CV_NAME | CV_FLOW | CV_ICON | CV_TEXT))
         {
-            sprintf(szTemp, "TREEFONT=%s;", pszValue);
-            xstrcat(&pszTemp, szTemp);
+            case (CV_NAME | CV_FLOW): // but not CV_ICON or CV_TEXT
+                xstrcat(&pszView, "FLOWED");
+                fIconViewColumns = TRUE;        // needed for colors below
+            break;
+
+            case (CV_NAME): // but not CV_ICON | CV_FLOW or CV_TEXT
+                xstrcat(&pszView, "NONFLOWED");
+                fIconViewColumns = TRUE;        // needed for colors below
+            break;
+
+            case (CV_TEXT): // but not CV_ICON
+                xstrcat(&pszView, "INVISIBLE");
+            break;
         }
-        free(pszDefaultValue);
-    }
 
-    // TREETEXTVISIBLE
-    // if this is NO, the WPS displays no tree text in tree icon view;
-    // setting this does not affect the CV_* flags, so apparently this
-    // is done via record owner-draw. There must be some flag in the
-    // instance data for this.
-
-    // TREEVIEW
-    ulValue = _wpQueryFldrAttr(somSelf, OPEN_TREE);
-    switch (ulValue & (CV_TREE | CV_NAME | CV_ICON | CV_TEXT))
-    {
-        // CV_TREE | CV_TEXT means text only, no icons (INVISIBLE)
-        // CV_TREE | CV_ICON means icons and text and +/- buttons (default)
-        // CV_TREE | CV_NAME is apparently not used by the WPS
-
-        case (CV_TREE | CV_TEXT):
-            xstrcat(&pszView, "INVISIBLE");
-            fTreeIconsInvisible = TRUE;         // needed for tree text colors below
-        break;
-    }
-
-    if (fIsWarp4)
-    {
-        // on Warp 4, mini icons in Tree view are the default
-        if ((ulValue & CV_MINI) == 0)
-            // TREEVIEW=MINI
-            if (pszView)
-                xstrcat(&pszView, ",NORMAL");
-            else
-                xstrcat(&pszView, "NORMAL");
-    }
-    else
-        // Warp 3:
-        if ((ulValue & CV_MINI) != 0)
-            // TREEVIEW=MINI
+        if (ulValue & CV_MINI)
+            // ICONVIEW=MINI
             if (pszView)
                 xstrcat(&pszView, ",MINI");
             else
                 xstrcat(&pszView, "MINI");
 
-    if ((ulValue & CA_TREELINE) == 0)
-        // TREEVIEW=NOLINES
         if (pszView)
-            xstrcat(&pszView, ",NOLINES");
+        {
+            sprintf(szTemp, "ICONVIEW=%s;", pszView);
+            xstrcat(&pszTemp, szTemp);
+            free(pszView);
+            pszView = NULL;
+        }
+
+        // ICONTEXTBACKGROUNDCOLOR
+
+        // ICONTEXTCOLOR
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if (_pWPFolderLongArray)
+            {
+                BYTE bUseDefault = FALSE;
+                PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbIconViewTextColAsPlaced)) );
+                if (fIconViewColumns)
+                    // FLOWED or NONFLOWED: use different field then
+                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbIconViewTextColColumns)) );
+
+                bUseDefault = *(pbArrayField + 3);
+                if (!bUseDefault)
+                {
+                    BYTE bRed   = *(pbArrayField + 2);
+                    BYTE bGreen = *(pbArrayField + 1);
+                    BYTE bBlue  = *(pbArrayField );
+
+                    sprintf(szTemp, "ICONTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                    xstrcat(&pszTemp, szTemp);
+                }
+            }
+
+        // ICONSHADOWCOLOR
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if (_pWPFolderLongArray)
+                // only Warp 4 has these fields, so check size of array
+                if (_cbWPFolderLongArray >= 84)
+                {
+                    PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbIconViewShadowCol)) );
+
+                    BYTE bUseDefault = *(pbArrayField + 3);
+                    if (!bUseDefault)
+                    {
+                        BYTE bRed   = *(pbArrayField + 2);
+                        BYTE bGreen = *(pbArrayField + 1);
+                        BYTE bBlue  = *(pbArrayField );
+
+                        sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                        xstrcat(&pszTemp, szTemp);
+                    }
+                }
+
+        /*
+         * Tree view
+         *
+         */
+
+        // TREEFONT
+        pszValue = _wpQueryFldrFont(somSelf, OPEN_TREE);
+        pszDefaultValue = prfhQueryProfileData(HINI_USER,
+                                               "PM_SystemFonts",
+                                               "IconText", NULL);
+        if (pszDefaultValue)
+        {
+            if (strcmp(pszValue, pszDefaultValue) != 0)
+            {
+                sprintf(szTemp, "TREEFONT=%s;", pszValue);
+                xstrcat(&pszTemp, szTemp);
+            }
+            free(pszDefaultValue);
+        }
+
+        // TREETEXTVISIBLE
+        // if this is NO, the WPS displays no tree text in tree icon view;
+        // setting this does not affect the CV_* flags, so apparently this
+        // is done via record owner-draw. There must be some flag in the
+        // instance data for this.
+
+        // TREEVIEW
+        ulValue = _wpQueryFldrAttr(somSelf, OPEN_TREE);
+        switch (ulValue & (CV_TREE | CV_NAME | CV_ICON | CV_TEXT))
+        {
+            // CV_TREE | CV_TEXT means text only, no icons (INVISIBLE)
+            // CV_TREE | CV_ICON means icons and text and +/- buttons (default)
+            // CV_TREE | CV_NAME is apparently not used by the WPS
+
+            case (CV_TREE | CV_TEXT):
+                xstrcat(&pszView, "INVISIBLE");
+                fTreeIconsInvisible = TRUE;         // needed for tree text colors below
+            break;
+        }
+
+        if (fIsWarp4)
+        {
+            // on Warp 4, mini icons in Tree view are the default
+            if ((ulValue & CV_MINI) == 0)
+                // TREEVIEW=MINI
+                if (pszView)
+                    xstrcat(&pszView, ",NORMAL");
+                else
+                    xstrcat(&pszView, "NORMAL");
+        }
         else
-            xstrcat(&pszView, "NOLINES");
+            // Warp 3:
+            if ((ulValue & CV_MINI) != 0)
+                // TREEVIEW=MINI
+                if (pszView)
+                    xstrcat(&pszView, ",MINI");
+                else
+                    xstrcat(&pszView, "MINI");
 
-    if (pszView)
-    {
-        sprintf(szTemp, "TREEVIEW=%s;", pszView);
-        xstrcat(&pszTemp, szTemp);
-        free(pszView);
-        pszView = NULL;
-    }
+        if ((ulValue & CA_TREELINE) == 0)
+            // TREEVIEW=NOLINES
+            if (pszView)
+                xstrcat(&pszView, ",NOLINES");
+            else
+                xstrcat(&pszView, "NOLINES");
 
-    // TREETEXTCOLOR
-    if (_pFldrLongArray)
-    {
-        BYTE bUseDefault = FALSE;
-        PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbTreeViewTextColIcons)) );
-
-        if (fTreeIconsInvisible)
-            pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbTreeViewTextColTextOnly)) );
-
-        bUseDefault = *(pbArrayField + 3);
-        if (!bUseDefault)
+        if (pszView)
         {
-            BYTE bRed   = *(pbArrayField + 2);
-            BYTE bGreen = *(pbArrayField + 1);
-            BYTE bBlue  = *(pbArrayField );
+            sprintf(szTemp, "TREEVIEW=%s;", pszView);
+            xstrcat(&pszTemp, szTemp);
+            free(pszView);
+            pszView = NULL;
+        }
 
-            sprintf(szTemp, "TREETEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if (_pWPFolderLongArray)
+            {
+                // TREETEXTCOLOR
+                BYTE bUseDefault = FALSE;
+                PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbTreeViewTextColIcons)) );
+
+                if (fTreeIconsInvisible)
+                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbTreeViewTextColTextOnly)) );
+
+                bUseDefault = *(pbArrayField + 3);
+                if (!bUseDefault)
+                {
+                    BYTE bRed   = *(pbArrayField + 2);
+                    BYTE bGreen = *(pbArrayField + 1);
+                    BYTE bBlue  = *(pbArrayField );
+
+                    sprintf(szTemp, "TREETEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                    xstrcat(&pszTemp, szTemp);
+                }
+
+                // TREESHADOWCOLOR
+                // only Warp 4 has these fields, so check size of array
+                if (_cbWPFolderLongArray >= 84)
+                {
+                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbTreeViewShadowCol)) );
+
+                    bUseDefault = *(pbArrayField + 3);
+                    if (!bUseDefault)
+                    {
+                        BYTE bRed   = *(pbArrayField + 2);
+                        BYTE bGreen = *(pbArrayField + 1);
+                        BYTE bBlue  = *(pbArrayField );
+
+                        sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                        xstrcat(&pszTemp, szTemp);
+                    }
+                }
+            }
+
+        // SHOWALLINTREEVIEW
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if (_pulWPFolderShowAllInTreeView) // only != NULL on Warp 4
+                if (*_pulWPFolderShowAllInTreeView)
+                    xstrcat(&pszTemp, "SHOWALLINTREEVIEW=YES;");
+
+        /*
+         * Details view
+         *
+         */
+
+        // DETAILSCLASS
+        pClassObject = _wpQueryFldrDetailsClass(somSelf);
+        if (pClassObject != _WPFileSystem)
+        {
+            sprintf(szTemp, "DETAILSCLASS=%s;", _somGetName(pClassObject));
             xstrcat(&pszTemp, szTemp);
         }
-    }
 
-    // TREESHADOWCOLOR
-    if (_pFldrLongArray)
-        // only Warp 4 has these fields, so check size of array
-        if (_cbFldrLongArray >= 84)
+        // DETAILSFONT
+        pszValue = _wpQueryFldrFont(somSelf, OPEN_DETAILS);
+        pszDefaultValue = prfhQueryProfileData(HINI_USER,
+                                               "PM_SystemFonts",
+                                               "IconText", NULL);
+        if (pszDefaultValue)
         {
-            PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbTreeViewShadowCol)) );
-
-            BYTE bUseDefault = *(pbArrayField + 3);
-            if (!bUseDefault)
+            if (strcmp(pszValue, pszDefaultValue) != 0)
             {
-                BYTE bRed   = *(pbArrayField + 2);
-                BYTE bGreen = *(pbArrayField + 1);
-                BYTE bBlue  = *(pbArrayField );
-
-                sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                sprintf(szTemp, "DETAILSFONT=%s;", pszValue);
                 xstrcat(&pszTemp, szTemp);
             }
+            free(pszDefaultValue);
         }
 
-    // SHOWALLINTREEVIEW
-    if (_pulShowAllInTreeView) // only != NULL on Warp 4
-        if (*_pulShowAllInTreeView)
-            xstrcat(&pszTemp, "SHOWALLINTREEVIEW=YES;");
+        // DETAILSTODISPLAY
 
-    /*
-     * Details view
-     *
-     */
+        // DETAILSVIEW
 
-    // DETAILSCLASS
-    pClassObject = _wpQueryFldrDetailsClass(somSelf);
-    if (pClassObject != _WPFileSystem)
-    {
-        sprintf(szTemp, "DETAILSCLASS=%s;", _somGetName(pClassObject));
-        xstrcat(&pszTemp, szTemp);
-    }
-
-    // DETAILSFONT
-    pszValue = _wpQueryFldrFont(somSelf, OPEN_DETAILS);
-    pszDefaultValue = prfhQueryProfileData(HINI_USER,
-                                           "PM_SystemFonts",
-                                           "IconText", NULL);
-    if (pszDefaultValue)
-    {
-        if (strcmp(pszValue, pszDefaultValue) != 0)
-        {
-            sprintf(szTemp, "DETAILSFONT=%s;", pszValue);
-            xstrcat(&pszTemp, szTemp);
-        }
-        free(pszDefaultValue);
-    }
-
-    // DETAILSTODISPLAY
-
-    // DETAILSVIEW
-
-    // DETAILSTEXTCOLOR
-    if (_pFldrLongArray)
-    {
-        BYTE bUseDefault = FALSE;
-        PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbDetlViewTextCol)) );
-
-        bUseDefault = *(pbArrayField + 3);
-        if (!bUseDefault)
-        {
-            BYTE bRed   = *(pbArrayField + 2);
-            BYTE bGreen = *(pbArrayField + 1);
-            BYTE bBlue  = *(pbArrayField );
-
-            sprintf(szTemp, "DETAILSTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-            xstrcat(&pszTemp, szTemp);
-        }
-    }
-
-    // DETAILSSHADOWCOLOR
-    if (_pFldrLongArray)
-        // only Warp 4 has these fields, so check size of array
-        if (_cbFldrLongArray >= 84)
-        {
-            PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbDetlViewShadowCol)) );
-
-            BYTE bUseDefault = *(pbArrayField + 3);
-            if (!bUseDefault)
+        // DETAILSTEXTCOLOR
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if (_pWPFolderLongArray)
             {
-                BYTE bRed   = *(pbArrayField + 2);
-                BYTE bGreen = *(pbArrayField + 1);
-                BYTE bBlue  = *(pbArrayField );
+                BYTE bUseDefault = FALSE;
+                PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbDetlViewTextCol)) );
 
-                sprintf(szTemp, "DETAILSSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                xstrcat(&pszTemp, szTemp);
+                bUseDefault = *(pbArrayField + 3);
+                if (!bUseDefault)
+                {
+                    BYTE bRed   = *(pbArrayField + 2);
+                    BYTE bGreen = *(pbArrayField + 1);
+                    BYTE bBlue  = *(pbArrayField );
+
+                    sprintf(szTemp, "DETAILSTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                    xstrcat(&pszTemp, szTemp);
+                }
+
+                // DETAILSSHADOWCOLOR
+                // only Warp 4 has these fields, so check size of array
+                if (_cbWPFolderLongArray >= 84)
+                {
+                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbDetlViewShadowCol)) );
+
+                    bUseDefault = *(pbArrayField + 3);
+                    if (!bUseDefault)
+                    {
+                        BYTE bRed   = *(pbArrayField + 2);
+                        BYTE bGreen = *(pbArrayField + 1);
+                        BYTE bBlue  = *(pbArrayField );
+
+                        sprintf(szTemp, "DETAILSSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
+                        xstrcat(&pszTemp, szTemp);
+                    }
+                }
             }
+
+        /*
+         * additional XFolder setup strings
+         *
+         */
+
+        switch (_bFolderHotkeysInstance)
+        {
+            case 0:
+                xstrcat(&pszTemp, "ACCELERATORS=NO;");
+            break;
+
+            case 1:
+                xstrcat(&pszTemp, "ACCELERATORS=YES;");
+            break;
+
+            // 2 means default
         }
 
-    /*
-     * additional XFolder setup strings
-     *
-     */
+        switch (_bSnapToGridInstance)
+        {
+            case 0:
+                xstrcat(&pszTemp, "SNAPTOGRID=NO;");
+            break;
 
-    switch (_bFolderHotkeysInstance)
-    {
-        case 0:
-            xstrcat(&pszTemp, "ACCELERATORS=NO;");
-        break;
+            case 1:
+                xstrcat(&pszTemp, "SNAPTOGRID=YES;");
+            break;
 
-        case 1:
-            xstrcat(&pszTemp, "ACCELERATORS=YES;");
-        break;
+            // 2 means default
+        }
 
-        // 2 means default
+        switch (_bFullPathInstance)
+        {
+            case 0:
+                xstrcat(&pszTemp, "FULLPATH=NO;");
+            break;
+
+            case 1:
+                xstrcat(&pszTemp, "FULLPATH=YES;");
+            break;
+
+            // 2 means default
+        }
+
+        switch (_bStatusBarInstance)
+        {
+            case 0:
+                xstrcat(&pszTemp, "STATUSBAR=NO;");
+            break;
+
+            case 1:
+                xstrcat(&pszTemp, "STATUSBAR=YES;");
+            break;
+
+            // 2 means default
+        }
+
+        if (_xwpIsFavoriteFolder(somSelf))
+            xstrcat(&pszTemp, "FAVORITEFOLDER=YES;");
+
+        /*
+         * append string
+         *
+         */
+
+        if (pszTemp)
+        {
+            // return string if buffer is given
+            if ((pszSetupString) && (cbSetupString))
+                strhncpy0(pszSetupString,   // target
+                          pszTemp,          // source
+                          cbSetupString);   // buffer size
+
+            // always return length of string
+            ulReturn = strlen(pszTemp);
+            free(pszTemp);
+        }
     }
-
-    switch (_bSnapToGridInstance)
+    CATCH(excpt1)
     {
-        case 0:
-            xstrcat(&pszTemp, "SNAPTOGRID=NO;");
-        break;
-
-        case 1:
-            xstrcat(&pszTemp, "SNAPTOGRID=YES;");
-        break;
-
-        // 2 means default
-    }
-
-    switch (_bFullPathInstance)
-    {
-        case 0:
-            xstrcat(&pszTemp, "FULLPATH=NO;");
-        break;
-
-        case 1:
-            xstrcat(&pszTemp, "FULLPATH=YES;");
-        break;
-
-        // 2 means default
-    }
-
-    switch (_bStatusBarInstance)
-    {
-        case 0:
-            xstrcat(&pszTemp, "STATUSBAR=NO;");
-        break;
-
-        case 1:
-            xstrcat(&pszTemp, "STATUSBAR=YES;");
-        break;
-
-        // 2 means default
-    }
-
-    if (_xwpIsFavoriteFolder(somSelf))
-        xstrcat(&pszTemp, "FAVORITEFOLDER=YES;");
-
-    /*
-     * append string
-     *
-     */
-
-    if (pszTemp)
-    {
-        // return string if buffer is given
-        if ((pszSetupString) && (cbSetupString))
-            strhncpy0(pszSetupString,   // target
-                      pszTemp,          // source
-                      cbSetupString);   // buffer size
-
-        // always return length of string
-        ulReturn = strlen(pszTemp);
-        free(pszTemp);
-    }
+        ulReturn = 0;
+    } END_CATCH();
 
     return (ulReturn);
 }
@@ -1225,8 +1248,8 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // now also update the internal WPFolder sort info, because otherwise
                 // the WPS will keep reverting the cnr attrs; we have obtained the pointer
                 // to this structure in wpRestoreData
-                if (_pFldrSortInfo)
-                    _pFldrSortInfo->fAlwaysSort = AlwaysSort;
+                if (_pWPFolderSortInfo)
+                    _pWPFolderSortInfo->fAlwaysSort = AlwaysSort;
 
                 // finally, set the cnr sort function: we perform these checks
                 // to avoid cnr flickering
@@ -1328,7 +1351,7 @@ MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView,        // folder frame
         _Pmpf(("fncbUpdateStatusBars ulActivate = %d", ulActivate));
     #endif
 
-    if (mpFolder != _wpclsQueryActiveDesktop(_WPDesktop))
+    if (mpFolder != cmnQueryActiveDesktop())
     {
         PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndView, NULL);
         if (psfv)
@@ -2040,6 +2063,9 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                 TRY_LOUD(excpt1, NULL)
                 {
                     XFolderData *somThis = XFolderGetData(psbd->somSelf);
+                    somTD_XFolder_xwpUpdateStatusBar pfnResolvedUpdateStatusBar = NULL;
+                    BOOL        fObjectInitialized
+                            = _wpIsObjectInitialized(psbd->somSelf); // V0.9.3 (2000-04-29) [umoeller]
 
                     // stop timer (it's just for one shot)
                     WinStopTimer(psbd->habStatusBar, // anchor block,
@@ -2098,16 +2124,31 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                     // if we have not done that for this instance already;
                     // we store the method pointer in the instance data
                     // for speed
-                    if (_pfnUpdateStatusBar == NULL)
-                        // not yet resolved:
-                        _pfnUpdateStatusBar = (PVOID)somResolveByName(psbd->somSelf,
-                                                                      "xwpUpdateStatusBar");
-                    // and compose the text
-                    if (_pfnUpdateStatusBar)
-                        ((somTD_XFolder_xwpUpdateStatusBar)_pfnUpdateStatusBar)
-                                            (psbd->somSelf,
-                                             hwndBar,
-                                             psbd->psfv->hwndCnr);
+                    if (fObjectInitialized) // V0.9.3 (2000-04-29) [umoeller]
+                        if (_pfnResolvedUpdateStatusBar)
+                            // already resolved: get resolved address
+                            // from instance data
+                            pfnResolvedUpdateStatusBar
+                                = (somTD_XFolder_xwpUpdateStatusBar)_pfnResolvedUpdateStatusBar;
+
+                    if (!pfnResolvedUpdateStatusBar)
+                    {
+                        // not resolved yet:
+                        pfnResolvedUpdateStatusBar
+                                = (somTD_XFolder_xwpUpdateStatusBar)somResolveByName(
+                                                          psbd->somSelf,
+                                                          "xwpUpdateStatusBar");
+                        if (fObjectInitialized)
+                            // object initialized:
+                            _pfnResolvedUpdateStatusBar = (PVOID)pfnResolvedUpdateStatusBar;
+                    }
+
+                    // finally, compose the text by calling
+                    // the resolved method
+                    if (pfnResolvedUpdateStatusBar)
+                        pfnResolvedUpdateStatusBar(psbd->somSelf,
+                                                   hwndBar,
+                                                   psbd->psfv->hwndCnr);
                     else
                         WinSetWindowText(hwndBar,
                                          "*** error in name-lookup resolution");

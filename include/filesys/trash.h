@@ -50,9 +50,13 @@
                                           XWPTrashCan* pTrashCan,
                                           WPObject* pRelatedObject);
 
-    ULONG trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass,
-                                         XWPTrashCan *pTrashCan,
-                                         WPFolder *pTrashDir);
+    BOOL trshSetupOnce(XWPTrashObject *somSelf,
+                       PSZ pszSetupString);
+
+    BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass,
+                                        XWPTrashCan *pTrashCan,
+                                        WPFolder *pTrashDir,
+                                        PULONG pulObjectCount);
 
     VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
                                  XWPTrashCan *pTrashCan);
@@ -85,7 +89,7 @@
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 
-    BOOL trshDestroyTrashObject(XWPTrashObject *somSelf);
+    // BOOL trshDestroyTrashObject(XWPTrashObject *somSelf);
 
     VOID trshUninitTrashObject(XWPTrashObject *somSelf);
 

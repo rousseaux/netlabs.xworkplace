@@ -11,9 +11,7 @@ XWorkplace. Of course, this requires less setup work, because much of the work
 has already been done.
 
 <OL><LI>If you need a new WPS method which isn't overridden yet, modify the
-IDL file in <CODE>IDL\</CODE> to suit your needs. Please, please, if you modify
-my IDL files, follow the coding style which exists, especially those "@@" flags etc.,
-which are needed for <A HREF="src1_4docs.html">code documentation</A> to work.
+IDL file in <CODE>IDL\</CODE> to suit your needs.
 
 <P>If the method you need is already overridden by XWorkplace, go to <B>3.</B>
 
@@ -32,7 +30,8 @@ SOM class code file that you modified. Please think of some useful
 that other programmers (including me) can find your code more easily.
 
 <P>Don't forget to update <CODE>src\classes\makefile</CODE> so that the class code
-file will be made dependent on your header.
+file will be made dependent on your new header (which you have added to the
+<CODE>SRC\CLASSES</CODE> code).
 
 <P><LI>In <CODE>SRC\YOURDIR\</CODE>, write your own makefile which compiles your
 sources. You can take the makefile in <CODE>SRC\FILESYS\</CODE> as a template. This

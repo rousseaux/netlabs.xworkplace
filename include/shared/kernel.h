@@ -63,18 +63,6 @@
         #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
         #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
 
-        // MMPM/2 status flags in KERNELGLOBALS.ulMMPM2Working;
-        // these reflect the status of SOUND.DLL.
-        // If this is anything other than MMSTAT_WORKING, sounds
-        // are disabled.
-        #define MMSTAT_UNKNOWN             0        // initial value
-        #define MMSTAT_WORKING             1        // SOUND.DLL is working
-        #define MMSTAT_MMDIRNOTFOUND       2        // MMPM/2 directory not found
-        #define MMSTAT_SOUNDLLNOTFOUND     3        // SOUND.DLL not found
-        #define MMSTAT_SOUNDLLNOTLOADED    4        // SOUND.DLL not loaded (DosLoadModule error)
-        #define MMSTAT_SOUNDLLFUNCERROR    5
-        #define MMSTAT_CRASHED             6        // SOUND.DLL crashed, sounds disabled
-
         /*
          *@@ KERNELGLOBALS:
          *      this structure is stored in a static global
@@ -100,8 +88,14 @@
 
         typedef struct _KERNELGLOBALS
         {
+            // WPS startup date and time (krnInitializeXWorkplace)
+            DATETIME        StartupDateTime;
 
-            ULONG               ulPanicFlags;
+            // PM error windows queried by krnInitializeXWorkplace
+            HWND            hwndHardError,
+                            hwndSysError;
+
+            ULONG           ulPanicFlags;
                     // flags set by the "panic" dialog if "Shift"
                     // was pressed during startup.
                     // Per default, this field is set to zero,
@@ -143,7 +137,9 @@
                                 fXFldShutdown,
                                 fXWPClassList,
                                 fXWPTrashCan,
-                                fXWPTrashObject;
+                                fXWPTrashObject,
+                                fXWPString,
+                                fXWPMedia;
 
             /*
              * XWorkplace daemon
@@ -170,9 +166,6 @@
 
             // XFolder Workplace object window handle
             HWND                hwndThread1Object;
-
-            // WPS startup date and time (krnInitializeXWorkplace)
-            DATETIME            StartupDateTime;
 
             /*
              * Worker thread:
@@ -214,10 +207,6 @@
 
             PTHREADINFO         ptiSpeedyThread;
             HWND                hwndSpeedyObject;
-
-            // sound data
-            ULONG               ulMMPM2Working;      // MMSTAT_* flags above
-            USHORT              usDeviceID;
 
             /*
              * File thread:
@@ -300,6 +289,8 @@
     #define T1M_QUERYXFOLDERVERSION     (WM_USER+413)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
+
+    #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+414)
 
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 

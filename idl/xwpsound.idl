@@ -65,6 +65,11 @@ interface XWPSound : WPSound
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
+     * Internal instance variables for XWPSound:
+     *
+     */
+
+    /*
      * WPSound methods overridden by XWPSound:
      *
      */

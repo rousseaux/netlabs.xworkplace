@@ -9,6 +9,11 @@
  *      This also has some implementation code for XWPSound
  *      class.
  *
+ *      Note: The original (WPS) MMSOUND_* constants are
+ *            defined in helpers\syssound.h. The new
+ *            (XWorkplace) MMSOUND_XFLD_* sound constants
+ *            are defined in shared\common.h instead.
+ *
  *      This file is ALL new with V0.9.0.
  *
  *@@added V0.9.0 [umoeller]
@@ -75,7 +80,9 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-#include "filesys\xthreads.h"           // extra XWorkplace threads
+// #include "filesys\xthreads.h"           // extra XWorkplace threads
+
+#include "media\media.h"                // XWorkplace multimedia support
 
 // other SOM headers
 #pragma hdrstop
@@ -1367,7 +1374,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
         case ID_XSDI_SOUND_PLAY:
         {
-            xthrPostSpeedyMsg(QM_PLAYSOUND,
+            xmmPostMediaMsg(XMM_PLAYSOUND,
                             (MPARAM)strdup(pspd->szFile),
                                     // the quick thread wants to free()
                                     // the PSZ passed to it

@@ -75,10 +75,11 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#include <stdio.h>
 #define INCL_WINCOUNTRY
 #define INCL_WINSTDCNR
 #include <os2.h>
+
+#include <stdio.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options

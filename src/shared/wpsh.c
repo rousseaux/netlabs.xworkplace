@@ -243,6 +243,8 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
  *      Be warned, this recurses in really all the
  *      folders, so in extreme cases this can populate
  *      a whole drive, which will take ages.
+ *
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
 BOOL wpshPopulateTree(WPFolder *somSelf)
@@ -250,14 +252,20 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
     BOOL brc = FALSE;
     WPObject    *pObject;
 
+    _Pmpf(("wpshPopulateTree"));
+
     if (somSelf)
     {
+        // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+        somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
+
         if (wpshCheckIfPopulated(somSelf))
             brc = TRUE;
 
-        for (   pObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+        for (   pObject = rslv_wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pObject);
-                pObject = _wpQueryContent(somSelf, pObject, (ULONG)QC_NEXT)
+                pObject = rslv_wpQueryContent(somSelf, pObject, (ULONG)QC_NEXT)
             )
         {
             if (_somIsA(pObject, _WPFolder))
@@ -265,6 +273,8 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
                     brc = TRUE;
         }
     }
+
+    _Pmpf(("End of wpshPopulateTree"));
 
     return (brc);
 }
@@ -283,11 +293,16 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf)
     BOOL        brc = FALSE;
     CHAR        szRealName[CCHMAXPATH];
 
+    _Pmpf(("wpshCheckIfPopulated"));
+
     if ((_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL) == 0)
     {
         _wpQueryFilename(somSelf, szRealName, TRUE);
         brc = _wpPopulate(somSelf, 0, szRealName, FALSE);
     }
+
+    _Pmpf(("End of wpshCheckIfPopulated"));
+
     return (brc);
 }
 
@@ -1270,6 +1285,102 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
     return (ulrc);
 }
 
+/*
+ *@@ wpshQueryDraggedObjectCnr:
+ *      kinda similar to wpshQueryDraggedObject,
+ *      but this handles the CN_DRAGOVER container
+ *      notification code instead.
+ *
+ *      This can be used in any dialog procedure
+ *      for PM containers which should accept
+ *      objects via drag an drop. When you receive
+ *      WM_CONTROL with CN_DRAGOVER, call this
+ *      helper as follows:
+ *
+ +      case CN_DRAGOVER:
+ +          HOBJECT hobjBeingDragged = NULLHANDLE;
+ +          MRESULT mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)mp2,
+ +                                                  &hobjBeingDragged);
+ +          return (mrc);
+ *
+ *      If a valid object has been dragged over the cnr,
+ *      *phObject will be set to the object handle. Otherwise
+ *      it will always be set to NULLHANDLE.
+ *
+ *@@added V0.9.3 (2000-04-27) [umoeller]
+ */
+
+MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
+                                  HOBJECT *phObject)
+{
+    PDRAGITEM   pdrgItem;
+    USHORT      usIndicator = DOR_NODROP,
+                    // cannot be dropped, but send
+                    // DM_DRAGOVER again
+                usOp = DO_UNKNOWN;
+                    // target-defined drop operation:
+                    // user operation (we don't want
+                    // the WPS to copy anything)
+
+    // reset output variable
+    *phObject = NULLHANDLE;
+
+    // OK so far:
+    // get access to the drag'n'drop structures
+    if (DrgAccessDraginfo(pcdi->pDragInfo))
+    {
+        if (
+                // accept no more than one single item at a time;
+                // we cannot move more than one file type
+                (pcdi->pDragInfo->cditem != 1)
+            )
+        {
+            usIndicator = DOR_NEVERDROP;
+        }
+        else
+        {
+
+            // accept only default drop operation
+            if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
+               )
+            {
+                // get the item being dragged (PDRAGITEM)
+                if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
+                {
+                    // WPS object?
+                    if (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
+                    {
+                        // the WPS stores the MINIRECORDCORE of the
+                        // object in ulItemID of the DRAGITEM structure;
+                        // we use OBJECT_FROM_PREC to get the SOM pointer
+                        WPObject *pSourceObject
+                                    = OBJECT_FROM_PREC(pdrgItem->ulItemID);
+                        if (pSourceObject)
+                        {
+                            // dereference shadows
+                            while (     (pSourceObject)
+                                     && (_somIsA(pSourceObject, _WPShadow))
+                                  )
+                                pSourceObject = _wpQueryShadowedObject(pSourceObject,
+                                                    TRUE);  // lock
+
+                            // store object handle to output
+                            *phObject = _wpQueryHandle(pSourceObject);
+                            if (*phObject)
+                                usIndicator = DOR_DROP;
+                        }
+                    }
+                }
+            }
+        }
+
+        DrgFreeDraginfo(pcdi->pDragInfo);
+    }
+
+    // and return the drop flags
+    return (MRFROM2SHORT(usIndicator, usOp));
+}
+
 #ifdef __DEBUG__
     /*
      *@@ wpshIdentifyRestoreID:
@@ -1408,21 +1519,32 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
                          PSZ pszMethodName,
                          PTASKREC pTaskRec)
     {
-        _Pmpf(("%s: dumping task rec for %s", pszMethodName, _wpQueryTitle(somSelf) ));
+        _Pmpf(("%s: dumping task rec 0x%lX for obj 0x%lX (%s)",
+                pszMethodName,
+                pTaskRec,
+                somSelf,
+                _wpQueryTitle(somSelf) ));
 
         if (pTaskRec)
         {
             ULONG   ul = 0;
+            CHAR    szFolder[CCHMAXPATH] = "null";
 
             while (pTaskRec)
             {
+                if (pTaskRec->folder)
+                    _wpQueryFilename(pTaskRec->folder, szFolder, TRUE);
+                else
+                    strcpy(szFolder, "null");
                 _Pmpf(("Index: %d", ul));
                 _Pmpf(("    useCount: %d", pTaskRec->useCount));
                 _Pmpf(("    pStdDlg: 0x%lX", pTaskRec->pStdDlg));
-                _Pmpf(("    folder: %s", _wpQueryTitle(pTaskRec->folder) ));
+                _Pmpf(("    folder: 0x%lX (%s)", pTaskRec->folder, szFolder ));
                 _Pmpf(("    xOrigin: %d", pTaskRec->xOrigin));
                 _Pmpf(("    yOrigin: %d", pTaskRec->yOrigin));
-                _Pmpf(("    pszTitle: %s", pTaskRec->pszTitle));
+                _Pmpf(("    pszTitle: 0x%lX (%s)",
+                            pTaskRec->pszTitle,
+                            (pTaskRec->pszTitle) ? pTaskRec->pszTitle : "NULL"));
                 _Pmpf(("    posAfterRecord: 0x%lX", pTaskRec->positionAfterRecord));
                 _Pmpf(("    keepAssocs: %d", pTaskRec->fKeepAssociations));
                 _Pmpf(("    pReserved: 0x%lX", pTaskRec->pReserved));

@@ -60,7 +60,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\menus.obj \
        $(OUTPUTDIR)\object.obj \
        $(OUTPUTDIR)\statbars.obj \
-       $(OUTPUTDIR)\sounddll.obj \
+#$(OUTPUTDIR)\sounddll.obj \
        $(OUTPUTDIR)\trash.obj \
        $(OUTPUTDIR)\xthreads.obj
 
@@ -272,20 +272,8 @@ $(OUTPUTDIR)\xthreads.obj: \
     $(INC)\dlgids.h \
     $(INC)\hook\xwphook.h \
     $(INC)\filesys\fileops.h $(INC)\filesys\folder.h \
-        $(INC)\filesys\sounddll.h $(INC)\filesys\xthreads.h $(INC)\filesys\trash.h \
+        $(INC)\filesys\xthreads.h $(INC)\filesys\trash.h \
     $(INC)\config\hookintf.h \
     $(@B).c $(MYOWNINC)\$(@B).h
-
-# Here comes SOUND.DLL which is new with V0.82.
-# For compiling, we use an additional compiler option because
-# we're using the subsystem libraries (/rn).
-
-$(OUTPUTDIR)\sounddll.obj         :  $(@B).c $(MYOWNINC)\$(@B).h \
-                      $(INC)\setup.h
-!ifndef PRECH
-    $(CC_DLL) /rn -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_DLL) /rn /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
 
 

@@ -72,7 +72,7 @@
 #include "helpers\animate.h"            // icon and other animations
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\memdebug.h"           // memory debugging
+// #include "helpers\memdebug.h"           // memory debugging
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\stringh.h"            // string helper routines
@@ -183,12 +183,12 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
  *      implementation for XFldDesktop::wpModifyPopupMenu.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: changed shutdown menu IDs for launchpad
  */
 
 VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                         HWND hwndMenu)
 {
-    BOOL            fRemoveDefaultShutdownItem = FALSE;
     HWND            hwndMenuInsert = hwndMenu;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PKERNELGLOBALS  pKernelGlobals = krnLockGlobals(5000);
@@ -217,20 +217,22 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             if (pGlobalSettings->fDTMShutdown)
             {
                 // "Shutdown" menu item enabled:
+
+                // remove original shutdown item
+                winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
+
                 hwndMenuInsert
                     = winhInsertSubmenu(hwndMenu,
                                         // position: after existing "Shutdown" item
-                                        (SHORT)WinSendMsg(hwndMenu,
-                                                          MM_ITEMPOSITIONFROMID,
-                                                          MPFROM2SHORT(WPMENUID_SHUTDOWN,
-                                                                       FALSE),
-                                                          MPNULL) + 1,
+                                        sOrigShutdownPos + 1,
                                         pGlobalSettings->VarMenuOffset + ID_XFM_OFS_SHUTDOWNMENU,
                                         pNLSStrings->pszShutdown,
                                         MIS_TEXT,
                                         // first item ID in "Shutdown" menu:
                                         // default OS/2 shutdown
-                                        WPMENUID_SHUTDOWN,
+                                        pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OS2_SHUTDOWN,
+                                                    // WPMENUID_SHUTDOWN,
+                                                    // changed V0.9.3 (2000-04-26) [umoeller]
                                         "Default OS/2 shutdown...",
                                         MIS_TEXT, 0);
 
@@ -240,7 +242,18 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                 if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
                     strcat(szShutdown, "...");
 
-                fRemoveDefaultShutdownItem = TRUE;
+                winhInsertMenuItem(hwndMenuInsert,
+                                   sOrigShutdownPos,
+                                   WPMENUID_SHUTDOWN,
+                                   // pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XSHUTDOWN,
+                                   szShutdown,
+                                   MIS_TEXT,
+                                   // disable if Shutdown is currently running
+                                   (   (thrQueryID(pKernelGlobals->ptiShutdownThread)
+                                    || (pKernelGlobals->fShutdownRunning)
+                                   )
+                                       ? MIA_DISABLED
+                                       : 0));
             }
         } // end if (pGlobalSettings->DTMShutdownMenu)
         else
@@ -250,24 +263,12 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
              *
              */
 
-            strcpy(szShutdown, pNLSStrings->pszShutdown);
+            /* strcpy(szShutdown, pNLSStrings->pszShutdown);
             if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
                 strcat(szShutdown, "...");
 
-            fRemoveDefaultShutdownItem = TRUE;
+            fRemoveDefaultShutdownItem = TRUE; */
         }
-
-        winhInsertMenuItem(hwndMenuInsert,
-                           sOrigShutdownPos,
-                           pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XSHUTDOWN,
-                           szShutdown,
-                           MIS_TEXT,
-                           // disable if Shutdown is currently running
-                           (   (thrQueryID(pKernelGlobals->ptiShutdownThread)
-                            || (pKernelGlobals->fShutdownRunning)
-                           )
-                               ? MIA_DISABLED
-                               : 0));
 
     } // end if (pGlobalSettings->XShutdown) ...
 
@@ -299,10 +300,9 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         winhRemoveMenuItem(hwndMenu, WPMENUID_LOCKUP);
     if (!pGlobalSettings->fDTMSystemSetup)
         winhRemoveMenuItem(hwndMenu, WPMENUID_SYSTEMSETUP);
-    if ((fRemoveDefaultShutdownItem) || (!pGlobalSettings->fDTMShutdown))
-        winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
-    #ifdef __DEBUG_ALLOC__
+
+    #ifdef __XWPMEMDEBUG__ // setup.h, helpers\memdebug.c
         // if XWorkplace is compiled with
         // VAC++ debug memory funcs,
         // add a menu item for listing all memory objects
@@ -313,6 +313,11 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            MIT_END,
                            DEBUG_MENUID_LISTHEAP,
                            "List VAC++ debug heap",
+                           MIS_TEXT, 0);
+        winhInsertMenuItem(hwndMenu,
+                           MIT_END,
+                           DEBUG_MENUID_RELEASEFREED,
+                           "Release freed memory",
                            MIS_TEXT, 0);
     #endif
 
@@ -356,47 +361,70 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
  *@@ dtpMenuItemSelected:
  *      implementation for XFldDesktop::wpMenuItemSelected.
  *
- *      This returns TRUE if one of the new items was processed.
+ *      This returns TRUE if one of the new items was processed
+ *      or FALSE if the parent method should be called. We may
+ *      change *pulMenuId and return FALSE.
  *
  *@@added V0.9.1 (99-12-04) [umoeller]
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: changed shutdown menu item IDs; changed prototype
  */
 
 BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                          HWND hwndFrame,
-                         ULONG ulMenuId)
+                         PULONG pulMenuId) // in/out: menu item ID (can be changed)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
+
     if (!(pKernelGlobals->fShutdownRunning))
     {
-        if ((ulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_RESTARTWPS)
+        if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_RESTARTWPS)
         {
             xsdInitiateRestartWPS();
             return (TRUE);
         }
-        else if (    ((ulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_XSHUTDOWN)
-                 &&  (pGlobalSettings->fXShutdown)
+        else if (    (pGlobalSettings->fXShutdown)
                  &&  (pGlobalSettings->NoWorkerThread == 0)
                 )
         {
-            xsdInitiateShutdown();
-            return (TRUE);
+            // shutdown enabled:
+            if (*pulMenuId == WPMENUID_SHUTDOWN)
+            {
+                xsdInitiateShutdown();
+                return (TRUE);
+            }
+            else if ((*pulMenuId - (pGlobalSettings->VarMenuOffset))
+                    == ID_XFMI_OFS_OS2_SHUTDOWN)
+            {
+                // default OS/2 shutdown (in submenu):
+                // have parent method called with default shutdown menu item ID
+                // to start OS/2 shutdown...
+                *pulMenuId = WPMENUID_SHUTDOWN;
+                return (FALSE);
+            }
         }
     }
 
-    #ifdef __DEBUG_ALLOC__
+    #ifdef __XWPMEMDEBUG__ // setup.h, helpers\memdebug.c
         // if XWorkplace is compiled with
         // VAC++ debug memory funcs,
         // check the menu item for listing all memory objects
-        if (ulMenuId == WPMENUID_USER)
+        if (ulMenuId == DEBUG_MENUID_LISTHEAP)
         {
             memdCreateMemDebugWindow();
+            return (TRUE);
+        }
+        else if (ulMenuId == DEBUG_MENUID_RELEASEFREED)
+        {
+            HPOINTER hptrOld = winhSetWaitPointer();
+            memdReleaseFreed();
+            WinSetPointer(HWND_DESKTOP, hptrOld);
             return (TRUE);
         }
     #endif
 
     #ifdef __DEBUG__
-        switch (ulMenuId)
+        switch (*pulMenuId)
         {
             case DEBUG_MENUID_CRASH_THR1:
                 krnPostThread1ObjectMsg(XM_CRASH, 0, 0); break;
@@ -696,6 +724,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (2000-02-09) [umoeller]: added NumLock support to this page
+ *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed major resource leak; the bootlogo bitmap was never freed
  */
 
 MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -917,16 +946,20 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             sf.ptlLowerLeft.x = (swpScreen.cx - sf.bmi.cx) / 2;
                             sf.ptlLowerLeft.y = (swpScreen.cy - sf.bmi.cy) / 2;
 
-                            if (shpCreateWindows(&sf))
+                            if (shpCreateWindows(&sf)) // this selects the bitmap into the HPS
                             {
                                 DosSleep(2000);
+
+                                GpiSetBitmap(sf.hps, NULLHANDLE); // V0.9.3 (2000-04-11) [umoeller]
 
                                 WinDestroyWindow(sf.hwndShapeFrame) ;
                                 WinDestroyWindow(sf.hwndShape);
                             }
                         }
                         // delete the bitmap again
-                        GpiDeleteBitmap(hbmBootLogo);
+                        if (!GpiDeleteBitmap(hbmBootLogo))
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                   "Unable to free bootlogo bitmap.");
                     }
                     GpiDestroyPS(hpsMem);
                     DevCloseDC(hdcMem);

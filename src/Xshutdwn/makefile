@@ -26,7 +26,7 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exes
+OUTPUTDIR = ..\..\bin\exe_st
 MODULESDIR = ..\..\bin\modules
 
 # create output directory
@@ -64,7 +64,7 @@ callmainmake:
     @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
 
 $(OUTPUTDIR)\xshutdwn.obj: $(@B).c $(HLPINC)\winh.h $(INC)\shared\common.h $(INC)\startshut\shutdown.h
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+          $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 
 # build targets
 xshutdwn.def: ..\..\include\bldlevel.h

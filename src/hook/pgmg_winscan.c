@@ -29,11 +29,11 @@
 #include <string.h>
 #include <process.h>
 
+#include "setup.h"                      // code generation and debugging options
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
-
-#include "setup.h"                      // code generation and debugging options
 
 VOID DumpAllWindows(VOID)
 {
@@ -302,9 +302,9 @@ BOOL pgmwStickyCheck(CHAR *pszWindowName,
     BOOL    bFound;
 
     bFound = FALSE;
-    for (usIdx = 0; usIdx < G_PageMageConfig.usStickyTextNum; usIdx++)
+    for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.usStickyTextNum; usIdx++)
     {
-        if (strstr(pszWindowName, G_PageMageConfig.aszSticky[usIdx]))
+        if (strstr(pszWindowName, G_pHookData->PageMageConfig.aszSticky[usIdx]))
         {
             bFound = TRUE;
             break;
@@ -312,9 +312,9 @@ BOOL pgmwStickyCheck(CHAR *pszWindowName,
     }
 
     if (!bFound)
-        for (usIdx = 0; usIdx < G_PageMageConfig.usStickyTextNum; usIdx++)
+        for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.usStickyTextNum; usIdx++)
         {
-            if (strstr(pszSwitchName, G_PageMageConfig.aszSticky[usIdx]))
+            if (strstr(pszSwitchName, G_pHookData->PageMageConfig.aszSticky[usIdx]))
             {
                 bFound = TRUE;
                 break;
@@ -336,9 +336,9 @@ BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
     BOOL    bFound;
 
     bFound = FALSE;
-    for (usIdx = 0; usIdx < G_PageMageConfig.usSticky2Num; usIdx++)
+    for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.usSticky2Num; usIdx++)
     {
-        if (G_PageMageConfig.hwndSticky2[usIdx] == hwndTest)
+        if (G_pHookData->PageMageConfig.hwndSticky2[usIdx] == hwndTest)
         {
             bFound = TRUE;
             break;
@@ -374,8 +374,11 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
     flCalcY = (float) flCalcY * G_pHookData->lCYScreen;
 
     ptlCalc.x = ((int) flCalcX) - G_ptlCurrPos.x;
-    ptlCalc.y = ((int) flCalcY) -
-                ((G_PageMageConfig.ptlMaxDesktops.y - 1) * G_pHookData->lCYScreen - G_ptlCurrPos.y);
+    ptlCalc.y = ((int) flCalcY)
+                - (   (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
+                       * G_pHookData->lCYScreen
+                    - G_ptlCurrPos.y
+                  );
 
     hwndResult = NULLHANDLE;
 
@@ -383,7 +386,9 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
     while ((hwndPoint = WinGetNextWindow(henumPoint)) != NULLHANDLE)
     {
         if (hwndPoint == G_pHookData->hwndPageMageFrame)
+            // ignore PageMage frame
             continue;
+
         WinQueryWindowPos(hwndPoint, &swpPoint);
         if (    (ptlCalc.x >= swpPoint.x)
              && (ptlCalc.x <= swpPoint.x + swpPoint.cx)

@@ -69,11 +69,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.2"
+#define XFOLDER_VERSION        "0.9.3"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.2"
+#define MINIMUM_NLS_VERSION    "0.9.3"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -105,6 +105,8 @@
 
 #define ID_ICONXWPTRASHEMPTY   121
 #define ID_ICONXWPTRASHFILLED  122
+
+#define ID_ICONXWPSTRING       123
 
 #define ID_XFLDRBITMAP         130
 
@@ -447,6 +449,11 @@
 // #define ID_XCDI_REPLFILEEXISTS          1154
 // #define ID_XCDI_REPLDRIVENOTREADY       1155
 
+// XWPSetup "Multimedia" page V0.9.3 (2000-04-29) [umoeller]
+#define ID_XCD_MULTIMEDIA               1150
+#define ID_XCD_MM_CNR                   1151
+#define ID_XCD_MM_GROUPTITLE            1152
+
 // XWPSetup "Paranoia" page (V0.9.0)
 #define ID_XCD_PARANOIA                 1160
 #define ID_XCDI_VARMENUOFFSET           1161
@@ -491,6 +498,41 @@
 #define ID_XCDI_XWPCLS_XFLDSHUTDOWN     1264
 #define ID_XCDI_XWPCLS_XWPCLASSLIST     1265
 #define ID_XCDI_XWPCLS_XWPTRASHCAN      1266
+
+// new classes with V0.9.3
+#define ID_XCDI_XWPCLS_XWPSCREEN        1267
+#define ID_XCDI_XWPCLS_XWPSTRING        1268
+
+/******************************************
+ * XWPScreen ("Screen", PageMage) >= 1400 *
+ ******************************************/
+
+#define ID_SCD_PAGEMAGE1                1400
+#define ID_SCDI_PGMG1_X_SLIDER          1401
+#define ID_SCDI_PGMG1_X_TEXT2           1402
+#define ID_SCDI_PGMG1_Y_SLIDER          1403
+#define ID_SCDI_PGMG1_Y_TEXT2           1404
+#define ID_SCDI_PGMG1_SHOWWINDOWS       1405
+#define ID_SCDI_PGMG1_SHOWWINTITLES     1406
+#define ID_SCDI_PGMG1_CLICK2ACTIVATE    1407
+#define ID_SCDI_PGMG1_TITLEBAR          1408
+#define ID_SCDI_PGMG1_PRESERVEPROPS     1409
+#define ID_SCDI_PGMG1_STAYONTOP         1410
+#define ID_SCDI_PGMG1_FLASHTOTOP        1411
+#define ID_SCDI_PGMG1_ARROWHOTKEYS      1412
+#define ID_SCDI_PGMG1_HOTKEYS_CTRL      1413
+#define ID_SCDI_PGMG1_HOTKEYS_SHIFT     1414
+#define ID_SCDI_PGMG1_HOTKEYS_ALT       1415
+
+#define ID_SCD_PAGEMAGE2                1430
+#define ID_SCDI_PGMG2_DTP_INACTIVE      1431
+#define ID_SCDI_PGMG2_DTP_ACTIVE        1432
+#define ID_SCDI_PGMG2_DTP_BORDER        1433
+#define ID_SCDI_PGMG2_WIN_INACTIVE      1434
+#define ID_SCDI_PGMG2_WIN_ACTIVE        1435
+#define ID_SCDI_PGMG2_WIN_BORDER        1436
+#define ID_SCDI_PGMG2_TXT_INACTIVE      1437
+#define ID_SCDI_PGMG2_TXT_ACTIVE        1438
 
 /******************************************
  * XFldSystem ("OS/2 Kernel")    >= 1500  *
@@ -780,6 +822,7 @@
 #define ID_XTDI_EMPTYSTARTUP            3002
 #define ID_XTDI_EMPTYSHUTDOWN           3003
 #define ID_XTDI_CONFIRMEMPTY            3004
+#define ID_XTDI_CONFIRMDESTROY          3005
 
 #define ID_XTD_DRIVES                   3020
 #define ID_XTDI_UNSUPPORTED_LB          3021
@@ -793,6 +836,14 @@
 
 #define ID_XSD_KEYB_OBJHOTKEYS          3200
 #define ID_XSDI_HOTK_CNR                3201
+
+#define ID_XSD_KEYB_FUNCTIONKEYS        3220
+#define ID_XSDI_FUNCK_CNR               3221
+
+#define ID_XSD_KEYB_EDITFUNCTIONKEY     3230
+#define ID_XSDI_FUNCK_DESCRIPTION_EF    3231
+#define ID_XSDI_FUNCK_SCANCODE_EF       3232
+#define ID_XSDI_FUNCK_MODIFIER          3233
 
 /******************************************
  * XWPMouse    (V0.9.0)          >= 3400   *
@@ -841,6 +892,16 @@
 #define ID_XSDI_MOUSE_MB3AMP_SLIDER     3460
 #define ID_XSDI_MOUSE_MB3AMP_TXT2       3461
 #define ID_XSDI_MOUSE_MB3SCROLLREVERSE  3462
+
+/******************************************
+ * XWPString (V0.9.3)       >= 3800       *
+ ******************************************/
+
+#define ID_XSD_XWPSTRING_PAGE           3800
+#define ID_XSD_XWPSTRING_STRING_MLE     3801
+#define ID_XSD_XWPSTRING_OBJ_CNR        3802
+#define ID_XSD_XWPSTRING_OBJ_CLEAR      3803
+#define ID_XSD_XWPSTRING_CONFIRM        3804
 
 /******************************************
  *          Shutdown defs                 *
@@ -897,7 +958,7 @@
 // context menu in "WPS Classes" container;
 // all the identifiers have changed with V0.9.0
 #define ID_XLM_CLASS_SEL                (WPMENUID_USER+1001)
-// #define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002) // removed V0.9.1 (99-12-28) [umoeller]
+#define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002)
 #define ID_XLMI_REGISTER                (WPMENUID_USER+1003)
 #define ID_XLMI_DEREGISTER              (WPMENUID_USER+1004)
 #define ID_XLMI_REPLACE                 (WPMENUID_USER+1005)
@@ -947,6 +1008,14 @@
 #define ID_XSMI_HOTKEYS_OPENFOLDER      (WPMENUID_USER+1122)
 #define ID_XSMI_HOTKEYS_REMOVE          (WPMENUID_USER+1123)
 
+// "Function keys" menus on XWPKeyboard "Function keys" page
+// V0.9.3 (2000-04-18) [umoeller]
+#define ID_XSM_FUNCTIONKEYS_SEL         (WPMENUID_USER+1130)
+#define ID_XSMI_FUNCK_EDIT              (WPMENUID_USER+1131)
+#define ID_XSMI_FUNCK_DELETE            (WPMENUID_USER+1132)
+
+#define ID_XSM_FUNCTIONKEYS_NOSEL       (WPMENUID_USER+1133)
+#define ID_XSMI_FUNCK_NEW               (WPMENUID_USER+1134)
 
 // The following menu ID's (with _OFS_ in their names)
 // are _variable_ menu ID's: XFolder will add the value
@@ -961,7 +1030,9 @@
 #define ID_XFMI_OFS_OPENPARENTANDCLOSE  (WPMENUID_USER+6)
 #define ID_XFMI_OFS_CLOSE               (WPMENUID_USER+7)
 #define ID_XFM_OFS_SHUTDOWNMENU         (WPMENUID_USER+9)       // new with V0.9.0
-#define ID_XFMI_OFS_XSHUTDOWN           (WPMENUID_USER+10)      // new with V0.9.0
+// #define ID_XFMI_OFS_XSHUTDOWN           (WPMENUID_USER+10)      // new with V0.9.0
+                                                    // removed V0.9.3 (2000-04-26) [umoeller]
+#define ID_XFMI_OFS_OS2_SHUTDOWN        (WPMENUID_USER+10)      // new with V0.9.3 (2000-04-26) [umoeller]
 #define ID_XFMI_OFS_RESTARTWPS          (WPMENUID_USER+11)
 #define ID_XFMI_OFS_FLDRCONTENT         (WPMENUID_USER+12)
 #define ID_XFMI_OFS_DUMMY               (WPMENUID_USER+13)
@@ -1190,8 +1261,9 @@
 #define ID_XSSI_ARCHIVESPAGE            5644
 #define ID_XSSI_PGMFILE_MODULE          5645
 #define ID_XSSI_OBJECTHOTKEYSPAGE       5646
-#define ID_XSSI_MOUSEHOOKPAGE           5647
-#define ID_XSSI_MAPPINGSPAGE            5648
+#define ID_XSSI_FUNCTIONKEYSPAGE        5647
+#define ID_XSSI_MOUSEHOOKPAGE           5648
+#define ID_XSSI_MAPPINGSPAGE            5649
 
 // sort criteria
 #define ID_XSSI_SV_NAME                 5650
@@ -1345,6 +1417,7 @@
 #define ID_XCSI_REPLFILEEXISTS          6043
 #define ID_XCSI_REPLDRIVENOTREADY       6044
 #define ID_XCSI_XWPTRASHCAN             6045
+#define ID_XCSI_REPLACEDELETE           6046
 
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
 #define ID_XCSI_XWPHOOK                 6051
@@ -1359,27 +1432,28 @@
 #define ID_TSD_MAIN                     10001
 #define ID_TSDI_CNR                     10002
 #define ID_TSDI_TEXT1                   10003
-#define ID_TSDI_ICON                    10004
-#define DID_CLEAR                       10005
+#define ID_TSDI_TEXT2                   10004
+#define ID_TSDI_ICON                    10005
+#define DID_CLEAR                       10006
 
-#define ID_TSD_PRODINFO                 10006
+#define ID_TSD_PRODINFO                 10007
 
-#define ID_TSM_CONTEXT                  10007
-#define ID_TSM_SORT                     10008
-#define ID_TSMI_SORTBYNAME              10009
-#define ID_TSMI_SORTBYSIZE              10010
-#define ID_TSMI_SORTBYEASIZE            10011
-#define ID_TSMI_SORTBYFILESCOUNT        10012
-#define ID_TSMI_COLLECTEAS              10013
-#define ID_TSMI_LOWPRTY                 10014
-#define ID_TSM_SIZES                    10015
-#define ID_TSMI_SIZE_BYTES              10016
-#define ID_TSMI_SIZE_KBYTES             10017
-#define ID_TSMI_SIZE_MBYTES             10018
+#define ID_TSM_CONTEXT                  10008
+#define ID_TSM_SORT                     10009
+#define ID_TSMI_SORTBYNAME              10010
+#define ID_TSMI_SORTBYSIZE              10011
+#define ID_TSMI_SORTBYEASIZE            10012
+#define ID_TSMI_SORTBYFILESCOUNT        10013
+#define ID_TSMI_COLLECTEAS              10014
+#define ID_TSMI_LOWPRTY                 10015
+#define ID_TSM_SIZES                    10016
+#define ID_TSMI_SIZE_BYTES              10017
+#define ID_TSMI_SIZE_KBYTES             10018
+#define ID_TSMI_SIZE_MBYTES             10019
 
-#define ID_TSMI_PRODINFO                10019
+#define ID_TSMI_PRODINFO                10020
 
-#define ID_TS_ICON                      10020
+#define ID_TS_ICON                      10021
 
 /******************************************
  *          NetscapeDDE                   *

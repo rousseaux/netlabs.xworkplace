@@ -63,6 +63,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
@@ -85,25 +86,6 @@
  *   Declarations                                                   *
  *                                                                  *
  ********************************************************************/
-
-// common RGB colors
-#define RGBCOL_WHITE            0x00FFFFFF
-#define RGBCOL_RED              0x00FF0000
-#define RGBCOL_PINK             0x00FF00FF
-#define RGBCOL_BLUE             0x000000FF
-#define RGBCOL_CYAN             0x0000FFFF
-#define RGBCOL_GREEN            0x0000FF00
-#define RGBCOL_YELLOW           0x00FFFF00
-#define RGBCOL_GRAY             0x00CCCCCC
-
-#define RGBCOL_BLACK            0x00000000
-#define RGBCOL_DARKRED          0x00800000
-#define RGBCOL_DARKPINK         0x00800080
-#define RGBCOL_DARKBLUE         0x00000080
-#define RGBCOL_DARKCYAN         0x00008080
-#define RGBCOL_DARKGREEN        0x00008000
-#define RGBCOL_DARKYELLOW       0x00808000
-#define RGBCOL_DARKGRAY         0x00808080
 
 // client window class name
 #define WC_PARTITIONSCLIENT      "XWPPartitionsWindow"

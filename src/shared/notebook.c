@@ -903,6 +903,25 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     break; }
 
                     /*
+                     *@@ XNTBM_UPDATE:
+                     *      message posted by ntbUpdateVisiblePage
+                     *      to update the page by calling the INIT
+                     *      callback.
+                     *
+                     *      Parameters:
+                     *
+                     *      ULONG mp1: CBI_* flags to pass to INIT callback.
+                     *
+                     *@@added V0.9.3 (2000-04-24) [umoeller]
+                     */
+
+                    case XNTBM_UPDATE:
+                        if (pcnbp)
+                            if (pcnbp->pfncbInitPage)
+                                (pcnbp->pfncbInitPage)(pcnbp, (ULONG)mp1);
+                    break;
+
+                    /*
                      * WM_DESTROY:
                      *      clean up the allocated structures.
                      */
@@ -1499,6 +1518,8 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
  *      folder page ID which has these controls, and there we go.
  *
  *      Returns the number of pages that were updated.
+ *
+ *@@changed V0.9.3 (2000-04-24) [umoeller]: finally made this thread-safe; now sending XNTBM_UPDATE
  */
 
 ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
@@ -1518,9 +1539,13 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
                     )
                )
             {
-                if (pcnbp->pfncbInitPage)
+                WinSendMsg(pcnbp->hwndDlgPage,
+                           XNTBM_UPDATE,
+                           (MPARAM)(CBI_SET | CBI_ENABLE),
+                           0);
+                /* if (pcnbp->pfncbInitPage)
                     // enable/disable items on visible page
-                    (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                    (*(pcnbp->pfncbInitPage))(pcnbp, ); */
                 ulrc++;
             }
         }

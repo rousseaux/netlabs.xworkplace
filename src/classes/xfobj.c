@@ -202,19 +202,23 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
  *      and changes the data which is subsequently returned by
  *      XFldObject::xwpQueryDeletion.
  *
- *      If (fSet == TRUE), the internal fields for deletion date and
- *      time will be set to the current system date and time, and
+ *      If (fSet == TRUE),the object is assumed to have been moved to the
+ *      invisble TRASH directory on the object's drive already.
+ *
+ *      The object's internal fields for deletion date and time will
+ *      then be set to the current system date and time, and
  *      subsequent calls to XFldObject::xwpQueryDeletion will return
  *      this data.
  *
- *      If (fSet == FALSE), subsequent calls to XFldObject::xwpQueryDeletion
- *      will return FALSE only.
+ *      If (fSet == FALSE), this means the obejct is no longer
+ *      considered "deleted" (because it's been restored), and subsequent
+ *      calls to XFldObject::xwpQueryDeletion will return FALSE only.
  *
  *@@added V0.9.0 [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
-                                            BOOL fSet)
+                                             BOOL fSet)
 {
     // BOOL    brc = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
@@ -229,36 +233,21 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
         _fDeleted = TRUE;
     }
     else
-        _fDeleted = FALSE;
-
-    return (_wpSaveDeferred(somSelf));
-
-    /* return (brc);
-    if ((pcdateDeleted) && (pctimeDeleted))
     {
-        memcpy(&_cdateDeleted, pcdateDeleted, sizeof(CDATE));
-        memcpy(&_ctimeDeleted, pctimeDeleted, sizeof(CTIME));
-        _fDeleted = TRUE;
-        brc = TRUE;
-        _wpSaveDeferred(somSelf);
+        _fDeleted = FALSE;
     }
 
-    return (brc); */
+    return (_wpSaveDeferred(somSelf));
 }
 
 /*
  *@@ xwpSetTrashObject:
- *      sets the member trash object. This gets called
- *      by the trash can while somSelf is being deleted
- *      to the trash can or when the object has been
- *      previously deleted and the trash can is first
- *      populated after WPS bootup.
+ *      sets the internal trash object field to the specified
+ *      trash object (XWPTrashObject) to be able to relate a
+ *      deleted object to the corresponding trash object in the
+ *      trash can. Only to be called by the trash can.
  *
- *      This reverse linkage makes sure we destroy the
- *      trash object when the related object (somSelf)
- *      gets deleted.
- *
- *@@added V0.9.2 (2000-03-15) [umoeller]
+ *@@added V0.9.3 (2000-04-11) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
@@ -269,7 +258,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
 
     _pTrashObject = pTrashObject;
 
-    return TRUE;
+    return (TRUE);
 }
 
 /*
@@ -281,7 +270,8 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
  *      and the hotkey data is stored in the two USHORT variables.
  *
  *      *pusFlags contains the flags for the fsFlags parameter of
- *      the WM_CHAR message (SHORT1FROMMP(mp1)).
+ *      the WM_CHAR message (SHORT1FROMMP(mp1)). Those flags have
+ *      been filtered. See GLOBALHOTKEY for the valid flags.
  *
  *      *pucScanCode contains the hardware scan code which is used
  *      to identify the hotkey in the XWorkplace hook. Since the
@@ -465,9 +455,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
 
 /*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.2 (2000-03-15) [umoeller]: initializing new members
@@ -488,6 +479,29 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     _cbWPObjectData = 0;
 
     _pTrashObject = NULL;
+}
+
+/*
+ *@@ wpCopyObject:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.3 (2000-04-28) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xfobj_wpCopyObject(XFldObject *somSelf,
+                                                WPFolder* Folder,
+                                                BOOL fLock)
+{
+    WPObject *pCopiedObject;
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpCopyObject");
+
+    _Pmpf(("0x%lX ++ XFldObject::wpCopyObject", somSelf));
+    pCopiedObject = XFldObject_parent_WPObject_wpCopyObject(somSelf,
+                                                            Folder,
+                                                            fLock);
+    _Pmpf(("0x%lX -- End of XFldObject::wpCopyObject", somSelf));
+    return (pCopiedObject);
 }
 
 /*
@@ -547,30 +561,42 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
 
 /*
  *@@ wpUnInitData:
- *      reverse to XFldObject::wpObjectReady, this instance
- *      method is called by the system when an object is made
- *      dormant. We will have this object removed from our
- *      global list of awake objects.
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant or being deleted. All allocated resources
+ *      should be freed here.
+ *      The parent method must always be called last.
+ *
+ *      We will have this object removed from our global list
+ *      of awake objects.
+ *
+ *@@changed V0.9.3 (2000-04-11) [umoeller]: now destroying related trash object too
  */
 
 SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
 {
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpUnInitData");
 
-    // if (_fAddedToAwakeList)
-        xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
-                         (MPARAM)somSelf,
-                         MPNULL);
+    // have object removed from awake-objects list
+    xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
+                     (MPARAM)somSelf,
+                     MPNULL);
+
+    // destroy trash object, if there's one
+    if (_pTrashObject)
+        _wpFree(_pTrashObject);
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);
 }
 
 /*
  *@@ wpSaveState:
- *      this instance method is called to allow an
- *      an object to save its state; XFldObject will
- *      save the deletion data here.
+ *      this WPObject instance method saves an object's state
+ *      persistently so that it can later be re-initialized
+ *      with wpRestoreState. This gets called during wpClose,
+ *      wpSaveImmediate or wpSaveDeferred processing.
+ *      All persistent instance variables should be stored here.
  *
  *@@added V0.9.0 [umoeller]
  */
@@ -597,9 +623,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
 
 /*
  *@@ wpRestoreState:
- *      this instance method is called to allow an
- *      an object to restore its state; XFldObject will
- *      restore the deletion data here.
+ *      this WPObject instance method gets called during object
+ *      initialization (after wpInitData) to restore the data
+ *      which was stored with wpSaveState.
  *
  *@@added V0.9.0 [umoeller]
  */
@@ -736,7 +762,11 @@ SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove default entries according to global settings.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove default entries according to global settings.
  */
 
 SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
@@ -781,7 +811,13 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      add my own popup menu entries.
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We remove the "Lock in place" item here because there's
+ *      no flag for that in wpFilterPopupMenu.
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
@@ -818,8 +854,8 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the new menu items
- *      we have inserted for our subclass.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
  *
  *      Note that the WPS invokes this method upon every
  *      object which has been selected in the container.
@@ -911,14 +947,16 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
             break; }
         #endif
 
-        case WPMENUID_DELETE:
-            /* _Pmpf(("Deleting object %s, hwndFrame: 0x%lX",
+        /* case WPMENUID_DELETE:
+            // this is never reached, because the subclassed folder
+            // frame winproc already intercepts this
+            _Pmpf(("Deleting object %s, hwndFrame: 0x%lX",
                    _wpQueryTitle(somSelf),
-                   hwndFrame )); */
+                   hwndFrame ));
             brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
                                                                 hwndFrame,
                                                                 ulMenuId);
-        break;
+        break; */
 
         default:
             brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
@@ -931,8 +969,10 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method inserts all the settings
- *      pages into an object's settings notebook.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
  *      We will add the object's "Internals" page here.
  */
 

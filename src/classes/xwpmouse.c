@@ -203,7 +203,10 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
 
 /*
  *@@ wpInitData:
- *      init instance data.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xms_wpInitData(XWPMouse *somSelf)
@@ -216,7 +219,11 @@ SOM_Scope void  SOMLINK xms_wpInitData(XWPMouse *somSelf)
 
 /*
  *@@ wpUnInitData:
- *      clean up instance data.
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant or being deleted. All allocated resources
+ *      should be freed here.
+ *      The parent method must always be called last.
  */
 
 SOM_Scope void  SOMLINK xms_wpUnInitData(XWPMouse *somSelf)
@@ -245,7 +252,10 @@ SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)
 /*
  *@@ wpSaveState:
  *      this WPObject instance method saves an object's state
- *      persistently.
+ *      persistently so that it can later be re-initialized
+ *      with wpRestoreState. This gets called during wpClose,
+ *      wpSaveImmediate or wpSaveDeferred processing.
+ *      All persistent instance variables should be stored here.
  */
 
 SOM_Scope BOOL  SOMLINK xms_wpSaveState(XWPMouse *somSelf)
@@ -259,8 +269,8 @@ SOM_Scope BOOL  SOMLINK xms_wpSaveState(XWPMouse *somSelf)
 /*
  *@@ wpRestoreState:
  *      this WPObject instance method gets called during object
- *      initialization to restore the data which was stored with
- *      wpSaveState.
+ *      initialization (after wpInitData) to restore the data
+ *      which was stored with wpSaveState.
  */
 
 SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
@@ -274,7 +284,11 @@ SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */

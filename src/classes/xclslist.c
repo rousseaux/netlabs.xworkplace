@@ -132,6 +132,7 @@
 #include <os2.h>
 
 // C library headers
+#include <stdlib.h>
 #include <stdio.h>
 #include <setjmp.h>
 
@@ -211,9 +212,10 @@ SOM_Scope ULONG  SOMLINK xwlist_xwpAddXWPClassListPages(XWPClassList *somSelf,
 
 /*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xwlist_wpInitData(XWPClassList *somSelf)
@@ -230,13 +232,16 @@ SOM_Scope void  SOMLINK xwlist_wpInitData(XWPClassList *somSelf)
     _ulSortID = ID_XLMI_METHOD_SORT_INDEX;
     _ulMethodsRadioB = ID_XLDI_RADIO_INSTANCEMETHODS;
     _hwndOpenView = NULLHANDLE;
+    _fMenuCnrWhitespace = FALSE;
 }
 
 /*
  *@@ wpSaveState:
- *      this instance method is called to allow an
- *      an object to save its state; we save some
- *      class list user settings here.
+ *      this WPObject instance method saves an object's state
+ *      persistently so that it can later be re-initialized
+ *      with wpRestoreState. This gets called during wpClose,
+ *      wpSaveImmediate or wpSaveDeferred processing.
+ *      All persistent instance variables should be stored here.
  */
 
 SOM_Scope BOOL  SOMLINK xwlist_wpSaveState(XWPClassList *somSelf)
@@ -256,9 +261,9 @@ SOM_Scope BOOL  SOMLINK xwlist_wpSaveState(XWPClassList *somSelf)
 
 /*
  *@@ wpRestoreState:
- *      this instance method is called to allow an
- *      an object to restore its state; we restore
- *      the class list user settings here.
+ *      this WPObject instance method gets called during object
+ *      initialization (after wpInitData) to restore the data
+ *      which was stored with wpSaveState.
  */
 
 SOM_Scope BOOL  SOMLINK xwlist_wpRestoreState(XWPClassList *somSelf,
@@ -284,7 +289,12 @@ SOM_Scope BOOL  SOMLINK xwlist_wpRestoreState(XWPClassList *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      we need to modify the "Open" submenu for the WPS class
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We need to modify the "Open" submenu for the WPS class
  *      list so that our new "Class List View" is shown.
  */
 
@@ -311,8 +321,10 @@ SOM_Scope BOOL  SOMLINK xwlist_wpModifyPopupMenu(XWPClassList *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the "Process content"
- *      item we have inserted for the class list view.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
+ *
+ *      We need to support "open class list view".
  *
  *      Note that the WPS invokes this method upon every
  *      object which has been selected in the container.
@@ -451,7 +463,11 @@ SOM_Scope ULONG  SOMLINK xwlist_wpAddObjectWindowPage(XWPClassList *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method is overridden in order
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      This instance method is overridden in order
  *      to add the new XWPClassList pages on top of
  *      the generic WPAbstract settings pages.
  */

@@ -105,7 +105,7 @@
 
 <--XFL0131-->: The class "%1" was successfully registered. A restart of the WPS is probably not neccessary.
 
-<--XFL0132-->: Registering class "%1" failed.
+<--XFL0132-->: Registering class "%1" failed. Error code: %2. Module information: %3.
 
 <--XFL0133-->: You have chosen to have all folders on your system sorted by default. This will include the Desktop. Do you wish to disable auto-sort for the Desktop?
 
@@ -137,7 +137,7 @@ XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices
 
 Among others, XWorkplace contains copyrighted code from the following people:
     ARAKAWA Atsushi (APM power off)
-    Achim HasenmÅller (various hook code)
+    Achim HasenmÅller (WarpEnhancer code)
     Henk Kelder (OS2SYS.INI handles)
     Stefan Mielcke (WPS archiving)
     Kai Uwe Rommel (process queries)
@@ -253,15 +253,37 @@ Should we do this now?
 
 <--XFL0175-->: XWorkplace: File Operations Error
 
-<--XFL0176-->: The object cannot be moved to the trash can because the current drive is not supported by the trash can.
+;
+; the following items have been added with V0.9.3
+;
+
+<--XFL0177-->: Are you sure you want to permanently delete  "%1"?
+
+<--XFL0178-->: You have selected %1 objects to be permanently deleted. Are you sure you want to do this?
+
+<--XFL0179-->: "%1" is a read-only file. Do you want to move it to the trash can anyways?
+
+<--XFL0180-->: The current drive is not supported by the trash can. Do you wish to permanently delete "%1" instead?
+
+<--XFL0181-->: The current drive is not supported by the trash can. Do you wish to permanently delete the %1 selected objects instead?
+
+<--XFL0182-->: Are you sure you want to move "%1" to the trash can?
+
+<--XFL0183-->: You have selected %1 objects to be moved to the trash can. Are you sure you want to do this?
+
+<--XFL0184-->: "%1" is a read-only file. Do you want to permanently delete it anyways?
+
+<--XFL0185-->: "%1" cannot be deleted.
 
 ; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
 ;
 ; Here follow the toolinfos (fly-over help) for the new IBM1S506/DANIS506.ADD dialog
 ; in "OS/2 Kernel".
 ; Each item starts with "S506DLG_", followed by the dialog ID from include\dlgids.h.
 ; NOTE: The internal string buffer for these messages is limited to 3000 characters,
-;       so no string may exceed this value.
+;       so no string may exceed this value. XWP will crash with longer strings.
 ;
 ; ---------------------------------------------------------------------------------
 
@@ -460,10 +482,12 @@ Availability: DANIS506.ADD only.
 
 ; ---------------------------------------------------------------------------------
 ;
+; V0.9.0:
+;
 ; Here follow the toolinfos (fly-over help) for the new "Features" page (XWPSetup).
 ; Each item starts with "FEATURES_", followed by the dialog ID from include\dlgids.h.
 ; NOTE: The internal string buffer for these messages is limited to 3000 characters,
-;       so no string may exceed this value.
+;       so no string may exceed this value. XWP will crash with longer strings.
 ;
 ; ---------------------------------------------------------------------------------
 
@@ -551,12 +575,27 @@ This was new with XFolder 0.80.
 <--FEATURES_6044-->: This replaces the ugly white system-modal hard-error popup box which appears if you open a drive object which is not ready.
 If this is enabled, you'll get a regular dialog box, which also has a "retry" button.
 This was new with XFolder 0.85.
-<--FEATURES_6045-->: If this is enabled, all Workplace Shell "Delete" operations will not actually delete objects, but move them to the XWorkplace trash can instead.
+;
+; the following was changed with V0.9.3
+;
+<--FEATURES_6045-->: If this is enabled, all regular Workplace Shell "Delete" operations will not actually delete objects, but move them to the XWorkplace trash can instead.
 This includes pressing the "Del" key and selecting the "Delete" context menu items for all objects on your system.
-This will install XWorkplace's trash can WPS classes and create a trash can object on your Desktop, if these requirements are not met yet.
+You can still force a "true" delete by holding down the "Shift" key when selecting the "Delete" context menu item.
+Selecting this item will install XWorkplace's trash can WPS classes and create a trash can object on your Desktop, if these requirements are not met yet.
+See the XWorkplace User Guide for details.
 This was added with XWorkplace 0.9.1.
+;
+; the following was added with V0.9.3
+;
+<--FEATURES_6046-->: If "Replace true delete" is enabled, XWorkplace will replace the Workplace Shell's "true" delete operations.
+If the trash can has been enabled above, this applies to destroying trash objects as well as the "true" delete which is started when "Delete" is selected with the "Shift" key pressed.
+If the trash can has not been enabled above, this applies to all delete operations.
+Compared to the WPS's default delete operations, this will allow you to cancel a delete operation in progress if a folder has lots of subfolders.
+This was added with XWorkplace 0.9.3.
 
 ; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
 ;
 ; Here follow the toolinfos (fly-over help) for the new "XWorkplace Classes" dialog
 ; (XWPSetup).
@@ -618,6 +657,15 @@ This can now even display WPS method information, which might be helpful for WPS
 <--XWPCLS_1266-->: "XWPTrashCan" is new with XWorkplace 0.9.0 and finally implements a special "trash can" folder object, similar to those found on Macintosh, KDE and Win95 systems.
 "XWPTrashObject" implements the "trash objects" found in that folder and will automatically be installed with XWPTrashCan.
 This was added with XWorkplace 0.9.0.
+
+<--XWPCLS_1267-->: "XWPScreen" implements the "Screen" settings object, which has all the
+screen-related pages from the old "System" object plus new XWorkplace screen settings,
+such as PageMage configuration.
+This was added with XWorkplace 0.9.2.
+
+<--XWPCLS_1268-->: "XWPString" is a handy class for invoking WPS setup strings on any object.
+By creating an object of this class and entering any setup string, you can later invoke that setup string on any object.
+This was added with XWorkplace 0.9.3.
 
 <--XWPCLS_0001-->: Pressing "OK" will register, deregister, replace, and unreplace classes according to the changes you have made to the XWorkplace class setup.
 

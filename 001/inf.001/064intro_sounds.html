@@ -44,17 +44,20 @@ system sounds and sound schemes, even if you have different Desktops
 versions before V0.9.0 did already. If you enable the "Extended system sounds" in
 "XWorkplace Setup", XWorkplace will add new events to the "Sound" page in the
 "Sound" object.
-<P><B>Note:</B> To actually interface MMPM/2 (to play a sound), XWorkplace uses
-a separate DLL (<CODE>SOUND.DLL</CODE> in the <CODE>BIN</CODE> subdirectory of
+
+<!-- V0.9.3: removed the following
+Note: To actually interface MMPM/2 (to play a sound), XWorkplace uses
+a separate DLL (SOUND.DLL in the BIN subdirectory of
 the XWorkplace installation directory). If you're running into problems with
 XWorkplace sound support, you can simply delete that DLL, and the new sounds will
 automatically be disabled. If, on the "XWorkplace Status" page in "XWorkplace Setup",
-"XSound status" diplays "OK", this means that <CODE>SOUND.DLL</CODE> has been
-successfully loaded.
-<P>Please note also that the XWorkplace system sounds will make your system slower, just
+"XSound status" diplays "OK", this means that SOUND.DLL has been
+successfully loaded. -->
+
+<P>Please note that the XWorkplace system sounds will make your system slower, just
 as the regular system sounds do too. Even on my Pentium-133 with 32 MB RAM, this is
 noticeable, even though XWorkplace uses a separate thread to play its sounds.
-<P>Configuring these sounds is not too spectacular: XWorkplace just adds a few more items
+<P>Configuring these new sounds is not too spectacular: XWorkplace just adds a few more items
 to the events list box on the "Sounds" page.
 All the XWorkplace items start with "XWorkplace", so you'll be able to view them grouped
 together.
@@ -66,8 +69,12 @@ the XWorkplace installation directory to get you started. <CODE>;-)</CODE>
 XWorkplace are interacting. The WPSound class is replaced with XWPSound to enhance
 the "Sound" page. This however does not play any sounds yet; to intercept system
 events for the new system sounds, the XFolder and XFldDesktop classes also need
-to be installed. Third, <CODE>SOUND.DLL</CODE> must be present and working
-(again, which can be checked in "XWorkplace Setup").
+to be installed.
+
+<!-- V0.9.3: removed the following
+Third, SOUND.DLL must be present and working
+(again, which can be checked in "XWorkplace Setup"). -->
+
 <P>If you want the "Sound" object replacement only, without the new system sounds,
 simply disable the "Extended system sounds" setting
 on the "Features" page in <A HREF="sys_2global.html">"XWorkplace Setup"</A>.

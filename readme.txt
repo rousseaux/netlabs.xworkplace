@@ -1,6 +1,6 @@
-XWorkplace 0.9.2 README
+XWorkplace 0.9.3 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated March 24, 2000, Ulrich M”ller
+Last updated April 17, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -35,16 +35,15 @@ Last updated March 24, 2000, Ulrich M”ller
     Welcome to the XWorkplace source code. As this thing is complex,
     I have tried to add plenty of documentation.
 
-    The user guide is still largely outdated, sorry.
-    See 001\inf.001\vers_2history.html, which has the current revision
-    history though.
-    After compilation, this can be found in XFLDR001.INF, as usual.
-
-    Programming information is contained in the PROGREF.INF file in
-    the main directory of the source tree.
+    In order to get to know XWorkplace's structure, you might first
+    want to read the "XWorkplace Internals" section in the XWorkplace
+    User Guide, which comes with the binary distribution already.
 
     The most current release information (for developer versions)
     is in the "001\readme" file.
+
+    Programming information is contained in the PROGREF.INF file in
+    the main directory of the source tree.
 
 
 3. COMPILATION/INSTALLATION
@@ -73,34 +72,71 @@ Last updated March 24, 2000, Ulrich M”ller
            tree. The makefiles will copy all produced output files
            to the proper locations in that tree so that you can
            work on XWorkplace while it is installed. DLLs which
-           are in use will be unlocked. See PROGREF.INF for details.
+           are in use will be unlocked.
 
            You can point XWPRUNNING to an existing XFolder 0.85
-           installation tree. In that case, copy the files from
-           RELEASE to that tree, because some have been updated.
+           or XWorkplace installation tree. In that case, copy the
+           files from RELEASE to that tree, because some have been
+           updated.
 
-           Alternatively, specify the RELEASE subtree in the source
-           tree directly.
+           Alternatively, copy the entire "release" subtree to some
+           new location and specify that location with XWPRUNNING
+           to start.
 
-           Specify the parent directory of BIN for this, where
-           XFLDR.DLL will reside.
+           With XWPRUNNING, specify the parent directory of BIN,
+           where XFLDR.DLL shall reside, like this:
 
-        -- HELPERS_BASE must point to the root of the WarpIN source
-           tree. Otherwise XWorkplace cannot compile.
+                SET XWPRUNNING=J:\Tools\XWorkplace
 
-           Specify the parent directory of SRC\HELPERS and
-           INCLUDE\HELPERS for this.
+        -- PROJECT_BASE_DIR must point to the root of the
+           XWorkplace source tree. Otherwise the makefiles will
+           complain.
 
-    2)  Put the .EXEs from \TOOLS somewhere on your PATH.
+           Specify the directory where this README.TXT file
+           resides, like this:
 
-    3)  Execute MAKE.CMD.
+                SET PROJECT_BASE_DIR=K:\cvs\xworkplace
 
-    4)  Run RELEASE\INSTALL.CMD to install XWorkplace. This is only
-        a slightly modified new version of the ole XFolder install
-        script. The binary release is installed using WarpIN.
+        -- HELPERS_BASE must point to the root of the WarpIN
+           source tree to be able to switch to the helpers code.
+           Specify the parent directory of INCLUDE\HELPERS and
+           SRC\HELPERS, like this:
 
-    Optionally, you can replace the WPDataFile class with the DbgDataFile
-    class in BIN\XDEBUG.DLL, which is created by MAKE.CMD. See
+                SET HELPERS_BASE=K:\cvs\warpin
+
+        -- XWPRELEASE is used with "nmake release" to build a
+           separate target tree which holds all files for a
+           release version. That tree can then easily be "zipped"
+           into a WarpIN archive (.WPI).
+
+           This directory will hold a complete XWorkplace working
+           set from where XWorkplace can be installed.
+           That directory will be created by "nmake release"
+           if if doesn't exist.
+
+           Even if you don't plan to use "nmake release", you
+           must set XWPRELEASE to something, or the makefiles
+           will fail, like this:
+
+                SET XWPRELEASE=K:\temp\xwp_release
+
+        -- SET XWP_DEBUG=YES enables debug code. If XWP_DEBUG
+           is not defined, release code is produced.
+
+    2)  Put the .EXE and .CMD files from \TOOLS somewhere on your
+        PATH. These are used by the makefiles. Or add the tools
+        directory to your path.
+
+    3)  Execute "nmake" in the main source directory (where this
+        README.TXT resides).
+
+        If you don't have XWorkplace or XFolder installed yet,
+        run "nmake release" instead. This will create a complete
+        XWorkplace working set. Run "install.cmd" in that directory
+        to have XWorkplace installed then.
+
+    Only if you want, you can replace the WPDataFile class with the DbgDataFile
+    class in BIN\XDEBUG.DLL, which is created by the makefiles also. See
     SRC\CLASSES\XDEBUG.C for details. This is only for debugging WPS
     objects in detail though and probably not something for everyday work.
 

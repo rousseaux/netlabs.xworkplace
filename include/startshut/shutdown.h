@@ -175,7 +175,7 @@
 
     VOID xsdFreeAnimation(PSHUTDOWNANIM psda);
 
-    VOID xsdRestartWPS(VOID);
+    VOID xsdRestartWPS(HAB hab);
 
     APIRET xsdFlushWPS2INI(VOID);
 

@@ -87,12 +87,12 @@
 
 /*
  *@@ xwpAddKeyboardHotkeysPage:
- *      this actually adds the XWorkplace pages into the
+ *      this adds the "Hotkeys" page into the
  *      "Keyboard" notebook.
  */
 
 SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
-                                                    HWND hwndDlg)
+                                                       HWND hwndDlg)
 {
     ULONG               ulrc = 0;
     PCREATENOTEBOOKPAGE pcnbp;
@@ -127,8 +127,54 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
 }
 
 /*
+ *@@ xwpAddKeyboardFunctionKeysPage:
+ *      this adds the "Function keys" page into the
+ *      "Keyboard" notebook.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf,
+                                                            HWND hwndDlg)
+{
+    ULONG               ulrc = 0;
+    PCREATENOTEBOOKPAGE pcnbp;
+    HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
+
+    /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
+    XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
+
+    // insert "Hotkeys" page if the hook has been enabled
+    if (    (hifXWPHookReady())
+       )
+    {
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndDlg;
+        pcnbp->hmod = savehmod;
+        pcnbp->ulDlgID = ID_XSD_KEYB_FUNCTIONKEYS;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = pNLSStrings->pszFunctionKeysPage;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FUNCTIONKEYS;
+        pcnbp->ulPageID = SP_KEYB_FUNCTIONKEYS;
+        pcnbp->pfncbInitPage    = hifKeybdFunctionKeysInitPage;
+        pcnbp->pfncbItemChanged = hifKeybdFunctionKeysItemChanged;
+        ulrc = ntbInsertPage(pcnbp);
+    }
+
+    return (ulrc);
+}
+
+/*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -165,6 +211,8 @@ SOM_Scope ULONG  SOMLINK xkb_wpAddKeyboardSpecialNeedsPage(XWPKeyboard *somSelf,
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_wpAddKeyboardSpecialNeedsPage");
 
     _xwpAddKeyboardHotkeysPage(somSelf, hwndNotebook);
+
+    _xwpAddKeyboardFunctionKeysPage(somSelf, hwndNotebook);
 
     return (XWPKeyboard_parent_WPKeyboard_wpAddKeyboardSpecialNeedsPage(somSelf,
                                                                         hwndNotebook));

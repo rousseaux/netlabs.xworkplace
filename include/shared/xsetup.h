@@ -69,6 +69,7 @@
         MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        USHORT usItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
+
     #endif
 #endif
 

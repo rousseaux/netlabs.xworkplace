@@ -26,11 +26,11 @@ otherwise they'll never know where to recurse to.
 
 <P><LI>If <CODE>XWPDEBUG</CODE> is defined (to anything), XWorkplace will
 be compiled and linked with debug code enabled. Also, this will pass the
-<CODE>__XWPDEBUG__</CODE> define to the compiler, to which some code parts
+<CODE>__DEBUG__</CODE> define to the compiler, to which some code parts
 react. For example, only if that flag is defined, PmPrintf calls will be
 compiled. See <A HREF="src1_880debug.html">"Debugging XWorkplace"</A> for details.
 
-<P><LI><CODE>XWPRUNNING</CODE> must point to an exiting XFolder/XWorkplace
+<P><LI><CODE>XWPRUNNING</CODE> must point to an existing XFolder/XWorkplace
 installation. Since the makefiles first create all the files in <CODE>bin\</CODE>,
 this is not suitable for testing your code, because XWorkplace expects a lot
 of files at fixed locations relative to the directory where <CODE>XFLDR.DLL</CODE>

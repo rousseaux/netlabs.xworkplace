@@ -86,7 +86,7 @@
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
-#include <wpdesk.h>
+// #include <wpdesk.h>
 
 /* ******************************************************************
  *                                                                  *
@@ -145,7 +145,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                 (    (pGlobalSettings->NoWorkerThread == FALSE)
-                  && (pGlobalSettings->NoSubclassing == FALSE)
+                  && (pGlobalSettings->fNoSubclassing == FALSE)
                 ));
     }
 }
@@ -436,7 +436,7 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                                     ? pGlobalSettings->fDefaultStatusBarVisibility
                                     : _bStatusBarInstance )
                          // always uncheck for Desktop
-                         && (pcnbp->somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
+                         && (pcnbp->somSelf != cmnQueryActiveDesktop())
                        ));
     }
 
@@ -445,7 +445,7 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
         // disable items
         WinEnableControl(pcnbp->hwndDlgPage,
                          ID_XSDI_ACCELERATORS,
-                         (    !(pGlobalSettings->NoSubclassing)
+                         (    !(pGlobalSettings->fNoSubclassing)
                            && (pGlobalSettings->fEnableFolderHotkeys)
                          ));
 
@@ -456,8 +456,8 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage,
                          ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
-                         (   (pcnbp->somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
-                          && (!(pGlobalSettings->NoSubclassing))
+                         (   (pcnbp->somSelf != cmnQueryActiveDesktop())
+                          && (!(pGlobalSettings->fNoSubclassing))
                           && (pGlobalSettings->fEnableStatusBars)
                          ));
     }
@@ -708,7 +708,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (bTemp)
                 {
                     USHORT usDefaultSort, usAlwaysSort;
-                    _xwpQueryFldrSort(_wpclsQueryActiveDesktop(_WPDesktop),
+                    _xwpQueryFldrSort(cmnQueryActiveDesktop(),
                                       &usDefaultSort, &usAlwaysSort);
                     if (usAlwaysSort != 0)
                     {
@@ -717,7 +717,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              116, 133,
                                              MB_YESNO)
                                        == MBID_YES)
-                            _xwpSetFldrSort(_wpclsQueryActiveDesktop(_WPDesktop),
+                            _xwpSetFldrSort(cmnQueryActiveDesktop(),
                                             usDefaultSort, 0);
                     }
                 }

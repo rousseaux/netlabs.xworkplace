@@ -79,19 +79,26 @@ interface XWPClassList : WPAbstract
                                 // (ID_XLDI_RADIO_INSTANCEMETHODS or ID_XLDI_RADIO_CLASSMETHODS)
     HWND    hwndOpenView;       // window handle of currently open view or NULLHANDLE
 
+    BOOL    fMenuCnrWhitespace; // if TRUE, menu has been requested on cnr whitespace
+
     /*
      * WPAbstract methods overridden by XWPClassList:
      *
      */
 
     wpInitData: override;
+
     wpSaveState: override;
     wpRestoreState: override;
+
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
+
     wpQueryDefaultView: override;
     wpQueryDefaultHelp: override;
+
     wpOpen: override;
+
     wpAddObjectWindowPage: override;
     wpAddSettingsPages: override;
 

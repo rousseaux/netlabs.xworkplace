@@ -89,6 +89,8 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
+#include "media\media.h"                // XWorkplace multimedia support
+
 #include "startshut\apm.h"              // APM power-off for XShutdown
 
 #include "hook\xwphook.h"
@@ -122,7 +124,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
 #define OBJECTSIDLAST  213      // last object menu ID, inclusive
 
-STANDARDOBJECT  WPSObjects[] = {
+STANDARDOBJECT  G_WPSObjects[] = {
                                     "<WP_KEYB>", "WPKeyboard", "", 100,
                                     "<WP_MOUSE>", "WPMouse", "", 101,
                                     "<WP_CNTRY>", "WPCountry", "", 102,
@@ -147,7 +149,7 @@ STANDARDOBJECT  WPSObjects[] = {
                                     "<WP_TEMPS>", "WPTemplates", "", 141,
                                     "<WP_DRIVES>", "WPDrives", "", 142
                                },
-                XWPObjects[] = {
+                G_XWPObjects[] = {
                                     XFOLDER_WPSID, "XFldWPS", "", 200,
                                     XFOLDER_KERNELID, "XFldSystem", "", 201,
                                     XFOLDER_SCREENID, "XWPScreen", "", 203,
@@ -192,13 +194,13 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
     if (fStandardObj)
     {
-        pso2 = WPSObjects;
-        ulMax = sizeof(WPSObjects) / sizeof(STANDARDOBJECT);
+        pso2 = G_WPSObjects;
+        ulMax = sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT);
     }
     else
     {
-        pso2 = XWPObjects;
-        ulMax = sizeof(XWPObjects) / sizeof(STANDARDOBJECT);
+        pso2 = G_XWPObjects;
+        ulMax = sizeof(G_XWPObjects) / sizeof(STANDARDOBJECT);
     }
 
     for (ul = 0;
@@ -369,10 +371,12 @@ typedef struct _XWPCLASSES
             fXWPSetup,
             fXFldSystem,
             fXFldWPS,
+            fXWPScreen,
             fXFldStartup,
             fXFldShutdown,
             fXWPClassList,
-            fXWPTrashCan;
+            fXWPTrashCan,
+            fXWPString;
 
     HWND    hwndTooltip;
     PSZ     pszTooltipString;
@@ -399,6 +403,10 @@ USHORT usClassesToolIDs[] =
         ID_XCDI_XWPCLS_XWPCLASSLIST,
         ID_XCDI_XWPCLS_XWPTRASHCAN,
 
+        // new items with V0.9.3 (2000-04-26) [umoeller]
+        ID_XCDI_XWPCLS_XWPSCREEN,
+        ID_XCDI_XWPCLS_XWPSTRING,
+
         DID_OK,
         DID_CANCEL
     };
@@ -406,6 +414,9 @@ USHORT usClassesToolIDs[] =
 /*
  * fnwpXWorkplaceClasses:
  *      dialog procedure for the "XWorkplace Classes" dialog.
+ *
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: added generic fonts support
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: added new classes
  */
 
 MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -450,12 +461,15 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             pxwpc->fXWPSetup = (winhQueryWPSClass(pObjClass, "XWPSetup") != 0);
             pxwpc->fXFldSystem = (winhQueryWPSClass(pObjClass, "XFldSystem") != 0);
             pxwpc->fXFldWPS = (winhQueryWPSClass(pObjClass, "XFldWPS") != 0);
+            pxwpc->fXWPScreen = (winhQueryWPSClass(pObjClass, "XWPScreen") != 0);
             pxwpc->fXFldStartup = (winhQueryWPSClass(pObjClass, "XFldStartup") != 0);
             pxwpc->fXFldShutdown = (winhQueryWPSClass(pObjClass, "XFldShutdown") != 0);
             pxwpc->fXWPClassList = (winhQueryWPSClass(pObjClass, "XWPClassList") != 0);
             pxwpc->fXWPTrashCan = (     (winhQueryWPSClass(pObjClass, "XWPTrashCan") != 0)
                                      && (winhQueryWPSClass(pObjClass, "XWPTrashObject") != 0)
                                   );
+            pxwpc->fXWPString = (winhQueryWPSClass(pObjClass, "XWPString") != 0);
+
             // copy first structure to second one
             memcpy(pxwpc + 1, pxwpc, sizeof(XWPCLASSES));
 
@@ -475,10 +489,15 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSETUP, pxwpc->fXWPSetup);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSYSTEM, pxwpc->fXFldSystem);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDWPS, pxwpc->fXFldWPS);
+            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSCREEN, pxwpc->fXWPScreen);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, pxwpc->fXFldStartup);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN, pxwpc->fXFldShutdown),
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST, pxwpc->fXWPClassList);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN, pxwpc->fXWPTrashCan);
+            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING, pxwpc->fXWPString);
+
+            cmnSetControlsFont(hwndDlg, 0, 5000);
+                    // added V0.9.3 (2000-04-26) [umoeller]
 
             free(pObjClass);
 
@@ -594,10 +613,12 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 pxwpcNew->fXWPSetup = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSETUP);
                 pxwpcNew->fXFldSystem = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSYSTEM);
                 pxwpcNew->fXFldWPS = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDWPS);
+                pxwpcNew->fXWPScreen = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSCREEN);
                 pxwpcNew->fXFldStartup = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP);
                 pxwpcNew->fXFldShutdown = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN);
                 pxwpcNew->fXWPClassList = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST);
                 pxwpcNew->fXWPTrashCan = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN);
+                pxwpcNew->fXWPString = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING);
 
                 // compare old and new selections:
                 // if we have a difference, add the class name
@@ -764,6 +785,13 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     // register
                     xstrcat(&pszReg, "XFldWPS\n");
 
+                if ((pxwpcOld->fXWPScreen) && (!pxwpcNew->fXWPScreen))
+                    // deregister XWPScreen
+                    xstrcat(&pszDereg, "XWPScreen\n");
+                else if ((pxwpcNew->fXWPScreen) && (!pxwpcOld->fXWPScreen))
+                    // register
+                    xstrcat(&pszReg, "XWPScreen\n");
+
                 if ((pxwpcOld->fXFldStartup) && (!pxwpcNew->fXFldStartup))
                     // deregister XFldStartup
                     xstrcat(&pszDereg, "XFldStartup\n");
@@ -797,6 +825,13 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     xstrcat(&pszReg, "XWPTrashCan\n");
                     xstrcat(&pszReg, "XWPTrashObject\n");
                 }
+
+                if ((pxwpcOld->fXWPString) && (!pxwpcNew->fXWPString))
+                    // deregister XWPString
+                    xstrcat(&pszDereg, "XWPString\n");
+                else if ((pxwpcNew->fXWPString) && (!pxwpcOld->fXWPString))
+                    // register
+                    xstrcat(&pszReg, "XWPString\n");
 
                 // check if we have anything to do
                 fReg = (pszReg != NULL);
@@ -1211,7 +1246,8 @@ FEATURESITEM FeatureItemsList[] =
             ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+            ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
         };
 
 PCHECKBOXRECORDCORE pFeatureRecordsList = NULL;
@@ -1387,7 +1423,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifObjectHotkeysEnabled());
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
-                pGlobalSettings->fPageMageEnabled);
+                pGlobalSettings->fEnablePageMage);
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
                 pGlobalSettings->fReplaceArchiving);
@@ -1406,6 +1442,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->fReplDriveNotReady);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
                 fopsTrashCanReady() && pGlobalSettings->fTrashDelete);
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
+                pGlobalSettings->fReplaceTrueDelete);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -1567,7 +1605,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCSI_PAGEMAGE:
             if (hifEnablePageMage(ulExtra) == ulExtra)
             {
-                pGlobalSettings->fPageMageEnabled = ulExtra;
+                pGlobalSettings->fEnablePageMage = ulExtra;
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
@@ -1622,6 +1660,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCSI_XWPTRASHCAN:
             // pGlobalSettings->fTrashDelete = ulExtra;
             cEnableTrashCan = ulExtra;
+        break;
+
+        case ID_XCSI_REPLACEDELETE:
+            pGlobalSettings->fReplaceTrueDelete = ulExtra;
         break;
 
         /*
@@ -1887,9 +1929,11 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pMsg += sprintf(pMsg, "pXWPSetup: 0x%lX\n", pKernelGlobals->pXWPSetup);
             pMsg += sprintf(pMsg, "pXFldSystem: 0x%lX\n", pKernelGlobals->pXFldSystem);
             pMsg += sprintf(pMsg, "pXFldWPS: 0x%lX\n", pKernelGlobals->pXFldWPS);
+            pMsg += sprintf(pMsg, "pXWPScreen: 0x%lX\n", pKernelGlobals->pXWPScreen);
             pMsg += sprintf(pMsg, "pXFldStartup: 0x%lX\n", pKernelGlobals->pXFldStartup);
             pMsg += sprintf(pMsg, "pXFldShutdown: 0x%lX\n", pKernelGlobals->pXFldShutdown);
             pMsg += sprintf(pMsg, "pXWPClassList: 0x%lX\n", pKernelGlobals->pXWPClassList);
+            pMsg += sprintf(pMsg, "pXWPString: 0x%lX\n", pKernelGlobals->pXWPString);
 
             DebugBox("XWorkplace Class Objects", szMsg);
         #endif
@@ -1910,6 +1954,8 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
         HAB             hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
+
+        ULONG           ulSoundStatus = xmmQueryStatus();
 
         // kernel version number
         strcpy(szSearchMask, XFOLDER_VERSION);
@@ -1940,19 +1986,17 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // sound status
         strcpy(szSearchMask,
-               (pKernelGlobals->ulMMPM2Working == MMSTAT_UNKNOWN)
+               (ulSoundStatus == MMSTAT_UNKNOWN)
                        ? "not initialized"
-               : (pKernelGlobals->ulMMPM2Working == MMSTAT_WORKING)
+               : (ulSoundStatus == MMSTAT_WORKING)
                        ? "OK"
-               : (pKernelGlobals->ulMMPM2Working == MMSTAT_MMDIRNOTFOUND)
+               : (ulSoundStatus == MMSTAT_MMDIRNOTFOUND)
                        ? "MMPM/2 directory not found"
-               : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLNOTFOUND)
-                       ? "SOUND.DLL not found"
-               : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLNOTLOADED)
-                       ? "SOUND.DLL could not be loaded"
-               : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLFUNCERROR)
-                       ? "SOUND.DLL functions could not be imported"
-               : (pKernelGlobals->ulMMPM2Working == MMSTAT_CRASHED)
+               : (ulSoundStatus == MMSTAT_DLLNOTFOUND)
+                       ? "MMPM/2 DLLs not found"
+               : (ulSoundStatus == MMSTAT_IMPORTSFAILED)
+                       ? "MMPM/2 imports failed"
+               : (ulSoundStatus == MMSTAT_CRASHED)
                        ? "Speedy thread crashed"
                : "unknown"
                );
@@ -2335,8 +2379,8 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            cmnQueryNLSModuleHandle(FALSE),
                                            ID_XSM_OBJECTS_SYSTEM);
             DisableObjectMenuItems(hwndMenu,
-                                   &WPSObjects[0],
-                                   sizeof(WPSObjects) / sizeof(STANDARDOBJECT)); // array item count
+                                   &G_WPSObjects[0],
+                                   sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT)); // array item count
             mrc = (MRESULT)hwndMenu;
             WinSetPointer(HWND_DESKTOP, hptrOld);
         break; }
@@ -2353,8 +2397,8 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            cmnQueryNLSModuleHandle(FALSE),
                                            ID_XSM_OBJECTS_XWORKPLACE);
             DisableObjectMenuItems(hwndMenu,
-                                   &XWPObjects[0],
-                                   sizeof(XWPObjects) / sizeof(STANDARDOBJECT)); // array item count
+                                   &G_XWPObjects[0],
+                                   sizeof(G_XWPObjects) / sizeof(STANDARDOBJECT)); // array item count
             mrc = (MRESULT)hwndMenu;
             WinSetPointer(HWND_DESKTOP, hptrOld);
         break; }
@@ -2446,7 +2490,7 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
                                                pGlobalSettings->fNoFreakyMenus);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
-                                               pGlobalSettings->NoSubclassing);
+                                               pGlobalSettings->fNoSubclassing);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
                                                pGlobalSettings->NoWorkerThread);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
@@ -2502,7 +2546,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XCDI_NOSUBCLASSING:
-            pGlobalSettings->NoSubclassing   = ulExtra;
+            pGlobalSettings->fNoSubclassing   = ulExtra;
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break;
@@ -2562,7 +2606,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // and restore the settings for this page
             pGlobalSettings->VarMenuOffset   = pGSBackup->VarMenuOffset;
-            pGlobalSettings->NoSubclassing   = pGSBackup->NoSubclassing;
+            pGlobalSettings->fNoSubclassing   = pGSBackup->fNoSubclassing;
             pGlobalSettings->NoWorkerThread  = pGSBackup->NoWorkerThread;
             pGlobalSettings->fUse8HelvFont   = pGSBackup->fUse8HelvFont;
             pGlobalSettings->fNoExcptBeeps    = pGSBackup->fNoExcptBeeps;

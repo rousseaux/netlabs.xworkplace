@@ -78,6 +78,9 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "config\hookintf.h"            // daemon/hook interface
+#include "config\pagemage.h"            // PageMage interface
+
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 // #include "xfobj.h"
@@ -90,7 +93,9 @@
 
 /*
  *@@ xwpAddXWPScreenPages:
+ *      adds the "PageMage" pages to the "Screen" notebook.
  *
+ *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
@@ -99,13 +104,64 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
     /* XWPScreenData *somThis = XWPScreenGetData(somSelf); */
     XWPScreenMethodDebug("XWPScreen","xwpscr_xwpAddXWPScreenPages");
 
-    /* Return statement to be customized: */
-    return (TRUE);
+    // hook installed?
+    if (hifXWPHookReady())
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        if (pGlobalSettings->fEnablePageMage)
+        {
+            PCREATENOTEBOOKPAGE pcnbp;
+            HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
+            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+            // "PageMage" page 2
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndDlg;
+            pcnbp->hmod = savehmod;
+            pcnbp->pfncbInitPage    = pgmiPageMage2InitPage;
+            pcnbp->pfncbItemChanged = pgmiPageMage2ItemChanged;
+            pcnbp->usPageStyleFlags = BKA_MINOR;
+            pcnbp->fEnumerate = TRUE;
+            pcnbp->pszName = "~PageMage";
+            pcnbp->ulDlgID = ID_SCD_PAGEMAGE2;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE2;
+            // give this page a unique ID, which is
+            // passed to the common config.sys callbacks
+            pcnbp->ulPageID = SP_PAGEMAGE2;
+            ntbInsertPage(pcnbp);
+
+            // "PageMage" page 1
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndDlg;
+            pcnbp->hmod = savehmod;
+            pcnbp->pfncbInitPage    = pgmiPageMage1InitPage;
+            pcnbp->pfncbItemChanged = pgmiPageMage1ItemChanged;
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->fEnumerate = TRUE;
+            pcnbp->pszName = "~PageMage";       // ###
+            pcnbp->ulDlgID = ID_SCD_PAGEMAGE1;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE1;
+            // give this page a unique ID, which is
+            // passed to the common config.sys callbacks
+            pcnbp->ulPageID = SP_PAGEMAGE1;
+            return (ntbInsertPage(pcnbp));
+        }
+    }
+
+    return NULLHANDLE;
 }
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -128,7 +184,9 @@ SOM_Scope ULONG  SOMLINK xwpscr_wpFilterPopupMenu(XWPScreen *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *
+ *      this instance method specifies the default
+ *      help panel for this instance; display some
+ *      help for the "Screen" object.
  */
 
 SOM_Scope BOOL  SOMLINK xwpscr_wpQueryDefaultHelp(XWPScreen *somSelf,
@@ -145,9 +203,10 @@ SOM_Scope BOOL  SOMLINK xwpscr_wpQueryDefaultHelp(XWPScreen *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method is overridden in order
- *      to add the new XWorkplace pages to the settings
- *      notebook.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
  *      In order to to this, unlike the procedure used in
  *      the "Workplace Shell" object, we will explicitly
  *      call the WPSystem methods which insert the

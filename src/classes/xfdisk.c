@@ -94,6 +94,8 @@
 #include "filesys\menus.h"              // common XFolder context menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 
+#include "media\media.h"                // XWorkplace multimedia support
+
 // other SOM headers
 #pragma hdrstop
 #include "helpers\undoc.h"              // some undocumented stuff
@@ -109,46 +111,157 @@
 
 /*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
 {
-    // XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpInitData");
 
     XFldDisk_parent_WPDisk_wpInitData(somSelf);
 
-    // _szFSType[0] = '\0';
+    _usMMDeviceID = 0;          // no device yet
 }
 
 /*
  *@@ wpObjectReady:
- *      this is called upon an object when its creation
- *      or awakening is complete. This is the last method
- *      which gets called during instantiation of a
- *      WPS object when it has completely initialized
- *      itself. ulCode signifies the cause of object
- *      instantiation.
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
  *
- *      We will have this object's pointer stored in a
- *      global array to be able to find the Disk object for
- *      a given object (M_XFldDisk::xwpclsQueryDiskObject).
+ *      Even though WPSREF doesn't really say so, this method
+ *      must be used similar to a C++ copy constructor
+ *      when the instance data contains pointers. Since when
+ *      objects are copied, SOM just copies the binary instance
+ *      data, you get two objects with instance pointers pointing
+ *      to the same object, which can only lead to problems.
+ *
+ *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
 SOM_Scope void  SOMLINK xfdisk_wpObjectReady(XFldDisk *somSelf,
                                              ULONG ulCode, WPObject* refObject)
 {
     ULONG ulDisk;
-    // XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpObjectReady");
 
     XFldDisk_parent_WPDisk_wpObjectReady(somSelf, ulCode, refObject);
 
-    // ulDisk = _wpQueryLogicalDrive(somSelf);
-    // apDrives[ulDisk] = somSelf;
+    if (ulCode & OR_REFERENCE)
+    {
+        // according to wpobject.h, this flag is set for
+        // OR_FROMTEMPLATE, OR_FROMCOPY, OR_SHADOW; this
+        // means that refObject is valid
+        _usMMDeviceID = 0;
+    }
+}
+
+/*
+ *@@ wpSetup:
+ *      this WPObject instance method is called to allow an
+ *      object to set up itself according to setup strings.
+ *
+ *      We use this interface to implement a CD player if the
+ *      current drive is a CD-ROM drive. The syntax of the
+ *      setup strings is "XWPCDPLAY=command", with "command"
+ *      being a CD player command such as "PLAY", "PAUSE" etc.
+ *      See xmmCDPlayer for the supported commands.
+ *
+ *@@added V0.9.3 (2000-04-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdisk_wpSetup(XFldDisk *somSelf, PSZ pszSetupString)
+{
+    BOOL    brc = FALSE;
+    ULONG   cbValue;
+    CHAR    szValue[300];
+
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpSetup");
+
+    brc = XFldDisk_parent_WPDisk_wpSetup(somSelf, pszSetupString);
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "XWPCDPLAY", szValue, &cbValue))
+    {
+        MPARAM  mp2 = 0;
+
+        if (xmmQueryStatus() == MMSTAT_WORKING)
+        {
+            /*
+             * "PLAY":
+             *
+             */
+
+            if (strcmp(szValue, "PLAY") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_PLAY, 0);
+            /*
+             * "STOP":
+             *      stops the CD and closes the device.
+             */
+
+            else if (strcmp(szValue, "STOP") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_STOP, 0);
+
+            /*
+             * "PAUSE":
+             *
+             */
+
+            else if (strcmp(szValue, "PAUSE") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_PAUSE, 0);
+
+            /*
+             * TOGGLEPLAY:
+             *      play if paused/stopped;
+             *      pause if playing.
+             */
+
+            else if (strcmp(szValue, "TOGGLEPLAY") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_TOGGLEPLAY, 0);
+
+            /*
+             * "NEXTTRACK":
+             *
+             */
+
+            else if (strcmp(szValue, "NEXTTRACK") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_NEXTTRACK, 0);
+
+            /*
+             * "PREVTRACK":
+             *
+             */
+
+            else if (strcmp(szValue, "PREVTRACK") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_PREVTRACK, 0);
+
+            /*
+             * "EJECT":
+             *
+             */
+
+            else if (strcmp(szValue, "EJECT") == 0)
+                mp2 = MPFROM2SHORT(XMMCD_EJECT, 0);
+        }
+
+        if (mp2)
+        {
+            brc = xmmPostMediaMsg(XMM_CDPLAYER,
+                                  (MPARAM)&_usMMDeviceID,
+                                  mp2);
+        }
+    }
+
+    return (brc);
 }
 
 /*
@@ -196,7 +309,12 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove default entries for disks according to Global Settings
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove default entries for disks according to the
+ *      global menu settings.
  */
 
 SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
@@ -218,8 +336,12 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      this method allows an object to modify a context
- *      menu. We add the various XFolder menu entries here
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We add the various XFolder menu entries here
  *      by calling mnuModifyFolderPopupMenu in menus.c,
  *      which is also used by the XFolder class.
  */
@@ -262,8 +384,8 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the new menu items
- *      we have inserted for our subclass.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
  *
  *      We pass the input to mnuMenuItemSelected in menus.c
  *      because disk menu items are mostly shared with XFolder.

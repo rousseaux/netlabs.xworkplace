@@ -105,6 +105,14 @@
 
 /* ******************************************************************
  *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
+HWND    G_hwndFirstOpenDesktop = NULLHANDLE;
+
+/* ******************************************************************
+ *                                                                  *
  *   here come the XFldDesktop instance methods                     *
  *                                                                  *
  ********************************************************************/
@@ -310,8 +318,30 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpInitData:
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
+ */
+
+SOM_Scope void  SOMLINK xfdesk_wpInitData(XFldDesktop *somSelf)
+{
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpInitData");
+
+    // _fDesktopOpen = FALSE;
+
+    XFldDesktop_parent_WPDesktop_wpInitData(somSelf);
+}
+
+/*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" for Desktop, because
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove "Create another" for Desktop, because
  *      we don't want to allow creating another Desktop.
  *      For some reason, the "Create another" option
  *      doesn't seem to be working right with XFolder,
@@ -346,7 +376,12 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpFilterPopupMenu(XFldDesktop *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      play with the Desktop menu entries
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We play with the Desktop menu entries
  *      (Shutdown and such)
  *
  *@@changed V0.9.0 [umoeller]: reworked context menu items
@@ -380,8 +415,8 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpModifyPopupMenu(XFldDesktop *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the new menu items
- *      we have inserted for our subclass.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
  *
  *      Note that the WPS invokes this method upon every
  *      object which has been selected in the container.
@@ -390,22 +425,115 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpModifyPopupMenu(XFldDesktop *somSelf,
  *      them, all three objects will receive this method
  *      call. This is true even if FALSE is returned from
  *      this method.
+ *
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: now allowing dtpMenuItemSelected to change the menu ID
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
                                                   HWND hwndFrame,
                                                   ULONG ulMenuId)
 {
+    ULONG   ulMenuId2 = ulMenuId;
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpMenuItemSelected");
 
-    if (dtpMenuItemSelected(somSelf, hwndFrame, ulMenuId))
+    if (dtpMenuItemSelected(somSelf, hwndFrame, &ulMenuId2))
         // one of the new items processed:
         return (TRUE);
     else
         return (XFldDesktop_parent_WPDesktop_wpMenuItemSelected(somSelf,
                                                                 hwndFrame,
-                                                                ulMenuId));
+                                                                ulMenuId2));
+}
+
+/*
+ *@@ wpOpen:
+ *
+ *@@added V0.9.3 (2000-04-26) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf,
+                                      HWND hwndCnr,
+                                      ULONG ulView,
+                                      ULONG param)
+{
+    HWND hwnd = NULLHANDLE;
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpOpen");
+
+    hwnd = XFldDesktop_parent_WPDesktop_wpOpen(somSelf, hwndCnr,
+                                               ulView, param);
+
+    #ifdef DEBUG_STARTUP
+        _Pmpf(("XFldDesktop::wpOpen: checking whether Worker thread needs notify"));
+    #endif
+
+    if (hwnd)
+        if (G_hwndFirstOpenDesktop == NULLHANDLE)
+        {
+            // first call:
+            G_hwndFirstOpenDesktop = hwnd;
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("XFldDesktop::wpOpen: posting FIM_DESKTOPREADY"));
+            #endif
+            xthrPostFileMsg(FIM_DESKTOPREADY,
+                            (MPARAM)somSelf,
+                            (MPARAM)hwnd);
+            // the worker thread will now loop until the Desktop
+            // is populated also
+        }
+
+    #ifdef DEBUG_STARTUP
+        _Pmpf(("    End of XFldDesktop::wpOpen"));
+    #endif
+
+    return (hwnd);
+}
+
+/*
+ *@@ wpPopulate:
+ *      this instance method populates a folder, in this case, the
+ *      Desktop. After the active Desktop has been populated at
+ *      WPS startup, we'll post a message to the Worker thread to
+ *      initiate all the XWorkplace startup processing.
+ *
+ *@@changed V0.9.0 [umoeller]: this was previously done in wpOpen
+ */
+
+SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
+                                          ULONG ulReserved,
+                                          PSZ pszPath,
+                                          BOOL fFoldersOnly)
+{
+    BOOL    brc = FALSE;
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpPopulate");
+
+    #ifdef DEBUG_STARTUP
+        _Pmpf(("XFldDesktop::wpPopulate"));
+    #endif
+
+    brc = XFldDesktop_parent_WPDesktop_wpPopulate(somSelf,
+                                                    ulReserved,
+                                                    pszPath,
+                                                    fFoldersOnly);
+
+    /* if (!_fDesktopOpen)
+        if (_wpIsCurrentDesktop(somSelf))
+        {
+            _fDesktopOpen = TRUE;
+            // notify file thread to start processing
+            xthrPostFileMsg(FIM_DESKTOPPOPULATED,
+                            (MPARAM)somSelf,
+                            MPNULL);
+        } */
+
+    #ifdef DEBUG_STARTUP
+        _Pmpf(("End of XFldDesktop::wpPopulate"));
+    #endif
+
+    return (brc);
 }
 
 /*
@@ -438,8 +566,9 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      insert additional settings page into the Desktop's settings
- *      notebook.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
  *
  *      As opposed to the "XFolder" page, which deals with instance
  *      data, we save the Desktop settings in the GLOBALSETTINGS
@@ -481,61 +610,6 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
         }
 
     return (rc);
-}
-
-/*
- *@@ wpPopulate:
- *      this instance method populates a folder, in this case, the
- *      Desktop. After the active Desktop has been populated at
- *      WPS startup, we'll post a message to the Worker thread to
- *      initiate all the XWorkplace startup processing.
- *
- *@@changed V0.9.0 [umoeller]: this was previously done in wpOpen
- */
-
-SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
-                                          ULONG ulReserved,
-                                          PSZ pszPath,
-                                          BOOL fFoldersOnly)
-{
-    BOOL    brc = FALSE;
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
-    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpPopulate");
-
-    brc = XFldDesktop_parent_WPDesktop_wpPopulate(somSelf,
-                                                    ulReserved,
-                                                    pszPath,
-                                                    fFoldersOnly);
-
-    if (!_fDesktopOpen)
-        if (_wpIsCurrentDesktop(somSelf))
-        {
-            _fDesktopOpen = TRUE;
-            // notify file thread to start processing
-            xthrPostFileMsg(FIM_DESKTOPPOPULATED,
-                            (MPARAM)somSelf,
-                            MPNULL);
-        }
-
-    return (brc);
-}
-
-/*
- *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
- */
-
-SOM_Scope void  SOMLINK xfdesk_wpInitData(XFldDesktop *somSelf)
-{
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
-    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpInitData");
-
-    _fDesktopOpen = FALSE;
-    _fInsertArchivesPageNow = FALSE;
-
-    XFldDesktop_parent_WPDesktop_wpInitData(somSelf);
 }
 
 /*

@@ -80,7 +80,7 @@
 #include <assert.h>             // needed for except.h
 #include <io.h>
 // #include <locale.h>
-#include <malloc.h>
+// #include <malloc.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -108,6 +108,8 @@
 
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
+
+#include "media\media.h"                // XWorkplace multimedia support
 
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
@@ -395,7 +397,7 @@ const char* cmnQueryLanguageCode(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (G_szLanguageCode);
 }
@@ -473,7 +475,7 @@ const char* cmnQueryHelpLibrary(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (rc);
 }
@@ -491,7 +493,7 @@ BOOL cmnDisplayHelp(WPObject *somSelf,
 {
     BOOL brc = FALSE;
     if (somSelf == NULL)
-        somSelf = _wpclsQueryActiveDesktop(_WPDesktop);
+        somSelf = cmnQueryActiveDesktop();
 
     if (somSelf)
     {
@@ -540,7 +542,7 @@ const char* cmnQueryMessageFile(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (rc);
 }
@@ -622,7 +624,7 @@ HMODULE cmnQueryIconsDLL(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (G_hmodIconsDLL);
 }
@@ -669,7 +671,7 @@ PSZ cmnQueryBootLogoFile(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (pszReturn);
 }
@@ -899,6 +901,8 @@ VOID LoadNLSData(HAB habDesktop,
             &(pNLSStrings->pszModulePage));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_OBJECTHOTKEYSPAGE,
             &(pNLSStrings->pszObjectHotkeysPage));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FUNCTIONKEYSPAGE,
+            &(pNLSStrings->pszFunctionKeysPage));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_MOUSEHOOKPAGE,
             &(pNLSStrings->pszMouseHookPage));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_MAPPINGSPAGE,
@@ -1204,7 +1208,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     // return (new?) module handle
     return (G_hmodNLS);
@@ -1237,7 +1241,7 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (G_pNLSStringsGlobal);
 }
@@ -1394,7 +1398,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (rc);
 }
@@ -1480,7 +1484,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (brc);
 }
@@ -1604,7 +1608,7 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 
     return (G_pGlobalSettings);
 }
@@ -1642,7 +1646,7 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
     return (G_pGlobalSettings);
 }
 
@@ -1668,7 +1672,7 @@ GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
     else
     {
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
         return (NULL);
     }
 }
@@ -1819,7 +1823,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             G_pGlobalSettings->fAniMouse = 0;
             G_pGlobalSettings->fEnableXWPHook = 0;
-            G_pGlobalSettings->fPageMageEnabled = 0;
+            G_pGlobalSettings->fEnablePageMage = 0;
 
             G_pGlobalSettings->fMonitorCDRoms = 0;
             G_pGlobalSettings->fRestartWPS = 0;
@@ -1831,12 +1835,13 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->fReplFileExists = 0;
             G_pGlobalSettings->fReplDriveNotReady = 0;
             G_pGlobalSettings->fTrashDelete = 0;
+            G_pGlobalSettings->fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
         break;
 
         case SP_SETUP_PARANOIA:   // all new with V0.9.0
             G_pGlobalSettings->VarMenuOffset   = 700;     // raised (V0.9.0)
             G_pGlobalSettings->fNoFreakyMenus   = 0;
-            G_pGlobalSettings->NoSubclassing   = 0;
+            G_pGlobalSettings->fNoSubclassing   = 0;
             G_pGlobalSettings->NoWorkerThread  = 0;
             G_pGlobalSettings->fUse8HelvFont   = (!doshIsWarp4());
             G_pGlobalSettings->fNoExcptBeeps    = 0;
@@ -1850,10 +1855,10 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         break;
 
         case SP_TRASHCAN_SETTINGS:             // all new with V0.9.0
-            G_pGlobalSettings->fTrashDelete = 0;
+            // G_pGlobalSettings->fTrashDelete = 0;  // removedV0.9.3 (2000-04-10) [umoeller]
             G_pGlobalSettings->fTrashEmptyStartup = 0;
             G_pGlobalSettings->fTrashEmptyShutdown = 0;
-            G_pGlobalSettings->fTrashConfirmEmpty = 1;
+            G_pGlobalSettings->ulTrashConfirmEmpty = TRSHCONF_DESTROYOBJ | TRSHCONF_EMPTYTRASH;
         break;
     }
 
@@ -1865,6 +1870,70 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
  *   Miscellaneae                                                   *
  *                                                                  *
  ********************************************************************/
+
+/*
+ *@@ cmnPlaySystemSound:
+ *      this posts a msg to the XFolder Media thread to
+ *      have it play a system sound. This does sufficient
+ *      error checking and returns FALSE if playing the
+ *      sound failed.
+ *
+ *      usIndex may be any of the MMSOUND_* values defined
+ *      in helpers\syssound.h and shared\common.h.
+ *
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: "Sounds" setting in XWPSetup wasn't respected; fixed
+ */
+
+BOOL cmnPlaySystemSound(USHORT usIndex)
+{
+    BOOL rc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    if (pGlobalSettings->fXSystemSounds)    // V0.9.3 (2000-04-10) [umoeller]
+    {
+        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+
+        if (xmmQueryStatus() == MMSTAT_WORKING)
+            // SOUND.DLL loaded successfully and
+            // Speedythread running:
+            rc = xmmPostMediaMsg(XMM_PLAYSYSTEMSOUND,
+                                 (MPARAM)usIndex,
+                                 MPNULL);
+    }
+
+    return (rc);
+}
+
+/*
+ *@@ cmnQueryActiveDesktop:
+ *      wrapper for wpclsQueryActiveDesktop. This
+ *      has been implemented so that this method
+ *      gets called only once (speed). Also, this
+ *      saves us from including wpdesk.h in every
+ *      source file.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+WPObject* cmnQueryActiveDesktop(VOID)
+{
+    return (_wpclsQueryActiveDesktop(_WPDesktop));
+}
+
+/*
+ *@@ cmnQueryActiveDesktopHWND:
+ *      wrapper for wpclsQueryActiveDesktopHWND. This
+ *      has been implemented so that this method
+ *      gets called only once (speed). Also, this
+ *      saves us from including wpdesk.h in every
+ *      source file.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+HWND cmnQueryActiveDesktopHWND(VOID)
+{
+    return (_wpclsQueryActiveDesktopHWND(_WPDesktop));
+}
 
 /*
  *@@ cmnShowProductInfo:
@@ -1900,7 +1969,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
 
     cmnSetControlsFont(hwndInfo, 1, 10000);
 
-    xthrPlaySystemSound(ulSound);
+    cmnPlaySystemSound(ulSound);
 
     cmnGetMessage(NULL, 0,
                   szGPLInfo, sizeof(szGPLInfo),
@@ -1922,7 +1991,8 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
  *      this returns the font to be used for dialogs.
  *      If the "Use 8.Helv" checkbox is enabled on
  *      the "Paranoia" page, we return "8.Helv",
- *      otherwise "9.WarpSans" (which are static values).
+ *      otherwise "9.WarpSans". The returned font
+ *      string is static, so don't attempt to free it.
  *
  *@@added V0.9.0 [umoeller]
  */
@@ -1956,7 +2026,7 @@ VOID cmnSetControlsFont(HWND hwnd,
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed");
+               "krnLock failed.");
 }
 
 PFNWP pfnwpOrigStatic = NULL;
@@ -2474,7 +2544,7 @@ ULONG cmnMessageBoxMsg(HWND hwndOwner,
 ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
                           ULONG ulTitle,    // in: msg number for title
                           PCHAR *pTable,    // in: replacement table for ulMessage
-                          ULONG ulTable,    // in: sizeof *pTable
+                          ULONG ulTable,    // in: array count in *pTable
                           ULONG ulMessage,  // in: msg number for message
                           ULONG flStyle)    // in: msg box style flags (cmnMessageBox)
 {
@@ -2496,17 +2566,19 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
  *      This calls cmnMessageBox in turn.
  *
  *@@added V0.9.1 (2000-02-08) [umoeller]
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
  */
 
 ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                         CHAR cDrive,        // in: drive letter
                         PSZ pszTitle,       // in: msgbox title
                         APIRET arc,         // in: DOS error code to get msg for
-                        ULONG ulFlags)      // in: as in cmnMessageBox flStyle
+                        ULONG ulFlags,      // in: as in cmnMessageBox flStyle
+                        BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
 {
     ULONG   mbrc = 0;
     CHAR    szError[1000],
-            szError2[1000];
+            szError2[2000];
     ULONG   ulLen = 0;
     APIRET  arc2 = NO_ERROR;
 
@@ -2523,11 +2595,31 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
     szError[ulLen] = 0;
 
     if (arc2 != NO_ERROR)
-        sprintf(szError,
+    {
+        sprintf(szError2,
                 "%s: DosGetMessage returned error %d",
                 __FUNCTION__, arc2);
+    }
+    else
+    {
+        sprintf(szError2, "(%d) %s", arc, szError);
 
-    sprintf(szError2, "(%d) %s", arc, szError);
+        if (fShowExplanation)
+        {
+            CHAR szErrorExpl[1000];
+            arc2 = DosGetMessage(NULL, 0,
+                                 szErrorExpl, sizeof(szErrorExpl),
+                                 arc,
+                                 "OSO001H.MSG",        // default OS/2 help message file
+                                 &ulLen);
+            if (arc2 == NO_ERROR)
+            {
+                szErrorExpl[ulLen] = 0;
+                strcat(szError2, "\n");
+                strcat(szError2, szErrorExpl);
+            }
+        }
+    }
 
     mbrc = cmnMessageBox(HWND_DESKTOP,
                          pszTitle,
@@ -2567,7 +2659,7 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                is pressed in a dialog window. */
             if (G_ulCurHelpPanel > 0)
             {
-                WPObject    *pHelpSomSelf = _wpclsQueryActiveDesktop(_WPDesktop);
+                WPObject    *pHelpSomSelf = cmnQueryActiveDesktop();
                 /* ulCurHelpPanel is set by instance methods before creating a
                    dialog box in order to link help topics to the displayed
                    dialog box. Possible values are:

@@ -57,6 +57,7 @@ interface XWPTrashCan : WPFolder
     ULONG xwpAddTrashCanDrivesPage(in HWND hwndDlg);
     ULONG xwpAddTrashCanGeneralPage(in HWND hwndDlg);
 
+    BOOL xwpTrashCanBusy(in SHORT sBusy);
     VOID xwpAddObjectSize(in ULONG ulNewSize);
     ULONG xwpQueryTrashObjectsCount();
 
@@ -66,8 +67,6 @@ interface XWPTrashCan : WPFolder
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
-    ULONG xwpIsCurrentlyPopulating();
-
 #ifdef __SOMIDL__
   implementation {
 
@@ -76,12 +75,12 @@ interface XWPTrashCan : WPFolder
             xwpAddTrashCanSettingsPage,
             xwpAddTrashCanDrivesPage,
             xwpAddTrashCanGeneralPage,
+            xwpTrashCanBusy,
             xwpAddObjectSize,
             xwpQueryTrashObjectsCount,
             xwpSetCorrectTrashIcon,
             xwpEmptyTrashCan,
-            xwpUpdateStatusBar,
-            xwpIsCurrentlyPopulating;
+            xwpUpdateStatusBar;
 
     /*
      * Class Modifiers:
@@ -110,9 +109,11 @@ interface XWPTrashCan : WPFolder
 
     double  dSizeOfAllObjects;      // size of all objects in trash can
 
-    CHAR    cCurrentDrivePopulating; // if this is != 0, a drive is currently
+    CHAR    cDrivePopulating;       // if this is != 0, a drive is currently
                                     // being populated; set by wpPopulate and
                                     // used for the status bar
+
+    ULONG   ulBusyCount;            // raised or lowered with every xwpTrashCanBusy call
 
     /*
      * WPFolder methods overridden by XWPTrashCan:
@@ -249,7 +250,6 @@ interface XWPTrashObject : WPTransient
                                   in XWPTrashCan pTrashCan);
     ULONG xwpQueryRelatedSize();
     APIRET xwpValidateTrashObject();
-    BOOL xwpDestroyTrashObject();
     BOOL xwpRestoreFromTrashCan(in WPFolder pTargetFolder);
 
 #ifdef __SOMIDL__
@@ -262,7 +262,6 @@ interface XWPTrashObject : WPTransient
             xwpSetExpandedObjectData,
             xwpQueryRelatedSize,
             xwpValidateTrashObject,
-            xwpDestroyTrashObject,
             xwpRestoreFromTrashCan;
 
     /*
@@ -307,6 +306,8 @@ interface XWPTrashObject : WPTransient
 
     wpInitData: override;
     wpUnInitData: override;
+
+    wpSetupOnce: override;
 
     wpQueryDetailsData: override;
 

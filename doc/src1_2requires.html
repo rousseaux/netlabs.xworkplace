@@ -9,9 +9,10 @@ Required Tools
 
 <UL><LI><B>Compiler.</B> With V0.80, I have switched to IBM VisualAge C++ 3.0
 to develop XWorkplace.
-I have not tried EMX/GCC because I'm too lazy to get used to it, even
-though it might compile faster.
-<P>For VAC++ 3.0, fixpak 8 is strongly recommended, because the original crashes
+I have not adjusted the code to work with EMX/GCC yet. We did this for the
+WarpIN sources, and this is turns out to be a constant hassle. If you care
+to make the code work with EMX, go ahead...
+<P>For VAC++ 3.0, <B>fixpak 8</B> is strongly recommended, because the original crashes
 frequently with the complex SOM header files.
 <P>I'm not perfectly sure whether I'm using IBM-specific language extensions.
 I had to switch the language level to &quot;extended&quot; to use some none-POSIX
@@ -22,16 +23,16 @@ be the same, even though they're not POSIX C.
 know or supply patches.
 
 <P><LI>Whatever compiler you use, you need some <B>OS/2 Developer's Toolkit</B> for
-all the SOM header files.
+all the SOM header files and the SOM compiler.
+(Those are <I>not</I> included with EMX, so even with
+EMX, you'll need the toolkit headers).
 <P>The Warp 3 toolkit is sufficient. XWorkplace does some tricks for Warp 4 too,
 but does it even though I don't have the Warp 4 toolkit. <CODE>;-)</CODE>
-The Toolkit is also needed for changing
-<A HREF="040nls.html">NLS files,</A> even though you won't
-need a compiler for that.
 
-<P><LI>You need an "installation directory" of XWorkplace because the makefiles
-copy all output files to that directory tree. This directory tree must be specified
-using the <CODE>XWPRUNNING</CODE> <A HREF="src1_32env.html">environment variable</A>.
+<P><LI>You need the <B>WarpIN source code</B> also because XWorkplace uses a lot
+of shared code from that package as well. There's no way to compile without that
+code, so download the most current WarpIN source package as well (or check it out
+from the CVS tree).
 
 <P><LI>All the .C files have lots of debugging code which can conditionally be
 compiled using certain #define's in <CODE>include\setup.h</CODE>. That file

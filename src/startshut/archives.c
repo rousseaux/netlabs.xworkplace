@@ -111,11 +111,11 @@
  *                                                                  *
  ********************************************************************/
 
-WPSARCOSETTINGS     ArcSettings;
-DATETIME            dtLastArchived;
-BOOL                fSettingsLoaded = FALSE;
+WPSARCOSETTINGS     G_ArcSettings;
+DATETIME            G_dtLastArchived;
+BOOL                G_fSettingsLoaded = FALSE;
 
-CHAR                szArcBaseFilename[CCHMAXPATH] = "";
+CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 
 #define ARC_FILE_OFFSET    0x000CF
 
@@ -127,7 +127,7 @@ CHAR                szArcBaseFilename[CCHMAXPATH] = "";
 
 #define PERCENTAGES_COUNT 11
 // 8 PSZ's for percentage spinbutton
-PSZ     apszPercentages[PERCENTAGES_COUNT];
+PSZ     G_apszPercentages[PERCENTAGES_COUNT];
 
 /*
  * arcArchivesInitPage:
@@ -156,23 +156,23 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pcnbp->pUser = malloc(sizeof(WPSARCOSETTINGS));
             memcpy(pcnbp->pUser, pArcSettings, sizeof(WPSARCOSETTINGS));
 
-            memset(&apszPercentages, 0, sizeof(apszPercentages));
-            apszPercentages[0]  = "0.010";
-            apszPercentages[1]  = "0.025";
-            apszPercentages[2]  = "0.050";
-            apszPercentages[3]  = "0.075";
-            apszPercentages[4]  = "0.100";
-            apszPercentages[5]  = "0.250";
-            apszPercentages[6]  = "0.500";
-            apszPercentages[7]  = "0.750";
-            apszPercentages[8]  = "1.000";
-            apszPercentages[9]  = "2.500";
-            apszPercentages[10] = "5.000";
+            memset(&G_apszPercentages, 0, sizeof(G_apszPercentages));
+            G_apszPercentages[0]  = "0.010";
+            G_apszPercentages[1]  = "0.025";
+            G_apszPercentages[2]  = "0.050";
+            G_apszPercentages[3]  = "0.075";
+            G_apszPercentages[4]  = "0.100";
+            G_apszPercentages[5]  = "0.250";
+            G_apszPercentages[6]  = "0.500";
+            G_apszPercentages[7]  = "0.750";
+            G_apszPercentages[8]  = "1.000";
+            G_apszPercentages[9]  = "2.500";
+            G_apszPercentages[10] = "5.000";
         }
 
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           SPBM_SETARRAY,
-                          (MPARAM)&apszPercentages,
+                          (MPARAM)&G_apszPercentages,
                           (MPARAM)PERCENTAGES_COUNT);       // array size
     }
 
@@ -198,7 +198,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             float dTemp;
             CHAR szTempx[100];
             // convert current array item to float
-            sscanf(apszPercentages[ul], "%f", &dTemp);
+            sscanf(G_apszPercentages[ul], "%f", &dTemp);
 
             // same?
             if (fabs(dTemp - pArcSettings->dIniFilesPercent) < 0.00001)
@@ -404,13 +404,13 @@ VOID arcSetDefaultSettings(VOID)
     #ifdef DEBUG_STARTUP
         _Pmpf(("**** Settings defaults"));
     #endif
-    ArcSettings.ulArcFlags = 0;
-    ArcSettings.dIniFilesPercent = .1;
-    ArcSettings.ulEveryDays = 1;
-    ArcSettings.dAppsSizeLast = 0;
-    ArcSettings.dKeysSizeLast = 0;
-    ArcSettings.dDataSumLast = 0;
-    ArcSettings.fShowStatus = TRUE;
+    G_ArcSettings.ulArcFlags = 0;
+    G_ArcSettings.dIniFilesPercent = .1;
+    G_ArcSettings.ulEveryDays = 1;
+    G_ArcSettings.dAppsSizeLast = 0;
+    G_ArcSettings.dKeysSizeLast = 0;
+    G_ArcSettings.dDataSumLast = 0;
+    G_ArcSettings.fShowStatus = TRUE;
 }
 
 /*
@@ -423,40 +423,40 @@ VOID arcSetDefaultSettings(VOID)
 
 PWPSARCOSETTINGS arcQuerySettings(VOID)
 {
-    if (!fSettingsLoaded)
+    if (!G_fSettingsLoaded)
     {
-        ULONG   cbData = sizeof(ArcSettings);
+        ULONG   cbData = sizeof(G_ArcSettings);
         BOOL    brc = FALSE;
         // first call:
-        fSettingsLoaded = TRUE;
+        G_fSettingsLoaded = TRUE;
         // load settings
         brc = PrfQueryProfileData(HINI_USER,
                                   WPSARCO_INIAPP, WPSARCO_INIKEY_SETTINGS,    // archives.h
-                                  &ArcSettings,
+                                  &G_ArcSettings,
                                   &cbData);
-        if ((!brc) || cbData != sizeof(ArcSettings))
+        if ((!brc) || cbData != sizeof(G_ArcSettings))
             // data not found:
             arcSetDefaultSettings();
 
-        cbData = sizeof(dtLastArchived);
+        cbData = sizeof(G_dtLastArchived);
         brc = PrfQueryProfileData(HINI_USER,
                                   WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
-                                  &dtLastArchived,
+                                  &G_dtLastArchived,
                                   &cbData);
-        if ((!brc) || cbData != sizeof(dtLastArchived))
+        if ((!brc) || cbData != sizeof(G_dtLastArchived))
         {
             // data not found:
-            DosGetDateTime(&dtLastArchived);
-            dtLastArchived.year = 1990;       // enfore backup then
+            DosGetDateTime(&G_dtLastArchived);
+            G_dtLastArchived.year = 1990;       // enfore backup then
         }
 
         // initialize szArcBaseFilename
-        sprintf(szArcBaseFilename,
+        sprintf(G_szArcBaseFilename,
                 "%c:\\OS2\\BOOT\\ARCHBASE.$$$",
                 doshQueryBootDrive());
     }
 
-    return (&ArcSettings);
+    return (&G_ArcSettings);
 }
 
 /*
@@ -469,8 +469,8 @@ BOOL arcSaveSettings(VOID)
 {
     return (PrfWriteProfileData(HINI_USER,
                                 WPSARCO_INIAPP, WPSARCO_INIKEY_SETTINGS,    // archives.h
-                                &ArcSettings,
-                                sizeof(ArcSettings)));
+                                &G_ArcSettings,
+                                sizeof(G_ArcSettings)));
 }
 
 /********************************************************************
@@ -510,14 +510,14 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
     // force loading of settings
     arcQuerySettings();
 
-    if (ArcSettings.ulArcFlags & ARCF_ENABLED)
+    if (G_ArcSettings.ulArcFlags & ARCF_ENABLED)
     {
         HWND    hwndStatus = NULLHANDLE;
         BOOL    fShowWindow = TRUE;
         CHAR    szTemp[100];
         PSZ     pszMsg = NULL;
 
-        if (ArcSettings.fShowStatus)
+        if (G_ArcSettings.fShowStatus)
         {
             hwndStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
                                     WinDefDlgProc,
@@ -527,11 +527,11 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
             cmnSetControlsFont(hwndStatus, 1, 10000);
         }
 
-        if (ArcSettings.ulArcFlags & ARCF_ALWAYS)
+        if (G_ArcSettings.ulArcFlags & ARCF_ALWAYS)
         {
             fBackup = TRUE;
 
-            if (ArcSettings.fShowStatus)
+            if (G_ArcSettings.fShowStatus)
             {
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
                                   "WPS archiving enabled\n");
@@ -540,11 +540,11 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
         }
         else
         {
-            BOOL    fCheckINIs = (ArcSettings.ulArcFlags & ARCF_INI);
+            BOOL    fCheckINIs = (G_ArcSettings.ulArcFlags & ARCF_INI);
 
-            if (ArcSettings.ulArcFlags & ARCF_NEXT)
+            if (G_ArcSettings.ulArcFlags & ARCF_NEXT)
             {
-                if (ArcSettings.fShowStatus)
+                if (G_ArcSettings.fShowStatus)
                 {
                     WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
                                       "WPS archiving enabled once\n");
@@ -555,10 +555,10 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 fCheckINIs = FALSE;     // not necessary
 
                 // unset this settings flag for next time
-                ArcSettings.ulArcFlags &= ~ARCF_NEXT;
+                G_ArcSettings.ulArcFlags &= ~ARCF_NEXT;
                 arcSaveSettings();
             }
-            else if (ArcSettings.ulArcFlags & ARCF_DAYS)
+            else if (G_ArcSettings.ulArcFlags & ARCF_DAYS)
             {
                 // days-based:
                 DATETIME    dtNow;
@@ -570,23 +570,23 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 lDaysNow = dtDate2Scalar(dtNow.year,
                                          dtNow.month,
                                          dtNow.day);
-                lDaysLast= dtDate2Scalar(dtLastArchived.year,
-                                         dtLastArchived.month,
-                                         dtLastArchived.day);
+                lDaysLast= dtDate2Scalar(G_dtLastArchived.year,
+                                         G_dtLastArchived.month,
+                                         G_dtLastArchived.day);
                 lDaysPassed = lDaysNow - lDaysLast;
 
-                if (lDaysPassed >= ArcSettings.ulEveryDays)
+                if (lDaysPassed >= G_ArcSettings.ulEveryDays)
                 {
                     fBackup = TRUE;
                     fCheckINIs = FALSE;     // not necessary
                 }
 
-                if (ArcSettings.fShowStatus)
+                if (G_ArcSettings.fShowStatus)
                 {
                     sprintf(szTemp, "%d", lDaysPassed);
                     xstrcpy(&pszMsg, szTemp);
                     xstrcat(&pszMsg, " days passed since last backup\nLimit: ");
-                    sprintf(szTemp, "%d", ArcSettings.ulEveryDays);
+                    sprintf(szTemp, "%d", G_ArcSettings.ulEveryDays);
                     xstrcat(&pszMsg, szTemp);
                     xstrcat(&pszMsg, " days\n");
                 }
@@ -597,27 +597,27 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 // INI-based:
                 double  dMaxDifferencePercent = 0;
 
-                if (ArcSettings.fShowStatus)
+                if (G_ArcSettings.fShowStatus)
                 {
                     WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
                                       "Checking INI files for changes\n");
                     WinShowWindow(hwndStatus, TRUE);
                 }
 
-                fBackup = arcCheckINIFiles(&ArcSettings.dIniFilesPercent,
+                fBackup = arcCheckINIFiles(&G_ArcSettings.dIniFilesPercent,
                                            WPSARCO_INIAPP,  // ignore this
-                                           &ArcSettings.dAppsSizeLast,
-                                           &ArcSettings.dKeysSizeLast,
-                                           &ArcSettings.dDataSumLast,
+                                           &G_ArcSettings.dAppsSizeLast,
+                                           &G_ArcSettings.dKeysSizeLast,
+                                           &G_ArcSettings.dDataSumLast,
                                            &dMaxDifferencePercent);
 
-                if (ArcSettings.fShowStatus)
+                if (G_ArcSettings.fShowStatus)
                 {
                     sprintf(szTemp, "%f", dMaxDifferencePercent);
                     xstrcpy(&pszMsg, "INI files checked\nChanged: ");
                     xstrcat(&pszMsg, szTemp);
                     xstrcat(&pszMsg, " %\nLimit: ");
-                    sprintf(szTemp, "%f", ArcSettings.dIniFilesPercent);
+                    sprintf(szTemp, "%f", G_ArcSettings.dIniFilesPercent);
                     xstrcat(&pszMsg, szTemp);
                     xstrcat(&pszMsg, " %\n");
                 }
@@ -626,7 +626,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
         if (pszMsg)
         {
-            if (ArcSettings.fShowStatus)
+            if (G_ArcSettings.fShowStatus)
             {
                 if (fBackup)
                 {
@@ -647,7 +647,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
         arcSwitchArchivingOn(fBackup);
 
-        if (ArcSettings.fShowStatus)
+        if (G_ArcSettings.fShowStatus)
             WinPostMsg(hwndNotify, ulMsg, (MPARAM)hwndStatus, (MPARAM)NULL);
     }
 
@@ -672,9 +672,9 @@ int arcSwitchArchivingOn(BOOL switchOn)
 
     // because the archive information file is write protected we must switch
     // write protection of to write informations to it
-    chmod(szArcBaseFilename, S_IREAD | S_IWRITE);
+    chmod(G_szArcBaseFilename, S_IREAD | S_IWRITE);
     // now open the file
-    file = open(szArcBaseFilename, O_BINARY | O_RDWR, 0);
+    file = open(G_szArcBaseFilename, O_BINARY | O_RDWR, 0);
     if (file != -1)
     {
         // seek to the position of the archiving flag
@@ -691,11 +691,11 @@ int arcSwitchArchivingOn(BOOL switchOn)
                             _Pmpf(("WPS Archiving activated"));
                         #endif
                         // store date of backup in OS2.INI
-                        DosGetDateTime(&dtLastArchived);
+                        DosGetDateTime(&G_dtLastArchived);
                         PrfWriteProfileData(HINI_USER,
                                             WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
-                                            &dtLastArchived,
-                                            sizeof(dtLastArchived));
+                                            &G_dtLastArchived,
+                                            sizeof(G_dtLastArchived));
                     }
                     #ifdef DEBUG_STARTUP
                         else
@@ -711,7 +711,7 @@ int arcSwitchArchivingOn(BOOL switchOn)
         rc = -1;
 
     // switch write protection on
-    chmod(szArcBaseFilename, S_IREAD);
+    chmod(G_szArcBaseFilename, S_IREAD);
     return rc;
 }
 
@@ -744,8 +744,8 @@ BOOL arcSetNumArchives(PCHAR pcArchives,        // in/out: number of archives
         {
             // because the archive information file is write protected we must switch
             // write protection of to write informations to it
-            chmod(szArcBaseFilename, S_IREAD | S_IWRITE);
-            file = open(szArcBaseFilename, O_BINARY | O_RDWR, 0);
+            chmod(G_szArcBaseFilename, S_IREAD | S_IWRITE);
+            file = open(G_szArcBaseFilename, O_BINARY | O_RDWR, 0);
             if (file != -1)
             {
                 // seek to the position of number of archives
@@ -760,7 +760,7 @@ BOOL arcSetNumArchives(PCHAR pcArchives,        // in/out: number of archives
                 }
                 close(file);
             }
-            chmod(szArcBaseFilename, S_IREAD);
+            chmod(G_szArcBaseFilename, S_IREAD);
         }
 
     return (brc);

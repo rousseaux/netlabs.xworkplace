@@ -77,21 +77,24 @@ MODULESDIR=bin\modules
 
 # The OBJS macro contains all the .OBJ files which have been
 # created from the files in MAIN\.
-OBJS = bin\xdebug.obj \
+OBJS = \
 # code from classes\
     bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
     bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
-    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj \
-    bin\xwpkeybd.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
+    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xwpkeybd.obj \
+    bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj bin\xwpstring.obj \
 # code from shared \
-    bin\classes.obj bin\cnrsort.obj bin\common.obj bin\notebook.obj bin\kernel.obj bin\xsetup.obj \
+    bin\classes.obj bin\cnrsort.obj bin\common.obj bin\notebook.obj \
+    bin\kernel.obj bin\xsetup.obj bin\wpsh.obj \
 # code from config\
-    bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\hookintf.obj \
-    bin\partitions.obj bin\sound.obj \
+    bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\hookintf.obj \
+    bin\pagemage.obj bin\partitions.obj bin\sound.obj \
 # code from filesys\
     bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fileops.obj bin\filesys.obj \
     bin\filetype.obj bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
     bin\statbars.obj bin\trash.obj bin\xthreads.obj \
+# code from media\
+    bin\mmhelp.obj bin\mmthread.obj \
 # code from startshut\
     bin\apm.obj bin\archives.obj bin\shutdown.obj
 
@@ -109,18 +112,13 @@ ANIOBJS =
 
 # The HLPOBJS macro contains all the .OBJ files which have been
 # created from the files in HELPERS\. You probably won't have to change this.
-HLPOBJS = bin\animate.obj bin\comctl.obj bin\cnrh.obj bin\datetime.obj \
-    bin\debug.obj bin\dosh.obj bin\eah.obj bin\except.obj bin\gpih.obj \
-    bin\level.obj bin\linklist.obj bin\memdebug.obj bin\procstat.obj \
-    bin\prfh.obj bin\shapewin.obj bin\stringh.obj bin\syssound.obj \
-    bin\threads.obj bin\textview.obj bin\tmsgfile.obj \
-    bin\winh.obj bin\wphandle.obj bin\wpsh.obj bin\xstring.obj
+HLPOBJS = bin\helpers.lib
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
-DMNOBJS = bin\exes\xwpdaemn.obj \
-          bin\exes\pgmg_control.obj bin\exes\pgmg_move.obj bin\exes\pgmg_settings.obj \
-                bin\exes\pgmg_winscan.obj \
-          bin\exes\threads.obj
+DMNOBJS = bin\exe_mt\xwpdaemn.obj \
+          bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
+                bin\exe_mt\pgmg_winscan.obj \
+          bin\helpers.lib
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
@@ -138,8 +136,7 @@ PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
 LIBS = somtk.lib $(PMPRINTF_LIB)
 
 # some variable strings to pass to sub-nmakes
-PROJECT_BASE_DIR_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"
-INCLUDE_STRING = "PROJECT_INCLUDE = $(PROJECT_INCLUDE)";
+SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"
 
 # store current directory so we can change back later
 CURRENT_DIR = $(MAKEDIR)
@@ -157,7 +154,7 @@ really_all: tools all nls
 
 # If you add a subdirectory to SRC\, add a target to
 # "cpl_main" also to have automatic recompiles.
-cpl_main: classes config filesys helpers shared startshut hook treesize netscdde xshutdwn
+cpl_main: helpers classes config filesys media shared startshut hook treesize netscdde xshutdwn
 #animouse
 
 # COMPILER PSEUDOTARGETS
@@ -178,84 +175,96 @@ idl:
 classes:
     @echo $(MAKEDIR)\makefile: Going for subdir src\classes
     @cd src\classes
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 config:
     @echo $(MAKEDIR)\makefile: Going for subdir src\config
     @cd src\config
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 filesys:
     @echo $(MAKEDIR)\makefile: Going for subdir src\filesys
     @cd src\filesys
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..\..
+
+media:
+# V0.9.3 (2000-04-25) [umoeller]
+    @echo $(MAKEDIR)\makefile: Going for subdir src\media
+    @cd src\media
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 helpers:
+# helpers:
 # this branches over to the WarpIN source tree,
-# which is prepared for this
+# which is prepared for this. The helpers.lib file
+# is created in the .\bin directory and can be used
+# with both EXE's and DLL's (VAC++ user guide says).
     @echo $(MAKEDIR)\makefile: Going for subdir src\helpers (from WarpIN source tree)
-    @echo $(MAKEDIR)\makefile: HELPERS_BASE is defined from setup.in as: $(HELPERS_BASE)
     @cd $(HELPERS_BASE)\src\helpers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
+"HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin"
+# according to VAC++ user guide, we need to use /ge+ for libs
+# even if the lib will be linked to a DLL
     @cd $(CURRENT_DIR)
 
 shared:
     @echo $(MAKEDIR)\makefile: Going for subdir src\shared
     @cd src\shared
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 startshut:
     @echo $(MAKEDIR)\makefile: Going for subdir src\startshut
     @cd src\startshut
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 animouse:
     @echo $(MAKEDIR)\makefile: Going for subdir src\animouse
     @cd src\animouse
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 hook:
     @echo $(MAKEDIR)\makefile: Going for subdir src\hook
     @cd src\hook
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 treesize:
     @echo $(MAKEDIR)\makefile: Going for subdir src\treesize
     @cd src\treesize
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 netscdde:
     @echo $(MAKEDIR)\makefile: Going for subdir src\NetscapeDDE
     @cd src\NetscapeDDE
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 xshutdwn:
     @echo $(MAKEDIR)\makefile: Going for subdir src\xshutdwn
     @cd src\xshutdwn
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 nls:
     @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\dll
     @cd $(XWP_LANG_CODE)\dll
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
     @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)
     @cd inf.$(XWP_LANG_CODE)
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
     @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\help.$(XWP_LANG_CODE)
     @cd help.$(XWP_LANG_CODE)
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 
@@ -265,7 +274,7 @@ nls:
 link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
       $(XWPRUNNING)\bin\xwpdaemn.exe \
-      $(XWPRUNNING)\bin\sound.dll \
+#$(XWPRUNNING)\bin\sound.dll \
       $(XWPRUNNING)\bin\xdebug.dll
 
 # Finally, define rules for linking the target DLLs and EXEs
@@ -279,7 +288,9 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
 # XFLDR.DLL
 #
 $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
         unlock $(XWPRUNNING)\bin\$(@B).dll
+!endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 !ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
@@ -331,11 +342,11 @@ src\hook\xwpdaemn.def: include\bldlevel.h
 bin\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
         implib /nologo bin\$(@B).lib $(MODULESDIR)\$(@B).dll
 
-$(MODULESDIR)\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exes\$(@B).res
+$(MODULESDIR)\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exe_mt\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
         $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\hook\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
-        $(RC) ..\exes\$(@B).res $(@B).exe
+        $(RC) ..\exe_mt\$(@B).res $(@B).exe
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
@@ -378,39 +389,16 @@ $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
         @cd $(CURRENT_DIR)
 
 #
-# SOUND.DLL
-#
-$(XWPRUNNING)\bin\sound.dll: $(MODULESDIR)\$(@B).dll
-        unlock $(XWPRUNNING)\bin\$(@B).dll
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-!ifndef DEBUG
-# copy symbol file, which is only needed if debug code is disabled
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-!endif
-
-# update DEF file if buildlevel has changed
-src\shared\sounddll.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\shared\$(@B).def include\bldlevel.h "XWorkplace Sound Support Module"
-
-$(MODULESDIR)\sound.dll: src\shared\sounddll.def bin\sounddll.obj
-        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll bin\sounddll.obj src\shared\sounddll.def mmpm2.lib $(PMPRINTF_LIB)
-        @cd $(MODULESDIR)
-!ifndef DEBUG
-# create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(@B).map > NUL
-!endif
-        @cd $(CURRENT_DIR)
-
-#
 # XDEBUG.DLL
 #
 $(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
         unlock $(XWPRUNNING)\bin\$(@B).dll
+!endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
-$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS)
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) $(LIBS)
+$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) bin\wpsh.obj
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) $(LIBS) bin\wpsh.obj
 
 #
 # Special target "dlgedit": this is not called by "all",
@@ -485,8 +473,6 @@ release: really_all
 !if [@md $(XWPRELEASE_NLS)\bin 2> NUL]
 !endif
     $(COPY) release\bin\* $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\sound.dll $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\sound.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.dll $(XWPRELEASE_MAIN)\bin

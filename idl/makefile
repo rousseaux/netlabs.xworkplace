@@ -51,10 +51,12 @@ all: $(OUTPUTDIR)\xclslist.h \
      $(OUTPUTDIR)\xfwps.h \
      $(OUTPUTDIR)\xtrash.h \
      $(OUTPUTDIR)\xwpkeybd.h \
+     $(OUTPUTDIR)\xwpmedia.h \
      $(OUTPUTDIR)\xwpmouse.h \
      $(OUTPUTDIR)\xwpsetup.h \
      $(OUTPUTDIR)\xwpscreen.h \
-     $(OUTPUTDIR)\xwpsound.h
+     $(OUTPUTDIR)\xwpsound.h \
+     $(OUTPUTDIR)\xwpstring.h
     @echo ----- Leaving $(MAKEDIR)
 
 # Now define inference rules for what to do with certain file
@@ -108,6 +110,8 @@ $(OUTPUTDIR)\xtrash.h:           $(@B).idl
 
 $(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
 
+$(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
+
 $(OUTPUTDIR)\xwpmouse.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
@@ -115,5 +119,7 @@ $(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
 $(OUTPUTDIR)\xwpsetup.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpsound.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwpstring.h:        $(@B).idl
 
 

@@ -156,6 +156,7 @@ int main(int argc, char *argv[])
             {
                 SHORT   sMajor,
                         sMinor;
+                // cross-process send-msg
                 mrVersion = WinSendMsg(hwndXWorkplaceObject,
                                        T1M_QUERYXFOLDERVERSION,
                                        0, 0);

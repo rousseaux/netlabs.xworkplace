@@ -4,11 +4,6 @@
 /*
     This will call nmake to (re)build XWorkplace completely.
 
-    As opposed to the "smart" makefiles in the src\ directory
-    tree, this file really builds everything (if necessary),
-    including all the NLS files and PROGREF.INF. The makefiles
-    below src\ only rebuild the "real" executables.
-
     Note that there are some directory checks below which might
     not apply to your system, because I am also using this script
     to update my "private" XWorkplace parts which are not included
@@ -34,19 +29,20 @@
 "call envicc.cmd"
 
 /*  Set other variables to override the defaults (which
-    apply to my system only) in SETUP.IN. See SETUP.IN
-    for more details. */
+    apply to my system only) in SETUP.IN.
 
-/* XWPRUNNING (current XFolder/XWorkplace installation) */
-/* SET XWPRUNNING = */
+    See README.TXT for details. */
 
-/* XWPRELEASE (target for composing all new tree for releases) */
-/* SET XWPRELEASE = */
+/* XWPRUNNING (current XFolder/XWorkplace installation
+   from where WPS classes are registered; the executables
+   in there will be unlocked by the makefiles) */
+/* SET XWPRUNNING= */
 
-/* HELPERS_BASE (WarpIN source directory where SRC\HELPERS
-   and INCLUDE\HELPERS can be found) */
-/* HELPERS_BASE */
-
+/* XWPRELEASE (target for composing all new tree for releases;
+   this is only useful for creating a complete tree to create
+   a new .WPI file (for WarpIN); this is only used with
+   "nmake release") */
+/* SET XWPRELEASE= */
 
 "SET PROJECT_BASE_DIR="directory()
 

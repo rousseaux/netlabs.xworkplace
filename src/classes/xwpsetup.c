@@ -74,7 +74,6 @@
 
 // C library headers
 #include <stdio.h>
-#include <locale.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -99,6 +98,8 @@
 
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
+#include "media\media.h"                // XWorkplace multimedia support
+
 #include "startshut\apm.h"              // APM power-off for XShutdown
 
 #include "hook\xwphook.h"
@@ -109,7 +110,7 @@
 
 /* ******************************************************************
  *                                                                  *
- *   XWPSetup Instance Methods                                     *
+ *   XWPSetup Instance Methods                                      *
  *                                                                  *
  ********************************************************************/
 
@@ -122,12 +123,9 @@
 SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
                                                    HWND hwndDlg)
 {
-    // PAGEINFO        pi;
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // CHAR            szXFolderVersion[100];
     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-    // PSZ             pszHelpLibrary = cmnQueryHelpLibrary();
 
     /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_xwpAddXWPSetupPages");
@@ -218,7 +216,11 @@ SOM_Scope ULONG  SOMLINK xwset_wpQueryDefaultView(XWPSetup *somSelf)
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -262,9 +264,11 @@ SOM_Scope BOOL  SOMLINK xwset_wpQueryDefaultHelp(XWPSetup *somSelf,
 
 /*
  *@@ wpAddObjectWindowPage:
- *      this instance method normally adds the "Standard Options"
- *      page to the settings notebook (that's what the WPS
- *      reference calls it; it's actually the "Window" page).
+ *      this WPObject instance method normally adds the
+ *      "Standard Options" page to the settings notebook
+ *      (that's what the WPS reference calls it; it's actually
+ *      the "Window" page).
+ *
  *      We don't want that page in XWPSetup, so we remove it.
  */
 
@@ -274,16 +278,16 @@ SOM_Scope ULONG  SOMLINK xwset_wpAddObjectWindowPage(XWPSetup *somSelf,
     /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_wpAddObjectWindowPage");
 
-    /* return (XWPSetup_parent_WPAbstract_wpAddObjectWindowPage(somSelf,
-                                                              hwndNotebook)); */
     return (SETTINGS_PAGE_REMOVED);
 }
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method is overridden in order
- *      to add the new XWorkplace pages on top of
- *      the generic WPAbstract settings pages.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      We add the various XWPSetup pages here.
  */
 
 SOM_Scope BOOL  SOMLINK xwset_wpAddSettingsPages(XWPSetup *somSelf,
@@ -302,7 +306,7 @@ SOM_Scope BOOL  SOMLINK xwset_wpAddSettingsPages(XWPSetup *somSelf,
 
 /* ******************************************************************
  *                                                                  *
- *   XWPSetup Class Methods                                        *
+ *   XWPSetup Class Methods                                         *
  *                                                                  *
  ********************************************************************/
 
@@ -344,8 +348,7 @@ SOM_Scope ULONG  SOMLINK xwsetM_wpclsQueryStyle(M_XWPSetup *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "XWorkplace Configuration".
+ *      tell the WPS the new class default title for XWPSetup.
  */
 
 SOM_Scope PSZ  SOMLINK xwsetM_wpclsQueryTitle(M_XWPSetup *somSelf)
@@ -354,13 +357,15 @@ SOM_Scope PSZ  SOMLINK xwsetM_wpclsQueryTitle(M_XWPSetup *somSelf)
     M_XWPSetupMethodDebug("M_XWPSetup","xwsetM_wpclsQueryTitle");
 
     return ("XWorkplace Setup");
-    /* return (M_XWPSetup_parent_M_WPAbstract_wpclsQueryTitle(somSelf)); */
 }
 
 /*
  *@@ wpclsQueryIconData:
- *      give the "XWorkplace Configuration" object
- *      a new icon.
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned).
+ *      We override this to give XWPString object a new
+ *      icon (src\shared\xwpsetup.ico).
  */
 
 SOM_Scope ULONG  SOMLINK xwsetM_wpclsQueryIconData(M_XWPSetup *somSelf,
@@ -376,9 +381,6 @@ SOM_Scope ULONG  SOMLINK xwsetM_wpclsQueryIconData(M_XWPSetup *somSelf,
     }
 
     return (sizeof(ICONINFO));
-
-    /* return (M_XWPSetup_parent_M_WPAbstract_wpclsQueryIconData(somSelf,
-                                                               pIconInfo)); */
 }
 
 /*

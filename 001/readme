@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.2 README
+XWorkplace 0.9.3 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated March 24, 2000
+Last updated April 28, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,33 +20,38 @@ Last updated March 24, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.2. This is mainly a bugfix
-    release compared to V0.9.1. Some new features have been
-    introduces anyways, I couldn't resist.
+    Welcome to XWorkplace V0.9.3. This version fixes more bugs,
+    including the infamous "folder no-close" bug, and adds new
+    features.
 
     XWorkplace is a complex set of replacement classes for the
-    OS/2 Workplace Shell. It can add features to pretty much all
-    parts of the system, such as generic object features, folder
-    enhancements, replacement icons, CONFIG.SYS settings, and
-    much, much more.
+    OS/2 Workplace Shell. Consider this the WPS upgrade IBM
+    should have released with OS/2 Warp 4.
 
-    XWorkplace is the successor to XFolder V0.85.
+    XWorkplace can add features to pretty much all parts of the
+    system, such as generic object features, folder enhancements,
+    replacement icons, CONFIG.SYS settings, and much, much more.
 
     All parts of XWorkplace are fully configurable and can be
-    selectively enabled.
+    selectively enabled in case something is going wrong.
+
+    XWorkplace is the successor to XFolder V0.85 and contains
+    all of it, except the bugs.
 
     For an introduction to XWorkplace's many features, please
     open the "XWorkplace User Guide" (XFLDR001.INF).
 
-    Note that this is a developer's release. It is not guaranteed
+    NOTE:
+
+    This is still a developer's release. It is not guaranteed
     to be stable in every environment. Lots of new things have
     been added since the last public XFolder release (which was
     V0.85), and even though these are working on my system, this
     does not mean it will work on yours. So beware.
 
     This README has additional information which is not included
-    in XFLDR001.INF. Please read through all of this before
-    installing.
+    in the XWorkplace User Guide. Please read through all of this
+    before installing.
 
     After installation, you can find this README in the main
     install directory.
@@ -95,6 +100,10 @@ Last updated March 24, 2000
     that XWPDAEMN.EXE is running. Have WarpIN kill that program
     (which is the XWorkplace Daemon), and you can overwrite your
     existing installation.
+
+    If upgrading doesn't work, have WarpIN remove the installed
+    XWorkplace version first, restart the WPS, and install the
+    new version then.
 
 
     Upgrading from XFolder
@@ -165,11 +174,7 @@ Last updated March 24, 2000
         submenu, but clicking on them will not open the proper
         association.
 
-    3)  The new trash displays wrong info sometimes and cannot delete
-        objects which have the read-only attribute on.
-
-    4)  Trash can confirmations and auto-delete on startup and shutdown
-        don't work quite yet.
+    4)  Trash can auto-delete on startup and shutdown don't work yet.
 
     5)  Trash can icons are somewhat shaky.
 

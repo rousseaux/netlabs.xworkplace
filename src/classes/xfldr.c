@@ -129,7 +129,7 @@
 
 #include <wprootf.h>                    // WPRootFolder
 #include <wpshadow.h>                   // WPShadow
-#include <wpdesk.h>                     // WPDesktop
+// #include <wpdesk.h>                     // WPDesktop
 #include "xfobj.h"                      // XFldObject
 #include "xfdisk.h"                     // XFldDisk
 
@@ -236,9 +236,11 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                 // if _wpRestoreState has found the pointer to the
                 // WPFOlder-internal sort structure, we will update
                 // this one also, because otherwise the WPS keeps
-                // messing with the container attributes
-                if (_pFldrSortInfo)
-                    (_pFldrSortInfo)->fAlwaysSort = ALWAYS_SORT;
+                // messing with the container attributes;
+                // but make sure the folder is not being copied right now
+                if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+                    if (_pWPFolderSortInfo)
+                        (_pWPFolderSortInfo)->fAlwaysSort = ALWAYS_SORT;
                 Update = TRUE;
             }
         } // end if (fFolderLocked)
@@ -257,8 +259,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
         // save instance data
         _wpSaveDeferred(somSelf);
         // update folder "Sort" notebook page, if open
-        // ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
-            // doesn't work, we might be on a different thread!!! ###
+        ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
     }
 
     return (Update);
@@ -455,6 +456,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added folder locking
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
@@ -491,9 +493,13 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 // b)   then all abstract objects in the order they were
                 //      placed in this folder.
 
-                for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
+
+                for (pObj = rslv_wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                      (pObj);
-                     pObj = _wpQueryContent(somSelf, pObj, (ULONG)QC_NEXT)
+                     pObj = rslv_wpQueryContent(somSelf, pObj, (ULONG)QC_NEXT)
                     )
                 {
                     // create new list item
@@ -905,27 +911,28 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
         // check the FDRLONGARRAY (xfldr.idl) to which we have
         // obtained a pointer using the ugly kludge in
         // XFolder::wpRestoreData
-        if (_pFldrLongArray)
-        {
-            // _Pmpf(("cbFldrLongArray: %d", _cbFldrLongArray));
-            ULONG   ulMenuBarVisibility = _pFldrLongArray->ulMenuBarVisibility;
-                        // 0 = off, 1 = on, 2 = default
-            if (ulMenuBarVisibility == 1)
-                brc = TRUE;
-            else if (ulMenuBarVisibility == 2)
+        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+            if (_pWPFolderLongArray)
             {
-                CHAR    szTemp[20] = "";
-                // default value set: get the default value
-                PrfQueryProfileString(HINI_USER,
-                                      "PM_Workplace",
-                                      "FolderMenuBar",
-                                      "OFF",
-                                      szTemp,
-                                      sizeof(szTemp));
-                if (strcmp(szTemp, "ON") == 0)
+                // _Pmpf(("cbFldrLongArray: %d", _cbFldrLongArray));
+                ULONG   ulMenuBarVisibility = _pWPFolderLongArray->ulMenuBarVisibility;
+                            // 0 = off, 1 = on, 2 = default
+                if (ulMenuBarVisibility == 1)
                     brc = TRUE;
+                else if (ulMenuBarVisibility == 2)
+                {
+                    CHAR    szTemp[20] = "";
+                    // default value set: get the default value
+                    PrfQueryProfileString(HINI_USER,
+                                          "PM_Workplace",
+                                          "FolderMenuBar",
+                                          "OFF",
+                                          szTemp,
+                                          sizeof(szTemp));
+                    if (strcmp(szTemp, "ON") == 0)
+                        brc = TRUE;
+                }
             }
-        }
     }
 
     return (brc);
@@ -1151,9 +1158,10 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
 
 /*
  *@@ wpInitData:
- *      this instance method gets called when the object
- *      is being initialized. We initialize our instance
- *      data here.
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
  */
 
 SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
@@ -1173,162 +1181,29 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _bDefaultSortInstance = SET_DEFAULT;
     // _ulSBInflatedFrame = 0;
 
-    _pFldrSortInfo = NULL;
-    _pFldrLongArray = NULL;
-    _pszFldrStrArray = NULL;
-    _cbFldrStrArray = 0;
-    _cbFldrLongArray = 0;
+    _pWPFolderSortInfo = NULL;
+    _pWPFolderLongArray = NULL;
+    _pszWPFolderStrArray = NULL;
+    _cbWPFolderStrArray = 0;
+    _cbWPFolderLongArray = 0;
 
-    _pFldrBackground = NULL;
-    _cbFldrBackground = 0;
+    _pWPFolderBackground = NULL;
+    _cbWPFolderBackground = 0;
 
-    _pulShowAllInTreeView = NULL;
+    _pulWPFolderShowAllInTreeView = NULL;
 
-    _pszFdrBkgndImageFile = 0;
+    _pszWPFolderBkgndImageFile = 0;
 
     _fUnInitCalled = FALSE;
     _hwndCnrSaved = NULLHANDLE;
 
-    _pfnUpdateStatusBar = NULL;
-}
-
-/*
- *@@ wpObjectReady:
- *      this is called upon an object when its creation
- *      or awakening is complete. This is the last method
- *      which gets called during instantiation of a
- *      WPS object when it has completely initialized
- *      itself. ulCode signifies the cause of object
- *      instantiation.
- *
- *      We will have this object's pointer stored
- *      in a global list (maintained by the Worker thread)
- *      so that XShutdown knows which objects are currently
- *      awake.
- *
- *      Note: XFldObject::wpObjectReady already does this
- *      for all objects, but on my Warp 4 (FP 10), that
- *      method does _not_ get called for WPFolder instances,
- *      so we override this method for XFolder also.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
-                                         ULONG ulCode,
-                                         WPObject* refObject)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpObjectReady");
-
-    #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
-        _Pmpf(("XFolder::wpObjectReady for %s (class %s), ulCode: %s",
-                _wpQueryTitle(somSelf),
-                _somGetName(_somGetClass(somSelf)),
-                (ulCode == OR_AWAKE) ? "OR_AWAKE"
-                : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
-                : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
-                : (ulCode == OR_NEW) ? "OR_NEW"
-                : (ulCode == OR_SHADOW) ? "OR_SHADOW"
-                : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
-                : "unknown code"
-             ));
-    #endif
-
-    XFolder_parent_WPFolder_wpObjectReady(somSelf, ulCode, refObject);
-
-    xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
-                      (MPARAM)somSelf,
-                      MPNULL);
-}
-
-/*
- *@@ wpUnInitData:
- *      clean up when object is deleted or made dormant.
- */
-
-SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpUnInitData");
-
-    // make sure we only do this once, because we
-    // seem to get called several times sometimes
-    if (!_fUnInitCalled)
-        _fUnInitCalled = TRUE;
-
-    if (_pszFdrBkgndImageFile)
-        free(_pszFdrBkgndImageFile);
-
-    XFolder_parent_WPFolder_wpUnInitData(somSelf);
-        // fixed this (V0.9.0)
-}
-
-/*
- *@@ wpFree:
- *      this WPObject method destroys the persistent form of the object
- *      and then frees the memory that represented that object.
- *
- *      For WPFolders, this is called when a folder is actually to be
- *      deleted. We will call the parent method and then also remove
- *      those darn PMWorkplace:FolderPos entries which the WPS never
- *      deletes.
- *
- *      If the folder is somewhere in the config folder hierarchy,
- *      we also invalidate the config folder caches in menus.c.
- *
- *@@changed V0.9.0 [umoeller]: adjusted to new config folder handling
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
-{
-    BOOL        brc;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HOBJECT     hObj = NULLHANDLE;
-    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpFree");
-
-    if (wpshResidesBelow(somSelf, pCfg))
-    {
-        // somSelf is in the config folder hierarchy:
-        // invalidate the content lists for the config
-        // folders so that they will be rebuilt
-        mnuInvalidateConfigCache();
-    }
-
-    if (pGlobalSettings->CleanupINIs)
-    {
-        // "clean up INI files": get object handle for
-        // folderpos deletion later. This doesn't hurt
-        // because every folder has a handle once it has
-        // been opened
-        hObj = _wpQueryHandle(somSelf);
-    }
-
-    // according to WPS docs, the parent method should be called
-    // AFTER additional processing; probably somSelf becomes invalid
-    // after this
-    brc = XFolder_parent_WPFolder_wpFree(somSelf);
-
-    if (brc)
-        // successfully deleted:
-        if (hObj)
-            // have FOLDERPOS entries
-            // deleted by Worker thread; we only pass the
-            // object HANDLE and not somSelf because somSelf
-            // is no longer valid after having called the parent
-            xthrPostWorkerMsg(WOM_DELETEFOLDERPOS,
-                              (MPARAM)hObj, NULL);
-
-    return (brc);
+    _pfnResolvedUpdateStatusBar = NULL;
 }
 
 /*
  *@@ wpSetup:
- *      this instance method is called to allow a
- *      newly created object to initialize itself.
+ *      this WPObject instance method is called to allow an
+ *      object to set up itself according to setup strings.
  *      XFolder will examine its setup strings here.
  *
  *@@changed V0.9.1 (2000-01-03) [umoeller]: now processing our own strings first
@@ -1425,7 +1300,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
         // fChanged = TRUE;
     }
 
-    if (somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
+    if (somSelf != cmnQueryActiveDesktop())
     {
         cbValue = sizeof(szValue);
         if (_wpScanSetupString(somSelf, pszSetupString,
@@ -1509,10 +1384,220 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
 }
 
 /*
+ *@@ wpCopyObject:
+ *      this WPObject method gets called to have a copy
+ *      of somSelf created, which is returned.
+ *
+ *      This method can get called in several situations:
+ *
+ *      -- Synchronously in any situation by any code to have
+ *         a copy created.
+ *
+ *      -- The WPS itself calls this method when it's doing its
+ *         file operations which have been initiated by the user.
+ *         This is a complex and largely undocumented issue; see
+ *         PROGREF.INF for more notes.
+ *
+ *      According to WPSREF, copies of an object can always be deleted
+ *      and moved by default, even if the original has the OBJSTYLE_NODELETE
+ *      or OBJSTYLE_NOMOVE style set.
+ *
+ *@@added V0.9.3 (2000-04-29) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xf_wpCopyObject(XFolder *somSelf,
+                                             WPFolder* Folder,
+                                             BOOL fLock)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpCopyObject");
+
+    return (XFolder_parent_WPFolder_wpCopyObject(somSelf, Folder,
+                                                 fLock));
+}
+
+/*
+ *@@ wpCreateAnother:
+ *
+ *@@added V0.9.3 (2000-04-29) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xf_wpCreateAnother(XFolder *somSelf,
+                                                PSZ pszTitle,
+                                                PSZ pszSetupEnv,
+                                                WPFolder* Folder)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpCreateAnother");
+
+    return (XFolder_parent_WPFolder_wpCreateAnother(somSelf,
+                                                    pszTitle,
+                                                    pszSetupEnv,
+                                                    Folder));
+}
+
+/*
+ *@@ wpCreateFromTemplate:
+ *
+ *@@added V0.9.3 (2000-04-29) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xf_wpCreateFromTemplate(XFolder *somSelf,
+                                                     WPFolder* folder,
+                                                     BOOL fLock)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpCreateFromTemplate");
+
+    return (XFolder_parent_WPFolder_wpCreateFromTemplate(somSelf,
+                                                         folder,
+                                                         fLock));
+}
+
+/*
+ *@@ wpObjectReady:
+ *      this is called upon an object when its creation
+ *      or awakening is complete. This is the last method
+ *      which gets called during instantiation of a
+ *      WPS object when it has completely initialized
+ *      itself. ulCode signifies the cause of object
+ *      instantiation.
+ *
+ *      We will have this object's pointer stored
+ *      in a global list (maintained by the Worker thread)
+ *      so that XShutdown knows which objects are currently
+ *      awake.
+ *
+ *      Note: XFldObject::wpObjectReady already does this
+ *      for all objects, but on my Warp 4 (FP 10), that
+ *      method does _not_ get called for WPFolder instances,
+ *      so we override this method for XFolder also.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
+                                         ULONG ulCode,
+                                         WPObject* refObject)
+{
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderMethodDebug("XFolder","xf_wpObjectReady");
+
+    #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
+        _Pmpf(("XFolder::wpObjectReady for %s (class %s), ulCode: %s",
+                _wpQueryTitle(somSelf),
+                _somGetName(_somGetClass(somSelf)),
+                (ulCode == OR_AWAKE) ? "OR_AWAKE"
+                : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
+                : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
+                : (ulCode == OR_NEW) ? "OR_NEW"
+                : (ulCode == OR_SHADOW) ? "OR_SHADOW"
+                : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
+                : "unknown code"
+             ));
+    #endif
+
+    XFolder_parent_WPFolder_wpObjectReady(somSelf, ulCode, refObject);
+
+    xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
+                      (MPARAM)somSelf,
+                      MPNULL);
+}
+
+/*
+ *@@ wpUnInitData:
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant or being deleted. All allocated resources
+ *      should be freed here.
+ *      The parent method must always be called last.
+ */
+
+SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpUnInitData");
+
+    // make sure we only do this once, because we
+    // seem to get called several times sometimes
+    if (!_fUnInitCalled)
+        _fUnInitCalled = TRUE;
+
+    if (_pszWPFolderBkgndImageFile)
+        free(_pszWPFolderBkgndImageFile);
+
+    XFolder_parent_WPFolder_wpUnInitData(somSelf);
+        // fixed this (V0.9.0)
+}
+
+/*
+ *@@ wpFree:
+ *      this WPObject method destroys the persistent form of the object
+ *      and then frees the memory that represented that object.
+ *
+ *      For WPFolders, this is called when a folder is actually to be
+ *      deleted. We will call the parent method and then also remove
+ *      those darn PMWorkplace:FolderPos entries which the WPS never
+ *      deletes.
+ *
+ *      If the folder is somewhere in the config folder hierarchy,
+ *      we also invalidate the config folder caches in menus.c.
+ *
+ *@@changed V0.9.0 [umoeller]: adjusted to new config folder handling
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
+{
+    BOOL        brc;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HOBJECT     hObj = NULLHANDLE;
+    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpFree");
+
+    if (wpshResidesBelow(somSelf, pCfg))
+    {
+        // somSelf is in the config folder hierarchy:
+        // invalidate the content lists for the config
+        // folders so that they will be rebuilt
+        mnuInvalidateConfigCache();
+    }
+
+    if (pGlobalSettings->CleanupINIs)
+    {
+        // "clean up INI files": get object handle for
+        // folderpos deletion later. This doesn't hurt
+        // because every folder has a handle once it has
+        // been opened
+        hObj = _wpQueryHandle(somSelf);
+    }
+
+    // according to WPS docs, the parent method should be called
+    // AFTER additional processing; probably somSelf becomes invalid
+    // after this
+    brc = XFolder_parent_WPFolder_wpFree(somSelf);
+
+    if (brc)
+        // successfully deleted:
+        if (hObj)
+            // have FOLDERPOS entries
+            // deleted by Worker thread; we only pass the
+            // object HANDLE and not somSelf because somSelf
+            // is no longer valid after having called the parent
+            xthrPostWorkerMsg(WOM_DELETEFOLDERPOS,
+                              (MPARAM)hObj, NULL);
+
+    return (brc);
+}
+
+/*
  *@@ wpSaveState:
- *      this instance method is called to allow an
- *      an object to save its state; XFolder will
- *      save its instance settings (NB page) here.
+ *      this WPObject instance method saves an object's state
+ *      persistently so that it can later be re-initialized
+ *      with wpRestoreState. This gets called during wpClose,
+ *      wpSaveImmediate or wpSaveDeferred processing.
+ *      All persistent instance variables should be stored here.
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
@@ -1556,9 +1641,9 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
 
 /*
  *@@ wpRestoreState:
- *      this instance method is called to allow an
- *      an object to restore its state; XFolder will
- *      restore its instance settings (NB page) here.
+ *      this WPObject instance method gets called during object
+ *      initialization (after wpInitData) to restore the data
+ *      which was stored with wpSaveState.
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
@@ -1658,7 +1743,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
                     if (pulValue)
                     {
                         XFolderData *somThis = XFolderGetData(somSelf);
-                        _pulShowAllInTreeView = pulValue;
+                        _pulWPFolderShowAllInTreeView = pulValue;
                     }
             break; }
         }
@@ -1701,7 +1786,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                 if ((pszValue) && (brc))
                 {
                     XFolderData *somThis = XFolderGetData(somSelf);
-                    _pszFdrBkgndImageFile = strdup(pszValue);
+                    _pszWPFolderBkgndImageFile = strdup(pszValue);   // freed in uninitdata
                 }
             break;
         }
@@ -1775,7 +1860,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     if (pValue)
                     {
                         XFolderData *somThis = XFolderGetData(somSelf);
-                        _pFldrSortInfo = (PFDRSORTINFO)pValue;
+                        _pWPFolderSortInfo = (PFDRSORTINFO)pValue;
 
                         if (brc)
                             // if the parent method has found sort data,
@@ -1797,8 +1882,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 if (pValue)
                 {
                     XFolderData *somThis = XFolderGetData(somSelf);
-                    _cbFldrBackground = *pcbValue;
-                    _pFldrBackground = (PVOID)pValue;
+                    _cbWPFolderBackground = *pcbValue;
+                    _pWPFolderBackground = (PVOID)pValue;
                 }
             break;
 
@@ -1820,9 +1905,9 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 84 bytes (as it is with Warp 4 fixpak 8)
-                _cbFldrLongArray = *pcbValue;
+                _cbWPFolderLongArray = *pcbValue;
                 if (pValue)
-                    _pFldrLongArray = (PFDRLONGARRAY)pValue;
+                    _pWPFolderLongArray = (PFDRLONGARRAY)pValue;
             break; }
 
             case IDKEY_FDRSTRARRAY:         // size: 400 bytes
@@ -1833,8 +1918,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 // 400 bytes (as it is with Warp 4 fixpak 8)
                 if (pValue)
                 {
-                    _cbFldrStrArray = *pcbValue;
-                    _pszFldrStrArray = (PSZ)pValue;
+                    _cbWPFolderStrArray = *pcbValue;
+                    _pszWPFolderStrArray = (PSZ)pValue;
                 }
             break; }
 
@@ -2190,7 +2275,11 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this call xwpAddXFolderPages.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      This call xwpAddXFolderPages.
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpAddSettingsPages(XFolder *somSelf,
@@ -2213,8 +2302,12 @@ SOM_Scope BOOL  SOMLINK xf_wpAddSettingsPages(XFolder *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      this removes default menu entries according to the
- *      Global Settings.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      This removes default menu entries according to the
+ *      global menu settings.
  */
 
 SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
@@ -2254,8 +2347,12 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      this routine allows an object to modify a context
- *      menu. We add the various XFolder menu entries here
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We add the various XFolder menu entries here
  *      by calling the common XFolder function in menus.c,
  *      which is also used by the XFldDisk class.
  */
@@ -2306,8 +2403,8 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
 /*
  *@@ wpMenuItemSelected:
  *      this WPObject method processes menu selections.
- *      This is overridden to support the new menu items
- *      we have inserted for our subclass.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
  *
  *      We pass the input to mnuMenuItemSelected in menus.c
  *      because disk menu items are mostly shared with XFldDisk.
@@ -2431,58 +2528,6 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     #endif
 
     return (hwndNewFrame);
-}
-
-/*
- *@@ wpRegisterView:
- *      this WPObject method registers a new view for
- *      an object. When this is called, the WPS subclasses
- *      the hwndFrame window, which is assumed to be
- *      a subclass of WC_FRAME.
- *
- *@@added V0.9.3 (2000-04-08) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpRegisterView(XFolder *somSelf,
-                                          HWND hwndFrame,
-                                          PSZ pszViewTitle)
-{
-    BOOL        brc = FALSE;
-    XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpRegisterView");
-
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpRegisterView for 0x%lX (%s): hwndFrame = 0x%lX, viewTitle = '%s'",
-                    somSelf,
-                    _wpQueryTitle(somSelf),
-                    hwndFrame,
-                    pszViewTitle));
-    #endif
-
-    brc = XFolder_parent_WPFolder_wpRegisterView(somSelf,
-                                                 hwndFrame,
-                                                 pszViewTitle);
-
-    /* if (brc)
-    {
-        HWND    hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-        ULONG   ulView = wpshQueryView(somSelf,
-                                       hwndFrame);
-
-        if (hwndCnr)
-        {
-            #if defined(DEBUG_SOMMETHODS)
-                _Pmpf(("    wpRegisterView hwndCnr: %d, ulView: %d", hwndCnr, ulView));
-            #endif
-
-        }
-    } */
-
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("End of wpRegisterView for %s", _wpQueryTitle(somSelf)));
-    #endif
-
-    return (brc);
 }
 
 /*
@@ -3272,7 +3317,7 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
                              (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
                              0,       // class style
                              4);      // extra window words for SUBCLASSEDFOLDERVIEW
-                                      // pointer (see fdrSubclassFolderFrame)
+                                      // pointer (see fdrSubclassFolderView)
 
             // install local hook (fdrsubclass.c)
             WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),

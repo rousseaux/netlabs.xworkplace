@@ -27,7 +27,7 @@
 #define DRVF_BASEDEV    0x00010000  // BASEDEV=
 #define DRVF_DEVICE     0x00020000  // DEVICE=
 #define DRVF_IFS        0x00040000  // IFS=
-#define DRVF_OTHER      0x00080000  // ?!?
+#define DRVF_OTHER      0x00080000  // RUN=, CALL=, ?!?
 
 /*
  *@@ DRIVERSPEC:
@@ -40,13 +40,15 @@
  *      This is done by cfgDriversInitPage (xfsys.c).
  *
  *@@added V0.9.0
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: added pszVersion to DRIVERSPEC
  */
 
 typedef struct _DRIVERSPEC
 {
     PSZ        pszKeyword;          // e.g. "BASEDEV="
-    PSZ        pszFilename;         // e.g. "IBM1S506.ADD"
+    PSZ        pszFilename;         // e.g. "IBM1S506.ADD", without path
     PSZ        pszDescription;      // e.g. "IBM IDE driver"
+    PSZ        pszVersion;          // driver version or NULL if n/a
     ULONG      ulFlags;             // DRVF_* flags
     HMODULE    hmodConfigDlg;       // module handle with dlg template or null if no dlg exists
     ULONG      idConfigDlg;         // resource ID of config dlg or null if no dlg exists
@@ -65,7 +67,7 @@ typedef struct _DRIVERSPEC
 
 typedef struct _DRIVERDLGDATA
 {
-    PDRIVERSPEC pDriverSpec;                    // in: driver specs; do not modify
+    const DRIVERSPEC *pDriverSpec;              // in: driver specs; do not modify
     CHAR        szParams[500];                  // in/out: as in CONFIG.SYS
     PVOID       pvUser;                         // for data needed in dialog
 } DRIVERDLGDATA, *PDRIVERDLGDATA;

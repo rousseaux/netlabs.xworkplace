@@ -257,6 +257,15 @@
     #define ID_XSH_MOUSE_CORNERS             60     // V0.9.2: XWPMouse "Movement" page 2
     #define ID_XSH_SETTINGS_TRASH_DRIVES     61     // V0.9.2: XWPTrashCan "Drives" page
     #define ID_XSH_SETTINGS_SYSLEVEL         62     // V0.9.3: XFldSystem "Syslevel" page
+    #define ID_XSH_SETTINGS_PAGEMAGE1        63     // V0.9.3: XWPScreen "PageMage" page 1
+    #define ID_XSH_SETTINGS_PAGEMAGE2        64     // V0.9.3: XWPScreen "PageMage" page 2
+                // 65 is for "Mouse actions" descriptions linked to from the above pages
+    #define ID_XSH_SETTINGS_FUNCTIONKEYS     66     // V0.9.3: XWPKeyboard "Function keys" page
+                // 67 is for the "edit function key" dlg
+    #define ID_XSH_SETTINGS_XWPSTRING        68     // V0.9.3: XWPString page
+    #define ID_XSH_MEDIA_DEVICES             69     // V0.9.3: XWPMedia "Devices" page
+    #define ID_XSH_MEDIA_CODECS              70     // V0.9.3: XWPMedia "Codecs" page
+    #define ID_XSH_MEDIA_IOPROCS             71     // V0.9.3: XWPMedia "IOProcs" page
 
     // "subpanels" for pages with context-sensitive help
     // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
@@ -299,7 +308,6 @@
 
     // log file names
     #define XFOLDER_CRASHLOG        "xwptrap.log"
-    #define XFOLDER_RUNTIMELOG      "xwprterr.log"
     #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
     #define XFOLDER_LOGLOG          "xwplog.log"
 
@@ -337,11 +345,13 @@
 
     // new XWorkplace system sounds indices
     // (in addition to those def'd by helpers\syssound.h)
-    #define MMSOUND_XFLD_SHUTDOWN   555
-    #define MMSOUND_XFLD_RESTARTWPS 556
-    #define MMSOUND_XFLD_CTXTOPEN   558
-    #define MMSOUND_XFLD_CTXTSELECT 559
-    #define MMSOUND_XFLD_CNRDBLCLK  560
+    #define MMSOUND_XFLD_SHUTDOWN   555     // shutdown
+    #define MMSOUND_XFLD_RESTARTWPS 556     // restart WPS
+    #define MMSOUND_XFLD_CTXTOPEN   558     // context (sub)menu opened
+    #define MMSOUND_XFLD_CTXTSELECT 559     // menu item selected
+    #define MMSOUND_XFLD_CNRDBLCLK  560     // folder container double-click
+    #define MMSOUND_XFLD_HOTKEYPRSD 561     // XWP global hotkey pressed
+                                            // added V0.9.3 (2000-04-20) [umoeller]
 
     // default style used for XWorkplace tooltip controls
     #ifdef COMCTL_HEADER_INCLUDED
@@ -433,12 +443,24 @@
 
     // 13) XWPKeyboard
     #define SP_KEYB_OBJHOTKEYS      120     // new with V0.9.0
-    #define SP_KEYB_EXTMAPPINGS     121     // new with V0.9.1 (99-12-19) [umoeller]
+    #define SP_KEYB_FUNCTIONKEYS    121     // new with V0.9.3 (2000-04-18) [umoeller]
 
-    // 13) XWPMOUSE
+    // 13) XWPMouse
     #define SP_MOUSE_MOVEMENT       130     // new with V0.9.2 (2000-02-26) [umoeller]
     #define SP_MOUSE_CORNERS        131     // new with V0.9.2 (2000-02-26) [umoeller]
     #define SP_MOUSE_MAPPINGS2      132     // new with V0.9.1
+
+    // 14) XWPScreen
+    #define SP_PAGEMAGE1            140     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGEMAGE2            141     // new with V0.9.3 (2000-04-09) [umoeller]
+
+    // 15) XWPString
+    #define SP_XWPSTRING            150     // new with V0.9.3 (2000-04-27) [umoeller]
+
+    // 16) XWPMedia
+    #define SP_MEDIA_DEVICES        160     // new with V0.9.3 (2000-04-29) [umoeller]
+    #define SP_MEDIA_CODECS         161     // new with V0.9.3 (2000-04-29) [umoeller]
+    #define SP_MEDIA_IOPROCS        162     // new with V0.9.3 (2000-04-29) [umoeller]
 
     /********************************************************************
      *                                                                  *
@@ -471,6 +493,10 @@
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
+
+    // flags for GLOBALSETTINGS.ulConfirmEmpty
+    #define TRSHCONF_EMPTYTRASH     0x00000001
+    #define TRSHCONF_DESTROYOBJ     0x00000002
 
     #pragma pack(4)     // just to make sure;
                         // the following is stored as binary in OS2.INI
@@ -583,7 +609,7 @@
                         // XSD_* shutdown settings
         ULONG       NoWorkerThread,
                         // "Paranoia" page
-                    NoSubclassing,
+                    fNoSubclassing,
                         // "Paranoia" page
                     TreeViewAutoScroll,
                         // XFolder
@@ -708,10 +734,11 @@
         // trashcan settings
                     fTrashDelete,
                     fTrashEmptyStartup,
-                    fTrashEmptyShutdown,
-                    fTrashConfirmEmpty,
+                    fTrashEmptyShutdown;
+        ULONG       ulTrashConfirmEmpty;
+                        // TRSHEMPTY_* flags
 
-                    fReplDriveNotReady;
+        BYTE        fReplDriveNotReady;
                         // XWPSetup: replace "Drive not ready" dialog
 
         ULONG       ulIntroHelpShown;
@@ -732,15 +759,21 @@
         BYTE        fNumLockStartup;
                         // XFldDesktop "Startup": set NumLock to ON on WPS startup
 
-        BYTE        fPageMageEnabled;
+        BYTE        fEnablePageMage;
                         // XWPSetup "PageMage virtual desktops"; this will cause
                         // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
 
         BYTE        fShowHotkeysInMenus;
                         // on XFldWPS "Hotkeys" page
 
+    /* XWorkplace 0.9.3 */
+
         BYTE        fNoFreakyMenus;
                         // on XWPSetup "Paranoia" page
+
+        BYTE        fReplaceTrueDelete;
+                        // replace "true delete" also?
+                        // on XWPSetup "Features" page
 
     } GLOBALSETTINGS;
 
@@ -901,6 +934,7 @@
                 pszArchivesPage,    // title of WPDesktop "Archives" page replacement
                 pszModulePage,      // title of XFldProgramFile "Module" page
                 pszObjectHotkeysPage, // title of XWPKeyboard "Hotkeys" page
+                pszFunctionKeysPage, // title of XWPKeyboard "Function keys " page V0.9.3 (2000-04-18) [umoeller]
                 pszMouseHookPage,   // title of XWPMouse "Mouse hook" page
                 pszMappingsPage,    // title of XWPKeyboard/XWPMouse "Mappings" pages (V0.9.1)
 
@@ -1066,8 +1100,8 @@
     const char* cmnQueryHelpLibrary(VOID);
 
     #ifdef SOM_WPObject_h
-    BOOL cmnDisplayHelp(WPObject *somSelf,
-                        ULONG ulPanelID);
+        BOOL cmnDisplayHelp(WPObject *somSelf,
+                            ULONG ulPanelID);
     #endif
 
     const char* cmnQueryMessageFile(VOID);
@@ -1114,9 +1148,17 @@
 
     /********************************************************************
      *                                                                  *
-     *   Miscellaneous                                                  *
+     *   Miscellaneae                                                   *
      *                                                                  *
      ********************************************************************/
+
+    BOOL cmnPlaySystemSound(USHORT usIndex);
+
+    #ifdef SOM_WPObject_h
+        WPObject* cmnQueryActiveDesktop(VOID);
+
+        HWND cmnQueryActiveDesktopHWND(VOID);
+    #endif
 
     VOID cmnShowProductInfo(ULONG ulSound);
 
@@ -1153,7 +1195,8 @@
                             CHAR cDrive,
                             PSZ pszTitle,
                             APIRET arc,
-                            ULONG ulFlags);
+                            ULONG ulFlags,
+                            BOOL fShowExplanation);
 
     VOID cmnSetDlgHelpPanel(ULONG ulHelpPanel);
 

@@ -26,7 +26,7 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exes
+OUTPUTDIR = ..\..\bin\exe_mt
 MODULESDIR = ..\..\bin\modules
 
 # create output directory

@@ -95,7 +95,9 @@ $(OUTPUTDIR)\xfldr$(LANGUAGE).dll: $(@B).def $(OBJS) $(OUTPUTDIR)\$(@B).res ..\.
 
 # main target
 $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll: $(OUTPUTDIR)\xfldr$(LANGUAGE).dll
+!ifdef XWP_UNLOCK_MODULES
          unlock $(XWPRUNNING)\bin\$(@B).dll
+!endif
          cmd.exe /c del $(XWPRUNNING)\bin\$(@B).dll
          cmd.exe /c copy $(OUTPUTDIR)\$(@B).dll $(XWPRUNNING)\bin
 

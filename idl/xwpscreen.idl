@@ -67,6 +67,11 @@ interface XWPScreen : WPSystem
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
+     * Internal instance variables for XWPScreen:
+     *
+     */
+
+    /*
      * WPSystem methods overridden by XWPScreen:
      *
      */

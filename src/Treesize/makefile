@@ -26,7 +26,7 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exes
+OUTPUTDIR = ..\..\bin\exe_mt
 MODULESDIR = ..\..\bin\modules
 
 # create output directory
@@ -43,11 +43,9 @@ MODULESDIR = ..\..\bin\modules
 
 HLPINC = $(HELPERS_BASE)\include\helpers
 
-HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h
+HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\memdebug.h $(HLPINC)\winh.h $(HLPINC)\xstring.h
 
-ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj $(OUTPUTDIR)\eah.obj $(OUTPUTDIR)\cnrh.obj \
-           $(OUTPUTDIR)\gpih.obj $(OUTPUTDIR)\dosh.obj $(OUTPUTDIR)\stringh.obj \
-           $(OUTPUTDIR)\winh.obj $(OUTPUTDIR)\xstring.obj
+ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj ..\..\bin\helpers.lib
 
 # TARGETS
 # -------
@@ -56,28 +54,7 @@ all: $(XWPRUNNING)\bin\treesize.exe
     @echo ----- Leaving $(MAKEDIR)
 
 $(OUTPUTDIR)\treesize.obj: $(@B).c $(HEADERS) ..\..\include\bldlevel.h
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
-$(OUTPUTDIR)\eah.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
-
-$(OUTPUTDIR)\cnrh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
-
-$(OUTPUTDIR)\dosh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
-
-$(OUTPUTDIR)\gpih.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
-
-$(OUTPUTDIR)\stringh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
-
-$(OUTPUTDIR)\winh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
-
-$(OUTPUTDIR)\xstring.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 
 # build targets
 treesize.def: ..\..\include\bldlevel.h

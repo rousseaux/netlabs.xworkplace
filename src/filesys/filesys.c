@@ -105,11 +105,10 @@ typedef struct _FILEPAGEDATA
 /*
  *@@ fsysFile1InitPage:
  *      first "File" page notebook callback function (notebook.c).
- *      Sets the controls on the page according to a folder's
- *      instance settings.
+ *      Sets the controls on the page according to a file's
+ *      filesystem characteristics.
  *
- *      This is also used by the XFolder class, since we replace
- *      the "File" pages there also.
+ *      This is used by both XFolder and XFldDataFile.
  *
  *      Notes about the EAs which are parsed here (also see the
  *      "Extended Attributes" section in CPREF):
@@ -326,8 +325,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *      first "File" page notebook callback function (notebook.c).
  *      Reacts to changes of any of the dialog controls.
  *
- *      This is also used by the XFolder class, since we replace
- *      the "File" pages there also.
+ *      This is used by both XFolder and XFldDataFile.
  *
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFile1InitPage
  */
@@ -540,11 +538,10 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
 /*
  *@@ fsysFile2InitPage:
  *      second "File" page notebook callback function (notebook.c).
- *      Sets the controls on the page according to a folder's
- *      instance settings.
+ *      Sets the controls on the page according to a file's
+ *      filesystem characteristics.
  *
- *      This is also used by the XFolder class, since we replace
- *      the "File" pages there also.
+ *      This is used by both XFolder and XFldDataFile.
  *
  *@@added V0.9.1 (2000-01-22) [umoeller]
  */
@@ -590,8 +587,7 @@ VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *      second "File" page notebook callback function (notebook.c).
  *      Reacts to changes of any of the dialog controls.
  *
- *      This is also used by the XFolder class, since we replace
- *      the "File" pages there also.
+ *      This is used by both XFolder and XFldDataFile.
  *
  *@@added V0.9.1 (2000-01-22) [umoeller]
  */

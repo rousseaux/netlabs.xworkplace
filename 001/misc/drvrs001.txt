@@ -24,8 +24,7 @@
  *      DRIVER ( ... )
  *
  *      In each DRIVER block, specify one or more parameters
- *      separated by commas. The order of parameters is not
- *      important.
+ *      separated by commas.
  *
  *      1)  A DRIVER statement requires two parameters first,
  *          being the CONFIG.SYS keyname to search for (e.g.
@@ -58,8 +57,14 @@
  *            is enabled automatically based on the driver's
  *            filename if a corresponding dialog exists in
  *            XWorkplace.
+ *
  *            To create a "Configure" dialog, you must create
- *            and modify code in "src\config\drivdlgs.c".
+ *            and modify code in "src\config\drivdlgs.c". You
+ *            are welcome to write more configuration dialogs.
+ *            This is plain PM programming and requires no
+ *            knowledge about SOM/WPS programming, other than
+ *            getting XWorkplace to compile at all. See
+ *            src\config\drivdlgs.c for an introduction.
  */
 
 CATEGORY "General"
@@ -67,6 +72,9 @@ CATEGORY "General"
         DRIVER ( "DEVICE=", "APM.SYS",
                  "Advanced Power Management",
                  DRVF_CMDREF)
+        DRIVER ( "RUN=", "APMDAEMN.EXE",
+                 "APM daemon",
+                 0)
 
         DRIVER ( "DEVICE=", "DOS.SYS",
                  "DOS support",
@@ -76,13 +84,6 @@ CATEGORY "General"
                  "Test-configuration driver for OS/2 installation",
                  DRVF_CMDREF)
 
-        DRIVER ( "DEVICE=", "PMDD.SYS",
-                 "OS/2 PM Ring 0 Device driver",
-                 DRVF_CMDREF)
-
-        DRIVER ( "DEVICE=", "POINTDD.SYS",
-                 "Text-mode pointer support",
-                 DRVF_CMDREF)
         DRIVER ( "DEVICE=", "RESERVE.SYS",
                  "Resource manager",
                  DRVF_NOPARAMS)
@@ -100,10 +101,10 @@ CATEGORY "General"
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VAPM.SYS",
                  "Advanced Power Management support for MVDM",
-                 DRV_NOPARAMS)
+                 DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VXMS.SYS",
                  "eXtended Memory Specification support for MVDM",
-                 "DRV_CMDREF")
+                 DRVF_CMDREF)
     }
 
 CATEGORY "Hard disk"
@@ -306,6 +307,13 @@ CATEGORY "Video"
         DRIVER ( "DEVICE=", "V8514A.SYS",
                  "8514 driver for DOS/Windows support",
                  0 )
+
+        DRIVER ( "DEVICE=", "PMDD.SYS",
+                 "OS/2 PM Ring 0 Device driver",
+                 DRVF_CMDREF | DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "POINTDD.SYS",
+                 "Text-mode pointer support",
+                 DRVF_CMDREF | DRVF_NOPARAMS)
     }
 
 CATEGORY "Other peripherals"

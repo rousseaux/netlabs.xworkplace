@@ -24,10 +24,6 @@
 #ifndef PAGEMAGE_HEADER_INCLUDED
     #define PAGEMAGE_HEADER_INCLUDED
 
-    #define PAGEMAGE_MUTEX      "\\SEM32\\PAGEMAGE"
-    #define PAGEMAGE_WNDLSTMTX  "\\SEM32\\PGMG_WNDLSTMTX"
-    #define PAGEMAGE_WNDLSTEV   "\\SEM32\\PGMG_WNDLSTEV"
-    #define PAGEMAGE_WNDQUEUE   "\\QUEUES\\PAGEMAGE"
     #define DLL_VERSION         6
 
     #define INI_OK              100
@@ -102,13 +98,15 @@
     BOOL                pgmcCreateMainControlWnd(VOID);
 
     // pgmg_move.c
-    VOID    _Optlink    fntMoveThread(PVOID);
+    VOID    _Optlink    fntMoveQueueThread(PVOID);
     INT                 pgmmMoveIt(LONG, LONG, BOOL);
     INT                 pgmmZMoveIt(LONG, LONG);
     VOID                pgmmRecoverAllWindows(VOID);
 
     // pgmg_settings.c
     VOID                pgmsSetDefaults(VOID);
+    BOOL                pgmsLoadSettings(ULONG flConfig);
+    BOOL                pgmsSaveSettings(VOID);
 
     // pgmg_winscan.c
     BOOL                pgmwGetWinInfo(HWND hwnd,
@@ -143,7 +141,7 @@
     extern POINTL       G_ptlCurrPos;
     extern POINTL       G_ptlMoveDeltaPcnt;
     extern POINTL       G_ptlMoveDelta;
-    extern POINTL       G_ptlPagerSize;
+    extern POINTL       G_ptlPgmgClientSize;
     extern POINTL       G_ptlEachDesktop;
     extern BOOL         G_bConfigChanged;
     extern BOOL         G_bTitlebarChange;
@@ -154,8 +152,6 @@
     extern SWP          G_swpRecover;
 
     extern PFNWP        G_pfnOldFrameWndProc;
-
-    extern PAGEMAGECONFIG G_PageMageConfig;
 
 #endif
 

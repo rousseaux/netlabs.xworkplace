@@ -68,6 +68,8 @@
     #define CBI_SHOW        0x10        // notebook page is turned to
     #define CBI_HIDE        0x20        // notebook page is turned away from
 
+    #define XNTBM_UPDATE     (WM_USER)  // update
+
     #ifndef BKA_MAJOR
        #define BKA_MAJOR                0x0040
     #endif

@@ -58,11 +58,10 @@
 // XWorkplace implementation headers
 #include "startshut\apm.h"            // APM power-off for XShutdown
 
-HFILE           hfAPMSys = NULLHANDLE;
-ULONG           ulAPMStat = APM_UNKNOWN;
-USHORT          usAPMVersion = 0;
-
-CHAR szAPMVersion[10];
+HFILE           G_hfAPMSys = NULLHANDLE;
+ULONG           G_ulAPMStat = APM_UNKNOWN;
+USHORT          G_usAPMVersion = 0;
+CHAR            G_szAPMVersion[10];
 
 /*
  *@@  apmQueryVersion:
@@ -76,10 +75,10 @@ CHAR szAPMVersion[10];
 
 PSZ apmQueryVersion(VOID)
 {
-    if (ulAPMStat == APM_UNKNOWN)
+    if (G_ulAPMStat == APM_UNKNOWN)
         apmPowerOffSupported();
-    sprintf(szAPMVersion, "%d.%d", usAPMVersion>>8, usAPMVersion & 0xff);
-    return (szAPMVersion);
+    sprintf(G_szAPMVersion, "%d.%d", G_usAPMVersion>>8, G_usAPMVersion & 0xff);
+    return (G_szAPMVersion);
 }
 
 /*
@@ -105,10 +104,11 @@ BOOL apmPowerOffSupported(VOID)
     ULONG           ulPacketSize;
     ULONG           ulDataSize;
 
-    if (ulAPMStat == APM_UNKNOWN) {
+    if (G_ulAPMStat == APM_UNKNOWN)
+    {
         // open APM.SYS
         ulAction = 0;
-        arc = DosOpen("\\DEV\\APM$", &hfAPMSys, &ulAction, 0, FILE_NORMAL,
+        arc = DosOpen("\\DEV\\APM$", &G_hfAPMSys, &ulAction, 0, FILE_NORMAL,
                       OPEN_ACTION_OPEN_IF_EXISTS,
                       OPEN_FLAGS_FAIL_ON_ERROR | OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE,
                       NULL);
@@ -120,7 +120,7 @@ BOOL apmPowerOffSupported(VOID)
             ulPacketSize = sizeof(getpowerinfo);
             ulAPMRc = 0;
             ulDataSize = sizeof(ulAPMRc);
-            arc = DosDevIOCtl(hfAPMSys, IOCTL_POWER,
+            arc = DosDevIOCtl(G_hfAPMSys, IOCTL_POWER,
                               POWER_GETPOWERINFO,
                               &getpowerinfo, ulPacketSize, &ulPacketSize,
                               &ulAPMRc, ulDataSize, &ulDataSize);
@@ -132,32 +132,32 @@ BOOL apmPowerOffSupported(VOID)
                 usDriverVersion = (getpowerinfo.usDriverVersion & 0xff) <<8 |
                     (getpowerinfo.usDriverVersion >>8);
                 // set general APM version to lower
-                usAPMVersion = (usBIOSVersion < usDriverVersion)
+                G_usAPMVersion = (usBIOSVersion < usDriverVersion)
                     ? usBIOSVersion : usDriverVersion;
 
                 // check APM version whether power-off is supported
-                if (usAPMVersion >= 0x102)  // version 1.2 or above
-                    ulAPMStat = APM_OK;
+                if (G_usAPMVersion >= 0x102)  // version 1.2 or above
+                    G_ulAPMStat = APM_OK;
                 else
-                    ulAPMStat = APM_IGNORE;
+                    G_ulAPMStat = APM_IGNORE;
 
             }
             else
             {
                 // DosDevIOCtl failed
-                ulAPMStat = APM_IGNORE;
-                usAPMVersion = 0;
+                G_ulAPMStat = APM_IGNORE;
+                G_usAPMVersion = 0;
             }
-            DosClose(hfAPMSys);
+            DosClose(G_hfAPMSys);
         }
         else
         {
             // DosOpen failed; APM.SYS is not loaded
-            ulAPMStat = APM_IGNORE;
-            usAPMVersion = 0;
+            G_ulAPMStat = APM_IGNORE;
+            G_usAPMVersion = 0;
         }
     }
-    return (ulAPMStat == APM_OK);
+    return (G_ulAPMStat == APM_OK);
 }
 
 /*
@@ -219,7 +219,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
     // open APM.SYS
     ulAction = 0;
     arc = DosOpen("\\DEV\\APM$",
-                  &hfAPMSys,
+                  &G_hfAPMSys,
                   &ulAction,
                   0,
                   FILE_NORMAL,
@@ -237,7 +237,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
     sendpowerevent.usSubID = POWER_SUBID_ENABLE_APM;
     ulPacketSize = sizeof(sendpowerevent);
     ulDataSize = sizeof(ulAPMRc);
-    arc = DosDevIOCtl(hfAPMSys,
+    arc = DosDevIOCtl(G_hfAPMSys,
                       IOCTL_POWER,
                       POWER_SENDPOWEREVENT,
                       &sendpowerevent, ulPacketSize, &ulPacketSize,
@@ -307,12 +307,12 @@ VOID apmDoPowerOff(BOOL fDelay)
     }
 
     // this initiates the APM power-off
-    arc = DosDevIOCtl(hfAPMSys,
+    arc = DosDevIOCtl(G_hfAPMSys,
                       IOCTL_POWER,
                       POWER_SENDPOWEREVENT,
                       &sendpowerevent, ulPacketSize, &ulPacketSize,
                       &usAPMRc, ulDataSize, &ulDataSize);
-    DosClose(hfAPMSys);
+    DosClose(G_hfAPMSys);
 
     // OS/2 _does_ return from that function, but in the
     // background APM power-off is now being executed.

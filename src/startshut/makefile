@@ -130,6 +130,7 @@ $(OUTPUTDIR)\shutdown.obj: \
     $(INC)\classes\xfldr.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
+    $(INC)\media\media.h \
     $(INC)\startshut\apm.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

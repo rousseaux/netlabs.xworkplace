@@ -43,11 +43,13 @@
 #include <string.h>
 #include <process.h>
 
+#include "setup.h"                      // code generation and debugging options
+
+#include "helpers\gpih.h"               // GPI helper routines
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
-
-#include "setup.h"                      // code generation and debugging options
 
 /* ******************************************************************
  *                                                                  *
@@ -68,21 +70,110 @@ ULONG       G_hUpdateTimer = NULLHANDLE;
  ********************************************************************/
 
 /*
+ *@@ pgmcCreateMainControlWnd:
+ *      creates the PageMage control window (frame
+ *      and client). This gets called by dmnStartPageMage
+ *      when PageMage has been enabled.
+ *
+ *      This registers the PageMage client class,
+ *      using fnwpPageMageClient which does the grunt
+ *      work for PageMage.
+ *
+ *@@added V0.9.2 (2000-02-21) [umoeller]
+ */
+
+BOOL pgmcCreateMainControlWnd(VOID)
+{
+    _Pmpf(("pgmcCreateMainControlWnd, G_pHookData->hwndPageMageFrame: 0x%lX",
+            G_pHookData->hwndPageMageFrame));
+    // now go for PageMage client
+    WinRegisterClass(G_habDaemon,
+                     (PSZ)WNDCLASS_PAGEMAGECLIENT,
+                     (PFNWP)fnwpPageMageClient,
+                     0,
+                     0);
+
+    if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
+    {
+        ULONG   flFrameFlags    = FCF_TITLEBAR |
+                                  FCF_SYSMENU |
+                                  FCF_MINBUTTON |
+                                // | FCF_TASKLIST
+                                // | FCF_ICON
+                                  FCF_SIZEBORDER;
+        _Pmpf(("Creating pagemage"));
+
+        G_pHookData->hwndPageMageFrame
+            = WinCreateStdWindow(HWND_DESKTOP,
+                                 (ULONG)0,  // style
+                                 &flFrameFlags,
+                                 (PSZ)WNDCLASS_PAGEMAGECLIENT,
+                                 "XWorkplace PageMage",
+                                 0,
+                                 0,
+                                 1000,    // ID...
+                                 &G_pHookData->hwndPageMageClient);
+
+        if (!G_pHookData->hwndPageMageFrame)
+            _Pmpf(("PageMage window creation failed...."));
+        else
+        {
+            SWP     swpPager;
+
+            // set frame icon
+            WinSendMsg(G_pHookData->hwndPageMageFrame,
+                       WM_SETICON,
+                       (MPARAM)G_hptrDaemon,
+                       NULL);
+
+            // subclass frame
+            _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
+
+            G_pfnOldFrameWndProc = WinSubclassWindow(G_pHookData->hwndPageMageFrame,
+                                                     fnwpSubclPageMageFrame);
+
+            pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
+            WinQueryWindowPos(G_pHookData->hwndPageMageClient, &swpPager);
+            G_ptlPgmgClientSize.x = swpPager.cx;
+            G_ptlPgmgClientSize.y = swpPager.cy;
+
+            G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
+                                 / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
+            G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
+                                 / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
+
+            /* if (iConfigResult == INI_CREATED)
+              WinPostMsg(hwndClient, WM_COMMAND,
+                         MPFROMSHORT(PGMG_CMD_NOTEBOOK), MPVOID); */
+            return (TRUE);
+        }
+    }
+
+    return (FALSE);
+}
+
+/*
  *@@ pgmcCalcNewFrameCY:
+ *      calculates the new frame height according to
+ *      the frame width, so that the frame can be
+ *      sized proportionally.
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: now taking titlebar setting into account
  */
 
 LONG pgmcCalcNewFrameCY(LONG cx)
 {
     LONG lHeightPercentOfWidth = G_pHookData->lCYScreen * 100 / G_pHookData->lCXScreen;
                 // e.g. 75 for 1024x768
-    return (              (  (cx * lHeightPercentOfWidth / 100)
-                             * G_PageMageConfig.ptlMaxDesktops.y
-                             / G_PageMageConfig.ptlMaxDesktops.x
-                          )
-                + WinQuerySysValue(HWND_DESKTOP, SV_CYTITLEBAR)
-            );
+    LONG lCY =      (  (cx * lHeightPercentOfWidth / 100)
+                       * G_pHookData->PageMageConfig.ptlMaxDesktops.y
+                       / G_pHookData->PageMageConfig.ptlMaxDesktops.x
+                    );
+    if (G_pHookData->PageMageConfig.fShowTitlebar)
+        lCY += WinQuerySysValue(HWND_DESKTOP, SV_CYTITLEBAR);
+
+    return (lCY);
 }
 
 /*
@@ -104,11 +195,11 @@ VOID pgmcSetPgmgFramePos(HWND hwnd)
 
     flOptions = SWP_MOVE | SWP_SIZE;
 
-    if (!G_PageMageConfig.bFlash)
+    if (!G_pHookData->PageMageConfig.fFlash)
         flOptions |= SWP_SHOW;
 
-    if (G_PageMageConfig.bStartMin)
-        flOptions |= SWP_MINIMIZE;
+    /* if (G_pHookData->PageMageConfig.fStartMinimized)
+        flOptions |= SWP_MINIMIZE; */ // ###
 
     WinSetWindowPos(hwnd, NULLHANDLE, rcl.xLeft, rcl.yBottom,
                     (rcl.xRight - rcl.xLeft), (rcl.yTop - rcl.yBottom),
@@ -140,13 +231,13 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
     float           fScale_X,
                     fScale_Y;
 
-    G_ptlEachDesktop.x = (G_ptlPagerSize.x - G_PageMageConfig.ptlMaxDesktops.x + 1)
-                         / G_PageMageConfig.ptlMaxDesktops.x;
-    G_ptlEachDesktop.y = (G_ptlPagerSize.y - G_PageMageConfig.ptlMaxDesktops.y + 1)
-                         / G_PageMageConfig.ptlMaxDesktops.y;
+    G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
+                         / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
+    G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
+                         / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
 
     // Draw main box - all Desktops
-    GpiSetColor(hps, G_PageMageConfig.lcNormal);
+    GpiSetColor(hps, G_pHookData->PageMageConfig.lcNormal);
     ptlDest.x = ptlDest.y = 0;
     GpiMove(hps, &ptlDest);
     WinQueryWindowPos(G_pHookData->hwndPageMageClient, &swpClient);
@@ -155,11 +246,11 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
     GpiBox(hps, DRO_OUTLINEFILL, &ptlDest, (LONG) 0, (LONG) 0);
 
     // Paint "Current" Desktop
-    GpiSetColor(hps, G_PageMageConfig.lcCurrent);
+    GpiSetColor(hps, G_pHookData->PageMageConfig.lcCurrent);
     ptlDest.x = (   (float) G_ptlCurrPos.x / (float) G_pHookData->lCXScreen)
                   * ((float) G_ptlEachDesktop.x + 1)
                   + 1;
-    ptlDest.y = (   ((float) (G_PageMageConfig.ptlMaxDesktops.y - 1)
+    ptlDest.y = (   ((float) (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
                   * G_pHookData->lCYScreen - G_ptlCurrPos.y)
                   / (float) G_pHookData->lCYScreen)
                   * ((float) G_ptlEachDesktop.y + 1)
@@ -170,34 +261,34 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
     GpiBox(hps, DRO_FILL, &ptlDest, (LONG) 0, (LONG) 0);
 
     // Draw vertical lines
-    GpiSetColor(hps, G_PageMageConfig.lcDivider);
-    for (usIdx = 0; usIdx < G_PageMageConfig.ptlMaxDesktops.x - 1; usIdx++)
+    GpiSetColor(hps, G_pHookData->PageMageConfig.lcDivider);
+    for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.ptlMaxDesktops.x - 1; usIdx++)
     {
         ptlDest.x = (G_ptlEachDesktop.x + 1) * (usIdx + 1);
         ptlDest.y = 0;
         GpiMove(hps, &ptlDest);
         ptlDest.x = (G_ptlEachDesktop.x + 1) * (usIdx + 1);
-        ptlDest.y = G_ptlPagerSize.y;
+        ptlDest.y = G_ptlPgmgClientSize.y;
         GpiLine(hps, &ptlDest);
     }
 
     // Draw horizontal lines
-    for (usIdx = 0; usIdx < G_PageMageConfig.ptlMaxDesktops.y - 1; usIdx++)
+    for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1; usIdx++)
     {
         ptlDest.x = 0;
-        ptlDest.y = G_ptlPagerSize.y
+        ptlDest.y = G_ptlPgmgClientSize.y
                     - (usIdx + 1)
                     * (G_ptlEachDesktop.y + 1);
         GpiMove(hps, &ptlDest);
-        ptlDest.x = G_ptlPagerSize.x;
-        ptlDest.y = G_ptlPagerSize.y
+        ptlDest.x = G_ptlPgmgClientSize.x;
+        ptlDest.y = G_ptlPgmgClientSize.y
                     - (usIdx + 1)
                     * (G_ptlEachDesktop.y + 1);
         GpiLine(hps, &ptlDest);
     }
 
     // Paint boxes - visible, standard windows
-    if (G_PageMageConfig.bShowWindows)
+    if (G_pHookData->PageMageConfig.fMirrorWindows)
     {
         HENUM           henum;
         HWND            hwndThis;
@@ -214,12 +305,12 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
         GpiCreateLogFont(hps, NULL, LCID_FONT, &G_fat);
         GpiSetCharSet(hps, LCID_FONT);
         usIdx = 0;
-        fScale_X = (float) ( G_PageMageConfig.ptlMaxDesktops.x
+        fScale_X = (float) ( G_pHookData->PageMageConfig.ptlMaxDesktops.x
                              * G_pHookData->lCXScreen
-                           ) / G_ptlPagerSize.x;
-        fScale_Y = (float) ( G_PageMageConfig.ptlMaxDesktops.y
+                           ) / G_ptlPgmgClientSize.x;
+        fScale_Y = (float) ( G_pHookData->PageMageConfig.ptlMaxDesktops.y
                              * G_pHookData->lCYScreen
-                           ) / G_ptlPagerSize.y;
+                           ) / G_ptlPgmgClientSize.y;
 
         hwndLocalActive = WinQueryActiveWindow(HWND_DESKTOP);
 
@@ -280,14 +371,14 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
 
                         ptlBegin[usPaintCount].x = (swpBox.x + G_ptlCurrPos.x)
                                                    / fScale_X;
-                        ptlBegin[usPaintCount].y = (  (G_PageMageConfig.ptlMaxDesktops.y - 1)
+                        ptlBegin[usPaintCount].y = (  (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
                                                      * G_pHookData->lCYScreen
                                                      - G_ptlCurrPos.y + swpBox.y
                                                     )
                                                     / fScale_Y;
                         ptlFin[usPaintCount].x = (swpBox.x + swpBox.cx + G_ptlCurrPos.x)
                                                   / fScale_X - 1;
-                        ptlFin[usPaintCount].y = (    (G_PageMageConfig.ptlMaxDesktops.y - 1)
+                        ptlFin[usPaintCount].y = (    (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
                                                       * G_pHookData->lCYScreen
                                                       - G_ptlCurrPos.y + swpBox.y + swpBox.cy
                                                    )
@@ -318,21 +409,25 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
         while (sIdx >= 0)
         {
             if (hwndPaint[sIdx] == hwndLocalActive)
-                GpiSetColor(hps, G_PageMageConfig.lcCurrentApp);
+                GpiSetColor(hps, G_pHookData->PageMageConfig.lcCurrentApp);
             else
-                GpiSetColor(hps, G_PageMageConfig.lcNormalApp);
+                GpiSetColor(hps, G_pHookData->PageMageConfig.lcNormalApp);
 
             GpiMove(hps, &(ptlBegin[sIdx]));
             GpiBox(hps, DRO_FILL, &(ptlFin[sIdx]), (LONG) 0, (LONG) 0);
-            GpiSetColor(hps, G_PageMageConfig.lcAppBorder);
+            GpiSetColor(hps, G_pHookData->PageMageConfig.lcAppBorder);
             GpiBox(hps, DRO_OUTLINE, &(ptlFin[sIdx]), (LONG) 0, (LONG) 0);
             rclText.xLeft = ptlBegin[sIdx].x + 1;
             rclText.yBottom = ptlBegin[sIdx].y + 1;
             rclText.xRight = ptlFin[sIdx].x - 1;
             rclText.yTop = ptlFin[sIdx].y - 4;
-            if (G_PageMageConfig.bShowWindowText)
+
+            // draw window text too?
+            if (G_pHookData->PageMageConfig.fShowWindowText)
             {
                 CHAR        szWindowName[TEXTLEN] = "";
+                LONG        lTextColor;
+
                 // BOOL        bFound = FALSE;
                 DosRequestMutexSem(G_hmtxWindowList, SEM_INDEFINITE_WAIT);
                 for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
@@ -346,13 +441,18 @@ VOID UpdateClientBitmap(HPS hps)       // in: memory PS with bitmap
                         break;
                     }
                 DosReleaseMutexSem(G_hmtxWindowList);
-                /* if (!bFound)
-                    WinQueryWindowText(hwndPaint[sIdx], TEXTLEN, szWindowName); */
+
+                if (hwndPaint[sIdx] == hwndLocalActive)
+                    // active:
+                    lTextColor = G_pHookData->PageMageConfig.lcTxtCurrentApp;
+                else
+                    lTextColor = G_pHookData->PageMageConfig.lcTxtNormalApp;
+
                 WinDrawText(hps,
                             strlen(szWindowName),
                             szWindowName,
                             &rclText,
-                            CLR_BLACK,
+                            lTextColor,
                             (LONG)0,
                             DT_LEFT | DT_TOP /* | DT_WORDBREAK */);
             }
@@ -403,19 +503,19 @@ VOID TrackWithinPager(HWND hwnd,
         ti.cyGrid = 1;
         ti.cxKeyboard = 1;
         ti.cyKeyboard = 1;
-        fScale_X = (float) (G_PageMageConfig.ptlMaxDesktops.x * G_pHookData->lCXScreen)
-                           / G_ptlPagerSize.x;
-        fScale_Y = (float) (G_PageMageConfig.ptlMaxDesktops.y * G_pHookData->lCYScreen)
-                           / G_ptlPagerSize.y;
+        fScale_X = (float) (G_pHookData->PageMageConfig.ptlMaxDesktops.x * G_pHookData->lCXScreen)
+                           / G_ptlPgmgClientSize.x;
+        fScale_Y = (float) (G_pHookData->PageMageConfig.ptlMaxDesktops.y * G_pHookData->lCYScreen)
+                           / G_ptlPgmgClientSize.y;
         ti.rclTrack.xLeft = (swpTracked.x + G_ptlCurrPos.x) / fScale_X;
-        ti.rclTrack.yBottom = ( (G_PageMageConfig.ptlMaxDesktops.y - 1)
+        ti.rclTrack.yBottom = ( (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
                               * G_pHookData->lCYScreen
                               - G_ptlCurrPos.y + swpTracked.y
                               )
                               / fScale_Y;
         ti.rclTrack.xRight = (swpTracked.x + swpTracked.cx + G_ptlCurrPos.x)
                              / fScale_X - 1;
-        ti.rclTrack.yTop = (    (G_PageMageConfig.ptlMaxDesktops.y - 1)
+        ti.rclTrack.yTop = (    (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
                                 * G_pHookData->lCYScreen
                                 - G_ptlCurrPos.y
                                 + swpTracked.y
@@ -424,12 +524,12 @@ VOID TrackWithinPager(HWND hwnd,
                            / fScale_Y - 1;
         ti.rclBoundary.xLeft = 0;
         ti.rclBoundary.yBottom = 0;
-        ti.rclBoundary.xRight = G_ptlPagerSize.x;
-        ti.rclBoundary.yTop = G_ptlPagerSize.y;
+        ti.rclBoundary.xRight = G_ptlPgmgClientSize.x;
+        ti.rclBoundary.yTop = G_ptlPgmgClientSize.y;
         ti.ptlMinTrackSize.x = 2;
         ti.ptlMinTrackSize.y = 2;
-        ti.ptlMaxTrackSize.x = G_ptlPagerSize.x;
-        ti.ptlMaxTrackSize.y = G_ptlPagerSize.y;
+        ti.ptlMaxTrackSize.x = G_ptlPgmgClientSize.x;
+        ti.ptlMaxTrackSize.y = G_ptlPgmgClientSize.y;
         ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_ALLINBOUNDARY;
 
         G_pHookData->fDisableSwitching = TRUE;
@@ -437,7 +537,7 @@ VOID TrackWithinPager(HWND hwnd,
         {
             swpTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
             swpTracked.y = (ti.rclTrack.yBottom * fScale_Y)
-                           -  (   (G_PageMageConfig.ptlMaxDesktops.y - 1)
+                           -  (   (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
                                   * G_pHookData->lCYScreen
                                   - G_ptlCurrPos.y
                               );
@@ -468,6 +568,7 @@ VOID TrackWithinPager(HWND hwnd,
  *      which was created by pgmcCreateMainControlWnd.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: now using RGB colors
  */
 
 MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -496,13 +597,13 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             SIZEL       slMem;
             LONG        lBitmapFormat[2];
 
-            G_ptlCurrPos.x = (G_PageMageConfig.ptlStartDesktop.x - 1)
+            G_ptlCurrPos.x = (G_pHookData->PageMageConfig.ptlStartDesktop.x - 1)
                               * G_pHookData->lCXScreen;
-            G_ptlCurrPos.y = (G_PageMageConfig.ptlMaxDesktops.y
-                              - G_PageMageConfig.ptlStartDesktop.y
+            G_ptlCurrPos.y = (G_pHookData->PageMageConfig.ptlMaxDesktops.y
+                              - G_pHookData->PageMageConfig.ptlStartDesktop.y
                              ) * G_pHookData->lCYScreen;
 
-            G_bTitlebarChange = !G_PageMageConfig.bShowTitlebar;
+            G_bTitlebarChange = !G_pHookData->PageMageConfig.fShowTitlebar;
             bGetSize = TRUE;
             WinPostMsg(hwnd, PGMG_ZAPPO, MPVOID, MPVOID);
 
@@ -510,11 +611,12 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             slMem.cx = 0;
             slMem.cy = 0;
             hpsMem = GpiCreatePS(G_habDaemon, hdcMem, &slMem, GPIA_ASSOC | PU_PELS);
+            gpihSwitchToRGB(hpsMem);        // V0.9.3 (2000-04-09) [umoeller]
             GpiQueryDeviceBitmapFormats(hpsMem, (LONG) 2, lBitmapFormat);
             memset(&bmihMem, 0, sizeof(BITMAPINFOHEADER2));
             bmihMem.cbFix = sizeof(BITMAPINFOHEADER2);
-            bmihMem.cx = G_ptlPagerSize.x;
-            bmihMem.cy = G_ptlPagerSize.y;
+            bmihMem.cx = G_ptlPgmgClientSize.x;
+            bmihMem.cy = G_ptlPgmgClientSize.y;
             bmihMem.cPlanes = lBitmapFormat[0];
             bmihMem.cBitCount = lBitmapFormat[1];
             WinSetPresParam(hwnd, PP_FONTNAMESIZE,
@@ -533,7 +635,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
         {
             POINTL      ptlCopy[4];
             HPS         hps = WinBeginPaint(hwnd, 0, 0);
-
+            gpihSwitchToRGB(hps);   // V0.9.3 (2000-04-09) [umoeller]
             if (G_ClientBitmapNeedsUpdate)
             {
                 // bitmap has been marked as invalid:
@@ -544,8 +646,8 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             // now just bit-blt the bitmap
             ptlCopy[0].x = 0;
             ptlCopy[0].y = 0;
-            ptlCopy[1].x = G_ptlPagerSize.x;
-            ptlCopy[1].y = G_ptlPagerSize.y;
+            ptlCopy[1].x = G_ptlPgmgClientSize.x;
+            ptlCopy[1].y = G_ptlPgmgClientSize.y;
             ptlCopy[2].x = 0;
             ptlCopy[2].y = 0;
             GpiBitBlt(hps, hpsMem, (LONG) 3, ptlCopy, ROP_SRCCOPY, BBO_IGNORE);
@@ -613,18 +715,18 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             SHORT cxNew = SHORT1FROMMP(mp2),
                   cyNew = SHORT2FROMMP(mp2);
 
-            if (    (G_ptlPagerSize.x != cxNew)
-                 || (G_ptlPagerSize.y != cyNew)
+            if (    (G_ptlPgmgClientSize.x != cxNew)
+                 || (G_ptlPgmgClientSize.y != cyNew)
                )
             {
-                G_ptlPagerSize.x = cxNew;
-                G_ptlPagerSize.y = cyNew;
-                bmihMem.cx = G_ptlPagerSize.x;
-                bmihMem.cy = G_ptlPagerSize.y;
-                G_ptlEachDesktop.x = (G_ptlPagerSize.x - G_PageMageConfig.ptlMaxDesktops.x + 1)
-                                     / G_PageMageConfig.ptlMaxDesktops.x;
-                G_ptlEachDesktop.y = (G_ptlPagerSize.y - G_PageMageConfig.ptlMaxDesktops.y + 1)
-                                     / G_PageMageConfig.ptlMaxDesktops.y;
+                G_ptlPgmgClientSize.x = cxNew;
+                G_ptlPgmgClientSize.y = cyNew;
+                bmihMem.cx = G_ptlPgmgClientSize.x;
+                bmihMem.cy = G_ptlPgmgClientSize.y;
+                G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
+                                     / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
+                G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
+                                     / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
 
                 if (hbmMem)
                 {
@@ -700,6 +802,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_CLOSE:
+            _Pmpf(("fnwpPageMageClient: WM_CLOSE, notifying Kernel"));
             dmnKillPageMage(TRUE);  // notify XFLDR.DLL
             bHandled = TRUE;        // no default processing
             break;
@@ -760,8 +863,9 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case PGMG_ZAPPO:
             if (G_bTitlebarChange)
-                if (!G_PageMageConfig.bShowTitlebar)
+                if (!G_pHookData->PageMageConfig.fShowTitlebar)
                 {
+                    // titlebar disabled:
                     hwndSaveSysMenu = WinWindowFromID(G_pHookData->hwndPageMageFrame,
                                                       FID_SYSMENU);
                     hwndSaveTitlebar = WinWindowFromID(G_pHookData->hwndPageMageFrame,
@@ -778,6 +882,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 }
                 else
                 {
+                    // titlebar enabled:
                     WinSetParent(hwndSaveSysMenu, G_pHookData->hwndPageMageFrame, TRUE);
                     WinSetParent(hwndSaveTitlebar, G_pHookData->hwndPageMageFrame, TRUE);
                     WinSetParent(hwndSaveMinButton, G_pHookData->hwndPageMageFrame, TRUE);
@@ -788,6 +893,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                           FCF_MINBUTTON | FCF_TITLEBAR),
                                MPVOID);
                 }
+
             G_bTitlebarChange = FALSE;
             if (bGetSize)
             {
@@ -855,9 +961,10 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         /*
          *@@ PGMG_CHANGEACTIVE:
-         *      posted only by fntMoveThread when
+         *      posted only by fntMoveQueueThread when
          *      PGMGQ_CLICK2ACTIVATE was retrieved from
-         *      the "move" queue.
+         *      the "move" queue. This happens as a
+         *      response to mb1 or mb2 clicks.
          *
          *      Parameters: new active HWND in mp1.
          */
@@ -870,6 +977,10 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                     // fixed V0.9.2 (2000-02-23) [umoeller]
             {
                 WinSetActiveWindow(HWND_DESKTOP, hwnd2Activate);
+                        // this can be on any desktop, even if it's
+                        // not the current one... the hook will determine
+                        // that the active window has changed and have
+                        // the windows repositioned accordingly.
                 WinPostMsg(hwnd,
                            PGMG_INVALIDATECLIENT,
                            (MPARAM)TRUE,        // immediately
@@ -881,7 +992,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         /*
          *@@ PGMG_LOWERWINDOW:
-         *      posted only by fntMoveThread when
+         *      posted only by fntMoveQueueThread when
          *      PGMGQ_CLICK2LOWER was retrieved from
          *      the "move" queue.
          *
@@ -946,7 +1057,7 @@ MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
             if (pswp->cy < 100)
                 pswp->cy = 100;
 
-            if (G_PageMageConfig.fPreserveProportions)
+            if (G_pHookData->PageMageConfig.fPreserveProportions)
                 pswp->cy = pgmcCalcNewFrameCY(pswp->cx);
         break; }
 
@@ -960,86 +1071,5 @@ MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
 
     return (G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2));
 } // FrameWndProc
-
-/*
- *@@ pgmcCreateMainControlWnd:
- *      creates the PageMage control window (frame
- *      and client). This gets called by dmnStartPageMage
- *      when PageMage has been enabled.
- *
- *      This registers the PageMage client class,
- *      using fnwpPageMageClient which does the grunt
- *      work for PageMage.
- *
- *@@added V0.9.2 (2000-02-21) [umoeller]
- */
-
-BOOL pgmcCreateMainControlWnd(VOID)
-{
-    // now go for PageMage client
-    WinRegisterClass(G_habDaemon,
-                     (PSZ)WNDCLASS_PAGEMAGECLIENT,
-                     (PFNWP)fnwpPageMageClient,
-                     0,
-                     0);
-
-    if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
-    {
-        ULONG   flFrameFlags    = FCF_TITLEBAR
-                                | FCF_SYSMENU
-                                | FCF_MINBUTTON
-                                | FCF_TASKLIST
-                                // | FCF_ICON
-                                | FCF_SIZEBORDER;
-        SWP     swpPager;
-
-        // _Pmpf(("Creating pagemage"));
-
-        G_pHookData->hwndPageMageFrame
-            = WinCreateStdWindow(HWND_DESKTOP,
-                                 (ULONG) 0,
-                                 &flFrameFlags,
-                                 (PSZ)WNDCLASS_PAGEMAGECLIENT,
-                                 "XWorkplace PageMage",
-                                 0,
-                                 0,
-                                 1000,    // ID...
-                                 &G_pHookData->hwndPageMageClient);
-
-        if (!G_pHookData->hwndPageMageFrame)
-            _Pmpf(("PageMage window creation failed...."));
-        else
-        {
-            // set frame icon
-            WinSendMsg(G_pHookData->hwndPageMageFrame,
-                       WM_SETICON,
-                       (MPARAM)G_hptrDaemon,
-                       NULL);
-
-            // subclass frame
-            // _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
-
-            G_pfnOldFrameWndProc = WinSubclassWindow(G_pHookData->hwndPageMageFrame,
-                                                     fnwpSubclPageMageFrame);
-
-            pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
-            WinQueryWindowPos(G_pHookData->hwndPageMageClient, &swpPager);
-            G_ptlPagerSize.x = swpPager.cx;
-            G_ptlPagerSize.y = swpPager.cy;
-
-            G_ptlEachDesktop.x = (G_ptlPagerSize.x - G_PageMageConfig.ptlMaxDesktops.x + 1)
-                                 / G_PageMageConfig.ptlMaxDesktops.x;
-            G_ptlEachDesktop.y = (G_ptlPagerSize.y - G_PageMageConfig.ptlMaxDesktops.y + 1)
-                                 / G_PageMageConfig.ptlMaxDesktops.y;
-
-            /* if (iConfigResult == INI_CREATED)
-              WinPostMsg(hwndClient, WM_COMMAND,
-                         MPFROMSHORT(PGMG_CMD_NOTEBOOK), MPVOID); */
-            return (TRUE);
-        }
-    }
-
-    return (FALSE);
-}
 
 

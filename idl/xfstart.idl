@@ -76,11 +76,6 @@ interface XFldStartup : XFolder
      */
 
     /*
-     * The following is forced into the .H file:
-     *
-     */
-
-    /*
      * XFolder methods overridden by XFldStartup:
      *
      */

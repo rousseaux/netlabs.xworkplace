@@ -60,7 +60,8 @@ interface XFldDesktop : WPDesktop
             xwpInsertXFldDesktopMenuItemsPage,
             xwpInsertXFldDesktopStartupPage,
             xwpInsertXFldDesktopArchivesPage,
-            xwpInsertXFldDesktopShutdownPage;
+            xwpInsertXFldDesktopShutdownPage,
+            xwpQuerySetup2;
 
     /*
      * Class Modifiers:
@@ -81,25 +82,23 @@ interface XFldDesktop : WPDesktop
      *
      */
 
-    BOOL    fDesktopOpen,
-            fInsertArchivesPageNow;
-
     /*
      * WPDesktop methods overridden by XFldDesktop:
      *
      */
+
+    wpInitData: override;
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
 
     wpMenuItemSelected: override;
 
-    wpAddDesktopArcRest1Page: override;
-    wpAddSettingsPages: override;
-
+    wpOpen: override;
     wpPopulate: override;
 
-    wpInitData: override;
+    wpAddDesktopArcRest1Page: override;
+    wpAddSettingsPages: override;
 
 #ifdef __PRIVATE__
 

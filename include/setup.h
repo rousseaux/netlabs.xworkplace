@@ -60,7 +60,7 @@
         // each SOM method called from all the XWorkplace files and
         // slows down the system _very_ much if the PMPRINTF output
         // wnd is open.
-            #define DEBUG_SOMMETHODS
+            // #define DEBUG_SOMMETHODS
 
         // the following will show a dumb message box when XWPSetup
         // is opened to check whether all classes have properly
@@ -133,7 +133,7 @@
             // #define DEBUG_MENUS
 
         // debug startup (folder, archives) processing
-            // #define DEBUG_STARTUP
+            #define DEBUG_STARTUP
 
         // debug title clash dialog
             // #define DEBUG_TITLECLASH
@@ -154,12 +154,12 @@
             // #define DEBUG_NOTEBOOKS
 
         // debug trashcan
-            #define DEBUG_TRASHCAN
+            // #define DEBUG_TRASHCAN
     #endif
 
     /********************************************************************
      *                                                                  *
-     *   #include's                                                     *
+     *   Global #include's                                              *
      *                                                                  *
      ********************************************************************/
 
@@ -186,14 +186,18 @@
     #endif
 
     #ifdef __DEBUG__
-        #ifdef __string_h
-            // string.h included and debugging is on:
-            // redefine strdup to use memory debugging
-            #define strdup(psz)                                 \
-                strcpy( (char*)_debug_malloc(strlen(psz) + 1, __FILE__, __LINE__), psz)
-                // the original crashes also if psz is NULL
+        #ifndef __stdlib_h          // <stdlib.h>
+            #include <stdlib.h>
         #endif
-    #endif
+        #ifndef __string_h          // <string.h>
+            #include <string.h>
+        #endif
 
+        // enable memory debugging; comment out this line
+        // if you don't want it
+        // #define __XWPMEMDEBUG__
+
+        #include "helpers\memdebug.h"
+    #endif
 #endif
 

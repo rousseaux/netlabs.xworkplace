@@ -133,17 +133,6 @@
 
 /* ******************************************************************
  *                                                                  *
- *   Global variables                                               *
- *                                                                  *
- ********************************************************************/
-
-BOOL    G_fIsWarp4 = FALSE;
-
-HWND    G_hwndTemplateFrame = NULLHANDLE;
-POINTL  G_ptlTemplateMousePos = {0};
-
-/* ******************************************************************
- *                                                                  *
  *   Definitions                                                    *
  *                                                                  *
  ********************************************************************/
@@ -170,6 +159,11 @@ typedef struct _CONTENTLISTITEM
  *   Global variables                                               *
  *                                                                  *
  ********************************************************************/
+
+BOOL    G_fIsWarp4 = FALSE;
+
+HWND    G_hwndTemplateFrame = NULLHANDLE;
+POINTL  G_ptlTemplateMousePos = {0};
 
 // linked list for config folder content:
 // this holds
@@ -684,6 +678,7 @@ SHORT fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
  *      requested while the contents are retrieved.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
 VOID mnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
@@ -724,10 +719,14 @@ VOID mnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         {
             ULONG   ulTotalObjectsAdded = 0;
 
+            // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                    = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
             // now collect all objects in folder
-            for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
+            for (pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
                  pObject;
-                 pObject = _wpQueryContent(pFolder, pObject, QC_Next))
+                 pObject = rslv_wpQueryContent(pFolder, pObject, QC_Next))
             {
                 // dereference shadows, if necessary
                 pObject2 = pObject;
@@ -1406,6 +1405,7 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: introduced config folder menu items cache
  *@@changed V0.9.1 (2000-02-01) [umoeller]: "select some" was added for Tree view also; fixed
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: snap2grid feature setting was ignored; fixed
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -1665,26 +1665,28 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                             pNLSStrings->pszRefreshNow,
                             MIS_TEXT, 0);
 
-                // "Snap to grid" set locally or globally?
-                if (    (_bSnapToGridInstance == 1)
-                     || (   (_bSnapToGridInstance == 2)
-                         && (pGlobalSettings->fAddSnapToGridDefault)
-                        )
-                   )
-                {
-                    // insert only when sorting is off
-                    if (!(ALWAYS_SORT))
+                // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
+                if (pGlobalSettings->fEnableSnap2Grid)
+                    // "Snap to grid" enabled locally or globally?
+                    if (    (_bSnapToGridInstance == 1)
+                         || (   (_bSnapToGridInstance == 2)
+                             && (pGlobalSettings->fAddSnapToGridDefault)
+                            )
+                       )
                     {
-                        if (ulView == OPEN_CONTENTS)
+                        // insert only when sorting is off
+                        if (!(ALWAYS_SORT))
                         {
-                            // insert "Snap to grid" only for open icon views
-                            winhInsertMenuItem(hwndMenu, MIT_END,
-                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID),
-                                    pNLSStrings->pszSnapToGrid,
-                                    MIS_TEXT, 0);
+                            if (ulView == OPEN_CONTENTS)
+                            {
+                                // insert "Snap to grid" only for open icon views
+                                winhInsertMenuItem(hwndMenu, MIT_END,
+                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID),
+                                        pNLSStrings->pszSnapToGrid,
+                                        MIS_TEXT, 0);
+                            }
                         }
                     }
-                }
             } // end if view open
 
             // now do necessary preparations for all variable menu items
@@ -1716,7 +1718,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             // this if either folder content for every folder is
             // enabled or at least one favorite folder exists
             pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
-            if (    (pGlobalSettings->NoSubclassing == 0)
+            if (    (pGlobalSettings->fNoSubclassing == 0)
                  && (   (pGlobalSettings->AddFolderContentItem)
                      || (pFavorite)
                     )
@@ -2513,7 +2515,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                         _wpViewObject(pFolder, NULLHANDLE, OPEN_DEFAULT, 0);
                     else
                         WinAlarm(HWND_DESKTOP, WA_WARNING);
-                    if (somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
+                    if (somSelf != cmnQueryActiveDesktop())
                         // fixed V0.9.0 (UM 99-11-29); before it was
                         // possible to close the Desktop...
                         _wpClose(somSelf);
@@ -3446,9 +3448,9 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  || ( (!G_fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                ));
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                         !(pGlobalSettings->NoSubclassing));
+                         !(pGlobalSettings->fNoSubclassing));
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                         !(pGlobalSettings->NoSubclassing));
+                         !(pGlobalSettings->fNoSubclassing));
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
     }

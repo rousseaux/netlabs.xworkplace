@@ -149,16 +149,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <setjmp.h>
 
+#include "setup.h"                      // code generation and debugging options
+
+#include "helpers\except.h"
 #include "helpers\threads.h"
+#include "helpers\winh.h"
 
 #include "hook\xwphook.h"               // hook and daemon definitions
 #include "hook\hook_private.h"          // private hook and daemon definitions
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
 
 #include "shared\kernel.h"              // XWorkplace Kernel
-
-#include "setup.h"                      // code generation and debugging options
 
 /* ******************************************************************
  *                                                                  *
@@ -209,14 +212,12 @@ HQUEUE          G_hqPageMage = 0;
 POINTL          G_ptlCurrPos = {0};
 POINTL          G_ptlMoveDeltaPcnt = {0};
 POINTL          G_ptlMoveDelta = {0};
-POINTL          G_ptlPagerSize = {0};
+POINTL          G_ptlPgmgClientSize = {0};
 POINTL          G_ptlEachDesktop = {0};
 SWP             G_swpPgmgFrame = {0};
 CHAR            G_pchArg0[64] = {0};
 POINTL          G_ptlWhich = {0};
 SWP             G_swpRecover = {0};
-
-PAGEMAGECONFIG  G_PageMageConfig = {0};
 
 BOOL            G_bConfigChanged = FALSE;
 BOOL            G_bTitlebarChange = FALSE;
@@ -323,7 +324,7 @@ int CheckRemoveableDrive(void)
  *@@ StartPageMage:
  *      starts PageMage by calling pgmwScanAllWindows
  *      and pgmcCreateMainControlWnd and starting
- *      fntMoveThread.
+ *      fntMoveQueueThread.
  *
  *      This gets called when XDM_STARTSTOPPAGEMAGE is
  *      received by fnwpDaemonObject.
@@ -347,21 +348,20 @@ BOOL dmnStartPageMage(VOID)
              && (G_pHookData->fPreAccelHooked)
            )
         {
-            _Pmpf(("daemndmnStartPageMage: Scanning windows"));
+            _Pmpf(("dmnStartPageMage: Scanning windows"));
             pgmwScanAllWindows();
-            _Pmpf(("Windows scanned"));
 
+            _Pmpf(("  Windows scanned, starting Move thread"));
+            thrCreate(&G_ptiMoveThread,
+                      fntMoveQueueThread,
+                      FALSE,
+                      0);
+
+            _Pmpf(("  Creating main window"));
             brc = pgmcCreateMainControlWnd();
                // this sets the global window handles;
                // the hook sees this and will start processing
                // PageMage messages
-
-            if (brc)
-                // success:
-                thrCreate(&G_ptiMoveThread,
-                          3*96000, // plenty of stack space
-                          fntMoveThread,
-                          0);
         }
 
     return (brc);
@@ -383,16 +383,17 @@ BOOL dmnStartPageMage(VOID)
  *      notice this and process fewer messages.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: adjusted for new T1M_PAGEMAGECLOSED
  */
 
-VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGECLOSED to the kernel
+VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGECLOSED (TRUE) to the kernel
 {
     if (G_pHookData->hwndPageMageFrame)
     {
         // PageMage running:
         ULONG ulRequest;
 
-        if (G_PageMageConfig.bRecoverOnShutdown)
+        if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
             pgmmRecoverAllWindows();
 
         WinDestroyWindow(G_pHookData->hwndPageMageFrame);
@@ -408,12 +409,12 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
         DosWriteQueue(G_hqPageMage, ulRequest, 0, NULL, 0);
         thrFree(&G_ptiMoveThread);
 
-        if (fNotifyKernel)
-            // notify kernel that PageMage has been closed
-            // so that the global settings can be updated
-            WinPostMsg(G_pDaemonShared->hwndThread1Object,
-                       T1M_PAGEMAGECLOSED,
-                       0, 0);
+        // notify kernel that PageMage has been closed
+        // so that the global settings can be updated
+        WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                   T1M_PAGEMAGECLOSED,
+                   (MPARAM)fNotifyKernel,       // if TRUE, PageMage will be disabled
+                   0);
     }
 }
 
@@ -433,13 +434,22 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
  *      This gets called from main() when the daemon
  *      is (re)started and from fnwpDaemonObject
  *      when the hotkeys have changed.
+ *
+ *@@changed V0.9.3 (2000-04-20) [umoeller]: added function keys support
  */
 
 VOID LoadHotkeysForHook(VOID)
 {
+    PGLOBALHOTKEY pHotkeys = NULL;
+    ULONG cHotkeys = 0;
+    PFUNCTIONKEY pFunctionKeys = NULL;
+    ULONG cFunctionKeys = 0;
+
     ULONG   ulSizeOfData = 0;
 
-    _Pmpf(("XWPDAEMON: LoadHotkeysForHook, pHookData: 0x%lX", G_pHookData));
+    _Pmpf(("LoadHotkeysForHook, pHookData: 0x%lX", G_pHookData));
+
+    // 1) hotkeys
 
     // get size of data for pszApp/pszKey
     if (PrfQueryProfileSize(HINI_USER,
@@ -447,26 +457,53 @@ VOID LoadHotkeysForHook(VOID)
                             INIKEY_HOOK_HOTKEYS,
                             &ulSizeOfData))
     {
-        PGLOBALHOTKEY pHotkeys = (PGLOBALHOTKEY)malloc(ulSizeOfData);
+        pHotkeys = (PGLOBALHOTKEY)malloc(ulSizeOfData);
         if (PrfQueryProfileData(HINI_USER,
                                 INIAPP_XWPHOOK,
                                 INIKEY_HOOK_HOTKEYS,
                                 pHotkeys,
                                 &ulSizeOfData))
+            // hotkeys successfully loaded:
+            // calc no. of items in array
+            cHotkeys = ulSizeOfData / sizeof(GLOBALHOTKEY);
+    }
+
+    // 2) function keys
+
+    // get size of data for pszApp/pszKey
+    ulSizeOfData = 0;
+    if (PrfQueryProfileSize(HINI_USER,
+                            INIAPP_XWPHOOK,
+                            INIKEY_HOOK_FUNCTIONKEYS,
+                            &ulSizeOfData))
+    {
+        pFunctionKeys = (PFUNCTIONKEY)malloc(ulSizeOfData);
+        if (PrfQueryProfileData(HINI_USER,
+                                INIAPP_XWPHOOK,
+                                INIKEY_HOOK_FUNCTIONKEYS,
+                                pFunctionKeys,
+                                &ulSizeOfData))
         {
             // hotkeys successfully loaded:
             // calc no. of items in array
-            ULONG cHotkeys = ulSizeOfData / sizeof(GLOBALHOTKEY);
-
-            if (cHotkeys)
-                // notify hook
-                hookSetGlobalHotkeys(pHotkeys, cHotkeys);
+            cFunctionKeys = ulSizeOfData / sizeof(FUNCTIONKEY);
+            _Pmpf(("  Got %d function keys", cFunctionKeys));
+            _Pmpf(("  function key %d is 0x%lX", 1, pFunctionKeys[1].ucScanCode));
         }
-
-        // we can safely free the hotkeys, because
-        // the hook has copied them to shared memory
-        free(pHotkeys);
     }
+
+    // 3) notify hook
+    hookSetGlobalHotkeys(pHotkeys,
+                         cHotkeys,
+                         pFunctionKeys,
+                         cFunctionKeys);
+
+    // we can safely free the hotkeys, because
+    // the hook has copied them to shared memory
+    if (pHotkeys)
+        free(pHotkeys);
+    if (pFunctionKeys)
+        free(pFunctionKeys);
 }
 
 /*
@@ -512,11 +549,10 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
             // safe defaults
             pgmsSetDefaults();
             // overwrite from INI, if found
-            brc = PrfQueryProfileData(HINI_USER,
-                                      INIAPP_XWPHOOK,
-                                      INIKEY_HOOK_PGMGCONFIG,
-                                      &G_pHookData->HookConfig,
-                                      &cb);
+            pgmsLoadSettings(0);
+            // in any case, write them back to OS2.INI because
+            // otherwise XWPScreen doesn't work right
+            pgmsSaveSettings();
         }
     }
 
@@ -566,7 +602,9 @@ VOID InstallHook(VOID)
  *      this removes the hooks by calling hookKill
  *      in XWPHOOK.DLL and also calls dmnKillPageMage.
  *
- *      This gets called when fnwpDaemonObject receives XDM_HOOKINSTALL.
+ *      This gets called when fnwpDaemonObject receives
+ *      XDM_HOOKINSTALL. Also, this gets called on the
+ *      daemon exit list in case the daemon crashes.
  */
 
 VOID DeinstallHook(VOID)
@@ -577,6 +615,12 @@ VOID DeinstallHook(VOID)
         hookKill();
         _Pmpf(("XWPDAEMON: hookKilled called"));
         G_pDaemonShared->fAllHooksInstalled = FALSE;
+
+        // if mouse pointer is currently hidden,
+        // show it now (otherwise it'll be lost...)
+        if (G_pHookData)
+            if (G_pHookData->fMousePointerHidden)
+                WinShowPointer(HWND_DESKTOP, TRUE);
     }
     G_pHookData = NULL;
 }
@@ -713,345 +757,371 @@ VOID ProcessSlidingFocus(VOID)
 
 /*
  *@@ fnwpDaemonObject:
- *      object window created in main().
+ *      object window created in main(). This runs on thread 1.
  *
  *      This reacts to XDM_* messages (see xwphook.h)
  *      which are either posted from XWPHOOK.DLL for
  *      hotkeys, sliding focus, screen corner objects,
  *      or from XFLDR.DLL for daemon/hook configuration.
+ *
+ *@@changed V0.9.3 (2000-04-12) [umoeller]: added exception handling
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
 
-    switch (msg)
+    TRY_LOUD(excpt1, NULL)
     {
-        /*
-         *@@ XDM_HOOKCONFIG:
-         *      this gets _sent_ from XFLDR.DLL when
-         *      daemon/hook settings have changed.
-         *      This causes HOOKDATA.HOOKCONFIG to be
-         *      updated from OS2.INI.
-         *
-         *      Parameters: none.
-         *
-         *      Return value:
-         *      -- BOOL TRUE if successful.
-         */
+        switch (msg)
+        {
+            /*
+             *@@ XDM_HOOKCONFIG:
+             *      this gets _sent_ from XFLDR.DLL when
+             *      daemon/hook settings have changed.
+             *      This causes HOOKDATA.HOOKCONFIG to be
+             *      updated from OS2.INI.
+             *
+             *      Parameters: none.
+             *
+             *      Return value:
+             *      -- BOOL TRUE if successful.
+             */
 
-        case XDM_HOOKCONFIG:
-            // load config from OS2.INI
-            mrc = (MPARAM)LoadHookConfig(TRUE,      // hook
-                                         FALSE);    // PageMage
-        break;
+            case XDM_HOOKCONFIG:
+                _Pmpf(("fnwpDaemonObject: got XDM_HOOKCONFIG"));
+                // load config from OS2.INI
+                mrc = (MPARAM)LoadHookConfig(TRUE,      // hook
+                                             FALSE);    // PageMage
+            break;
 
-        /*
-         *@@ XDM_PAGEMAGECONFIG:
-         *      this gets _sent_ from XFLDR.DLL when
-         *      PageMage settings have changed.
-         *      This causes the global PAGEMAGECONFIG
-         *      data to be updated from OS2.INI.
-         *
-         *      Parameters: none.
-         *
-         *      Return value:
-         *      -- BOOL TRUE if successful.
-         */
+            /*
+             *@@ XDM_PAGEMAGECONFIG:
+             *      this gets _sent_ from XFLDR.DLL when
+             *      PageMage settings have changed.
+             *      This causes the global PAGEMAGECONFIG
+             *      data to be updated from OS2.INI.
+             *
+             *      Parameters:
+             *      -- ULONG mp1: any of the following flags:
+             *          -- PGMGCFG_REPAINT: repaint PageMage client
+             *          -- PGMGCFG_REFORMAT: reformat whole window (e.g.
+             *                  because Desktops have changed)
+             *
+             *      Return value:
+             *      -- BOOL TRUE if successful.
+             */
 
-        case XDM_PAGEMAGECONFIG:
-            // load config from OS2.INI
-            mrc = (MPARAM)LoadHookConfig(FALSE,     // hook
-                                         TRUE);     // PageMage
-        break;
+            case XDM_PAGEMAGECONFIG:
+                _Pmpf(("fnwpDaemonObject: got XDM_PAGEMAGECONFIG"));
+                // load config from OS2.INI
+                mrc = (MPARAM)pgmsLoadSettings((ULONG)mp1);
+            break;
 
-        /*
-         *@@ XDM_HOOKINSTALL:
-         *      this must be sent while the daemon
-         *      is running to install or deinstall
-         *      the hook. This does not affect operation
-         *      of the daemon, which will keep running.
-         *
-         *      This is used by the XWPSetup "Features"
-         *      page and by XFLDR.DLL after main() has
-         *      posted T1M_DAEMONREADY to the thread-1
-         *      object window.
-         *
-         *      Parameters:
-         *      -- BOOL mp1: if TRUE, the hook will be installed;
-         *                   if FALSE, the hook will be deinstalled.
-         *
-         *      Return value:
-         *      -- BOOL TRUE if the hook is now installed,
-         *              FALSE if it is not.
-         */
+            /*
+             *@@ XDM_HOOKINSTALL:
+             *      this must be sent while the daemon
+             *      is running to install or deinstall
+             *      the hook. This does not affect operation
+             *      of the daemon, which will keep running.
+             *
+             *      This is used by the XWPSetup "Features"
+             *      page and by XFLDR.DLL after main() has
+             *      posted T1M_DAEMONREADY to the thread-1
+             *      object window.
+             *
+             *      Parameters:
+             *      -- BOOL mp1: if TRUE, the hook will be installed;
+             *                   if FALSE, the hook will be deinstalled.
+             *
+             *      Return value:
+             *      -- BOOL TRUE if the hook is now installed,
+             *              FALSE if it is not.
+             */
 
-        case XDM_HOOKINSTALL:
-            if (mp1)
-                // install the hook:
-                InstallHook();
-                    // this sets the global pHookData pointer
-                    // to the HOOKDATA in the DLL
-            else
-                DeinstallHook();
+            case XDM_HOOKINSTALL:
+                _Pmpf(("fnwpDaemonObject: got XDM_HOOKINSTALL (%d)", mp1));
+                if (mp1)
+                    // install the hook:
+                    InstallHook();
+                        // this sets the global pHookData pointer
+                        // to the HOOKDATA in the DLL
+                else
+                    DeinstallHook();
 
-            mrc = (MPARAM)(G_pDaemonShared->fAllHooksInstalled);
-        break;
+                mrc = (MPARAM)(G_pDaemonShared->fAllHooksInstalled);
+            break;
 
-        /*
-         *@@ XDM_STARTSTOPPAGEMAGE:
-         *      starts or stops PageMage.
-         *
-         *      If (mp1 == TRUE), dmnStartPageMage is called.
-         *      If (mp1 == FALSE), dmnKillPageMage is called.
-         *
-         *@@added V0.9.2 (2000-02-21) [umoeller]
-         */
+            /*
+             *@@ XDM_STARTSTOPPAGEMAGE:
+             *      starts or stops PageMage.
+             *
+             *      If (mp1 == TRUE), dmnStartPageMage is called.
+             *      If (mp1 == FALSE), dmnKillPageMage is called.
+             *
+             *@@added V0.9.2 (2000-02-21) [umoeller]
+             */
 
-        case XDM_STARTSTOPPAGEMAGE:
-            if (mp1)
-                // install the hook:
-                dmnStartPageMage();
-                    // this sets the global pHookData pointer
-                    // to the HOOKDATA in the DLL
-            else
-                dmnKillPageMage(FALSE); // no notify
+            case XDM_STARTSTOPPAGEMAGE:
+                _Pmpf(("fnwpDaemonObject: got XDM_STARTSTOPPAGEMAGE (%d)", mp1));
+                if (mp1)
+                    // install the hook:
+                    dmnStartPageMage();
+                        // this sets the global pHookData pointer
+                        // to the HOOKDATA in the DLL
+                else
+                    dmnKillPageMage(FALSE); // no notify
 
-            mrc = (MPARAM)(G_pHookData->hwndPageMageFrame != NULLHANDLE);
-        break;
+                mrc = (MPARAM)(G_pHookData->hwndPageMageFrame != NULLHANDLE);
+            break;
 
-        /*
-         *@@ XDM_DESKTOPREADY:
-         *      this gets posted from fnwpFileObject after
-         *      the WPS desktop frame has been opened
-         *      so that the daemon/hook knows about the
-         *      HWND of the WPS desktop. This is necessary
-         *      for the sliding focus feature and for
-         *      PageMage.
-         *
-         *      Parameters:
-         *      -- HWND mp1: desktop frame HWND.
-         *      -- mp2: unused, always 0.
-         */
+            /*
+             *@@ XDM_DESKTOPREADY:
+             *      this gets posted from fnwpFileObject after
+             *      the WPS desktop frame has been opened
+             *      so that the daemon/hook knows about the
+             *      HWND of the WPS desktop. This is necessary
+             *      for the sliding focus feature and for
+             *      PageMage.
+             *
+             *      Parameters:
+             *      -- HWND mp1: desktop frame HWND.
+             *      -- mp2: unused, always 0.
+             */
 
-        case XDM_DESKTOPREADY:
-            if (G_pHookData)
-            {
-                G_pHookData->hwndWPSDesktop = (HWND)mp1;
-                pgmwScanAllWindows();
-            }
-        break;
+            case XDM_DESKTOPREADY:
+                _Pmpf(("fnwpDaemonObject: got XDM_DESKTOPREADY (0x%lX)", mp1));
+                if (G_pHookData)
+                {
+                    G_pHookData->hwndWPSDesktop = (HWND)mp1;
+                    pgmwScanAllWindows();
+                }
+            break;
 
-        /*
-         *@@ XDM_HOTKEYPRESSED:
-         *      message posted by the hook when
-         *      a global hotkey is pressed. We forward
-         *      this message on to the XWorkplace thread-1
-         *      object window so that the object can be
-         *      started on thread 1 of the WPS. If we used
-         *      WinOpenObject here, the object would be
-         *      running on a thread other than thread 1,
-         *      which is not really desirable.
-         *
-         *      Parameters:
-         *      -- ULONG mp1: hotkey identifier, probably WPS object handle.
-         */
+            /*
+             *@@ XDM_HOTKEYPRESSED:
+             *      message posted by the hook when
+             *      a global hotkey is pressed. We forward
+             *      this message on to the XWorkplace thread-1
+             *      object window so that the object can be
+             *      started on thread 1 of the WPS. If we used
+             *      WinOpenObject here, the object would be
+             *      running on a thread other than thread 1,
+             *      which is not really desirable.
+             *
+             *      Parameters:
+             *      -- ULONG mp1: hotkey identifier, probably WPS object handle.
+             */
 
-        case XDM_HOTKEYPRESSED:
-            if (mp1)
-            {
-                _Pmpf(("Forwarding 0x%lX to 0x%lX",
-                        mp1,
-                        G_pDaemonShared->hwndThread1Object));
-                // forward msg (cross-process post)
-                WinPostMsg(G_pDaemonShared->hwndThread1Object,
-                           T1M_OPENOBJECTFROMHANDLE,
-                           mp1,
-                           mp2);
-            }
-        break;
+            case XDM_HOTKEYPRESSED:
+                if (mp1)
+                {
+                    _Pmpf(("Forwarding 0x%lX to 0x%lX",
+                            mp1,
+                            G_pDaemonShared->hwndThread1Object));
+                    // forward msg (cross-process post)
+                    WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                               T1M_OPENOBJECTFROMHANDLE,
+                               mp1,
+                               mp2);
+                }
+            break;
 
-        /*
-         *@@ XDM_HOTKEYSCHANGED:
-         *      message posted by XFLDR.DLL when the
-         *      list of global object hotkeys has changed.
-         *      This is posted after the new list has been
-         *      written to OS2.INI so we can safely re-read
-         *      this now and notify the hook of the change.
-         *
-         *      Parameters: none.
-         */
+            /*
+             *@@ XDM_HOTKEYSCHANGED:
+             *      message posted by hifSetObjectHotkeys
+             *      or hifSetFunctionKeys (XFLDR.DLL) when the
+             *      list of global object hotkeys or the list
+             *      of function keys has changed.
+             *
+             *      This is posted after the new lists have been
+             *      written to OS2.INI so we can safely re-read
+             *      this now and notify the hook of the change.
+             *
+             *      This is NOT posted at startup because we then
+             *      read the lists automatically (XDM_HOOKINSTALL,
+             *      InstallHook).
+             *
+             *      Parameters: none.
+             *
+             *@@changed V0.9.3 (2000-04-20) [umoeller]: this is now also posted for function keys.
+             */
 
-        case XDM_HOTKEYSCHANGED:
-            LoadHotkeysForHook();
-        break;
+            case XDM_HOTKEYSCHANGED:
+                LoadHotkeysForHook();
+            break;
 
-        /*
-         *@@ XDM_SLIDINGFOCUS:
-         *      message posted by the hook when the mouse
-         *      pointer has moved to a new frame window.
-         *
-         *      Parameters:
-         *      -- HWND mp1: new desktop window handle
-         *              (child of HWND_DESKTOP)
-         *      -- BOOL mp2: TRUE if mp1 is a seamless Win-OS/2
-         *              window
-         */
+            /*
+             *@@ XDM_SLIDINGFOCUS:
+             *      message posted by the hook when the mouse
+             *      pointer has moved to a new frame window.
+             *
+             *      Parameters:
+             *      -- HWND mp1: new desktop window handle
+             *              (child of HWND_DESKTOP)
+             *      -- BOOL mp2: TRUE if mp1 is a seamless Win-OS/2
+             *              window
+             */
 
-        case XDM_SLIDINGFOCUS:
-            G_hwndToActivate = (HWND)mp1;
-            G_fIsSeamless = (BOOL)mp2;
-            if (G_pHookData->HookConfig.ulSlidingFocusDelay)
-            {
-                // delayed sliding focus:
-                if (G_ulSlidingFocusTimer)
-                    WinStopTimer(G_habDaemon,
-                                 hwndObject,
-                                 TIMERID_SLIDINGFOCUS);
-                G_ulSlidingFocusTimer = WinStartTimer(G_habDaemon,
-                                                      hwndObject,
-                                                      TIMERID_SLIDINGFOCUS,
-                                                      G_pHookData->HookConfig.ulSlidingFocusDelay);
-            }
-            else
-                // immediately
-                ProcessSlidingFocus();
-        break;
-
-        /*
-         *@@ XDM_SLIDINGMENU:
-         *      message posted by the hook when the mouse
-         *      pointer has moved to a new menu item.
-         *
-         *      Parameters:
-         *      -- mp1: mp1 of WM_MOUSEMOVE which was processed.
-         *      -- mp2: unused.
-         *
-         *@@added V0.9.2 (2000-02-26) [umoeller]
-         */
-
-        case XDM_SLIDINGMENU:
-            G_SlidingMenuMp1Saved = mp1;
-
-            // delayed sliding menu:
-            if (G_ulSlidingMenuTimer)
-                WinStopTimer(G_habDaemon,
-                             hwndObject,
-                             TIMERID_SLIDINGMENU);
-            G_ulSlidingMenuTimer = WinStartTimer(G_habDaemon,
-                                                 hwndObject,
-                                                 TIMERID_SLIDINGMENU,
-                                                 G_pHookData->HookConfig.ulSubmenuDelay);
-        break;
-
-        /*
-         *@@ XDM_HOTCORNER:
-         *      message posted by the hook when the mouse
-         *      has reached one of the four corners of the
-         *      screen ("hot corners"). The daemon then
-         *      determines whether to open any object.
-         *
-         *      Parameters:
-         *      -- BYTE mp1: corner reached;
-         *                  1 = lower left,
-         *                  2 = top left,
-         *                  3 = lower right,
-         *                  4 = top right.
-         *      -- mp2: unused, always 0.
-         */
-
-        case XDM_HOTCORNER:
-            if (mp1)
-            {
-                // create array index
-                LONG lIndex = ((LONG)mp1)-1;
-
-                if ((lIndex >= 0) && (lIndex <= 3))
-                    if (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] != NULLHANDLE)
-                        // hot-corner object defined:
-                        WinPostMsg(G_pDaemonShared->hwndThread1Object,
-                                   T1M_OPENOBJECTFROMHANDLE,
-                                   (MPARAM)(G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex]),
-                                   (MPARAM)(lIndex + 1));
-
-            }
-        break;
-
-        /*
-         * WM_TIMER:
-         *
-         */
-
-        case WM_TIMER:
-            switch ((ULONG)mp1)
-            {
-                /*
-                 * TIMERID_SLIDINGFOCUS:
-                 *
-                 */
-
-                case TIMERID_SLIDINGFOCUS:
-                    WinStopTimer(G_habDaemon,
-                                 hwndObject,
-                                 (ULONG)mp1);   // timer ID
-                    G_ulSlidingFocusTimer = NULLHANDLE;
-
+            case XDM_SLIDINGFOCUS:
+                G_hwndToActivate = (HWND)mp1;
+                G_fIsSeamless = (BOOL)mp2;
+                if (G_pHookData->HookConfig.ulSlidingFocusDelay)
+                {
+                    // delayed sliding focus:
+                    if (G_ulSlidingFocusTimer)
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     TIMERID_SLIDINGFOCUS);
+                    G_ulSlidingFocusTimer = WinStartTimer(G_habDaemon,
+                                                          hwndObject,
+                                                          TIMERID_SLIDINGFOCUS,
+                                                          G_pHookData->HookConfig.ulSlidingFocusDelay);
+                }
+                else
+                    // immediately
                     ProcessSlidingFocus();
-                break;
+            break;
 
-                /*
-                 * TIMERID_SLIDINGMENU:
-                 *      started from XDM_SLIDINGMENU.
-                 */
+            /*
+             *@@ XDM_SLIDINGMENU:
+             *      message posted by the hook when the mouse
+             *      pointer has moved to a new menu item.
+             *
+             *      Parameters:
+             *      -- mp1: mp1 of WM_MOUSEMOVE which was processed.
+             *      -- mp2: unused.
+             *
+             *@@added V0.9.2 (2000-02-26) [umoeller]
+             */
 
-                case TIMERID_SLIDINGMENU:
+            case XDM_SLIDINGMENU:
+                G_SlidingMenuMp1Saved = mp1;
+
+                // delayed sliding menu:
+                if (G_ulSlidingMenuTimer)
                     WinStopTimer(G_habDaemon,
                                  hwndObject,
-                                 (ULONG)mp1);   // timer ID
-                    G_ulSlidingMenuTimer = NULLHANDLE;
+                                 TIMERID_SLIDINGMENU);
+                G_ulSlidingMenuTimer = WinStartTimer(G_habDaemon,
+                                                     hwndObject,
+                                                     TIMERID_SLIDINGMENU,
+                                                     G_pHookData->HookConfig.ulSubmenuDelay);
+            break;
 
-                    // post a special WM_MOUSEMOVE message;
-                    // see WMMouseMove_SlidingMenus in xwphook.c
-                    // for how this works
-                    WinPostMsg(G_pHookData->hwndMenuUnderMouse,
-                               WM_MOUSEMOVE,
-                               G_SlidingMenuMp1Saved,
-                                    // MP1 which was saved in XDM_SLIDINGMENU
-                                    // to identify this msg in the hook
-                               MPFROM2SHORT(HT_DELAYEDSLIDINGMENU,
-                                            KC_NONE));
-                break;
+            /*
+             *@@ XDM_HOTCORNER:
+             *      message posted by the hook when the mouse
+             *      has reached one of the four corners of the
+             *      screen ("hot corners"). The daemon then
+             *      determines whether to open any object.
+             *
+             *      Parameters:
+             *      -- BYTE mp1: corner reached;
+             *                  1 = lower left,
+             *                  2 = top left,
+             *                  3 = lower right,
+             *                  4 = top right.
+             *      -- mp2: unused, always 0.
+             */
 
-                /*
-                 * TIMERID_MONITORDRIVE:
-                 *
-                 */
+            case XDM_HOTCORNER:
+                if (mp1)
+                {
+                    // create array index
+                    LONG lIndex = ((LONG)mp1)-1;
 
-                case TIMERID_MONITORDRIVE:
-                    CheckRemoveableDrive();
-                break;
+                    if ((lIndex >= 0) && (lIndex <= 3))
+                        if (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] != NULLHANDLE)
+                            // hot-corner object defined:
+                            WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                                       T1M_OPENOBJECTFROMHANDLE,
+                                       (MPARAM)(G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex]),
+                                       (MPARAM)(lIndex + 1));
 
-                /*
-                 * TIMERID_AUTOHIDEMOUSE:
-                 *
-                 */
+                }
+            break;
 
-                case TIMERID_AUTOHIDEMOUSE:
-                    WinStopTimer(G_habDaemon,
-                                 hwndObject,
-                                 (ULONG)mp1);   // timer ID
+            /*
+             * WM_TIMER:
+             *
+             */
 
-                    G_pHookData->idAutoHideTimer = NULLHANDLE;
+            case WM_TIMER:
+                switch ((ULONG)mp1)
+                {
+                    /*
+                     * TIMERID_SLIDINGFOCUS:
+                     *
+                     */
 
-                    WinShowPointer(HWND_DESKTOP, FALSE);
-                    G_pHookData->fMousePointerHidden = TRUE;
-                break;
-            }
-        break;
+                    case TIMERID_SLIDINGFOCUS:
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     (ULONG)mp1);   // timer ID
+                        G_ulSlidingFocusTimer = NULLHANDLE;
 
-        default:
-            mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+                        ProcessSlidingFocus();
+                    break;
+
+                    /*
+                     * TIMERID_SLIDINGMENU:
+                     *      started from XDM_SLIDINGMENU.
+                     */
+
+                    case TIMERID_SLIDINGMENU:
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     (ULONG)mp1);   // timer ID
+                        G_ulSlidingMenuTimer = NULLHANDLE;
+
+                        // post a special WM_MOUSEMOVE message;
+                        // see WMMouseMove_SlidingMenus in xwphook.c
+                        // for how this works
+                        WinPostMsg(G_pHookData->hwndMenuUnderMouse,
+                                   WM_MOUSEMOVE,
+                                   G_SlidingMenuMp1Saved,
+                                        // MP1 which was saved in XDM_SLIDINGMENU
+                                        // to identify this msg in the hook
+                                   MPFROM2SHORT(HT_DELAYEDSLIDINGMENU,
+                                                KC_NONE));
+                    break;
+
+                    /*
+                     * TIMERID_MONITORDRIVE:
+                     *
+                     */
+
+                    case TIMERID_MONITORDRIVE:
+                        CheckRemoveableDrive();
+                    break;
+
+                    /*
+                     * TIMERID_AUTOHIDEMOUSE:
+                     *
+                     */
+
+                    case TIMERID_AUTOHIDEMOUSE:
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     (ULONG)mp1);   // timer ID
+
+                        G_pHookData->idAutoHideTimer = NULLHANDLE;
+
+                        WinShowPointer(HWND_DESKTOP, FALSE);
+                        G_pHookData->fMousePointerHidden = TRUE;
+                    break;
+                }
+            break;
+
+            default:
+                mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+        }
     }
+    CATCH(excpt1)
+    {
+        mrc = 0;
+    } END_CATCH();
 
     return (mrc);
 }
@@ -1072,12 +1142,6 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
 VOID APIENTRY DaemonExitList(ULONG ulCode)
 {
-    // if mouse pointer is currently hidden,
-    // show it now (otherwise it'll be lost...)
-    if (G_pHookData)
-        if (G_pHookData->fMousePointerHidden)
-            WinShowPointer(HWND_DESKTOP, TRUE);
-
     // de-install the hook
     DeinstallHook();
     if (G_pDaemonShared)
@@ -1087,57 +1151,6 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
 
     // and exit (we must not use return here)
     DosExitList(EXLST_EXIT, (PFNEXITLIST)DaemonExitList);
-}
-
-/*
- *@@ CreateDaemonWindows:
- *      creates the daemon object window as well as
- *      the PageMage client window.
- *
- *@@added V0.9.2 (2000-02-21) [umoeller]
- */
-
-BOOL CreateDaemonWindows(VOID)
-{
-    // create the object window
-    WinRegisterClass(G_habDaemon,
-                     (PSZ)WNDCLASS_DAEMONOBJECT,
-                     (PFNWP)fnwpDaemonObject,
-                     0,                  // class style
-                     0);                 // extra window words
-    G_pDaemonShared->hwndDaemonObject
-                   = WinCreateWindow(HWND_OBJECT,
-                                     (PSZ)WNDCLASS_DAEMONOBJECT,
-                                     "XWorkplace PM Daemon",
-                                     0,           // style
-                                     0,0,0,0,     // position
-                                     0,           // owner
-                                     HWND_BOTTOM, // z-order
-                                     0x1000, // window id
-                                     NULL,        // create params
-                                     NULL);       // pres params
-
-    _Pmpf(("hwndDaemonObject: 0x%lX", G_pDaemonShared->hwndDaemonObject));
-
-    if (G_pDaemonShared->hwndDaemonObject)
-    {
-        // daemon object successfully created:
-
-        /* ulMonitorTimer = WinStartTimer(habDaemon,
-                                       pDaemonShared->hwndDaemonObject,
-                                       TIMERID_MONITORDRIVE,
-                                       2000); */
-
-        // OK: post msg to XFLDR.DLL thread-1 object window
-        // that we're ready, which will in turn send XDM_HOOKINSTALL
-        WinPostMsg(G_pDaemonShared->hwndThread1Object,
-                   T1M_DAEMONREADY,
-                   0, 0);
-
-        return (TRUE);
-    }
-
-    return (FALSE);
 }
 
 /*
@@ -1169,105 +1182,135 @@ int main(int argc, char *argv[])
         G_hmqDaemon = WinCreateMsgQueue(G_habDaemon, 0);
         if (G_hmqDaemon)
         {
-            // check security dummy parameter "-D"
-            if (    (argc == 2)
-                 && (strcmp(argv[1], "-D") == 0)
-               )
+            TRY_LOUD(excpt1, NULL)
             {
-                HMTX    hmtx;
-                // check the daemon one-instance semaphore, which
-                // we create just for testing that the daemon is
-                // started only once
-                if (DosCreateMutexSem(IDMUTEX_ONEINSTANCE,
-                                      &hmtx,
-                                      DC_SEM_SHARED,
-                                      TRUE)
-                     == NO_ERROR)
+                // check security dummy parameter "-D"
+                if (    (argc == 2)
+                     && (strcmp(argv[1], "-D") == 0)
+                   )
                 {
-                    // semaphore successfully created: this means
-                    // that no other instance of XWPDAEMN.EXE is
-                    // running
-
-                    // access the shared memory allocated by
-                    // XFLDR.DLL
-                    APIRET arc = DosGetNamedSharedMem((PVOID*)&G_pDaemonShared,
-                                                      IDSHMEM_DAEMON,
-                                                      PAG_READ | PAG_WRITE);
-                    if (arc == NO_ERROR)
+                    HMTX    hmtx;
+                    // check the daemon one-instance semaphore, which
+                    // we create just for testing that the daemon is
+                    // started only once
+                    if (DosCreateMutexSem(IDMUTEX_ONEINSTANCE,
+                                          &hmtx,
+                                          DC_SEM_SHARED,
+                                          TRUE)
+                         == NO_ERROR)
                     {
-                        // OK:
-                        // install exit list
-                        DosExitList(EXLST_ADD,
-                                    DaemonExitList);
+                        // semaphore successfully created: this means
+                        // that no other instance of XWPDAEMN.EXE is
+                        // running
 
-                        arc = DosCreateMutexSem(PAGEMAGE_WNDLSTMTX,
-                                                &G_hmtxWindowList,
-                                                DC_SEM_SHARED, // unnamed, but shared
-                                                FALSE);
-
-                        arc = DosCreateEventSem(PAGEMAGE_WNDLSTEV,
-                                                &G_hevWindowList,
-                                                0,
-                                                FALSE);
-
-                        arc = DosCreateQueue(&G_hqPageMage,
-                                             QUE_FIFO | QUE_NOCONVERT_ADDRESS,
-                                             PAGEMAGE_WNDQUEUE);
-
-                        G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
-                                                      NULLHANDLE,
-                                                      1);
-
-                        if (CreateDaemonWindows())
+                        // access the shared memory allocated by
+                        // XFLDR.DLL; this should always work:
+                        // a) if the daemon has been started during first
+                        //    WPS startup, krnInitializeXWorkplace has
+                        //    allocated the memory before starting the
+                        //    daemon;
+                        // b) at any time later (if the daemon is restarted
+                        //    manually), we have no problem either
+                        APIRET arc = DosGetNamedSharedMem((PVOID*)&G_pDaemonShared,
+                                                          SHMEM_DAEMON,
+                                                          PAG_READ | PAG_WRITE);
+                        if (arc == NO_ERROR)
                         {
-                            // all windows successfully created:
-                            // standard PM message loop
-                            QMSG    qmsg;
+                            // OK:
+                            // install exit list
+                            DosExitList(EXLST_ADD,
+                                        DaemonExitList);
 
-                            _Pmpf(("Entering msg queue"));
+                            arc = DosCreateMutexSem(PAGEMAGE_WNDLSTMTX,
+                                                    &G_hmtxWindowList,
+                                                    DC_SEM_SHARED, // unnamed, but shared
+                                                    FALSE);
 
-                            while (WinGetMsg(G_habDaemon, &qmsg, 0, 0, 0))
-                                WinDispatchMsg(G_habDaemon, &qmsg);
+                            arc = DosCreateEventSem(PAGEMAGE_WNDLSTEV,
+                                                    &G_hevWindowList,
+                                                    0,
+                                                    FALSE);
 
-                            // then kill the hook again
-                            DeinstallHook();
-                        }
+                            arc = DosCreateQueue(&G_hqPageMage,
+                                                 QUE_FIFO | QUE_NOCONVERT_ADDRESS,
+                                                 PAGEMAGE_WNDQUEUE);
 
-                        WinDestroyWindow(G_pDaemonShared->hwndDaemonObject);
-                        G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
-                    } // end if DosGetNamedSharedMem
+                            G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
+                                                          NULLHANDLE,
+                                                          1);
+
+                            // create the object window
+                            WinRegisterClass(G_habDaemon,
+                                             (PSZ)WNDCLASS_DAEMONOBJECT,
+                                             (PFNWP)fnwpDaemonObject,
+                                             0,                  // class style
+                                             0);                 // extra window words
+                            G_pDaemonShared->hwndDaemonObject
+                                = winhCreateObjectWindow((PSZ)WNDCLASS_DAEMONOBJECT, NULL);
+
+                            _Pmpf(("hwndDaemonObject: 0x%lX", G_pDaemonShared->hwndDaemonObject));
+
+                            if (G_pDaemonShared->hwndDaemonObject)
+                            {
+                                QMSG    qmsg;
+
+                                // OK: post msg to XFLDR.DLL thread-1 object window
+                                // that we're ready, which will in turn send
+                                // XDM_HOOKINSTALL
+                                WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                                           T1M_DAEMONREADY,
+                                           0, 0);
+
+                                // standard PM message loop
+
+                                _Pmpf(("Entering msg queue"));
+
+                                while (WinGetMsg(G_habDaemon, &qmsg, 0, 0, 0))
+                                    WinDispatchMsg(G_habDaemon, &qmsg);
+
+                                // then kill the hook again
+                                DeinstallHook();
+                            }
+
+                            WinDestroyWindow(G_pDaemonShared->hwndDaemonObject);
+                            G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
+                        } // end if DosGetNamedSharedMem
+                        else
+                            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                                          "The XWorkplace Daemon failed to access the data block shared with "
+                                          "the Workplace process. The daemon is terminated.",
+                                          "XWorkplace Daemon",
+                                          0,
+                                          MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
+                    } // end DosCreateMutexSem...
                     else
+                    {
+                        // mutex creation failed: another instance of
+                        // XWPDAEMN.EXE is running, so complain
                         WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                      "The XWorkplace Daemon failed to access the data block shared with "
-                                      "the Workplace process. The daemon is terminated.",
+                                      "Another instance of XWPDAEMN.EXE is already running. "
+                                      "This instance will terminate now.",
                                       "XWorkplace Daemon",
                                       0,
                                       MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
-                } // end DosCreateMutexSem...
+                    }
+                } // end if argc...
                 else
-                {
-                    // mutex creation failed: another instance of
-                    // XWPDAEMN.EXE is running, so complain
                     WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                  "Another instance of XWPDAEMN.EXE is already running. "
-                                  "This instance will terminate now.",
+                                  "Hi there. Thanks for your interest in the XWorkplace Daemon, "
+                                  "but this program is not intended to be started manually, "
+                                  "but only automatically by XWorkplace when the WPS starts up.",
                                   "XWorkplace Daemon",
                                   0,
                                   MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
-                }
-            } // end if argc...
-            else
-                WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                              "Hi there. Thanks for your interest in the XWorkplace Daemon, "
-                              "but this program is not intended to be started manually, "
-                              "but only automatically by XWorkplace when the WPS starts up.",
-                              "XWorkplace Daemon",
-                              0,
-                              MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
+
+            }
+            CATCH(excpt1) {} END_CATCH();
 
             WinDestroyMsgQueue(G_hmqDaemon);
         }
         WinTerminate(G_habDaemon);
+
         return (0);
     }
     return (99);

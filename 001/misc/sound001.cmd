@@ -9,6 +9,8 @@ RestartWPSSound     = "XWorkplace: Restart WPS"
 ContextOpenSound    = "XWorkplace: Open menu"
 ContextSelectSound  = "XWorkplace: Menu selection"
 CnrSelectSound      = "XWorkplace: Folder double click"
+HotkeyPrsSound      = "XWorkplace: Hotkey pressed"
+            /* added V0.9.3 (2000-04-20) [umoeller] */
 
 /* do not change the following */
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
@@ -25,6 +27,8 @@ rc = SysINI(MMINI, "MMPM2_AlarmSounds", "556", dir||"autoshut.wav#"||RestartWPSS
 rc = SysINI(MMINI, "MMPM2_AlarmSounds", "558", dir||"ckckk.wav#"||ContextOpenSound||"#100");
 rc = SysINI(MMINI, "MMPM2_AlarmSounds", "559", dir||"dudubeep.wav#"||ContextSelectSound||"#100");
 rc = SysINI(MMINI, "MMPM2_AlarmSounds", "560", dir||"dudubeep.wav#"||CnrSelectSound||"#100");
+rc = SysINI(MMINI, "MMPM2_AlarmSounds", "561", dir||"open.wav#"||HotkeyPrsSound||"#100");
+            /* added V0.9.3 (2000-04-20) [umoeller] */
 
 exit;
 

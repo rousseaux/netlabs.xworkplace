@@ -6,6 +6,7 @@
  *
  *@@include #define INCL_WINMESSAGEMGR
  *@@include #include <os2.h>
+ *@@include #include xwphook.h
  */
 
 /*
@@ -29,15 +30,17 @@
      *                                                                  *
      ********************************************************************/
 
-    #define IDSHMEM_HOTKEYS         "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
+    #define SHMEM_HOTKEYS         "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
+    #define SHMEM_FUNCTIONKEYS    "\\SHAREMEM\\XWORKPLC\\FUNCKEYS.DAT"
+                // added V0.9.3 (2000-04-20) [umoeller]
 
     #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.SEM"
     #define SEM_TIMEOUT             4000
 
-    #define PAGEMAGE_MUTEX          "\\SEM32\\PAGEMAGE"
-    #define PAGEMAGE_WNDLSTMTX      "\\SEM32\\PGMG_WNDLSTMTX"
-    #define PAGEMAGE_WNDLSTEV       "\\SEM32\\PGMG_WNDLSTEV"
-    #define PAGEMAGE_WNDQUEUE       "\\QUEUES\\PAGEMAGE"
+    #define PAGEMAGE_MUTEX          "\\SEM32\\XWORKPLC\\PAGEMAGE"
+    #define PAGEMAGE_WNDLSTMTX      "\\SEM32\\XWORKPLC\\PGMG_WNDLSTMTX"
+    #define PAGEMAGE_WNDLSTEV       "\\SEM32\\XWORKPLC\\PGMG_WNDLSTEV"
+    #define PAGEMAGE_WNDQUEUE       "\\QUEUES\\XWORKPLC\\PGMG_Q"
 
     // timer IDs for fnwpDaemonObject
     #define TIMERID_SLIDINGFOCUS        1
@@ -66,7 +69,7 @@
     typedef struct _SCROLLDATA
     {
         HWND        hwndScrollBar;
-                // actual scroll bar window
+                // actual scroll bar window or NULLHANDLE if none
         HWND        hwndScrollOwner;
                 // WinQueryWindow(hwndScrollBar, QW_OWNER)
         SHORT       usScrollBarID;
@@ -122,6 +125,14 @@
 
     typedef struct _HOOKDATA
     {
+        // damon/hook configuration data shared by daemon and the hook;
+        // this gets loaded from OS2.INI
+        HOOKCONFIG  HookConfig;
+
+        // PageMage configuration data shared by daemon and the hook;
+        // this gets loaded from OS2.INI also
+        PAGEMAGECONFIG PageMageConfig;
+
         BOOL        fSendMsgHooked,     // send-message hook installed?
                     fLockupHooked,      // lockup hook installed?
                     fInputHooked,       // input hook installed?
@@ -162,10 +173,6 @@
         // V0.9.2 (2000-02-23) [umoeller])
         LONG        lCXScreen,
                     lCYScreen;
-
-        // damon/hook configuration data shared by daemon and the hook;
-        // this gets loaded from OS2.INI
-        HOOKCONFIG  HookConfig;
 
         HWND        hwndActivatedByUs;
                 // this gets set to a window which was activated by the
@@ -213,10 +220,10 @@
     #define PGMG_PASSTHRU           (WM_USER + 107)
 
     #define PGMGQ_QUIT              0
-    #define PGMGQ_MOUSEMOVE         1
+    // #define PGMGQ_MOUSEMOVE         1
     #define PGMGQ_CLICK2ACTIVATE    2
     #define PGMGQ_CLICK2LOWER       3
-    #define PGMGQ_KEY               4
+    // #define PGMGQ_KEY               4
     #define PGMGQ_HOOKKEY           5
     #define PGMGQ_FOCUSCHANGE       6
 
@@ -236,7 +243,9 @@
     BOOL EXPENTRY hookKill(VOID);
 
     APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys,
-                                         ULONG cNewHotkeys);
+                                         ULONG cNewHotkeys,
+                                         PFUNCTIONKEY pNewFunctionKeys,
+                                         ULONG cNewFunctionKeys);
 
 
 #endif

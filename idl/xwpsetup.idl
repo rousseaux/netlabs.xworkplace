@@ -64,6 +64,11 @@ interface XWPSetup : WPAbstract
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
+     * Internal instance variables for XWPSetup:
+     *
+     */
+
+    /*
      * WPAbstract methods overridden by XWPSetup:
      *
      */

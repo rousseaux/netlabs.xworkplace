@@ -105,6 +105,8 @@
 
 // other SOM headers
 
+#pragma hdrstop
+
 /* ******************************************************************
  *                                                                  *
  *   XWPSound instance methods                                      *
@@ -120,7 +122,6 @@
 SOM_Scope ULONG  SOMLINK xsnd_xwpAddXWPSoundPages(XWPSound *somSelf,
                                                   HWND hwndNotebook)
 {
-    // PSZ pszHelpLibrary = cmnQueryHelpLibrary();
     PCREATENOTEBOOKPAGE pcnbp;
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -147,7 +148,11 @@ SOM_Scope ULONG  SOMLINK xsnd_xwpAddXWPSoundPages(XWPSound *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -170,9 +175,10 @@ SOM_Scope ULONG  SOMLINK xsnd_wpFilterPopupMenu(XWPSound *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method is overridden in order to
- *      manipulate the settings pages which are inserted
- *      into the "Sound" settings notebook.
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
  *      Since the MMPM/2 replacement of this class, MMSound,
  *      is not documented, we call the settings pages which
  *      are to be inserted here explicitly.

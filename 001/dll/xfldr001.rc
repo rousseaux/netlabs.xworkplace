@@ -58,13 +58,12 @@ BEGIN
     MENUITEM "~Help", ID_XFMI_HELP
 END
 
-/* the following has been removed V0.9.1 (99-12-28) [umoeller] */
-/* MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "~Register new class...", ID_XLMI_REGISTER
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Help", ID_XFMI_HELP
-END */
+END
 
 // the following two have been added with V0.9.0 */
 MENU ID_XLM_METHOD_NOSEL LOADONCALL MOVEABLE DISCARDABLE
@@ -190,6 +189,20 @@ BEGIN
     MENUITEM "Open folder", ID_XSMI_HOTKEYS_OPENFOLDER
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Remove hotkey...", ID_XSMI_HOTKEYS_REMOVE
+END
+
+/* Context menus on XWPKeyboard "Function keys" page;
+   new with V0.9.3 (2000-04-18) [umoeller] */
+
+MENU ID_XSM_FUNCTIONKEYS_SEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Edit function key...", ID_XSMI_FUNCK_EDIT
+    MENUITEM "~Delete function key", ID_XSMI_FUNCK_DELETE
+END
+
+MENU ID_XSM_FUNCTIONKEYS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~New function key...", ID_XSMI_FUNCK_NEW
 END
 
 /* here come lots of little strings which XWorkplace uses in all kinds
@@ -354,6 +367,8 @@ BEGIN
     ID_XSSI_ARCHIVESPAGE            "~Archives"
     ID_XSSI_PGMFILE_MODULE          "~Module"
     ID_XSSI_OBJECTHOTKEYSPAGE       "~Hotkeys"
+    /* ID_XSSI_FUNCTIONKEYSPAGE added with V0.9.3 (2000-04-18) [umoeller] */
+    ID_XSSI_FUNCTIONKEYSPAGE        "~Function keys"
     ID_XSSI_MOUSEHOOKPAGE           "~Movement"
     ID_XSSI_MAPPINGSPAGE            "~Mappings"
 
@@ -518,6 +533,8 @@ BEGIN
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
     ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
     ID_XCSI_XWPTRASHCAN                 "XWorkplace trash can"
+/* the following has been added V0.9.3 (2000-04-26) [umoeller] */
+    ID_XCSI_REPLACEDELETE               "Replace true delete"
 END
 
 /* Treesize definitions; added V0.9.0 */

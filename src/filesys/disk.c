@@ -137,7 +137,8 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
                                      _wpQueryLogicalDrive(somSelf) + 'A' - 1,
                                      szTitle,
                                      arc,
-                                     MB_RETRYCANCEL);
+                                     MB_RETRYCANCEL,
+                                     TRUE); // show explanation
         }
 
         WinSetPointer(HWND_DESKTOP, hptrOld);

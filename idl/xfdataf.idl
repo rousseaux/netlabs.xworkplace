@@ -92,6 +92,7 @@ interface XFldDataFile : WPDataFile
 
     wpInitData: override;
     wpUnInitData: override;
+    wpObjectReady: override;
 
     wpAddFile1Page: override;
     wpAddFile2Page: override;
@@ -146,8 +147,6 @@ interface M_XFldDataFile : M_WPDataFile
      * Internal class variables for M_XFldDataFile:
      *
      */
-
-    CHAR    szTitle[100];
 
     /*
      * M_WPDataFile methods overridden by M_XFldDataFile:

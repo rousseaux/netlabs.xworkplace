@@ -25,7 +25,7 @@
 #       and with the include directories set properly:
 #
 #       $(CC_DLL)    compile DLL code (multi-threaded)
-#       $(CC_EXE)    compile EXE code (multi-threaded)
+#       $(CC_EXE_MT)    compile EXE code (multi-threaded)
 #       $(CC_EXE_ST) compile EXE code (single-threaded)
 #
 #       $(LINK)      call linker (ILINK.EXE per default)
@@ -207,35 +207,44 @@ CC = error_in_setup_in_do_not_use_CC_directly
 CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 # /Wuse+ /Wuni+
 
+# compiler options which are the same with debug and release code
+CC_SHARED    = icc /I$(PROJECT_INCLUDE) $(CC_WARNINGS) /c /gd- /gi+ /q+ /se /ss /tn+
+
 !ifdef XWP_DEBUG
 # debug code
-CC_TEMP      = icc /I$(PROJECT_INCLUDE) $(CC_WARNINGS) /c /gd- /gi+ /q+ /se /ss /o- /oi- /ol- /ti+ /tm+ /tn+  /D__DEBUG__=1
+CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
+# /tm+
 !else
 # release code
-CC_TEMP      = icc /I$(PROJECT_INCLUDE) $(CC_WARNINGS) /c /gd- /gi+ /q+ /se /ss /o+ /oi- /ol- /Tn+
+CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol-
 !endif
 
-# DLL code
+# DLL code (multi-threaded)
 CC_DLL = $(CC_TEMP) /ge- /gm+
 # EXE code (multi-threaded)
-CC_EXE = $(CC_TEMP) /ge+ /gm+
+CC_EXE_MT = $(CC_TEMP) /ge+ /gm+
 # EXE code (single-threaded)
 CC_EXE_ST = $(CC_TEMP) /ge+ /gm-
 
 # compiler options for WarpIN helpers;
 # this is necessary because WarpIN uses a different compiler
 # setup to compile the helpers
-CC_HELPERS = $(CC_DLL)
+CC_HELPERS=$(CC_EXE_MT)
+# V0.9.3 (2000-04-17) [umoeller]
 
 # /oi- /w2 /fi+ /Tn+
 #/ti+
 
-# Some VisualAge C++ compiler options explained:
+# Some VisualAge C++ compiler options explained [default in brackets]:
 # /c:   compile only, no link (we'll call the linker explicitly)
-# /fi+: precompile header files
-# /g3|4|5: optimize for 386/486/Pentium
-# /gd-: link runtime statically
-# /ge-: create DLL code
+# /fi+: precompile header files                         [/fe-]
+# /g3|4|5: optimize for 386/486/Pentium                 [/g3]
+# /gd-: link runtime statically                         [/gd-]
+# /ge-: create DLL code                                 [/ge+]
+#           This switches between EXE and DLL initialization code
+#           for the .OBJ file. /ge+ is only needed when the object
+#           file contains a main() function. For libraries to be
+#           used either with EXE's or DLL's, use /ge+.
 # /gi+: fast integer execution
 # /Gl+: remove unreferenced functions (when comp.+link in 1 step)
 # /gm+: multithread libraries

@@ -84,6 +84,7 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 // headers in /hook
 #include "hook\xwphook.h"
@@ -95,6 +96,14 @@
 #pragma hdrstop
 #include <wpfolder.h>                   // WPFolder
 #include <wpshadow.h>                   // WPShadow
+
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
+PFNWP G_pfnwpEntryFieldOrig = 0;
 
 /* ******************************************************************
  *                                                                  *
@@ -118,16 +127,22 @@ BOOL hifEnableHook(BOOL fEnable)
     BOOL    brc = FALSE;
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+
+    _Pmpf(("hifEnableHook (%d)", fEnable));
+
     // (de)install the hook by notifying the daemon
     if (pDaemonShared)
     {
         if (pDaemonShared->hwndDaemonObject)
         {
+            _Pmpf(("  Sending XDM_HOOKINSTALL"));
             if (WinSendMsg(pDaemonShared->hwndDaemonObject,
                            XDM_HOOKINSTALL,
                            (MPARAM)(fEnable),
                            0))
             {
+                _Pmpf(("  Posting XDM_DESKTOPREADY (0x%lX)",
+                        pKernelGlobals->hwndActiveDesktop));
                 // hook installed:
                 brc = TRUE;
                 // tell the daemon about the Desktop window
@@ -187,18 +202,24 @@ BOOL hifEnablePageMage(BOOL fEnable)
     BOOL    brc = FALSE;
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+
+    _Pmpf(("hifEnablePageMage: %d", fEnable));
+
     // (de)install the hook by notifying the daemon
     if (pDaemonShared)
     {
         if (pDaemonShared->hwndDaemonObject)
         {
+            _Pmpf(("hifEnablePageMage: Sending XDM_STARTSTOPPAGEMAGE"));
             if (WinSendMsg(pDaemonShared->hwndDaemonObject,
                            XDM_STARTSTOPPAGEMAGE,
                            (MPARAM)(fEnable),
                            0))
-                // hook installed:
+                // PageMage installed:
                 brc = TRUE;
+
             // else: hook not installed
+            _Pmpf(("  Returning %d", brc));
         }
     }
 
@@ -206,11 +227,70 @@ BOOL hifEnablePageMage(BOOL fEnable)
 }
 
 /*
+ *@@ hifHookConfigChanged:
+ *      this writes the HOOKCONFIG structure which
+ *      pvdc points to back to OS2.INI and posts
+ *      XDM_HOOKCONFIG to the daemon, which then
+ *      re-reads that data for both the daemon and
+ *      the hook.
+ *
+ *      Note that the config data does not include
+ *      object hotkeys. Use hifSetObjectHotkeys for
+ *      that.
+ *
+ *      pvdc is declared as a PVOID so that xwphook.h
+ *      does not have included when including common.h,
+ *      but _must_ be a PHOOKCONFIG really.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+BOOL hifHookConfigChanged(PVOID pvdc)
+{
+    // store HOOKCONFIG back to INI
+    // and notify daemon
+    BOOL            brc = FALSE;
+
+    if (pvdc)
+    {
+        PHOOKCONFIG   pdc = (PHOOKCONFIG)pvdc;
+
+        PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+        PDAEMONSHARED   pDaemonShared = pKernelGlobals->pDaemonShared;
+
+        brc = PrfWriteProfileData(HINI_USER,
+                                  INIAPP_XWPHOOK,
+                                  INIKEY_HOOK_CONFIG,
+                                  pdc,
+                                  sizeof(HOOKCONFIG));
+
+        if (brc)
+            if (pDaemonShared)
+                if (pDaemonShared->hwndDaemonObject)
+                    // cross-process send msg: this
+                    // does not return until the daemon
+                    // has re-read the data
+                    brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
+                                           XDM_HOOKCONFIG,
+                                           0, 0);
+    }
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   Object hotkeys interface                                       *
+ *                                                                  *
+ ********************************************************************/
+
+/*
  *@@ hifObjectHotkeysEnabled:
  *      returns TRUE if object hotkeys have been
  *      enabled. This does not mean that the
  *      hook is running, but returns the flag
- *      in HOOKCONFIG only.
+ *      in HOOKCONFIG only. So check hifXWPHookReady()
+ *      in addition to this.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  */
@@ -345,53 +425,197 @@ BOOL hifSetObjectHotkeys(PVOID pvHotkeys,   // in: ptr to array of GLOBALHOTKEY 
     return (brc);
 }
 
+/* ******************************************************************
+ *                                                                  *
+ *   Function keys interface                                        *
+ *                                                                  *
+ ********************************************************************/
+
 /*
- *@@ hifHookConfigChanged:
- *      this writes the HOOKCONFIG structure which
- *      pvdc points to back to OS2.INI and posts
- *      XDM_HOOKCONFIG to the daemon, which then
- *      re-reads that data for both the daemon and
- *      the hook.
+ *@@ hifQueryFunctionKeys:
+ *      returns a pointer to the shared memory block
+ *      containing all current function keys definitions.
  *
- *      Note that the config data does not include
- *      object hotkeys. Use hifSetObjectHotkeys for
- *      that.
+ *      Use hifFreeFunctionKeys to free the array returned
+ *      here.
  *
- *      pvdc is declared as a PVOID so that xwphook.h
- *      does not have included when including common.h,
- *      but _must_ be a PHOOKCONFIG really.
- *
- *@@added V0.9.0 [umoeller]
+ *@@added V0.9.3 (2000-04-19) [umoeller]
  */
 
-BOOL hifHookConfigChanged(PVOID pvdc)
+PFUNCTIONKEY hifQueryFunctionKeys(PULONG pcFunctionKeys)    // out: function key count (not array size!)
 {
-    // store HOOKCONFIG back to INI
-    // and notify daemon
-    BOOL            brc = FALSE;
+    ULONG   cbFunctionKeys = 0;
+    PFUNCTIONKEY paFunctionKeys
+        = (PFUNCTIONKEY)prfhQueryProfileData(HINI_USER,
+                                             INIAPP_XWPHOOK,
+                                             INIKEY_HOOK_FUNCTIONKEYS,
+                                             &cbFunctionKeys);
+    if (paFunctionKeys)
+        if (pcFunctionKeys)
+            *pcFunctionKeys = cbFunctionKeys / sizeof(FUNCTIONKEY);
 
-    if (pvdc)
+    return (paFunctionKeys);
+}
+
+/*
+ *@@ hifFreeFunctionKeys:
+ *      frees an array returned by hifQueryFunctionKeys.
+ *
+ *@@added V0.9.3 (2000-04-19) [umoeller]
+ */
+
+BOOL hifFreeFunctionKeys(PFUNCTIONKEY paFunctionKeys)
+{
+    if (paFunctionKeys)
     {
-        PHOOKCONFIG   pdc = (PHOOKCONFIG)pvdc;
+        free(paFunctionKeys);
+        return (TRUE);
+    }
 
-        PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-        PDAEMONSHARED   pDaemonShared = pKernelGlobals->pDaemonShared;
+    return (FALSE);
+}
 
-        brc = PrfWriteProfileData(HINI_USER,
-                                  INIAPP_XWPHOOK,
-                                  INIKEY_HOOK_CONFIG,
-                                  pdc,
-                                  sizeof(HOOKCONFIG));
+/*
+ *@@ hifSetFunctionKeys:
+ *      writes the specified array of function keys
+ *      back to OS2.INI and notifies the hook/daemon
+ *      of the change.
+ *
+ *@@added V0.9.3 (2000-04-19) [umoeller]
+ */
 
-        if (brc)
-            if (pDaemonShared)
-                if (pDaemonShared->hwndDaemonObject)
-                    // cross-process send msg: this
-                    // does not return until the daemon
-                    // has re-read the data
-                    brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
-                                           XDM_HOOKCONFIG,
-                                           0, 0);
+BOOL hifSetFunctionKeys(PFUNCTIONKEY paFunctionKeys, // in: function keys array
+                        ULONG cFunctionKeys)    // in: array item count (NOT array size!)
+{
+    BOOL brc = FALSE;
+
+    brc = PrfWriteProfileData(HINI_USER,
+                              INIAPP_XWPHOOK,
+                              INIKEY_HOOK_FUNCTIONKEYS,
+                              (cFunctionKeys)
+                                    ? paFunctionKeys
+                                    : NULL,     // if none are present
+                              cFunctionKeys * sizeof(FUNCTIONKEY));
+
+    if (brc)
+    {
+        // notify daemon, which in turn notifies the hook
+        brc = krnPostDaemonMsg(XDM_HOTKEYSCHANGED,
+                               0, 0);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ hifAppendFunctionKey:
+ *      appends a new function key to the end of
+ *      the function keys list.
+ *
+ *      Calls hifSetFunctionKeys in turn.
+ *
+ *@@added V0.9.3 (2000-04-19) [umoeller]
+ */
+
+BOOL hifAppendFunctionKey(PFUNCTIONKEY pNewKey)
+{
+    BOOL    brc = FALSE;
+    ULONG   cbFunctionKeys = 0;
+    PFUNCTIONKEY paFunctionKeys
+        = (PFUNCTIONKEY) prfhQueryProfileData(HINI_USER,
+                                              INIAPP_XWPHOOK,
+                                              INIKEY_HOOK_FUNCTIONKEYS,
+                                              &cbFunctionKeys),
+            paNewKeys = NULL;
+    ULONG   cKeys = 0;
+
+    if (paFunctionKeys)
+        cKeys = cbFunctionKeys / sizeof(FUNCTIONKEY);
+
+    paNewKeys = malloc(sizeof(FUNCTIONKEY) * (cKeys + 1));
+    if (paFunctionKeys)
+        // items existed already:
+        memcpy(paNewKeys, paFunctionKeys, sizeof(FUNCTIONKEY) * cKeys);
+    // append new item
+    memcpy(&paNewKeys[cKeys], pNewKey, sizeof(FUNCTIONKEY));
+
+    brc = hifSetFunctionKeys(paNewKeys,
+                             cKeys + 1);
+
+    if (paFunctionKeys)
+        free(paFunctionKeys);
+    if (paNewKeys)
+        free(paNewKeys);
+
+    return (brc);
+}
+
+/*
+ *@@ hifFindFunctionKey:
+ *      searches the specified array for the array
+ *      item with the specified scan code. If it's
+ *      found, the address of the array item is
+ *      returned; otherwise we return NULL.
+ *
+ *@@added V0.9.3 (2000-04-19) [umoeller]
+ */
+
+PFUNCTIONKEY hifFindFunctionKey(PFUNCTIONKEY paFunctionKeys, // in: array of function keys
+                                ULONG cFunctionKeys,    // in: array item count (NOT array size)
+                                UCHAR ucScanCode)       // in: scan code to search
+{
+    ULONG   ul = 0;
+
+    for (ul = 0;
+         ul < cFunctionKeys;
+         ul++)
+    {
+        if (paFunctionKeys[ul].ucScanCode == ucScanCode)
+            return (&paFunctionKeys[ul]);
+    }
+
+    return (NULL);
+}
+
+/*
+ *@@ hifDeleteFunctionKey:
+ *      deletes the function key with the specified
+ *      index from the given function keys array.
+ *      The items are copied within the array, but
+ *      the array is not re-allocated, only the
+ *      array item count is changed.
+ *
+ *      Calls hifSetFunctionKeys in turn.
+ *
+ *@@added V0.9.3 (2000-04-20) [umoeller]
+ */
+
+BOOL hifDeleteFunctionKey(PFUNCTIONKEY paFunctionKeys,// in: array of function keys
+                          PULONG pcFunctionKeys,    // in/out: array item count (NOT array size)
+                          ULONG ulDelete)   // in: index of function key to delete
+{
+    BOOL brc = FALSE;
+
+    if (ulDelete < *pcFunctionKeys)
+    {
+        if (ulDelete < (*pcFunctionKeys - 1))
+            // item to delete is not the last item:
+            // copy following items over the item to
+            // be deleted
+            memcpy(&paFunctionKeys[ulDelete],        // target: item to be deleted
+                   &paFunctionKeys[ulDelete + 1],    // source: following items
+                   (*pcFunctionKeys - ulDelete - 1)
+                        * sizeof(FUNCTIONKEY));
+                        // -- if we have 2 items and item 0 is deleted,
+                        //    copy 1 item
+                        // -- if we have 5 items and item 2 (third) is deleted,
+                        //    copy 2 items (item 3 and 4)
+
+        // decrease count
+        (*pcFunctionKeys)--;
+
+        brc = hifSetFunctionKeys(paFunctionKeys,
+                                 *pcFunctionKeys);
     }
 
     return (brc);
@@ -402,6 +626,123 @@ BOOL hifHookConfigChanged(PVOID pvdc)
  *   XWPKeyboard notebook callbacks (notebook.c)                    *
  *                                                                  *
  ********************************************************************/
+
+/*
+ *@@ hifCollectHotkeys:
+ *      implementation for FIM_INSERTHOTKEYS.
+ *      This runs on the File thread.
+ *
+ *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.3 (2000-04-19) [umoeller]: moved this here from xthreads.c
+ *@@changed V0.9.3 (2000-04-19) [umoeller]: added XWP function keys support
+ */
+
+VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
+                       MPARAM mp2)  // in: PBOOL pfBusy
+{
+    HWND            hwndCnr = (HWND)mp1;
+    PBOOL           pfBusy = (PBOOL)mp2;
+    ULONG           cHotkeys;       // set below
+    PGLOBALHOTKEY   pHotkeys;
+
+    if ((hwndCnr) && (pfBusy))
+    {
+        *pfBusy = TRUE;
+        pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
+
+        #ifdef DEBUG_KEYS
+            _Pmpf(("hifKeybdHotkeysInitPage: got %d hotkeys", cHotkeys));
+        #endif
+
+        cnrhRemoveAll(hwndCnr);
+
+        if (pHotkeys)
+        {
+            ULONG cFuncKeys = 0;
+            PFUNCTIONKEY paFuncKeys = hifQueryFunctionKeys(&cFuncKeys);
+
+            ULONG       ulCount = 0;
+            PHOTKEYRECORD preccFirst
+                        = (PHOTKEYRECORD)cnrhAllocRecords(hwndCnr,
+                                                          sizeof(HOTKEYRECORD),
+                                                          cHotkeys);
+            PHOTKEYRECORD preccThis = preccFirst;
+            PGLOBALHOTKEY pHotkeyThis = pHotkeys;
+
+            while (ulCount < cHotkeys)
+            {
+                PFUNCTIONKEY pFuncKey = 0;
+
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("  %d: Getting hotkey for 0x%lX", ulCount, pHotkeyThis->ulHandle));
+                #endif
+
+                preccThis->ulIndex = ulCount;
+
+                // copy struct
+                memcpy(&preccThis->Hotkey, pHotkeyThis, sizeof(GLOBALHOTKEY));
+
+                // object handle
+                sprintf(preccThis->szHandle, "0x%lX", pHotkeyThis->ulHandle);
+                preccThis->pszHandle = preccThis->szHandle;
+
+                // describe hotkey
+                // check if maybe this is a function key
+                // V0.9.3 (2000-04-19) [umoeller]
+                if (paFuncKeys)
+                    pFuncKey = hifFindFunctionKey(paFuncKeys,
+                                                  cFuncKeys,
+                                                  pHotkeyThis->ucScanCode);
+                if (pFuncKey)
+                {
+                    // it's a function key:
+                    sprintf(preccThis->szHotkey,
+                            "\"%s\"",
+                            pFuncKey->szDescription);
+                }
+                else
+                    cmnDescribeKey(preccThis->szHotkey,
+                                   pHotkeyThis->usFlags,
+                                   pHotkeyThis->usKeyCode);
+                preccThis->pszHotkey = preccThis->szHotkey;
+
+                // get object for hotkey
+                preccThis->pObject = _wpclsQueryObject(_WPObject,
+                                                       pHotkeyThis->ulHandle);
+                if (preccThis->pObject)
+                {
+                    WPFolder *pFolder = _wpQueryFolder(preccThis->pObject);
+
+                    preccThis->recc.pszIcon = _wpQueryTitle(preccThis->pObject);
+                    preccThis->recc.hptrMiniIcon = _wpQueryIcon(preccThis->pObject);
+                    if (pFolder)
+                        if (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
+                            preccThis->pszFolderPath = preccThis->szFolderPath;
+                }
+                else
+                    preccThis->recc.pszIcon = "Invalid object";
+
+                preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
+                ulCount++;
+                pHotkeyThis++;
+            }
+
+            cnrhInsertRecords(hwndCnr,
+                              NULL,         // parent
+                              (PRECORDCORE)preccFirst,
+                              TRUE, // invalidate
+                              NULL,         // text
+                              CRA_RECORDREADONLY,
+                              cHotkeys);
+
+            // clean up
+            hifFreeObjectHotkeys(pHotkeys);
+            hifFreeFunctionKeys(paFuncKeys);
+        }
+
+        *pfBusy = FALSE;
+    }
+}
 
 /*
  *@@ hifKeybdHotkeysInitPage:
@@ -477,7 +818,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         pfi = cnrhSetFieldInfos(hwndCnr,
                                 &xfi[0],
                                 i,             // array item count
-                                TRUE,          // no draw lines
+                                TRUE,          // draw lines
                                 4);            // return column
 
         BEGIN_CNRINFO()
@@ -617,6 +958,505 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // this updates the notebook in turn
             }
         break; }
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ EDITFUNCTIONKEYDATA:
+ *      structure stored in QWL_USER of
+ *      "edit function key" dlg (hif_fnwpEditFunctionKeyDlg).
+ *
+ *@@added V0.9.3 (2000-04-20) [umoeller]
+ */
+
+typedef struct _EDITFUNCTIONKEYDATA
+{
+    WPObject        *somSelf;
+    UCHAR           ucScanCode;
+} EDITFUNCTIONKEYDATA, *PEDITFUNCTIONKEYDATA;
+
+/*
+ *@@ hif_fnwpSubclassedFuncKeyEF:
+ *      subclassed entry field procedure which
+ *      displays the hardware scan code for
+ *      every WM_CHAR.
+ *
+ *@@added V0.9.3 (2000-04-18) [umoeller]
+ */
+
+MRESULT EXPENTRY hif_fnwpSubclassedFuncKeyEF(HWND hwndEdit,
+                                             ULONG msg,
+                                             MPARAM mp1,
+                                             MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_CHAR:
+        {
+            /*
+                  #define KC_CHAR                    0x0001
+                  #define KC_VIRTUALKEY              0x0002
+                  #define KC_SCANCODE                0x0004
+                  #define KC_SHIFT                   0x0008
+                  #define KC_CTRL                    0x0010
+                  #define KC_ALT                     0x0020
+                  #define KC_KEYUP                   0x0040
+                  #define KC_PREVDOWN                0x0080
+                  #define KC_LONEKEY                 0x0100
+                  #define KC_DEADKEY                 0x0200
+                  #define KC_COMPOSITE               0x0400
+                  #define KC_INVALIDCOMP             0x0800
+            */
+
+            /*
+                Examples:           usFlags  usKeyCode
+                    F3                02       22
+                    Ctrl+F4           12       23
+                    Ctrl+Shift+F4     1a       23
+                    Ctrl              12       0a
+                    Alt               22       0b
+                    Shift             0a       09
+            */
+
+            USHORT usFlags    = SHORT1FROMMP(mp1);
+            UCHAR  ucScanCode = CHAR4FROMMP(mp1);
+            USHORT usch       = SHORT1FROMMP(mp2);
+            USHORT usvk       = SHORT2FROMMP(mp2);
+
+            if (
+                    // filter out important virtual keys
+                    // which should never be intercepted
+                       (    ((usFlags & KC_VIRTUALKEY) == 0)
+                         || (   (usvk != VK_ESC)
+                             && (usvk != VK_ENTER)
+                             && (usvk != VK_TAB)
+                            )
+                       )
+               )
+            {
+
+                // process only key-down messages
+                if  ((usFlags & KC_KEYUP) == 0)
+                {
+                    PEDITFUNCTIONKEYDATA pefkd
+                        = (PEDITFUNCTIONKEYDATA)WinQueryWindowULong(WinQueryWindow(hwndEdit,
+                                                                                   QW_PARENT),
+                                                                    QWL_USER);
+
+                    CHAR    szDescription[100];
+                    sprintf(szDescription, "0x%lX (%d)", ucScanCode, ucScanCode);
+                    WinSetWindowText(hwndEdit, szDescription);
+
+                    // store scan code in QWL_USER of parent window
+                    // so the owner of the dialog can retrieve it
+                    pefkd->ucScanCode = ucScanCode;
+                }
+
+                mrc = (MPARAM)TRUE; // WM_CHAR processed flag;
+            }
+            else
+                mrc = WinSendMsg(WinQueryWindow(hwndEdit, QW_PARENT),
+                                 msg, mp1, mp2);
+        break; }
+
+        default:
+            mrc = G_pfnwpEntryFieldOrig(hwndEdit, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ hif_fnwpEditFunctionKeyDlg:
+ *      window procedure for "edit function key" dlg.
+ *
+ *@@added V0.9.3 (2000-04-18) [umoeller]
+ */
+
+MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
+                                            ULONG msg,
+                                            MPARAM mp1,
+                                            MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    PEDITFUNCTIONKEYDATA pefkd
+        = (PEDITFUNCTIONKEYDATA)WinQueryWindowULong(hwndDlg,
+                                                    QWL_USER);
+
+    switch (msg)
+    {
+        case WM_HELP:
+            cmnDisplayHelp(pefkd->somSelf,
+                           67);
+        break;
+
+        case WM_DESTROY:
+            free(pefkd);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ AddFuncKeyRecord:
+ *
+ *@@added V0.9.3 (2000-04-19) [umoeller]
+ */
+
+VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
+                      PFUNCTIONKEY pFuncKey,    // in: new function key definition (one item)
+                      ULONG ulIndex)            // in: index of item in FUNCTIONKEY array (must match!)
+{
+    PFUNCTIONKEYRECORD precc
+        = (PFUNCTIONKEYRECORD)cnrhAllocRecords(hwndCnr,
+                                               sizeof(FUNCTIONKEYRECORD),
+                                               1);
+    if (precc)
+    {
+        memcpy(&precc->FuncKey, pFuncKey, sizeof(FUNCTIONKEY));
+        precc->pszDescription = precc->FuncKey.szDescription;
+        sprintf(precc->szScanCode,
+                "0x%lX (%d)",
+                pFuncKey->ucScanCode,
+                pFuncKey->ucScanCode);
+        precc->pszScanCode = precc->szScanCode;
+
+        precc->ulIndex = ulIndex;
+
+        if (pFuncKey->fModifier)
+            precc->pszModifier = "X";
+
+        cnrhInsertRecords(hwndCnr,
+                          NULL,
+                          (PRECORDCORE)precc,
+                          TRUE,
+                          NULL,
+                          CRA_RECORDREADONLY,
+                          1);
+    }
+}
+
+/*
+ *@@ hifKeybdFunctionKeysInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      "Function keys" page in the "Keyboard" settings object.
+ *      Sets the controls on the page according to the
+ *      Global Settings.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                                  ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO      xfi[4];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
+        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FUNCK_CNR);
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, ulIndex);
+        xfi[i].pszColumnTitle = "";
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszDescription);
+        xfi[i].pszColumnTitle = "Key description";      // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszScanCode);
+        xfi[i].pszColumnTitle = "Hardware scan code";   // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszModifier);
+        xfi[i].pszColumnTitle = "Modifier";   // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_CENTER;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                &xfi[0],
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // split bar after this column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CV_MINI | CA_DETAILSVIEWTITLES | CA_DRAWICON);
+            cnrhSetSplitBarAfter(pfi);
+            cnrhSetSplitBarPos(250);
+        } END_CNRINFO(hwndCnr);
+
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        ULONG   cKeys = 0,
+                ul = 0;
+        PFUNCTIONKEY paFuncKeys = hifQueryFunctionKeys(&cKeys);
+        HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FUNCK_CNR);
+        cnrhRemoveAll(hwndCnr);
+
+        for (ul = 0;
+             ul < cKeys;
+             ul++)
+        {
+            AddFuncKeyRecord(hwndCnr,
+                             &paFuncKeys[ul],
+                             ul);
+        }
+    }
+}
+
+/*
+ *@@ hifKeybdFunctionKeysItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      "Function keys" page in the "Keyboard" settings object.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                        USHORT usItemID, USHORT usNotifyCode,
+                                        ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = (MPARAM)0;
+
+    switch (usItemID)
+    {
+        case ID_XSDI_FUNCK_CNR:
+
+            switch (usNotifyCode)
+            {
+                /*
+                 * CN_CONTEXTMENU:
+                 *      ulExtra has the record core
+                 */
+
+                case CN_CONTEXTMENU:
+                {
+                    HWND    hPopupMenu = NULLHANDLE; // fixed V0.9.1 (99-12-06)
+
+                    // we store the container and recc.
+                    // in the CREATENOTEBOOKPAGE structure
+                    // so that the notebook.c function can
+                    // remove source emphasis later automatically
+                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
+                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
+                    if (pcnbp->preccSource)
+                    {
+                        // popup menu on container recc:
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_FUNCTIONKEYS_SEL);
+                    }
+                    else
+                        // popup menu on whitespace:
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_FUNCTIONKEYS_NOSEL);
+
+                    if (hPopupMenu)
+                        cnrhShowContextMenu(pcnbp->hwndControl,     // cnr
+                                            (PRECORDCORE)pcnbp->preccSource,
+                                            hPopupMenu,
+                                            pcnbp->hwndDlgPage);    // owner
+                break; }
+            }
+        break;
+
+        /*
+         * ID_XSMI_FUNCK_NEW:
+         *      "New" popup menu item on cnr whitespace
+         *
+         * ID_XSMI_FUNCK_EDIT:
+         *      "Edit" popup menu item on record core
+         */
+
+        case ID_XSMI_FUNCK_NEW:
+        case ID_XSMI_FUNCK_EDIT:
+        {
+            // in both cases, we use the same "Edit" dialog
+            HWND hwndEditDlg = WinLoadDlg(HWND_DESKTOP,
+                                          pcnbp->hwndDlgPage,
+                                          hif_fnwpEditFunctionKeyDlg,
+                                          cmnQueryNLSModuleHandle(FALSE),
+                                          ID_XSD_KEYB_EDITFUNCTIONKEY,
+                                          NULL);
+            if (hwndEditDlg)
+            {
+                PEDITFUNCTIONKEYDATA pefkd
+                    = (PEDITFUNCTIONKEYDATA)malloc(sizeof(EDITFUNCTIONKEYDATA));
+
+                HWND    hwndEntryField = WinWindowFromID(hwndEditDlg,
+                                                         ID_XSDI_FUNCK_SCANCODE_EF);
+
+                // store EDITFUNCTIONKEYDATA
+                pefkd->somSelf = pcnbp->somSelf;
+                WinSetWindowPtr(hwndEditDlg,
+                                QWL_USER,
+                                pefkd);
+
+                // subclass entry field
+                G_pfnwpEntryFieldOrig = WinSubclassWindow(hwndEntryField,
+                                                          hif_fnwpSubclassedFuncKeyEF);
+
+                if (usItemID == ID_XSMI_FUNCK_EDIT)
+                {
+                    // if we have "edit" (not "new"), set the dialog items
+                    PFUNCTIONKEYRECORD precc = (PFUNCTIONKEYRECORD)pcnbp->preccSource;
+                    if (precc)
+                    {
+                        WinSetWindowText(WinWindowFromID(hwndEditDlg,
+                                                         ID_XSDI_FUNCK_DESCRIPTION_EF),
+                                         precc->FuncKey.szDescription);
+                        WinSetWindowText(hwndEntryField,
+                                         precc->szScanCode);
+                        winhSetDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER,
+                                              (precc->FuncKey.fModifier != 0));
+                    }
+                }
+
+                winhCenterWindow(hwndEditDlg);
+                cmnSetControlsFont(hwndEditDlg, 0, 5000);
+                // go!!
+                if (WinProcessDlg(hwndEditDlg) == DID_OK)
+                {
+                    PFUNCTIONKEY paKeys = NULL;
+                    ULONG   cKeys = 0;
+
+                    paKeys = hifQueryFunctionKeys(&cKeys);
+
+                    if (usItemID == ID_XSMI_FUNCK_EDIT)
+                    {
+                        // if we have "edit" (not "new"), use the
+                        // existing record
+                        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+                                                       ID_XSDI_FUNCK_CNR);
+
+                        PFUNCTIONKEYRECORD precc = (PFUNCTIONKEYRECORD)pcnbp->preccSource;
+
+                        // update FUNCTIONKEY structure in record core
+                        WinQueryWindowText(WinWindowFromID(hwndEditDlg,
+                                                           ID_XSDI_FUNCK_DESCRIPTION_EF),
+                                           sizeof(precc->FuncKey.szDescription),
+                                           precc->FuncKey.szDescription);
+                        precc->FuncKey.ucScanCode
+                            = pefkd->ucScanCode;
+                        precc->FuncKey.fModifier
+                            = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
+
+                        // update record
+                        sprintf(precc->szScanCode,
+                                "0x%lX (%d)",
+                                precc->FuncKey.ucScanCode,
+                                precc->FuncKey.ucScanCode);
+                        precc->pszModifier = (precc->FuncKey.fModifier)
+                                                    ? "X"
+                                                    : NULL;
+
+                        // update container
+                        WinSendMsg(hwndCnr,
+                                   CM_INVALIDATERECORD,
+                                   (MPARAM)&precc,
+                                   MPFROM2SHORT(1,
+                                                CMA_TEXTCHANGED));
+                        // compose new list and store it
+                        if (paKeys)
+                        {
+                            LONG   lReccIndex = cnrhQueryRecordIndex(hwndCnr,
+                                                                     (PRECORDCORE)precc);
+                            if (lReccIndex != -1)
+                            {
+                                // overwrite corresponding entry in
+                                // FUNCTIONKEY array
+                                memcpy(&paKeys[lReccIndex],
+                                       &precc->FuncKey,
+                                       sizeof(FUNCTIONKEY));
+                                // and store new array
+                                hifSetFunctionKeys(paKeys, cKeys);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // "New" mode:
+                        // add new record
+                        FUNCTIONKEY FuncKey;
+                        WinQueryWindowText(WinWindowFromID(hwndEditDlg,
+                                                           ID_XSDI_FUNCK_DESCRIPTION_EF),
+                                           sizeof(FuncKey.szDescription),
+                                           FuncKey.szDescription);
+                        FuncKey.ucScanCode = pefkd->ucScanCode;
+                        FuncKey.fModifier
+                            = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
+                        hifAppendFunctionKey(&FuncKey);
+                        AddFuncKeyRecord(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FUNCK_CNR),
+                                         &FuncKey,
+                                         cKeys);        // new index == item count
+                    }
+
+                    if (paKeys)
+                        hifFreeFunctionKeys(paKeys);
+
+                } // end if (WinProcessDlg(hwndEditDlg) == DID_OK)
+
+                WinDestroyWindow(hwndEditDlg);
+            } // end if (hwndEditDlg)
+        break; }
+
+        /*
+         * ID_XSMI_FUNCK_DELETE:
+         *      "Delete" popup menu item on record core
+         */
+
+        case ID_XSMI_FUNCK_DELETE:
+        {
+            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_XSDI_FUNCK_CNR);
+
+            PFUNCTIONKEYRECORD precc = (PFUNCTIONKEYRECORD)pcnbp->preccSource;
+
+            LONG   lReccIndex = cnrhQueryRecordIndex(hwndCnr,
+                                                     (PRECORDCORE)precc);
+            if (lReccIndex != -1)
+            {
+                PFUNCTIONKEY paKeys = NULL;
+                ULONG   cKeys = 0;
+
+                paKeys = hifQueryFunctionKeys(&cKeys);
+                if (paKeys)
+                {
+                    hifDeleteFunctionKey(paKeys, &cKeys, lReccIndex);
+                    hifFreeFunctionKeys(paKeys);
+
+                    WinSendMsg(hwndCnr,
+                               CM_REMOVERECORD,
+                               &precc,
+                               MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
+                }
+            }
+        break; }
+
+        default:
+        break;
     }
 
     return (mrc);
@@ -1012,7 +1852,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                           pdc->fSlidingFocus);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
                           (pdc->fSlidingFocus)
-                          && (pGlobalSettings->fPageMageEnabled)
+                          && (pGlobalSettings->fEnablePageMage)
                          );
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
                           pdc->fSlidingFocus);
@@ -1386,76 +2226,9 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             switch (usNotifyCode)
             {
                 case CN_DRAGOVER:
-                {
-                    PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
-                    PDRAGITEM   pdrgItem;
-                    USHORT      usIndicator = DOR_NODROP,
-                                    // cannot be dropped, but send
-                                    // DM_DRAGOVER again
-                                usOp = DO_UNKNOWN;
-                                    // target-defined drop operation:
-                                    // user operation (we don't want
-                                    // the WPS to copy anything)
-
-                    // reset global variable
-                    hobjBeingDragged = NULLHANDLE;
-
-                    // OK so far:
-                    // get access to the drag'n'drop structures
-                    if (DrgAccessDraginfo(pcdi->pDragInfo))
-                    {
-                        if (
-                                // accept no more than one single item at a time;
-                                // we cannot move more than one file type
-                                (pcdi->pDragInfo->cditem != 1)
-                            )
-                        {
-                            usIndicator = DOR_NEVERDROP;
-                        }
-                        else
-                        {
-
-                            // accept only default drop operation
-                            if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
-                               )
-                            {
-                                // get the item being dragged (PDRAGITEM)
-                                if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
-                                {
-                                    // WPS object?
-                                    if (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
-                                    {
-                                        // the WPS stores the MINIRECORDCORE of the
-                                        // object in ulItemID of the DRAGITEM structure;
-                                        // we use OBJECT_FROM_PREC to get the SOM pointer
-                                        WPObject *pSourceObject
-                                                    = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-                                        if (pSourceObject)
-                                        {
-                                            // dereference shadows
-                                            while (     (pSourceObject)
-                                                     && (_somIsA(pSourceObject, _WPShadow))
-                                                  )
-                                                pSourceObject = _wpQueryShadowedObject(pSourceObject,
-                                                                    TRUE);  // lock
-
-                                            // store object handle for CN_DROP later
-                                            hobjBeingDragged
-                                                    = _wpQueryHandle(pSourceObject);
-                                            if (hobjBeingDragged)
-                                                usIndicator = DOR_DROP;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        DrgFreeDraginfo(pcdi->pDragInfo);
-                    }
-
-                    // and return the drop flags
-                    mrc = (MRFROM2SHORT(usIndicator, usOp));
-                break; } // CN_DRAGOVER
+                    mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)ulExtra,
+                                                    &hobjBeingDragged);
+                break; // CN_DRAGOVER
 
                 case CN_DROP:
                     if (hobjBeingDragged)
@@ -1463,7 +2236,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex]
                                 = hobjBeingDragged;
                         hobjBeingDragged = NULLHANDLE;
-                        hifMouseCornersInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                        (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
                     }
                 break;
             }

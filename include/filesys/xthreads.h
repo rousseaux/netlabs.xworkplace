@@ -83,8 +83,8 @@
      ********************************************************************/
 
     #define QM_BOOTUPSTATUS             (WM_USER+140)
-    #define QM_PLAYSOUND                (WM_USER+141)
-    #define QM_PLAYSYSTEMSOUND          (WM_USER+142)
+    // #define QM_PLAYSOUND                (WM_USER+141)
+    // #define QM_PLAYSYSTEMSOUND          (WM_USER+142)
 
     #define QM_DESTROYLOGO              (WM_USER+143)
 
@@ -104,7 +104,11 @@
     #define RCF_MAININSTALLFOLDER      3
             // create "main" installation folder
 
-    #define FIM_DESKTOPPOPULATED        (WM_USER+130)
+    // #define FIM_DESKTOPPOPULATED        (WM_USER+130)
+
+    #define FIM_DESKTOPREADY            (WM_USER+130)
+            // re-added V0.9.3 (2000-04-26) [umoeller]; this was removed from
+            // the Worker thread with V0.9.0
 
     #define FIM_RECREATECONFIGFOLDER    (WM_USER+131)
 
@@ -171,10 +175,6 @@
     ULONG xthrIsFileThreadBusy(VOID);
 
     BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
-
-    BOOL xthrPlaySystemSound(USHORT usIndex);
-
-    BOOL xthrIsPlayingSystemSound(VOID);
 
     BOOL xthrStartThreads(VOID);
 

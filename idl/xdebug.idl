@@ -73,6 +73,18 @@ interface DbgDataFile : WPDataFile
      *
      */
 
+//# SOMObject methods
+
+    somDefaultInit: override;
+
+    somDefaultAssign: override;
+    somDefaultConstAssign: override;
+    somDefaultConstCopyInit: override;
+    somDefaultCopyInit: override;
+
+    somUninit: override;
+    somDestruct: override;
+
 //# initialization methods
 
     wpInitData: override;
@@ -98,6 +110,14 @@ interface DbgDataFile : WPDataFile
     wpAssertObjectMutexSem: override;
     wpReleaseObjectMutexSem: override;
     wpRequestObjectMutexSem: override;
+
+//# save/restore methods
+
+    wpSaveImmediate: override;
+    wpSaveDeferred: override;
+    wpSaveState: override;
+
+    wpRestoreState: override;
 
 //# container methods
     wpCnrInsertObject: override;
@@ -214,6 +234,9 @@ interface DbgDataFile : WPDataFile
 
     wpConfirmKeepAssoc: override;
 
+//#     these are listed in the method table only, but
+//#     we have no prototypes for them... sigh.
+
 //#    wpSetTitleNoRenameFile: override;
 //#     wpSetNewRealName: override;
 //#     wpAdoptNewRealName: override;
@@ -284,11 +307,33 @@ interface M_DbgDataFile : M_WPDataFile
      */
 
     /*
+     * SOMClass methods overridden by M_DbgDataFile:
+     *
+     */
+
+    somNew: override;
+    somNewNoInit: override;
+
+    somRenew: override;
+    somRenewNoInit: override;
+    somRenewNoInitNoZero: override;
+    somRenewNoZero: override;
+
+    somGetInstancePartSize: override;
+    somGetInstanceSize: override;
+
+
+    /*
      * M_WPObject methods overridden by M_DbgDataFile:
      *
      */
 
     wpclsInitData: override;
+    wpclsMakeAwake: override;
+    wpclsNew: override;
+
+    wpclsFileSysExists: override;
+    wpclsQueryAwakeObject: override;
   };
 #endif /* __SOMIDL__ */
 };

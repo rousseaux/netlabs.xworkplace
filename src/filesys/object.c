@@ -55,7 +55,7 @@
 
 // C library headers
 #include <stdio.h>
-#include <malloc.h>
+// #include <malloc.h>
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
 
@@ -90,7 +90,7 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wpdesk.h>                     // WPDesktop
+#include <wpdesk.h>                     // WPDesktop; includes WPFolder also
 #include <wpshadow.h>
 #include "filesys\folder.h"             // XFolder implementation
 
@@ -133,7 +133,8 @@ typedef struct _OBJECTUSAGEDATA
 
 /*
  * XFOBJWINDATA:
- *      structure used with "Object" page for data
+ *      structure used with "Object" page
+ *      (obj_fnwpSettingsObjDetails) for data
  *      exchange with XFldObject instance data.
  *      Created in WM_INITDLG.
  */
@@ -146,6 +147,11 @@ typedef struct _XFOBJWINDATA
     CHAR            szOldObjectID[256];
     BOOL            fEscPressed;
     PRECORDCORE     preccExpanded;
+
+    // function keys
+    // V0.9.3 (2000-04-19) [umoeller]
+    PFUNCTIONKEY    paFuncKeys;
+    ULONG           cFuncKeys;
 } XFOBJWINDATA, *PXFOBJWINDATA;
 
 #define WM_FILLCNR      (WM_USER+1)
@@ -431,7 +437,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             // we use a conditional compile flag here because
             // _heap_walk adds additional overhead to malloc()
             #ifdef DEBUG_MEMORY
-                if (pObject == _wpclsQueryActiveDesktop(_WPDesktop))
+                if (pObject == cmnQueryActiveDesktop())
                 {
                     preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
                                                      "Workplace Shell status",
@@ -679,6 +685,7 @@ VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
  *@@changed 0.85 [umoeller]: fixed object ID error message
  *@@changed V0.9.0 [umoeller]: fixed memory leak (thanks Lars Erdmann)
  *@@changed V0.9.0 [umoeller]: added hotkey support
+ *@@changed V0.9.3 (2000-04-19) [umoeller]: added function key support
  */
 
 MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -709,6 +716,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                 strcpy(pWinData->szOldID, pszObjectID);
             else
                 strcpy(pWinData->szOldID, "");
+
+            // load function keys
+            pWinData->paFuncKeys = hifQueryFunctionKeys(&pWinData->cFuncKeys);
 
             // subclass entry field for hotkeys
             ctlMakeHotkeyEntryField(hwndHotkeyEntryField);
@@ -764,7 +774,20 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                       &usKeyCode))
             {
                 CHAR    szKeyName[200];
-                cmnDescribeKey(szKeyName, usFlags, usKeyCode);
+                // check if maybe this is a function key
+                // V0.9.3 (2000-04-19) [umoeller]
+                PFUNCTIONKEY pFuncKey = hifFindFunctionKey(pWinData->paFuncKeys,
+                                                           pWinData->cFuncKeys,
+                                                           ucScanCode);
+                if (pFuncKey)
+                {
+                    // it's a function key:
+                    sprintf(szKeyName,
+                            "\"%s\"",
+                            pFuncKey->szDescription);
+                }
+                else
+                    cmnDescribeKey(szKeyName, usFlags, usKeyCode);
                 WinSetWindowText(hwndEntryField, szKeyName);
             }
             else
@@ -838,7 +861,8 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         {
                             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                            if (pGlobalSettings->TreeViewAutoScroll) {
+                            if (pGlobalSettings->TreeViewAutoScroll)
+                            {
                                 pWinData->preccExpanded = (PRECORDCORE)mp2;
                                 WinStartTimer(WinQueryAnchorBlock(hwndDlg),
                                         hwndDlg,
@@ -921,13 +945,22 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                 /*
                  * ID_XSDI_DTL_HOTKEY:
-                 *      "hotkey" entry field
+                 *      subclassed "hotkey" entry field;
+                 *      this sends EN_HOTKEY when a new
+                 *      hotkey has been entered
                  */
 
                 case ID_XSDI_DTL_HOTKEY:
                     if (usNotifyCode == EN_HOTKEY)
                     {
                         PHOTKEYNOTIFY phkn = (PHOTKEYNOTIFY)mp2;
+
+                        // check if maybe this is a function key
+                        // V0.9.3 (2000-04-19) [umoeller]
+                        PFUNCTIONKEY pFuncKey = hifFindFunctionKey(pWinData->paFuncKeys,
+                                                                   pWinData->cFuncKeys,
+                                                                   phkn->ucScanCode);
+
                         // now check if this thing makes up a valid
                         // hotkey just yet: if KC_VIRTUALKEY is down,
                         // we must filter out the sole CTRL, ALT, and
@@ -936,44 +969,64 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         // this, we do get a display in the entry field
                         // if only, say, Ctrl is down, but we won't
                         // store this.
-                        if  (  (  ((phkn->usFlags & KC_VIRTUALKEY) != 0)
-                                  // Ctrl pressed?
-                               || ((phkn->usFlags & KC_CTRL) != 0)
-                                  // Alt pressed?
-                               || ((phkn->usFlags & KC_ALT) != 0)
-                                  // or one of the Win95 keys?
-                               || (   ((phkn->usFlags & KC_VIRTUALKEY) == 0)
-                                   && (     (phkn->usch == 0xEC00)
-                                        ||  (phkn->usch == 0xED00)
-                                        ||  (phkn->usch == 0xEE00)
-                                      )
-                               )
-                            )
-                            && (    ((phkn->usFlags & KC_VIRTUALKEY) == 0)
-                                 || (   (phkn->usKeyCode != 0x09)     // shift
-                                     && (phkn->usKeyCode != 0x0a)     // ctrl
-                                     && (phkn->usKeyCode != 0x0b)     // alt
-                                    )
-                               )
+                        if  (
+                                // do we have an XWorkplace function key?
+                                (pFuncKey != NULL)
+                             ||
+                                // no function key: check if we have a valid
+                                // key combo
+                                (  (  ((phkn->usFlags & KC_VIRTUALKEY) != 0)
+                                      // Ctrl pressed?
+                                   || ((phkn->usFlags & KC_CTRL) != 0)
+                                      // Alt pressed?
+                                   || ((phkn->usFlags & KC_ALT) != 0)
+                                      // or one of the Win95 keys?
+                                   || (   ((phkn->usFlags & KC_VIRTUALKEY) == 0)
+                                       && (     (phkn->usch == 0xEC00)
+                                            ||  (phkn->usch == 0xED00)
+                                            ||  (phkn->usch == 0xEE00)
+                                          )
+                                   )
+                                )
+                                && (    ((phkn->usFlags & KC_VIRTUALKEY) == 0)
+                                     || (   (phkn->usKeyCode != 0x09)     // shift
+                                         && (phkn->usKeyCode != 0x0a)     // ctrl
+                                         && (phkn->usKeyCode != 0x0b)     // alt
+                                        )
+                                   )
+                                )
                             )
                         {
+                            // valid hotkey:
+                            USHORT usFlags = phkn->usFlags;
+                            if (pFuncKey)
+                            {
+                                // it's a function key:
+                                // add KC_INVALIDCOMP
+                                usFlags |= KC_INVALIDCOMP;
+                                sprintf(phkn->szDescription,
+                                        "\"%s\"",
+                                        pFuncKey->szDescription);
+                            }
+                            else
+                                cmnDescribeKey(phkn->szDescription,
+                                               phkn->usFlags,
+                                               phkn->usKeyCode);
+
                             // store hotkey for object;
                             // we'll now pass the scan code, which is
                             // used by the hook
                             objSetObjectHotkey(pWinData->somSelf,
-                                               phkn->usFlags,
+                                               usFlags,
                                                phkn->ucScanCode,
                                                phkn->usKeyCode);
-                            // show description
-                            cmnDescribeKey(phkn->szDescription,
-                                           phkn->usFlags,
-                                           phkn->usKeyCode);
                             // have entry field display that (comctl.c)
                             mrc = (MPARAM)TRUE;
                         }
                         else
                         {
                             // invalid:
+                            // delete the object's hotkey
                             objSetObjectHotkey(pWinData->somSelf,
                                                0, 0, 0);
                             mrc = (MPARAM)FALSE;
@@ -1033,7 +1086,8 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
         case WM_DESTROY:
         {
-            // clean up the data we allocated earlier (V1.00)
+            // clean up the data we allocated earlier
+            hifFreeFunctionKeys(pWinData->paFuncKeys);
             _wpFreeMem(pWinData->somSelf, (PBYTE)pWinData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
@@ -1155,6 +1209,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
         if (pHotkeys)
         {
             // hotkeys list exists:
+            // check if we have a hotkey for this object already
             PGLOBALHOTKEY pHotkeyThis = objFindHotkey(pHotkeys,
                                                       cHotkeys,
                                                       _wpQueryHandle(somSelf));

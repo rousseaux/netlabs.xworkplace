@@ -144,6 +144,7 @@ $(OUTPUTDIR)\common.obj: \
      $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
+     $(INC)\media\media.h \
      $(INC)\startshut\shutdown.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -156,12 +157,13 @@ $(OUTPUTDIR)\notebook.obj: \
 $(OUTPUTDIR)\kernel.obj: \
      $(INC)\setup.h \
      $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+        $(HLPINC)\memdebug.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
      $(INC)\classes\xfldr.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\xthreads.h \
+     $(INC)\media\media.h \
      $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -174,6 +176,7 @@ $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
      $(INC)\config\hookintf.h $(INC)\config\sound.h \
      $(INC)\filesys\fileops.h $(INC)\filesys\xthreads.h \
+     $(INC)\media\media.h \
      $(INC)\startshut\apm.h \
      $(INC)\hook\xwphook.h \
      $(@B).c $(MYOWNINC)\$(@B).h

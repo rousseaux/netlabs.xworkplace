@@ -99,7 +99,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\sounddll.h"           // declarations for SOUND.DLL
+// #include "filesys\sounddll.h"           // declarations for SOUND.DLL
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "config\hookintf.h"             // daemon/hook interface
@@ -109,7 +109,7 @@
 
 // other SOM headers
 #include <wpshadow.h>                   // WPShadow
-#include <wpdesk.h>                     // WPDesktop
+// #include <wpdesk.h>                     // WPDesktop
 #include "classes\xtrash.h"             // XWPTrashCan
 #include "filesys\trash.h"              // trash can implementation
 
@@ -133,11 +133,11 @@ CHAR                G_szBootupStatus[256];
 HWND                G_hwndBootupStatus = NULLHANDLE;
 
 // SOUND.DLL module handle
-HMODULE             G_hmodSoundDLL;
+// HMODULE             G_hmodSoundDLL;
 // imported functions (see sounddll.h)
-PFN_SNDOPENSOUND    G_psndOpenSound;
-PFN_SNDPLAYSOUND    G_psndPlaySound;
-PFN_SNDSTOPSOUND    G_psndStopSound;
+// PFN_SNDOPENSOUND    G_psndOpenSound;
+// PFN_SNDPLAYSOUND    G_psndPlaySound;
+// PFN_SNDSTOPSOUND    G_psndStopSound;
 
 // File thread
 HAB                 G_habFileThread = NULLHANDLE;
@@ -252,29 +252,36 @@ BOOL RaiseWorkerThreadPriority(BOOL fRaise)
  *      and controls that thread's priority at the same time; use this
  *      function instead of WinPostMsg, cos otherwise the
  *      Worker thread gets confused.
+ *
+ *@@changed V0.9.3 (2000-04-26) [umoeller]: changed kernel locks
  */
 
 BOOL xthrPostWorkerMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     BOOL rc = FALSE;
-    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+    PCKERNELGLOBALS pcKernelGlobals = krnQueryGlobals();
 
-    if (thrQueryID(pKernelGlobals->ptiWorkerThread))
+    if (thrQueryID(pcKernelGlobals->ptiWorkerThread))
     {
-        if (pKernelGlobals->hwndWorkerObject)
+        if (pcKernelGlobals->hwndWorkerObject)
         {
-            rc = WinPostMsg(pKernelGlobals->hwndWorkerObject, msg, mp1, mp2);
+            rc = WinPostMsg(pcKernelGlobals->hwndWorkerObject, msg, mp1, mp2);
 
             if (rc)
             {
-                pKernelGlobals->ulWorkerMsgCount++;
-                if (pKernelGlobals->ulWorkerMsgCount > 300)
-                    // if the Worker thread msg queue gets congested, boost priority
-                    RaiseWorkerThreadPriority(TRUE);
+                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                if (pKernelGlobals)
+                {
+                    pKernelGlobals->ulWorkerMsgCount++;
+                    krnUnlockGlobals();
+                    if (pKernelGlobals->ulWorkerMsgCount > 300)
+                        // if the Worker thread msg queue gets congested, boost priority
+                        RaiseWorkerThreadPriority(TRUE);
+                }
             }
         }
     }
-    krnUnlockGlobals();
+
     return (rc);
 }
 
@@ -311,6 +318,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.0: adjust WOM_PROCESSORDEREDCONTENT for new XFolder: [umoeller]:xwpBeginEnumContent functions
  *@@changed V0.9.0 [umoeller]: removed WM_INVALIDATEORDEREDCONTENT
  *@@changed V0.9.0 [umoeller]: WOM_ADDAWAKEOBJECT is now storing plain WPObject pointers (no more OBJECTLISTITEM)
+ *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
 MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -425,22 +433,26 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 ULONG       ulNow = 0, ulMax = 0;
                 BOOL        fContinue = TRUE;
 
+                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
                 // populate folder
                 wpshCheckIfPopulated(pFolder);
 
                 // count objects
-                for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pObject);
-                        pObject = _wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
+                        pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
                     )
                 {
                     ulMax++;
                 }
 
                 // collect icons for all objects
-                for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pObject);
-                        pObject = _wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
+                        pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
                     )
                 {
                     PFNWP pfncb = (PFNWP)mp2;
@@ -614,20 +626,37 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     else
                     {
                         // timing mode
-                        // pKernelGlobals->ulWorkerFunc2 = 5120;
                         if (dtGetULongTime() > ((pPCI->ulFirstTime) + pPCI->ulTiming))
                             OKGetNext = TRUE;
                     }
 
-                    // pKernelGlobals->ulWorkerFunc2 = 5130;
                     if (OKGetNext)
-                        // pKernelGlobals->ulWorkerFunc2 = 5131;
+                    {
+                        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                        // ready to go for next object:
+                        // make sure the damn PM hard error windows are not visible,
+                        // because this locks any other PM activity
+                        if (    (WinIsWindowVisible(pKernelGlobals->hwndHardError))
+                             || (WinIsWindowVisible(pKernelGlobals->hwndSysError))
+                           )
+                        {
+                            DosBeep(250, 100);
+                            // wait a little more and try again
+                            OKGetNext = FALSE;
+                        }
+
+                        krnUnlockGlobals();
+                    }
+
+                    if (OKGetNext)
                         xthrPostWorkerMsg(WOM_PROCESSORDEREDCONTENT, mp1, mp2);
                     else
                     {
-                        // pKernelGlobals->ulWorkerFunc2 = 5132;
-                        xthrPostWorkerMsg(WOM_WAITFORPROCESSNEXT, mp1, mp2);
+                        // not ready yet:
+                        // sleep awhile
                         DosSleep(100);
+                        // and repost
+                        xthrPostWorkerMsg(WOM_WAITFORPROCESSNEXT, mp1, mp2);
                     }
                 } // end if (!pPCI->fCancelled)
                 else
@@ -1041,17 +1070,7 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
                                  0);                 // extra window words
 
                 // create Worker object window
-                hwndWorkerObjectTemp = WinCreateWindow(
-                                    HWND_OBJECT,
-                                    WNDCLASS_WORKEROBJECT,
-                                    (PSZ)"",     // title
-                                    0,           // style
-                                    0,0,0,0,     // position
-                                    0,           // owner
-                                    HWND_BOTTOM, // z-order
-                                    ID_WORKEROBJECT, // window id
-                                    NULL,        // create params
-                                    NULL);       // pres params
+                hwndWorkerObjectTemp = winhCreateObjectWindow(WNDCLASS_WORKEROBJECT, NULL);
 
                 if (!hwndWorkerObjectTemp)
                     DebugBox(HWND_DESKTOP,
@@ -1206,6 +1225,7 @@ ULONG xthrIsFileThreadBusy(VOID)
 /*
  *@@ CollectDoubleFiles:
  *      implementation for FIM_DOUBLEFILES.
+ *      This runs on the File thread.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
@@ -1320,103 +1340,13 @@ VOID CollectDoubleFiles(MPARAM mp1)
 }
 
 /*
- *@@ CollectHotkeys:
- *      implementation for FIM_INSERTHOTKEYS.
- *
- *@@added V0.9.2 (2000-02-21) [umoeller]
- */
-
-VOID CollectHotkeys(MPARAM mp1, MPARAM mp2)
-{
-    HWND            hwndCnr = (HWND)mp1;
-    PBOOL           pfBusy = (PBOOL)mp2;
-    ULONG           cHotkeys;       // set below
-    PGLOBALHOTKEY   pHotkeys;
-
-    if ((hwndCnr) && (pfBusy))
-    {
-        *pfBusy = TRUE;
-        pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
-
-        #ifdef DEBUG_KEYS
-            _Pmpf(("hifKeybdHotkeysInitPage: got %d hotkeys", cHotkeys));
-        #endif
-
-        cnrhRemoveAll(hwndCnr);
-
-        if (pHotkeys)
-        {
-            ULONG       ulCount = 0;
-            PHOTKEYRECORD preccFirst
-                        = (PHOTKEYRECORD)cnrhAllocRecords(hwndCnr,
-                                                          sizeof(HOTKEYRECORD),
-                                                          cHotkeys);
-            PHOTKEYRECORD preccThis = preccFirst;
-            PGLOBALHOTKEY pHotkeyThis = pHotkeys;
-
-            while (ulCount < cHotkeys)
-            {
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  %d: Getting hotkey for 0x%lX", ulCount, pHotkeyThis->ulHandle));
-                #endif
-
-                preccThis->ulIndex = ulCount;
-
-                // copy struct
-                memcpy(&preccThis->Hotkey, pHotkeyThis, sizeof(GLOBALHOTKEY));
-
-                // object handle
-                sprintf(preccThis->szHandle, "0x%lX", pHotkeyThis->ulHandle);
-                preccThis->pszHandle = preccThis->szHandle;
-
-                // describe hotkey
-                cmnDescribeKey(preccThis->szHotkey,
-                               pHotkeyThis->usFlags,
-                               pHotkeyThis->usKeyCode);
-                preccThis->pszHotkey = preccThis->szHotkey;
-
-                // get object for hotkey
-                preccThis->pObject = _wpclsQueryObject(_WPObject,
-                                                       pHotkeyThis->ulHandle);
-                if (preccThis->pObject)
-                {
-                    WPFolder *pFolder = _wpQueryFolder(preccThis->pObject);
-
-                    preccThis->recc.pszIcon = _wpQueryTitle(preccThis->pObject);
-                    preccThis->recc.hptrMiniIcon = _wpQueryIcon(preccThis->pObject);
-                    if (pFolder)
-                        if (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
-                            preccThis->pszFolderPath = preccThis->szFolderPath;
-                }
-                else
-                    preccThis->recc.pszIcon = "Invalid object";
-
-                preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
-                ulCount++;
-                pHotkeyThis++;
-            }
-
-            cnrhInsertRecords(hwndCnr,
-                              NULL,         // parent
-                              (PRECORDCORE)preccFirst,
-                              TRUE, // invalidate
-                              NULL,         // text
-                              CRA_RECORDREADONLY,
-                              cHotkeys);
-
-            hifFreeObjectHotkeys(pHotkeys);
-
-            *pfBusy = FALSE;
-        }
-    }
-}
-
-/*
  *@@ fnwpFileObject:
  *      wnd proc for File thread object window
  *      (see fntFileThread below).
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: redid initial desktop open processing
  */
 
 MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1429,23 +1359,50 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
     switch (msg)
     {
         /*
-         *@@ FIM_DESKTOPPOPULATED:
-         *      this msg is posted by XFldDesktop::wpPopulate;
+         *@@ FIM_DESKTOPREADY:
+         *      this msg is posted by XFldDesktop::wpOpen;
          *      we will now go for the XWorkplace startup
          *      processing.
          *
          *      Parameters:
-         *          WPDesktop* mp1:    currently active Desktop.
+         *      --  WPDesktop* mp1:     currently active Desktop.
+         *      --  HWND mp2:           frame of Desktop just opened.
+         *
+         *@@added V0.9.3 (2000-04-26) [umoeller]
          */
 
-        case FIM_DESKTOPPOPULATED:
+        case FIM_DESKTOPREADY:
         {
-            HWND    hwndActiveDesktop;
+            HWND    hwndActiveDesktop = (HWND)mp2;
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("fnwpFileObject: got WOM_DESKTOPREADY"));
+            #endif
+
+            if ((_wpQueryFldrFlags((WPFolder*)mp1)
+                        & FOI_POPULATEDWITHALL) == 0)
+            {
+                #ifdef DEBUG_STARTUP
+                    _Pmpf(("    Desktop not populated yet, reposting WOM_DESKTOPREADY"));
+                #endif
+
+                DosSleep(100);
+                // if Desktop is not populated yet, post this
+                // msg again
+
+                WinPostMsg(hwndObject, FIM_DESKTOPREADY, mp1, mp2);
+                // do not continue
+                break;
+            }
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("    Desktop populated, sleep(1000)"));
+            #endif
 
             // sleep a little while more
             DosSleep(1000);
 
-            hwndActiveDesktop = _wpclsQueryActiveDesktopHWND(_WPDesktop);
+            // hwndActiveDesktop = cmnQueryActiveDesktopHWND();
 
             {
                 PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
@@ -1453,10 +1410,20 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 krnUnlockGlobals();
             }
 
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("    Posting XDM_DESKTOPREADY (0x%lX) to daemon",
+                        hwndActiveDesktop));
+            #endif
+
             // notify daemon of WPS desktop window handle
             krnPostDaemonMsg(XDM_DESKTOPREADY,
                              (MPARAM)hwndActiveDesktop,
                              (MPARAM)0);
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("    Posting FIM_STARTUP (1) to File thread",
+                        hwndActiveDesktop));
+            #endif
 
             // go for startup folder
             xthrPostFileMsg(FIM_STARTUP,
@@ -1466,7 +1433,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         /*
          *@@ FIM_STARTUP:
-         *      this gets posted in turn by FIM_DESKTOPPOPULATED
+         *      this gets posted in turn by FIM_DESKTOPREADY
          *      initially and several times afterwards with an
          *      increasing value in mp1, depending on which
          *      different startup thingies will be processed.
@@ -1475,18 +1442,26 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *          ULONG mp1: startup action indicator.
          *
          *      Valid values for mp1:
-         *      -- 1:   initial posting by FIM_DESKTOPPOPULATED.
+         *      -- 1:   initial posting by FIM_DESKTOPREADY.
          *              This checks for the "just installed" flag
          *              in OS2.INI and creates the config folders
          *              and posts WOM_WELCOME to the Worker thread.
-         *      -- 2:   process XWorkplace Startup folder
+         *      -- 2:   start processing XWorkplace Startup folder.
+         *      -- 3:   populate Quick Open folders
+         *      -- 4:   destroy boot logo
          *      -- 0:   done, post no next FIM_STARTUP.
+         *
+         *      This is maybe the most obscure code in XWorkplace.
          */
 
         case FIM_STARTUP:
         {
             ULONG   ulAction = (ULONG)mp1;
             BOOL    fPostNext = FALSE;
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("fnwpFileObject: got FIM_STARTUP(%d)", ulAction));
+            #endif
 
             switch (ulAction)
             {
@@ -1518,30 +1493,42 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                 case 2: // startup folder
                 {
+                    fPostNext = TRUE;
                     // initiate processing of startup folder; this is
                     // again done by the Thread-1 object window.
                     if (krnNeed2ProcessStartupFolder())
-                        // OK, process startup folder
-                        krnPostThread1ObjectMsg(T1M_BEGINSTARTUP, MPNULL, MPNULL);
-                            // this will continue asynchronously and
-                            // post FIM_STARTUPFOLDERDONE when done
-                    else
-                        fPostNext = TRUE;
+                    {
+                        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+                        // check if startup folder is to be skipped
+                        if ((pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP) == 0)
+                                // V0.9.3 (2000-04-25) [umoeller]
+                        {
+                            // OK, process startup folder
+                            krnPostThread1ObjectMsg(T1M_BEGINSTARTUP, MPNULL, MPNULL);
+                                // this will continue asynchronously and
+                                // post FIM_STARTUPFOLDERDONE when done
+                            fPostNext = FALSE;
+                        }
+                    }
                 break; }
 
                 case 3: // populate config folders
                 {
-                    XFolder *pFolder = _xwpclsQueryConfigFolder(_XFolder); // changed V0.9.0
+                    /* XFolder *pFolder = _xwpclsQueryConfigFolder(_XFolder); // changed V0.9.0
                     if (pFolder)
-                        wpshPopulateTree(pFolder);
+                        wpshPopulateTree(pFolder); */
 
                     // now go for the "Quick open" folders;
                     krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN, MPNULL, MPNULL);
+                            // this posts FIM_STARTUPFOLDERDONE(2)
+                            // back to us, which in turn posts
+                            // FIM_STARTUP(4)... kinda sick.
                 break; }
 
                 case 4:
                     // destroy boot logo, if present
                     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
+                    fPostNext = FALSE;
                 break;
             } // end switch
 
@@ -1818,7 +1805,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case FIM_INSERTHOTKEYS:
-            CollectHotkeys(mp1, mp2);
+            hifCollectHotkeys(mp1, mp2);
         break;
 
         /*
@@ -1928,17 +1915,8 @@ void _Optlink fntFileThread(PVOID ptiMyself)
                                    0);
 
                     // create object window
-                    pKernelGlobals->hwndFileObject = WinCreateWindow(
-                                        HWND_OBJECT,
-                                        WNDCLASS_FILEOBJECT,
-                                        (PSZ)"",     // title
-                                        0,           // style
-                                        0,0,0,0,     // position
-                                        0,           // owner
-                                        HWND_BOTTOM, // z-order
-                                        ID_FILEOBJECT,  // window id
-                                        NULL,        // create params
-                                        NULL);       // pres params
+                    pKernelGlobals->hwndFileObject
+                        = winhCreateObjectWindow(WNDCLASS_FILEOBJECT, NULL);
 
                     if (!pKernelGlobals->hwndFileObject)
                         DebugBox(HWND_DESKTOP,
@@ -2016,47 +1994,6 @@ BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     return (rc);
 }
 
-/*
- *@@ xthrPlaySystemSound:
- *      this posts a msg to the XFolder Speedy thread to
- *      have SOUND.DLL play a system sound. This should
- *      be failsafe, since successful loading of that DLL
- *      is checked for.
- *
- *      usIndex may be one of the MMSOUND_* values in
- *      "sound.h".
- */
-
-BOOL xthrPlaySystemSound(USHORT usIndex)
-{
-    BOOL rc = FALSE;
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
-    if (pKernelGlobals->ulMMPM2Working == MMSTAT_WORKING)
-        // SOUND.DLL loaded successfully and
-        // Speedythread running:
-        rc = WinPostMsg(pKernelGlobals->hwndSpeedyObject,
-                        QM_PLAYSYSTEMSOUND,
-                        (MPARAM)usIndex,
-                        MPNULL);
-
-    return (rc);
-}
-
-/*
- *@@ xthrIsPlayingSystemSound:
- *      returns TRUE if the Speedy thread is
- *      currently playing a system sound.
- *      This is useful for waiting until it's done.
- */
-
-BOOL xthrIsPlayingSystemSound(VOID)
-{
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    return (pKernelGlobals->usDeviceID != 0);
-}
-
-ULONG   ulVolumeTemp = 0;
 SHAPEFRAME sb = {0};
 
 /*
@@ -2065,6 +2002,7 @@ SHAPEFRAME sb = {0};
  *      (see fntSpeedyThread below)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new global settings
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
 MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2237,182 +2175,6 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
         break; }
 
-        /*
-         * QM_PLAYSYSTEMSOUND:
-         *      plays system sound specified in MMPM.INI.
-         *      This is posted by xthrPostSpeedyMsg.
-         *      (USHORT)mp1 must be the MMPM.INI index (see
-         *      sndQuerySystemSound in common.c for a list).
-         */
-
-        case QM_PLAYSYSTEMSOUND:
-        {
-            CHAR    szDescr[CCHMAXPATH];
-            ULONG   ulVolume;
-            // allocate mem for sound file; this will
-            // be freed in QM_PLAYSOUND below
-            PSZ     pszFile = malloc(CCHMAXPATH);
-
-            #ifdef DEBUG_SOUNDS
-                _Pmpf(( "QM_PLAYSYSTEMSOUND index %d", mp1));
-            #endif
-
-            // get system sound from MMPM.INI
-            if (sndQuerySystemSound((USHORT)mp1,
-                                    szDescr,
-                                    pszFile,
-                                    &ulVolume))
-            {
-                // OK, sound file found in MMPM.INI:
-                #ifdef DEBUG_SOUNDS
-                    _Pmpf(( "QM: posting Sound %d == %s, %s", mp1, szDescr, pszFile ));
-                #endif
-
-                // play!
-                WinPostMsg(hwndObject,
-                           QM_PLAYSOUND,
-                           (MPARAM)pszFile,
-                           (MPARAM)ulVolume);
-            }
-            else
-                // any error: do nothing
-                free(pszFile);
-        break; }
-
-        /*
-         * QM_PLAYSOUND:
-         *      plays the sound file specified in
-         *      (PSZ)mp1; this PSZ is assumed to have
-         *      been allocated using malloc() and will
-         *      be freed afterwards.
-         *      (ULONG)mp2 must be the volume (0-100).
-         *      This message is only posted by
-         *      QM_PLAYSYSTEMSOUND (above) if a system
-         *      sound was queried successfully.
-         *      To play sounds in the Speedy thread, we use
-         *      SOUND.DLL, which should have been loaded
-         *      at WPS startup. (See krnInitializeXWorkplace.
-         *      If not, we don't get this message in the
-         *      first place.)
-         *      Playing sounds is a three-step process:
-         *      1)  We call sndOpenSound in SOUND.DLL first
-         *          to open a waveform device for this sound
-         *          file as a _shareable_ device and then
-         *          stop for the moment.
-         *      2)  If this device is accessible, MMPM/2 then
-         *          posts us MM_MCIPASSDEVICE (below) so we can
-         *          play the sound.
-         *      3)  We close the device if we're either losing
-         *          it (because another app needs it -- that's
-         *          MM_MCIPASSDEVICE with MCI_LOSING_USE set)
-         *          or if MMPM/2 is done with our sound (that's
-         *          MM_MCINOTIFY below).
-         */
-
-        case QM_PLAYSOUND:
-        {
-            if (mp1)
-            {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                if (G_psndOpenSound) // func ptr into SOUND.DLL
-                    // check for whether that sound file really exists
-                    if (access(mp1, 0) == 0)
-                        (*G_psndOpenSound)(hwndObject,
-                                         &pKernelGlobals->usDeviceID,
-                                         (PSZ)mp1);
-                                // this will post MM_MCIPASSDEVICE
-                                // if the device is available
-
-                // free the PSZ passed to us
-                free((PSZ)mp1);
-                ulVolumeTemp = (ULONG)mp2;
-                krnUnlockGlobals();
-            }
-        break; }
-
-        /*
-         * MM_MCIPASSDEVICE:
-         *      MMPM/2 posts this msg for shareable devices
-         *      to allow multimedia applications to behave
-         *      politely when several applications use the
-         *      same device. This is posted to us in two cases:
-         *      1)  opening the device above was successful
-         *          and the device is available (that is, no
-         *          other application needs exclusive access
-         *          to that device); in this case, mp2 has the
-         *          MCI_GAINING_USE flag set, and we can call
-         *          sndPlaySound in SOUND.DLL to actually
-         *          play the sound.
-         *          The device is _not_ available, for example,
-         *          when a Win-OS/2 session is running which
-         *          uses sounds.
-         *      2)  While we are playing, another application
-         *          is trying to get access to the device; in
-         *          this case, mp2 has the MCI_LOSING_USE flag
-         *          set, and we call sndStopSound to stop
-         *          playing our sound.
-         */
-
-        #define MM_MCINOTIFY                        0x0500
-        #define MM_MCIPASSDEVICE                    0x0501
-        #define MCI_LOSING_USE                      0x00000001L
-        #define MCI_GAINING_USE                     0x00000002L
-        #define MCI_NOTIFY_SUCCESSFUL               0x0000
-
-        case MM_MCIPASSDEVICE:
-        {
-            PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-            BOOL fGainingUse = (SHORT1FROMMP(mp2) == MCI_GAINING_USE);
-
-            #ifdef DEBUG_SOUNDS
-                _Pmpf(( "MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
-                _Pmpf(( "    %s use", (fGainingUse) ? "Gaining" : "Losing" ));
-            #endif
-
-            if (fGainingUse)
-            {
-                // we're gaining the device (1): play sound
-                if (G_psndPlaySound)  // func ptr into SOUND.DLL
-                    (*G_psndPlaySound)(hwndObject,
-                                     &pKernelGlobals->usDeviceID,
-                                     ulVolumeTemp);
-            }
-            else
-                // we're losing the device (2): stop sound
-                if (G_psndStopSound)  // func ptr into SOUND.DLL
-                    (*G_psndStopSound)(&pKernelGlobals->usDeviceID);
-            krnUnlockGlobals();
-        break; }
-
-        /*
-         * MM_MCINOTIFY:
-         *      this is the general notification msg of MMPM/2.
-         *      We need this message to know when MMPM/2 is done
-         *      playing our sound; we will then close the device.
-         */
-
-        case MM_MCINOTIFY:
-        {
-            PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-            #ifdef DEBUG_SOUNDS
-                _Pmpf(( "MM_MCINOTIFY: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
-            #endif
-
-            if (    (SHORT1FROMMP(mp2) == pKernelGlobals->usDeviceID)
-                 && (SHORT1FROMMP(mp1) == MCI_NOTIFY_SUCCESSFUL)
-               )
-            {
-                if (G_psndStopSound)  // func ptr into SOUND.DLL
-                    (*G_psndStopSound)(&pKernelGlobals->usDeviceID);
-            }
-            krnUnlockGlobals();
-        break; }
-
-        #ifdef __DEBUG__
-        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
-            CRASH;
-        break;
-        #endif
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
@@ -2462,6 +2224,8 @@ VOID APIENTRY xthrOnKillSpeedyThread(VOID)
  *          with high regular priority.
  *
  *          This thread is also created from krnInitializeXWorkplace.
+ *
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
 void _Optlink fntSpeedyThread(PVOID ptiMyself)
@@ -2494,17 +2258,8 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
                                    0);
 
                     // create object window
-                    pKernelGlobals->hwndSpeedyObject = WinCreateWindow(
-                                        HWND_OBJECT,
-                                        WNDCLASS_QUICKOBJECT,
-                                        (PSZ)"",     // title
-                                        0,           // style
-                                        0,0,0,0,     // position
-                                        0,           // owner
-                                        HWND_BOTTOM, // z-order
-                                        ID_WORKEROBJECT,  // window id
-                                        NULL,        // create params
-                                        NULL);       // pres params
+                    pKernelGlobals->hwndSpeedyObject
+                        = winhCreateObjectWindow(WNDCLASS_QUICKOBJECT, NULL);
 
                     if (!pKernelGlobals->hwndSpeedyObject)
                         DebugBox(HWND_DESKTOP,
@@ -2557,10 +2312,10 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
         WinTerminate(G_habSpeedyThread);
         G_habSpeedyThread = NULLHANDLE;
 
-        if (fTrapped)
+        /* if (fTrapped)
             pKernelGlobals->ulMMPM2Working = MMSTAT_CRASHED;
         else
-            pKernelGlobals->ulMMPM2Working = MMSTAT_UNKNOWN;
+            pKernelGlobals->ulMMPM2Working = MMSTAT_UNKNOWN; */
 
         krnUnlockGlobals();
     }
@@ -2571,6 +2326,8 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
  *      this gets called by krnInitializeXWorkplace upon
  *      system startup to start the three additional
  *      XWorkplace threads.
+ *
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
 BOOL xthrStartThreads(VOID)
@@ -2594,7 +2351,7 @@ BOOL xthrStartThreads(VOID)
                     pKernelGlobals->tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
 
         // attempt to load SOUND.DLL
-        if (cmnQueryXFolderBasePath(szSoundDLL))
+        /* if (cmnQueryXFolderBasePath(szSoundDLL))
         {
             // path found: append DLL name
             strcat(szSoundDLL,
@@ -2679,7 +2436,7 @@ BOOL xthrStartThreads(VOID)
             }
             else
                 pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLNOTFOUND;
-        }
+        } */
 
         /*
          *  start threads
@@ -2691,19 +2448,19 @@ BOOL xthrStartThreads(VOID)
             // threads not disabled:
             pKernelGlobals->ulWorkerMsgCount = 0;
             thrCreate(&(pKernelGlobals->ptiWorkerThread),
-                      3*96000,          // plenty of stack space
                       fntWorkerThread,
+                      FALSE,        // no create msgq
                       0);
 
             thrCreate(&(pKernelGlobals->ptiSpeedyThread),
-                      3*96000,          // plenty of stack space
                       fntSpeedyThread,
+                      FALSE,        // no create msgq
                       0);
         }
 
         thrCreate(&(pKernelGlobals->ptiFileThread),
-                  3*96000,          // plenty of stack space
                   fntFileThread,
+                  FALSE,        // no create msgq
                   0);
     }
 

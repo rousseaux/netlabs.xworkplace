@@ -33,6 +33,36 @@
 
     /* ******************************************************************
      *                                                                  *
+     *   FOPSRET: file operations error codes                           *
+     *                                                                  *
+     ********************************************************************/
+
+    #define FOPSERR_OK                        0
+    #define FOPSERR_NOT_HANDLED_ABORT         1
+    #define FOPSERR_INVALID_OBJECT            2
+    #define FOPSERR_INTEGRITY_ABORT           3
+    #define FOPSERR_CANCELLEDBYUSER           4
+    // #define FOPSERR_NODELETETRASHOBJECT       5
+    #define FOPSERR_MOVE2TRASH_READONLY       6         // non-fatal
+            // moving WPFileSystem which has read-only:
+            // this should prompt the user
+    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  7         // fatal
+            // moving non-deletable to trash can: this should abort
+    #define FOPSERR_DELETE_READONLY           8         // non-fatal
+            // deleting WPFileSystem which has read-only flag;
+            // this should prompt the user
+    #define FOPSERR_DELETE_NOT_DELETABLE      9         // fatal
+            // deleting not-deletable; this should abort
+    // #define FOPSERR_DESTROYNONTRASHOBJECT     10        // fatal
+    #define FOPSERR_TRASHDRIVENOTSUPPORTED    11         // non-fatal
+    #define FOPSERR_WPFREE_FAILED             12        // fatal
+    #define FOPSERR_LOCK_FAILED               13        // fatal
+            // requesting object mutex failed
+
+    typedef unsigned char FOPSRET;
+
+    /* ******************************************************************
+     *                                                                  *
      *   Trash can setup                                                *
      *                                                                  *
      ********************************************************************/
@@ -52,6 +82,9 @@
 
         /*
          *@@ EXPANDEDOBJECT:
+         *      used with fopsFolder2ExpandedList
+         *      and fopsExpandObjectDeep. See remarks
+         *      there.
          *
          *@@added V0.9.2 (2000-02-28) [umoeller]
          */
@@ -72,15 +105,12 @@
                     // on pllContentsSFL and sub-lists
         } EXPANDEDOBJECT, *PEXPANDEDOBJECT;
 
-        PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
-                                          PULONG pulSizeContents);
-
-        PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject);
-
-        VOID fopsFreeExpandedList(PLINKLIST pllSFL);
+        PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject);
 
         VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI);
 
+        FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,
+                                     WPObject *pObject);
     #endif
 
     /********************************************************************
@@ -105,13 +135,18 @@
      *                                                                  *
      ********************************************************************/
 
+    // file operation identifiers
     #define XFT_MOVE2TRASHCAN       1
     #define XFT_RESTOREFROMTRASHCAN 2
-    #define XFT_DESTROYTRASHOBJECTS 3
-    #define XFT_EMPTYTRASHCAN       4
-    #define XFT_DELETE              5
+    // #define XFT_DESTROYTRASHOBJECTS 3
+    #define XFT_TRUEDELETE          4
 
     typedef PVOID HFILETASKLIST;
+
+    // status id for FOPSUPDATE
+    #define FOPSUPD_EXPANDINGOBJECT         1
+    #define FOPSUPD_SOURCEOBJECT            2
+    #define FOPSUPD_SUBOBJECT               3
 
     /*
      *@@ FOPSUPDATE:
@@ -123,14 +158,34 @@
 
     typedef struct _FOPSUPDATE
     {
-        ULONG       ulOperation;
+        ULONG       ulOperation;        // operation, as specified with fopsCreateFileTaskList
 
-        WPFolder    *pSourceFolder;
-        WPObject    *pCurrentObject;
-        WPFolder    *pTargetFolder;
+        WPFolder    *pSourceFolder;     // source folder; see fopsCreateFileTaskList
+        WPFolder    *pTargetFolder;     // source folder; see fopsCreateFileTaskList
+
+        ULONG       ulStatus;
+                        // one of the following:
+                        //  -- FOPSUPD_EXPANDINGOBJECT: collecting objects before
+                        //     actual processing is started (with XFT_TRUEDELETE);
+                        //     in that case, pObject points to the object
+                        //     being expanded.
+                        // --  FOPSUPD_SOURCEOBJECT: pObject is one of the
+                        //     objects on the file task list (in pSourceFolder)
+                        //     and is currently being processed. The title should be
+                        //     displayed, and the progress bar should be updated.
+                        // --  FOPSUPD_SUBOBJECT: pObject is an object in one
+                        //     of the subfolders of the actual source objects.
+                        //     The title should be
+                        //     displayed, but the progress bar should not be updated,
+                        //     since the values below are constant (speed).
+        WPObject    *pObject;    // current object being worked on
 
         ULONG       ulCurrentObject;
+                        // index of pCurrentObject (out of ulTotalObjects); useful
+                        // for progress bar. This only changes when
+                        // (ulStatus == FOPSUPD_SOURCEOBJECT).
         ULONG       ulTotalObjects;
+                        // total objects count (100%).
     } FOPSUPDATE, *PFOPSUPDATE;
 
     /*
@@ -174,22 +229,21 @@
     typedef BOOL APIENTRY FNFOPSPROGRESSCALLBACK(PFOPSUPDATE pfu,
                                                  ULONG ulUser);
 
-    #define FOPSERR_NODELETETRASHOBJECT         1
-    #define FOPSERR_OBJSTYLENODELETE            2
-    #define FOPSERR_DESTROYNONTRASHOBJECT       3
-    #define FOPSERR_TRASHDRIVENOTSUPPORTED      4
-
     /*
      *@@ FNFOPSERRORCALLBACK:
      *      error callback if problems are encountered
      *      during file processing. If this function
-     *      returns TRUE, processing continues. If this
-     *      returns FALSE, processing is halted.
+     *      returns FOPSERR_OK, processing continues.
+     *      For every other return value, processing
+     *      will be aborted, and the return value
+     *      will be passed upwards to the caller.
      *
      *      ulError will be one of the following:
      *
      *      -- FOPSERR_NODELETETRASHOBJECT: cannot move
-     *         XWPTrashObject instances. Shouldn't happen.
+     *         XWPTrashObject instances to trash can.
+     *         ulOperation should be switched to
+     *         XFT_DESTROYTRASHOBJECTS instead.
      *
      *      -- FOPSERR_OBJSTYLENODELETE: object to be deleted
      *         has OBJSTYLE_NODELETE flag.
@@ -205,8 +259,9 @@
      *@@added V0.9.2 (2000-03-04) [umoeller]
      */
 
-    typedef BOOL APIENTRY FNFOPSERRORCALLBACK(WPObject *pObject,
-                                              ULONG ulError);
+    typedef FOPSRET APIENTRY FNFOPSERRORCALLBACK(ULONG ulOperation,
+                                                 WPObject *pObject,
+                                                 FOPSRET frError);
 
     HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
                                          WPFolder *pSourceFolder,
@@ -215,14 +270,14 @@
                                          FNFOPSERRORCALLBACK *pfnErrorCallback,
                                          ULONG ulUser);
 
-    BOOL fopsValidateObjOperation(ULONG ulOperation,
-                                  FNFOPSERRORCALLBACK *pfnErrorCallback,
-                                  WPObject *pObject);
+    FOPSRET fopsValidateObjOperation(ULONG ulOperation,
+                                     FNFOPSERRORCALLBACK *pfnErrorCallback,
+                                     WPObject *pObject);
 
-    BOOL fopsAddObjectToTask(HFILETASKLIST hftl,
-                             WPObject *pObject);
+    FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,
+                                WPObject *pObject);
 
-    BOOL fopsStartProcessingTasks(HFILETASKLIST hftl);
+    BOOL fopsStartTaskAsync(HFILETASKLIST hftl);
 
     VOID fopsFileThreadProcessing(HFILETASKLIST hftl);
 
@@ -234,20 +289,21 @@
      *                                                                  *
      ********************************************************************/
 
-    BOOL fopsStartCnrCommon(ULONG ulOperation,
-                            PSZ pszTitle,
-                            WPFolder *pSourceFolder,
-                            WPFolder *pTargetFolder,
-                            WPObject *pSourceObject,
-                            ULONG ulSelection,
-                            HWND hwndCnr);
+    FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,
+                                 WPFolder *pSourceFolder,
+                                 WPFolder *pTargetFolder,
+                                 WPObject *pSourceObject,
+                                 ULONG ulSelection,
+                                 BOOL fRelatedObjects,
+                                 HWND hwndCnr,
+                                 ULONG ulMsgSingle,
+                                 ULONG ulMsgMultiple);
 
     #ifdef LINKLIST_HEADER_INCLUDED
-        BOOL fopsStartFromListCommon(ULONG ulOperation,
-                                     PSZ pszTitle,
-                                     WPFolder *pSourceFolder,
-                                     WPFolder *pTargetFolder,
-                                     PLINKLIST pllObjects);
+        FOPSRET fopsStartTaskFromList(ULONG ulOperation,
+                                      WPFolder *pSourceFolder,
+                                      WPFolder *pTargetFolder,
+                                      PLINKLIST pllObjects);
     #endif
 
     /********************************************************************
@@ -256,18 +312,19 @@
      *                                                                  *
      ********************************************************************/
 
-    BOOL fopsStartCnrDelete2Trash(WPFolder *pSourceFolder,
-                                  WPObject *pSourceObject,
-                                  ULONG ulSelection,
-                                  HWND hwndCnr);
+    FOPSRET fopsStartTrashDeleteFromCnr(WPFolder *pSourceFolder,
+                                        WPObject *pSourceObject,
+                                        ULONG ulSelection,
+                                        HWND hwndCnr,
+                                        BOOL fTrueDelete);
 
-    BOOL fopsStartCnrRestoreFromTrash(WPFolder *pTrashSource,
-                                      WPFolder *pTargetFolder,
-                                      WPObject *pSourceObject,
-                                      ULONG ulSelection,
-                                      HWND hwndCnr);
+    FOPSRET fopsStartTrashRestoreFromCnr(WPFolder *pTrashSource,
+                                         WPFolder *pTargetFolder,
+                                         WPObject *pSourceObject,
+                                         ULONG ulSelection,
+                                         HWND hwndCnr);
 
-    BOOL fopsStartCnrDestroyTrashObjects(WPFolder *pTrashSource,
+    FOPSRET fopsStartTrashDestroyFromCnr(WPFolder *pTrashSource,
                                          WPObject *pSourceObject,
                                          ULONG ulSelection,
                                          HWND hwndCnr);

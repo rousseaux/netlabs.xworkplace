@@ -184,7 +184,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
      * "Status bar" pages
      */
 
-    if (    (!pGlobalSettings->NoSubclassing)
+    if (    (!pGlobalSettings->fNoSubclassing)
          && (pGlobalSettings->fEnableStatusBars)
        )
     {
@@ -335,7 +335,11 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 
 /*
  *@@ wpFilterPopupMenu:
- *      remove "Create another" menu item.
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
@@ -434,8 +438,11 @@ SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemPrintScreenPage(XFldWPS *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *      this instance method is overridden in order
- *      to add the new XWorkplace pages on top of
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      We add the new XWorkplace pages on top of
  *      the other WPS settings pages from the old "System"
  *      notebook.
  */

@@ -181,7 +181,7 @@
          *      linked list structure used with folder frame
          *      window subclassing. One of these structures
          *      is created for each folder view (window) which
-         *      is subclassed by fdrSubclassFolderFrame and
+         *      is subclassed by fdrSubclassFolderView and
          *      stored in a global linked list.
          *
          *      This is one of the most important kludges which
@@ -199,6 +199,7 @@
          *
          *@@changed V0.9.1 (2000-01-29) [umoeller]: added pSourceObject and ulSelection fields
          *@@changed V0.9.2 (2000-03-06) [umoeller]: removed ulView, because this might change
+         *@@changed V0.9.3 (2000-04-07) [umoeller]: renamed from SUBCLASSEDLISTITEM
          */
 
         typedef struct _SUBCLASSEDFOLDERVIEW

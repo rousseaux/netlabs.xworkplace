@@ -29,11 +29,13 @@
 #include <string.h>
 #include <process.h>
 
+#include "setup.h"                      // code generation and debugging options
+
+#include "helpers\gpih.h"               // GPI helper routines
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
-
-#include "setup.h"                      // code generation and debugging options
 
 /*
  *@@ pgmsSetDefaults:
@@ -43,65 +45,65 @@
 
 VOID pgmsSetDefaults(VOID)
 {
+    _Pmpf(("pgmsSetDefaults"));
     // Misc 1
-    G_PageMageConfig.ptlMaxDesktops.x = 3;
-    G_PageMageConfig.ptlMaxDesktops.y = 2;
-    G_PageMageConfig.ptlStartDesktop.x = 1;
-    G_PageMageConfig.ptlStartDesktop.y = 2;
-    G_PageMageConfig.iEdgeBoundary = 5;
-    G_PageMageConfig.ulSleepTime = 100;
-    G_PageMageConfig.bRepositionMouse = TRUE;
-    G_PageMageConfig.bClickActivate = TRUE;
+    G_pHookData->PageMageConfig.ptlMaxDesktops.x = 3;
+    G_pHookData->PageMageConfig.ptlMaxDesktops.y = 2;
+    G_pHookData->PageMageConfig.ptlStartDesktop.x = 1;
+    G_pHookData->PageMageConfig.ptlStartDesktop.y = 2;
+    // G_pHookData->PageMageConfig.iEdgeBoundary = 5;
+    // G_pHookData->PageMageConfig.ulSleepTime = 100;
+    // G_pHookData->PageMageConfig.bRepositionMouse = TRUE;
+    G_pHookData->PageMageConfig.fClick2Activate = TRUE;
 
     // Misc 2
-    G_PageMageConfig._bHoldWPS = TRUE;
-    G_PageMageConfig.lPriority = 0;
-    G_PageMageConfig.bRecoverOnShutdown = TRUE;
-    G_PageMageConfig.bSwitchToFocus = FALSE;
+    // G_pHookData->PageMageConfig._bHoldWPS = TRUE;
+    // G_pHookData->PageMageConfig.lPriority = 0;
+    G_pHookData->PageMageConfig.fRecoverOnShutdown = TRUE;
+    // G_pHookData->PageMageConfig.bSwitchToFocus = FALSE;
 
     // Display
-    G_PageMageConfig.bShowTitlebar = TRUE;
-    G_PageMageConfig.bStartMin = FALSE;
-    G_PageMageConfig.bFlash = FALSE;
-    G_PageMageConfig.ulFlashDelay = 500;
-    G_PageMageConfig.bFloatToTop = FALSE;
-    G_PageMageConfig.bShowWindows = TRUE;
-    G_PageMageConfig.bShowWindowText = TRUE;
-    G_PageMageConfig.fPreserveProportions = TRUE;
+    G_pHookData->PageMageConfig.fShowTitlebar = TRUE;
+    // G_pHookData->PageMageConfig.fStartMinimized = FALSE; // ###
+    G_pHookData->PageMageConfig.fFlash = FALSE;
+    G_pHookData->PageMageConfig.ulFlashDelay = 500;
+    // G_pHookData->PageMageConfig.bFloatToTop = FALSE;
+    G_pHookData->PageMageConfig.fMirrorWindows = TRUE;
+    G_pHookData->PageMageConfig.fShowWindowText = TRUE;
+    G_pHookData->PageMageConfig.fPreserveProportions = TRUE;
 
     // Sticky
-    memset(G_PageMageConfig.aszSticky, 0, sizeof(G_PageMageConfig.aszSticky));
-    G_PageMageConfig.usStickyTextNum = 0;
-    memset(G_PageMageConfig.hwndSticky2, 0, sizeof(G_PageMageConfig.hwndSticky2));
-    G_PageMageConfig.usSticky2Num = 0;
+    memset(G_pHookData->PageMageConfig.aszSticky,
+           0,
+           sizeof(G_pHookData->PageMageConfig.aszSticky));
+    G_pHookData->PageMageConfig.usStickyTextNum = 0;
+    memset(G_pHookData->PageMageConfig.hwndSticky2,
+           0,
+           sizeof(G_pHookData->PageMageConfig.hwndSticky2));
+    G_pHookData->PageMageConfig.usSticky2Num = 0;
 
     // Colors 1
-    G_PageMageConfig.lcNormal = CLR_DARKBLUE;
-    G_PageMageConfig.lcCurrent = CLR_BLUE;
-    G_PageMageConfig.lcDivider = CLR_PALEGRAY;
-    strcpy(G_PageMageConfig.szNormal, "Dark Blue");
-    strcpy(G_PageMageConfig.szCurrent, "Blue");
-    strcpy(G_PageMageConfig.szDivider, "Pale Gray");
+    G_pHookData->PageMageConfig.lcNormal = RGBCOL_DARKBLUE;
+    G_pHookData->PageMageConfig.lcCurrent = RGBCOL_BLUE;
+    G_pHookData->PageMageConfig.lcDivider = RGBCOL_GRAY;
 
-    // Colors 2
-    G_PageMageConfig.lcNormalApp = CLR_WHITE;
-    G_PageMageConfig.lcCurrentApp = CLR_GREEN;
-    G_PageMageConfig.lcAppBorder = CLR_BLACK;
-    strcpy(G_PageMageConfig.szNormalApp, "White");
-    strcpy(G_PageMageConfig.szCurrentApp, "Green");
-    strcpy(G_PageMageConfig.szAppBorder, "Black");
+    G_pHookData->PageMageConfig.lcNormalApp = RGBCOL_WHITE;
+    G_pHookData->PageMageConfig.lcCurrentApp = RGBCOL_GREEN;
+    G_pHookData->PageMageConfig.lcAppBorder = RGBCOL_BLACK;
+
+    G_pHookData->PageMageConfig.lcTxtNormalApp = RGBCOL_BLACK;
+    G_pHookData->PageMageConfig.lcTxtCurrentApp = RGBCOL_BLACK;
 
     // Panning
-    G_PageMageConfig.bPanAtTop
-      = G_PageMageConfig.bPanAtBottom
-      = G_PageMageConfig.bPanAtLeft
-      = G_PageMageConfig.bPanAtRight = TRUE;
-    G_PageMageConfig.bWrapAround = FALSE;
+    G_pHookData->PageMageConfig.bPanAtTop
+      = G_pHookData->PageMageConfig.bPanAtBottom
+      = G_pHookData->PageMageConfig.bPanAtLeft
+      = G_pHookData->PageMageConfig.bPanAtRight = TRUE;
+    G_pHookData->PageMageConfig.bWrapAround = FALSE;
 
     // Keyboard
-    G_PageMageConfig.ulKeyShift = KC_CTRL | KC_ALT;
-    G_PageMageConfig.bReturnKeystrokes = TRUE;
-    G_PageMageConfig.bHotkeyGrabFocus = TRUE;
+    G_pHookData->PageMageConfig.fEnableArrowHotkeys = FALSE;
+    G_pHookData->PageMageConfig.ulKeyShift = KC_CTRL | KC_ALT;
 
     G_swpPgmgFrame.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
     G_swpPgmgFrame.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
@@ -121,4 +123,59 @@ VOID pgmsSetDefaults(VOID)
     // hps = WinGetPS(HWND_DESKTOP);
 }
 
+/*
+ *@@ pgmsLoadSettings:
+ *      loads the PageMage settings from OS2.INI,
+ *      if present.
+ *
+ *@@added V0.9.3 (2000-04-09) [umoeller]
+ */
+
+BOOL pgmsLoadSettings(ULONG flConfig)
+{
+    ULONG cb = sizeof(PAGEMAGECONFIG);
+
+    _Pmpf(("pgmsLoadSettings"));
+
+    if (PrfQueryProfileData(HINI_USER,
+                            INIAPP_XWPHOOK,
+                            INIKEY_HOOK_PGMGCONFIG,
+                            &G_pHookData->PageMageConfig,
+                            &cb))
+    {
+        // success:
+
+        if (    (G_pHookData->hwndPageMageClient)
+             && (G_pHookData->hwndPageMageFrame)
+           )
+        {
+            if (flConfig & PGMGCFG_REPAINT)
+                WinPostMsg(G_pHookData->hwndPageMageClient,
+                           PGMG_INVALIDATECLIENT,
+                           (MPARAM)FALSE,        // delayed
+                           0);
+            if (flConfig & PGMGCFG_REFORMAT)
+                pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
+        }
+
+        return (TRUE);
+    }
+
+    return (FALSE);
+}
+
+/*
+ *@@ pgmsSaveSettings:
+ *
+ *@@added V0.9.3 (2000-04-09) [umoeller]
+ */
+
+BOOL pgmsSaveSettings(VOID)
+{
+    return (PrfWriteProfileData(HINI_USER,
+                                INIAPP_XWPHOOK,
+                                INIKEY_HOOK_PGMGCONFIG,
+                                &G_pHookData->PageMageConfig,
+                                sizeof(PAGEMAGECONFIG)));
+}
 

@@ -68,6 +68,11 @@ interface XFldWPS : WPSystem
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
+     * Internal instance variables for XFldWPS:
+     *
+     */
+
+    /*
      * WPSystem methods overridden by XFldWPS:
      *
      */
