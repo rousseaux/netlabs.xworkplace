@@ -359,6 +359,13 @@ CATEGORY "Installable File Systems"
         DRIVER ( "RUN=", "NDCTL.EXE",
                  "NDFS control program by Blueprint Software Works",
                  0)
+
+        DRIVER ( "IFS=", "STUBFSD.IFS",
+                 "CD-ROM ISO image file system (ISOFS) by Chris Wohlgemuth",
+                 0)
+        DRIVER ( "RUN=", "ISOFSDMN.EXE",
+                 "ISOFS control program by Chris Wohlgemuth",
+                 0)
     }
 
 CATEGORY "Video"
