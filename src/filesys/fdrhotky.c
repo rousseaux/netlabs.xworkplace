@@ -554,8 +554,8 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
  *      a new accelerator can be created.
  */
 
-PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
-                                USHORT *pusCommand)     // out: menu command
+static PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
+                                       USHORT *pusCommand)     // out: menu command
 {
     SHORT               i, i2 = 0;
     CHAR                szTemp[MAXLBENTRYLENGTH];
@@ -626,10 +626,10 @@ PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-VOID AddHotkeyToMenuItem(HWND hwndMenu,
-                         USHORT usPostCommand2Find,
-                         USHORT usMenuCommand,
-                         ULONG ulVarMenuOffset) // cmnQuerySetting(sulVarMenuOffset)
+static VOID AddHotkeyToMenuItem(HWND hwndMenu,
+                                USHORT usPostCommand2Find,
+                                USHORT usMenuCommand,
+                                ULONG ulVarMenuOffset) // cmnQuerySetting(sulVarMenuOffset)
 {
     USHORT  usFlags, usKeyCode;
     CHAR    szDescription[100];
@@ -788,7 +788,7 @@ typedef struct _SUBCLHOTKEYEF
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "set" support
  */
 
-MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     // get original wnd proc; this was stored in the
     // window words in xfwps.c

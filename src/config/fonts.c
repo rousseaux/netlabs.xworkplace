@@ -1163,9 +1163,9 @@ typedef struct _FONTSAMPLEDATA
  *      the client's scroll bars.
  */
 
-VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
-                      ULONG ulWinCX,
-                      ULONG ulWinCY)
+static VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
+                             ULONG ulWinCX,
+                             ULONG ulWinCY)
 {
     // vertical
     winhUpdateScrollBar(WinWindowFromID(pWinData->ViewItem.handle,  // frame
@@ -1190,8 +1190,8 @@ VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
  *@@changed V0.9.16 (2001-09-29) [umoeller]: now painting small sizes first
  */
 
-VOID FontSamplePaint(HWND hwnd,
-                     PFONTSAMPLEDATA pWinData)
+static VOID FontSamplePaint(HWND hwnd,
+                            PFONTSAMPLEDATA pWinData)
 {
     HPS  hps = NULLHANDLE;
     HRGN hrgnUpdate,
@@ -1471,14 +1471,14 @@ VOID FontSamplePaint(HWND hwnd,
  *      defined in PMREF.
  */
 
-MRESULT HandleContextMenu(WPObject *somSelf,            // in: object with view
-                          HWND hwndClient,              // in: client window handle of view
-                                                        // (must be FID_CLIENT)
-                          ULONG msg,                    // in: WM_CONTEXTMENU or WM_MENUEND
-                          MPARAM mp1,                   // in: message param 1 (just pass this in)
-                          MPARAM mp2,                   // in: message param 2 (just pass this in)
-                          BOOL *pfShowingOpenViewMenu,  // in/out: set to TRUE on context menu show
-                          HWND *phwndContextMenu)       // out: context menu window
+static MRESULT HandleContextMenu(WPObject *somSelf,            // in: object with view
+                                 HWND hwndClient,              // in: client window handle of view
+                                                               // (must be FID_CLIENT)
+                                 ULONG msg,                    // in: WM_CONTEXTMENU or WM_MENUEND
+                                 MPARAM mp1,                   // in: message param 1 (just pass this in)
+                                 MPARAM mp2,                   // in: message param 2 (just pass this in)
+                                 BOOL *pfShowingOpenViewMenu,  // in/out: set to TRUE on context menu show
+                                 HWND *phwndContextMenu)       // out: context menu window
 {
     MRESULT mrc = 0;
 
@@ -1524,7 +1524,7 @@ MRESULT HandleContextMenu(WPObject *somSelf,            // in: object with view
  *      window proc for the subclassed frame.
  */
 
-MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
     PFONTSAMPLEDATA     pWinData = (PFONTSAMPLEDATA)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -1553,7 +1553,7 @@ MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
  *      window proc for the font "Sample" view client.
  */
 
-MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
     PFONTSAMPLEDATA     pWinData = (PFONTSAMPLEDATA)WinQueryWindowPtr(hwnd, QWL_USER);

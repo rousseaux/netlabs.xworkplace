@@ -707,10 +707,10 @@ static struct _DefaultIconHeader
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
-APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
-                      ULONG cbBuffer,       // in: size of *pbBuffer
-                      PBYTE *ppbResData,     // out: converted icon data (to be free()'d)
-                      PULONG pcbResdata)   // out: size of converted data (ptr can be NULL)
+static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
+                             ULONG cbBuffer,       // in: size of *pbBuffer
+                             PBYTE *ppbResData,     // out: converted icon data (to be free()'d)
+                             PULONG pcbResdata)   // out: size of converted data (ptr can be NULL)
 {
     PWIN16DIBINFO pInfo = (PWIN16DIBINFO)pbBuffer;
     APIRET arc = ERROR_BAD_FORMAT;
@@ -2149,10 +2149,10 @@ HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
 
-APIRET LoadIconData(WPObject *pobj,             // in: object whose icon to query
-                    ULONG ulIndex,              // in: animation index or 0 for regular icon
-                    PICONINFO *ppIconInfo,      // out: ICONINFO allocated via _wpAllocMem
-                    BOOL fMayRecurse)           // in: if TRUE, this may recurse
+static APIRET LoadIconData(WPObject *pobj,             // in: object whose icon to query
+                           ULONG ulIndex,              // in: animation index or 0 for regular icon
+                           PICONINFO *ppIconInfo,      // out: ICONINFO allocated via _wpAllocMem
+                           BOOL fMayRecurse)           // in: if TRUE, this may recurse
 {
     APIRET arc = NO_ERROR;
     PICONINFO pData = NULL;
@@ -2823,9 +2823,9 @@ typedef struct _OBJICONPAGEDATA
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-VOID PaintIcon(POBJICONPAGEDATA pData,
-               HWND hwndStatic,
-               HPS hps)
+static VOID PaintIcon(POBJICONPAGEDATA pData,
+                      HWND hwndStatic,
+                      HPS hps)
 {
     RECTL       rclStatic;
     LONG        cxIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
@@ -2855,8 +2855,8 @@ VOID PaintIcon(POBJICONPAGEDATA pData,
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
-                          HWND hwndStatic)
+static VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
+                                 HWND hwndStatic)
 {
     HPS hps = DrgGetPS(hwndStatic);
     PaintIcon(pData, hwndStatic, hps);
@@ -2869,9 +2869,9 @@ VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
 
-VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
-                 APIRET arc,
-                 PCSZ pcszContext)
+static VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
+                        APIRET arc,
+                        PCSZ pcszContext)
 {
     if (arc)
         cmnDosErrorMsgBox(pcnbp->hwndDlgPage,
@@ -2890,7 +2890,7 @@ VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
 
-VOID EditIcon(POBJICONPAGEDATA pData)
+static VOID EditIcon(POBJICONPAGEDATA pData)
 {
     APIRET arc;
 
@@ -3013,7 +3013,7 @@ VOID EditIcon(POBJICONPAGEDATA pData)
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     POBJICONPAGEDATA  pData = (POBJICONPAGEDATA)WinQueryWindowPtr(hwndStatic, QWL_USER);
     MRESULT         mrc = FALSE;
@@ -3425,8 +3425,8 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
-                       ULONG ulExtra)
+static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
+                              ULONG ulExtra)
 {
     PCREATENOTEBOOKPAGE pcnbp = pData->pcnbp;
 

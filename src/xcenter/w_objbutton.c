@@ -221,7 +221,7 @@ typedef struct _OBJBUTTONPRIVATE
  *      itself.
  */
 
-VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
+static VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
 {
 }
 
@@ -238,8 +238,8 @@ VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
  *@@changed V0.9.16 (2001-10-15) [umoeller]: added support for OBJECTHANDLE=<OBJID>
  */
 
-VOID OwgtScanSetup(const char *pcszSetupString,
-                   POBJBUTTONSETUP pSetup)
+static VOID OwgtScanSetup(const char *pcszSetupString,
+                          POBJBUTTONSETUP pSetup)
 {
     PSZ p;
     pSetup->hobj = 0;
@@ -281,9 +281,9 @@ VOID OwgtScanSetup(const char *pcszSetupString,
  *      string after use.
  */
 
-VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   BOOL fIsObjButton,
-                   POBJBUTTONSETUP pSetup)
+static VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+                          BOOL fIsObjButton,
+                          POBJBUTTONSETUP pSetup)
 {
     CHAR    szTemp[100];
     xstrInit(pstrSetup, 100);
@@ -524,7 +524,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
+static WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
 {
     WPObject *pobj = NULL;
 
@@ -563,7 +563,7 @@ WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
  *      implementation for WM_CREATE.
  */
 
-MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
+static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
@@ -607,7 +607,7 @@ MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
  */
 
-BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -723,7 +723,7 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
  */
 
-VOID OwgtPaintButton(HWND hwnd)
+static VOID OwgtPaintButton(HWND hwnd)
 {
     RECTL rclPaint;
     PXCENTERWIDGET pWidget;
@@ -808,8 +808,8 @@ VOID OwgtPaintButton(HWND hwnd)
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added selective disable of menu items
  */
 
-VOID BuildXButtonMenu(HWND hwnd,
-                      POBJBUTTONPRIVATE pPrivate)
+static VOID BuildXButtonMenu(HWND hwnd,
+                             POBJBUTTONPRIVATE pPrivate)
 {
     WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
     PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
@@ -926,7 +926,7 @@ VOID BuildXButtonMenu(HWND hwnd,
  *@@changed V0.9.14 (2001-07-24) [lafaix]: fixed menu position
  */
 
-VOID OwgtButton1Down(HWND hwnd)
+static VOID OwgtButton1Down(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1051,7 +1051,7 @@ VOID OwgtButton1Down(HWND hwnd)
  *      implementation for WM_BUTTON1UP.
  */
 
-VOID OwgtButton1Up(HWND hwnd)
+static VOID OwgtButton1Up(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1113,7 +1113,7 @@ VOID OwgtButton1Up(HWND hwnd)
  *         a folder (or disk).
  */
 
-VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1204,7 +1204,7 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_MENUEND.
  */
 
-VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
+static VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1251,7 +1251,7 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *@@changed V0.9.12 (2001-05-01) [umoeller]: added lockup
  */
 
-BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
+static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 {
     BOOL fProcessed = FALSE;
     ULONG ulMenuId = (ULONG)mp1;
@@ -1419,7 +1419,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed context menus for broken objects
  */
 
-MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1543,7 +1543,7 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.14 (2001-08-05) [lafaix]: refuses move/default for DRM_XCENTERWIDGET
  */
 
-MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PDRAGINFO   pdrgInfo = (PDRAGINFO)mp1;
     // default return values
@@ -1620,7 +1620,7 @@ MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.13 (2001-06-19) [umoeller]
  */
 
-VOID OwgtDragLeave(HWND hwnd)
+static VOID OwgtDragLeave(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1657,7 +1657,7 @@ VOID OwgtDragLeave(HWND hwnd)
  *@@changed V0.9.14 (2001-08-05) [lafaix]: refuses move/default drops for DRM_XCENTERWIDGET
  */
 
-VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PDRAGINFO   pdrgInfo = (PDRAGINFO)mp1;
 
@@ -1722,7 +1722,7 @@ VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.12 (2001-05-24) [umoeller]
  */
 
-VOID OwgtDestroy(HWND hwnd)
+static VOID OwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;

@@ -321,7 +321,7 @@ ULONG fdrReleaseFolderMutexSem(WPFolder *somSelf)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-SOMAny* GetMonitorObject(WPFolder *somSelf)
+static SOMAny* GetMonitorObject(WPFolder *somSelf)
 {
 #ifdef __DEBUG__
     if (_somIsA(somSelf, _WPFolder))
@@ -697,8 +697,8 @@ BOOL fdrResolveContentPtrs(WPFolder *somSelf)
  *@@changed V0.9.18 (2002-02-06) [umoeller]: removed mutex request, renamed
  */
 
-WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
-                                  const char *pcszUpperShortName)
+static WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
+                                         const char *pcszUpperShortName)
 {
     XFolderData *somThis = XFolderGetData(pFolder);
     PFDRCONTENTITEM pNode;
@@ -719,8 +719,8 @@ WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
-                                  const char *pcszUpperShortName)
+static WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
+                                         const char *pcszUpperShortName)
 {
     WPObject *pobjReturn = NULL;
     BOOL fFolderLocked = FALSE;
@@ -829,9 +829,9 @@ WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-BOOL HackContentPointers(WPFolder *somSelf,
-                         XFolderData *somThis,
-                         WPObject *pObject)
+static BOOL HackContentPointers(WPFolder *somSelf,
+                                XFolderData *somThis,
+                                WPObject *pObject)
 {
     BOOL brc = FALSE;
 
@@ -1491,7 +1491,7 @@ static CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-BOOL LockRootFolders(VOID)
+static BOOL LockRootFolders(VOID)
 {
     if (G_hmtxRootFolders)
         return (!WinRequestMutexSem(G_hmtxRootFolders, SEM_INDEFINITE_WAIT));
@@ -1517,7 +1517,7 @@ BOOL LockRootFolders(VOID)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-VOID UnlockRootFolders(VOID)
+static VOID UnlockRootFolders(VOID)
 {
     DosReleaseMutexSem(G_hmtxRootFolders);
 }
@@ -1626,8 +1626,8 @@ BOOL fdrRemoveAwakeRootFolder(WPFolder *somSelf)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
-                               PSZ pStartOfParticle)
+static WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
+                                      PSZ pStartOfParticle)
 {
     // 0123456789012
     // C:\FOLDER\XXX
@@ -1749,7 +1749,7 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
             memcpy(pszUpperFQPath, pcszFQPath, ulFQPathLen + 1);
             nlsUpper(pszUpperFQPath, ulFQPathLen);
 
-            // if the string terminates with '\\',
+            // if the string terminates with '\',
             // remove that (the below code cannot handle that)
             if (pszUpperFQPath[ulFQPathLen - 1] == '\\')
                 pszUpperFQPath[--ulFQPathLen] = '\0';
@@ -1921,10 +1921,10 @@ VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-BOOL PopulateWithAbstracts(WPFolder *somSelf,
-                           HWND hwndReserved,
-                           PMINIRECORDCORE pMyRecord,
-                           PBOOL pfExit)          // in: exit flag
+static BOOL PopulateWithAbstracts(WPFolder *somSelf,
+                                  HWND hwndReserved,
+                                  PMINIRECORDCORE pMyRecord,
+                                  PBOOL pfExit)          // in: exit flag
 {
     BOOL        fSuccess = FALSE;
     HFIND       hFind = 0;
@@ -2279,7 +2279,7 @@ BOOL fdrCheckIfPopulated(WPFolder *somSelf,
     if (    // (re)populate if the POPULATED_* flag is not set
             ((ulFlags & ulPopulateFlag) != ulPopulateFlag)
 // V0.9.16 (2002-01-01) [umoeller]: added all the below checks
-            // or if the folder has the refresh bit set
+            // for if the folder has the refresh bit set
          || (ulFlags & FOI_ASYNCREFRESHONOPEN)
             // or if we can't get the drive data
          || (!(pDriveData = fsysQueryDriveData(somSelf)))

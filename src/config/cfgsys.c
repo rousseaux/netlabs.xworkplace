@@ -192,10 +192,10 @@ static PSYSPATH    G_pSysPathSelected = 0;
  *      which should be CCHMAXPATH in size.
  */
 
-MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
-                                      ULONG msg,
-                                      MPARAM mp1,
-                                      MPARAM mp2)
+static MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
+                                             ULONG msg,
+                                             MPARAM mp1,
+                                             MPARAM mp2)
 {
     MRESULT mrc = (MRESULT)0;
 
@@ -352,10 +352,10 @@ static MPARAM ampDoubleFilesControls[] =
  *@@changed V0.9.9 (2001-02-28) [pr]: made this modal
  */
 
-MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
-                                    ULONG msg,
-                                    MPARAM mp1,
-                                    MPARAM mp2)
+static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
+                                           ULONG msg,
+                                           MPARAM mp1,
+                                           MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2427,9 +2427,9 @@ typedef struct _SYSLEVELRECORD
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-VOID AddOneSyslevel2Cnr(HWND hwndCnr,
-                        HFILE hfSysLevel,
-                        PSZ pszFilename)
+static VOID AddOneSyslevel2Cnr(HWND hwndCnr,
+                               HFILE hfSysLevel,
+                               PSZ pszFilename)
 {
     PSYSLEVELRECORD precc
         = (PSYSLEVELRECORD)cnrhAllocRecords(hwndCnr,
@@ -2540,8 +2540,8 @@ VOID AddOneSyslevel2Cnr(HWND hwndCnr,
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-VOID AddSyslevelsForDir(HWND hwndCnr,
-                        PSZ pszDir)     // in: directory to search (with terminating \)
+static VOID AddSyslevelsForDir(HWND hwndCnr,
+                               PSZ pszDir)     // in: directory to search (with terminating \)
 {
     HDIR          hdirFindHandle = HDIR_CREATE;
     FILEFINDBUF3  ffb3     = {0};      /* Returned from FindFirst/Next */

@@ -125,9 +125,9 @@
  *
  ********************************************************************/
 
-MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY krn_fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
-MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 #ifdef __XWPMEMDEBUG__
 VOID krnMemoryError(PCSZ pcszMsg);
@@ -214,8 +214,8 @@ static const char **G_appszXFolderKeys[]
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-ULONG WaitForApp(PCSZ pcszTitle,
-                 HAPP happ)
+static ULONG WaitForApp(PCSZ pcszTitle,
+                        HAPP happ)
 {
     ULONG   ulrc = -1;
 
@@ -453,8 +453,8 @@ static const DLGHITEM dlgPanic[] =
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-APIRET StartCmdExe(HWND hwndNotify,
-                   HAPP *phappCmd)
+static APIRET StartCmdExe(HWND hwndNotify,
+                          HAPP *phappCmd)
 {
     PROGDETAILS pd = {0};
     pd.Length = sizeof(pd);
@@ -478,7 +478,7 @@ APIRET StartCmdExe(HWND hwndNotify,
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-BOOL RunXFix(VOID)
+static BOOL RunXFix(VOID)
 {
     CHAR        szXfix[CCHMAXPATH];
     PROGDETAILS pd = {0};
@@ -514,7 +514,7 @@ BOOL RunXFix(VOID)
  *@@changed V0.9.17 (2002-02-05) [umoeller]: added fForceShow and "disable check desktop"
  */
 
-VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
+static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
 {
     BOOL    fRepeat = fForceShow;
 
@@ -687,7 +687,7 @@ VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed multiple XFolder conversions
  */
 
-VOID ShowStartupDlgs(VOID)
+static VOID ShowStartupDlgs(VOID)
 {
     ULONG   cbData = 0;
     PCSZ    pcszXFolderConverted = "_XFolderConv";
@@ -793,7 +793,7 @@ VOID ShowStartupDlgs(VOID)
  *@@changed V0.9.10 (2001-04-08) [umoeller]: added exception handling
  */
 
-VOID ReplaceWheelWatcher(PXFILE pLogFile)
+static VOID ReplaceWheelWatcher(PXFILE pLogFile)
 {
     APIRET      arc = NO_ERROR;
 
@@ -928,8 +928,8 @@ VOID ReplaceWheelWatcher(PXFILE pLogFile)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-ULONG CheckDesktop(PXFILE pLogFile,
-                   HHANDLES hHandles)       // in: handles buffer from wphLoadHandles
+static ULONG CheckDesktop(PXFILE pLogFile,
+                          HHANDLES hHandles)       // in: handles buffer from wphLoadHandles
 {
     ULONG   ulResult = DESKTOP_VALID;
 
@@ -1050,8 +1050,8 @@ ULONG CheckDesktop(PXFILE pLogFile,
  *      a) Initialize XWorkplace's globals: the GLOBALSETTINGS,
  *         the KERNELGLOBALS, and such.
  *
- *      b) Create the Thread-1 object window (fnwpThread1Object)
- *         and the API object window (fnwpAPIObject).
+ *      b) Create the Thread-1 object window (krn_fnwpThread1Object)
+ *         and the API object window (krn_fnwpAPIObject).
  *
  *      c) If the "Shift" key is pressed, show the "Panic" dialog
  *         (new with V0.9.0). In that case, we pause the WPS
@@ -1171,7 +1171,7 @@ VOID initMain(VOID)
     // create thread-1 object window
     WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
                      (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
-                     (PFNWP)fnwpThread1Object,   // Window procedure
+                     (PFNWP)krn_fnwpThread1Object,   // Window procedure
                      0,                  // class style
                      0);                 // extra window words
     G_KernelGlobals.hwndThread1Object
@@ -1188,7 +1188,7 @@ VOID initMain(VOID)
     // create API object window V0.9.9 (2001-03-23) [umoeller]
     WinRegisterClass(G_habThread1,
                      (PSZ)WNDCLASS_APIOBJECT,    // class name
-                     (PFNWP)fnwpAPIObject,   // Window procedure
+                     (PFNWP)krn_fnwpAPIObject,   // Window procedure
                      0,                  // class style
                      0);                 // extra window words
     G_KernelGlobals.hwndAPIObject
@@ -1784,7 +1784,7 @@ typedef struct _QUICKOPENDATA
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
 
@@ -1855,11 +1855,11 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
-                            WPObject *pObject,
-                            ULONG ulNow,
-                            ULONG ulMax,
-                            ULONG ulCallbackParam)
+static BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
+                                   WPObject *pObject,
+                                   ULONG ulNow,
+                                   ULONG ulMax,
+                                   ULONG ulCallbackParam)
 {
     PQUICKOPENDATA pqod = (PQUICKOPENDATA)ulCallbackParam;
 
@@ -1888,7 +1888,7 @@ BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
+static void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
 {
     PQUICKOPENDATA pqod = (PQUICKOPENDATA)ptiMyself->ulData;
     PLISTNODE pNode;
@@ -1978,7 +1978,7 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
+static void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 {
     PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
 

@@ -17,6 +17,10 @@ Ulrich M”ller.
 CURRENT PROBLEMS
 ----------------
 
+BTW, Check Desktop Integrity in XWP Setup is missing its descriptive
+entry in the .TMF file.
+
+
 --  override all wpQuery/SetIconData too
 
 --  align icon page 2 for folders

@@ -557,10 +557,10 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added NLS
  */
 
-FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
-                                 ULONG ulOperation,
-                                 HAB hab,  // in: as with fopsStartTask
-                                 PGENERICPROGRESSWINDATA ppwd)
+static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
+                                        ULONG ulOperation,
+                                        HAB hab,  // in: as with fopsStartTask
+                                        PGENERICPROGRESSWINDATA ppwd)
 {
     FOPSRET frc = NO_ERROR;
     PSZ pszTitle = "unknown task";

@@ -1299,9 +1299,9 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.13 (2001-06-14) [umoeller]
  */
 
-VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
-                     PCSZ pcszNewBootLogoFile,
-                     BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
+static VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
+                            PCSZ pcszNewBootLogoFile,
+                            BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
 {
     winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
                      (access(pcszNewBootLogoFile, 0) == 0));

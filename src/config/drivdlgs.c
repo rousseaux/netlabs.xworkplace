@@ -219,7 +219,7 @@ static PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL LockPlugins(VOID)
+static BOOL LockPlugins(VOID)
 {
     if (!G_hmxPlugins)
         return (!DosCreateMutexSem(NULL,
@@ -237,7 +237,7 @@ BOOL LockPlugins(VOID)
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-VOID UnlockPlugins(VOID)
+static VOID UnlockPlugins(VOID)
 {
     DosReleaseMutexSem(G_hmxPlugins);
 }
@@ -553,10 +553,10 @@ BOOL drvConfigSupported(PDRIVERSPEC pSpec)
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL ShowDriverDlg(HWND hwndOwner,
-                   ULONG ulID,
-                   PFNWP pfnwp,
-                   PDRIVERDLGDATA pDlgData)
+static BOOL ShowDriverDlg(HWND hwndOwner,
+                          ULONG ulID,
+                          PFNWP pfnwp,
+                          PDRIVERDLGDATA pDlgData)
 {
     BOOL brc = FALSE;
     HWND hwndDlg;
@@ -596,8 +596,8 @@ BOOL ShowDriverDlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
-                          PDRIVERDLGDATA pDlgData)
+static BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
+                                 PDRIVERDLGDATA pDlgData)
 {
     return (ShowDriverDlg(hwndOwner,
                           ID_OSD_DRIVER_HPFS,
@@ -611,8 +611,8 @@ BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
-                             PDRIVERDLGDATA pDlgData)
+static BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
+                                    PDRIVERDLGDATA pDlgData)
 {
     return (ShowDriverDlg(hwndOwner,
                           ID_OSD_DRIVER_HPFS386,
@@ -626,8 +626,8 @@ BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
-                              PDRIVERDLGDATA pDlgData)
+static BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
+                                     PDRIVERDLGDATA pDlgData)
 {
     return (ShowDriverDlg(hwndOwner,
                           ID_OSD_DRIVER_IBM1S506,
@@ -641,7 +641,7 @@ BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+static BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
     if (!stricmp(pSpec->pszFilename, "HPFS.IFS"))
     {
@@ -658,7 +658,7 @@ BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVER
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+static BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
     if (!stricmp(pSpec->pszFilename, "HPFS386.IFS"))
     {
@@ -675,7 +675,7 @@ BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRI
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+static BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
     if (    (!stricmp(pSpec->pszFilename, "IBM1S506.ADD"))
          || (!stricmp(pSpec->pszFilename, "DANIS506.ADD"))
@@ -1232,7 +1232,7 @@ static USHORT usS506ToolIDs[] =
  *      default values.
  */
 
-VOID SetS506Defaults(PS506ALL pS506All)
+static VOID SetS506Defaults(PS506ALL pS506All)
 {
     ULONG   ul = 0;
     // defaults for global parameters
@@ -1301,7 +1301,7 @@ VOID SetS506Defaults(PS506ALL pS506All)
  *@@added V0.9.3 (2000-04-10) [umoeller]
  */
 
-VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
+static VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
 {
     PSZ         pszParamsCopy = 0,
                 pszToken = 0;
@@ -1610,8 +1610,8 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
  *      Returns NULL if no params have been defined.
  */
 
-PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
-                          PS506ALL pS506All)    // in: driver settings
+static PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
+                                 PS506ALL pS506All)    // in: driver settings
 {
     XSTRING     strParams,
                 strAdapterParams[2],
@@ -1859,8 +1859,8 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
  *@@added V0.9.3 (2000-04-10) [umoeller]
  */
 
-VOID S506Settings2Dlg(HWND hwndDlg,
-                      PDRIVERDLGDATA pddd)
+static VOID S506Settings2Dlg(HWND hwndDlg,
+                             PDRIVERDLGDATA pddd)
 {
     CHAR            szTemp[30];
     ULONG           ul = 0;
@@ -2059,8 +2059,8 @@ static USHORT ausNotSupportedByOldIBM[] =
  *@@added V0.9.3 (2000-04-10) [umoeller]
  */
 
-VOID S506EnableItems(HWND hwndDlg,
-                     PDRIVERDLGDATA pddd)
+static VOID S506EnableItems(HWND hwndDlg,
+                            PDRIVERDLGDATA pddd)
 {
     PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
     // find current adapter pointer

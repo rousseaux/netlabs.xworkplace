@@ -411,8 +411,8 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
  *@@changed V0.9.14 (2001-08-25) [umoeller]: added XWPString support
  */
 
-BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM list to append to
-                          XFolder *pFolderThis)         // in: folder to append from
+static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM list to append to
+                                 XFolder *pFolderThis)         // in: folder to append from
 {
     BOOL        brc = TRUE;
     WPObject    *pObject,
@@ -533,10 +533,10 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
  *@@changed V0.9.0 [umoeller]: renamed from mnuFillMenuWithObjects; prototype changed; now running with lists
  */
 
-LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
-                           HWND       hMenuThis,      // in: menu to add items to (var.)
-                           HWND       hwndCnr,        // in: needed for wpInsertPopupMenuItems (const)
-                           ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOffset)
+static LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
+                                  HWND       hMenuThis,      // in: menu to add items to (var.)
+                                  HWND       hwndCnr,        // in: needed for wpInsertPopupMenuItems (const)
+                                  ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOffset)
 {
     LONG       lDefaultItem = 0;
     LONG       rc = 0,
@@ -653,7 +653,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-BOOL LockConfigCache(VOID)
+static BOOL LockConfigCache(VOID)
 {
     BOOL brc = FALSE;
 
@@ -679,7 +679,7 @@ BOOL LockConfigCache(VOID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-VOID UnlockConfigCache(VOID)
+static VOID UnlockConfigCache(VOID)
 {
     DosReleaseMutexSem(G_hmtxConfigContent);
 }
@@ -734,10 +734,10 @@ VOID mnuInvalidateConfigCache(VOID)
  *@@changed V0.9.12 (2001-05-22) [umoeller]: added extended close menu
  */
 
-BOOL InsertConfigFolderItems(XFolder *somSelf,
-                             HWND hwndMenu,
-                             HWND hwndCnr,
-                             ULONG ulOfs)
+static BOOL InsertConfigFolderItems(XFolder *somSelf,
+                                    HWND hwndMenu,
+                                    HWND hwndCnr,
+                                    ULONG ulOfs)
 {
     BOOL brc = FALSE;
 
@@ -1763,9 +1763,9 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
  *@@added V0.9.14 (2001-07-14) [umoeller]
  */
 
-BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
-                               HWND hwndFrame,    // in: as in wpMenuItemSelected
-                               ULONG ulMenuId)    // in: selected menu item
+static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
+                                      HWND hwndFrame,    // in: as in wpMenuItemSelected
+                                      ULONG ulMenuId)    // in: selected menu item
 {
     BOOL brc = FALSE;
 

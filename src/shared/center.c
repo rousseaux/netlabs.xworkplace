@@ -736,7 +736,7 @@ VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
  *@@changed V0.9.14 (2001-08-05) [lafaix]: optimized WGTF_TRANSPARENT support
  */
 
-VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
@@ -792,8 +792,8 @@ VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_MENUEND in ctrDefWidgetProc.
  */
 
-VOID DwgtMenuEnd(HWND hwnd,
-                 HWND hwndMenu)
+static VOID DwgtMenuEnd(HWND hwnd,
+                        HWND hwndMenu)
 {
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
@@ -810,8 +810,8 @@ VOID DwgtMenuEnd(HWND hwnd,
  *      implementation for WM_COMMAND in ctrDefWidgetProc.
  */
 
-VOID DwgtCommand(HWND hwnd,
-                 USHORT usCmd)
+static VOID DwgtCommand(HWND hwnd,
+                        USHORT usCmd)
 {
     PXCENTERWIDGET  pWidget;
     HWND            hwndClient;
@@ -905,7 +905,7 @@ VOID DwgtCommand(HWND hwnd,
  *@@added V0.9.9 (2001-03-09) [umoeller]
  */
 
-MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
+static MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
@@ -932,7 +932,7 @@ MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
  *      WinDestroyWindow on the widget.
  */
 
-VOID DwgtDestroy(HWND hwnd)
+static VOID DwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
@@ -1020,8 +1020,8 @@ VOID DwgtDestroy(HWND hwnd)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: didn't work for tray subwidgets, fixed
  */
 
-BOOL DwgtRender(HWND hwnd,
-                PDRAGTRANSFER pdt)
+static BOOL DwgtRender(HWND hwnd,
+                       PDRAGTRANSFER pdt)
 {
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     BOOL           brc = FALSE;

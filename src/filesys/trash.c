@@ -225,7 +225,7 @@ static BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
+static int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 {
     return (strhicmp((PCSZ)ul1,
                      (PCSZ)ul2));
@@ -246,11 +246,11 @@ int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in \trash subdir name
-                                    WPFolder *pFolderInTrash,   // in: direct \trash subfolder
-                                    PCSZ pcszSourceRealName,   // in: real name of source dir
-                                    PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
-                                         // and wpSaveDeferred must be called on the trash can
+static PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in \trash subdir name
+                                           WPFolder *pFolderInTrash,   // in: direct \trash subfolder
+                                           PCSZ pcszSourceRealName,   // in: real name of source dir
+                                           PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
+                                                // and wpSaveDeferred must be called on the trash can
 {
     PTRASHMAPPINGTREENODE pMapping = malloc(sizeof(TRASHMAPPINGTREENODE));
     if (pMapping)
@@ -290,9 +290,9 @@ PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
-                           PCSZ pcszTrashDir,    // in: "?:\trash"
-                           PBOOL pfNeedSave)     // out: set to TRUE if mappings are dirty
+static ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
+                                  PCSZ pcszTrashDir,    // in: "?:\trash"
+                                  PBOOL pfNeedSave)     // out: set to TRUE if mappings are dirty
 {
     ULONG   ulrc = 0;
 
@@ -446,8 +446,8 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-VOID InitMappings(XWPTrashCan *somSelf,
-                  PBOOL pfNeedSave)      // out: set to TRUE if drives are dirty
+static VOID InitMappings(XWPTrashCan *somSelf,
+                         PBOOL pfNeedSave)      // out: set to TRUE if drives are dirty
                                          // and wpSaveDeferred must be called on the trash can
 {
     WPSHLOCKSTRUCT Lock = {0};
@@ -517,8 +517,8 @@ VOID InitMappings(XWPTrashCan *somSelf,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
-                                               PCSZ pcszSourceFolder)
+static PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
+                                                      PCSZ pcszSourceFolder)
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
@@ -553,8 +553,8 @@ PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
-                                                 WPFolder *pFolderInTrash)
+static PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
+                                                        WPFolder *pFolderInTrash)
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
@@ -744,7 +744,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-ULONG GetLowestTrashDirDecimal(VOID)
+static ULONG GetLowestTrashDirDecimal(VOID)
 {
     ULONG ul = 0;
     PTRASHMAPPINGTREENODE pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
@@ -1219,12 +1219,12 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added trash dir mappings
  */
 
-BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _XWPTrashObject (for speed)
-                                XWPTrashCan *pTrashCan,  // in: trashcan to add objects to
-                                WPFolder *pTrashDir,     // in: trash directory to examine
-                                PBOOL pfNeedSave,     // out: set to TRUE if mappings are dirty and
-                                                         // wpSaveDeferred is needed
-                                PULONG pulObjectCount)   // out: object count (req. ptr)
+static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _XWPTrashObject (for speed)
+                                       XWPTrashCan *pTrashCan,  // in: trashcan to add objects to
+                                       WPFolder *pTrashDir,     // in: trash directory to examine
+                                       PBOOL pfNeedSave,     // out: set to TRUE if mappings are dirty and
+                                                                // wpSaveDeferred is needed
+                                       PULONG pulObjectCount)   // out: object count (req. ptr)
 {
     BOOL        brc = FALSE,
                 fTrashDirSemOwned = FALSE;
@@ -2699,8 +2699,8 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
  *@@added V0.9.1 (99-12-14) [umoeller]
  */
 
-BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supported drives
-                          HWND hwndUnsupportedLB) // in: list box with unsupported drives
+static BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supported drives
+                                 HWND hwndUnsupportedLB) // in: list box with unsupported drives
 {
     BOOL    brc = FALSE;
 

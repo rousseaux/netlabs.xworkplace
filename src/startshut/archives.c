@@ -779,8 +779,8 @@ static const DLGHITEM dlgArcStatus[] =
  *@@added V0.9.16 (2001-11-25) [umoeller]
  */
 
-VOID ShowStatus(HWND hwndStatus,
-                PCSZ pcszText)
+static VOID ShowStatus(HWND hwndStatus,
+                       PCSZ pcszText)
 {
     WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
                       pcszText);

@@ -286,8 +286,8 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed a bunch of bugs
  */
 
-ULONG ParseFileString(PFILEDLGDATA pWinData,
-                      const char *pcszFullFile)
+static ULONG ParseFileString(PFILEDLGDATA pWinData,
+                             const char *pcszFullFile)
 {
     ULONG ulChanged = 0;
 
@@ -460,8 +460,8 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
  *@@added V0.9.9 (2001-03-11) [umoeller]
  */
 
-WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
-                              BOOL fFoldersOnly)
+static WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
+                                     BOOL fFoldersOnly)
 {
     WPObject *pobj = NULL;
     if (precc)
@@ -537,9 +537,9 @@ WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
  *      the above, but the object has the "hidden" attribute on.
  */
 
-BOOL IsInsertable(WPObject *pObject,
-                  BOOL ulFoldersOnly,
-                  const char *pcszFileMask)     // in: upper-case file mask
+static BOOL IsInsertable(WPObject *pObject,
+                         BOOL ulFoldersOnly,
+                         const char *pcszFileMask)     // in: upper-case file mask
 {
     if (ulFoldersOnly)
     {
@@ -620,8 +620,8 @@ BOOL IsInsertable(WPObject *pObject,
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-BOOL IsObjectInCnr(WPObject *pObject,
-                   HWND hwndCnr)
+static BOOL IsObjectInCnr(WPObject *pObject,
+                          HWND hwndCnr)
 {
     BOOL    brc = FALSE;
     BOOL    fLocked = FALSE;
@@ -664,8 +664,8 @@ BOOL IsObjectInCnr(WPObject *pObject,
  *      correctly.
  */
 
-ULONG ClearContainer(HWND hwndCnr,              // in: cnr to clear
-                     PLINKLIST pllObjects)      // in: list of objects to remove
+static ULONG ClearContainer(HWND hwndCnr,              // in: cnr to clear
+                            PLINKLIST pllObjects)      // in: list of objects to remove
 {
     ULONG       ulrc = 0;
     PLISTNODE   pNode;
@@ -721,9 +721,9 @@ ULONG ClearContainer(HWND hwndCnr,              // in: cnr to clear
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-VOID PostFillFolder(PFILEDLGDATA pWinData,
-                    PMINIRECORDCORE prec,       // in: record with folder to populate
-                    ULONG fl)                   // in: FFL_* flags
+static VOID PostFillFolder(PFILEDLGDATA pWinData,
+                           PMINIRECORDCORE prec,       // in: record with folder to populate
+                           ULONG fl)                   // in: FFL_* flags
 {
     _Pmpf(("        posting FM_FILLFOLDER %s, fl %s %s",
                 prec->pszIcon,
@@ -748,7 +748,7 @@ VOID PostFillFolder(PFILEDLGDATA pWinData,
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed sticky wait pointer
  */
 
-HPOINTER QueryCurrentPointer(HWND hwndMainControl)
+static HPOINTER QueryCurrentPointer(HWND hwndMainControl)
 {
     ULONG           idPtr = SPTR_ARROW;
 
@@ -775,7 +775,7 @@ HPOINTER QueryCurrentPointer(HWND hwndMainControl)
  *@@changed V0.9.18 (2002-02-06) [umoeller]: mostly rewritten for better thread synchronization
  */
 
-BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
+static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 {
     PMINIRECORDCORE precDiskSelect = NULL;
     WPFolder        *pRootFolder = NULL;
@@ -966,8 +966,8 @@ BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
  *      to dismiss the dialog.
  */
 
-VOID ParseAndUpdate(PFILEDLGDATA pWinData,
-                    const char *pcszFullFile)
+static VOID ParseAndUpdate(PFILEDLGDATA pWinData,
+                           const char *pcszFullFile)
 {
     // parse the new file string
     ULONG fl = ParseFileString(pWinData,
@@ -1002,8 +1002,8 @@ VOID ParseAndUpdate(PFILEDLGDATA pWinData,
  *      "Drives" folder.
  */
 
-VOID BuildDisksList(WPFolder *pDrivesFolder,
-                    PLINKLIST pllDisks)
+static VOID BuildDisksList(WPFolder *pDrivesFolder,
+                           PLINKLIST pllDisks)
 {
     if (fdrCheckIfPopulated(pDrivesFolder,
                             FALSE))     // folders only?
@@ -1058,10 +1058,10 @@ VOID BuildDisksList(WPFolder *pDrivesFolder,
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-WPObject* AddFirstChild(WPFolder *pFolder,
-                        PMINIRECORDCORE precParent,     // in: folder record to insert first child for
-                        HWND hwndCnr,                   // in: cnr where precParent is inserted
-                        PLINKLIST pll)                  // in/out: list of objs
+static WPObject* AddFirstChild(WPFolder *pFolder,
+                               PMINIRECORDCORE precParent,     // in: folder record to insert first child for
+                               HWND hwndCnr,                   // in: cnr where precParent is inserted
+                               PLINKLIST pll)                  // in/out: list of objs
 {
     PMINIRECORDCORE     precFirstChild;
     WPFolder            *pFirstChildFolder = NULL;
@@ -1213,7 +1213,7 @@ typedef struct _POPULATEDATA
  *      object window for populate thread.
  */
 
-MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1406,7 +1406,7 @@ MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      scan the entire contents first.
  */
 
-VOID _Optlink fntPopulate(PTHREADINFO ptiMyself)
+static VOID _Optlink fntPopulate(PTHREADINFO ptiMyself)
 {
     TRY_LOUD(excpt1)
     {
@@ -1443,10 +1443,10 @@ VOID _Optlink fntPopulate(PTHREADINFO ptiMyself)
  *
  */
 
-HWND CreateFrameWithCnr(ULONG ulFrameID,
-                        HWND hwndMainControl,        // in: main client window
-                        BOOL fMultipleSelection,
-                        HWND *phwndClient)          // out: client window (cnr)
+static HWND CreateFrameWithCnr(ULONG ulFrameID,
+                               HWND hwndMainControl,        // in: main client window
+                               BOOL fMultipleSelection,
+                               HWND *phwndClient)          // out: client window (cnr)
 {
     HWND hwndFrame;
     ULONG ws;
@@ -1488,8 +1488,8 @@ HWND CreateFrameWithCnr(ULONG ulFrameID,
  *      creates all the controls.
  */
 
-MPARAM MainControlCreate(HWND hwnd,
-                        PFILEDLGDATA pWinData)
+static MPARAM MainControlCreate(HWND hwnd,
+                                PFILEDLGDATA pWinData)
 {
     MPARAM mrc = (MPARAM)FALSE;         // return value of WM_CREATE: 0 == OK
 
@@ -1688,7 +1688,7 @@ MPARAM MainControlCreate(HWND hwnd,
  *@@added V0.9.9 (2001-03-13) [umoeller]
  */
 
-MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;               // not processed
     PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
@@ -1772,9 +1772,9 @@ MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      cause the two container frames to be adjusted.
  */
 
-VOID MainControlRepositionControls(HWND hwnd,
-                                  PFILEDLGDATA pWinData,
-                                  MPARAM mp2)
+static VOID MainControlRepositionControls(HWND hwnd,
+                                          PFILEDLGDATA pWinData,
+                                          MPARAM mp2)
 {
     #define OUTER_SPACING       5
 
@@ -1937,13 +1937,13 @@ VOID MainControlRepositionControls(HWND hwnd,
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-VOID InsertContents(WPFolder *pFolder,              // in: populated folder
-                    HWND hwndCnr,                   // in: cnr to insert records to
-                    PMINIRECORDCORE precParent,     // in: parent record or NULL
-                    ULONG ulFoldersOnly,            // in: as with IsInsertable
-                    HWND hwndAddFirstChild,         // in: if != 0, we post CM_ADDFIRSTCHILD for each item too
-                    PCSZ pcszFileMask,              // in: file mask filter or NULL
-                    PLINKLIST pllObjects)           // in/out: linked list of objs that were inserted
+static VOID InsertContents(WPFolder *pFolder,              // in: populated folder
+                           HWND hwndCnr,                   // in: cnr to insert records to
+                           PMINIRECORDCORE precParent,     // in: parent record or NULL
+                           ULONG ulFoldersOnly,            // in: as with IsInsertable
+                           HWND hwndAddFirstChild,         // in: if != 0, we post CM_ADDFIRSTCHILD for each item too
+                           PCSZ pcszFileMask,              // in: file mask filter or NULL
+                           PLINKLIST pllObjects)           // in/out: linked list of objs that were inserted
 {
     BOOL        fFolderSem = FALSE;
 
@@ -2102,7 +2102,7 @@ VOID InsertContents(WPFolder *pFolder,              // in: populated folder
  *@@changed V0.9.18 (2002-02-06) [umoeller]: largely rewritten for new thread synchronization
  */
 
-MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2497,7 +2497,7 @@ MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.18 (2002-02-06) [umoeller]: many fixes for new threads synchronization
  */
 
-MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT                 mrc = 0;
     BOOL                    fCallDefault = FALSE;
@@ -2676,7 +2676,7 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
  *      couple more for extra features.
  */
 
-MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT                 mrc = 0;
     BOOL                    fCallDefault = FALSE;

@@ -300,7 +300,7 @@ VOID refrClearFolderNotifications(WPFolder *pFolder)
  *@@added V0.9.12 (2001-05-19) [umoeller]
  */
 
-VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
+static VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
 {
     TRY_LOUD(excpt1)
     {
@@ -323,7 +323,7 @@ VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
-VOID Refresh(WPObject *pobj)
+static VOID Refresh(WPObject *pobj)
 {
     if (_somIsA(pobj, _WPFolder))
         // is folder: do not call _wpRefresh, this
@@ -376,7 +376,7 @@ VOID Refresh(WPObject *pobj)
  *@@changed V0.9.16 (2002-01-09) [umoeller]: folder refresh wasn't always working, fixed
  */
 
-ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
+static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
 {
     // per default, remove the node V0.9.12 (2001-05-29) [umoeller]
     ULONG ulrc = REMOVE_NODE;
@@ -551,7 +551,7 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
  *@@changed V0.9.12 (2001-05-31) [umoeller]: fixed more list crashes on overflow
  */
 
-BOOL PumpNotifications(VOID)
+static BOOL PumpNotifications(VOID)
 {
     BOOL        fNotificationsLeft = FALSE;
     ULONG       ulrc = 100*1000;
@@ -630,7 +630,7 @@ BOOL PumpNotifications(VOID)
 }
 
 /*
- *@@ refr_fntPumpThread:
+ *@@ fntPumpThread:
  *      third refresh thread which finally does the
  *      automatic folder update.
  *
@@ -646,7 +646,7 @@ BOOL PumpNotifications(VOID)
  *@@added V0.9.9 (2001-02-01) [umoeller]
  */
 
-VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
+static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
 {
     // QMSG qmsg;
     ULONG   ulWaitTime = 1000;
@@ -740,7 +740,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  */
 
-BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
+static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
 {
     BOOL    fAddThis = FALSE;
 
@@ -859,8 +859,8 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
  */
 
-VOID FindFolderForNotification(PXWPNOTIFY pNotify,
-                               WPFolder **ppLastValidFolder)    // out: last valid folder
+static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
+                                      WPFolder **ppLastValidFolder)    // out: last valid folder
 {
     static M_WPFileSystem *pclsWPFileSystem = NULL;
 
@@ -1116,7 +1116,7 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  */
 
-MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1199,7 +1199,7 @@ MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ refr_fntFindFolder:
+ *@@ fntFindFolder:
  *      second thread for folder auto-refresh. This
  *      has a PM message queue and an object window
  *      (fnwpFindFolder) which does the hard work
@@ -1212,7 +1212,7 @@ MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
 
-VOID _Optlink refr_fntFindFolder(PTHREADINFO ptiMyself)
+static VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
 {
     QMSG qmsg;
 
@@ -1261,7 +1261,7 @@ VOID _Optlink refr_fntFindFolder(PTHREADINFO ptiMyself)
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
 
-VOID PostXWPNotify(PCNINFO pCNInfo)
+static VOID PostXWPNotify(PCNINFO pCNInfo)
 {
     // create an XWPNOTIFY struct which has
     // a CNINFO in it... the find-folder worker
@@ -1308,7 +1308,7 @@ VOID PostXWPNotify(PCNINFO pCNInfo)
  *      If folder auto-refresh has been replaced in
  *      XWPSetup, this thread gets created from
  *      krnReplaceWheelWatcher and starts the other
- *      two threads (refr_fntFindFolder, refr_fntPumpThread)
+ *      two threads (fntFindFolder, fntPumpThread)
  *      in turn.
  *
  *      These three threads get created even if folder
@@ -1343,7 +1343,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
     // which can process our notifications asynchronously
     DosCreateEventSem(NULL, &G_hevFindFolderReady, 0, FALSE);
     thrCreate(&G_tiFindFolder,
-              refr_fntFindFolder,
+              fntFindFolder,
               NULL,
               "RefreshFindFolder",
               THRF_PMMSGQUEUE,
@@ -1357,7 +1357,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
     // inserting the notifications into the folder
     DosCreateEventSem(NULL, &G_hevNotificationPump, 0, FALSE);
     thrCreate(&G_tiPumpThread,
-              refr_fntPumpThread,
+              fntPumpThread,
               NULL,
               "RefreshNotificationPump",
               THRF_PMMSGQUEUE,

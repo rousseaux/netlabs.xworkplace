@@ -383,10 +383,10 @@ static STANDARDOBJECT G_WPSObjects[] =
  *@@changed V0.8.5 [umoeller]: language string now initialized to ""
  */
 
-VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
-                        ULONG idLB,                     // in: listbox item ID
-                        PSZ pszXFolderBasePath,         // in: from cmnQueryXWPBasePath
-                        PSZ pszFileName)
+static VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
+                               ULONG idLB,                     // in: listbox item ID
+                               PSZ pszXFolderBasePath,         // in: from cmnQueryXWPBasePath
+                               PSZ pszFileName)
 {
     CHAR    szLBEntry[2*CCHMAXPATH] = "",   // changed V0.85
             szResourceModuleName[2*CCHMAXPATH];
@@ -491,13 +491,13 @@ typedef struct _XWPCLASSES
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-VOID RegisterArray(HWND hwndDlg,
-                   HWND hwndTooltip,
-                   PTOOLINFO pti,
-                   ULONG ulFirstID,
-                   PBYTE pObjClass,
-                   PCXWPCLASSITEM paClasses,
-                   ULONG cClasses)
+static VOID RegisterArray(HWND hwndDlg,
+                          HWND hwndTooltip,
+                          PTOOLINFO pti,
+                          ULONG ulFirstID,
+                          PBYTE pObjClass,
+                          PCXWPCLASSITEM paClasses,
+                          ULONG cClasses)
 {
     ULONG ul;
     for (ul = 0;
@@ -668,7 +668,7 @@ static const XWPCLASSITEM G_aClasses[] =
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-VOID HandleEnableItems(HWND hwndDlg)
+static VOID HandleEnableItems(HWND hwndDlg)
 {
     HPOINTER    hptrOld = winhSetWaitPointer();
     PBYTE pObjClass = winhQueryWPSClassList();
@@ -743,8 +743,8 @@ VOID HandleEnableItems(HWND hwndDlg)
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-VOID HandleTooltip(HWND hwndDlg,
-                   MPARAM mp2)
+static VOID HandleTooltip(HWND hwndDlg,
+                          MPARAM mp2)
 {
     PXWPCLASSES     pxwpc = WinQueryWindowPtr(hwndDlg, QWL_USER);
     PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
@@ -799,7 +799,7 @@ VOID HandleTooltip(HWND hwndDlg,
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-BOOL HandleOKButton(HWND hwndDlg)
+static BOOL HandleOKButton(HWND hwndDlg)
 {
     BOOL            fDismiss = TRUE;
     XSTRING         strDereg,
@@ -1297,10 +1297,10 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-VOID AppendClassesGroup(CONTROLDEF *pOneClass,
-                        CONTROLDEF **ppControlDefThis,
-                        DLGHITEM **ppDlgItemThis,
-                        BOOL fReplacements)
+static VOID AppendClassesGroup(CONTROLDEF *pOneClass,
+                               CONTROLDEF **ppControlDefThis,
+                               DLGHITEM **ppDlgItemThis,
+                               BOOL fReplacements)
 {
     ULONG ul;
 
@@ -1433,7 +1433,7 @@ static const DLGHITEM
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-VOID ShowClassesDlg(HWND hwndOwner)
+static VOID ShowClassesDlg(HWND hwndOwner)
 {
     TRY_LOUD(excpt1)
     {
@@ -2726,7 +2726,7 @@ typedef struct _THREADRECORD
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-VOID ClearThreads(HWND hwndCnr)
+static VOID ClearThreads(HWND hwndCnr)
 {
     PTHREADRECORD prec;
     while (    (prec = (PTHREADRECORD)WinSendMsg(hwndCnr,
@@ -3431,9 +3431,9 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
  *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
  */
 
-VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
-                            PSTANDARDOBJECT pso,    // in: first menu array item
-                            ULONG ulMax)            // in: size of menu array
+static VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
+                                   PSTANDARDOBJECT pso,    // in: first menu array item
+                                   ULONG ulMax)            // in: size of menu array
 {
     ULONG   ul = 0;
     PSTANDARDOBJECT pso2 = pso;

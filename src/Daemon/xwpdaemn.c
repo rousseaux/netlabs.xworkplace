@@ -52,9 +52,9 @@
  *          c) The daemon then requests access to that block of
  *             shared memory, creates the daemon object window
  *             (fnwpDaemonObject) and posts T1M_DAEMONREADY to
- *             fnwpThread1Object in XFLDR.DLL.
+ *             krn_fnwpThread1Object in XFLDR.DLL.
  *
- *             fnwpThread1Object will then send XDM_HOOKINSTALL
+ *             krn_fnwpThread1Object will then send XDM_HOOKINSTALL
  *             to the daemon object window to install the hook (if
  *             the hook is enabled in XWPSetup). If PageMage has
  *             been enabled also, XDM_STARTSTOPPAGEMAGE will also

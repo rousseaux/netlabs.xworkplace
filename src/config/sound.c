@@ -299,7 +299,7 @@ BOOL sndInstallAddtlSounds(HAB hab,
  *      this manually afterwards (using SelectSoundScheme).
  */
 
-VOID FillDropDownWithSchemes(HWND hwndDropDown)
+static VOID FillDropDownWithSchemes(HWND hwndDropDown)
 {
     APIRET arc = NO_ERROR;
     PSZ pszSchemes = NULL;
@@ -334,8 +334,8 @@ VOID FillDropDownWithSchemes(HWND hwndDropDown)
  *      the box's entry field to display "<none>".
  */
 
-VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
-                       SHORT sIndex)
+static VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
+                              SHORT sIndex)
 {
     winhSetLboxSelectedItem(pspd->hwndSchemesDropDown,
                             sIndex,
@@ -375,7 +375,7 @@ VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
  *      current sound scheme to "none".
  */
 
-VOID UpdateMMPMINI(PCREATENOTEBOOKPAGE pcnbp)
+static VOID UpdateMMPMINI(PCREATENOTEBOOKPAGE pcnbp)
 {
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
 
@@ -422,8 +422,8 @@ VOID UpdateMMPMINI(PCREATENOTEBOOKPAGE pcnbp)
  *      occured.
  */
 
-BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
-                       BOOL fSelectNew)
+static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
+                              BOOL fSelectNew)
 {
     BOOL    brc = FALSE;
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
@@ -544,7 +544,7 @@ BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
  *      No more confirmations in this function.
  */
 
-BOOL LoadSoundSchemeFrom(PCREATENOTEBOOKPAGE pcnbp)
+static BOOL LoadSoundSchemeFrom(PCREATENOTEBOOKPAGE pcnbp)
 {
     BOOL    brc = FALSE;
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
@@ -587,7 +587,7 @@ BOOL LoadSoundSchemeFrom(PCREATENOTEBOOKPAGE pcnbp)
  *      entryfield.
  */
 
-VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
+static VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
 {
     HPS                hps;
     POINTL             ptl;
@@ -633,10 +633,10 @@ VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
  *      page's CREATENOTEBOOKPAGE structure.
  */
 
-MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
-                                         ULONG msg,
-                                         MPARAM mp1,
-                                         MPARAM mp2)
+static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
+                                                ULONG msg,
+                                                MPARAM mp1,
+                                                MPARAM mp2)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(WinQueryWindowPtr(hwndEntryField, QWL_USER));
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;

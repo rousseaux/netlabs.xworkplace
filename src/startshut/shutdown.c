@@ -155,7 +155,7 @@ static ULONG               G_fShutdownRunning = FALSE;
             // V0.9.16 (2001-11-22) [umoeller]
 
 // forward declarations
-MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
 void _Optlink fntUpdateThread(PTHREADINFO pti);
 
 /* ******************************************************************
@@ -178,8 +178,8 @@ ULONG   G_ulConfirmHelpPanel = NULLHANDLE;
  *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  */
 
-VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg window
-                           BOOL fExtended)      // in: if TRUE, the list box will be shown
+static VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg window
+                                  BOOL fExtended)      // in: if TRUE, the list box will be shown
 {
     // _Pmpf(("ReformatConfirmWindow: %d, ready: %d", fExtended, G_fConfirmDialogReady));
 
@@ -217,7 +217,7 @@ VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg window
  *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  */
 
-MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
     switch (msg)
@@ -264,7 +264,7 @@ PXBITMAP G_pbmDim = NULLHANDLE;
  *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
-MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -304,7 +304,7 @@ MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2
  *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
-HWND CreateDimScreenWindow(VOID)
+static HWND CreateDimScreenWindow(VOID)
 {
     HWND hwnd;
 
@@ -1985,9 +1985,9 @@ ULONG xsdIsShutdownRunning(VOID)
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-VOID StartShutdownThread(BOOL fStartShutdown,
-                         BOOL fPlayRestartDesktopSound,     // in: else: play shutdown sound
-                         PSHUTDOWNPARAMS psdp)
+static VOID StartShutdownThread(BOOL fStartShutdown,
+                                BOOL fPlayRestartDesktopSound,     // in: else: play shutdown sound
+                                PSHUTDOWNPARAMS psdp)
 {
     if (psdp)
     {
@@ -3030,7 +3030,7 @@ typedef struct _SHUTDOWNDATA
                 // -- XSD_IDLE: shutdown still preparing, not closing yet
                 // -- XSD_CLOSING: currently closing applications
                 // -- XSD_SAVINGWPS: all windows closed, probably saving WPS now
-                // -- XSD_ALLDONEOK: done saving WPS too, fnwpShutdown is exiting
+                // -- XSD_ALLDONEOK: done saving WPS too, fnwpShutdownThread is exiting
                 // -- XSD_CANCELLED: shutdown has been cancelled by user
 
     /* BOOL            fAllWindowsClosed,
@@ -3763,7 +3763,7 @@ void xsdUpdateListBox(HAB hab,
 
 /*
  *@@ xsdUpdateClosingStatus:
- *      this gets called from xsd_fnwpShutdown to
+ *      this gets called from fnwpShutdownThread to
  *      set the Shutdown status wnd text to "Closing xxx".
  *
  *      Runs on the Shutdown thread.
@@ -3912,22 +3912,22 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *          windows are created (the status window with the progress
  *          bar and the "main" window, which is only visible in debug
  *          mode, but processes all the messages). These two windows
- *          daringly share the same msg proc (xsd_fnwpShutdown below),
+ *          daringly share the same msg proc (fnwpShutdownThread below),
  *          but receive different messages, so this shan't hurt.
  *
  *          After these windows have been created, fntShutdown will also
  *          create the Update thread (fntUpdateThread below).
  *          This Update thread is responsible for monitoring the
  *          task list; every time an item is closed (or even opened!),
- *          it will post a ID_SDMI_UPDATESHUTLIST command to xsd_fnwpShutdown,
+ *          it will post a ID_SDMI_UPDATESHUTLIST command to fnwpShutdownThread,
  *          which will then start working again.
  *
  *      2)  fntShutdownThread then remains in a standard PM message
  *          loop until shutdown is cancelled by the user or all
  *          windows have been closed.
- *          In both cases, xsd_fnwpShutdown posts a WM_QUIT then.
+ *          In both cases, fnwpShutdownThread posts a WM_QUIT then.
  *
- *          The order of msg processing in fntShutdownThread / xsd_fnwpShutdown
+ *          The order of msg processing in fntShutdownThread / fnwpShutdownThread
  *          is the following:
  *
  *          a)  ID_SDMI_UPDATESHUTLIST will update the list of currently
@@ -3969,7 +3969,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *              set fAllWindowsClosed to TRUE and post WM_QUIT, so that
  *              the PM message loop in fntShutdownThread will exit.
  *
- *      3)  Depending on whether xsd_fnwpShutdown set fAllWindowsClosed to
+ *      3)  Depending on whether fnwpShutdownThread set fAllWindowsClosed to
  *          TRUE, we will then actually restart the WPS or shut down the system
  *          or exit this thread (= shutdown cancelled), and the user may continue work.
  *
@@ -3988,10 +3988,10 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.0 [umoeller]: changed shutdown logging to stdio functions (fprintf etc.)
  *@@changed V0.9.0 [umoeller]: code has been re-ordered for semaphore safety.
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted auto-close list code to xsdLoadAutoCloseItems
- *@@changed V0.9.9 (2001-04-04) [umoeller]: moved all post-close stuff from xsd_fnwpShutdown here
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: moved all post-close stuff from fnwpShutdownThread here
  *@@changed V0.9.9 (2001-04-04) [umoeller]: rewrote "save Desktop objects" to use dirty list from object.c
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed logoff
- *@@changed V0.9.12 (2001-04-29) [umoeller]: deferred update thread startup to fnwpShutdown; this fixes shutdown folder
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: deferred update thread startup to fnwpShutdownThread; this fixes shutdown folder
  *@@changed V0.9.12 (2001-05-15) [umoeller]: now telling PageMage to recover windows first
  *@@changed V0.9.12 (2001-05-29) [umoeller]: now broadcasting WM_SAVEAPPLICATION here
  *@@changed V0.9.12 (2001-05-29) [umoeller]: StartShutdownThread now uses THRF_PMMSGQUEUE so Wininitialize etc. has been removed here
@@ -4000,7 +4000,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.16 (2001-10-25) [umoeller]: couple of extra hacks for saving desktop
  */
 
-void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
+static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 {
     /*************************************************
      *
@@ -4096,7 +4096,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                                                   ID_SDICON);
 
         // create an event semaphore which signals to the Update thread
-        // that the Shutlist has been updated by xsd_fnwpShutdown
+        // that the Shutlist has been updated by fnwpShutdownThread
         DosCreateEventSem(NULL,         // unnamed
                           &pShutdownData->hevUpdated,
                           0,            // unshared
@@ -4139,7 +4139,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // if we're not in debug mode
         pShutdownData->SDConsts.hwndMain
                 = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
-                             xsd_fnwpShutdown,
+                             fnwpShutdownThread,
                              pShutdownData->hmodResource,
                              ID_SDD_MAIN,
                              NULL);
@@ -4187,7 +4187,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         pShutdownData->SDConsts.hwndShutdownStatus
                 = WinLoadDlg(HWND_DESKTOP,
                              NULLHANDLE,
-                             xsd_fnwpShutdown,
+                             fnwpShutdownThread,
                              pShutdownData->hmodResource,
                              ID_SDD_STATUS,
                              NULL);
@@ -4227,7 +4227,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                             TRUE);  // start now
 
         // create update thread (moved here V0.9.9 (2001-03-07) [umoeller])
-        /* removed again; moved this down into fnwpShutdown
+        /* removed again; moved this down into fnwpShutdownThread
             it is now started after the shutdown folder has
             finished processing V0.9.12 (2001-04-29) [umoeller]
 
@@ -4311,9 +4311,9 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
          *************************************************/
 
         // now enter the common message loop for the main (debug) and
-        // status windows (xsd_fnwpShutdown); this will keep running
+        // status windows (fnwpShutdownThread); this will keep running
         // until closing all windows is complete or cancelled, upon
-        // both of which xsd_fnwpShutdown will post WM_QUIT
+        // both of which fnwpShutdownThread will post WM_QUIT
         while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
             WinDispatchMsg(hab, &qmsg);
 
@@ -4326,7 +4326,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
          *
          *************************************************/
 
-// all the following has been moved here from fnwpShutdown
+// all the following has been moved here from fnwpShutdownThread
 // with V0.9.9 (2001-04-04) [umoeller]
 
         // in any case,
@@ -4626,7 +4626,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
      */
 
     // we arrive here if
-    //      a) xsd_fnwpShutdown successfully closed all windows;
+    //      a) fnwpShutdownThread successfully closed all windows;
     //         only in that case, fAllWindowsClosed is TRUE;
     //      b) shutdown was cancelled by the user;
     //      c) an exception occured.
@@ -4658,7 +4658,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         doshWriteLogEntry(LogFile, "  Done releasing semaphores.");
 
         // get rid of the Update thread;
-        // this got closed by xsd_fnwpShutdown normally,
+        // this got closed by fnwpShutdownThread normally,
         // but with exceptions, this might not have happened
         if (thrQueryID(&G_tiUpdateThread))
         {
@@ -4783,7 +4783,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 /*
  *@@ xsdCloseVIO:
  *      this gets called upon ID_SDMI_CLOSEVIO in
- *      xsd_fnwpShutdown when a VIO window is encountered.
+ *      fnwpShutdownThread when a VIO window is encountered.
  *      (To be precise, this gets called for all non-PM
  *      sessions, not just VIO windows.)
  *
@@ -5024,9 +5024,9 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
-                  HWND hwndListbox,
-                  PSHUTLISTITEM pItem)
+static VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
+                         HWND hwndListbox,
+                         PSHUTLISTITEM pItem)
 {
     CHAR        szTitle[1024];
     USHORT      usItem;
@@ -5138,7 +5138,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
 }
 
 /*
- *@@ xsd_fnwpShutdown:
+ *@@ fnwpShutdownThread:
  *      window procedure for both the main (debug) window and
  *      the status window; it receives messages from the Update
  *      threads, so that it can update the windows' contents
@@ -5168,7 +5168,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.16 (2001-10-22) [pr]: fixed bug trying to close the first switch list item twice
  */
 
-MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT         mrc = MRFALSE;
 
@@ -5616,7 +5616,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
  *      Runs on the Shutdown thread.
  */
 
-MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     if (hwnd)
         WinSendMsg(hwnd, msg, mp1, mp2);
@@ -5630,7 +5630,7 @@ MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
  *      Runs on the Shutdown thread.
  */
 
-MRESULT EXPENTRY fncbSaveINIError(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fncbSaveINIError(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     return ((MRESULT)cmnMessageBox(HWND_DESKTOP,
                                    "XShutdown: Error",
@@ -5817,7 +5817,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-VOID PowerOffAnim(HPS hpsScreen)
+static VOID PowerOffAnim(HPS hpsScreen)
 {
     anmPowerOff(hpsScreen,
                 500, 800, 200, 300);
@@ -6171,7 +6171,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
  *          it to the global pliShutdownFirst.
  *
  *          If they are different, this means that windows have been
- *          closed (or even maybe opened), so xsd_fnwpShutdown is posted
+ *          closed (or even maybe opened), so fnwpShutdownThread is posted
  *          ID_SDMI_UPDATESHUTLIST so that it can rebuild pliShutdownFirst
  *          and react accordingly, in most cases, close the next window.
  *
@@ -6191,7 +6191,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
  *@@changed V0.9.0 [umoeller]: code has been re-ordered for semaphore safety.
  */
 
-void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
+static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 {
     PSZ             pszErrMsg = NULL;
 

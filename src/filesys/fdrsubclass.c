@@ -572,9 +572,9 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
-                 MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
-                 ULONG ulCount)         // in: frame control count (returned from default wnd proc)
+static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
+                        MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
+                        ULONG ulCount)         // in: frame control count (returned from default wnd proc)
 {
     // access the SWP array that is passed to us
     // and search all the controls for the container child window,
@@ -664,7 +664,7 @@ VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
+static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
 {
     PRECTL prclPassed = (PRECTL)mp1;
     ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
@@ -753,9 +753,9 @@ VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed broken source object with folder menu bars, which broke new "View" menu items
  */
 
-VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
-              ULONG sMenuIDMsg,         // in: mp1 from WM_INITMENU
-              HWND hwndMenuMsg)         // in: mp2 from WM_INITMENU
+static VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
+                     ULONG sMenuIDMsg,         // in: mp1 from WM_INITMENU
+                     HWND hwndMenuMsg)         // in: mp2 from WM_INITMENU
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
@@ -973,10 +973,10 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
-                MPARAM mp1,               // in: mp1 from WM_MENUSELECT
-                MPARAM mp2,               // in: mp2 from WM_MENUSELECT
-                BOOL *pfDismiss)          // out: dismissal flag
+static BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
+                       MPARAM mp1,               // in: mp1 from WM_MENUSELECT
+                       MPARAM mp2,               // in: mp2 from WM_MENUSELECT
+                       BOOL *pfDismiss)          // out: dismissal flag
 {
     BOOL fHandled = FALSE;
     // return value for WM_MENUSELECT;
@@ -1084,7 +1084,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *@@changed V0.9.9 (2001-02-16) [umoeller]: added "shift-delete" support; thanks [pr]
  */
 
-VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
+static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
 {
     ULONG       ulSelection = 0;
     WPObject    *pSelected = 0;
@@ -1983,7 +1983,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
  *      different window, which we own all alone.
  *
  *      We cannot use the global XFolder object window either
- *      (fnwpThread1Object, kernel.c) because sometimes
+ *      (krn_fnwpThread1Object, kernel.c) because sometimes
  *      folder windows do not run in the main PM thread
  *      (TID 1), esp. when they're opened using WinOpenObject or
  *      REXX functions. I have found that manipulating windows

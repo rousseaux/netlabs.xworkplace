@@ -172,8 +172,8 @@ static const RESOLVEFUNCTION G_aResolveFromMMIO[] =
  *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
-VOID ThreadPlaySystemSound(HWND hwndObject,
-                           MPARAM mp1)
+static VOID ThreadPlaySystemSound(HWND hwndObject,
+                                  MPARAM mp1)
 {
     CHAR    szDescr[CCHMAXPATH];
     ULONG   ulVolume;

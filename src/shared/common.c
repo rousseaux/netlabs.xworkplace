@@ -984,7 +984,7 @@ static const XWPENTITY G_aEntities[] =
  *@@added V0.9.16 (2001-09-29) [umoeller]
  */
 
-ULONG ReplaceEntities(PXSTRING pstr)
+static ULONG ReplaceEntities(PXSTRING pstr)
 {
     ULONG ul,
           rc = 0;
@@ -1064,7 +1064,7 @@ static LONG        G_cStringsInCache = 0;
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-BOOL LockStrings(VOID)
+static BOOL LockStrings(VOID)
 {
     BOOL brc = FALSE;
 
@@ -1089,7 +1089,7 @@ BOOL LockStrings(VOID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-VOID UnlockStrings(VOID)
+static VOID UnlockStrings(VOID)
 {
     DosReleaseMutexSem(G_hmtxStringsCache);
 }
@@ -1242,7 +1242,7 @@ PSZ cmnGetString(ULONG ulStringID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-VOID UnloadAllStrings(VOID)
+static VOID UnloadAllStrings(VOID)
 {
     BOOL    fLocked = FALSE;
 
@@ -1452,7 +1452,7 @@ LONG        G_cIconsInCache = 0;
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-BOOL LockIcons(VOID)
+static BOOL LockIcons(VOID)
 {
     BOOL brc = FALSE;
 
@@ -1480,7 +1480,7 @@ BOOL LockIcons(VOID)
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-VOID UnlockIcons(VOID)
+static VOID UnlockIcons(VOID)
 {
     DosReleaseMutexSem(G_hmtxIconsCache);
 }
@@ -1606,7 +1606,7 @@ static const STDICON aStdIcons[] =
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
+static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 {
     HPOINTER hptrReturn = NULLHANDLE;
     PICONTREENODE pNode;
@@ -2870,7 +2870,7 @@ static const SETTINGINFO G_aSettingInfos[] =
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-PCSETTINGINFO FindSettingInfo(XWPSETTING s)
+static PCSETTINGINFO FindSettingInfo(XWPSETTING s)
 {
     ULONG ul2;
     for (ul2 = 0;
@@ -2902,7 +2902,7 @@ PCSETTINGINFO FindSettingInfo(XWPSETTING s)
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
+static VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
 {
     ULONG s, ul2;
 
@@ -4807,8 +4807,8 @@ static PCSZ G_apcszExtensions[]
  *@@added V0.9.11 (2001-04-18) [umoeller]
  */
 
-PSZ StripParams(PSZ pcszCommand,
-                PSZ *ppParams)      // out: ptr to first char of params
+static PSZ StripParams(PSZ pcszCommand,
+                       PSZ *ppParams)      // out: ptr to first char of params
 {
     PSZ pszReturn = NULL;
 
@@ -4854,9 +4854,9 @@ PSZ StripParams(PSZ pcszCommand,
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-APIRET GetExeFromControl(HWND hwnd,
-                         PSZ pszExecutable,
-                         USHORT usExeLength)
+static APIRET GetExeFromControl(HWND hwnd,
+                                PSZ pszExecutable,
+                                USHORT usExeLength)
 {
     APIRET arc = ERROR_FILE_NOT_FOUND;
 
@@ -4894,7 +4894,7 @@ APIRET GetExeFromControl(HWND hwnd,
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-BOOL LoadRunHistory(HWND hwnd)
+static BOOL LoadRunHistory(HWND hwnd)
 {
     USHORT i;
     BOOL   bOK = FALSE;
@@ -4931,7 +4931,7 @@ BOOL LoadRunHistory(HWND hwnd)
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-VOID SaveRunHistory(HWND hwnd)
+static VOID SaveRunHistory(HWND hwnd)
 {
     USHORT i;
 
@@ -4956,7 +4956,7 @@ VOID SaveRunHistory(HWND hwnd)
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-VOID UpdateRunHistory(HWND hwnd)
+static VOID UpdateRunHistory(HWND hwnd)
 {
     CHAR szData[CCHMAXPATH];
     USHORT i, usCount;
@@ -5010,7 +5010,7 @@ VOID UpdateRunHistory(HWND hwnd)
  *@@changed V0.9.14 (2001-08-23) [pr]: added more options and Browse button
  */
 
-MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

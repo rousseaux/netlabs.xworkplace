@@ -193,13 +193,13 @@ typedef struct _DRIVERRECORD
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added pszVersion to DRIVERSPEC
  */
 
-void InsertDrivers(HWND hwndCnr,              // in: container
-                   PDRIVERRECORD preccRoot,   // in: root record core ("Drivers drivers")
-                   PSZ pszHeading,            // in: heading for new category;
-                                              // this is freed after this call, so this must
-                                              // be copied
-                   PSZ pszConfigSys,          // in: CONFIG.SYS file contents
-                   PLINKLIST pllDriverSpecs)  // in: linked list of DRIVERSPEC structures
+static void InsertDrivers(HWND hwndCnr,              // in: container
+                          PDRIVERRECORD preccRoot,   // in: root record core ("Drivers drivers")
+                          PSZ pszHeading,            // in: heading for new category;
+                                                     // this is freed after this call, so this must
+                                                     // be copied
+                          PSZ pszConfigSys,          // in: CONFIG.SYS file contents
+                          PLINKLIST pllDriverSpecs)  // in: linked list of DRIVERSPEC structures
 {
     // create category record
     PDRIVERRECORD preccHeading = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
@@ -376,7 +376,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
  *@@added V0.9.5 (2000-08-30) [umoeller]
  */
 
-VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
+static VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
 {
     if (pSpecThis->pszKeyword)
         free(pSpecThis->pszKeyword);
@@ -412,13 +412,13 @@ VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
  *@@changed V0.9.3 (2000-05-21) [umoeller]: DRVF_NOPARAMS wasn't recognized, fixed
  */
 
-PLINKLIST InsertDriverCategories(HWND hwndCnr,
-                                 PDRIVERRECORD preccRoot,
-                                        // in: root record core ("Drivers drivers")
-                                 PSZ pszConfigSys,
-                                        // in: CONFIG.SYS file contents
-                                 PSZ pszDriverSpecsFile)
-                                        // in: DRVRSxxx.TXT file contents
+static PLINKLIST InsertDriverCategories(HWND hwndCnr,
+                                        PDRIVERRECORD preccRoot,
+                                               // in: root record core ("Drivers drivers")
+                                        PSZ pszConfigSys,
+                                               // in: CONFIG.SYS file contents
+                                        PSZ pszDriverSpecsFile)
+                                               // in: DRVRSxxx.TXT file contents
 {
     // linked list of PLINKLIST items to return
     PLINKLIST pllReturn = lstCreate(FALSE);
@@ -591,7 +591,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added excpt handling, this took down the wps
  */
 
-void _Optlink fntDriversThread(PTHREADINFO pti)
+static void _Optlink fntDriversThread(PTHREADINFO pti)
 {
     TRY_LOUD(excpt1)
     {

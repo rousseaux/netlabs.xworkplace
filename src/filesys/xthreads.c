@@ -329,7 +329,7 @@ LONG xthrQueryAwakeObjectsCount(VOID)
  *@@changed V0.9.16 (2001-10-25) [umoeller]: fixed memory leak
  */
 
-VOID WorkerAddObject(WPObject *pObj2Store)
+static VOID WorkerAddObject(WPObject *pObj2Store)
 {
     BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
 
@@ -416,7 +416,7 @@ VOID WorkerAddObject(WPObject *pObj2Store)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-VOID WorkerRemoveObject(WPObject *pObj)
+static VOID WorkerRemoveObject(WPObject *pObj)
 {
     BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
 
@@ -488,7 +488,7 @@ VOID WorkerRemoveObject(WPObject *pObj)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-BOOL LockWorkerThreadData(VOID)
+static BOOL LockWorkerThreadData(VOID)
 {
     if (G_hmtxWorkerThreadData)
         return (!WinRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT));
@@ -506,7 +506,7 @@ BOOL LockWorkerThreadData(VOID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-VOID UnlockWorkerThreadData(VOID)
+static VOID UnlockWorkerThreadData(VOID)
 {
     DosReleaseMutexSem(G_hmtxWorkerThreadData);
 }
@@ -594,7 +594,7 @@ VOID xthrResetWorkerThreadPriority(VOID)
  *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
  */
 
-VOID RaiseWorkerThreadPriority(BOOL fRaise)
+static VOID RaiseWorkerThreadPriority(BOOL fRaise)
 {
     static BOOL fFirstTime = TRUE;
 
@@ -1293,7 +1293,7 @@ ULONG xthrIsFileThreadBusy(VOID)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-VOID CollectDoubleFiles(MPARAM mp1)
+static VOID CollectDoubleFiles(MPARAM mp1)
 {
     PDOUBLEFILES pdf = (PDOUBLEFILES)mp1;
 

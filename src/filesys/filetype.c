@@ -234,13 +234,13 @@ static LINKLIST            G_llInstanceFilters;
  ********************************************************************/
 
 /*
- *@@ ftypLockInstances:
+ *@@ LockInstances:
  *      locks the association caches.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-BOOL ftypLockInstances(VOID)
+static BOOL LockInstances(VOID)
 {
     if (G_hmtxInstances)
         return (!WinRequestMutexSem(G_hmtxInstances, SEM_INDEFINITE_WAIT));
@@ -263,13 +263,13 @@ BOOL ftypLockInstances(VOID)
 }
 
 /*
- *@@ ftypUnlockInstances:
+ *@@ UnlockInstances:
  *      unlocks the association caches.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-VOID ftypUnlockInstances(VOID)
+static VOID UnlockInstances(VOID)
 {
     DosReleaseMutexSem(G_hmtxInstances);
 }
@@ -346,7 +346,7 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                     pNew->pClassObject = pClassObject;
 
                     if (!fLocked)
-                        fLocked = ftypLockInstances();
+                        fLocked = LockInstances();
 
                     if (fLocked)
                     {
@@ -423,7 +423,7 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                     #endif
 
                     if (!fLocked)
-                        fLocked = ftypLockInstances();
+                        fLocked = LockInstances();
 
                     if (fLocked)
                     {
@@ -451,7 +451,7 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
     } END_CATCH();
 
     if (fLocked)
-        ftypUnlockInstances();
+        UnlockInstances();
 
     return (ulrc);
 }
@@ -479,7 +479,7 @@ PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case i
         if (    (pcszType)
              && (ulTypeLength = strlen(pcszType))
              && (pszUpperType = _alloca(ulTypeLength + 1))
-             && (fLocked = ftypLockInstances())
+             && (fLocked = LockInstances())
            )
         {
             PINSTANCETYPE p;
@@ -502,7 +502,7 @@ PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case i
     } END_CATCH();
 
     if (fLocked)
-        ftypUnlockInstances();
+        UnlockInstances();
 
     return (pcszClassName);
 }
@@ -526,7 +526,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
         if (    (pcszObjectTitle)
              && (*pcszObjectTitle)
              && (ulTitleLen)
-             && (fLocked = ftypLockInstances())
+             && (fLocked = LockInstances())
            )
         {
             PLISTNODE pNode = lstQueryFirstNode(&G_llInstanceFilters);
@@ -556,7 +556,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
     } END_CATCH();
 
     if (fLocked)
-        ftypUnlockInstances();
+        UnlockInstances();
 
     return (pcszClassName);
 }
@@ -568,13 +568,13 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
  ********************************************************************/
 
 /*
- *@@ ftypLockCaches:
+ *@@ LockTypeCaches:
  *      locks the association caches.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-BOOL ftypLockCaches(VOID)
+static BOOL LockTypeCaches(VOID)
 {
     if (G_hmtxAssocsCaches)
         return (!WinRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT));
@@ -597,13 +597,13 @@ BOOL ftypLockCaches(VOID)
 }
 
 /*
- *@@ ftypUnlockCaches:
+ *@@ UnlockTypeCaches:
  *      unlocks the association caches.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-VOID ftypUnlockCaches(VOID)
+static VOID UnlockTypeCaches(VOID)
 {
     DosReleaseMutexSem(G_hmtxAssocsCaches);
 }
@@ -626,7 +626,7 @@ VOID ftypUnlockCaches(VOID)
 
 VOID ftypInvalidateCaches(VOID)
 {
-    if (ftypLockCaches())
+    if (LockTypeCaches())
     {
         if (G_fTypesWithFiltersValid)
         {
@@ -695,7 +695,7 @@ VOID ftypInvalidateCaches(VOID)
             G_fWPSTypesValid = FALSE;
         }
 
-        ftypUnlockCaches();
+        UnlockTypeCaches();
     }
 }
 
@@ -711,7 +711,7 @@ VOID ftypInvalidateCaches(VOID)
  *@@added V0.9.16 (2002-01-26) [umoeller]
  */
 
-VOID BuildTypesWithFiltersCache(VOID)
+static VOID BuildTypesWithFiltersCache(VOID)
 {
     // caches have been cleared, or first call:
     // build the list in the global variable from OS2.INI...
@@ -815,7 +815,7 @@ VOID BuildTypesWithFiltersCache(VOID)
  *@@changed V0.9.16 (2002-01-26) [umoeller]: optimizations
  */
 
-PLINKLIST GetCachedTypesWithFilters(VOID)
+static PLINKLIST GetCachedTypesWithFilters(VOID)
 {
     if (!G_fTypesWithFiltersValid)
         BuildTypesWithFiltersCache();
@@ -837,7 +837,7 @@ PLINKLIST GetCachedTypesWithFilters(VOID)
  *@@changed V0.9.16 (2002-01-26) [umoeller]: now pre-resolving object handles for speed
  */
 
-VOID BuildWPSTypesCache(VOID)
+static VOID BuildWPSTypesCache(VOID)
 {
     APIRET  arc;
     PSZ     pszAssocData = NULL;
@@ -947,7 +947,7 @@ VOID BuildWPSTypesCache(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
+static PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
 {
     if (!G_fWPSTypesValid)
         // create a copy of the data from OS2.INI... this
@@ -988,8 +988,8 @@ PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
  *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed memory leak
  */
 
-BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; list gets created on first call
-                            PSZ pszNewType)     // in: new type to append (must be free()'able!)
+static BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; list gets created on first call
+                                   PSZ pszNewType)     // in: new type to append (must be free()'able!)
 {
     BOOL brc = FALSE;
 
@@ -1041,10 +1041,10 @@ BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; list get
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG AppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C Code\nPlain text")
-                            CHAR cSeparator, // in: separator (\n for data files, ',' for programs)
-                            PLINKLIST pllTypes) // in/out: list of newly allocated PSZ's
-                                                // with file types (e.g. "C Code", "Plain text")
+static ULONG AppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C Code\nPlain text")
+                                   CHAR cSeparator, // in: separator (\n for data files, ',' for programs)
+                                   PLINKLIST pllTypes) // in/out: list of newly allocated PSZ's
+                                                       // with file types (e.g. "C Code", "Plain text")
 {
     ULONG   ulrc = 0;
     // if we have several file types (which are then separated
@@ -1117,13 +1117,13 @@ ULONG AppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C Code\nP
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
-                         PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
-                                               // with file types (e.g. "C Code", "Plain text")
+static ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
+                                PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
+                                                      // with file types (e.g. "C Code", "Plain text")
 {
     ULONG   ulrc = 0;
 
-    if (ftypLockCaches())
+    if (LockTypeCaches())
     {
         // loop thru all extended file types which have
         // filters assigned to them to check whether the
@@ -1180,7 +1180,7 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
             free(pszUpperTitle);
         }
 
-        ftypUnlockCaches();
+        UnlockTypeCaches();
     }
     return (ulrc);
 }
@@ -1216,11 +1216,11 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
  *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, changed prototype, optimized
  */
 
-ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgram or WPProgramFile
-                                               // objects to append to
-                        PCSZ pcszType0,      // in: file type (e.g. "C Code")
-                        ULONG ulBuildMax,    // in: max no. of assocs to append or -1 for all
-                        BOOL *pfDone)        // out: set to TRUE only if ulBuildMax was reached; ptr can be NULL
+static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgram or WPProgramFile
+                                                      // objects to append to
+                               PCSZ pcszType0,      // in: file type (e.g. "C Code")
+                               ULONG ulBuildMax,    // in: max no. of assocs to append or -1 for all
+                               BOOL *pfDone)        // out: set to TRUE only if ulBuildMax was reached; ptr can be NULL
 {
     ULONG   ulrc = 0;
 
@@ -1337,7 +1337,7 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
 {
     APIRET arc = FALSE;
 
-    if (ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
+    if (LockTypeCaches())       // V0.9.12 (2001-05-31) [umoeller]
     {
         // check WPS file types... this better exist, or we'll stop
         // right away
@@ -1416,7 +1416,7 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
             ftypInvalidateCaches();
         }
 
-        ftypUnlockCaches();
+        UnlockTypeCaches();
     }
 
     return (arc);
@@ -1431,8 +1431,8 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
-                            PCSZ pcszIniApp)     // in: OS2.INI app to search
+static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
+                                   PCSZ pcszIniApp)     // in: OS2.INI app to search
 {
     APIRET arc;
     ULONG ulrc = 0;
@@ -1547,7 +1547,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
     TRY_LOUD(excpt1)
     {
         // lock out everyone else from messing with the types here
-        if (fLocked = ftypLockCaches())
+        if (fLocked = LockTypeCaches())
         {
             CHAR szHandle[20];
 
@@ -1574,7 +1574,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
     CATCH(excpt1) {} END_CATCH();
 
     if (fLocked)
-        ftypUnlockCaches();
+        UnlockTypeCaches();
 
     return (ulrc);
 }
@@ -1638,7 +1638,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
+        if (fLocked = LockTypeCaches())       // V0.9.12 (2001-05-31) [umoeller]
         {
             BOOL        fDone = FALSE;
 
@@ -1761,7 +1761,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
     } END_CATCH();
 
     if (fLocked)
-        ftypUnlockCaches();
+        UnlockTypeCaches();
 
     #ifdef DEBUG_ASSOCS
         _Pmpf(("    ftypBuildAssocsList: got %d assocs",
@@ -2078,11 +2078,11 @@ typedef struct _FILETYPELISTITEM
  *      core, which is also returned.
  */
 
-PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert into
-                                PFILETYPERECORD preccParent,  // in: parent recc for tree view
-                                PFILETYPELISTITEM pliAssoc,   // in: file type to add
-                                PLINKLIST pllCheck,      // in: list of types for checking records
-                                PLINKLIST pllDisable)    // in: list of types for disabling records
+static PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert into
+                                       PFILETYPERECORD preccParent,  // in: parent recc for tree view
+                                       PFILETYPELISTITEM pliAssoc,   // in: file type to add
+                                       PLINKLIST pllCheck,      // in: list of types for checking records
+                                       PLINKLIST pllDisable)    // in: list of types for disabling records
 {
     PFILETYPERECORD preccNew
         = (PFILETYPERECORD)cnrhAllocRecords(hwndCnr, sizeof(FILETYPERECORD), 1);
@@ -2167,11 +2167,11 @@ PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert int
  *      if they haven't been added yet.
  */
 
-PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to insert into
-                                         PLINKLIST pllFileTypes, // in: list of all file types
-                                         PSZ pszKey,
-                                         PLINKLIST pllCheck,      // in: list of types for checking records
-                                         PLINKLIST pllDisable)    // in: list of types for disabling records
+static PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to insert into
+                                                PLINKLIST pllFileTypes, // in: list of all file types
+                                                PSZ pszKey,
+                                                PLINKLIST pllCheck,      // in: list of types for checking records
+                                                PLINKLIST pllDisable)    // in: list of types for disabling records
 {
     PFILETYPERECORD     pftreccParent = NULL,
                         pftreccReturn = NULL;
@@ -2285,10 +2285,10 @@ PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to in
  *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed small memory leak
  */
 
-VOID FillCnrWithAvailableTypes(HWND hwndCnr,
-                               PLINKLIST pllFileTypes,  // in: list to append types to
-                               PLINKLIST pllCheck,      // in: list of types for checking records
-                               PLINKLIST pllDisable)    // in: list of types for disabling records
+static VOID FillCnrWithAvailableTypes(HWND hwndCnr,
+                                      PLINKLIST pllFileTypes,  // in: list to append types to
+                                      PLINKLIST pllCheck,      // in: list of types for checking records
+                                      PLINKLIST pllDisable)    // in: list of types for disabling records
 {
     APIRET  arc;
     PSZ     pszAssocTypeList = NULL;
@@ -2387,8 +2387,8 @@ VOID FillCnrWithAvailableTypes(HWND hwndCnr,
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-VOID ClearAvailableTypes(HWND hwndCnr,              // in: cnr, can be NULLHANDLE
-                         PLINKLIST pllFileTypes)
+static VOID ClearAvailableTypes(HWND hwndCnr,              // in: cnr, can be NULLHANDLE
+                                PLINKLIST pllFileTypes)
 {
     PLISTNODE pAssocNode = lstQueryFirstNode(pllFileTypes);
     PFILETYPELISTITEM pliAssoc;
@@ -2520,10 +2520,10 @@ typedef struct _FILETYPESPAGEDATA
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added icons to assoc records
  */
 
-PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
-                                WPObject *pObject,  // in: must be a WPProgram or WPProgramFile
-                                PRECORDCORE preccInsertAfter, // in: record to insert after (or CMA_FIRST or CMA_END)
-                                BOOL fEnableRecord) // in: if FALSE, the record will be disabled
+static PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
+                                       WPObject *pObject,  // in: must be a WPProgram or WPProgramFile
+                                       PRECORDCORE preccInsertAfter, // in: record to insert after (or CMA_FIRST or CMA_END)
+                                       BOOL fEnableRecord) // in: if FALSE, the record will be disabled
 {
     // ULONG ulrc = LIT_ERROR;
 
@@ -2581,9 +2581,9 @@ PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
  *      func cannot find the object handles.
  */
 
-BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
-                     HWND hwndTypesCnr,  // in: cnr with selected FILETYPERECORD
-                     HWND hwndAssocsCnr) // in: cnr with ASSOCRECORDs
+static BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
+                            HWND hwndTypesCnr,  // in: cnr with selected FILETYPERECORD
+                            HWND hwndAssocsCnr) // in: cnr with ASSOCRECORDs
 {
     BOOL    brc = FALSE;
 
@@ -2671,11 +2671,11 @@ BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMW
  *          dialog (and "PMWP_ASSOC_FILTER").
  */
 
-VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
-                     PSZ  pszTypeOrFilter,  // in: file type or file filter
-                     PSZ  pszINIApp,        // in: "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
-                     BOOL fEmpty,           // in: if TRUE, list box will be emptied beforehand
-                     BOOL fEnableRecords)   // in: if FALSE, the records will be disabled
+static VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
+                            PSZ  pszTypeOrFilter,  // in: file type or file filter
+                            PSZ  pszINIApp,        // in: "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
+                            BOOL fEmpty,           // in: if TRUE, list box will be emptied beforehand
+                            BOOL fEnableRecords)   // in: if FALSE, the records will be disabled
 {
     // get WPS associations from OS2.INI for this file type/filter
     ULONG cbAssocData;
@@ -2742,8 +2742,8 @@ VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
  *      The new record core is returned.
  */
 
-PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
-                          PSZ pszFilter)    // in: filter name
+static PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
+                                 PSZ pszFilter)    // in: filter name
 {
     PRECORDCORE preccNew = cnrhAllocRecords(pftpd->hwndFiltersCnr,
                                               sizeof(RECORDCORE), 1);
@@ -2783,7 +2783,7 @@ PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
  *      Returns the number of filters written into the INI data.
  */
 
-ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
+static ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
 {
     ULONG ulrc = 0;
 
@@ -2846,7 +2846,7 @@ ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
  *      has the currently selected file type in the container.
  */
 
-VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
+static VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
 {
     // get text of selected record core
     PSZ pszFileType = pftpd->pftreccSelected->recc.recc.pszIcon;
@@ -2901,9 +2901,9 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
-                    PSZ pszNewType,             // in: new type (malloc!)
-                    PFILETYPERECORD pParent)    // in: parent record or NULL if root type
+static BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
+                           PSZ pszNewType,             // in: new type (malloc!)
+                           PFILETYPERECORD pParent)    // in: parent record or NULL if root type
 {
     BOOL brc = FALSE;
 
@@ -2980,11 +2980,11 @@ BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
-                       PDRAGINFO pDragInfo,     // in: drag info
-                       PFILETYPERECORD pTargetRec, // in: target record from CNRDRAGINFO
-                       PUSHORT pusIndicator,    // out: DOR_* flag for indicator (ptr can be NULL)
-                       PUSHORT pusOperation)    // out: DOR_* flag for operation (ptr can be NULL)
+static BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
+                              PDRAGINFO pDragInfo,     // in: drag info
+                              PFILETYPERECORD pTargetRec, // in: target record from CNRDRAGINFO
+                              PUSHORT pusIndicator,    // out: DOR_* flag for indicator (ptr can be NULL)
+                              PUSHORT pusOperation)    // out: DOR_* flag for operation (ptr can be NULL)
 {
     BOOL brc = FALSE;
 
@@ -3285,7 +3285,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
+static VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
 {
     CHAR szFilename[CCHMAXPATH];
     sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
@@ -4539,11 +4539,11 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-VOID FillListboxWithWPSFilters(HWND hwndDlg)
+static VOID FillListboxWithWPSFilters(HWND hwndDlg)
 {
     HPOINTER hptrOld = winhSetWaitPointer();
 
-    if (ftypLockCaches())
+    if (LockTypeCaches())
     {
         HWND        hwndListBox = WinWindowFromID(hwndDlg,
                                                   ID_XSDI_FT_FILTERLIST);
@@ -4627,7 +4627,7 @@ VOID FillListboxWithWPSFilters(HWND hwndDlg)
 
         } // end if (pszAssocsList)
 
-        ftypUnlockCaches();
+        UnlockTypeCaches();
     }
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -4648,7 +4648,7 @@ VOID FillListboxWithWPSFilters(HWND hwndDlg)
  *@@changed V0.9.9 (2001-02-06) [umoeller]: setting proper fonts now
  */
 
-MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -4993,8 +4993,8 @@ typedef struct _INSTANCEFILETYPESPAGE
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
-                               PINSTANCEFILETYPESPAGE *pp)  // out: new struct
+static VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      PINSTANCEFILETYPESPAGE *pp)  // out: new struct
 {
     PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
     if (pdftp)
@@ -5027,10 +5027,10 @@ VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
-                               PCSZ pcszCheck,
-                               CHAR cSeparator,
-                               PLINKLIST pllDisable)
+static VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      PCSZ pcszCheck,
+                                      CHAR cSeparator,
+                                      PLINKLIST pllDisable)
 {
     PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pcnbp->pUser;
     if (pdftp)
@@ -5069,7 +5069,7 @@ VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
+static VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
 {
     PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pcnbp->pUser;
     if (pdftp)
@@ -5092,9 +5092,9 @@ VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
  *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed buggy type removal
  */
 
-VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
-                         PXSTRING pstrTypes,
-                         PCSZ pcszSeparator)
+static VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
+                                PXSTRING pstrTypes,
+                                PCSZ pcszSeparator)
 {
     PFILETYPERECORD precc = (PFILETYPERECORD)ulExtra;
 
@@ -5508,8 +5508,8 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ImportFilters(PDOMNODE pTypeElementThis,
-                     PCSZ pcszTypeNameThis)
+static APIRET ImportFilters(PDOMNODE pTypeElementThis,
+                            PCSZ pcszTypeNameThis)
 {
     APIRET arc = NO_ERROR;
 
@@ -5667,8 +5667,8 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ImportTypes(PDOMNODE pParentElement,
-                   PCSZ pcszParentType)  // in: parent type name or NULL
+static APIRET ImportTypes(PDOMNODE pParentElement,
+                          PCSZ pcszParentType)  // in: parent type name or NULL
 {
     APIRET arc = NO_ERROR;
     PLINKLIST pllTypes = xmlGetElementsByTagName(pParentElement,
@@ -5799,7 +5799,7 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
             {
                 TRY_LOUD(excpt1)
                 {
-                    if (fLocked = ftypLockCaches())
+                    if (fLocked = LockTypeCaches())
                     {
                         PDOMNODE pRootElement;
                         if (pRootElement = xmlGetRootElement(pDom))
@@ -5822,7 +5822,7 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
                 ftypInvalidateCaches();
 
                 if (fLocked)
-                    ftypUnlockCaches();
+                    UnlockTypeCaches();
             }
 
             switch (arc)
@@ -5901,9 +5901,9 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (document root node if none)
-                     PFILETYPELISTITEM pliAssoc,    // in: type description
-                     PDOMNODE *ppNewNode)           // out: new element
+static APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (document root node if none)
+                            PFILETYPELISTITEM pliAssoc,    // in: type description
+                            PDOMNODE *ppNewNode)           // out: new element
 {
     PDOMNODE pNodeReturn;
     APIRET arc = xmlCreateElementNode(pParentNode,
@@ -5992,10 +5992,10 @@ APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (d
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
-                                      PLINKLIST pllFileTypes,  // in: list of all file types
-                                      PSZ pszKey,
-                                      PDOMNODE *ppNewElement)   // out: element node for this key
+static APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
+                                             PLINKLIST pllFileTypes,  // in: list of all file types
+                                             PSZ pszKey,
+                                             PDOMNODE *ppNewElement)   // out: element node for this key
 {
     APIRET              arc = NO_ERROR;
     PDOMNODE            pParentNode = pRootElement,
@@ -6081,7 +6081,7 @@ APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ExportAddTypesTree(PDOMNODE pRootElement)
+static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
 {
     APIRET arc = NO_ERROR;
     PSZ pszAssocTypeList;
@@ -6226,7 +6226,7 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = ftypLockCaches())
+        if (fLocked = LockTypeCaches())
         {
             PDOMDOCUMENTNODE pDocument = NULL;
             PDOMNODE pRootElement = NULL;
@@ -6273,7 +6273,7 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
     } END_CATCH();
 
     if (fLocked)
-        ftypUnlockCaches();
+        UnlockTypeCaches();
 
     return (arc);
 }

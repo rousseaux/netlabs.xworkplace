@@ -1,9 +1,8 @@
 
 src\filesys has "file-system" code in the broadest
-sense, i.e. everything that has to do with stuff
-in the file system. This includes implementation
-code for folders, data files, program files, as
-well as the additional XWorkplace threads.
+sense. This includes implementation code for folders,
+data files, program files, as well as the additional
+XWorkplace threads.
 
 Most of this code gets called from the SOM class
 code in src\classes.

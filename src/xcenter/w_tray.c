@@ -281,7 +281,7 @@ typedef struct _TRAYWIDGETPRIVATE
  *      are switched.
  */
 
-BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
+static BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
 {
     PCXCENTERWIDGETCLASS    pClass;
     BOOL                    brc = TRUE;
@@ -320,8 +320,8 @@ BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
  *      if a subwidget gets deleted by the user.
  */
 
-VOID DestroySubwidgetWindow(PTRAYWIDGETPRIVATE pPrivate,
-                            PLISTNODE pNode)    // in: PRIVATEWIDGETVIEW node from pPrivate->llWidgetViews
+static VOID DestroySubwidgetWindow(PTRAYWIDGETPRIVATE pPrivate,
+                                   PLISTNODE pNode)    // in: PRIVATEWIDGETVIEW node from pPrivate->llWidgetViews
 {
     // destroy the subwidget
     WinDestroyWindow(((PPRIVATEWIDGETVIEW)pNode->pItemData)->Widget.hwndWidget);
@@ -342,8 +342,8 @@ VOID DestroySubwidgetWindow(PTRAYWIDGETPRIVATE pPrivate,
  *      XCenter client.
  */
 
-VOID ReformatTray(PXCENTERWINDATA pXCenterData,
-                  PTRAYWIDGETPRIVATE pPrivate)
+static VOID ReformatTray(PXCENTERWINDATA pXCenterData,
+                         PTRAYWIDGETPRIVATE pPrivate)
 {
     // this is the same sequence that ctrpReformat uses
     // for the entire XCenter client
@@ -386,7 +386,7 @@ VOID ReformatTray(PXCENTERWINDATA pXCenterData,
  *
  */
 
-PTRAYSETTING FindCurrentTray(PTRAYWIDGETPRIVATE pPrivate)
+static PTRAYSETTING FindCurrentTray(PTRAYWIDGETPRIVATE pPrivate)
 {
     PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
 
@@ -402,7 +402,7 @@ PTRAYSETTING FindCurrentTray(PTRAYWIDGETPRIVATE pPrivate)
  *
  */
 
-VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
+static VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
 {
     // if we had built a tray menu before,
     // invalidate that
@@ -433,8 +433,8 @@ VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
  *@@changed V0.9.14 (2001-08-05) [lafaix]: check if subwidgets are trayable
  */
 
-BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
-                  ULONG ulNewTray)      // in: new current tray or -1 for none
+static BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
+                         ULONG ulNewTray)      // in: new current tray or -1 for none
 {
     if (pPrivate)
     {
@@ -532,9 +532,9 @@ BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
  *      fnwpTrayWidget.
  */
 
-BOOL SetSubwidgetSize(HWND hwnd,            // tray widget
-                      HWND hwndWidget,      // subwidget
-                      ULONG ulNewWidth)
+static BOOL SetSubwidgetSize(HWND hwnd,            // tray widget
+                             HWND hwndWidget,      // subwidget
+                             ULONG ulNewWidth)
 {
     BOOL brc = FALSE;
 
@@ -592,7 +592,7 @@ BOOL SetSubwidgetSize(HWND hwnd,            // tray widget
  *      itself.
  */
 
-VOID YwgtClearSetup(PTRAYSETUP pSetup)
+static VOID YwgtClearSetup(PTRAYSETUP pSetup)
 {
 }
 
@@ -608,8 +608,8 @@ VOID YwgtClearSetup(PTRAYSETUP pSetup)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed a bad default setting
  */
 
-VOID YwgtScanSetup(PCSZ pcszSetupString,
-                   PTRAYSETUP pSetup)
+static VOID YwgtScanSetup(PCSZ pcszSetupString,
+                          PTRAYSETUP pSetup)
 {
     PSZ p;
 
@@ -642,8 +642,8 @@ VOID YwgtScanSetup(PCSZ pcszSetupString,
  *      string after use.
  */
 
-VOID YwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   PTRAYSETUP pSetup)
+static VOID YwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+                          PTRAYSETUP pSetup)
 {
     CHAR    szTemp[100];
     xstrInit(pstrSetup, 100);
@@ -662,7 +662,7 @@ VOID YwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  *
  */
 
-VOID YwgtSaveSetupAndSend(PTRAYWIDGETPRIVATE pPrivate)
+static VOID YwgtSaveSetupAndSend(PTRAYWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
     XSTRING strSetup;
@@ -760,7 +760,7 @@ PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
  *@@changed V0.9.16 (2001-10-28) [umoeller]: turned tray icon into bitmap and made it vertical
  */
 
-MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
+static MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;        // continue window creation
 
@@ -867,7 +867,7 @@ MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
  *
  */
 
-BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -966,7 +966,7 @@ BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PAINT in fnwpTrayWidget.
  */
 
-VOID YwgtPaint(HWND hwnd)
+static VOID YwgtPaint(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1031,7 +1031,7 @@ VOID YwgtPaint(HWND hwnd)
  *
  */
 
-VOID YwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static VOID YwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1077,7 +1077,7 @@ VOID YwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.14 (2001-08-05) [lafaix]: added MB1 click tray switch
  */
 
-VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
+static VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1172,7 +1172,7 @@ VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
  *@@added V0.9.14 (2001-08-07) [umoeller]
  */
 
-VOID YwgtButton1DblClick(HWND hwnd)
+static VOID YwgtButton1DblClick(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1194,7 +1194,7 @@ VOID YwgtButton1DblClick(HWND hwnd)
  *      implementation for WM_BUTTON1UP in fnwpTrayWidget.
  */
 
-VOID YwgtButton1Up(HWND hwnd)
+static VOID YwgtButton1Up(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1227,7 +1227,7 @@ VOID YwgtButton1Up(HWND hwnd)
  *      implementation for WM_MENUEND in fnwpTrayWidget.
  */
 
-MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1263,7 +1263,7 @@ MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.16 (2001-12-08) [umoeller]: "delete" wasn't disabled if there was only one tray
  */
 
-MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1355,7 +1355,7 @@ MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      --  >= GLOBALSETTINGS.VarMenuItems: "add widget" menu.
  */
 
-MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1506,8 +1506,7 @@ MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *
  */
 
-MRESULT YwgtDragOver(HWND hwnd,
-                     MPARAM mp1)
+static MRESULT YwgtDragOver(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWIDGET pWidget;
     if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
@@ -1526,7 +1525,7 @@ MRESULT YwgtDragOver(HWND hwnd,
  *
  */
 
-VOID YwgtDragLeave(HWND hwnd)
+static VOID YwgtDragLeave(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
@@ -1541,8 +1540,7 @@ VOID YwgtDragLeave(HWND hwnd)
  *
  */
 
-VOID YwgtDrop(HWND hwnd,
-              MPARAM mp1)
+static VOID YwgtDrop(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWIDGET pWidget;
     if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
@@ -1564,9 +1562,9 @@ VOID YwgtDrop(HWND hwnd,
  *      to save the entire XCenter setup.
  */
 
-BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
-                            HWND hwndSubwidget,
-                            PCSZ pcszSetupString)     // can be NULL
+static BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
+                                   HWND hwndSubwidget,
+                                   PCSZ pcszSetupString)     // can be NULL
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1634,8 +1632,8 @@ BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
  *      that and update our lists.
  */
 
-MRESULT YwgtRemoveSubwidget(HWND hwnd,
-                            PPRIVATEWIDGETVIEW pWidget2Remove)
+static MRESULT YwgtRemoveSubwidget(HWND hwnd,
+                                   PPRIVATEWIDGETVIEW pWidget2Remove)
 {
     // mp1 has the PRIVATEWIDGETVIEW to be destroyed:
     // search our list for that
@@ -1712,8 +1710,8 @@ MRESULT YwgtRemoveSubwidget(HWND hwnd,
  *
  */
 
-VOID YwgtSwitchToTray(HWND hwnd,
-                      ULONG ulSwitchTo)
+static VOID YwgtSwitchToTray(HWND hwnd,
+                             ULONG ulSwitchTo)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1736,7 +1734,7 @@ VOID YwgtSwitchToTray(HWND hwnd,
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-VOID YwgtDestroy(HWND hwnd)
+static VOID YwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;

@@ -1412,7 +1412,7 @@ ULONG xmmSetMasterVolume(ULONG ulVolume)
  *@@added V0.9.7 (2000-11-30) [umoeller]
  */
 
-const char* GetDeviceTypeName(ULONG ulDeviceType)
+static const char* GetDeviceTypeName(ULONG ulDeviceType)
 {
     ULONG   ulStringID = 0;
     // const char *prc = "Unknown";
@@ -1520,8 +1520,8 @@ const char* GetDeviceTypeName(ULONG ulDeviceType)
  *@@added V0.9.13 (2001-06-14) [umoeller]
  */
 
-ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
-                        PSZ *ppszNames)         // out: device names
+static ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
+                               PSZ *ppszNames)         // out: device names
 {
     ULONG               cDevices = 0,
                         ulrc = 0;
@@ -1600,8 +1600,8 @@ ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
-                    const char *pcszName)       // in: device name (e.g. "CDaudio01")
+static ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
+                           const char *pcszName)       // in: device name (e.g. "CDaudio01")
 {
     ULONG rc;
 

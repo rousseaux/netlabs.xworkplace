@@ -213,8 +213,8 @@ VOID ctrpUnlockClasses(VOID)
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added fCallUnInit
  */
 
-APIRET FreeModule(HMODULE hmod,
-                  BOOL fCallUnInit)     // in: if TRUE, "uninit" export gets called
+static APIRET FreeModule(HMODULE hmod,
+                         BOOL fCallUnInit)     // in: if TRUE, "uninit" export gets called
 {
     if (fCallUnInit)
     {
@@ -696,9 +696,9 @@ typedef struct _CLASSTOINSERT
     ULONG               ulAttr;
 } CLASSTOINSERT, *PCLASSTOINSERT;
 
-signed short _System SortClasses(void* pItem1,
-                                 void* pItem2,
-                                 void* pStorage)       // HAB really
+static signed short _System SortClasses(void* pItem1,
+                                        void* pItem2,
+                                        void* pStorage)       // HAB really
 {
     switch (WinCompareStrings((HAB)pStorage,
                               0,
@@ -1688,8 +1688,8 @@ PSZ ctrpStuffSettings(XCenter *somSelf,
  *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
-VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substring (between [])
-                      PTRAYSETTING pTray)       // in: tray setting to append widgets to
+static VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substring (between [])
+                             PTRAYSETTING pTray)       // in: tray setting to append widgets to
 {
     PSZ pClassName = p;
     // alright, go ahead...
@@ -1808,9 +1808,9 @@ VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substri
  *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
-VOID DecodeTraySettings(PSZ p,
-                        ULONG ulLength,
-                        PPRIVATEWIDGETSETTING pSetting)
+static VOID DecodeTraySettings(PSZ p,
+                               ULONG ulLength,
+                               PPRIVATEWIDGETSETTING pSetting)
 {
     PSZ pTrayName = p;
 

@@ -11,7 +11,7 @@
  *      by overriding the proper WPS methods for an object, you call
  *      ntbInsertPage here instead of calling wpInsertSettingsPage.
  *      This function will always use the same window procedure
- *      (ntb_fnwpPageCommon) and call CALLBACKS for certain notebook
+ *      (fnwpPageCommon) and call CALLBACKS for certain notebook
  *      events which you can specify in your call to ntbInsertPage.
  *
  *      Callbacks exist for everything you will need on a notebook page;
@@ -33,7 +33,7 @@
  *      be disabled in folder settings notebooks.
  *
  *      All the notebook functions are fully thread-safe and protected
- *      by mutex semaphores. ntb_fnwpPageCommon installs an exception
+ *      by mutex semaphores. fnwpPageCommon installs an exception
  *      handler, so all the callbacks are protected by that handler too.
  *
  *@@header "shared\notebook.h"
@@ -120,7 +120,7 @@ static PLINKLIST       G_pllSubclNotebooks = NULL;     // this is auto-free
 // mutex semaphore for both lists
 static HMTX            G_hmtxNotebooks = NULLHANDLE;
 
-MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /* ******************************************************************
  *
@@ -134,7 +134,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-BOOL LockNotebooks(VOID)
+static BOOL LockNotebooks(VOID)
 {
     if (G_hmtxNotebooks)
         return !WinRequestMutexSem(G_hmtxNotebooks, SEM_INDEFINITE_WAIT);
@@ -167,7 +167,7 @@ BOOL LockNotebooks(VOID)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-VOID UnlockNotebooks(VOID)
+static VOID UnlockNotebooks(VOID)
 {
     DosReleaseMutexSem(G_hmtxNotebooks);
 }
@@ -179,20 +179,20 @@ VOID UnlockNotebooks(VOID)
  ********************************************************************/
 
 /*
- *@@ ntbInitPage:
+ *@@ PageInit:
  *      implementation for WM_INITDLG in
- *      ntb_fnwpPageCommon.
+ *      fnwpPageCommon.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  */
 
-VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                 HWND hwndDlg)
+static VOID PageInit(PCREATENOTEBOOKPAGE pcnbp,
+                     HWND hwndDlg)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("ntb_fnwpPageCommon: WM_INITDLG"));
+        _Pmpf(("fnwpPageCommon: WM_INITDLG"));
     #endif
 
     // store the dlg hwnd in notebook structure
@@ -260,18 +260,18 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /*
- *@@ ntbDestroyPage:
+ *@@ PageDestroy:
  *      implementation for WM_DESTROY in
- *      ntb_fnwpPageCommon.
+ *      fnwpPageCommon.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
-VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
+static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
 {
     #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("ntb_fnwpPageCommon: WM_DESTROY"));
+        _Pmpf(("fnwpPageCommon: WM_DESTROY"));
     #endif
 
     if (pcnbp)
@@ -354,8 +354,8 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
 }
 
 /*
- *@@ ntbPageWmControl:
- *      implementation for WM_CONTROL in ntb_fnwpPageCommon.
+ *@@ PageWmControl:
+ *      implementation for WM_CONTROL in fnwpPageCommon.
  *
  *      hwndDlg is not passed because this can be retrieved
  *      thru pcnbp->hwndDlgPage.
@@ -367,10 +367,12 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed ulExtra for CN_RECORDCHECKED
  */
 
-MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
-                                  ULONG msg, MPARAM mp1, MPARAM mp2) // in: as in WM_CONTROL
+static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG msg,
+                                      MPARAM mp1,
+                                      MPARAM mp2) // in: as in WM_CONTROL
 {
-    // code returned to ntb_fnwpPageCommon
+    // code returned to fnwpPageCommon
     MRESULT mrc = 0;
 
     // identify the source of the msg
@@ -385,7 +387,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
     ULONG   ulExtra = -1;
 
     #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("ntb_fnwpPageCommon: WM_CONTROL"));
+        _Pmpf(("fnwpPageCommon: WM_CONTROL"));
     #endif
 
     // "item changed" callback defined?
@@ -671,19 +673,19 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /*
- *@@ ntbPageWindowPosChanged:
- *      implementation for WM_WINDOWPOSCHANGED in ntb_fnwpPageCommon.
+ *@@ PageWindowPosChanged:
+ *      implementation for WM_WINDOWPOSCHANGED in fnwpPageCommon.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
 
-VOID ntbPageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
-                             MPARAM mp1)
+static VOID PageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                 MPARAM mp1)
 {
     PSWP pswp = (PSWP)mp1;
 
     #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("ntb_fnwpPageCommon: WM_WINDOWPOSCHANGED"));
+        _Pmpf(("fnwpPageCommon: WM_WINDOWPOSCHANGED"));
     #endif
 
     if (!pcnbp)
@@ -736,17 +738,17 @@ VOID ntbPageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /*
- *@@ ntbPageTimer:
- *      implementation for WM_TIMER in ntb_fnwpPageCommon.
+ *@@ PageTimer:
+ *      implementation for WM_TIMER in fnwpPageCommon.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
 
-VOID ntbPageTimer(PCREATENOTEBOOKPAGE pcnbp,
-                  MPARAM mp1)
+static VOID PageTimer(PCREATENOTEBOOKPAGE pcnbp,
+                      MPARAM mp1)
 {
     #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("ntb_fnwpPageCommon: WM_TIMER"));
+        _Pmpf(("fnwpPageCommon: WM_TIMER"));
     #endif
 
     switch ((USHORT)mp1)    // timer ID
@@ -789,7 +791,7 @@ VOID ntbPageTimer(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /*
- *@@ ntb_fnwpPageCommon:
+ *@@ fnwpPageCommon:
  *      this is the common notebook window procedure which is
  *      always set if you use ntbInsertPage to insert notebook
  *      pages. This function will analyze all incoming messages
@@ -823,13 +825,13 @@ VOID ntbPageTimer(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.1 (99-11-29) [umoeller]: reworked message flow
  *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
  *@@changed V0.9.1 (99-12-19) [umoeller]: added EN_HOTKEY support (ctlMakeHotkeyEntryField)
- *@@changed V0.9.1 (99-12-31) [umoeller]: extracted ntbInitPage, ntbDestroyPage, ntbPageWmControl
+ *@@changed V0.9.1 (99-12-31) [umoeller]: extracted PageInit, PageDestroy, PageWmControl
  *@@changed V0.9.3 (2000-05-01) [umoeller]: added WM_MOUSEMOVE pointer changing
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
- *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted ntbPageWindowPosChanged, ntbPageTimer
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted PageWindowPosChanged, PageTimer
  */
 
-MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = NULL;
     BOOL                fProcessed = FALSE;
@@ -851,7 +853,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         {
             pcnbp = (PCREATENOTEBOOKPAGE)mp2;
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-            ntbInitPage(pcnbp, hwndDlg);
+            PageInit(pcnbp, hwndDlg);
             fProcessed = TRUE;
         }
         else
@@ -890,7 +892,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                  */
 
                 case WM_CONTROL:
-                    mrc = ntbPageWmControl(pcnbp, msg, mp1, mp2);
+                    mrc = PageWmControl(pcnbp, msg, mp1, mp2);
                 break;
 
                 /*
@@ -940,7 +942,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                 case WM_MENUEND:
                 {
                     #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("ntb_fnwpPageCommon: WM_MENUEND"));
+                        _Pmpf(("fnwpPageCommon: WM_MENUEND"));
                     #endif
 
                     if (    (pcnbp->preccSource != (PRECORDCORE)-1)
@@ -975,7 +977,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     USHORT usItemID = SHORT1FROMMP(mp1);
 
                     #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("ntb_fnwpPageCommon: WM_COMMAND"));
+                        _Pmpf(("fnwpPageCommon: WM_COMMAND"));
                     #endif
 
                     // call "item changed" callback
@@ -1016,7 +1018,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                  */
 
                 case WM_WINDOWPOSCHANGED:
-                    ntbPageWindowPosChanged(pcnbp, mp1);
+                    PageWindowPosChanged(pcnbp, mp1);
                     // call default
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;  // WM_WINDOWPOSCHANGED
@@ -1066,7 +1068,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                  */
 
                 case WM_TIMER:
-                    ntbPageTimer(pcnbp, mp1);
+                    PageTimer(pcnbp, mp1);
                 break;
 
                 /*
@@ -1094,7 +1096,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                  */
 
                 case WM_DESTROY:
-                    ntbDestroyPage(pcnbp);
+                    PageDestroy(pcnbp);
                     fProcessed = FALSE;
                     // mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
@@ -1124,7 +1126,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *@@added V0.9.7 (2000-12-09) [umoeller]
  */
 
-PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct from ntbInsertPage
+static PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct from ntbInsertPage
 {
     BOOL        fSemOwned = FALSE;
 
@@ -1200,7 +1202,7 @@ PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct fr
                                   pSubclNBLINew);
                     pSubclNBLINew->pfnwpNotebookOrig
                         = WinSubclassWindow(pcnbp->hwndNotebook,
-                                            ntb_fnwpSubclNotebook);
+                                            fnwpSubclNotebook);
                 }
             }
         } // end if (fSemOwned)
@@ -1220,14 +1222,14 @@ PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct fr
  *@@ FindNBLI:
  *      finds the SUBCLNOTEBOOKLISTITEM for hwndNotebook.
  *
- *      This has been extracted from ntb_fnwpSubclNotebook
+ *      This has been extracted from fnwpSubclNotebook
  *      because it wasn't such a good idea to put the entire
  *      window proc in a mutex block.
  *
  *@@added V0.9.7 (2000-12-09) [umoeller]
  */
 
-PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
+static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 {
     PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
     BOOL fSemOwned = FALSE;
@@ -1261,9 +1263,9 @@ PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 
 /*
  *@@ DestroyNBLI:
- *      implementation for WM_DESTROY in ntb_fnwpSubclNotebook.
+ *      implementation for WM_DESTROY in fnwpSubclNotebook.
  *
- *      This has been extracted from ntb_fnwpSubclNotebook
+ *      This has been extracted from fnwpSubclNotebook
  *      because it wasn't such a good idea to put the entire
  *      window proc in a mutex block.
  *
@@ -1271,8 +1273,8 @@ PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
  *@@changed V0.9.14 (2001-08-23) [umoeller]: fixed bad pointer on list node remove
  */
 
-VOID DestroyNBLI(HWND hwndNotebook,
-                 PSUBCLNOTEBOOKLISTITEM pSubclNBLI)
+static VOID DestroyNBLI(HWND hwndNotebook,
+                        PSUBCLNOTEBOOKLISTITEM pSubclNBLI)
 {
     BOOL fSemOwned = FALSE;
 
@@ -1283,7 +1285,7 @@ VOID DestroyNBLI(HWND hwndNotebook,
             PLISTNODE pPageNode = lstQueryFirstNode(G_pllOpenPages);
 
             #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("ntb_fnwpSubclNotebook: WM_DESTROY"));
+                _Pmpf(("fnwpSubclNotebook: WM_DESTROY"));
             #endif
 
             while (pPageNode)
@@ -1295,7 +1297,7 @@ VOID DestroyNBLI(HWND hwndNotebook,
                      && (pPageLI->pcnbp->hwndNotebook == hwndNotebook) // our page?
                      && (!pPageLI->pcnbp->fPageInitialized)
                             // page has NOT been initialized
-                            // (this flag is set by ntb_fnwpPageCommon):
+                            // (this flag is set by fnwpPageCommon):
                    )
                 {
                     // remove it from list
@@ -1325,7 +1327,7 @@ VOID DestroyNBLI(HWND hwndNotebook,
 }
 
 /*
- *@@ ntb_fnwpSubclNotebook:
+ *@@ fnwpSubclNotebook:
  *      window procedure for notebook controls subclassed
  *      by ntbInsertPage.
  *
@@ -1346,7 +1348,7 @@ VOID DestroyNBLI(HWND hwndNotebook,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
-MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1363,7 +1365,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
              *      by ntbInsertPage and destroy those
              *      which haven't been initialized yet,
              *      because those won't get WM_DESTROY
-             *      in ntb_fnwpPageCommon.
+             *      in fnwpPageCommon.
              */
 
             case WM_DESTROY:
@@ -1389,7 +1391,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *@@ ntbInsertPage:
  *      this function inserts the specified notebook page
  *      using the wpInsertSettingsPage function. However,
- *      this always uses ntb_fnwpPageCommon for the notebook's
+ *      this always uses fnwpPageCommon for the notebook's
  *      window procedure, which then calls the callbacks which
  *      you may specify in the CREATENOTEBOOKPAGE structure.
  *
@@ -1436,7 +1438,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      --  ULONG flFlags:           CBI_* flags (notebook.h), which determine
  *                                   the context of the call.
  *
- *      ntb_fnwpPageCommon will call this init callback itself
+ *      fnwpPageCommon will call this init callback itself
  *      in the following situations:
  *
  *      -- When the page is initialized (WM_INITDLG), flFlags is
@@ -1469,7 +1471,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  +
  +          if (flFlags & CBI_SET)
  +                   ... // set controls' data; this gets called only once
- +                       // from ntb_fnwpPageCommon, but you can call this yourself
+ +                       // from fnwpPageCommon, but you can call this yourself
  +                       // several times
  +          if (flFlags & CBI_ENABLE)
  +                   ... // enable/disable controls; this can get called several times
@@ -1492,8 +1494,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *
  *      <B>The "item changed" callback</B>
  *
- *      This gets called from ntb_fnwpPageCommon when either
- *      WM_CONTROL or WM_COMMAND comes in. Note that ntb_fnwpPageCommon
+ *      This gets called from fnwpPageCommon when either
+ *      WM_CONTROL or WM_COMMAND comes in. Note that fnwpPageCommon
  *      _filters_ these messages and calls the "item changed" callback
  *      only for notifications which I have considered useful so far.
  *      If this is not sufficient for you, you must use the pfncbMessage
@@ -1558,7 +1560,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      -- For all other controls/messages, this is always -1.
  *
  *      Whatever the "item changed" callback returns will be the
- *      return value of ntb_fnwpPageCommon. Normally, you should
+ *      return value of fnwpPageCommon. Normally, you should
  *      return 0, except for the container d'n'd messages.
  *
  *      A couple of remarks about using this on radio buttons...
@@ -1583,7 +1585,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      updated with the backed-up data.
  *
  *      If pUser or pUser2 are != NULL, free() will automatically be
- *      invoked on them by ntb_fnwpPageCommon when the page is destroyed.
+ *      invoked on them by fnwpPageCommon when the page is destroyed.
  *      This is done _after_ the INIT callback has been called which
  *      CBI_DESTROY, so if you store something in there which should
  *      not be free()'d, set those pointers to NULL upon CBI_DESTROY.
@@ -1621,7 +1623,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
 
     pi.cb                  = sizeof(PAGEINFO);
     pi.hwndPage            = NULLHANDLE;
-    pi.pfnwp               = ntb_fnwpPageCommon;
+    pi.pfnwp               = fnwpPageCommon;
     pi.resid               = pcnbp->hmod;
     pi.dlgid               = pcnbp->ulDlgID;
     pi.pCreateParams       = pcnbp;
@@ -1716,7 +1718,7 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
                               DFFL_CREATECONTROLS | DFFL_RESIZEFRAME)))
     {
         // make Warp 4 notebook buttons and move controls
-        // (this was already called in ntbInitPage on WM_INITDLG,
+        // (this was already called in PageInit on WM_INITDLG,
         // but at that point the init callback wasn't called yet...)
         winhAssertWarp4Notebook(hwndDlg,
                                 100,         // ID threshold
@@ -1730,7 +1732,7 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
  *@@ ntbQueryOpenPages:
  *      this function returns the CREATENOTEBOOKPAGE
  *      structures for currently open notebook pages, which
- *      are maintained by ntbInsertPage and ntb_fnwpPageCommon.
+ *      are maintained by ntbInsertPage and fnwpPageCommon.
  *      This way you can iterate over all open pages and call
  *      the callbacks of certain pages to have pages updated,
  *      if necessary.
@@ -1815,7 +1817,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 /*
  *@@ ntbUpdateVisiblePage:
  *      this will go thru all currently open notebook
- *      pages (which are maintained by ntb_fnwpPageCommon
+ *      pages (which are maintained by fnwpPageCommon
  *      in a linked list) and update a page (by calling its
  *      "init" callback with CBI_SET | CBI_ENABLE) if it
  *      matches the specified criteria.

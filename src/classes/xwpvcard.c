@@ -121,9 +121,9 @@
  *
  */
 
-VOID SetEFText(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-               ULONG ulID,
-               PCSZ pcsz)
+static VOID SetEFText(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                      ULONG ulID,
+                      PCSZ pcsz)
 {
     HWND hwnd;
     if (hwnd = WinWindowFromID(pcnbp->hwndDlgPage, ulID))
@@ -196,13 +196,13 @@ static const DLGHITEM dlgSummary[] =
  *
  */
 
-VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                      ULONG ulID,
-                      PCSZ pcszReal,
-                      PCSZ *papcsz,
-                      CHAR cSeparator,
-                      ULONG c,
-                      PULONG paulOrder)
+static VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                             ULONG ulID,
+                             PCSZ pcszReal,
+                             PCSZ *papcsz,
+                             CHAR cSeparator,
+                             ULONG c,
+                             PULONG paulOrder)
 {
     PCSZ pcszTemp = NULL;
     XSTRING strTemp;
@@ -243,8 +243,8 @@ VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *
  */
 
-VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                        ULONG flFlags)                // CBI_* flags (notebook.h)
+static VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                               ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -390,8 +390,8 @@ static const DLGHITEM dlgName[] =
  *
  */
 
-VOID vcfNameInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                     ULONG flFlags)                // CBI_* flags (notebook.h)
+static VOID vcfNameInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                            ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -565,8 +565,8 @@ static const DLGHITEM dlgPhone[] =
  *
  */
 
-VOID vcfPhoneInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                      ULONG flFlags)                // CBI_* flags (notebook.h)
+static VOID vcfPhoneInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                             ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -609,9 +609,9 @@ VOID vcfPhoneInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *
  */
 
-MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                     ULONG ulItemID, USHORT usNotifyCode,
-                                     ULONG ulExtra)
+static MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG ulItemID, USHORT usNotifyCode,
+                                            ULONG ulExtra)
 {
     MRESULT mrc = 0;
 
@@ -775,8 +775,8 @@ static const DLGHITEM dlgAddresses[] =
  *
  */
 
-VOID vcfAddressesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                          ULONG flFlags)                // CBI_* flags (notebook.h)
+static VOID vcfAddressesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                                 ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {

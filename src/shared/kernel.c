@@ -14,13 +14,13 @@
  *
  *      -- the KERNELGLOBALS interface (krnQueryGlobals);
  *
- *      -- the thread-1 object window (fnwpThread1Object);
+ *      -- the thread-1 object window (krn_fnwpThread1Object);
  *
  *      In this file, I have assembled code which you might consider
  *      useful for extensions. For example, if you need code to
  *      execute on thread 1 of PMSHELL.EXE (which is required for
  *      some WPS methods to work, unfortunately), you can add a
- *      message to be processed in fnwpThread1Object.
+ *      message to be processed in krn_fnwpThread1Object.
  *
  *      If you need stuff to be executed upon Desktop startup, you can
  *      insert a function into initMain.
@@ -830,17 +830,17 @@ BOOL     fLimitMsgOpen = FALSE;
 HWND     hwndArchiveStatus = NULLHANDLE;
 
 /*
- *@@ krn_T1M_DaemonReady:
+ *@@ T1M_DaemonReady:
  *      implementation for T1M_DAEMONREADY.
  *
  *@@added V0.9.3 (2000-04-24) [umoeller]
  */
 
-VOID krn_T1M_DaemonReady(VOID)
+static VOID T1M_DaemonReady(VOID)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    // _Pmpf(("krn_T1M_DaemonReady"));
+    // _Pmpf(("T1M_DaemonReady"));
 
     if (G_KernelGlobals.pXwpGlobalShared)
     {
@@ -887,9 +887,9 @@ VOID krn_T1M_DaemonReady(VOID)
 }
 
 /*
- *@@ krn_T1M_OpenObjectFromHandle:
+ *@@ T1M_OpenObjectFromHandle:
  *      implementation for T1M_OPENOBJECTFROMHANDLE in
- *      fnwpThread1Object.
+ *      krn_fnwpThread1Object.
  *
  *      Parameters:
  *      -- HOBJECT mp1: object handle to open.
@@ -912,9 +912,9 @@ VOID krn_T1M_DaemonReady(VOID)
  *@@changed V0.9.16 (2001-11-22) [umoeller]: now disallowing object open during startup and shutdown
  */
 
-VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
-                                  MPARAM mp1,
-                                  MPARAM mp2)
+static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
+                                     MPARAM mp1,
+                                     MPARAM mp2)
 {
     HOBJECT hobjStart;
 
@@ -962,7 +962,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
                                      0);           // "optional parameter" (?!?)
 
                 #ifdef DEBUG_KEYS
-                    _Pmpf(("krn_T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+                    _Pmpf(("T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
                 #endif
 
                 if (hwnd)
@@ -1082,7 +1082,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
 }
 
 /*
- *@@ fnwpThread1Object:
+ *@@ krn_fnwpThread1Object:
  *      wnd proc for the thread-1 object window.
  *
  *      This is needed for processing messages which must be
@@ -1128,7 +1128,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.14 (2001-08-07) [pr]: added T1M_OPENRUNDIALOG
  */
 
-MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MPARAM  mrc = NULL;
     BOOL    fCallDefault = FALSE;
@@ -1367,7 +1367,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              *      object window will always open the object
              *      on thread 1, which leads to less problems.
              *
-             *      See krn_T1M_OpenObjectFromHandle for the
+             *      See T1M_OpenObjectFromHandle for the
              *      parameters.
              *
              *      Most notably, this is posted from the daemon
@@ -1376,7 +1376,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              */
 
             case T1M_OPENOBJECTFROMHANDLE:
-                krn_T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
+                T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
             break;
 
             /*
@@ -1458,7 +1458,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              */
 
             case T1M_DAEMONREADY:
-                krn_T1M_DaemonReady();
+                T1M_DaemonReady();
             break;
 
 #ifndef __NOPAGEMAGE__
@@ -1607,9 +1607,9 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                         // open "Screen" object
                         HOBJECT hobj = WinQueryObject((PSZ)XFOLDER_SCREENID);
                         if (hobj)
-                            krn_T1M_OpenObjectFromHandle(hwndObject,
-                                                         (MPARAM)hobj,
-                                                         (MPARAM)0);   // no screen corner
+                            T1M_OpenObjectFromHandle(hwndObject,
+                                                    (MPARAM)hobj,
+                                                    (MPARAM)0);   // no screen corner
                     break; }
 
                     case ID_CRMI_HELP:
@@ -1724,7 +1724,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
 
 /*
  *@@ krnPostThread1ObjectMsg:
- *      post msg to thread-1 object window (fnwpThread1Object).
+ *      post msg to thread-1 object window (krn_fnwpThread1Object).
  *      See include\shared\kernel.h for the supported T1M_*
  *      messages.
  *      This is used from all kinds of places and different threads.
@@ -1743,7 +1743,7 @@ BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ krnSendThread1ObjectMsg:
- *      send msg to thread-1 object window (fnwpThread1Object).
+ *      send msg to thread-1 object window (krn_fnwpThread1Object).
  *      See include\shared\kernel.h for the supported T1M_*
  *      messages.
  *      Note that, as usual, sending a message from another
@@ -1768,11 +1768,11 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  ********************************************************************/
 
 /*
- *@@ fnwpAPIObject:
+ *@@ krn_fnwpAPIObject:
  *      window proc for the XWorkplace API object window.
  *
  *      This API object window is quite similar to the thread-1
- *      object window (fnwpThread1Object), except that its
+ *      object window (krn_fnwpThread1Object), except that its
  *      messages are defined in include\xwpapi.h. As a result,
  *      this thing handles public messages to allow external
  *      processes to communicate with XWorkplace in the WPS
@@ -1785,7 +1785,7 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.9 (2001-03-23) [umoeller]
  */
 
-MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY krn_fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

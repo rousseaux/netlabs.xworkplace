@@ -233,7 +233,7 @@ PSZ stbVar1024Double(PSZ pszTarget,
  *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed SOM resource leak
  */
 
-VOID ResolveWPUrl(VOID)
+static VOID ResolveWPUrl(VOID)
 {
     if (G_WPUrl == (SOMClass*)-1)
     {
@@ -573,8 +573,8 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
 
-ULONG GetDivisor(CHAR c,
-                 PULONG pcReplace)      // out: chars to replace (2 or 3)
+static ULONG GetDivisor(CHAR c,
+                        PULONG pcReplace)      // out: chars to replace (2 or 3)
 {
     *pcReplace = 3;
 
@@ -621,10 +621,10 @@ ULONG GetDivisor(CHAR c,
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
 
-VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
-                       ULONG ulDivisor,         // in: divisor from GetDivisor()
-                       double dbl,              // in: value to format
-                       PCOUNTRYSETTINGS pcs)    // in: country settings for formatting
+static VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
+                              ULONG ulDivisor,         // in: divisor from GetDivisor()
+                              double dbl,              // in: value to format
+                              PCOUNTRYSETTINGS pcs)    // in: country settings for formatting
 {
     switch (ulDivisor)
     {
@@ -679,8 +679,8 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
  *@@changed V0.9.16 (2001-10-04) [umoeller]: stopped the disk A: clicking for remote disks
  */
 
-BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
-                       WPDisk *pDisk)
+static BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
+                              WPDisk *pDisk)
 {
     if (*pulLogicalDrive == -1)
     {
@@ -1835,10 +1835,10 @@ typedef struct _STATUSBARSELECTCLASS
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  */
 
-MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
-                                                 ULONG ulscd,   // SELECTCLASSDATA struct
-                                                 MPARAM mpwps,  // current WPSLISTITEM struct
-                                                 MPARAM mpreccParent) // parent record core
+static MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
+                                                        ULONG ulscd,   // SELECTCLASSDATA struct
+                                                        MPARAM mpwps,  // current WPSLISTITEM struct
+                                                        MPARAM mpreccParent) // parent record core
 {
     USHORT              usAttr = CRA_RECORDREADONLY | CRA_COLLAPSED | CRA_DISABLED;
     PWPSLISTITEM        pwps = (PWPSLISTITEM)mpwps;
@@ -1906,10 +1906,10 @@ MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  */
 
-MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
-                                               ULONG ulpsbsc,
-                                               MPARAM mpwps,
-                                               MPARAM mphwndInfo)
+static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
+                                                      ULONG ulpsbsc,
+                                                      MPARAM mpwps,
+                                                      MPARAM mphwndInfo)
 {
     PWPSLISTITEM pwps = (PWPSLISTITEM)mpwps;
     // PSTATUSBARSELECTCLASS psbsc = (PSTATUSBARSELECTCLASS)ulpsbsc;
@@ -2187,7 +2187,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
+static VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
 {
     somId somidClassSelected;
     if (somidClassSelected = somIdFromString(psbpd->szSBClassSelected))
@@ -2438,10 +2438,10 @@ static KEYARRAYITEM G_aFormatSubKeys[] =
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-VOID InsertKeysIntoMenu(HWND hwndMenu,
-                        PKEYARRAYITEM paKeys,
-                        ULONG cKeys,
-                        BOOL fSeparatorBefore)
+static VOID InsertKeysIntoMenu(HWND hwndMenu,
+                               PKEYARRAYITEM paKeys,
+                               ULONG cKeys,
+                               BOOL fSeparatorBefore)
 {
     ULONG ul;
     XSTRING str;
@@ -2512,8 +2512,8 @@ VOID InsertKeysIntoMenu(HWND hwndMenu,
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
-                       ULONG ulItemID)
+static MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
+                              ULONG ulItemID)
 {
     HPOINTER hptrOld = winhSetWaitPointer();
 

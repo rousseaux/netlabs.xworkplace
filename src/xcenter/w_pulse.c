@@ -237,7 +237,7 @@ typedef struct _WIDGETPRIVATE
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-LONG QueryDefaultColor(ULONG ulIndex)
+static LONG QueryDefaultColor(ULONG ulIndex)
 {
     switch (ulIndex)
     {
@@ -271,7 +271,7 @@ LONG QueryDefaultColor(ULONG ulIndex)
  *      itself.
  */
 
-VOID PwgtClearSetup(PPULSESETUP pSetup)
+static VOID PwgtClearSetup(PPULSESETUP pSetup)
 {
     if (pSetup)
     {
@@ -294,9 +294,9 @@ VOID PwgtClearSetup(PPULSESETUP pSetup)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added SMP support, added proper default colors
  */
 
-VOID PwgtScanSetup(const char *pcszSetupString,
-                   PPULSESETUP pSetup,
-                   ULONG cProcessors)               // in: CPU count from WIDGETPRIVATE
+static VOID PwgtScanSetup(const char *pcszSetupString,
+                          PPULSESETUP pSetup,
+                          ULONG cProcessors)               // in: CPU count from WIDGETPRIVATE
 {
     PSZ     p;
     ULONG   ul;
@@ -388,9 +388,9 @@ VOID PwgtScanSetup(const char *pcszSetupString,
  *@@changed V0.9.16 (2002-01-05) [umoeller]: now adding string only if not default color
  */
 
-VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   PPULSESETUP pSetup,
-                   ULONG cProcessors)            // added V0.9.16 (2002-01-05) [umoeller]
+static VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+                          PPULSESETUP pSetup,
+                          ULONG cProcessors)            // added V0.9.16 (2002-01-05) [umoeller]
 {
     CHAR    szTemp[100];
     ULONG   ul;
@@ -464,7 +464,7 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-APIRET GetProcessorCount(PULONG pcProcessors)
+static APIRET GetProcessorCount(PULONG pcProcessors)
 {
     APIRET arc;
     PDOSHPERFSYS    pPerfData;
@@ -507,7 +507,7 @@ static PFNWP G_pfnwpOrigStatic = NULL;
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-MRESULT EXPENTRY ctl_fnwpSubclassedColorRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY ctl_fnwpSubclassedColorRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -601,11 +601,11 @@ MRESULT EXPENTRY ctl_fnwpSubclassedColorRect(HWND hwndStatic, ULONG msg, MPARAM 
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-VOID SubclassAndSetColor(HWND hwndDlg,
-                         ULONG ulID,
-                         PCSZ pcszTitle,
-                         LONG lColor,
-                         LONG lBackColor)
+static VOID SubclassAndSetColor(HWND hwndDlg,
+                                ULONG ulID,
+                                PCSZ pcszTitle,
+                                LONG lColor,
+                                LONG lBackColor)
 {
     HWND hwnd;
     if (hwnd = WinWindowFromID(hwndDlg, ulID))
@@ -630,8 +630,8 @@ VOID SubclassAndSetColor(HWND hwndDlg,
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-LONG GetColor(HWND hwndDlg,
-              ULONG ulID)
+static LONG GetColor(HWND hwndDlg,
+                     ULONG ulID)
 {
     return (winhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
                                PP_BACKGROUNDCOLOR,
@@ -865,7 +865,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *@@added V0.9.12 (2001-05-20) [umoeller]
  */
 
-BOOL LockData(PWIDGETPRIVATE pPrivate)
+static BOOL LockData(PWIDGETPRIVATE pPrivate)
 {
     return (!DosRequestMutexSem(pPrivate->hmtxData, 500));
 }
@@ -877,7 +877,7 @@ BOOL LockData(PWIDGETPRIVATE pPrivate)
  *@@added V0.9.12 (2001-05-20) [umoeller]
  */
 
-VOID UnlockData(PWIDGETPRIVATE pPrivate)
+static VOID UnlockData(PWIDGETPRIVATE pPrivate)
 {
     DosReleaseMutexSem(pPrivate->hmtxData);
 }
@@ -926,7 +926,7 @@ VOID UnlockData(PWIDGETPRIVATE pPrivate)
  *@@added V0.9.12 (2001-05-20) [umoeller]
  */
 
-VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
+static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
 {
     PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)ptiMyself->ulData;
     if (pPrivate)
@@ -1067,7 +1067,7 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
  *@@changed V0.9.12 (2001-05-20) [umoeller]: now using second thread
  */
 
-MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
+static MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;        // continue window creation
 
@@ -1136,7 +1136,7 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip
  */
 
-BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -1237,8 +1237,8 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
  */
 
-VOID PwgtUpdateGraph(HWND hwnd,
-                     PWIDGETPRIVATE pPrivate)
+static VOID PwgtUpdateGraph(HWND hwnd,
+                            PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
 
@@ -1390,10 +1390,10 @@ VOID PwgtUpdateGraph(HWND hwnd,
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
  */
 
-VOID PwgtPaint2(HWND hwnd,
-                HPS hps,
-                PWIDGETPRIVATE pPrivate,
-                BOOL fDrawFrame)     // in: if TRUE, everything is painted
+static VOID PwgtPaint2(HWND hwnd,
+                       HPS hps,
+                       PWIDGETPRIVATE pPrivate,
+                       BOOL fDrawFrame)     // in: if TRUE, everything is painted
 {
     BOOL fLocked = FALSE;
 
@@ -1542,7 +1542,7 @@ VOID PwgtPaint2(HWND hwnd,
  *      implementation for WM_PAINT.
  */
 
-VOID PwgtPaint(HWND hwnd)
+static VOID PwgtPaint(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1570,7 +1570,7 @@ VOID PwgtPaint(HWND hwnd)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
  */
 
-VOID PwgtNewDataAvailable(HWND hwnd)
+static VOID PwgtNewDataAvailable(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1654,7 +1654,7 @@ VOID PwgtNewDataAvailable(HWND hwnd)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
-VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1802,8 +1802,8 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
-VOID PwgtPresParamChanged(HWND hwnd,
-                          ULONG ulAttrChanged)
+static VOID PwgtPresParamChanged(HWND hwnd,
+                                 ULONG ulAttrChanged)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1890,7 +1890,7 @@ VOID PwgtPresParamChanged(HWND hwnd,
  *@@added V0.9.16 (2001-09-29) [umoeller]
  */
 
-VOID PwgtButton1DblClick(HWND hwnd)
+static VOID PwgtButton1DblClick(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1917,7 +1917,7 @@ VOID PwgtButton1DblClick(HWND hwnd)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed three memory leaks
  */
 
-VOID PwgtDestroy(HWND hwnd)
+static VOID PwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;

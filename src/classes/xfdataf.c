@@ -1001,6 +1001,7 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
  *      ftypQueryAssociatedProgram directly.
  *
  *@@added V0.9.16 (2002-01-26) [umoeller]
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed broken icons in PMMail
  */
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
@@ -1027,11 +1028,12 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
             // get the assoc icon
             if (hptr = _wpQueryIcon(pobjAssoc))
                 // and make it global so that other processes
-                // can use it (otherwise PMView won't display
+                // can use it (otherwise PMMail won't display
                 // icons for attachments) V0.9.18 (2002-02-06) [umoeller]
                 WinSetPointerOwner(hptr,
                                    (PID)0,
-                                   // magic flag used by the WPS
+                                   // magic flag used by the WPS,
+                                   // whatever this is for
                                    0x77482837);
 
             // _wpUnlockObject(pobjAssoc);

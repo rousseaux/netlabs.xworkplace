@@ -1884,8 +1884,8 @@ VOID fdrUpdateStatusBars(WPFolder *pFolder)
  *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed bad excpt handler cleanup
  */
 
-VOID StatusTimer(HWND hwndBar,
-                 PSTATUSBARDATA psbd)
+static VOID StatusTimer(HWND hwndBar,
+                        PSTATUSBARDATA psbd)
 {
     TRY_LOUD(excpt1)
     {
@@ -1976,7 +1976,7 @@ VOID StatusTimer(HWND hwndBar,
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-VOID StatusPaint(HWND hwndBar)
+static VOID StatusPaint(HWND hwndBar)
 {
     // preparations:
     HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
@@ -2170,9 +2170,9 @@ VOID StatusPaint(HWND hwndBar)
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-VOID StatusPresParamChanged(HWND hwndBar,
-                            PSTATUSBARDATA psbd,
-                            MPARAM mp1)
+static VOID StatusPresParamChanged(HWND hwndBar,
+                                   PSTATUSBARDATA psbd,
+                                   MPARAM mp1)
 {
     if (psbd->fDontBroadcast)
     {
@@ -2726,8 +2726,8 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
-                    PSORTBYICONPOS psip)
+static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
+                           PSORTBYICONPOS psip)
 {
     PICONPOS                    pip;
     CHAR                        *p;
@@ -2838,7 +2838,7 @@ typedef struct _PROCESSFOLDER
 /*
  *@@ fnwpStartupDlg:
  *      dlg proc for the Startup status window, which
- *      runs on the main PM thread (fnwpThread1Object).
+ *      runs on the main PM thread (krn_fnwpThread1Object).
  */
 
 MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2850,7 +2850,7 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_INITDLG:
         {
             // WinSetWindowULong(hwnd, QWL_USER, (ULONG)mp2);
-                // we don't need this here, it's done by fnwpThread1Object
+                // we don't need this here, it's done by krn_fnwpThread1Object
             ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);

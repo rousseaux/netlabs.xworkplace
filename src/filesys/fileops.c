@@ -643,7 +643,7 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
  *      dialog items' keyboard focus and such.
  */
 
-MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     #define WM_DELAYEDFOCUS         (WM_USER+1)
 
@@ -952,11 +952,11 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
  *@@changed V0.9.16 (2001-12-31) [umoeller]: largely rewritten
  */
 
-HWND PrepareFileExistsDlg(WPObject *somSelf,
-                          WPFolder *Folder,
-                          WPObject *pExisting,
-                          PSZ pszTitle,
-                          ULONG flOptions)
+static HWND PrepareFileExistsDlg(WPObject *somSelf,
+                                 WPFolder *Folder,
+                                 WPObject *pExisting,
+                                 PSZ pszTitle,
+                                 ULONG flOptions)
 {
     HWND    hwndConfirm;
 
@@ -1164,13 +1164,13 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
  *@@changed V0.9.16 (2002-01-01) [umoeller]: added auto-rename for trash can
  */
 
-ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder to check
-                         WPObject **ppExistingObject, // in: current object,
-                                                      // out: object to append to or to replace
-                         PSZ pszTitle,              // in: title to check for,
-                                                    // out: new proposed title for object
-                         ULONG cbTitle,
-                         ULONG flOptions)
+static ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder to check
+                                WPObject **ppExistingObject, // in: current object,
+                                                             // out: object to append to or to replace
+                                PSZ pszTitle,              // in: title to check for,
+                                                           // out: new proposed title for object
+                                ULONG cbTitle,
+                                ULONG flOptions)
 {
     ULONG           ulrc = NAMECLASH_NONE;
 

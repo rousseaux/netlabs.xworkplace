@@ -228,7 +228,7 @@ typedef struct _CLASSLISTCLIENTDATA
 /*
  *@@ METHODTHREADINFO:
  *      user data structure used with
- *      cll_fntMethodCollectThread.
+ *      fntMethodCollectThread.
  *
  *@@added V0.9.1 (99-12-20) [umoeller]
  */
@@ -345,7 +345,7 @@ static MPARAM ampMethodInfoCtls[] =
  *      just a dummy.
  */
 
-MRESULT EXPENTRY fnwpOpenFilter(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpOpenFilter(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
    return (WinDefFileDlgProc(hwnd, msg, mp1, mp2));
 }
@@ -355,7 +355,7 @@ MRESULT EXPENTRY fnwpOpenFilter(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      dlg func for "Register Class" dialog; use with WinLoadDlg().
  */
 
-MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
     PREGISTERCLASSDATA prcd = (PREGISTERCLASSDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
@@ -499,10 +499,10 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.6 (2000-10-25) [umoeller]: this didn't find words correctly, fixed
  */
 
-BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text file
-                      PSZ pszSrch0,         // in: class name (token) to search for
-                      PULONG pulFlags,      // out: if found, flags for the class
-                      PSZ pszDescription)   // out: if found, class's description
+static BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text file
+                             PSZ pszSrch0,         // in: class name (token) to search for
+                             PULONG pulFlags,      // out: if found, flags for the class
+                             PSZ pszDescription)   // out: if found, class's description
 {
     BOOL brc = FALSE;
 
@@ -566,8 +566,8 @@ BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text fi
  *      properly, depending on _fShowMethods.
  */
 
-VOID RelinkWindows(PCLASSLISTCLIENTDATA pClientData,
-                   BOOL fReformat)
+static VOID RelinkWindows(PCLASSLISTCLIENTDATA pClientData,
+                          BOOL fReformat)
 {
     XWPClassListData *somThis = pClientData->somThis;
 
@@ -609,7 +609,7 @@ VOID RelinkWindows(PCLASSLISTCLIENTDATA pClientData,
  *      cleans up the methods container.
  */
 
-VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
+static VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
 {
     // clear methods container first; the container
     // uses the strings from METHODINFO, so
@@ -631,7 +631,7 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
 }
 
 /*
- *@@ cll_fntMethodCollectThread:
+ *@@ fntMethodCollectThread:
  *
  *      This gets a METHODTHREADINFO in the user
  *      parameter.
@@ -642,7 +642,7 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
  *@@added V0.9.1 (99-12-20) [umoeller]
  */
 
-void _Optlink cll_fntMethodCollectThread(PTHREADINFO pti)
+static void _Optlink fntMethodCollectThread(PTHREADINFO pti)
 {
     PMETHODTHREADINFO pmti = (PMETHODTHREADINFO)(pti->ulData);
     // now update method info
@@ -673,11 +673,11 @@ void _Optlink cll_fntMethodCollectThread(PTHREADINFO pti)
  *@@changed V0.9.0 [umoeller]: moved this func here from xfsys.c; updated for new window hierarchy
  *@@changed V0.9.0 [umoeller]: added method information
  *@@changed V0.9.0 [umoeller]: now using a delay timer
- *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
+ *@@changed V0.9.1 (99-12-20) [umoeller]: now using fntMethodCollectThread for method infos
  *@@changed V0.9.12 (2001-05-17) [pr]: beautify class title
  */
 
-VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
+static VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
 {
     PWPSLISTITEM    pwps = pClientData->pscd->preccSelection->pwps;
     CHAR            szInfo[1000] = "",
@@ -782,7 +782,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
             // class object exists:
             // start thread for collecting method info
             thrCreate(&pClientData->tiMethodCollectThread,
-                      cll_fntMethodCollectThread,
+                      fntMethodCollectThread,
                       NULL, // running flag
                       "CollectMethods",
                       0,    // no msgq
@@ -822,7 +822,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
  *      the methods info will be re-retrieved.
  */
 
-VOID StartMethodsUpdateTimer(PCLASSLISTCLIENTDATA pClientData)
+static VOID StartMethodsUpdateTimer(PCLASSLISTCLIENTDATA pClientData)
 {
     HAB     habDlg = WinQueryAnchorBlock(pClientData->hwndClassCnrDlg);
     // start one-shot timer to update other
@@ -858,10 +858,10 @@ VOID StartMethodsUpdateTimer(PCLASSLISTCLIENTDATA pClientData)
  *@@changed V0.9.15 (2001-09-14) [umoeller]: now expanding replaced classes too
  */
 
-MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
-                                        ULONG ulscd,   // SELECTCLASSDATA struct
-                                        MPARAM mpwps,  // current WPSLISTITEM struct
-                                        MPARAM mpreccParent) // parent record core
+static MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
+                                               ULONG ulscd,   // SELECTCLASSDATA struct
+                                               MPARAM mpwps,  // current WPSLISTITEM struct
+                                               MPARAM mpreccParent) // parent record core
 {
     PWPSLISTITEM        pwps;
 
@@ -943,10 +943,10 @@ MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
  *@@changed V0.9.0 [umoeller]: moved this func here from xfsys.c.
  */
 
-MRESULT EXPENTRY fncbReplaceClassSelected(HWND hwndCnr,
-                                          ULONG ulpsbsc,
-                                          MPARAM mpwps,
-                                          MPARAM mphwndInfo)
+static MRESULT EXPENTRY fncbReplaceClassSelected(HWND hwndCnr,
+                                                 ULONG ulpsbsc,
+                                                 MPARAM mpwps,
+                                                 MPARAM mphwndInfo)
 {
     PWPSLISTITEM pwps = (PWPSLISTITEM)mpwps;
     // PSZ pszClassTitle;
@@ -988,9 +988,9 @@ MRESULT EXPENTRY fncbReplaceClassSelected(HWND hwndCnr,
  +         +1   pmrc1 >  pmrc2
  */
 
-SHORT EXPENTRY fnCompareMethodIndex(PMETHODRECORD precc1,
-                                    PMETHODRECORD precc2,
-                                    PVOID pStorage)
+static SHORT EXPENTRY fnCompareMethodIndex(PMETHODRECORD precc1,
+                                           PMETHODRECORD precc2,
+                                           PVOID pStorage)
 {
     SHORT src = 0;
     if ((precc1) && (precc2))
@@ -1010,9 +1010,9 @@ SHORT EXPENTRY fnCompareMethodIndex(PMETHODRECORD precc1,
  *      method name.
  */
 
-SHORT EXPENTRY fnCompareMethodName(PMETHODRECORD precc1,
-                                   PMETHODRECORD precc2,
-                                   PVOID pStorage)
+static SHORT EXPENTRY fnCompareMethodName(PMETHODRECORD precc1,
+                                          PMETHODRECORD precc2,
+                                          PVOID pStorage)
 {
     SHORT src = 0;
     if ((precc1) && (precc2))
@@ -1033,9 +1033,9 @@ SHORT EXPENTRY fnCompareMethodName(PMETHODRECORD precc1,
  *      the class which introduced a method.
  */
 
-SHORT EXPENTRY fnCompareMethodIntro(PMETHODRECORD precc1,
-                                    PMETHODRECORD precc2,
-                                    PVOID pStorage)
+static SHORT EXPENTRY fnCompareMethodIntro(PMETHODRECORD precc1,
+                                           PMETHODRECORD precc2,
+                                           PVOID pStorage)
 {
     SHORT src = 0;
     if ((precc1) && (precc2))
@@ -1055,9 +1055,9 @@ SHORT EXPENTRY fnCompareMethodIntro(PMETHODRECORD precc1,
  *      the class which overrode a method.
  */
 
-SHORT EXPENTRY fnCompareMethodOverride(PMETHODRECORD precc1,
-                                       PMETHODRECORD precc2,
-                                       PVOID pStorage)
+static SHORT EXPENTRY fnCompareMethodOverride(PMETHODRECORD precc1,
+                                              PMETHODRECORD precc2,
+                                              PVOID pStorage)
 {
     SHORT src = 0;
     if ((precc1) && (precc2))
@@ -1079,7 +1079,7 @@ SHORT EXPENTRY fnCompareMethodOverride(PMETHODRECORD precc1,
  *      according to the current instance data.
  */
 
-PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pClientData)
+static PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pClientData)
 {
     PFNCNRSORT  pfnCnrSort = NULL;
 
@@ -1224,7 +1224,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
-MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = (MRESULT)0;
     PCLASSLISTCLIENTDATA pClientData
@@ -1514,9 +1514,9 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
-VOID ShowClassContextMenu(HWND hwndDlg,
-                          PSELECTCLASSDATA pscd,
-                          HWND hPopupMenu)      // in: "class" popup menu
+static VOID ShowClassContextMenu(HWND hwndDlg,
+                                 PSELECTCLASSDATA pscd,
+                                 HWND hPopupMenu)      // in: "class" popup menu
 {
     LONG lrc2;
     /* HWND hPopupMenu = WinLoadMenu(hwndDlg,
@@ -1660,7 +1660,7 @@ BOOL fFillingCnr = FALSE;
  *@@changed V0.9.16 (2001-10-23) [umoeller]: another confirmation was missing, fixed
  */
 
-MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
 
@@ -2384,7 +2384,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
  *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
  */
 
-MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2507,12 +2507,12 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 /*
  *@@ fnwpMethodInfoDlg:
  *
- *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
+ *@@changed V0.9.1 (99-12-20) [umoeller]: now using fntMethodCollectThread for method infos
  *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added token, added static/dynamic
  */
 
-MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
 
@@ -2639,7 +2639,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
         /*
          * WM_FILLCNR:
-         *      this gets posted from cll_fntMethodCollectThread
+         *      this gets posted from fntMethodCollectThread
          *      after the thread is done collecting the method
          *      info.
          *

@@ -108,7 +108,7 @@ static PFNWP   G_pfnwpOrigStatic = NULL;
  *@@added V0.9.3 (2000-05-21) [umoeller]
  */
 
-BOOL LoadPageMageConfig(PAGEMAGECONFIG* pPgmgConfig)
+static BOOL LoadPageMageConfig(PAGEMAGECONFIG* pPgmgConfig)
 {
     ULONG cb = sizeof(PAGEMAGECONFIG);
     memset(pPgmgConfig, 0, sizeof(PAGEMAGECONFIG));
@@ -126,8 +126,8 @@ BOOL LoadPageMageConfig(PAGEMAGECONFIG* pPgmgConfig)
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
-VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
-                        ULONG ulFlags)  // in: PGMGCFG_* flags (xwphook.h)
+static VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
+                               ULONG ulFlags)  // in: PGMGCFG_* flags (xwphook.h)
 {
     // settings changed:
     // 1) write back to OS2.INI
@@ -165,8 +165,8 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
  *@@added V0.9.9 (2001-03-15) [lafaix]
  */
 
-VOID UpdateValueSet(HWND hwndValueSet,
-                    PAGEMAGECONFIG *pPgmgConfig)
+static VOID UpdateValueSet(HWND hwndValueSet,
+                           PAGEMAGECONFIG *pPgmgConfig)
 {
    int row, col;
    BOOL bValid;
@@ -729,9 +729,9 @@ typedef struct _STICKYRECORD
  *@@added V0.9.4 (2000-07-10) [umoeller]
  */
 
-VOID AddStickyRecord(HWND hwndCnr,
-                     PSZ pszStickyName,     // in: window or switch list title (for PageMage)
-                     BOOL fInvalidate)      // in: if TRUE, invalidate records
+static VOID AddStickyRecord(HWND hwndCnr,
+                            PSZ pszStickyName,     // in: window or switch list title (for PageMage)
+                            BOOL fInvalidate)      // in: if TRUE, invalidate records
 {
     PSTICKYRECORD pRec
         = (PSTICKYRECORD)cnrhAllocRecords(hwndCnr,
@@ -759,8 +759,8 @@ VOID AddStickyRecord(HWND hwndCnr,
  *@@added V0.9.4 (2000-07-10) [umoeller]
  */
 
-VOID SaveStickies(HWND hwndCnr,
-                  PAGEMAGECONFIG* pPgmgConfig)
+static VOID SaveStickies(HWND hwndCnr,
+                         PAGEMAGECONFIG* pPgmgConfig)
 {
     PSTICKYRECORD   pRec = NULL;
     USHORT          usCmd = CMA_FIRST;
@@ -1051,8 +1051,8 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
-PLONG GetColorPointer(HWND hwndStatic,
-                      PAGEMAGECONFIG* pPgmgConfig)
+static PLONG GetColorPointer(HWND hwndStatic,
+                             PAGEMAGECONFIG* pPgmgConfig)
 {
     USHORT usID = WinQueryWindowUShort(hwndStatic, QWS_ID);
     switch (usID)

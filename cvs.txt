@@ -111,16 +111,16 @@ Last updated March 29, 2001 by Ulrich M”ller
     Set the current project environment. This is done via another
     environment variable, so for XWorkplace, set:
 
-        CVSROOT=:pserver:guest@www.netlabs.org:e:/netlabs.cvs/xworkplace
+        CVSROOT=:pserver:guest@www.netlabs.org:/netlabs.cvs/xworkplace
 
     For WarpIN, use:
 
-        CVSROOT=:pserver:guest@www.netlabs.org:e:/netlabs.cvs/warpin
+        CVSROOT=:pserver:guest@www.netlabs.org:/netlabs.cvs/warpin
 
     For the "XWorkplace helpers", which are needed by both XWorkplace
     and WarpIN, use:
 
-        CVSROOT=:pserver:guest@www.netlabs.org:e:/netlabs.cvs/xwphelpers
+        CVSROOT=:pserver:guest@www.netlabs.org:/netlabs.cvs/xwphelpers
 
     and so on. Currently, Netlabs holds over a dozen projects which
     can all be retrieved that way.

@@ -157,7 +157,7 @@ typedef struct _INVOKESETUPSTRING
  *@@changed V0.9.6 (2000-11-23) [umoeller]: now using PINVOKESETUPSTRING
  */
 
-void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
+static void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
 {
     BOOL brc = FALSE;
 
@@ -217,8 +217,8 @@ void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
-                         ULONG flFlags)        // CBI_* flags (notebook.h)
+static VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                                ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     XWPStringData *somThis = XWPStringGetData(pcnbp->somSelf);
 
@@ -318,9 +318,9 @@ VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               ULONG ulItemID, USHORT usNotifyCode,
-                               ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG ulItemID, USHORT usNotifyCode,
+                                      ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
     XWPStringData *somThis = XWPStringGetData(pcnbp->somSelf);

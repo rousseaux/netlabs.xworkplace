@@ -1752,10 +1752,10 @@ PFNWP G_pfnwpWidgetsCnr = NULL;
  *@@added V0.9.14 (2001-07-29) [lafaix]
  */
 
-MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
-                                ULONG msg,
-                                MPARAM mp1,
-                                MPARAM mp2)
+static MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
+                                       ULONG msg,
+                                       MPARAM mp1,
+                                       MPARAM mp2)
 {
     switch (msg)
     {
@@ -1837,9 +1837,9 @@ DosBeep(100, 100);
  *@@added V0.9.13 (2001-06-23) [umoeller]
  */
 
-PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
-                                  PPRIVATEWIDGETSETTING pSetting,
-                                  const WIDGETPOSITION *pPosition)
+static PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
+                                         PPRIVATEWIDGETSETTING pSetting,
+                                         const WIDGETPOSITION *pPosition)
                                   /*
                                   ULONG ulRootIndex,    // in: if -1, this is a subwidget;
                                                         // otherwise the widget index

@@ -558,7 +558,7 @@ VOID fsysCreateStandardGEAList(VOID)
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-PGEA2LIST GetGEA2List(VOID)
+static PGEA2LIST GetGEA2List(VOID)
 {
     PGEA2LIST pList;
     if (pList = (PGEA2LIST)malloc(G_cbStandardGEA2List))
@@ -753,9 +753,9 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-BOOL DecodeLongname(PFEA2LIST pFEA2List2,
-                    PSZ pszLongname,          // out: .LONGNAME if TRUE is returned
-                    PULONG pulNameLen)        // out: length of .LONGNAME string
+static BOOL DecodeLongname(PFEA2LIST pFEA2List2,
+                           PSZ pszLongname,          // out: .LONGNAME if TRUE is returned
+                           PULONG pulNameLen)        // out: length of .LONGNAME string
 {
     PBYTE pbValue;
 
@@ -816,9 +816,9 @@ typedef struct _FSCLASSINFO
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
-                     PULONG pulClassNameLen,    // out: strlen of the return value
-                     POBJDATA *ppObjData)       // out: OBJDATA for _wpclsMakeAwake
+static PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
+                            PULONG pulClassNameLen,    // out: strlen of the return value
+                            POBJDATA *ppObjData)       // out: OBJDATA for _wpclsMakeAwake
 {
     PCSZ        pcszClassName = NULL;
     ULONG       ulClassNameLen = 0;
@@ -873,9 +873,9 @@ PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
-                           PCSZ pcszObjectTitle,
-                           ULONG ulTitleLen)      // in: length of title string (req.)
+static PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
+                                  PCSZ pcszObjectTitle,
+                                  ULONG ulTitleLen)      // in: length of title string (req.)
 {
     PCSZ pcszClassName = NULL;
 
@@ -973,8 +973,8 @@ PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed duplicate awakes and "treeInsert failed"
  */
 
-WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
-                             PFILEFINDBUF3 pfb3)
+static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
+                                    PFILEFINDBUF3 pfb3)
 {
     WPFileSystem *pAwake = NULL;
 
@@ -1337,7 +1337,7 @@ typedef struct _SYNCHPOPULATETHREADS
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
+static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
 {
     PSYNCHPOPULATETHREADS pspt = (PSYNCHPOPULATETHREADS)ptiMyself->ulData;
     HDIR            hdirFindHandle = HDIR_CREATE;
@@ -1914,12 +1914,12 @@ typedef struct _FILEPAGEDATA
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
-                    ULONG idDate,           // in: dialog item ID for date string
-                    ULONG idTime,           // in: dialog item ID for time string
-                    PFDATE pfDate,          // in: file info
-                    PFTIME pfTime,
-                    PCOUNTRYSETTINGS pcs)   // in: country settings
+static VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
+                           ULONG idDate,           // in: dialog item ID for date string
+                           ULONG idTime,           // in: dialog item ID for time string
+                           PFDATE pfDate,          // in: file info
+                           PFTIME pfTime,
+                           PCOUNTRYSETTINGS pcs)   // in: country settings
 {
     CHAR    szTemp[100];
 

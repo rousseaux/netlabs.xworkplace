@@ -821,7 +821,7 @@ APIRET progFindIcon(PEXECUTABLE pExec,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-BOOL LockRunning(VOID)
+static BOOL LockRunning(VOID)
 {
     if (!G_hmtxRunning)
     {
@@ -850,7 +850,7 @@ BOOL LockRunning(VOID)
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-VOID UnlockRunning(VOID)
+static VOID UnlockRunning(VOID)
 {
     DosReleaseMutexSem(G_hmtxRunning);
 }
@@ -1018,7 +1018,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
  *
  *      --  the item from the list.
  *
- *      This normally gets called from fnwpThread1Object
+ *      This normally gets called from krn_fnwpThread1Object
  *      when WM_APPTERMINATENOTIFY comes in.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
@@ -1186,7 +1186,7 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
+static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
                                                 // out: what user entered
 {
     BOOL brc = FALSE;
@@ -1239,7 +1239,7 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
  *@@changed V0.9.18 (2002-02-13) [umoeller]: now using XSTRING
  */
 
-VOID FixSpacesInFilename(PXSTRING pstr)
+static VOID FixSpacesInFilename(PXSTRING pstr)
 {
     if (pstr && pstr->psz)
     {
@@ -1305,12 +1305,12 @@ VOID FixSpacesInFilename(PXSTRING pstr)
  *@@changed V0.9.18 (2002-02-13) [umoeller]: fixed possible buffer overflows
  */
 
-BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
-                       PCSZ pcszFilename, // in: data file name;
-                                                 // ptr is always valid, but can point to ""
-                       PXSTRING pstrTemp,       // out: replacement string (e.g. filename)
-                       PULONG pcReplace,        // out: no. of chars to replace (w/o null terminator)
-                       PBOOL pfAppendDataFilename)  // out: if FALSE, do not append full filename
+static BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
+                              PCSZ pcszFilename, // in: data file name;
+                                                        // ptr is always valid, but can point to ""
+                              PXSTRING pstrTemp,       // out: replacement string (e.g. filename)
+                              PULONG pcReplace,        // out: no. of chars to replace (w/o null terminator)
+                              PBOOL pfAppendDataFilename)  // out: if FALSE, do not append full filename
 {
     BOOL brc = FALSE;
 
@@ -1881,10 +1881,10 @@ APIRET progOpenProgramThread1(PVOID pvData)
  *          which gets called from here.
  *
  *          Note: The XWorkplace thread-1 object window
- *          (fnwpThread1Object) is used as the notify
+ *          (krn_fnwpThread1Object) is used as the notify
  *          window to WinStartApp to receive WM_APPTERMINATENOTIFY
  *          so we can properly remove source emphasis later.
- *          fnwpThread1Object then calls progAppTerminateNotify.
+ *          krn_fnwpThread1Object then calls progAppTerminateNotify.
  *
  *      Since this calls progSetupArgs, this might display modal
  *      dialogs before returning. As a result (and because this
@@ -2351,7 +2351,7 @@ typedef struct _IMPORTEDMODULERECORD
  *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
  */
 
-void _Optlink fntInsertModules(PTHREADINFO pti)
+static void _Optlink fntInsertModules(PTHREADINFO pti)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
 
@@ -2569,7 +2569,7 @@ const char* fsysGetExportedFunctionTypeName(ULONG ulType)
  *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
  */
 
-void _Optlink fntInsertFunctions(PTHREADINFO pti)
+static void _Optlink fntInsertFunctions(PTHREADINFO pti)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
 
@@ -2920,7 +2920,7 @@ PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: fixed bad resource nameing for win resources
  */
 
-void _Optlink fntInsertResources(PTHREADINFO pti)
+static void _Optlink fntInsertResources(PTHREADINFO pti)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
 
@@ -3044,10 +3044,10 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
-                                     PRECORDCORE precc,
-                                     ULONG ulUser1,
-                                     ULONG ulUser2)
+static ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
+                                            PRECORDCORE precc,
+                                            ULONG ulUser1,
+                                            ULONG ulUser2)
 {
     HPOINTER hptr;
     if (hptr = ((PRESOURCERECORD)precc)->hptrResource)

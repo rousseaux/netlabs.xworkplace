@@ -408,7 +408,7 @@ VOID objRefreshUseItems(WPObject *somSelf,
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-BOOL LockObjectsList(VOID)
+static BOOL LockObjectsList(VOID)
 {
     BOOL brc = FALSE;
 
@@ -431,7 +431,7 @@ BOOL LockObjectsList(VOID)
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-VOID UnlockObjectsList(VOID)
+static VOID UnlockObjectsList(VOID)
 {
     DosReleaseMutexSem(G_hmtxObjectsLists);
 }
@@ -448,8 +448,8 @@ VOID UnlockObjectsList(VOID)
  *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
-BOOL WriteObjectsList(POBJECTLIST pll,
-                      PCSZ pcszIniKey)
+static BOOL WriteObjectsList(POBJECTLIST pll,
+                             PCSZ pcszIniKey)
 {
     BOOL brc = FALSE;
 
@@ -511,9 +511,9 @@ BOOL WriteObjectsList(POBJECTLIST pll,
  *@@changed V0.9.16 (2001-10-24) [umoeller]: added fixes for duplicate objects on list, which lead to endlessly looping startup folders
  */
 
-BOOL LoadObjectsList(POBJECTLIST pll,
-                     ULONG ulListFlag,          // in: list flag for xwpModifyListNotify
-                     PCSZ pcszIniKey)
+static BOOL LoadObjectsList(POBJECTLIST pll,
+                            ULONG ulListFlag,          // in: list flag for xwpModifyListNotify
+                            PCSZ pcszIniKey)
 {
     BOOL        brc = FALSE;
     // ULONG       ulSize;
@@ -932,7 +932,7 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-BOOL LockHandlesCache(VOID)
+static BOOL LockHandlesCache(VOID)
 {
     BOOL brc = FALSE;
 
@@ -960,7 +960,7 @@ BOOL LockHandlesCache(VOID)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-VOID UnlockHandlesCache(VOID)
+static VOID UnlockHandlesCache(VOID)
 {
     DosReleaseMutexSem(G_hmtxHandlesCache);
 }
@@ -982,7 +982,7 @@ VOID UnlockHandlesCache(VOID)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-ULONG CheckShrinkCache(VOID)
+static ULONG CheckShrinkCache(VOID)
 {
     ULONG   ulDeleted = 0;
     LONG    lObjectsToDelete = G_lHandlesCacheItemsCount - CACHE_ITEM_LIMIT;
@@ -1159,7 +1159,7 @@ VOID objRemoveFromHandlesCache(WPObject *somSelf)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-BOOL LockDirtyList(VOID)
+static BOOL LockDirtyList(VOID)
 {
     BOOL brc = FALSE;
 
@@ -1187,7 +1187,7 @@ BOOL LockDirtyList(VOID)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-VOID UnlockDirtyList(VOID)
+static VOID UnlockDirtyList(VOID)
 {
     DosReleaseMutexSem(G_hmtxDirtyList);
 }
@@ -1800,11 +1800,11 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  *      a string if necessary.
  */
 
-VOID CheckStyle(PXSTRING pxstr,       // in: string for xstrcat
-                ULONG ul1,        // in: style 1
-                ULONG ul2,        // in: style 2
-                ULONG ulMask,     // in: mask for style 1/2
-                PSZ pszName)    // in: setup string prefix (e.g. "NOMOVE=")
+static VOID CheckStyle(PXSTRING pxstr,       // in: string for xstrcat
+                       ULONG ul1,        // in: style 1
+                       ULONG ul2,        // in: style 2
+                       ULONG ulMask,     // in: mask for style 1/2
+                       PSZ pszName)    // in: setup string prefix (e.g. "NOMOVE=")
 {
     if ((ul1 & ulMask) != (ul2 & ulMask))
     {
@@ -2134,10 +2134,10 @@ BOOL objQuerySetup(WPObject *somSelf,
  *@@added V0.9.9 (2001-04-06) [umoeller]
  */
 
-ULONG WriteOutObjectSetup(FILE *RexxFile,
-                          WPObject *pobj,
-                          ULONG ulRecursion,        // in: recursion level, initially 0
-                          BOOL fRecurse)
+static ULONG WriteOutObjectSetup(FILE *RexxFile,
+                                 WPObject *pobj,
+                                 ULONG ulRecursion,        // in: recursion level, initially 0
+                                 BOOL fRecurse)
 {
     ULONG       ulrc = 0,
                 ul;
@@ -2351,10 +2351,10 @@ typedef struct _OBJECTUSAGERECORD
  *      to add one cnr record core.
  */
 
-POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Object" page
-                                      POBJECTUSAGERECORD preccParent, // in: parent record or NULL for root
-                                      PCSZ pcszTitle,     // in: text to appear in cnr
-                                      ULONG flAttrs)    // in: CRA_* flags for record
+static POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Object" page
+                                             POBJECTUSAGERECORD preccParent, // in: parent record or NULL for root
+                                             PCSZ pcszTitle,     // in: text to appear in cnr
+                                             ULONG flAttrs)    // in: CRA_* flags for record
 {
     POBJECTUSAGERECORD preccNew
         = (POBJECTUSAGERECORD)cnrhAllocRecords(hwndCnr, sizeof(OBJECTUSAGERECORD), 1);
@@ -2376,11 +2376,11 @@ POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Obj
  *@@added V0.9.1 (2000-01-17) [umoeller]
  */
 
-VOID AddFolderView2Cnr(HWND hwndCnr,
-                       POBJECTUSAGERECORD preccLevel2,
-                       WPObject *pObject,
-                       ULONG ulView,
-                       PSZ pszView)
+static VOID AddFolderView2Cnr(HWND hwndCnr,
+                              POBJECTUSAGERECORD preccLevel2,
+                              WPObject *pObject,
+                              ULONG ulView,
+                              PSZ pszView)
 {
     XSTRING strTemp;
     ULONG ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
@@ -2434,8 +2434,8 @@ VOID AddFolderView2Cnr(HWND hwndCnr,
  *@@changed V0.9.16 (2001-10-06): fixed memory leak with program objects
  */
 
-VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
-                            WPObject *pObject)  // in: object for which to insert data
+static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
+                                   WPObject *pObject)  // in: object for which to insert data
 {
     POBJECTUSAGERECORD
                     preccRoot, preccLevel2, preccLevel3;
@@ -3034,7 +3034,7 @@ typedef struct _XFOBJWINDATA
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed crash if "No" was selected on object ID change confirmation
  */
 
-MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

@@ -1214,9 +1214,9 @@ MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
  *@@added V0.9.3 (2000-04-19) [umoeller]
  */
 
-VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
-                      PFUNCTIONKEY pFuncKey,    // in: new function key definition (one item)
-                      ULONG ulIndex)            // in: index of item in FUNCTIONKEY array (must match!)
+static VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
+                             PFUNCTIONKEY pFuncKey,    // in: new function key definition (one item)
+                             ULONG ulIndex)            // in: index of item in FUNCTIONKEY array (must match!)
 {
     PFUNCTIONKEYRECORD precc
         = (PFUNCTIONKEYRECORD)cnrhAllocRecords(hwndCnr,
@@ -2701,7 +2701,7 @@ static BOOL    G_fShutUpSlider = FALSE;
  *@@changed v0.9.18 (2002-02-12) [pr]: use defined constants
  */
 
-VOID UpdateScreenCornerIndex(USHORT usItemID)
+static VOID UpdateScreenCornerIndex(USHORT usItemID)
 {
     switch (usItemID)
     {
