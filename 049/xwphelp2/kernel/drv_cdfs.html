@@ -1,0 +1,74 @@
+<HTML RESID=&ID_XSH_DRIVER_CDFS;>
+<HEAD>
+    <TITLE>
+        &os2;-Kernel: CDFS.IFS
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.4 -->
+<BODY>
+Dieser Dialog dient zur Konfiguration von <CODE>CDFS.IFS</CODE>.
+ 
+<!-- V0.9.13
+bei dem es sich um das installierbare Dateisystem (Installable File
+System, "IFS") der IBM zum Lesen von Daten auf CD-ROMs handelt.
+CD-ROMS verwenden ein eigenes, spezielles Datentr„gerformat, das von
+FAT oder HPFS abweicht, so daá auch ein spezieller Dateisystemtreiber
+ben”tigt wird.
+ 
+and added these links: -->
+ 
+<P>Fr einfhrende Informationen zu Dateisystemen verwenden Sie bitte
+einen der folgenden Verweise:
+<UL><LI><A HREF="glossary/gls_fs.html">Dateisysteme</A>
+<LI><A HREF="glossary/gls_caches.html">Cachespeicher fr Dateisysteme</A>
+ 
+</UL>Klicken Sie auf <B>"Optimieren"</B>, falls &xwp; Ihnen neue, optimierte
+Einstellungen vorschlagen soll. 
+<P>Klicken Sie auf <B>"Standard"</B>, um die Systemvorgabewerte von &os2;
+in den Einstellungsdialog zu laden.
+ 
+<P>Durch klicken auf <B>"OK"</B> werden Ihre Einstellungen umgesetzt in
+entsprechende Treiberparameter, die in das Feld "Parameter" auf der Seite
+"Treiber" im Dialog
+<!-- V0.9.20: added link -->
+<A HREF="objects/obj_krnl.html">"&os2;-Kernel"</A>
+bernommen werden. Ihre &cfgsys; wird hierdurch allerdings noch nicht
+ge„ndert. Um dies zu bewirken, klicken Sie auf "Anwenden" auf der Seite
+"Treiber", nachdem Sie im aktuellen Einstellungsdialog die Schaltfl„che
+"OK" geklickt haben.
+ 
+<P>Es wird dringend empfohlem, die <B>Untersttzung fr Microsoft Joliet
+Erweiterungen</B> zu verwenden. Hierbei handelt es sich um Microsofts
+Erweiterung des ISO-Standard-CD-ROM-Dateisystems zur Untersttzung langer
+Dateinamen (bis zu 64 Zeichen). Viele neuere CD-ROMs k”nnen unter &os2;
+nicht gelesen werden, wenn diese Einstellung nicht aktiviert ist.
+ 
+<P><B>Kanji</B> aktiviert die Untersttzung der japanischen Sprache.
+ 
+<P>Mit dem Schieberegler <B>"Cachegr”áe"</B> kann die Gr”áe des verwendeten
+Cachespeichers fr das CD-ROM-Dateisystem eingestellt werden. Die Systemvorgabe
+von 128 KB is nicht wirklich viel, daher wird empfohlen, einen Wert von 512 KB
+oder mehr zu verwenden. Da der Lesekopf eines CD-ROM-Laufwerks viel langsamer
+arbeitet als die einer Festplatte, kann ein gr”áerer Cache das Lesen von
+CD-ROMs wirklich beschleunigen.
+ 
+<P>Aus dem selben Grund sollten Sie auch den Wert fr <B>"Dateisektoren pro
+Lesevorgang"</B> auf den m”glichen Maximalwert stellen. Diese Einstellung
+steuert die Anzahl der einzulesenden Sektoren, wenn ein einzelner Sektor vom
+Dateisystemtreiber angefordert wird. Da es sehr wahrscheinlich ist, daá nicht
+nur ein einzelner sondern auch darauf folgende Sektoren gelesen werden, wenn
+auf eine CD-ROM zugegriffen wird, befinden sich diese Folgesektoren dann 
+bereits im Cache, was zu einer weiteren Reduzierung der physikalischen 
+Zugriffe auf das CD-ROM-Laufwerk fhrt.
+ 
+<!-- the following added with V0.9.5 -->
+Die unter <B>"Initialisierung"</B> gruppierten Einstellungen schlieálich
+regeln den Umfang dessen, was der IFS-Treiber beim Starten anzeigt.
+Der <B>Standard</B> ist dabei nur eine kurze Meldung, daá der Treiber
+geladen wurde. <B>"Stumm"</B> unterdrckt jegliche Ausgabe w„hrend mit 
+<B>"Verbos"</B> alle aktuellen IFS-Einstellungen analog zur vorherigen 
+Beschreibung ausgegeben werden.
+<BR>
+</BODY>
+</HTML>
+ 
