@@ -110,7 +110,7 @@
     #define FOPSERR_WPSETATTR_FAILED          (FOPSERR_FIRST_CODE + 18)
             // wpSetAttr failed
     #define FOPSERR_GETNOTIFYSEM_FAILED       (FOPSERR_FIRST_CODE + 19)
-            // wpshGetNotifySem failed
+            // fdrGetNotifySem failed
     #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 20)
             // wpshRequestFolderSem failed
     #define FOPSERR_NOT_FONT_FILE             (FOPSERR_FIRST_CODE + 21)
@@ -198,6 +198,8 @@
 
     DECLARE_CMN_STRING(INIKEY_BOOTMGR, "RebootTo");
     DECLARE_CMN_STRING(INIKEY_AUTOCLOSE, "AutoClose");
+    DECLARE_CMN_STRING(INIKEY_LASTDESKTOPPATH, "LastDesktopPath");
+            // V0.9.16 (2001-10-25) [umoeller]
 
     DECLARE_CMN_STRING(DEFAULT_LANGUAGECODE, "001");
 
@@ -246,7 +248,7 @@
     DECLARE_CMN_STRING(INIKEY_WNDPOSFILEDLG, "WndPosFileDlg");
     DECLARE_CMN_STRING(INIKEY_FILEDLGSETTINGS, "FileDlgSettings");
 
-    // WPSArcO application and keys in OS2.INI
+    // archiving application and keys in OS2.INI
     DECLARE_CMN_STRING(INIKEY_ARCHIVE_SETTINGS, "ArchiveSettings");
     DECLARE_CMN_STRING(INIKEY_ARCHIVE_LASTBACKUP, "ArchiveLastBackup");
 
@@ -320,6 +322,7 @@
      ********************************************************************/
 
     DECLARE_CMN_STRING(G_pcszXFldObject, "XFldObject");
+    DECLARE_CMN_STRING(G_pcszXWPFileSystem, "XWPFileSystem");
     DECLARE_CMN_STRING(G_pcszXFolder, "XFolder");
     DECLARE_CMN_STRING(G_pcszXFldDisk, "XFldDisk");
     DECLARE_CMN_STRING(G_pcszXFldDesktop, "XFldDesktop");
@@ -363,6 +366,7 @@
     DECLARE_CMN_STRING(G_pcszXWPProgram, "XWPProgram");
 
     DECLARE_CMN_STRING(G_pcszWPObject, "WPObject");
+    DECLARE_CMN_STRING(G_pcszWPFileSystem, "WPFileSystem");
     DECLARE_CMN_STRING(G_pcszWPFolder, "WPFolder");
     DECLARE_CMN_STRING(G_pcszWPDisk, "WPDisk");
     DECLARE_CMN_STRING(G_pcszWPDesktop, "WPDesktop");
@@ -750,6 +754,8 @@
 #ifndef __ALWAYSREPLACEICONPAGE__
         ReplaceIconPage,
 #endif
+        TurboFolders,            // warning: this will return the setting
+                                 // that was once determined on WPS startup
         ___dummy
     } XWPFEATURE;
 
@@ -1105,6 +1111,9 @@
 
         BYTE        fWriteXWPStartupLog;
                         // V0.9.14 (2001-08-21) [umoeller]
+
+        BYTE        __fTurboFolders;
+                        // V0.9.16 (2001-10-25) [umoeller]
 
     } GLOBALSETTINGS;
 

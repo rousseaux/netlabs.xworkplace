@@ -96,6 +96,7 @@
 #endif
     #define OBJLIST_HANDLESCACHE            0x0010 // V0.9.9 (2001-04-02) [umoeller]
     #define OBJLIST_DIRTYLIST               0x0020 // V0.9.11 (2001-04-18) [umoeller]
+    #define OBJLIST_QUERYAWAKEFSOBJECT      0x0040 // V0.9.16 (2001-10-25) [umoeller]
 
     /* ******************************************************************
      *
@@ -189,6 +190,15 @@
                                      ULONG flCreate);
     #endif
     #endif
+
+    /* ******************************************************************
+     *
+     *   Object details dialog
+     *
+     ********************************************************************/
+
+    VOID objShowObjectDetails(HWND hwndOwner,
+                              WPObject *pobj);
 
 #endif
 

@@ -131,8 +131,8 @@
 
     BOOL pgmwWindowListRescan(VOID);
 
-    BOOL pgmwStickyCheck(HWND hwnd,
-                         const char *pcszSwitchName);
+    BOOL pgmwIsSticky(HWND hwnd,
+                      const char *pcszSwitchName);
 
     BOOL pgmwSticky2Check(HWND hwndText);
 

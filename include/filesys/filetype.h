@@ -28,6 +28,16 @@
 #ifndef FILETYPE_HEADER_INCLUDED
     #define FILETYPE_HEADER_INCLUDED
 
+    #ifdef SOM_WPFileSystem_h
+
+        ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject);
+
+        PCSZ ftypFindClassFromInstanceType(PCSZ pcszType);
+
+        PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle);
+
+    #endif
+
     /* ******************************************************************
      *
      *   XFldDataFile extended associations

@@ -112,8 +112,9 @@
     // #define RCF_QUERYACTION            0
             // display message box
             // removed V0.9.16 (2001-10-11) [umoeller]
-    #define RCF_EMPTYCONFIGFOLDERONLY  1
+    // #define RCF_EMPTYCONFIGFOLDERONLY  1
             // create empty config folder
+            // removed V0.9.16 (2001-10-23) [umoeller]
     #define RCF_DEFAULTCONFIGFOLDER    2
             // create default config folder
     #define RCF_MAININSTALLFOLDER      3

@@ -62,6 +62,7 @@
     #define XCS_SIZINGBARS          0x0004
     #define XCS_ALL3DBORDERS        0x0008
     #define XCS_SPACINGLINES        0x0010      // added V0.9.13 (2001-06-19) [umoeller]
+    #define XCS_NOHATCHINUSE        0x0020      // added V0.9.16 (2001-10-24) [umoeller]
 
     /*
      *@@ XCENTERGLOBALS:

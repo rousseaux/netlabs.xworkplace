@@ -2367,43 +2367,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_CRD_SETTINGS_VIEW2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_CRD_SETTINGS_VIEW2, 0, 0, 188, 172, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "~3D border width", -1, 6, 118, 172, 36, DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW2_3DBORDER_SLIDER, 12, 132, 96, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 11, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW2_3DBORDER_TEXT, 128, 134, 44, 8
-        AUTOCHECKBOX    "Dr~aw all four 3D borders",
-                        ID_CRDI_VIEW2_ALL3DBORDERS, 12, 122, 148, 8
-        GROUPBOX        "~Border spacing", -1, 6, 90, 172, 26, DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW2_BDRSPACE_SLIDER, 12, 94, 96, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 11, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW2_BDRSPACE_TEXT, 128, 96, 44, 8
-        GROUPBOX        "~Widget spacing", -1, 6, 48, 172, 40, DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW2_WGTSPACE_SLIDER, 12, 66, 96, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 10, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW2_WGTSPACE_TEXT, 128, 68, 44, 8
-        AUTOCHECKBOX    "Draw si~zing bars", ID_CRDI_VIEW2_SIZINGBARS, 10,
-                        58, 148, 8
-        AUTOCHECKBOX    "Draw spa~cing lines", ID_CRDI_VIEW2_SPACINGLINES,
-                        10, 50, 148, 8
-        GROUPBOX        "Default widget styles", -1, 6, 20, 172, 26
-        AUTOCHECKBOX    "~Flat buttons", ID_CRDI_VIEW2_FLATBUTTONS, 10, 30,
-                        154, 8
-        AUTOCHECKBOX    "Fra~me around statics", ID_CRDI_VIEW2_SUNKBORDERS,
-                        10, 22, 154, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_OSD_SETTINGS_KERNEL1 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_OSD_SETTINGS_KERNEL1, 0, 0, 275, 180, NOT FS_DLGBORDER |

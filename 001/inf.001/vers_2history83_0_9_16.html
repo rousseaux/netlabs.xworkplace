@@ -1,7 +1,7 @@
 <HTML WIDTH=70% XPOS=right NOSUBLINKS="intro" NOSUBLINKS="xices" NOSUBLINKS="vers_">
 <HEAD>
     <TITLE>
-        &xwp; 0.9.15
+        &xwp; 0.9.16
     </TITLE>
 </HEAD>
 <!-- Note: This file changes almost with every XFolder version.
@@ -16,6 +16,9 @@
 <UL><LI>Common: Instead of adding the "Object" page, &xwp; now completely
 replaces the "Icon" page in every settings notebook.
 
+<P><LI>Common: WPS "Browse" buttons now use my new WPS file dialog routines.
+Try the "Browse" button on the new "Icon" page.
+
 <P><LI>File types: Added icon display to "File types" page in "Workplace Shell".
 Also added "Properties" and "Open folder" items to association context menu.
 
@@ -28,6 +31,9 @@ and added a proper help panel (shows up if you double-click on NETSCDDE.EXE only
 
 <P><LI>&xcenter;: When &xcenter; is newly created, it comes up with a standard
 widget setup now. The empty bar confused many people initially.
+
+<P><LI>&xcenter;: Added setting for whether object button widgets should show
+in-use emphasis (hatching).
 
 <P><LI>xfix: Added object IDs display and deletion.
 
@@ -47,6 +53,12 @@ to xwpQuerySetup that were always required.
 <P><LI>Common: Rewrote TMF loader to be much faster now. XWorkplace now keeps its TMF
 file open all the time and thus doesn't have to rebuild the strings buffer
 for every message that is needed.
+
+<P><LI>Common: Rewrote Henk Kelder's WPS handles engine to be much faster now.
+
+<P><LI>Common: Rewrote &xwp; log file routines to use DosWrite directly since the
+buffered fprintf() calls sometimes didn't end up in the log at all (especially
+on crashes).
 
 <P><LI>Archiving: Changed the settings format for the WPS extended archiving. Please
 reconfigure.
@@ -71,10 +83,30 @@ experiencing.
 
 <P><LI>Common: Fixed several small memory leaks in various places.
 
+<P><LI>Common: Fixed major/minor settings pages subtitles (for notebook context menus)
+in various places.
+
+<P><LI>Common: Removed all remaining must-complete sections in the code which
+sometimes prevented PMSHELL from exiting on kill or crashes.
+
+<P><LI>Startup: Fixed endlessly looping startup folders.
+
+<P><LI>Programs: Added more error checking to progOpenProgram.
+
+<P><LI>Disks: Added more "drive ready" checks to context menus and settings view
+to avoid some more "drive not ready" popups. Note that context menus still show
+"drive not ready" since that problem is in a WPS routine I can't easily replace.
+
+<P><LI>Folders: MENUBAR setup string had a wrong default value on Warp 4 and above.
+
 <P><LI>Status bars: For remote disk objects (WPSharedDir), the status bars kept
 querying drive A: for the free space, which was kind of annoying. The reason was
 that WPShared::wpQueryLogicalDrive returns 1 always for some reason only IBM can
 explain. Added a special case check in a couple of places.
+
+<P><LI>&xcenter;: Removed all the special window actication handling for now
+as a temporary fix for the Mozilla problems. Note that the XCenter will now
+become the active window sometimes as a result of this.
 
 <P><LI>&xcenter;: Fixed the 100% CPU load problem when mouse was over &xcenter; while
 a settings dialog was showing.
@@ -84,6 +116,9 @@ the power icon was changed. Fixed.
 
 <P><LI>PageMage: &xcenter;s are now sticky always and do not have to be added manually
 to the "Stickies" list any more.
+
+<P><LI>&xshutdown;: Paul Ratcliffe fixed bug trying to close the first switch list
+item twice.
 
 </UL>
 </BODY>

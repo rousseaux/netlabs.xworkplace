@@ -678,13 +678,13 @@ BEGIN
 #ifndef __NOICONREPLACEMENTS__
     ID_XCSI_REPLACEICONS                "Replace Icons"
 #endif
-    /* this item added with V0.9.4 V0.9.4 (2000-08-08) [umoeller] */
+    /* the following item added with V0.9.4 V0.9.4 (2000-08-08) [umoeller] */
     ID_XCSI_RESIZESETTINGSPAGES         "Adjust settings pages on notebook resize"
-    /* this item's ID and string changed with V0.9.16 (2001-10-15) [umoeller] */
+    /* the following item's ID and string changed with V0.9.16 (2001-10-15) [umoeller] */
     ID_XCSI_REPLACEICONPAGE             "Replace ""Icon"" page in all settings notebooks"
     ID_XCSI_REPLACEFILEPAGE             "Replace ""File"" and ""Details"" pages"
     ID_XCSI_XSYSTEMSOUNDS               "Extended system sounds"
-    /* this item added with V0.9.12 (2001-05-22) [umoeller] */
+    /* the following item added with V0.9.12 (2001-05-22) [umoeller] */
     ID_XCSI_FIXCLASSTITLES              "Fix class titles"
 
     ID_XCSI_FOLDERFEATURES              "Folder features"
@@ -692,6 +692,8 @@ BEGIN
     ID_XCSI_ENABLESNAP2GRID             "Enable folder ""Snap to grid"""
     ID_XCSI_ENABLEFOLDERHOTKEYS         "Enable folder hotkeys"
     ID_XCSI_EXTFOLDERSORT               "Extended folder sorting"
+    /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
+    ID_XCSI_TURBOFOLDERS                "Turbo folders"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
@@ -707,7 +709,7 @@ BEGIN
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries"
-/* this item added with V0.9.5 (2000-08-14) [umoeller] */
+/* the following item added with V0.9.5 (2000-08-14) [umoeller] */
     ID_XCSI_REPLHANDLES                 "Replace WPS handles management"
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
     ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
@@ -996,6 +998,9 @@ BEGIN
     ID_XFDI_PANIC_CMD_TXT               "Starts a command line session now."
     ID_XFDI_PANIC_SHUTDOWN              "~Shut down now"
     ID_XFDI_PANIC_SHUTDOWN_TXT          "This performs a default &os2; shutdown now."
+    // these ones are new with V0.9.16
+    ID_XFDI_PANIC_DISABLEREPLREFRESH    "Disable replacement folder auto-refresh"
+    ID_XFDI_PANIC_DISABLETURBOFOLDERS   "Disable turbo folders"
 
     /* strings formerly in ID_XSD_FOLDERVIEWS */
     ID_XSD_FOLDERVIEWGROUP              "Folder view settings"
@@ -1013,6 +1018,18 @@ BEGIN
     ID_XSDI_FDRVIEW_ICON                "~Icon"
     ID_XSDI_FDRVIEW_TREE                "T~ree"
     ID_XSDI_FDRVIEW_DETAILS             "Detail~s"
+
+    /* string formerly in ID_CRD_SETTINGS_VIEW2 */
+    ID_CRDI_VIEW2_3DBORDER_GROUP        "~3D border width"
+    ID_CRDI_VIEW2_ALL3DBORDERS          "Dr~aw all four 3D borders"
+    ID_CRDI_VIEW2_BDRSPACE_GROUP        "~Border spacing"
+    ID_CRDI_VIEW2_WGTSPACE_GROUP        "~Widget spacing"
+    ID_CRDI_VIEW2_SIZINGBARS            "Draw si~zing bars"
+    ID_CRDI_VIEW2_SPACINGLINES          "Draw spa~cing lines"
+    ID_CRDI_VIEW2_DEFSTYLES_GROUP       "Default widget styles"
+    ID_CRDI_VIEW2_FLATBUTTONS           "~Flat buttons"
+    ID_CRDI_VIEW2_SUNKBORDERS           "Fra~me around statics"
+    ID_CRDI_VIEW2_HATCHINUSE            "Hatch ~open objects"
 
     /* new "Icon" page replacement */
     ID_XSDI_ICON_TITLE_TEXT             "T~itle:"

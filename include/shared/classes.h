@@ -134,12 +134,12 @@
 
         typedef struct _SELECTCLASSDATA
         {
-            PSZ     pszDlgTitle;            // dialog title;
+            PCSZ    pszDlgTitle;            // dialog title;
                                             // only used with clsSelectWpsClassDlg
-            PSZ     pszIntroText;           // intro text above container
+            PCSZ    pszIntroText;           // intro text above container
                                             // only used with clsSelectWpsClassDlg
-            PSZ     pszRootClass;           // class to begin with
-            PSZ     pszOrphans;             // title of "Orphans" tree; if NULL,
+            PCSZ    pcszRootClass;          // class to begin with
+            PCSZ    pcszOrphans;            // title of "Orphans" tree; if NULL,
                                             // orphaned classes will not be shown
             CHAR    szClassSelected[256];   // in: initially select this class
                                             // (always used)
@@ -197,7 +197,7 @@
         } SELECTCLASSDATA, *PSELECTCLASSDATA;
 
         PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr,
-                                          PSZ pszRootClass,
+                                          PCSZ pcszRootClass,
                                           PSELECTCLASSDATA pscd);
 
         VOID clsCleanupWpsClasses(PWPSCLASSESINFO pwpsd);

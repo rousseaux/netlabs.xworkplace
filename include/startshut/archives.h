@@ -69,7 +69,6 @@
 
     typedef struct _ARCHIVINGSETTINGS
     {
-        // WPSArcO settings
         ULONG       ulArcFlags,               // ARCF_* flags (archives.h)
                     ulEveryDays;
 
@@ -94,6 +93,8 @@
      *   Archiving Enabling                                             *
      *                                                                  *
      ********************************************************************/
+
+    VOID arcForceNoArchiving(VOID);
 
     BOOL arcCheckIfBackupNeeded(HWND hwndNotify,
                                 ULONG ulMsg);

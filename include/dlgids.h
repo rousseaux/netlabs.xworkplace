@@ -155,7 +155,8 @@
 #define ID_POWER_BATTERY       171
 
 // icons used by tray widget
-#define ID_ICON_TRAY           180
+// #define ID_ICON_TRAY           180
+#define ID_BITMAP_TRAY         180          // replaced V0.9.16 (2001-10-28) [umoeller]
 
 /******************************************
  * generics                        < 100  *
@@ -300,6 +301,8 @@
 #define ID_XFDI_PANIC_CMD_TXT           415     // V0.9.16 (2001-10-08) [umoeller]
 #define ID_XFDI_PANIC_SHUTDOWN          416     // V0.9.16 (2001-10-08) [umoeller]
 #define ID_XFDI_PANIC_SHUTDOWN_TXT      417     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_DISABLEREPLREFRESH 418    // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_DISABLETURBOFOLDERS 419   // V0.9.16 (2001-10-25) [umoeller]
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
@@ -1192,7 +1195,8 @@
 #define ID_CRDI_VIEW_AUTOHIDE_TXT2      3613    // added V0.9.9 (2001-03-09) [umoeller]
 #define ID_CRDI_VIEW_AUTOHIDE_CLICK     3614    // added V0.9.14 (2001-08-21) [umoeller]
 
-#define ID_CRD_SETTINGS_VIEW2           3650
+// #define ID_CRD_SETTINGS_VIEW2           3650 // removed V0.9.16 (2001-10-24) [umoeller]
+#define ID_CRDI_VIEW2_3DBORDER_GROUP    3650
 #define ID_CRDI_VIEW2_3DBORDER_SLIDER   3651
 #define ID_CRDI_VIEW2_3DBORDER_TEXT     3652
 #define ID_CRDI_VIEW2_BDRSPACE_SLIDER   3653
@@ -1204,6 +1208,10 @@
 #define ID_CRDI_VIEW2_ALL3DBORDERS      3659
 #define ID_CRDI_VIEW2_SIZINGBARS        3660
 #define ID_CRDI_VIEW2_SPACINGLINES      3661
+#define ID_CRDI_VIEW2_BDRSPACE_GROUP    3662    // V0.9.16 (2001-10-24) [umoeller]
+#define ID_CRDI_VIEW2_WGTSPACE_GROUP    3663    // V0.9.16 (2001-10-24) [umoeller]
+#define ID_CRDI_VIEW2_DEFSTYLES_GROUP   3664    // V0.9.16 (2001-10-24) [umoeller]
+#define ID_CRDI_VIEW2_HATCHINUSE        3665    // V0.9.16 (2001-10-24) [umoeller]
 
 #define ID_CRD_WINLISTWGT_SETTINGS      3700
 #define ID_CRDI_FILTERS_CURRENTLB       3701
@@ -1941,6 +1949,7 @@
 #define ID_XCSI_ENABLEFOLDERHOTKEYS     6013
 #endif
 #define ID_XCSI_EXTFOLDERSORT           6014
+#define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #define ID_XCSI_ARCHIVING               6021

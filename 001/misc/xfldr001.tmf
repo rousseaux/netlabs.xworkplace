@@ -437,6 +437,13 @@ Do you wish to remove this widget from the &xcenter;'s widget list?
 
 <--XFL0187-->: The object title you have entered is invalid. Since every object must have a valid title, the old name has been restored.
 
+;
+; the following items are new with V0.9.16
+;
+
+<--XFL0223-->: The "Turbo folders" feature has been enabled. For safety reasons, this setting will not take effect until you restart the Desktop.
+<--XFL0224-->: The "Turbo folders" feature has been disabled. For safety reasons, this setting will not take effect until you restart the Desktop.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
@@ -698,6 +705,14 @@ See the &xwp; User Guide for details and the default hotkeys setup.
 Also, this introduces new sort criteria, such as "Sort by extension" or "Sort folders first".
 This was new with XFolder 0.70.
 See the &xwp; User Guide for details.
+;
+; FEATURES_6015 added with V0.9.16
+;
+<--FEATURES_6015-->: The "Turbo folders" feature replaces the internal storage of awake objects for all folders on the system.
+&xwp; implements high-speed algorithms to be able to find objects in folders much faster than the standard WPS.
+If you enable this setting, you will probably notice a speed increase when folders are first opened and thus need to be populated, especially with folders that contain many objects.
+Also, the background threads for the replacement auto-refresh will profit from this setting.
+This requires the XWPFileSystem replacement class to be installed. Changing this setting requires a WPS restart.
 
 <--FEATURES_6051-->: The "&xwp; Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
 Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.
@@ -886,5 +901,13 @@ This was added with &xwp; 0.9.4.
 <--XWPCLS_1271-->: "XWPFontFolder" implements a new folder containing all your fonts.
 "XWPFontObject" implements the "font objects" found in that folder and will automatically be installed with XWPFontFolder.
 "XWPFontFile" is a new subclass of WPDataFile and will also be automatically installed with XWPFontFolder. All files which are really font files will automatically turn into instances of this class.
+
+;
+; the following was added with V0.9.16
+;
+
+<--XWPCLS_1272-->: "XWPFileSystem" can replace the WPFileSystem class for speeding up some internal WPS functions, especially folder populating.
+This class must be installed for the "Turbo folders" setting to work.
+
 
 
