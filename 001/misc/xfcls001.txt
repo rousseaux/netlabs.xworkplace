@@ -201,16 +201,6 @@ WPDevSerial 0 (OS/2 V4) Class for serial ports residing in "Hardware Manager" in
 WPDevTape 0 (OS/2 V4) Class for tape devices residing in "Hardware Manager" in the "System Setup" folder.
 WPDevTimer 0 (OS/2 V4) Class for the timer device residing in "Hardware Manager" in the "System Setup" folder.
 
-WPStOfHTML5 1 (StarOffice/2 5.0) Document class for HTML files.
-WPStOfCalc5 1 (StarOffice/2 5.0) Document class for StarCalc spreadsheets.
-WPStOfChar5 1 (StarOffice/2 5.0) Document class for StarCalc charts.
-WPStOfDraw5 1 (StarOffice/2 5.0) Document class for StarDraw drawings.
-WPStOfGlob5 1 (StarOffice/2 5.0) Document class for StarWriter global documents.
-WPStOfImpr5 1 (StarOffice/2 5.0) Document class for StarImpress presentations.
-WPStOfMath5 1 (StarOffice/2 5.0) Document class for StarMath formulas.
-WPStOfWri5 1 (StarOffice/2 5.0) Document class for StarWriter texts.
-WPStOfExe5 1 (StarOffice/2 5.0) Program object class for starting StarOffice.
-
 // Items changed with V0.9.0
 
 WPObject 4 This is the most fundamental WPS class, from which all other WPS classes are derived. This class contains functionality common to all classes. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
@@ -297,41 +287,93 @@ SOMMTraced 0 Part of the SOM metaclass framework. See the SOM Programming Guide 
 CWProgFolder 1 This is the base class of the CD Creator package by Chris Wohlgemuth. It's needed by CWAudioFolder and CWDataFolder classes.
 CWAudioFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of Audio CDs.
 CWDataFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of Data CDs.
-TSCPad 1 This is part of the Object Desktop package by Stardock. It's the Control Center/Object Netscan.
-TSTabFolder 1 This is part of the Object Desktop package by Stardock. It's the Tab Launchpad.
-TSMasterSetup 1 This is part of the Object Desktop package by Stardock. It's the Master Setup.
-TSClassEdit 1 This is part of the Object Desktop package by Stardock. It's the Class Editor.
-TSInspect 1 This is part of the Object Desktop package by Stardock. It's the Object Inspector.
-TSPackageFile 1 This is part of the Object Desktop package by Stardock. It's the Object Package container class.
-TSPackageElem 1 This is part of the Object Desktop package by Stardock. It's the Object Package contained class.
-StarOfficeAgent 1 This is part of the StarOffice 5.1 package. Presumably it's needed by file association mechanism.
 WPTouch 1 Presumably this class is responsible for the touch screen configuration object. I don't have one, so I've never seen it.
 AcsAgent 1 This class is part of the UniMaint package.
 
 NewDisk 1 A class of WPDisk for handling drive locking and the cache which is used the NEWDASD package that adds support for removable drives.
 CDWriter 1 A subclass of WPDisk used by RSJ CD-Writer, presumably to implement the drive object for RSJ's IFS.
-TSKeyLaunch 1 Object Desktop 1.5 keyboard macro class, lets you start programs by certain key combinations
-TSTaskManager 1 Object Desktop 1.5 window list replacement
-TSArcMgr 1 Object Desktop 1.5 archive viewer ("object archives") parent class
-TSArcFileMgr: Object Desktop 1.5 archive viewer subclass for ARC archives
-TSLHAMgr 1 subclass for LHA archives
-TSRarMgr 1 subclass for RAR archives
-TSTarMgr 1 subclass for TAR/GZ archives
-TSZipMgr 1 subclass for ZIP archives
-TSZooMgr 1 subclass for ZOO archives
 PractiseImage 1 class to fix image association problem by Practise Co.
 PractiseBitmap 1 class to fix image association problem by Practise Co.
-TSCPad 1 Object Desktop 1.5 Control Center class
-TSTabFolder 1 Object Desktop 1.5 Tabbed Launchpad class
-TSMasterSetup 1 Object Desktop 1.5 General settings ("Master Setup") class
-TSEnhFolder 1 Object Desktop 1.5 Enhanced Folder class, adds status bars, configurable default icons, hyper drive etc.
-TSArcElem 1 Object Desktop 1.5 archive viewer parent class for transient elements, for populating archive views
-TSArcFileElem 1 subclass ARC archive objects
-TSLHAElem 1 subclass for LHA archive objects
-TSRarElem 1 subclass for RAR archive objects
-TSTarElem 1 subclass for TAR/GZ archive objects
-TSZipElem 1 subclass for Zip archive objects
-TSZooElem 1 subclass for ZOO archive objects
-TSKeyDfn 1 Object Desktop 1.5 Keyboard definition class
-TSPackageElem 1 Element of an Object Desktop 1.5 "Object Package", used to archive WPS objects including their settings
+
+// Items added or changed with V0.9.4
+
+XWPScreen 1 The new XWorkplace screen settings (object "Screen"). An object of this class has been placed in the "System setup" folder. There should only be one object of this class.
+
+// All Object Desktop classes (V0.9.4)
+TSArcElem 1 (Object Desktop) Archive viewer parent class for transient elements, for populating archive views
+TSArcMgr 1 (Object Desktop) Archive viewer parent class for "object archives"
+TSCPad 1 (Object Desktop) Control Center class
+TSClassEdit 1 (Object Desktop) Class Editor class
+TSEnhDataFile 1 (Object Desktop) Enhanced data file class, implements editor and viewers.
+TSEnhDrives 1 (Object Desktop) Object Navigator class.
+TSEnhFolder 1 (Object Desktop) Enhanced Folder class, adds status bars, configurable default icons, hyper drive etc.
+TSFldrParent 1 (Object Desktop) Class to implement the folder browse mode.
+TSInspect 1 (Object Desktop) Object Inspector class.
+TSKeyDefn 1 (Object Desktop) Keyboard definition class
+TSKeyLaunch 1 (Object Desktop) Keyboard macro class, lets you start programs by certain key combinations
+TSMasterSetup 1 (Object Desktop) General settings ("Master Setup") class
+TSPackageElem 1 (Object Desktop) Object Package element class.
+TSPackageFile 1 (Object Desktop) Object Package container class.
+TSPkgFolder 1 (Object Desktop) Package folder class.
+TSScript 1 (Object Desktop) Parent class for script objects (Find, Lockup, Shutdown).
+TSScriptFind 1 (Object Desktop) Find object subclass.
+TSScriptLockup 1 (Object Desktop) Lockup object subclass.
+TSScriptShutdown 1 (Object Desktop) Shutdown object subclass.
+TSTabFolder 1 (Object Desktop) Tabbed Launchpad class
+TSTaskMgr 1 (Object Desktop) Taskmanager (Window list replacement) class.
+TSTaskManager 1 (Object Desktop 1.x) Taskmanager (Window list replacement) class.
+TSKeyDfn 1 (Object Desktop 1.x) Keyboard definition class
+TSArcFileElem 1 (Object Desktop) Subclass for ARC archive objects
+TSArcFileMgr 1 (Object Desktop) Subclass for ARC archives
+TSTarElem 1 (Object Desktop) Subclass for TAR/GZ archive objects
+TSTarMgr 1 (Object Desktop) Subclass for TAR/GZ archives
+TSRarElem 1 (Object Desktop) Subclass for RAR archive objects
+TSRarMgr 1 (Object Desktop) Subclass for RAR archives
+TSLHAElem 1 (Object Desktop) Subclass for LHA archive objects
+TSLHAMgr 1 (Object Desktop) Subclass for LHA archives
+TSZipElem 1 (Object Desktop) Subclass for Zip archive objects
+TSZipMgr 1 (Object Desktop) Subclass for ZIP archives
+TSZooElem 1 (Object Desktop) Subclass for ZOO archive objects
+TSZooMgr 1 (Object Desktop) Subclass for ZOO archives
+
+// Other classes that come with Object Desktop (V0.9.4)
+BA2SchedFold 1 (BackAgain/2, Object Backup) Scheduler folder class.
+WPSecpgm 1 (Object Desktop) Secure program object class
+WPSecure 1 (Object Desktop) Secure folder object class
+WPSecs01 1 (Object Desktop) Secure shadow object class
+
+// StarOffice 5.0 classes (V0.9.4)
+WPStOfHTML5 1 (StarOffice 5.0) Document class for HTML files.
+WPStOfCalc5 1 (StarOffice 5.0) Document class for StarCalc spreadsheets.
+WPStOfChar5 1 (StarOffice 5.0) Document class for StarCalc charts.
+WPStOfDraw5 1 (StarOffice 5.0) Document class for StarDraw drawings.
+WPStOfGlob5 1 (StarOffice 5.0) Document class for StarWriter global documents.
+WPStOfImpr5 1 (StarOffice 5.0) Document class for StarImpress presentations.
+WPStOfMath5 1 (StarOffice 5.0) Document class for StarMath formulas.
+WPStOfWri5 1 (StarOffice 5.0) Document class for StarWriter texts.
+WPStOfExe5 1 (StarOffice 5.0) Program object class for starting StarOffice.
+
+// StarOffice 5.1 classes (V0.9.4)
+StarOfficeAgent 1 (StarOffice 5.1) Presumably it's needed by file association mechanism.
+StarCalcFile 1 (StarOffice 5.1) Document class for StarCalc spreadsheets.
+StarChartFile 1 (StarOffice 5.1) Document class for StarCalc charts.
+StarDrawFile 1 (StarOffice 5.1) Document class for StarDraw drawings.
+StarWriterGlobalFile 1 (StarOffice 5.1) Document class for StarWriter global documents.
+StarImpressFile 1 (StarOffice 5.1) Document class for StarImpress presentations.
+StarMathFile 1 (StarOffice 5.1) Document class for StarMath formulas.
+StarWriterFile 1 (StarOffice 5.1) Document class for StarWriter texts.
+
+// Lotus SmartSuite classes (V0.9.4)
+AmiProObject 1 (Lotus AmiPro) Program object for Lotus AmiPro
+Override123DocEx 1 (Lotus SmartSuite for Warp 4) 1-2-3 datafiles association mechanism
+OverrideApDocEx 1 (Lotus SmartSuite for Warp 4) Approach datafiles association mechanism
+OverrideFlDocEx 1 (Lotus SmartSuite for Warp 4) Freelance datafiles association mechanism
+OverrideOrDocEx 1 (Lotus SmartSuite for Warp 4) Organizer datafiles association mechanism
+WordProDocObj 1 (Lotus SmartSuite for Warp 4) WordPro datafiles association mechanism
+WPCDocument 1 (Lotus SmartSuite for Warp 4) Lotus document class.
+
+// Other classes (V0.9.4)
+LanStart 1 Startup folder class, that waits for a network login and opens the objects in the folder afterwards.
+NewPrinter 1 Enhanced WPPrinter class that has job suspend/release in main menu
+
 

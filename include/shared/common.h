@@ -1262,6 +1262,12 @@
                         PSZ pszMessage,
                         ULONG flStyle);
 
+    APIRET cmnGetMessageExt(PCHAR *pTable,
+                            ULONG ulTable,
+                            PSZ pszBuf,
+                            ULONG cbBuf,
+                            PSZ pszMsgID);
+
     APIRET cmnGetMessage(PCHAR *pTable,
                          ULONG ulTable,
                          PSZ pszBuf,

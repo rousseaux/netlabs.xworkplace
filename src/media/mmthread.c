@@ -176,7 +176,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
     switch (msg)
     {
         /*
-         * XMM_PLAYSYSTEMSOUND:
+         *@@ XMM_PLAYSYSTEMSOUND:
          *      plays system sound specified in MMPM.INI.
          *      This is posted by xthrPostMediaMsg.
          *      (USHORT)mp1 must be the MMPM.INI index (see
@@ -218,28 +218,29 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
         break; }
 
         /*
-         * XMM_PLAYSOUND:
+         *@@ XMM_PLAYSOUND:
          *      plays the sound file specified in
          *      (PSZ)mp1; this PSZ is assumed to have
          *      been allocated using malloc() and will
          *      be freed afterwards.
+         *
          *      (ULONG)mp2 must be the volume (0-100).
+         *
          *      This message is only posted by
-         *      QM_PLAYSYSTEMSOUND (above) if a system
+         *      XMM_PLAYSYSTEMSOUND (above) if a system
          *      sound was queried successfully.
-         *      To play sounds in the Media thread, we use
-         *      SOUND.DLL, which should have been loaded
-         *      at WPS startup. (See krnInitializeXWorkplace.
-         *      If not, we don't get this message in the
-         *      first place.)
+         *
          *      Playing sounds is a three-step process:
+         *
          *      1)  We call xmmOpenSound in SOUND.DLL first
          *          to open a waveform device for this sound
          *          file as a _shareable_ device and then
          *          stop for the moment.
+         *
          *      2)  If this device is accessible, MMPM/2 then
          *          posts us MM_MCIPASSDEVICE (below) so we can
          *          play the sound.
+         *
          *      3)  We close the device if we're either losing
          *          it (because another app needs it -- that's
          *          MM_MCIPASSDEVICE with MCI_LOSING_USE set)

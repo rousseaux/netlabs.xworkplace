@@ -183,7 +183,7 @@ $(OUTPUTDIR)\xsetup.obj: \
 
 $(OUTPUTDIR)\wpsh.obj: \
      $(INC)\setup.h \
-     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\winh.h \
+     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\winh.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 
 # build resources for XFLDR.DLL

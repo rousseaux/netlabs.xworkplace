@@ -668,6 +668,10 @@ screen-related pages from the old "System" object plus new XWorkplace screen set
 such as PageMage configuration.
 This was added with XWorkplace 0.9.2.
 
+;
+; the following was added with V0.9.3
+;
+
 <--XWPCLS_1268-->: "XWPString" is a handy class for invoking WPS setup strings on any object.
 By creating an object of this class and entering any setup string, you can later invoke that setup string on any object.
 This was added with XWorkplace 0.9.3.

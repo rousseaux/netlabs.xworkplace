@@ -28,6 +28,20 @@ file page:
 
 --  XShutdown creates 0-byte OS2.INI.
 
+--  parent object being deleted:
+    >The testing I did above has (I think) led me to the actual problem.
+    >When you open a submenu on the pop-up the object loses its marquee.
+    >If you then select delete it applies to the parent!  The reason it
+    >was so inconsistent was that I had sliding menu selection on.  This
+    >meant that depending on the path of the mouse pointer from the
+    >opening the menu to the delete option, submenus may or may not open.
+    >Turing off sliding selection improves matters but opening sub menus
+    >still cause this to happen.  The marquee is actually lost when moving
+    >from the submenu back to another parent menu item.  I've tried this
+    >quite a few times and I'm confident this is the problem (but I've
+    >been known to be wrong!)
+
+
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
@@ -53,7 +67,7 @@ status bars:
     -- hidden records are counted in total objects count (Templates folder)
 
 trash can:
-    -- open subfolders are not closed when deleting parent folder
+    -- delete Desktop from Tree view works... check for folders with NODELETE style!
     -- sorting doesn't work right
     -- Drives page: multiple selections are not all moved
 

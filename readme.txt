@@ -66,6 +66,8 @@ Last updated June 5, 2000, Ulrich M”ller
         CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/warpin
         USER=guest
 
+    Do a "cvs login" with "readonly" as your password.
+
     Then do a "cvs checkout".
 
     Alternatively, use the Netlabs Open Source Archive Client (NOSAC).

@@ -2670,45 +2670,37 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
 }
 
 /*
- *@@ cmnGetMessage:
- *      like DosGetMessage, but automatically uses the
- *      (NLS) XFolder message file.
- *      The parameters are exactly like with DosGetMessage.
+ *@@ cmnGetMessageExt:
+ *      retrieves a message string from the XWorkplace
+ *      TMF message file. The message is specified
+ *      using the TMF message ID string directly.
+ *      This gets called from cmnGetMessage.
  *
- *      <B>Returns:</B> the error code of tmfGetMessage.
- *
- *@@changed V0.9.0 [umoeller]: changed, this now uses the TMF file format (tmsgfile.c).
+ *@@added V0.9.4 (2000-06-17) [umoeller]
  */
 
-APIRET cmnGetMessage(PCHAR *pTable,     // in: replacement PSZ table or NULL
-                     ULONG ulTable,     // in: size of that table or 0
-                     PSZ pszBuf,        // out: buffer to hold message string
-                     ULONG cbBuf,       // in: size of pszBuf
-                     ULONG ulMsgNumber) // in: msg number to retrieve
+APIRET cmnGetMessageExt(PCHAR *pTable,     // in: replacement PSZ table or NULL
+                        ULONG ulTable,     // in: size of that table or 0
+                        PSZ pszBuf,        // out: buffer to hold message string
+                        ULONG cbBuf,       // in: size of pszBuf
+                        PSZ pszMsgID)      // in: msg ID to retrieve
 {
     APIRET  arc = NO_ERROR;
 
     TRY_LOUD(excpt1, NULL)
     {
         const char *pszMessageFile = cmnQueryMessageFile();
-        CHAR    szMessageName[40] = "error";
         ULONG   ulReturned;
-        /* arc = DosGetMessage(pTable, ulTable,
-                            pszBuf, cbBuf,
-                            ulMsgNumber, pszMessageFile, &ulReturned); */
-
-        // create string message identifier from ulMsgNumber
-        sprintf(szMessageName, "XFL%04d", ulMsgNumber);
 
         #ifdef DEBUG_LANGCODES
-            _Pmpf(("cmnGetMessage %s %s", pszMessageFile, szMessageName));
+            _Pmpf(("cmnGetMessage %s %s", pszMessageFile, pszMsgId));
         #endif
 
         arc = tmfGetMessage(pTable,
                             ulTable,
                             pszBuf,
                             cbBuf,
-                            szMessageName,      // string (!) message identifier
+                            pszMsgID,      // string (!) message identifier
                             (PSZ)pszMessageFile,     // .TMF file
                             &ulReturned);
 
@@ -2734,11 +2726,38 @@ APIRET cmnGetMessage(PCHAR *pTable,     // in: replacement PSZ table or NULL
         }
         else
             sprintf(pszBuf, "Message %s not found in %s",
-                            szMessageName, pszMessageFile);
+                            pszMsgID, pszMessageFile);
     }
     CATCH(excpt1) { } END_CATCH();
 
     return (arc);
+}
+
+/*
+ *@@ cmnGetMessage:
+ *      like DosGetMessage, but automatically uses the
+ *      (NLS) XFolder message file.
+ *      The parameters are exactly like with DosGetMessage.
+ *      The message code (ulMsgNumber) is automatically
+ *      converted to a TMF message ID.
+ *
+ *      <B>Returns:</B> the error code of tmfGetMessage.
+ *
+ *@@changed V0.9.0 [umoeller]: changed, this now uses the TMF file format (tmsgfile.c).
+ *@@changed V0.9.4 (2000-06-18) [umoeller]: extracted cmnGetMessageExt
+ */
+
+APIRET cmnGetMessage(PCHAR *pTable,     // in: replacement PSZ table or NULL
+                     ULONG ulTable,     // in: size of that table or 0
+                     PSZ pszBuf,        // out: buffer to hold message string
+                     ULONG cbBuf,       // in: size of pszBuf
+                     ULONG ulMsgNumber) // in: msg number to retrieve
+{
+    CHAR szMessageName[40];
+    // create string message identifier from ulMsgNumber
+    sprintf(szMessageName, "XFL%04d", ulMsgNumber);
+
+    return (cmnGetMessageExt(pTable, ulTable, pszBuf, cbBuf, szMessageName));
 }
 
 /*

@@ -752,13 +752,13 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *      This returns FALSE upon errors.
  *
  *@@added V0.9.1 (2000-02-03) [umoeller]
+ *@@changed V0.9.4 (2000-06-17) [umoeller]: now closing folder subviews properly
  */
 
 BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to create trash object
                             WPObject *pObject)      // in: object to delete
 {
     BOOL brc = FALSE;
-    XWPTrashCanData *somThis = XWPTrashCanGetData(pTrashCan);
 
     if (pObject)
     {
@@ -797,60 +797,62 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
                 if (pFolderInTrash)
                 {
                     // close all open views
-                    _wpClose(pObject);
-
-                    if (fopsMoveObjectConfirmed(pObject,
-                                                pFolderInTrash))
+                    if (wpshCloseAllViews(pObject))
                     {
-                        // successfully moved:
-
-                        // set original object's deletion data
-                        // to current date/time
-                        _xwpSetDeletion(pObject, TRUE);
-
-                        // return TRUE
-                        brc = TRUE;
-
-                        // if the trash can has been populated
-                        // already, add a matching trash object;
-                        // otherwise wpPopulate will do this
-                        // later
-                        if (_fAlreadyPopulated)
+                        if (fopsMoveObjectConfirmed(pObject,
+                                                    pFolderInTrash))
                         {
-                            SOMClass *pTrashObjectClass = _XWPTrashObject;
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("xwpDeleteIntoTrashCan: Trash can is populated: creating trash object"));
-                                _Pmpf(("  pTrashObjectClass: 0x%lX", pTrashObjectClass));
-                            #endif
-                            if (pTrashObjectClass)
+                            // successfully moved:
+                            XWPTrashCanData *somThis = XWPTrashCanGetData(pTrashCan);
+
+                            // set original object's deletion data
+                            // to current date/time
+                            _xwpSetDeletion(pObject, TRUE);
+
+                            // return TRUE
+                            brc = TRUE;
+
+                            // if the trash can has been populated
+                            // already, add a matching trash object;
+                            // otherwise wpPopulate will do this
+                            // later
+                            if (_fAlreadyPopulated)
                             {
-                                if (trshCreateTrashObject(pTrashObjectClass,
-                                                          pTrashCan,    // trash can
-                                                          pObject))
-                                    #ifdef DEBUG_TRASHCAN
-                                        _Pmpf(("xwpDeleteIntoTrashCan: Created trash object successfully"))
-                                    #endif
-                                    ;
+                                SOMClass *pTrashObjectClass = _XWPTrashObject;
+                                #ifdef DEBUG_TRASHCAN
+                                    _Pmpf(("xwpDeleteIntoTrashCan: Trash can is populated: creating trash object"));
+                                    _Pmpf(("  pTrashObjectClass: 0x%lX", pTrashObjectClass));
+                                #endif
+                                if (pTrashObjectClass)
+                                {
+                                    if (trshCreateTrashObject(pTrashObjectClass,
+                                                              pTrashCan,    // trash can
+                                                              pObject))
+                                        #ifdef DEBUG_TRASHCAN
+                                            _Pmpf(("xwpDeleteIntoTrashCan: Created trash object successfully"))
+                                        #endif
+                                        ;
+                                }
                             }
-                        }
-                        else
-                        {
-                            // not populated yet:
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("xwpDeleteIntoTrashCan: Trash can not populated, skipping trash object"));
-                            #endif
+                            else
+                            {
+                                // not populated yet:
+                                #ifdef DEBUG_TRASHCAN
+                                    _Pmpf(("xwpDeleteIntoTrashCan: Trash can not populated, skipping trash object"));
+                                #endif
 
-                            // just raise the number of trash items
-                            // and change the icon, wpPopulate will
-                            // later correct this number
-                            _ulTrashObjectCount++;
-                            _xwpSetCorrectTrashIcon(pTrashCan, FALSE);
-                        }
-                    } // end if (fopsMoveObject(pObject, ...
-                }
-            }
-        }
-    }
+                                // just raise the number of trash items
+                                // and change the icon, wpPopulate will
+                                // later correct this number
+                                _ulTrashObjectCount++;
+                                _xwpSetCorrectTrashIcon(pTrashCan, FALSE);
+                            }
+                        } // end if (fopsMoveObject(pObject, ...
+                    } // end if (wpshCloseAllViews(pObject))
+                } // end if (pFolderInTrash)
+            } // end if (_wpQueryFilename(pFolder, szFolder, TRUE))
+        } // end if (pFolder)
+    } // end if (pObject)
 
     return (brc);
 }

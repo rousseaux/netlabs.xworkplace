@@ -76,8 +76,9 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
-#include "helpers\winh.h"               // PM helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
 
@@ -1064,6 +1065,64 @@ WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
     }
 
     return (pObject2);
+}
+
+/*
+ *@@ wpshCloseAllViews:
+ *      closes all views of an object.
+ *
+ *      For non-folders, this behaves just like wpClose.
+ *      For folders however, this closes all views of
+ *      the folder itself plus any views of open subfolders
+ *      as well.
+ *
+ *      Returns FALSE on errors.
+ *
+ *@@added V0.9.4 (2000-06-17) [umoeller]
+ */
+
+BOOL wpshCloseAllViews(WPObject *pObject)
+{
+    BOOL brc = _wpClose(pObject);
+    if (brc)
+    {
+        if (_somIsA(pObject, _WPFolder))
+        {
+            // it's a folder:
+            PLINKLIST pllOpenFolders = lstCreate(FALSE);
+            if (pllOpenFolders)
+            {
+                WPFolder *pOpenFolder;
+                PLISTNODE pFolderNode = NULL;
+                for (pOpenFolder = _wpclsQueryOpenFolders(_WPFolder, NULL, QC_FIRST, FALSE); // no lock
+                     pOpenFolder;
+                     pOpenFolder = _wpclsQueryOpenFolders(_WPFolder, pOpenFolder, QC_NEXT, FALSE)) // no lock
+                {
+                    if (wpshResidesBelow(pOpenFolder, pObject))
+                        lstAppendItem(pllOpenFolders, pOpenFolder);
+                }
+
+                // OK, now we have a list of open folders:
+                pFolderNode = lstQueryFirstNode(pllOpenFolders);
+                while (pFolderNode)
+                {
+                    pOpenFolder = (WPFolder*)pFolderNode->pItemData;
+                    brc = _wpClose(pOpenFolder);
+                    if (!brc)
+                        // error:
+                        break;
+
+                    pFolderNode = pFolderNode->pNext;
+                }
+
+                lstFree(pllOpenFolders);
+            }
+            else
+                brc = FALSE;
+        }
+    }
+
+    return (brc);
 }
 
 /*

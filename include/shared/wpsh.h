@@ -77,6 +77,8 @@
     WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
                                         WPObject *pObject);
 
+    BOOL wpshCloseAllViews(WPObject *pObject);
+
     ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf);
 
     BOOL wpshCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fFullPath);

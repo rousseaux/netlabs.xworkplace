@@ -195,7 +195,10 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             CHAR            szVolumeLabel[20];
 
             // get thousands separator from "Country" object
-            CHAR            cThousands = prfhQueryProfileChar(HINI_USER, "PM_National", "sThousand", '.');
+            CHAR            cThousands = prfhQueryProfileChar(HINI_USER,
+                                                              "PM_National",
+                                                              "sThousand",
+                                                              '.');
 
             if (doshQueryDiskLabel(ulLogicalDrive, &szVolumeLabel[0])
                     == NO_ERROR)

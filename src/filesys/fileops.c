@@ -1472,6 +1472,7 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
  *
  *      If an error has been found and (pfnErrorCallback != NULL),
  *      that callback gets called and its return value is returned.
+ *      This means that pfnErrorCallback can fix the error.
  *      If the callback is NULL, some meaningfull error gets
  *      returned if the operation is invalid, but there's no chance
  *      to fix it.
@@ -1510,10 +1511,10 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
             else */
             if (!_wpIsDeleteable(pObject))
                 // this includes trash objects
-                if (_somIsA(pObject, _WPFileSystem))
-                    // this is recoverable, but prompt the user:
+                // if (_somIsA(pObject, _WPFileSystem))
+                    /* // this is recoverable, but prompt the user:
                     frc = FOPSERR_MOVE2TRASH_READONLY;
-                else
+                else */
                 {
                     // abort right away
                     frc = FOPSERR_MOVE2TRASH_NOT_DELETABLE;
@@ -1942,7 +1943,7 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
              *
              */
 
-            while (pNode)
+            while ((pNode) && (frc == NO_ERROR))
             {
                 WPObject    *pObjectThis = (WPObject*)pNode->pItemData;
 
@@ -1951,7 +1952,12 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                 #endif
 
                 // check if object is still valid
-                if (wpshCheckObject(pObjectThis))
+                if (!wpshCheckObject(pObjectThis))
+                {
+                    frc = FOPSERR_INVALID_OBJECT;
+                    break;
+                }
+                else
                 {
                     // call progress callback with this object
                     if (pftl->pfnProgressCallback)
@@ -1966,9 +1972,6 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                             break;
                     }
                 }
-                else
-                    // error:
-                    break;
 
                 #ifdef DEBUG_TRASHCAN
                     _Pmpf(("    processing %s", _wpQueryTitle(pObjectThis) ));
@@ -2042,17 +2045,22 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                     break;
                 }
 
-                if (frc != FOPSERR_OK)
-                {
-                    CHAR szMsg[1000];
-                    sprintf(szMsg,
-                            "Error %d with object %s",
-                            frc,
-                            _wpQueryTitle(pObjectThis));
-                    DebugBox(NULLHANDLE,
-                             "XWorkplace File thread",
-                             szMsg);
-                }
+                #ifdef __DEBUG__
+                    if (frc != FOPSERR_OK)
+                    {
+                        CHAR szMsg[3000];
+                        PSZ pszTitle = "?";
+                        if (wpshCheckObject(pObjectThis))
+                            pszTitle = _wpQueryTitle(pObjectThis);
+                        sprintf(szMsg,
+                                "Error %d with object %s",
+                                frc,
+                                pszTitle);
+                        DebugBox(NULLHANDLE,
+                                 "XWorkplace File thread",
+                                 szMsg);
+                    }
+                #endif
 
                 pNode = pNode->pNext;
                 ulCurrentObject++;
@@ -2188,7 +2196,7 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *      thread 1).
  *
  *      This thing displays a confirmation box only for errors
- *      which apply to a single trash object and are not recoverable.
+ *      which apply to a single trash object.
  *      For other errors, the error code is simply returned to the
  *      caller, which in turn passes the error code to its caller(s).
  *

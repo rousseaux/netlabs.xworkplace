@@ -1641,6 +1641,7 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
  *@@changed V0.9.3 (2000-04-30) [umoeller]: recalculating more data with every call
  *@@changed V0.9.3 (2000-04-30) [umoeller]: switched processing to screen coords to avoid mouse capturing
  *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
+ *@@changed V0.9.4 (2000-06-26) [umoeller]: changed error beep to debug mode only
  */
 
 BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE

@@ -10,6 +10,13 @@ everywhere:
 
 PageMage:
     -- add sticky windows config to "Screen"
+    -- When moving windows within the virtual desktop display,
+        >they should only be moved from a position in one desktop to
+        >the same position in another, except if the user presses e.g.
+        >CTRL while dragging - then exact positioning should occur
+    --  >- Fullscreen view of virtual desktops (click both
+        >mousebuttons -> VD window scales to fullscreen, click again,
+        >it scales back)
 
 folders:
     -- more than one config folder
