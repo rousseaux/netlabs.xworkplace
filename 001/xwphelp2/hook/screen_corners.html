@@ -1,0 +1,77 @@
+<HTML RESID=&ID_XSH_MOUSE_CORNERS;>
+<HEAD>
+    <TITLE>
+        Screen: Screen Borders Page
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.2 -->
+<!-- V0.9.4: replace all "screen corners" with "screen borders" -->
+<!-- V0.9.9: added PageMage special functions -->
+<!-- V0.9.9: added corner sensitivity setting -->
+<!-- V0.9.9: changed title -->
+<BODY>
+<!-- V0.9.9: changed the following paragraph -->
+The "Screen borders" page is inserted by &xwp; into the "Screen" properties notebook
+to allow for configuration of the screen-related features of the
+<!-- V0.9.13: added link -->
+<A HREF="glossary/gls_hook.html" TARGET="_top">&xwp; PM hook.</A>
+<!-- V0.9.13: removed this For an introduction to the features of the &xwp; PM hook,
+please refer to the &xwp;_User_Guide. -->
+
+<P>All settings on this page take effect immediately.
+
+<P>Press <B>"Undo"</B> to restore the settings that were in use before
+you opened this notebook page.
+
+<P>Press <B>"Default"</B> to restore the settings to the installation state.
+This will disable all features on this page.
+
+<P>The settings on this page affect the &xwp; "screen border objects" feature.
+<!-- V0.9.4: added the following -->
+This allows you to have a special action take place if the mouse is moved to one of
+the screen corners or borders.
+
+<P>In order to configure this feature, two steps are required:
+
+<OL><LI>First, click on one of the radio buttons in the <B>"Screen borders" group</B>
+to select the screen corner or border you wish to configure.
+
+<P><LI>Then, from the <B>"Action" group,</B> select the action which should
+occur when the mouse is moved to that border:
+
+<BR><UL><LI><B>"Inactive"</B> means that the screen border is disabled -- that is,
+nothing happens when the mouse is moved there. This is the default.
+
+<P><LI>By selecting <B>"Open object",</B> the white field below becomes active.
+Drag and drop any Desktop object into the white field to make it an active
+"screen border object" -- that is, if the mouse is moved to the screen corner or border you
+are currently configuring, that object will be opened in its default view, as if
+you had double-clicked upon it.
+
+<P><LI>By selecting <B>"Special function",</B> the drop-down box below becomes
+active. Select a special function from that box in order to have that function
+performed when the mouse is moved to the corner or border you are currently configuring.
+You can select to have either the window list or the Desktop's context menu displayed
+in the active screen corner or border.
+<!-- V 0.9.4: added the following -->
+In addition, you can have the PageMage window pop up if PageMage is enabled. This
+is especially useful if you are using the "Flash to top" feature of PageMage.
+<!-- V0.9.9: added the following -->
+Also, if you want a panning virtual desktop, you can associate the "One screen up",
+"One screen right", "One screen down", and "One screen left" functions to the
+respectives corners.
+
+<!-- V0.9.9: added the following -->
+</UL></OL>The <B>"Corner sensitivity"</B> setting allows to specify how much
+of the screen borders, counting from the "real" corners, are sensitive to the
+corner settings. If you specify 0%, then corners are disabled. If you specify
+50%, then borders are disabled.  This setting defaults to 30%.
+
+<P>For example, with the upper border and a screen resolution of 800x600,
+a corner sensitivity setting of 30% would mean that the first 240 pixels
+are assumed to be part of the upper <I>left corner,</I> the next 320 pixels the
+upper <I>border,</I> and the last 240 pixels the upper <I>right corner.</I>
+
+</BODY>
+</HTML>
+
