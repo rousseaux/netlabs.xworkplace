@@ -112,7 +112,7 @@
  *      The tree is sorted according to pszSourceRealName.
  *      While we need to do searches BOTH according to
  *      the name and the SOM folder pointer, I chose the
- *      the name as the sort key because string comparisons
+ *      name as the sort key because string comparisons
  *      are significantly slower than a simple pointer
  *      equality check.
  *
@@ -2877,7 +2877,7 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);

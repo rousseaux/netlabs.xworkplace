@@ -14,7 +14,7 @@
  *      a)  Register the classes with the WPS class list.
  *      b)  Create an object of this class manually.
  *
- *      After the next WPS restart, you'll see an additional
+ *      After the next Desktop restart, you'll see an additional
  *      "Debug" menu item in all object context menus, where
  *      you can enable debugging for this one object only.
  *      This requires that PMPRINTF be properly installed.

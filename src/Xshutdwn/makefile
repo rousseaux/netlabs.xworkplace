@@ -67,10 +67,10 @@ all: \
 !endif
 
 callmainmake:
-    @echo $(MAKEDIR)\makefile: Recursing to main makefile.
+    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
     @nmake
-    @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
+    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
 # "nmake dep" gets called from src\makefile if nmake dep
@@ -80,8 +80,8 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 # build targets
-xshutdwn.def: ..\..\include\bldlevel.h
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace external shutdown utility"
+xshutdwn.def: ..\..\include\bldlevel.h makefile
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) external shutdown utility"
 
 $(OUTPUTDIR)\xshutdwn.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

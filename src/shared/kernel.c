@@ -22,7 +22,7 @@
  *      some WPS methods to work, unfortunately), you can add a
  *      message to be processed in fnwpThread1Object.
  *
- *      If you need stuff to be executed upon WPS startup, you can
+ *      If you need stuff to be executed upon Desktop startup, you can
  *      insert a function into initMain.
  *
  *      All functions in this file have the "krn*" prefix (V0.9.0).
@@ -99,8 +99,10 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -158,7 +160,11 @@ static ULONG            G_PageMageConfigFlags = 0;
 
 // global structure with data needed across threads
 // (see kernel.h)
-KERNELGLOBALS    G_KernelGlobals = {0};
+KERNELGLOBALS           G_KernelGlobals = {0};
+
+// classes tree V0.9.16 (2001-09-29) [umoeller]
+// see krnClassInitialized
+TREE                    *G_ClassNamesTree;
 
 // anchor block of WPS thread 1 (queried in initMain);
 // this is exported thru kernel.h and never changed again
@@ -239,19 +245,22 @@ const char  *G_pcszReqFunction = NULL;
  *@@added V0.9.0 (99-11-14) [umoeller]
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype to trace locks
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: added classes tree init
  */
 
 BOOL krnLock(const char *pcszSourceFile,        // in: __FILE__
              ULONG ulLine,                      // in: __LINE__
              const char *pcszFunction)          // in: __FUNCTION__
 {
-    if (G_hmtxCommonLock == NULLHANDLE)
+    if (!G_hmtxCommonLock)
+    {
         // first call:
-        return (DosCreateMutexSem(NULL,         // unnamed
-                                  &G_hmtxCommonLock,
-                                  0,            // unshared
-                                  TRUE)         // request now
-                    == NO_ERROR);
+        treeInit(&G_ClassNamesTree);        // V0.9.16 (2001-09-29) [umoeller]
+        return (!DosCreateMutexSem(NULL,         // unnamed
+                                   &G_hmtxCommonLock,
+                                   0,            // unshared
+                                   TRUE));       // request now
+    }
 
     // subsequent calls:
     if (WinRequestMutexSem(G_hmtxCommonLock, 10*1000) == NO_ERROR)
@@ -323,6 +332,12 @@ ULONG krnQueryLock(VOID)
  *
  ********************************************************************/
 
+/*
+ *@@ krnQueryGlobals:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
 PCKERNELGLOBALS krnQueryGlobals(VOID)
 {
     return &G_KernelGlobals;
@@ -358,6 +373,81 @@ PKERNELGLOBALS krnLockGlobals(const char *pcszSourceFile,
 VOID krnUnlockGlobals(VOID)
 {
     krnUnlock();
+}
+
+/* ******************************************************************
+ *
+ *   Class maintanance
+ *
+ ********************************************************************/
+
+/*
+ *@@ krnClassInitialized:
+ *      registers the specified class name as
+ *      "initialized" with the kernel.
+ *
+ *      This mechanism replaces the BOOLs in
+ *      KERNELGLOBALS which had to be set to
+ *      TRUE by each class's wpclsInitData.
+ *      Instead, we now maintain a map of class
+ *      names.
+ *
+ *      pcszClassName must be the simple class
+ *      name, such as "XFldDataFile".
+ *
+ *      Returns TRUE only if the class name was
+ *      added, that is, if it was not already in
+ *      the list.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+BOOL krnClassInitialized(PCSZ pcszClassName)
+{
+    BOOL brc = FALSE;
+
+    if (krnLock(__FILE__, __LINE__, __FUNCTION__))
+            // krnLock initializes the tree now
+    {
+        TREE *pNew;
+
+        if (pNew = NEW(TREE))
+        {
+            pNew->ulKey = (ULONG)pcszClassName;
+            brc = !treeInsert(&G_ClassNamesTree,
+                              pNew,
+                              treeCompareStrings);
+        }
+
+        krnUnlock();
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ krnIsClassReady:
+ *      returns TRUE if the specified class was
+ *      registered with krnClassInitialized, i.e.
+ *      if the class is usable on the system.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+BOOL krnIsClassReady(PCSZ pcszClassName)
+{
+    BOOL brc = FALSE;
+
+    if (krnLock(__FILE__, __LINE__, __FUNCTION__))
+    {
+        brc = (NULL != treeFind(G_ClassNamesTree,
+                                (ULONG)pcszClassName,
+                                treeCompareStrings));
+
+        krnUnlock();
+    }
+
+    return (brc);
 }
 
 /* ******************************************************************
@@ -556,7 +646,7 @@ VOID krnMemoryError(const char *pcszMsg)
  *@@ krnEnableReplaceRefresh:
  *      enables or disables "replace auto-refresh folders".
  *      The setting does not take effect until after a
- *      WPS restart.
+ *      Desktop restart.
  *
  *@@added V0.9.9 (2001-01-31) [umoeller]
  */
@@ -609,7 +699,7 @@ BOOL krnReplaceRefreshEnabled(VOID)
  *      folder should be re-used at the next WPS
  *      startup.
  *
- *      This is only meaningful between WPS restarts,
+ *      This is only meaningful between Desktop restarts,
  *      because this flag does not get stored anywhere.
  *
  *@@added V0.9.0 [umoeller]
@@ -1125,7 +1215,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                     xstrset(&strMsg, (PSZ)mp1);
                     if (mp2)
                     {
-                        // restart WPS: Yes/No box
+                        // restart Desktop: Yes/No box
                         if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
                                           strMsg.psz,
                                           (PSZ)"XFolder: Exception caught",
@@ -1333,7 +1423,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              *      successfully created its object window.
              *      This can happen in two situations:
              *
-             *      -- during WPS startup, after initMain
+             *      -- during Desktop startup, after initMain
              *         has started the daemon;
              *      -- any time later, if the daemon has been restarted
              *         (shouldn't happen).
@@ -1521,7 +1611,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              *
              *      (ULONG)mp1 must be one of the following:
              *      --  ID_CRMI_LOGOFF: logoff.
-             *      --  ID_CRMI_RESTARTWPS: restart WPS.
+             *      --  ID_CRMI_RESTARTWPS: restart Desktop.
              *      --  ID_CRMI_SHUTDOWN: "real" shutdown.
              *
              *      These are the menu item IDs from the
@@ -1542,7 +1632,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_CRMI_RESTARTWPS:
-                        xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
+                        xsdInitiateRestartWPS(FALSE);   // restart Desktop, no logoff
                     break;
 
                     case ID_CRMI_SHUTDOWN:
@@ -1552,7 +1642,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
             break;
 
             /*
-             * T1M_OPENRUNDIALOG:
+             *@@ T1M_OPENRUNDIALOG:
              *      this gets posted from the XCenter thread
              *      to open the Run dialog.
              */
@@ -1637,7 +1727,7 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  *      process.
  *
  *      Like the thread-1 object window, this is created on
- *      WPS startup by initMain and runs on
+ *      Desktop startup by initMain and runs on
  *      thread-1 of the WPS always.
  *
  *@@added V0.9.9 (2001-03-23) [umoeller]
@@ -1691,7 +1781,19 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
             WinPostMsg(pfd->hwndNotify,
                        WM_USER,
                        0, 0);
-        break; }
+        }
+        break;
+
+        /*
+         *@@ APIM_NETSCDDEHELP:
+         *      displays the help for NetscapeDDE.
+         *
+         *@@added V0.9.16 (2001-10-02) [umoeller]
+         */
+
+        case APIM_NETSCDDEHELP:
+            cmnDisplayHelp(NULL, ID_XSH_NETSCAPEDDE);
+        break;
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);

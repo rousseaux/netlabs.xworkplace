@@ -72,7 +72,7 @@ LIBPATH,</B> or otherwise you'll spend days figuring out why XWorkplace is
 simply not working any more.
 (I had this once after a reinstall
 of OS/2, after which the DLLs where gone.) That is, XWorkplace classes
-will not load at WPS startup, because the PMPRINTF DLL imports cannot be
+will not load at Desktop startup, because the PMPRINTF DLL imports cannot be
 resolved. Neither will registering XWorkplace classes succeed. And don't
 expect to get an error message other than FALSE. <CODE>:-(</CODE>
 
@@ -85,7 +85,7 @@ After the rebuild, restart the WPS to make it use the newly
 built DLLs. To do this, simply set <CODE>XWP_UNLOCK_MODULES=YES</CODE>.
 
 <P><B>Note:</B> This environment variable has was with V0.9.3 because with
-Warp 4 FP13, unlocking WPS modules hung the WPS after the next WPS restart.
+Warp 4 FP13, unlocking WPS modules hung the WPS after the next Desktop restart.
 This problem has been fixed with FP15, so there is really no reason to not
 have this variable set to <CODE>YES</CODE> any more.
 
@@ -97,7 +97,7 @@ will never release the hook DLL again, so you'd have to
 reboot to use the new DLL.
 
 <P>Warning: If you don't restart the daemon before restarting the WPS, the XWorkplace
-startup folder will get processed again after the WPS restart.
+startup folder will get processed again after the Desktop restart.
 To start <CODE>XWPDAEMON.EXE</CODE> explicitly, give it the "-D" option, or it
 will tell you to leave it alone.
 

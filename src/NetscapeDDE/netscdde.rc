@@ -21,10 +21,13 @@ MENU    DDEC
 BEGIN
     SUBMENU         "~Commands",   IDM_MENU
     BEGIN
+        MENUITEM    "Run full sequence",       IDM_FULLSEQUENCE
+        MENUITEM "", 1, MIS_SEPARATOR
         MENUITEM    "~Initiate DDE",   IDM_INITIATE
         MENUITEM    "~Open URL in existing window",       IDM_OPENURL
         MENUITEM    "~Open URL in new window",       IDM_OPENURLNEW
         MENUITEM    "~Close DDE",      IDM_CLOSE
+        MENUITEM "", 1, MIS_SEPARATOR
         MENUITEM    "~Exit",       IDM_EXIT
     END
 END

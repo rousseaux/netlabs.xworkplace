@@ -125,7 +125,7 @@ $(OUTPUTDIR)\$(APPNAME).obj: \
     $(APPNAME).h
 
 # build targets
-$(APPNAME).def: ..\..\include\bldlevel.h
+$(APPNAME).def: ..\..\include\bldlevel.h makefile
           $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XML tester"
 
 $(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico

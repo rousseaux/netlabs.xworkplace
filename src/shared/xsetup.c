@@ -73,12 +73,13 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
-#include "helpers\tmsgfile.h"           // "text message file" handling
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -154,18 +155,30 @@ static FEATURESITEM G_FeatureItemsList[] =
         {
             // general features
             ID_XCSI_GENERALFEATURES, 0, 0, NULL,
+#ifndef __NOICONREPLACEMENTS__
             ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_FIXCLASSTITLES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
             ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifndef __ALWAYSREPLACEFILEPAGE__
             ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_XSYSTEMSOUNDS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             // folder features
             ID_XCSI_FOLDERFEATURES, 0, 0, NULL,
+#ifndef __NOCFGSTATUSBARS__
             ID_XCSI_ENABLESTATUSBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+#ifndef __NOSNAPTOGRID__
             ID_XCSI_ENABLESNAP2GRID, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
             ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             // mouse/keyboard features
@@ -229,7 +242,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
 #define OBJECTSIDLAST  230      // last object menu ID, inclusive
 
-// array of objects for "Standard WPS objects" menu button
+// array of objects for "Standard Desktop objects" menu button
 static STANDARDOBJECT
     G_WPSObjects[] =
     {
@@ -280,12 +293,14 @@ static STANDARDOBJECT
             &XFOLDER_SCREENID, &G_pcszXWPScreen, "<WP_CONFIG>",
                     "",
                     203, 0,
+#ifndef __XWPLITE__
             &XFOLDER_MEDIAID, &G_pcszXWPMedia, "<WP_CONFIG>",
                     "",
                     204, 0,
             &XFOLDER_CLASSLISTID, &G_pcszXWPClassList, "<WP_CONFIG>",
                     "",
                     202, 0,
+#endif
 
             &XFOLDER_CONFIGID, &G_pcszWPFolder, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
@@ -306,8 +321,7 @@ static STANDARDOBJECT
             &XFOLDER_STRINGTPLID, &G_pcszXWPString, "<XWP_MAINFLDR>", // V0.9.9
                     "TEMPLATE=YES;",
                     221, 0,
-
-            &XFOLDER_XCENTERID, &G_pcszXCenter, "<XWP_MAINFLDR>",
+            &XFOLDER_XCENTERID, &G_pcszXCenterReal, "<XWP_MAINFLDR>",
                     "",
                     230, 0
     };
@@ -467,64 +481,6 @@ VOID RegisterArray(HWND hwndDlg,
     }
 }
 
-/* DLGTEMPLATE ID_XCD_XWPINSTALLEDCLASSES LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Installed XWorkplace Classes", ID_XCD_XWPINSTALLEDCLASSES, 26,
-            12, 258, 216, , FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        GROUPBOX        "Class replacements", -1, 4, 130, 245, 85, NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "XFldObject (for all WPS objects)",
-                        ID_XCDI_XWPCLS_XFLDOBJECT, 10, 198, 170, 8,
-                        WS_DISABLED
-        AUTOCHECKBOX    "X~Folder (for all folders)", ID_XCDI_XWPCLS_XFOLDER,
-                        10, 190, 170, 8
-        AUTOCHECKBOX    "XFld~Disk (for disk objects)",
-                        ID_XCDI_XWPCLS_XFLDDISK, 20, 182, 170, 8
-        AUTOCHECKBOX    "XFldDes~ktop (Desktop)", ID_XCDI_XWPCLS_XFLDDESKTOP,
-                        10, 174, 170, 8
-        AUTOCHECKBOX    "XFldDa~taFile (all physical files)",
-                        ID_XCDI_XWPCLS_XFLDDATAFILE, 10, 166, 170, 8
-        AUTOCHECKBOX    "XFld~ProgramFile (executable files)",
-                        ID_XCDI_XWPCLS_XFLDPROGRAMFILE, 10, 158, 170, 8
-        AUTOCHECKBOX    "~XWPSound (enhanced ""Sound"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSOUND, 10, 150, 210, 8
-        AUTOCHECKBOX    "XWPMouse (e~nhanced ""Mouse"" settings object)",
-                        ID_XCDI_XWPCLS_XWPMOUSE, 10, 142, 210, 8
-        AUTOCHECKBOX    "XWPKey~board (enhanced ""Keyboard"" settings object"
-                        ")", ID_XCDI_XWPCLS_XWPKEYBOARD, 10, 134, 210, 8
-        GROUPBOX        "New classes", -1, 4, 20, 245, 108, NOT WS_GROUP
-        AUTOCHECKBOX    "XWPSetup (""XWorkplace Setup"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSETUP, 10, 112, 235, 8,
-                        WS_DISABLED
-        AUTOCHECKBOX    "XFldS~ystem (""OS/2 Kernel"" settings object)",
-                        ID_XCDI_XWPCLS_XFLDSYSTEM, 10, 104, 230, 8
-        AUTOCHECKBOX    "XFld~WPS (""Workplace Shell"" settings object)",
-                        ID_XCDI_XWPCLS_XFLDWPS, 10, 96, 230, 8
-        AUTOCHECKBOX    "XWPScr~een (""Screen"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSCREEN, 10, 88, 230, 8
-        AUTOCHECKBOX    "XWP~Media (Multimedia settings)",
-                        ID_XCDI_XWPCLS_XWPMEDIA, 10, 80, 230, 8
-        AUTOCHECKBOX    "XFldStart~up (new Startup folder)",
-                        ID_XCDI_XWPCLS_XFLDSTARTUP, 10, 72, 170, 8
-        AUTOCHECKBOX    "XFld~Shutdown (Shutdown folder)",
-                        ID_XCDI_XWPCLS_XFLDSHUTDOWN, 10, 64, 170, 8
-        AUTOCHECKBOX    "XWPClass~List (WPS Class List object)",
-                        ID_XCDI_XWPCLS_XWPCLASSLIST, 10, 56, 170, 8
-        AUTOCHECKBOX    "XWPT~rashCan/XWPTrashObject (trash can)",
-                        ID_XCDI_XWPCLS_XWPTRASHCAN, 10, 48, 235, 8
-        AUTOCHECKBOX    "XWPStr~ing (Setup-strings-as-object class)",
-                        ID_XCDI_XWPCLS_XWPSTRING, 10, 40, 230, 8
-        AUTOCHECKBOX    "XCenter (system control b~ar)",
-                        ID_XCDI_XWPCLS_XCENTER, 10, 32, 230, 8
-        AUTOCHECKBOX    "XWPFontFolder/XWPFontFile/XWPFontOb~ject (fonts)",
-                        ID_XCDI_XWPCLS_XWPFONTS, 10, 24, 230, 8
-        DEFPUSHBUTTON   "~OK...", DID_OK, 5, 4, 75, 12
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 90, 4, 75, 12
-        PUSHBUTTON      "~Help", DID_HELP, 175, 4, 75, 12, BS_HELP
-    END
-END */
-
 const char **G_RequirementsXFldStartupShutdown[] =
     {
         &G_pcszXFldDesktop,
@@ -610,9 +566,11 @@ static XWPCLASSITEM G_aClasses[] =
         &G_pcszXWPScreen, NULL,
             NULL, 0,
             1267,
+#ifndef __XWPLITE__
         &G_pcszXWPMedia, NULL,
             NULL, 0,
             1269,
+#endif
         &G_pcszXFldStartup, NULL,
             G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
             1263,
@@ -620,9 +578,11 @@ static XWPCLASSITEM G_aClasses[] =
             G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
             1264,
 
+#ifndef __XWPLITE__
         &G_pcszXWPClassList, NULL,
             NULL, 0,
             1265,
+#endif
         &G_pcszXWPTrashCan, NULL,
             G_RequirementsXWPTrashCan, ARRAYITEMCOUNT(G_RequirementsXWPTrashCan),
             1266,
@@ -632,7 +592,7 @@ static XWPCLASSITEM G_aClasses[] =
         &G_pcszXWPString, NULL,
             NULL, 0,
             1268,
-        &G_pcszXCenter, NULL,
+        &G_pcszXCenterReal, NULL,
             NULL, 0,
             1270,
         &G_pcszXWPFontFolder, NULL,
@@ -734,7 +694,6 @@ VOID HandleTooltip(HWND hwndDlg,
 {
     PXWPCLASSES     pxwpc = WinQueryWindowPtr(hwndDlg, QWL_USER);
     PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-    CHAR    szHelpString[3000] = "";
     ULONG   ulDlgID = WinQueryWindowUShort(pttt->hwndTool,
                                            QWS_ID);
     LONG lIndex = ulDlgID - ID_CLASSES_FIRST;
@@ -742,7 +701,11 @@ VOID HandleTooltip(HWND hwndDlg,
     APIRET  arc = 0;
 
     if (pxwpc->pszTooltipString)
+    {
+        // old string allocated:
         free(pxwpc->pszTooltipString);
+        pxwpc->pszTooltipString = NULL;
+    }
 
     if (    (lIndex >= 0)
          && (lIndex < ARRAYITEMCOUNT(G_aClasses))
@@ -752,37 +715,25 @@ VOID HandleTooltip(HWND hwndDlg,
         if (ulID = G_aClasses[lIndex].ulToolTipID)
         {
             CHAR    szMessageID[200];
-            const char *pszMessageFile = cmnQueryMessageFile();
+            XSTRING str;
+            xstrInit(&str, 0);
 
             sprintf(szMessageID,
                     "XWPCLS_%04d",
                     ulID);
-            arc = tmfGetMessageExt(NULL,                   // pTable
-                                   0,                      // cTable
-                                   szHelpString,           // pbBuffer
-                                   sizeof(szHelpString),   // cbBuffer
-                                   szMessageID,            // pszMessageName
-                                   (PSZ)pszMessageFile,         // pszFile
-                                   &ulWritten);
-            if (arc != NO_ERROR)
-            {
-                sprintf(szHelpString,
-                        "No help item found for \"%s\" in \"%s\". "
-                        "TOOLTIPTEXT.hdr.idFrom: 0x%lX ulID: 0x%lX tmfGetMessage rc: %d",
-                        szMessageID,
-                        pszMessageFile,
-                        pttt->hwndTool,
-                        ulID,
-                        arc);
-            }
-        }
-        else
-            strcpy(szHelpString, "No help available yet.");
-    }
-    else
-        sprintf(szHelpString, "Invalid index %d", lIndex);
+            cmnGetMessageExt(NULL,                   // pTable
+                             0,                      // cTable
+                             &str,
+                             szMessageID);           // pszMessageName
 
-    pxwpc->pszTooltipString = strdup(szHelpString);
+            pxwpc->pszTooltipString = str.psz;
+                    // do not free!
+        }
+    }
+
+    if (!pxwpc->pszTooltipString)
+        // error:
+        pxwpc->pszTooltipString = strdup("No help available yet.");
 
     pttt->ulFormat = TTFMT_PSZ;
     pttt->pszText = pxwpc->pszTooltipString;
@@ -866,28 +817,31 @@ BOOL HandleOKButton(HWND hwndDlg)
     {
         // OK, class selections have changed:
         XSTRING         strMessage;
-        CHAR            szTemp[1000];
+        XSTRING         strTemp;
 
         xstrInit(&strMessage, 100);
+        xstrInit(&strTemp, 0);
         // compose confirmation string
-        cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+        cmnGetMessage(NULL, 0,
+                      &strMessage,
                       142); // "You have made the following changes to the XWorkplace class setup:"
-        xstrcpy(&strMessage, szTemp, 0);
         xstrcatc(&strMessage, '\n');
         if (fReg)
         {
             xstrcat(&strMessage, "\n", 0);
-            cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+            cmnGetMessage(NULL, 0,
+                          &strTemp,
                           143); // "Register the following classes:"
-            xstrcat(&strMessage, szTemp, 0);
+            xstrcats(&strMessage, &strTemp);
             xstrcat(&strMessage, "\n\n", 0);
             xstrcats(&strMessage, &strReg);
             if (strReplace.ulLength)
             {
                 xstrcatc(&strMessage, '\n');
-                cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                cmnGetMessage(NULL, 0,
+                              &strTemp,
                               144); // "Replace the following classes:"
-                xstrcat(&strMessage, szTemp, 0);
+                xstrcats(&strMessage, &strTemp);
                 xstrcat(&strMessage, "\n\n", 0);
                 xstrcats(&strMessage, &strReplace);
             }
@@ -895,25 +849,28 @@ BOOL HandleOKButton(HWND hwndDlg)
         if (fDereg)
         {
             xstrcatc(&strMessage, '\n');
-            cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+            cmnGetMessage(NULL, 0,
+                          &strTemp,
                           145); // "Deregister the following classes:"
-            xstrcat(&strMessage, szTemp, 0);
+            xstrcats(&strMessage, &strTemp);
             xstrcat(&strMessage, "\n\n", 0);
             xstrcats(&strMessage, &strDereg);
             if (strUnreplace.ulLength)
             {
                 xstrcatc(&strMessage, '\n');
-                cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                cmnGetMessage(NULL, 0,
+                              &strTemp,
                               146); // "Undo the following class replacements:"
-                xstrcat(&strMessage, szTemp, 0);
+                xstrcats(&strMessage, &strTemp);
                 xstrcat(&strMessage, "\n\n", 0);
                 xstrcats(&strMessage, &strUnreplace);
             }
         }
         xstrcatc(&strMessage, '\n');
-        cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+        cmnGetMessage(NULL, 0,
+                      &strTemp,
                       147); // "Are you sure you want to do this?"
-        xstrcat(&strMessage, szTemp, 0);
+        xstrcats(&strMessage, &strTemp);
 
         // confirm class list changes
         if (cmnMessageBox(hwndDlg,
@@ -1070,7 +1027,7 @@ BOOL HandleOKButton(HWND hwndDlg)
             else
                 cmnMessageBoxMsg(hwndDlg,
                                  148, // "XWorkplace Setup",
-                                 150, // "restart WPS"
+                                 150, // "restart Desktop"
                                  MB_OK);
 
             xstrClear(&strFailing); // V0.9.14 (2001-07-31) [umoeller]
@@ -1080,6 +1037,7 @@ BOOL HandleOKButton(HWND hwndDlg)
             fDismiss = FALSE;
 
         xstrClear(&strMessage); // V0.9.14 (2001-07-31) [umoeller]
+        xstrClear(&strTemp);
 
     } // end if ((fReg) || (fDereg))
 
@@ -1826,25 +1784,37 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
+#ifndef __NOICONREPLACEMENTS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONS,
-                pGlobalSettings->fReplaceIcons);
+                cmnIsFeatureEnabled(IconReplacements));
+#endif
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
-                pGlobalSettings->fResizeSettingsPages);
+                cmnIsFeatureEnabled(ResizeSettingsPages));
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ADDOBJECTPAGE,
                 pGlobalSettings->AddObjectPage);
+#ifndef __ALWAYSREPLACEFILEPAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
-                pGlobalSettings->fReplaceFilePage);
+                cmnIsFeatureEnabled(ReplaceFilePage));
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 pGlobalSettings->fXSystemSounds);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FIXCLASSTITLES,
                 pGlobalSettings->fFixClassTitles);   // added V0.9.12 (2001-05-22) [umoeller]
 
+#ifndef __NOCFGSTATUSBARS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
-                pGlobalSettings->fEnableStatusBars);
+                cmnIsFeatureEnabled(StatusBars));
+#endif
+#ifndef __NOSNAPTOGRID__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESNAP2GRID,
-                pGlobalSettings->fEnableSnap2Grid);
+                cmnIsFeatureEnabled(Snap2Grid));
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLEFOLDERHOTKEYS,
-                pGlobalSettings->fEnableFolderHotkeys);
+                cmnIsFeatureEnabled(FolderHotkeys));
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 pGlobalSettings->ExtFolderSort);
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_MONITORCDROMS,
@@ -1893,18 +1863,31 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
+        BOOL        fXFolder = krnIsClassReady(G_pcszXFolder),
+                    fXFldDesktop = krnIsClassReady(G_pcszXFldDesktop),
+                    fXFldDataFile = krnIsClassReady(G_pcszXFldDataFile),
+                    fXFldDisk = krnIsClassReady(G_pcszXFldDisk);
+
+#ifndef __ALWAYSREPLACEFILEPAGE__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
-                (  (pKernelGlobals->fXFolder)
-                || (pKernelGlobals->fXFldDataFile)
+                (    (fXFolder)
+                  || (fXFldDataFile)
                 ));
+#endif
+#ifndef __NOCFGSTATUSBARS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
-                (pKernelGlobals->fXFolder));
+                (fXFolder));
+#endif
+#ifndef __NOSNAPTOGRID__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLESNAP2GRID,
-                (pKernelGlobals->fXFolder));
+                (fXFolder));
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLEFOLDERHOTKEYS,
-                (pKernelGlobals->fXFolder));
+                (fXFolder));
+#endif
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
-                (pKernelGlobals->fXFolder));
+                (fXFolder));
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
@@ -1914,21 +1897,21 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 hifXWPHookReady());
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
-                (   (pKernelGlobals->fXFolder)
-                 || (pKernelGlobals->fXFldDesktop)
+                (   (fXFolder)
+                 || (fXFldDesktop)
                 ));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_RESTARTWPS,
-                (pKernelGlobals->fXFldDesktop));
+                (fXFldDesktop));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
-                (pKernelGlobals->fXFldDesktop));
+                (fXFldDesktop));
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
-                (pKernelGlobals->fXFldDataFile));
+                (fXFldDataFile));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 !(pGlobalSettings->NoWorkerThread));
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
-                (pKernelGlobals->fXFldDisk));
+                (fXFldDisk));
 
     }
 }
@@ -1987,14 +1970,17 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         switch (precc->ulItemID)
         {
+#ifndef __NOICONREPLACEMENTS__
             case ID_XCSI_REPLACEICONS:
-                pGlobalSettings->fReplaceIcons = precc->usCheckState;
+                pGlobalSettings->__fIconReplacements = precc->usCheckState;
             break;
+#endif
 
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
             case ID_XCSI_RESIZESETTINGSPAGES:
-                pGlobalSettings->fResizeSettingsPages = precc->usCheckState;
+                pGlobalSettings->__fResizeSettingsPages = precc->usCheckState;
             break;
-
+#endif
             case ID_XCSI_ADDOBJECTPAGE:
                 pGlobalSettings->AddObjectPage = precc->usCheckState;
             break;
@@ -2017,9 +2003,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
             break;
 
+#ifndef __ALWAYSREPLACEFILEPAGE__
             case ID_XCSI_REPLACEFILEPAGE:
-                pGlobalSettings->fReplaceFilePage = precc->usCheckState;
+                pGlobalSettings->__fReplaceFilePage = precc->usCheckState;
             break;
+#endif
 
             case ID_XCSI_XSYSTEMSOUNDS:
                 pGlobalSettings->fXSystemSounds = precc->usCheckState;
@@ -2040,8 +2028,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->fAniMouse = precc->usCheckState;
             break;
 
+#ifndef __NOCFGSTATUSBARS__
             case ID_XCSI_ENABLESTATUSBARS:
-                pGlobalSettings->fEnableStatusBars = precc->usCheckState;
+                pGlobalSettings->__fEnableStatusBars = precc->usCheckState;
                 // update status bars for open folders
                 xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
                                   (MPARAM)1,
@@ -2050,20 +2039,25 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_XFOLDER_FLDR);
             break;
+#endif
 
+#ifndef __NOSNAPTOGRID__
             case ID_XCSI_ENABLESNAP2GRID:
-                pGlobalSettings->fEnableSnap2Grid = precc->usCheckState;
+                pGlobalSettings->__fEnableSnap2Grid = precc->usCheckState;
                 // update open settings notebooks
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_XFOLDER_FLDR);
             break;
+#endif
 
+#ifndef __ALWAYSFDRHOTKEYS__
             case ID_XCSI_ENABLEFOLDERHOTKEYS:
-                pGlobalSettings->fEnableFolderHotkeys = precc->usCheckState;
+                pGlobalSettings->__fEnableFolderHotkeys = precc->usCheckState;
                 // update open settings notebooks
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_XFOLDER_FLDR);
             break;
+#endif
 
             case ID_XCSI_EXTFOLDERSORT:
                 pGlobalSettings->ExtFolderSort = precc->usCheckState;
@@ -2174,15 +2168,23 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS) &pFeaturesData->GlobalSettings;
 
             // and restore the settings for this page
-            pGlobalSettings->fReplaceIcons = pGSBackup->fReplaceIcons;
-            pGlobalSettings->fResizeSettingsPages = pGSBackup->fResizeSettingsPages;
+#ifndef __NOICONREPLACEMENTS__
+            pGlobalSettings->__fIconReplacements = pGSBackup->__fIconReplacements;
+#endif
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+            pGlobalSettings->__fResizeSettingsPages = pGSBackup->__fResizeSettingsPages;
+#endif
             pGlobalSettings->AddObjectPage = pGSBackup->AddObjectPage;
-            pGlobalSettings->fReplaceFilePage = pGSBackup->fReplaceFilePage;
+#ifndef __ALWAYSREPLACEFILEPAGE__
+            pGlobalSettings->__fReplaceFilePage = pGSBackup->__fReplaceFilePage;
+#endif
             pGlobalSettings->fXSystemSounds = pGSBackup->fXSystemSounds;
 
-            pGlobalSettings->fEnableStatusBars = pGSBackup->fEnableStatusBars;
-            pGlobalSettings->fEnableSnap2Grid = pGSBackup->fEnableSnap2Grid;
-            pGlobalSettings->fEnableFolderHotkeys = pGSBackup->fEnableFolderHotkeys;
+#ifndef __NOCFGSTATUSBARS__
+            pGlobalSettings->__fEnableStatusBars = pGSBackup->__fEnableStatusBars;
+#endif
+            pGlobalSettings->__fEnableSnap2Grid = pGSBackup->__fEnableSnap2Grid;
+            pGlobalSettings->__fEnableFolderHotkeys = pGSBackup->__fEnableFolderHotkeys;
             pGlobalSettings->ExtFolderSort = pGSBackup->ExtFolderSort;
             // pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
 
@@ -2225,7 +2227,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
         {
             // set the default settings for this settings page
-            // (this is in common.c because it's also used at WPS startup)
+            // (this is in common.c because it's also used at Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             hifEnableHook(pGlobalSettings->fEnableXWPHook);
             hifEnableObjectHotkeys(0);
@@ -2381,38 +2383,24 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                             if (precc->ulStyle & WS_VISIBLE)
                             {
                                 CHAR        szMessageID[200];
-                                CHAR        szHelpString[3000] = "?";
-                                const char* pszMessageFile = cmnQueryMessageFile();
+                                XSTRING     str;
 
                                 ULONG       ulWritten = 0;
                                 APIRET      arc = 0;
 
+                                xstrInit(&str, 0);
+
                                 sprintf(szMessageID,
                                         "FEATURES_%04d",
                                         precc->ulItemID);
-                                arc = tmfGetMessageExt(NULL,                   // pTable
-                                                       0,                      // cTable
-                                                       szHelpString,           // pbBuffer
-                                                       sizeof(szHelpString),   // cbBuffer
-                                                       szMessageID,            // pszMessageName
-                                                       (PSZ)pszMessageFile,    // pszFile
-                                                       &ulWritten);
 
-                                if (arc != NO_ERROR)
-                                {
-                                    sprintf(szHelpString, "No help item found for \"%s\" "
-                                                          " in \"%s\". "
-                                                          "TOOLTIPTEXT.hdr.idFrom: 0x%lX "
-                                                          "ulID: 0x%lX "
-                                                          "tmfGetMessage rc: %d",
-                                                          szMessageID,
-                                                          pszMessageFile,
-                                                          pttt->hwndTool,
-                                                          precc->ulItemID,
-                                                          arc);
-                                }
+                                cmnGetMessageExt(NULL,                   // pTable
+                                                 0,                      // cTable
+                                                 &str,
+                                                 szMessageID);
 
-                                pcnbp->pUser2 = strdup(szHelpString);
+                                pcnbp->pUser2 = str.psz;
+                                        // freed later
 
                                 pttt->ulFormat = TTFMT_PSZ;
                                 pttt->pszText = pcnbp->pUser2;
@@ -2916,8 +2904,8 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      This gets called every two seconds to update
  *      variable data on the page.
  *
- *@@changed V0.9.1 (99-12-29) [umoeller]: added "WPS restarts" field
- *@@changed V0.9.4 (2000-07-03) [umoeller]: "WPS restarts" was 1 too large; fixed
+ *@@changed V0.9.1 (99-12-29) [umoeller]: added "Desktop restarts" field
+ *@@changed V0.9.4 (2000-07-03) [umoeller]: "Desktop restarts" was 1 too large; fixed
  */
 
 VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2930,7 +2918,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     CHAR            szTemp[200];
 
-    // awake WPS objects
+    // awake Desktop objects
 
     sprintf(szTemp, "%d", xthrQueryAwakeObjectsCount());
     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_AWAKEOBJECTS,
@@ -2958,7 +2946,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PSZ         psz = "Disabled";
         if (pXwpGlobalShared)
         {
-            // WPS restarts V0.9.1 (99-12-29) [umoeller]
+            // Desktop restarts V0.9.1 (99-12-29) [umoeller]
             WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,
                                pXwpGlobalShared->ulWPSStartupCount - 1,
                                FALSE);  // unsigned
@@ -2990,14 +2978,14 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace objects;
-                                                    // if TRUE, standard WPS objects
+                                                    // if TRUE, standard Desktop objects
 {
     PSTANDARDOBJECT pso2;
     ULONG ul, ulMax;
 
     if (fStandardObj)
     {
-        // WPS objects:
+        // Desktop objects:
         pso2 = G_WPSObjects;
         ulMax = sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT);
     }
@@ -3037,7 +3025,7 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
 BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                              USHORT usMenuID,        // in: selected menu item
                              BOOL fStandardObj)      // in: if FALSE, XWorkplace object;
-                                                     // if TRUE, standard WPS object
+                                                     // if TRUE, standard Desktop object
 {
     BOOL    brc = FALSE;
     ULONG   ul = 0;
@@ -3047,7 +3035,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
     if (fStandardObj)
     {
-        // WPS objects:
+        // Desktop objects:
         pso2 = G_WPSObjects;
         ulMax = sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT);
     }
@@ -3231,7 +3219,7 @@ VOID setObjectsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         // collect all existing objects
         setFindExistingObjects(FALSE);  // XWorkplace objects
-        setFindExistingObjects(TRUE);   // WPS objects
+        setFindExistingObjects(TRUE);   // Desktop objects
 
         ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_OBJECTS_SYSTEM),
                           0, 0);        // query for menu
@@ -3323,8 +3311,8 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (!setCreateStandardObject(pcnbp->hwndFrame,
                                              ulItemID,
                                              FALSE))
-                    // WPS objects not found:
-                    // try XWPS objects
+                    // Desktop objects not found:
+                    // try XDesktop objects
                     setCreateStandardObject(pcnbp->hwndFrame,
                                             ulItemID,
                                             TRUE);
@@ -3381,8 +3369,10 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                 pGlobalSettings->VarMenuOffset);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
                                                pGlobalSettings->fNoFreakyMenus);
+#ifndef __ALWAYSSUBCLASS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
-                                               pGlobalSettings->fNoSubclassing);
+                                               pGlobalSettings->__fNoSubclassing);
+#endif
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
                                                pGlobalSettings->NoWorkerThread);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
@@ -3438,11 +3428,13 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fNoFreakyMenus   = ulExtra;
         break;
 
+#ifndef __ALWAYSSUBCLASS__
         case ID_XCDI_NOSUBCLASSING:
-            pGlobalSettings->fNoSubclassing   = ulExtra;
+            pGlobalSettings->__fNoSubclassing   = ulExtra;
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break;
+#endif
 
         case ID_XCDI_NOWORKERTHREAD:
             pGlobalSettings->NoWorkerThread  = ulExtra;
@@ -3501,7 +3493,9 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // and restore the settings for this page
             pGlobalSettings->VarMenuOffset   = pGSBackup->VarMenuOffset;
             pGlobalSettings->fNoFreakyMenus   = pGSBackup->fNoFreakyMenus;
-            pGlobalSettings->fNoSubclassing   = pGSBackup->fNoSubclassing;
+#ifndef __ALWAYSSUBCLASS__
+            pGlobalSettings->__fNoSubclassing   = pGSBackup->__fNoSubclassing;
+#endif
             pGlobalSettings->NoWorkerThread  = pGSBackup->NoWorkerThread;
             pGlobalSettings->fUse8HelvFont   = pGSBackup->fUse8HelvFont;
             pGlobalSettings->fNoExcptBeeps    = pGSBackup->fNoExcptBeeps;
@@ -3520,7 +3514,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);

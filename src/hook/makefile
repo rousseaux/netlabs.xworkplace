@@ -83,10 +83,10 @@ all:   \
 !endif
 
 callmainmake:
-    @echo $(MAKEDIR)\makefile: Recursing to main makefile.
+    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
     @nmake
-    @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
+    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
 # "nmake dep" gets called from src\makefile if nmake dep
@@ -96,7 +96,7 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 .c.{$(OUTPUTDIR)}.obj:
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+    @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
     $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
@@ -120,10 +120,10 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !ifdef DYNAMIC_TRACE
-        @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
+        @echo $(MAKEDIR)\makefile [$@]: Creating TRACE files for $(@B).dll
         maptsf $(@B).map /MAJOR=253 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
         trcust $(@B).tsf /I /L=bin\$(@B).dll /node /M=$(@B).map
-        @echo $(MAKEDIR)\makefile: Done creating TRACE files for $(@B).dll
+        @echo $(MAKEDIR)\makefile [$@]: Done creating TRACE files for $(@B).dll
         cmd.exe /c copy $(@B).tdf $(XWPRUNNING)\bin
         cmd.exe /c del $(@B).tdf
         cmd.exe /c copy TRC00FD.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
@@ -131,11 +131,11 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 !endif
 
 # update DEF file if buildlevel has changed
-xwphook.def: $(PROJECT_BASE_DIR)\include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "XWorkplace PM hook module"
+xwphook.def: $(PROJECT_BASE_DIR)\include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "$(XWPNAME) PM hook module"
 
 $(MODULESDIR)\xwphook.dll: $(@B).def $(OBJS)
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ $(@B).def $(OBJS) $(PMPRINTF_LIB)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)

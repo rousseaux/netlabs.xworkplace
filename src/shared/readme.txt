@@ -5,7 +5,7 @@ been separated from the actual class code because
 it might be interesting for other developers too.
 
 This has the XWorkplace "Kernel" (kernel.c) which
-handles WPS startup and thread synchronization,
+handles Desktop startup and thread synchronization,
 common.c which deals with global settings, NLS, and
 such, notebook.c which has useful code for managing
 notebook settings pages, and more.

@@ -415,8 +415,6 @@ SOM_Scope ULONG  SOMLINK vol_wpAddObjectWindowPage(XMMVolume *somSelf,
  *      when the Settings view is opened to have all the
  *      settings page inserted into hwndNotebook.
  *
- *      We call XCenter::xwpAddXXenterPages to have the
- *      "XCenter" pages inserted on top.
  */
 
 SOM_Scope BOOL  SOMLINK vol_wpAddSettingsPages(XMMVolume *somSelf,
@@ -452,15 +450,7 @@ SOM_Scope void  SOMLINK volM_wpclsInitData(M_XMMVolume *somSelf)
 
     M_XMMVolume_parent_M_WPAbstract_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXMMVolume = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXMMVolume);
 }
 
 /*

@@ -118,7 +118,7 @@ BOOL pgmmMoveIt(HAB hab,
     HWND*   pahwndHacked = NULL;
     ULONG   chwndHacked = 0;
 
-    _Pmpf((__FUNCTION__": entering"));
+    // _Pmpf((__FUNCTION__": entering"));
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, FALSE);
@@ -264,7 +264,7 @@ BOOL pgmmMoveIt(HAB hab,
         } // end if (    (cbSwpnew)
           //          && (paswpNew = (PSWP)malloc(cbSwpNew)))
 
-        _Pmpf(("    Moving %d windows", cSwpNewUsed));
+        // _Pmpf(("    Moving %d windows", cSwpNewUsed));
 
         if (paswpNew)
         {
@@ -294,8 +294,8 @@ BOOL pgmmMoveIt(HAB hab,
                         #ifdef __DEBUG__
 
                         ULONG ul;
-                        _Pmpf(("WinSetMultWindowPos failed, error %lX!",
-                               WinGetLastError(hab)));
+                        // _Pmpf(("WinSetMultWindowPos failed, error %lX!",
+                           //     WinGetLastError(hab)));
 
                         // this gives us 0x81001, meaning:
                         // severity: 0x8 = error
@@ -331,14 +331,14 @@ BOOL pgmmMoveIt(HAB hab,
                                         pswpThis->cx,
                                         pswpThis->cy);
 
-                            _Pmpf(("  hwnd[%d] is 0x%lX (%s, %s) class \"%s\", client \"%s\"",
+                            /* _Pmpf(("  hwnd[%d] is 0x%lX (%s, %s) class \"%s\", client \"%s\"",
                                    ul,
                                    pswpThis->hwnd,
                                    WinIsWindow(hab, pswpThis->hwnd)
                                         ? "valid" : "!! invalid",
                                    szCoords,
                                    szClass,
-                                   szClient));
+                                   szClient)); */
                         }
 
                         #endif // V0.9.15 (2001-09-14) [umoeller]
@@ -372,7 +372,7 @@ BOOL pgmmMoveIt(HAB hab,
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, TRUE);
 
-    _Pmpf((__FUNCTION__": leaving"));
+    // _Pmpf((__FUNCTION__": leaving"));
 
     return (fAnythingMoved);
 }
@@ -413,7 +413,7 @@ BOOL pgmmZMoveIt(HAB hab,
     LONG        lNewPosX = G_ptlCurrPos.x - lXDelta;
     LONG        lNewPosY = G_ptlCurrPos.y + lYDelta;
 
-    _Pmpf((__FUNCTION__ ": 1) ldX = %d, ldY = %d", lXDelta, lYDelta));
+    // _Pmpf((__FUNCTION__ ": 1) ldX = %d, ldY = %d", lXDelta, lYDelta));
 
     // handle X delta
     if (lXDelta)
@@ -479,7 +479,7 @@ BOOL pgmmZMoveIt(HAB hab,
         }
     }
 
-    _Pmpf((__FUNCTION__ ": 1) ldX = %d, ldY = %d", lXDelta, lYDelta));
+    // _Pmpf((__FUNCTION__ ": 1) ldX = %d, ldY = %d", lXDelta, lYDelta));
 
     if (lXDelta || lYDelta)
     {
@@ -534,7 +534,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
         PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
-        _Pmpf((__FUNCTION__ ": msg %d", msg));
+        // _Pmpf((__FUNCTION__ ": msg %d", msg));
 
         switch (msg)
         {
@@ -555,7 +555,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 POINTL ptlMouse = {(LONG)mp1,
                                    (LONG)mp2};
 
-                _Pmpf(("  PGOM_CLICK2ACTIVATE/PGOM_CLICK2LOWER"));
+                // _Pmpf(("  PGOM_CLICK2ACTIVATE/PGOM_CLICK2LOWER"));
 
                 // calc new desktop if mb1 was clicked (always)
                 if (msg == PGOM_CLICK2ACTIVATE)
@@ -633,7 +633,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case PGOM_MOUSESWITCH:
-                _Pmpf(("  PGOM_MOUSESWITCH"));
+                // _Pmpf(("  PGOM_MOUSESWITCH"));
                 if (G_pHookData->fDisableMouseSwitch == FALSE)
                 {
                     // no mouse switch pending
@@ -660,7 +660,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case PGOM_HOOKKEY:
-                _Pmpf(("  PGOM_HOOKKEY"));
+                // _Pmpf(("  PGOM_HOOKKEY"));
                 switch ((ULONG)mp1)
                 {
                     case 0x63:                              // left
@@ -690,7 +690,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case PGOM_FOCUSCHANGE:
-                _Pmpf(("  PGOM_FOCUSCHANGE"));
+                // _Pmpf(("  PGOM_FOCUSCHANGE"));
                 if (!G_pHookData->fDisableMouseSwitch)
                 {
                     // we only do this if we are not currently processing
@@ -775,14 +775,14 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              || (lDeltaY)
            )
         {
-            _Pmpf(("  ldX = %d, ldY = %d", lDeltaX, lDeltaY));
+            // _Pmpf(("  ldX = %d, ldY = %d", lDeltaX, lDeltaY));
             if (    (!G_pHookData->fDisableMouseSwitch)
                  || (    (msg == PGOM_HOOKKEY)
                       && (mp2 == (MPARAM)TRUE)
                     )
                )
             {
-                _Pmpf(("  calling pgmmZMoveIt"));
+                // _Pmpf(("  calling pgmmZMoveIt"));
                 // we got something to move:
                 // move windows around to switch Desktops
                 if (pgmmZMoveIt(WinQueryAnchorBlock(hwndObject),

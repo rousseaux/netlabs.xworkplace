@@ -77,11 +77,10 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-// #include "helpers\comctl.h"             // common controls (window procs)
-#include "helpers\winh.h"               // PM helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
-#include "helpers\tmsgfile.h"           // "text message file" handling
+#include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xwpsetup.ih"
@@ -137,6 +136,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_xwpAddXWPSetupPages");
 
+#ifndef __XWPLITE__
     // insert "Paranoia" page
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -201,6 +201,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->ulTimer = 1000;
     pcnbp->pfncbTimer       = setStatusTimer;
     ntbInsertPage(pcnbp);
+#endif
 
     // insert "XWorkplace Features" page
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -218,6 +219,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->pfncbInitPage    = setFeaturesInitPage;
     pcnbp->pfncbItemChanged = setFeaturesItemChanged;
     pcnbp->pfncbMessage = setFeaturesMessages;
+#ifndef __XWPLITE__
     ntbInsertPage(pcnbp);
 
     // insert logo page  V0.9.6 (2000-11-04) [umoeller]
@@ -232,6 +234,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->ulPageID = SP_SETUP_XWPLOGO;
     pcnbp->pfncbInitPage    = setLogoInitPage;
     pcnbp->pfncbMessage = setLogoMessages;
+#endif
 
     return (ntbInsertPage(pcnbp));
 }
@@ -367,15 +370,7 @@ SOM_Scope void  SOMLINK xwsetM_wpclsInitData(M_XWPSetup *somSelf)
 
     M_XWPSetup_parent_M_WPAbstract_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPSetup = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPSetup);
 }
 
 /*

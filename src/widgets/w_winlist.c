@@ -1121,11 +1121,11 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                      PLINKLIST pllDirty)
 {
     ULONG       flReturn = 0;
-    PSWBLOCK    pswBlock = pwinhQuerySwitchList(pPrivate->pWidget->habWidget);
+    PSWBLOCK    pswBlock;
 
     PLINKLIST   pllFilters = &pPrivate->Setup.llFilters;
 
-    if (pswBlock)
+    if (pswBlock = pwinhQuerySwitchList(pPrivate->pWidget->habWidget))
     {
         // loop 1: go thru all items in the "show" list
         // and see if they are still in the switch list.

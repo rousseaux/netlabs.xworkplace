@@ -129,6 +129,142 @@ static LINKLIST    G_llRunning;
  ********************************************************************/
 
 /*
+ *@@ fsysQueryProgramSetup:
+ *      called to retrieve a setup string for programs.
+ *
+ *      Both XWPProgram and XFldProgramFile call
+ *      fsysQueryProgramFileSetup, which calls this
+ *      func in turn.
+ *
+ *@@added V0.9.4 (2000-08-02) [umoeller]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: added a few more strings
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: moved this here from filesys.c
+ */
+
+BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
+                    PVOID pstrSetup)   // in: string to append to (xstrcat)
+{
+    PSZ pszValue = NULL;
+    // ULONG ulSize = 0;
+    PPROGDETAILS    pDetails = NULL;
+
+    // wpQueryProgDetails:
+    // this works for both WPProgram and WPProgramFile; even though the two
+    // methods are differently implemented, they both call the same implementation
+    // in the WPS, so this is safe (famous last words)
+    if ((pDetails = progQueryDetails(somSelf)))
+    {
+        // EXENAME: skip for WPProgramFile
+        if (!_somIsA(somSelf, _WPProgramFile))
+        {
+            if (pDetails->pszExecutable)
+            {
+                PCSZ pcszProgString;
+
+                xstrcat(pstrSetup, "EXENAME=", 0);
+                xstrcat(pstrSetup, pDetails->pszExecutable, 0);
+                xstrcatc(pstrSetup, ';');
+
+                // add PROGTYPE=, unless this is PROG_DEFAULT
+                // (moved code to helpers V0.9.16 (2001-10-06))
+                if (pDetails->progt.progc != PROG_DEFAULT)
+                    if (pcszProgString = appDescribeAppType(pDetails->progt.progc))
+                    {
+                        xstrcat(pstrSetup, "PROGTYPE=", 0);
+                        xstrcat(pstrSetup, pcszProgString, 0);
+                        xstrcatc(pstrSetup, ';');
+                    }
+            }
+        } // end if (_somIsA(somSelf, _WPProgram)
+
+        // PARAMETERS=
+        if (pDetails->pszParameters)
+            if (strlen(pDetails->pszParameters))
+            {
+                xstrcat(pstrSetup, "PARAMETERS=", 0);
+                xstrcat(pstrSetup, pDetails->pszParameters, 0);
+                xstrcatc(pstrSetup, ';');
+            }
+
+        // STARTUPDIR=
+        if (pDetails->pszStartupDir)
+            if (strlen(pDetails->pszStartupDir))
+            {
+                xstrcat(pstrSetup, "STARTUPDIR=", 0);
+                xstrcat(pstrSetup, pDetails->pszStartupDir, 0);
+                xstrcatc(pstrSetup, ';');
+            }
+
+        // SET XXX=VVV
+        if (pDetails->pszEnvironment)
+        {
+            // this is one of those typical OS/2 environment
+            // arrays, so lets parse this
+            DOSENVIRONMENT Env = {0};
+            if (appParseEnvironment(pDetails->pszEnvironment,
+                                    &Env)
+                    == NO_ERROR)
+            {
+                if (Env.papszVars)
+                {
+                    // got the strings: parse them
+                    ULONG ul = 0;
+                    PSZ *ppszThis = Env.papszVars;
+                    for (ul = 0;
+                         ul < Env.cVars;
+                         ul++)
+                    {
+                        PSZ pszThis = *ppszThis;
+
+                        xstrcat(pstrSetup, "SET ", 0);
+                        xstrcat(pstrSetup, pszThis, 0);
+                        xstrcatc(pstrSetup, ';');
+
+                        // next environment string
+                        ppszThis++;
+                    }
+                }
+                appFreeEnvironment(&Env);
+            }
+        }
+
+        // following added V0.9.9 (2001-04-03) [umoeller]
+        if (pDetails->swpInitial.fl & SWP_MAXIMIZE)
+            xstrcat(pstrSetup, "MAXIMIZED=YES;", 0);
+        else if (pDetails->swpInitial.fl & SWP_MINIMIZE)
+            xstrcat(pstrSetup, "MINIMIZED=YES;", 0);
+
+        if (pDetails->swpInitial.fl & SWP_NOAUTOCLOSE)
+            xstrcat(pstrSetup, "NOAUTOCLOSE=YES;", 0);
+
+        free(pDetails);
+
+    } // end if _wpQueryProgDetails
+
+    // ASSOCFILTER
+    if ((pszValue = _wpQueryAssociationFilter(somSelf)))
+            // wpQueryAssociationFilter:
+            // supported by both WPProgram and WPProgramFile
+    {
+        xstrcat(pstrSetup, "ASSOCFILTER=", 0);
+        xstrcat(pstrSetup, pszValue, 0);
+        xstrcatc(pstrSetup, ';');
+    }
+
+    // ASSOCTYPE
+    if ((pszValue = _wpQueryAssociationType(somSelf)))
+            // wpQueryAssociationType:
+            // supported by both WPProgram and WPProgramFile
+    {
+        xstrcat(pstrSetup, "ASSOCTYPE=", 0);
+        xstrcat(pstrSetup, pszValue, 0);
+        xstrcatc(pstrSetup, ';');
+    }
+
+    return TRUE;
+}
+
+/*
  *@@ progQueryDetails:
  *      returns the PROGDETAILS of the specified
  *      object or NULL on errors.

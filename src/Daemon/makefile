@@ -103,10 +103,10 @@ all:   \
 !endif
 
 callmainmake:
-    @echo $(MAKEDIR)\makefile: Recursing to main makefile.
+    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
     @nmake
-    @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
+    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
 # "nmake dep" gets called from src\makefile if nmake dep
@@ -116,7 +116,7 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 .c.{$(OUTPUTDIR)}.obj:
-    @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+    @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
     $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
@@ -143,15 +143,15 @@ $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
-xwpdaemn.def: $(PROJECT_BASE_DIR)\include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "XWorkplace PM daemon"
+xwpdaemn.def: $(PROJECT_BASE_DIR)\include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "$(XWPNAME) PM daemon"
 
 # create import library from XWPHOOK.DLL
 $(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll
         implib /nologo $(XWP_OUTPUT_ROOT)\$(@B).lib $(MODULESDIR)\$(@B).dll
 
 $(MODULESDIR)\xwpdaemn.exe: $(@B).def $(LINKOBJS) $(OUTPUTDIR)\$(@B).res makefile
-        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
+        @echo $(MAKEDIR)\makefile [$@]: Linking $(MODULESDIR)\$(@B).exe
         $(LINK) @<<
 /OUT:$(MODULESDIR)\$(@B).exe $(@B).def $(LINKOBJS)
 <<

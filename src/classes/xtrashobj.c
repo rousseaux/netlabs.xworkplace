@@ -104,6 +104,7 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
 
@@ -303,7 +304,7 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
     // "calculating..." so far; we cannot just use the
     // ULONG in the details field, because we had a
     // string previously
-    strhThousandsULong(_szTotalSize,
+    nlsThousandsULong(_szTotalSize,
                        _ulTotalSize,
                        cmnQueryThousandsSeparator());
 
@@ -916,15 +917,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
 
     M_XWPTrashObject_parent_M_WPTransient_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPTrashObject = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPTrashObject);
 
     // initialize the extra data file details
     // in the global variable at the top of this file

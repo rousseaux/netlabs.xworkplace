@@ -135,7 +135,6 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
-#include "helpers\tmsgfile.h"           // "text message file" handling
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -2514,8 +2513,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     {
                         PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
                         CHAR    szMessageID[200];
-                        CHAR    szHelpString[3000];
-                        const char* pszMessageFile = cmnQueryMessageFile();
+                        XSTRING strHelpString;
 
                         // get control ID; we need that for the TMF msg ID
                         ULONG   ulID = WinQueryWindowUShort(pttt->hwndTool,
@@ -2530,26 +2528,11 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         sprintf(szMessageID,
                                 "S506DLG_%04d",
                                 ulID);
-                        if (arc = tmfGetMessageExt(NULL,                   // pTable
-                                                   0,                      // cTable
-                                                   szHelpString,           // pbBuffer
-                                                   sizeof(szHelpString),   // cbBuffer
-                                                   szMessageID,            // pszMessageName
-                                                   (PSZ)pszMessageFile,         // pszFile
-                                                   &ulWritten)
-                            != NO_ERROR)
-                        {
-                            sprintf(szHelpString, "No help item found for \"%s\" "
-                                                  " in \"%s\". "
-                                                  "TOOLTIPTEXT.hdr.idFrom: 0x%lX "
-                                                  "ulID: 0x%lX "
-                                                  "tmfGetMessage rc: %d",
-                                                  szMessageID,
-                                                  pszMessageFile,
-                                                  pttt->hwndTool,
-                                                  ulID,
-                                                  arc);
-                        }
+                        xstrInit(&strHelpString, 0);
+                        cmnGetMessageExt(NULL,                   // pTable
+                                         0,                      // cTable
+                                         &strHelpString,
+                                         szMessageID);
 
                         // put dlg item text before that string
                         xstrset(&pS506All->strTooltipString,
@@ -2564,10 +2547,12 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                                 // last char is already ":"
                                 xstrcat(&pS506All->strTooltipString, "\n", 0);
                         }
-                        xstrcat(&pS506All->strTooltipString, szHelpString, 0);
+                        xstrcats(&pS506All->strTooltipString, &strHelpString);
 
                         pttt->ulFormat = TTFMT_PSZ;
                         pttt->pszText = pS506All->strTooltipString.psz;
+
+                        xstrClear(&strHelpString);
                     }
                 break;
 

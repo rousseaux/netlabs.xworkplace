@@ -785,7 +785,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                            fInsertThis = FALSE;
                     }
 
-                    // exclude hidden WPS objects
+                    // exclude hidden Desktop objects
                     if (_wpQueryStyle(pObject2) & OBJSTYLE_NOTVISIBLE)
                         fInsertThis = FALSE;
 
@@ -855,7 +855,11 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                                             hwndMenu,
                                             pmli->szItemString,
                                             MIT_END,
-                                            pGlobalSettings->FCShowIcons);
+#ifndef __NOFOLDERCONTENTS__
+                                            cmnIsFeatureEnabled(FolderContentShowIcons));
+#else
+                                            TRUE);
+#endif
                                                      // OwnerDraw flag
 
         // next folder
@@ -878,9 +882,13 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         sItemId = cmnuInsertOneObjectMenuItem(hwndMenu,
                                               MIT_END,
                                               pmli->szItemString,
-                                              ((pGlobalSettings->FCShowIcons)
+#ifndef __NOFOLDERCONTENTS__
+                                              (cmnIsFeatureEnabled(FolderContentShowIcons))
                                                  ? MIS_OWNERDRAW
-                                                 : MIS_TEXT),
+                                                 : MIS_TEXT,
+#else
+                                              MIS_OWNERDRAW,
+#endif
                                               pmli->pObject,
                                               OC_CONTENT);
         if (sItemId)

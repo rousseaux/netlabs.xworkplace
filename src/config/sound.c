@@ -929,13 +929,11 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
                 {
                     // pKey2 has the current key now
                     ULONG   cbData = 0;
-                    PSZ     pszSoundData = prfhQueryProfileData(hiniMMPM,
-                                                                MMINIKEY_SYSSOUNDS,
-                                                                pKey2,
-                                                                &cbData);
-                    // _Pmpf(("Loaded sound %s", pKey2));
-
-                    if (pszSoundData)
+                    PSZ     pszSoundData;
+                    if (pszSoundData = prfhQueryProfileData(hiniMMPM,
+                                                            MMINIKEY_SYSSOUNDS,
+                                                            pKey2,
+                                                            &cbData))
                     {
                         CHAR    szDescription[200];
 
@@ -962,6 +960,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
                                        (MPARAM)sIndex,
                                        (MPARAM)ulSoundIndex);
                         }
+
                         free(pszSoundData);
                     }
 
@@ -1271,11 +1270,10 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
                 sprintf(szSoundIndex, "%d", pspd->ulSoundIndex);
 
-                pszSoundData = prfhQueryProfileData(hiniMMPM,
-                                                    MMINIKEY_SYSSOUNDS,
-                                                    szSoundIndex,
-                                                    &cbData);
-                if (pszSoundData)
+                if (pszSoundData = prfhQueryProfileData(hiniMMPM,
+                                                        MMINIKEY_SYSSOUNDS,
+                                                        szSoundIndex,
+                                                        &cbData))
                 {
                     if (sndParseSoundData(pszSoundData,
                             pspd->szDescription,       // we don't need the description

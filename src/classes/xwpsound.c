@@ -238,15 +238,7 @@ SOM_Scope void  SOMLINK xsndM_wpclsInitData(M_XWPSound *somSelf)
 
     M_XWPSound_parent_M_WPSound_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPSound = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPSound);
 }
 
 

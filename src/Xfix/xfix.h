@@ -22,10 +22,17 @@
  *                                                                  *
  ********************************************************************/
 
+#define IDM_OBJIDS              50
+
 #define IDM_XFIX                100
 #define IDMI_RESCAN             101
 #define IDMI_WRITETOINI         102
-#define IDMI_EXIT               103
+#define IDMI_CLOSETHIS          103
+#define IDMI_EXIT               104
+
+#define IDM_VIEW                130
+#define IDMI_VIEW_OBJIDS        131
+#define IDMI_VIEW_ABSTRACTS     132
 
 #define IDM_SORT                150
 #define IDMI_SORT_INDEX         151
@@ -38,6 +45,8 @@
 #define IDMI_SORT_DUPS          158
 #define IDMI_SORT_REFCS         159
 #define IDMI_SORT_LONGNAME      160
+
+#define IDMI_SORT_ID            170
 
 #define IDM_ACTIONS             200
 #define IDMI_ACTIONS_INTEGRITY  201
@@ -55,8 +64,9 @@
 #define IDM_RECORDSELMULTI      800
 #define IDM_RECORDSELSINGLE     801
 #define IDMI_NUKEFOLDERPOS      802
-#define IDMI_DELETE             803
-#define IDMI_MOVEABSTRACTS      804
+#define IDMI_NUKEOBJID          803
+#define IDMI_DELETE             804
+#define IDMI_MOVEABSTRACTS      805
 
 
 

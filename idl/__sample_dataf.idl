@@ -106,7 +106,7 @@ interface SampleDataFile : WPDataFile   //# &&& SampleDataFile is a WPDataFile s
      *         the variable, and update open views of the object.
      *
      *      -- If the value of the variable is to be persistent
-     *         between WPS restarts, wpSaveState and wpRestoreState
+     *         between Desktop restarts, wpSaveState and wpRestoreState
      *         must save and restore the value to the object's
      *         persistent data. Where this data is stored depends
      *         on the class's descendant; subclasses of WPAbstract
@@ -181,8 +181,8 @@ interface SampleDataFile : WPDataFile   //# &&& SampleDataFile is a WPDataFile s
 //#     Both classes and metaclasses have methods:
 //#
 //#     --  Instance methods belong to a class and operate on a
-//#         WPS object. For example, wpQueryTitle gets the title
-//#         of a WPS object. The WPS prefixes all instance methods
+//#         Desktop object. For example, wpQueryTitle gets the title
+//#         of a Desktop object. The WPS prefixes all instance methods
 //#         with "wp".
 //#
 //#     --  Class methods belong to a metaclass and operate on a

@@ -45,7 +45,7 @@
  *      To replace file-system object handling, XWorkplace must do
  *      the following:
  *
- *      -- On WPS startup, load the handles table from OS2SYS.INI.
+ *      -- On Desktop startup, load the handles table from OS2SYS.INI.
  *
  *      -- Override wpQueryHandle for file-system objects to do the
  *         following:
@@ -114,7 +114,7 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
-#include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
+#include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
 
@@ -131,10 +131,10 @@
 
 HMTX    G_hmtxHandles = NULLHANDLE;
 
-CHAR    G_szActiveHandles[100];
-PBYTE   G_pHandlesBuffer = NULL;
-ULONG   G_cbHandlesBuffer = 0;
-PNODE   G_NodeHashTable[65536];
+// CHAR    G_szActiveHandles[100];
+// PBYTE   G_pHandlesBuffer = NULL;
+// ULONG   G_cbHandlesBuffer = 0;
+// PNODE   G_NodeHashTable[65536];
 
 /* ******************************************************************
  *                                                                  *
@@ -195,7 +195,7 @@ BOOL fhdlUnlockHandles(VOID)
  *      M_XWPFileSystem::wpclsInitData.
  */
 
-BOOL fhdlLoadHandles(VOID)
+/* BOOL fhdlLoadHandles(VOID)
 {
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
@@ -267,5 +267,6 @@ BOOL fhdlLoadHandles(VOID)
     DosExitMustComplete(&ulNesting);
 
     return (brc);
-}
+} */
+
 

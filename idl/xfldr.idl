@@ -220,8 +220,7 @@ interface XFolder : WPFolder
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
-    ULONG xwpQuerySetup2(in PSZ pszSetupString,
-                         in ULONG cbSetupString);
+    BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
     VOID xwpSetDisableCnrAdd(in BOOL fDisable);
 

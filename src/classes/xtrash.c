@@ -10,7 +10,7 @@
  *             support to work.
  *
  *             The trash can folder itself never contains the "real"
- *             WPS objects which have been deleted, but only instances
+ *             Desktop objects which have been deleted, but only instances
  *             of XWPTrashObject (a subclass of WPTransient), which
  *             "mirror" the deleted objects.
  *             See xtrashobj.c for details.
@@ -123,6 +123,7 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
 
@@ -165,10 +166,10 @@ static BOOL        G_fDrivesInitialized = FALSE;
 
 /*
  *@@ xwpDeleteIntoTrashCan:
- *      this new instance method takes any WPS object and
+ *      this new instance method takes any Desktop object and
  *      "deletes" it into the trash can (somSelf).
  *
- *      Call this method to move any WPS object into the
+ *      Call this method to move any Desktop object into the
  *      trash can. This can be called in any context, but
  *      is mostly called from the XWP file operations
  *      engine (fops_bottom.c) when WPS "delete" operations
@@ -479,7 +480,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
         _wpReleaseObjectMutexSem(Lock.pObject);
 
     // save trash can state so that the correct icon
-    // is displayed after a WPS restart
+    // is displayed after a Desktop restart
     // V0.9.7 (2000-12-19) [umoeller]
     if (fSave)
         _wpSaveDeferred(somSelf);
@@ -621,8 +622,8 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
         // not populating:
         sprintf(szText,
                 cmnGetString(ID_XTSI_STB_OBJCOUNT),  // "Total size of all objects: %s bytes", // pszStbObjCount
-                strhThousandsDouble(szNum1, _ulTrashObjectCount, cThousands),
-                strhThousandsDouble(szNum2, _dSizeOfAllObjects, cThousands));
+                nlsThousandsDouble(szNum1, _ulTrashObjectCount, cThousands),
+                nlsThousandsDouble(szNum2, _dSizeOfAllObjects, cThousands));
     }
 
     WinSetWindowText(hwndStatusBar, szText);
@@ -662,7 +663,8 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 
     _fOpeningSettings = FALSE;
 
-    if (pGlobalSettings->fReplaceIcons)
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnIsFeatureEnabled(IconReplacements))
     {
         // attempt to load user-defined replacement icon
         // from ICONS.DLL
@@ -673,6 +675,7 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
                                     cmnQueryIconsDLL(),
                                     112);
     }
+#endif
 
     if (_hptrFull == NULLHANDLE)
         // no user icons or user icon not found:
@@ -764,7 +767,7 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
  *      All persistent instance variables should be stored here.
  *
  *      We store the trash can item count here so we don't have to
- *      populate the trash can at WPS startup already to set the
+ *      populate the trash can at Desktop startup already to set the
  *      correct trash icon.
  *
  *      In addition, we now call wpSaveDeferred every time the
@@ -802,7 +805,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)
  *      which was stored with wpSaveState.
  *
  *      We restore the trash can item count here so we don't have to
- *      populate the trash can at WPS startup already to set the
+ *      populate the trash can at Desktop startup already to set the
  *      correct trash icon.
  */
 
@@ -1616,32 +1619,25 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
 
     M_XWPTrashCan_parent_M_WPFolder_wpclsInitData(somSelf);
 
-    // enforce initialization of XWPTrashObject class
-    pTrashObjectClassObject = XWPTrashObjectNewClass(XWPTrashObject_MajorVersion,
-                                                     XWPTrashObject_MinorVersion);
-
-    if (pTrashObjectClassObject)
+    if (krnClassInitialized(G_pcszXWPTrashCan))
     {
-        // now increment the class's usage count by one to
-        // ensure that the class is never unloaded; if we
-        // didn't do this, we'd get WPS CRASHES in some
-        // background class because if no more trash objects
-        // exist, the class would get unloaded automatically -- sigh...
-        _wpclsIncUsage(pTrashObjectClassObject);
+        // first call:
 
+        // enforce initialization of XWPTrashObject class
+        if (pTrashObjectClassObject = XWPTrashObjectNewClass(XWPTrashObject_MajorVersion,
+                                                             XWPTrashObject_MinorVersion))
         {
-            // store the class object in KERNELGLOBALS
-            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-            if (pKernelGlobals)
-            {
-                pKernelGlobals->fXWPTrashCan = TRUE;
-                krnUnlockGlobals();
-            }
+            // now increment the class's usage count by one to
+            // ensure that the class is never unloaded; if we
+            // didn't do this, we'd get WPS CRASHES in some
+            // background class because if no more trash objects
+            // exist, the class would get unloaded automatically -- sigh...
+            _wpclsIncUsage(pTrashObjectClassObject);
         }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot initialize XWPTrashObject class. Is it installed?!?");
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Cannot initialize XWPTrashObject class. Is it installed?!?");
 
     // initialize supported drives
     if (!G_fDrivesInitialized)

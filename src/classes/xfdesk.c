@@ -182,7 +182,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *som
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = cmnGetString(ID_XSSI_STARTUPPAGE);  // pszStartupPage
-    pcnbp->ulDlgID = ID_XSD_DTP_STARTUP;
+    pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_STARTUP; V0.9.16 (2001-10-08) [umoeller]
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_STARTUP;
     pcnbp->ulPageID = SP_DTP_STARTUP;
     pcnbp->pfncbInitPage    = dtpStartupInitPage;
@@ -256,7 +256,8 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = cmnGetString(ID_XSSI_XSHUTDOWNPAGE);  // pszXShutdownPage
-    pcnbp->ulDlgID = ID_XSD_DTP_SHUTDOWN;
+    // pcnbp->ulDlgID = ID_XSD_DTP_SHUTDOWN;
+    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
     pcnbp->usFirstControlID = ID_SDDI_REBOOT;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_SHUTDOWN;
@@ -274,43 +275,31 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
  *      See XFldObject::xwpQuerySetup2 for details.
  *
  *@@added V0.9.1 (2000-01-08) [umoeller]
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
-                                               PSZ pszSetupString,
-                                               ULONG cbSetupString)
+SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
+                                              PVOID pstrSetup)
 {
-    ULONG ulReturn = 0;
-
-    // method pointer for parent class
-    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
-
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpQuerySetup2");
 
     // call XFldDesktop implementation
-    ulReturn = dtpQuerySetup(somSelf, pszSetupString, cbSetupString);
-
-    // manually resolve parent method
-    pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
-                                                         _somGetParent(_XFldDesktop),
-                                                         "xwpQuerySetup2");
-    if (pfn_xwpQuerySetup2)
+    if (dtpQuerySetup(somSelf, pstrSetup))
     {
-        // now call parent method (probably XFolder)
-        if ( (pszSetupString) && (cbSetupString) )
-            // string buffer already specified:
-            // tell XFolder to append to that string
-            ulReturn += pfn_xwpQuerySetup2(somSelf,
-                                           pszSetupString + ulReturn, // append to existing
-                                           cbSetupString - ulReturn); // remaining size
-        else
-            // string buffer not yet specified: return length only
-            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+        // manually resolve parent method
+        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
+
+        if (pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(
+                                                         somSelf,
+                                                         _somGetParent(_XFldDesktop),
+                                                         "xwpQuerySetup2"))
+        {
+            return (pfn_xwpQuerySetup2(somSelf, pstrSetup));
+        }
     }
 
-    return (ulReturn);
+    return (FALSE);
 }
 
 /*
@@ -453,7 +442,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
  *@@ wpPopulate:
  *      this instance method populates a folder, in this case, the
  *      Desktop. After the active Desktop has been populated at
- *      WPS startup, we'll post a message to the Worker thread to
+ *      Desktop startup, we'll post a message to the Worker thread to
  *      initiate all the XWorkplace startup processing.
  *
  *@@changed V0.9.5 (2000-08-26) [umoeller]: this was previously done in wpOpen
@@ -592,15 +581,7 @@ SOM_Scope void  SOMLINK xfdeskM_wpclsInitData(M_XFldDesktop *somSelf)
 
     M_XFldDesktop_parent_M_WPDesktop_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXFldDesktop = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXFldDesktop);
 }
 
 /*
@@ -660,11 +641,12 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
 {
     ULONG       ulrc;
     HMODULE     hmodIconsDLL = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
     // M_XFldDesktopData *somThis = M_XFldDesktopGetData(somSelf);
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconData");
 
-    if (pGlobalSettings->fReplaceIcons)
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnIsFeatureEnabled(IconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -678,6 +660,7 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
     }
 
     if (hmodIconsDLL == NULLHANDLE)
+#endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconData(somSelf,
                                                                    pIconInfo);
@@ -697,11 +680,12 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
 {
     ULONG       ulrc;
     HMODULE     hmodIconsDLL = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
     // M_XFldDesktopData *somThis = M_XFldDesktopGetData(somSelf);
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconDataN");
 
-    if (pGlobalSettings->fReplaceIcons)
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnIsFeatureEnabled(IconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -715,6 +699,7 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
     }
 
     if (hmodIconsDLL == NULLHANDLE)
+#endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconDataN(somSelf,
                                                                     pIconInfo,

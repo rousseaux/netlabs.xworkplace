@@ -93,10 +93,10 @@ all:   \
 !endif
 
 callmainmake:
-    @echo $(MAKEDIR)\makefile: Recursing to main makefile.
+    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
     @nmake
-    @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
+    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
 # "nmake dep" gets called from src\makefile if nmake dep
@@ -120,7 +120,7 @@ dep:
 #    the OUTPUTDIR variable (set above).
 
 .c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
         $(CC_DLL_SUBSYS) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c

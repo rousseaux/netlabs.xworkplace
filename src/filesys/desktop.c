@@ -76,12 +76,15 @@
 // headers in /helpers
 #include "helpers\animate.h"            // icon and other animations
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\shapewin.h"           // shaped windows helper functions
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
 #include "xfdesk.ih"
@@ -146,10 +149,10 @@ BOOL dtpSetup(WPDesktop *somSelf,
                             optDebug;
                 ULONG       ulRestartWPS;
                     // changed V0.9.5 (2000-08-10) [umoeller]:
-                    // restart WPS flag, meaning:
+                    // restart Desktop flag, meaning:
                     // -- 0: no, do shutdown
-                    // -- 1: yes, restart WPS
-                    // -- 2: yes, restart WPS, but logoff also
+                    // -- 1: yes, restart Desktop
+                    // -- 2: yes, restart Desktop, but logoff also
                     //          (only if XWPSHELL is running)
                 BOOL        optWPSCloseWindows,
                             optAutoCloseVIO,
@@ -213,13 +216,13 @@ BOOL dtpSetup(WPDesktop *somSelf,
                 }
                 else if (!strcmp(pszToken, "RESTARTWPS"))
                 {
-                    xsd.ulRestartWPS = 1;           // restart WPS
+                    xsd.ulRestartWPS = 1;           // restart Desktop
                     xsd.optWPSCloseWindows = FALSE;
                     xsd.optWPSReuseStartupFolder = FALSE;
                 }
                 else if (!strcmp(pszToken, "FULLRESTARTWPS"))
                 {
-                    xsd.ulRestartWPS = 1;           // restart WPS
+                    xsd.ulRestartWPS = 1;           // restart Desktop
                     xsd.optWPSCloseWindows = TRUE;
                     xsd.optWPSReuseStartupFolder = TRUE;
                 }
@@ -295,12 +298,10 @@ BOOL dtpSetup(WPDesktop *somSelf,
  *@@todo warp4 setup strings
  */
 
-ULONG dtpQuerySetup(WPDesktop *somSelf,
-                    PSZ pszSetupString,
-                    ULONG cbSetupString)
+BOOL dtpQuerySetup(WPDesktop *somSelf,
+                   PVOID pstrSetup)
 {
-    PSZ     pszTemp = NULL;
-    ULONG   ulReturn = 0;
+    // PSZ     pszTemp = NULL;
     // ULONG   ulValue = 0;
             // ulDefaultValue = 0;
 
@@ -350,7 +351,7 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
      *
      */
 
-    if (pszTemp)
+    /* if (pszTemp)
     {
         // return string if buffer is given
         if ( (pszSetupString) && (cbSetupString) )
@@ -361,9 +362,9 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
         // always return length of string
         ulReturn = strlen(pszTemp);
         free(pszTemp);
-    }
+    } */
 
-    return (ulReturn);
+    return (TRUE);
 }
 
 /* ******************************************************************
@@ -454,7 +455,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                    // disable if Shutdown is currently running
                                    ulShutdownAttr);
 
-            // append "restart WPS" to the end
+            // append "restart Desktop" to the end
             sOrigShutdownPos = MIT_END;
         } // end if (pGlobalSettings->DTMShutdownMenu)
         else
@@ -470,7 +471,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 
     if (pGlobalSettings->fRestartWPS)
     {
-        // insert "Restart WPS"
+        // insert "Restart Desktop"
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
                            sOrigShutdownPos,  // either MIT_END or position of "Shutdown" item
                            pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_RESTARTWPS,
@@ -481,7 +482,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 
         if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
             // if XShutdown confirmations have been disabled,
-            // remove "..." from "Restart WPS" entry
+            // remove "..." from "Restart Desktop" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
                                   pGlobalSettings->VarMenuOffset
                                         + ID_XFMI_OFS_RESTARTWPS);
@@ -605,7 +606,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
     {
         if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_RESTARTWPS)
         {
-            xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
+            xsdInitiateRestartWPS(FALSE);   // restart Desktop, no logoff
             return (TRUE);
         }
         else if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_LOGOFF)
@@ -820,7 +821,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -838,6 +839,134 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     return ((MPARAM)0);
 }
+
+CONTROLDEF
+#ifndef __NOBOOTLOGO__
+    BootLogoGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "Workplace Shell boot logo",
+                            ID_XSDI_DTP_LOGOGROUP),
+    BootLogoCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Enable ~boot logo"
+                            ID_XSDI_DTP_BOOTLOGO,
+                            -1,
+                            -1),
+    LogoStyleGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "Boot logo style"
+                            ID_XSDI_DTP_LOGOSTYLEGROUP),
+    LogoTransparentRadio = CONTROLDEF_FIRST_AUTORADIO(
+                            LOAD_STRING, // "~Transparent style"
+                            ID_XSDI_DTP_LOGO_TRANSPARENT,
+                            -1,
+                            -1),
+    LogoBlowUpRadio = CONTROLDEF_NEXT_AUTORADIO(
+                            LOAD_STRING, // "B~low-up style"
+                            ID_XSDI_DTP_LOGO_BLOWUP,
+                            -1,
+                            -1),
+    LogoFrameGroup = CONTROLDEF_GROUP(
+                            "",
+                            ID_XSDI_DTP_LOGOFRAME),
+    LogoBitmap =
+        {
+            WC_STATIC,
+            "",
+            SS_FGNDFRAME | WS_VISIBLE,
+            ID_XSDI_DTP_LOGOBITMAP,
+            CTL_COMMON_FONT,
+            0,
+            {200, 100},
+            COMMON_SPACING
+        },
+    LogoFileText = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "OS/2 1.3 BMP ~file for boot logo:"
+                            ID_XSDI_DTP_LOGOFILETXT,
+                            -1,
+                            -1),
+    LogoFileEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,
+                            ID_XSDI_DTP_LOGOFILE,
+                            200,
+                            30),
+    LogoFileBrowseButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "Bro~wse..."
+                            ID_XSDI_DTP_LOGO_BROWSE,
+                            200,
+                            30),
+    LogoFileTestButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "T~est logo",
+                            ID_XSDI_DTP_TESTLOGO,
+                            200,
+                            30),
+#endif
+    WriteXWPStartLogCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Write XWP~START.LOG file",
+                            ID_XSDI_DTP_WRITEXWPSTARTLOG,
+                            -1,
+                            -1),
+#ifndef __NOBOOTUPSTATUS__
+    BootupStatusCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Show W~PS class initialization"
+                            ID_XSDI_DTP_BOOTUPSTATUS,
+                            -1,
+                            -1),
+#endif
+    CreateStartupFolderButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "Create ~XWorkplace Startup folder",
+                            ID_XSDI_DTP_CREATESTARTUPFLDR,
+                            -1,
+                            30),
+    NumLockOnCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Enable ~NumLock at startup",
+                            ID_XSDI_DTP_NUMLOCKON,
+                            -1,
+                            -1);
+
+DLGHITEM dlgDesktopStartup[] =
+    {
+        START_TABLE,            // root table, required
+#ifndef __NOBOOTLOGO__
+            START_ROW(0),       // boot logo group
+                START_GROUP_TABLE(&BootLogoGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&BootLogoCB),
+                    START_ROW(0),
+                        START_GROUP_TABLE(&LogoStyleGroup),
+                            START_ROW(0),
+                                CONTROL_DEF(&LogoTransparentRadio),
+                            START_ROW(0),
+                                CONTROL_DEF(&LogoBlowUpRadio),
+                        END_TABLE,      // logo style group
+                    // START_ROW(0),
+                        START_GROUP_TABLE(&LogoFrameGroup),
+                            START_ROW(0),
+                                CONTROL_DEF(&LogoBitmap),
+                        END_TABLE,      // logo frame group
+                    START_ROW(0),
+                        CONTROL_DEF(&LogoFileText),
+                    START_ROW(0),
+                        CONTROL_DEF(&LogoFileEF),
+                    START_ROW(0),
+                        CONTROL_DEF(&LogoFileBrowseButton),
+                    START_ROW(0),
+                        CONTROL_DEF(&LogoFileTestButton),
+                END_TABLE,      // end of boot logo group
+#endif
+            START_ROW(0),
+                CONTROL_DEF(&WriteXWPStartLogCB),
+#ifndef __NOBOOTUPSTATUS__
+            START_ROW(0),
+                CONTROL_DEF(&BootupStatusCB),
+#endif
+            START_ROW(0),
+                CONTROL_DEF(&NumLockOnCB),
+            START_ROW(0),
+                CONTROL_DEF(&CreateStartupFolderButton),
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
 
 /*
  * dtpStartupInitPage:
@@ -869,6 +998,13 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
 
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-09-29) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgDesktopStartup,
+                          ARRAYITEMCOUNT(dlgDesktopStartup));
+
+#ifndef __NOBOOTLOGO__
             // backup old boot logo file
             pcnbp->pUser2 = cmnQueryBootLogoFile();     // malloc'ed
                     // fixed V0.9.13 (2001-06-14) [umoeller]
@@ -883,11 +1019,13 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             winhSetEntryFieldLimit(WinWindowFromID(pcnbp->hwndDlgPage,
                                                    ID_XSDI_DTP_LOGOFILE),
                                    CCHMAXPATH);
+#endif
         }
     }
 
     if (flFlags & CBI_SET)
     {
+#ifndef __NOBOOTLOGO__
         USHORT      usRadioID;
         ULONG       ulError;
         HDC         hdcMem;
@@ -901,10 +1039,10 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // "boot logo enabled"
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_BOOTLOGO,
-                              pGlobalSettings->BootLogo);
+                              cmnIsFeatureEnabled(BootLogo));
 
         // "boot logo style"
-        if (pGlobalSettings->bBootLogoStyle == 0)
+        if (pGlobalSettings->_bBootLogoStyle == 0)
             usRadioID = ID_XSDI_DTP_LOGO_TRANSPARENT;
         else
             usRadioID = ID_XSDI_DTP_LOGO_BLOWUP;
@@ -943,14 +1081,16 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         free(pszBootLogoFile);
 
         WinSetPointer(HWND_DESKTOP, hptrOld);
-
+#endif
         // startup log file
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_WRITEXWPSTARTLOG,
                               pGlobalSettings->fWriteXWPStartupLog);
 
+#ifndef __NOBOOTUPSTATUS__
         // bootup status
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_BOOTUPSTATUS,
-                              pGlobalSettings->ShowBootupStatus);
+                              pGlobalSettings->_fShowBootupStatus);
+#endif
 
         // numlock on
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_NUMLOCKON,
@@ -959,20 +1099,22 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
+#ifndef __NOBOOTLOGO__
         PSZ     pszBootLogoFile = cmnQueryBootLogoFile();
         BOOL    fBootLogoFileExists = (access(pszBootLogoFile, 0) == 0);
         free(pszBootLogoFile);
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
-                         pGlobalSettings->BootLogo);
+                         cmnIsFeatureEnabled(BootLogo));
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
+#endif
 
         if (WinQueryObject((PSZ)XFOLDER_STARTUPID))
             winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
-
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
     }
 }
 
+#ifndef __NOBOOTLOGO__
 
 /*
  *@@ SetBootLogoFile:
@@ -1000,6 +1142,8 @@ VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
         pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
     }
 }
+
+#endif
 
 /*
  * dtpStartupItemChanged:
@@ -1030,26 +1174,30 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         switch (ulItemID)
         {
+#ifndef __NOBOOTLOGO__
             case ID_XSDI_DTP_BOOTLOGO:
-                pGlobalSettings->BootLogo = ulExtra;
+                pGlobalSettings->__fBootLogo = ulExtra;
                 ulChange = 2;       // re-enable items
             break;
 
             case ID_XSDI_DTP_LOGO_TRANSPARENT:
-                pGlobalSettings->bBootLogoStyle = 0;
+                pGlobalSettings->_bBootLogoStyle = 0;
             break;
 
             case ID_XSDI_DTP_LOGO_BLOWUP:
-                pGlobalSettings->bBootLogoStyle = 1;
+                pGlobalSettings->_bBootLogoStyle = 1;
             break;
+#endif
 
             case ID_XSDI_DTP_WRITEXWPSTARTLOG:
                 pGlobalSettings->fWriteXWPStartupLog = ulExtra;
             break;
 
+#ifndef __NOBOOTUPSTATUS__
             case ID_XSDI_DTP_BOOTUPSTATUS:
-                pGlobalSettings->ShowBootupStatus = ulExtra;
+                pGlobalSettings->_fShowBootupStatus = ulExtra;
             break;
+#endif
 
             case ID_XSDI_DTP_NUMLOCKON:
                 pGlobalSettings->fNumLockStartup = ulExtra;
@@ -1063,14 +1211,20 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 // and restore the settings for this page
                 pGlobalSettings->fWriteXWPStartupLog = pGSBackup->fWriteXWPStartupLog;
-                pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
-                pGlobalSettings->BootLogo = pGSBackup->BootLogo;
-                pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;
+#ifndef __NOBOOTUPSTATUS__
+                pGlobalSettings->_fShowBootupStatus = pGSBackup->_fShowBootupStatus;
+#endif
+#ifndef __NOBOOTLOGO__
+                pGlobalSettings->__fBootLogo = pGSBackup->__fBootLogo;
+                pGlobalSettings->_bBootLogoStyle = pGSBackup->_bBootLogoStyle;
+#endif
                 pGlobalSettings->fNumLockStartup = pGSBackup->fNumLockStartup;  // V0.9.9
 
+#ifndef __NOBOOTLOGO__
                 SetBootLogoFile(pcnbp,
                                 (const char *)pcnbp->pUser2,
                                 TRUE);      // write
+#endif
 
                 // update the display by calling the INIT callback
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -1080,7 +1234,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 // set the default settings for this settings page
                 // (this is in common.c because it's also used at
-                // WPS startup)
+                // Desktop startup)
                 cmnSetDefaultSettings(pcnbp->ulPageID);
                 // update the display by calling the INIT callback
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -1110,6 +1264,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         switch (ulItemID)
         {
+#ifndef __NOBOOTLOGO__
             /*
              * ID_XSDI_DTP_LOGOFILE:
              *      focus leaves "file" entry field:
@@ -1202,7 +1357,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                          pszBootLogoFile,
                                                          &ulError))
                     {
-                        if (pGlobalSettings->bBootLogoStyle == 1)
+                        if (pGlobalSettings->_bBootLogoStyle == 1)
                         {
                             // blow-up mode:
                             HPS     hpsScreen = WinGetScreenPS(HWND_DESKTOP);
@@ -1257,6 +1412,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 WinSetPointer(HWND_DESKTOP, hptrOld);
             break; }
+#endif
 
             /*
              *@@ ID_XSDI_DTP_CREATESTARTUPFLDR:

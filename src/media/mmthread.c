@@ -484,7 +484,7 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
  *      initializes the XWorkplace Media environment
  *      and resolves the MMPM/2 APIs.
  *      Gets called by initMain on
- *      WPS startup.
+ *      Desktop startup.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */

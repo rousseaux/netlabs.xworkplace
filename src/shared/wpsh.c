@@ -11,7 +11,7 @@
  *      --  Helper functions for messing with SOM method
  *          resolution. See wpshResolveFor and others.
  *
- *      --  Miscellaneous WPS object helpers. See
+ *      --  Miscellaneous Desktop object helpers. See
  *          wpshCheckObject, wpshQueryObjectFromID, and
  *          others.
  *
@@ -88,8 +88,10 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
 
@@ -462,7 +464,7 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
  *
  *      Since somIsObj doesn't seem to be working right,
  *      here is a new function which checks if pObject
- *      points to a valid WPS object. This is done by
+ *      points to a valid Desktop object. This is done by
  *      temporarily installing yet another xcpt handler,
  *      so if the object ain't valid, calling this function
  *      doesn't crash, but returns FALSE only.
@@ -1072,7 +1074,7 @@ BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passe
 /*
  *@@ wpshQueryDraggedObject:
  *      this helper function can be used with wpDragOver
- *      and/or wpDrop to resolve a DRAGITEM to a WPS object.
+ *      and/or wpDrop to resolve a DRAGITEM to a Desktop object.
  *      This supports both DRM_OBJECT and DRM_OS2FILE
  *      rendering mechanisms.
  *
@@ -1201,7 +1203,7 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
                 // get the item being dragged (PDRAGITEM)
                 if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
                 {
-                    // WPS object?
+                    // Desktop object?
                     if (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
                     {
                         // the WPS stores the MINIRECORDCORE of the
@@ -1522,56 +1524,6 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf,
         brc = TRUE;
 
     return (brc);
-}
-
-/*
- *@@ wpshQueryDiskFreeFromFolder:
- *      returns the free space on the drive where a
- *      given folder resides (in bytes).
- *
- *@@changed V0.9.0 [umoeller]: fixed another > 4 GB bug (thanks to RÅdiger Ihle)
- */
-
-double wpshQueryDiskFreeFromFolder(WPFolder *somSelf)
-{
-    if (somSelf)
-    {
-        CHAR        szRealName[CCHMAXPATH];
-        ULONG       ulDrive;
-        FSALLOCATE  fsa;
-
-        _wpQueryFilename(somSelf, szRealName, TRUE);
-        ulDrive = (szRealName[0] - 'A' + 1); // = 1 for "A", 2 for "B" etc.
-        DosQueryFSInfo(ulDrive, FSIL_ALLOC, &fsa, sizeof(fsa));
-        return ((double)fsa.cSectorUnit * fsa.cbSector * fsa.cUnitAvail);
-    }
-    else
-        return (0);
-}
-
-/*
- *@@ wpshQueryDiskSizeFromFolder:
- *      returns the total size of the drive where a
- *      given folder resides (in bytes).
- *
- *@@added V0.9.11 (2001-04-22) [umoeller]
- */
-
-double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
-{
-    if (somSelf)
-    {
-        CHAR        szRealName[CCHMAXPATH];
-        ULONG       ulDrive;
-        FSALLOCATE  fsa;
-
-        _wpQueryFilename(somSelf, szRealName, TRUE);
-        ulDrive = (szRealName[0] - 'A' + 1); // = 1 for "A", 2 for "B" etc.
-        DosQueryFSInfo(ulDrive, FSIL_ALLOC, &fsa, sizeof(fsa));
-        return ((double)fsa.cSectorUnit * fsa.cbSector * fsa.cUnit);
-    }
-    else
-        return (0);
 }
 
 /*
@@ -1999,35 +1951,92 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
 }
 
 /*
- *@@ wpshQueryLogicalDriveNumber:
+ *@@ wpshQueryLogicalDisk:
  *      as opposed to wpQueryDisk, of which I really don't
  *      know what it returns, this returns the logical drive
  *      number (1 = A, 2 = B, etc.) on which the WPObject
  *      resides. This works also for objects which are not
  *      file-system based; for these, their folder is examined
  *      instead.
+ *
+ *      Note that if the object is a file-system object on
+ *      a remote drive (and thus returns a UNC name), 0
+ *      is returned because then there's no logical disk.
+ *
+ *@@changed V0.9.16 (2001-10-04) [umoeller]: fixed remote objects
  */
 
-ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf)
+ULONG wpshQueryLogicalDisk(WPObject *somSelf)
 {
-    ULONG ulDrive = 0;
-    WPFileSystem *pFSObj = NULL;
     if (somSelf)
     {
-        CHAR        szRealName[CCHMAXPATH];
+        WPFileSystem    *pFSObj = NULL;
+        CHAR            szRealName[CCHMAXPATH];
 
         if (!_somIsA(somSelf, _WPFileSystem))
             pFSObj = _wpQueryFolder(somSelf);
         else
             pFSObj = somSelf;
 
-        if (pFSObj)
+        if (    (pFSObj)
+             && (_wpQueryFilename(pFSObj, szRealName, TRUE))
+             // rule out UNC names
+             && (szRealName[1] == ':')      // V0.9.16 (2001-10-04) [umoeller]
+           )
         {
-            _wpQueryFilename(pFSObj, szRealName, TRUE);
-            ulDrive = (szRealName[0] - 'A' + 1); // = 1 for "A", 2 for "B" etc.
+            return (szRealName[0] - 'A' + 1); // = 1 for "A", 2 for "B" etc.
         }
     }
-    return (ulDrive);
+
+    return (0);
+}
+
+/*
+ *@@ wpshQueryDiskFreeFromFolder:
+ *      returns the free space on the drive where a
+ *      given folder resides (in bytes).
+ *
+ *@@changed V0.9.0 [umoeller]: fixed another > 4 GB bug (thanks to RÅdiger Ihle)
+ *@@changed V0.9.16 (2001-10-02) [umoeller]: rewritten
+ */
+
+double wpshQueryDiskFreeFromFolder(WPFolder *somSelf)
+{
+    ULONG       ulDisk;
+    double      dFree;
+
+    if (    (ulDisk = wpshQueryLogicalDisk(somSelf))
+         && (!doshQueryDiskFree(ulDisk, &dFree))
+       )
+    {
+        return (dFree);
+    }
+
+    return (0);
+}
+
+/*
+ *@@ wpshQueryDiskSizeFromFolder:
+ *      returns the total size of the drive where a
+ *      given folder resides (in bytes).
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ *@@changed V0.9.16 (2001-10-02) [umoeller]: rewritten
+ */
+
+double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
+{
+    ULONG       ulDisk;
+    double      dSize;
+
+    if (    (ulDisk = wpshQueryLogicalDisk(somSelf))
+         && (!doshQueryDiskSize(ulDisk, &dSize))
+       )
+    {
+        return (dSize);
+    }
+
+    return (0);
 }
 
 /* ******************************************************************

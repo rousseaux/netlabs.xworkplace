@@ -79,9 +79,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\prfh.h"               // INI file helper routines;
-                                        // this include is required for some
-                                        // of the structures in shared\center.h
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
@@ -223,8 +221,8 @@ PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
 PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
-PSTRHDATETIME pstrhDateTime = NULL;
-PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
+PNLSDATETIME pnlsDateTime = NULL;
+PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
@@ -255,8 +253,8 @@ RESOLVEFUNCTION G_aImports[] =
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
-        "strhDateTime", (PFN*)&pstrhDateTime,
-        "strhThousandsULong", (PFN*)&pstrhThousandsULong,
+        "nlsDateTime", (PFN*)&pnlsDateTime,
+        "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhFree", (PFN*)&pwinhFree,
@@ -889,14 +887,14 @@ VOID TwgtUpdateGraph(HWND hwnd,
                          "\nFree RAM: %s KB"
                          "\nUsed RAM: %s KB"
                          "\nSwapper size: %s KB",
-                         pstrhThousandsULong(sz1, pLatest->ulPhysFreeKB, cThousands),
-                         pstrhThousandsULong(sz2, pLatest->ulPhysInUseKB, cThousands),
-                         pstrhThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
+                         pnlsThousandsULong(sz1, pLatest->ulPhysFreeKB, cThousands),
+                         pnlsThousandsULong(sz2, pLatest->ulPhysInUseKB, cThousands),
+                         pnlsThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
 
             if (pPrivate->arcWin32K == NO_ERROR)
                 pdrv_sprintf(p,
                         "\nFree in swapper: %s KB ",
-                        pstrhThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
+                        pnlsThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
 
             if (pPrivate->fTooltipShowing)
                 // tooltip currently showing:

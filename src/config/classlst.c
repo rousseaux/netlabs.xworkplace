@@ -88,8 +88,10 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -1715,7 +1717,8 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
 
             case WM_DRAWITEM:
                 if ((USHORT)mp1 == ID_XLDI_CNR)
-                    mrc = cnrhOwnerDrawRecord(mp2);
+                    mrc = cnrhOwnerDrawRecord(mp2,
+                                              CODFL_DISABLEDTEXT);
                 else
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             break;
@@ -2113,17 +2116,20 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                             PSZ                     pszClassName =
                                         pscd->preccSource->pwps->pszClassName;
 
-                            CHAR szTitle[CCHMAXPATH] = "title";
-                            CHAR szIntroText[2000] = "intro";
+                            XSTRING strTitle,
+                                    strIntroText;
+                            xstrInit(&strTitle, 0);
+                            xstrInit(&strIntroText, 0);
 
                             cmnGetMessage(NULL, 0,
-                                    szTitle, sizeof(szTitle), 112);
-                            // replace "%1" by class name which is to be
+                                          &strTitle,
+                                          112);
+                            // replace "%1" with class name which is to be
                             // replaced
                             cmnGetMessage(&pszClassName, 1,
-                                    szIntroText, sizeof(szIntroText), 123);
-                            scd.pszDlgTitle = szTitle;
-                            scd.pszIntroText = szIntroText;
+                                          &strIntroText, 123);
+                            scd.pszDlgTitle = strTitle.psz;
+                            scd.pszIntroText = strIntroText.psz;
                             scd.pszRootClass = pszClassName;
                             scd.pszOrphans = NULL;
                             strcpy(scd.szClassSelected, scd.pszRootClass);
@@ -2164,6 +2170,9 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                                 pTable, 2, 130,
                                                 MB_OK);
                             }
+
+                            xstrClear(&strTitle);
+                            xstrClear(&strIntroText);
                         }
                     break; }
 

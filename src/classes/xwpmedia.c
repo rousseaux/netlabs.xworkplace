@@ -1147,15 +1147,7 @@ SOM_Scope void  SOMLINK xwmmM_wpclsInitData(M_XWPMedia *somSelf)
 
     M_XWPMedia_parent_M_WPAbstract_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPMedia = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPMedia);
 }
 
 /*

@@ -587,15 +587,7 @@ SOM_Scope void  SOMLINK xmsM_wpclsInitData(M_XWPMouse *somSelf)
 
     M_XWPMouse_parent_M_WPMouse_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPMouse = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPMouse);
 }
 
 /*

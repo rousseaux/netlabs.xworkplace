@@ -666,8 +666,12 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
 {
     PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (    (pGlobalSettings->fEnableFolderHotkeys) // V0.9.4 (2000-06-11) [umoeller]
-         && (pGlobalSettings->fShowHotkeysInMenus)
+    if (
+#ifndef __ALWAYSFDRHOTKEYS__
+            (cmnIsFeatureEnabled(FolderHotkeys)) // V0.9.4 (2000-06-11) [umoeller]
+         &&
+#endif
+            (pGlobalSettings->fShowHotkeysInMenus)
        )
     {
         CHAR        szDescription[100];
@@ -740,11 +744,13 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
 
             // OK, now we got most menu items;
             // we need a few more special checks
-            if (pGlobalSettings->MoveRefreshNow)
+#ifndef __NOMOVEREFRESHNOW__
+            if (cmnIsFeatureEnabled(MoveRefreshNow))
                 AddHotkeyToMenuItem(hwndMenu,
                                     WPMENUID_REFRESH,
                                     ID_XFMI_OFS_REFRESH,
                                     pGlobalSettings->VarMenuOffset);
+#endif
         }
     } // end if (pGlobalSettings->fShowHotkeysInMenus)
 }
@@ -972,10 +978,12 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        BOOL fEnable = !(pGlobalSettings->fNoSubclassing);
+#ifndef __ALWAYSSUBCLASS__
+        BOOL fEnable = !cmnIsFeatureEnabled(NoSubclassing);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
+#endif
     }
 }
 
@@ -1154,7 +1162,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             fdrLoadDefaultFldrHotkeys();
             // update the display by calling the INIT callback

@@ -1142,7 +1142,9 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                        == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
             {
                // okay, let's go
-               if (pGlobalSettings->FCShowIcons)
+#ifndef __NOFOLDERCONTENTS__
+               if (cmnIsFeatureEnabled(FolderContentShowIcons))
+#endif
                {
                    // show folder content icons ON:
                    cmnuPrepareOwnerDraw(hwndMenuMsg);

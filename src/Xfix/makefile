@@ -86,7 +86,7 @@ dep:
 #    the OUTPUTDIR variable (set above).
 
 .cpp.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).cpp
+        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).cpp
 !ifndef PRECH
 # precompiled headers disabled:
         $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).cpp
@@ -95,7 +95,7 @@ dep:
 !endif
 
 # build targets
-$(APPNAME).def: ..\..\include\bldlevel.h
+$(APPNAME).def: ..\..\include\bldlevel.h makefile
           $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "WPS handles fixer"
 
 $(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico

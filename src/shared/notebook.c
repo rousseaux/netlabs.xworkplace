@@ -84,13 +84,16 @@
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
 
 // XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 
 // other SOM headers
@@ -188,7 +191,9 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     // winhAdjustControls desired?
     if (    (pcnbp->pampControlFlags)
-         && (pGlobalSettings->fResizeSettingsPages)
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+         && (cmnIsFeatureEnabled(ResizeSettingsPages))
+#endif
        )
     {
         // yes: allocate and zero
@@ -438,17 +443,17 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                     case CN_EMPHASIS:
                     {
                         // get cnr notification struct
-                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
-                        if (pnre)
-                            if (    (pnre->fEmphasisMask & CRA_SELECTED)
-                                 && (pnre->pRecord)
-                                 && (pnre->pRecord != pcnbp->preccLastSelected)
-                               )
-                            {
-                                fCallItemChanged = TRUE;
-                                ulExtra = (ULONG)(pnre->pRecord);
-                                pcnbp->preccLastSelected = pnre->pRecord;
-                            }
+                        PNOTIFYRECORDEMPHASIS pnre;
+                        if (    (pnre = (PNOTIFYRECORDEMPHASIS)mp2)
+                             && (pnre->fEmphasisMask & CRA_SELECTED)
+                             && (pnre->pRecord)
+                             && (pnre->pRecord != pcnbp->preccLastSelected)
+                           )
+                        {
+                            fCallItemChanged = TRUE;
+                            ulExtra = (ULONG)(pnre->pRecord);
+                            pcnbp->preccLastSelected = pnre->pRecord;
+                        }
                     break; }
 
                     case CN_CONTEXTMENU:
@@ -847,19 +852,21 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
                 case WM_DRAWITEM:
                 {
+                    HWND    hwndControl;
                     CHAR    szClassName[5];
-                    // ULONG   ulClassCode = 0;
 
-                    HWND hwndControl = WinWindowFromID(hwndDlg,
-                                                       (USHORT)mp1); // has the control ID
-
-                    if (WinQueryClassName(hwndControl,
-                                          sizeof(szClassName),
-                                          szClassName))
+                    if (    (hwndControl = WinWindowFromID(hwndDlg,
+                                                           (USHORT)mp1)) // has the control ID
+                         && (WinQueryClassName(hwndControl,
+                                               sizeof(szClassName),
+                                               szClassName))
+                       )
                     {
-                        if (memcmp(szClassName, "#37", 4) == 0)
+                        if (!memcmp(szClassName, "#37", 4))
                             // container:
-                            mrc = cnrhOwnerDrawRecord(mp2);
+                            mrc = cnrhOwnerDrawRecord(mp2,
+                                                      // V0.9.16 (2001-09-29) [umoeller]
+                                                      pcnbp->ulCnrOwnerDraw);
                     }
                     // else: return default FALSE
                 break; } // WM_DRAWITEM
@@ -1633,6 +1640,58 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                      "Notebook page could not be inserted (wpInsertSettingsPage failed).");
 
     return (ulrc);
+}
+
+/*
+ *@@ ntbFormatPage:
+ *      wrapper around dlghFormatDialog for dynamically
+ *      formatting notebook pages.
+ *
+ *      Usage:
+ *
+ *      1)  With ntbInsertPage, specify ID_XFD_EMPTYDLG for
+ *          the dialog ID to be loaded (which is an empty
+ *          dialog frame).
+ *
+ *      2)  In your "init page" callback, when CBI_INIT
+ *          comes in, call this function on the array of
+ *          DLGHITEM which represents the controls to
+ *          be added.
+ *
+ *      3)  For dynamic string loading, set each dialog
+ *          item's pcszText to LOADSTRING, which will
+ *          cause this function to load the string
+ *          resources for each dialog item from the NLS
+ *          DLL. It is assumed that the NLS string has
+ *          the same ID as the control.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
+                     PDLGHITEM paDlgItems,      // in: definition array
+                     ULONG cDlgItems)           // in: array item count (NOT array size)
+{
+    APIRET arc;
+
+    cmnLoadDialogStrings(paDlgItems, cDlgItems);
+
+    // go create the controls
+    if (!(arc = dlghFormatDlg(hwndDlg,
+                              paDlgItems,
+                              cDlgItems,
+                              cmnQueryDefaultFont(),
+                              DFFL_CREATECONTROLS | DFFL_RESIZEFRAME)))
+    {
+        // make Warp 4 notebook buttons and move controls
+        // (this was already called in ntbInitPage on WM_INITDLG,
+        // but at that point the init callback wasn't called yet...)
+        winhAssertWarp4Notebook(hwndDlg,
+                                100,         // ID threshold
+                                14);
+    }
+
+    return (arc);
 }
 
 /*

@@ -50,8 +50,7 @@ interface XFldDesktop : WPDesktop
     ULONG xwpInsertXFldDesktopArchivesPage(in HWND hwndNotebook);
     ULONG xwpInsertXFldDesktopShutdownPage(in HWND hwndNotebook);
 
-    ULONG xwpQuerySetup2(in PSZ pszSetupString,
-                         in ULONG cbSetupString);
+    BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
 #ifdef __SOMIDL__
   implementation {

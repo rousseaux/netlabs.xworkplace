@@ -46,6 +46,8 @@ interface XFldWPS : WPSystem
      *
      */
 
+    ULONG xwpAddWPSMenuPages(in HWND hwndDlg);
+
     ULONG xwpAddXFldWPSPages(in HWND hwndDlg);
 
 #ifdef __SOMIDL__

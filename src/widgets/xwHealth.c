@@ -84,9 +84,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\prfh.h"               // INI file helper routines;
-                                        // this include is required for some
-                                        // of the structures in shared\center.h
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
@@ -179,8 +177,8 @@ PDRV_SPRINTF pdrv_sprintf = NULL;
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
-PSTRHDATETIME pstrhDateTime = NULL;
-PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
+PNLSDATETIME pnlsDateTime = NULL;
+PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
@@ -209,8 +207,8 @@ RESOLVEFUNCTION G_aImports[] =
         "drv_sprintf", (PFN*)&pdrv_sprintf,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
-        "strhDateTime", (PFN*)&pstrhDateTime,
-        "strhThousandsULong", (PFN*)&pstrhThousandsULong,
+        "nlsDateTime", (PFN*)&pnlsDateTime,
+        "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhFree", (PFN*)&pwinhFree,

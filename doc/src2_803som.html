@@ -102,7 +102,7 @@ for your WPDataFile subclass.
 objects</B> too. They are instances of their respective metaclasses. This takes some
 getting used to, but it is this concept only which allows WPS classes to
 be created at runtime and for class replacements in the first place.
-<P>That is, for example, any WPS object is an instance of WPObject (really
+<P>That is, for example, any Desktop object is an instance of WPObject (really
 one of its subclasses). The WPObject class in turn is an instance of
 its metaclass, M_WPObject.
 <P>In SOM, the default metaclass for a class is SOMClass. However, the WPS
@@ -110,7 +110,7 @@ overrides this behavior to create a unique metaclass for each WPS class,
 which is prefixed with <CODE>M_</CODE>. Since the metaclass is a class as well,
 it has methods too (the so-called "class methods", which operate on class
 objects, as opposed to the "instance methods" of the class itself, which operate
-on instances of the class -- the WPS objects).
+on instances of the class -- the Desktop objects).
 
 <P><LI>To <B>access a class object,</B> for any existing class you always have a
 corresponding macro which is

@@ -796,15 +796,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
 
     M_XWPFontObject_parent_M_WPTransient_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPFontObject = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPFontObject);
 
     // load default hints
     i = sizeof(G_ulFontSampleHints);

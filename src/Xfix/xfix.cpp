@@ -8,7 +8,9 @@
  *      my WPS got so confused with its handles in 2001,
  *      I finished this today (2001-01-21). Out of my
  *      11.000 handles, I managed to delete about 3.000,
- *      and my WPS booted again.
+ *      and my Desktop started again.
+ *
+ *      V0.9.16 added support for removing object IDs.
  *
  *@@header "xfix.h"
  *@@added V0.9.5 (2000-08-13) [umoeller]
@@ -45,6 +47,7 @@
 #include "helpers\dialog.h"
 #include "helpers\except.h"
 #include "helpers\linklist.h"
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"
 #include "helpers\standards.h"
 #include "helpers\stringh.h"
@@ -71,22 +74,22 @@ ULONG       G_ulrc = 0;         // return code from main()
 
 HAB         G_hab = NULLHANDLE;
 
-HWND        G_hwndMain = NULLHANDLE;
-HWND        G_hwndStatusBar = NULLHANDLE;
+HWND        G_hwndMain = NULLHANDLE,
+            G_hwndObjIDsFrame = NULLHANDLE;
 HWND        G_hwndContextMenuSingle = NULLHANDLE,
             G_hwndContextMenuMulti = NULLHANDLE;
 HWND        G_hwndHelp = NULLHANDLE;        // help instance
 
 PFNWP       G_pfnwpCnrOrig = NULL,
-            G_fnwpFrameOrig = NULL;
+            G_fnwpMainFrameOrig = NULL,
+            G_fnwpObjIDsFrameOrig = NULL;
+
+CHAR        G_cThousands[10] = ".";
 
 HPOINTER    G_hptrMain = NULLHANDLE;        // xfix icon V0.9.15 (2001-09-14) [umoeller]
 
-PBYTE       G_pHandlesBuffer = NULL;
-ULONG       G_cbHandlesBuffer = 0;
-
-PDRIV       G_aDriveNodes[27] = {0};        // drive nodes for each drive
-PNODE       G_aRootNodes[27] = {0};         // nodes for each root dir
+/* PBYTE       G_pHandlesBuffer = NULL;
+ULONG       G_cbHandlesBuffer = 0; */
 
 THREADINFO  G_tiInsertHandles = {0},
             G_tiCheckFiles = {0};
@@ -98,17 +101,73 @@ ULONG       G_ulPercentDone = 0;
 ULONG       G_cHandlesParsed = 0;
 ULONG       G_cDuplicatesFound = 0;
 
-ULONG       G_ulHiwordFileSystem = 0;
+PHANDLESBUF G_pHandlesBuf = NULL;
+
+PDRIV       G_aDriveNodes[27] = {0};        // drive nodes for each drive
+PNODE       G_aRootNodes[27] = {0};         // nodes for each root dir
+
+/* USHORT      G_usHiwordAbstract = 0,
+            G_usHiwordFileSystem = 0;
                                 // hi-word for file-system handles
                                 // (calc'd in main())
+   */
 
 LINKLIST    G_llDeferredNukes;
 
 const char  *INIAPP                 = "XWorkplace";
 const char  *INIKEY_MAINWINPOS      = "HandleFixWinPos";
+const char  *INIKEY_OBJIDSWINPOS    = "ObjIDsWinPos";
 
 #define     TIMERID_THREADRUNNING       998
 #define     TIMERID_SELECTIONCHANGED    997
+
+/*
+ *@@ OBJID:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+typedef struct _OBJID
+{
+    TREE        Tree;           // ulKey has the object handle
+    const char  *pcszID;        // object ID
+
+    struct _OBJIDRECORD *pRecord;   // if the obj IDs window is currently
+                                // open, the object ID record. NOTE: This
+                                // pointer is _invalid_ if G_hwndObjIDsFrame
+                                // is NULLHANDLE.
+} OBJID, *POBJID;
+
+TREE    *G_ObjIDsTree;          // has all OBJID nodes
+ULONG   G_cObjIDs = 0;          // count of nodes
+
+/*
+ *@@ OBJIDRECORD:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+typedef struct _OBJIDRECORD
+{
+    RECORDCORE      recc;
+
+    POBJID          pObjID;             // the corresponding OBJID record
+
+    ULONG           ulIndex;
+
+    PCSZ            pcszID;             // points into pObjID
+
+    PCSZ            pszStatus;          // NULL if valid
+
+    ULONG           ulHandle;           // handle for sorting
+    PCSZ            pcszHandle;         // points to szHandle
+    CHAR            szHandle[20];
+
+    PSZ             pszLongName;        // if FS obj, points to a NODERECORD.szLongName;
+                                        // if abstract, points to szLongName
+    CHAR            szLongName[2*CCHMAXPATH];
+
+} OBJIDRECORD, *POBJIDRECORD;
 
 #define NODESTAT_OK                     0x0000
 #define NODESTAT_DUPLICATEDRIV          0x0001
@@ -199,6 +258,9 @@ typedef struct _NODERECORD
     ULONG       cAbstracts;        // abstract objects in this folder
     BOOL        fFolderPos;         // if TRUE, folderpos entry exists
 
+    POBJID      pObjID;             // if != NULL, this entry has an
+                                    // object ID assigned
+
     PSZ         pszRefcsDescr;
             // descriptive text for references
 
@@ -207,22 +269,29 @@ typedef struct _NODERECORD
 
     PSZ         pszLongName;        // points to szLongName
     CHAR        szLongName[2*CCHMAXPATH];
+
+    APIRET      arcResolve;         // error code from wphComposePath
+
 } NODERECORD, *PNODERECORD;
 
 // root of records list
 PNODERECORD     G_preccVeryFirst = NULL;
 
 // nodes hash table
-PNODE           G_NodeHashTable[65536];
+// PNODE           G_NodeHashTable[65536];
 
 // NODERECORD hash table
 PNODERECORD     G_RecordHashTable[65536];
+
+// abstracts hash table; to get the folder of an abstract,
+// look up the abstract's index
+USHORT          G_ausAbstractFolders[65536];
 
 // record with source emphasis
 PRECORDCORE     G_preccSource = NULL;
 
 // count of selected records
-ULONG           G_cSelected = 0;
+ULONG           G_cHandlesSelected = 0;
 
 /*
  *@@ DEFERREDINI:
@@ -252,6 +321,8 @@ CHAR                G_szHandleDesktop[10];          // hex handle of desktop
 ULONG               G_cAbstractsDesktop = 0;
 ULONG               G_cTotalAbstractsMoved = 0;
 
+VOID UpdateMenuItems(USHORT usSortCmd);
+
 VOID UpdateStatusBar(LONG lSeconds);
 
 VOID MarkAllOrphans(PNODERECORD prec,
@@ -264,46 +335,101 @@ VOID MarkAllOrphans(PNODERECORD prec,
  ********************************************************************/
 
 /*
- *@@ wphFastFindPartName:
- *      similar to wphFindPartName, but this function doesn't
- *      search the whole buffer all the time, but uses a hash table
- *      instead. This is several times as fast as wphFindPartName.
- *      This function recurses, if neccessary.
+ *@@ Append:
  *
- *@@added V0.9.5 (2000-08-13) [umoeller]
  */
 
-PNODE wphFastFindPartName(USHORT usHandle,      // in: handle to search for
-                          PSZ pszFname,         // out: object partname
-                          USHORT usMax)         // in: sizeof(pszFname)
+VOID Append(PXSTRING pstr,
+            const char *pcsz,
+            const char *pcszSeparator)
 {
-    PNODE pNode = G_NodeHashTable[usHandle];
-    if (pNode)
+    if (pstr->ulLength)
+        xstrcat(pstr, pcszSeparator, 0);
+    xstrcat(pstr, pcsz, 0);
+}
+
+/*
+ *@@ UpdateStatusDescr:
+ *
+ */
+
+VOID UpdateStatusDescr(PNODERECORD prec)
+{
+    XSTRING     str;
+    xstrInit(&str, 0);
+
+    // node status
+    if (prec->ulStatus & NODESTAT_DUPLICATEDRIV)
+        Append(&str, "Duplicate DRIV", "; ");
+
+    if (prec->ulStatus & NODESTAT_ISDUPLICATE)
+        Append(&str, "Duplicate", "; ");
+
+    if (prec->ulStatus & NODESTAT_INVALIDDRIVE)
+        Append(&str, "Invalid drive", "; ");
+
+    if (prec->ulStatus & NODESTAT_INVALID_PARENT)
+        Append(&str, "Orphaned", "; ");
+
+    if (prec->ulStatus & NODESTAT_FILENOTFOUND)
+        Append(&str, "File not found", "; ");
+
+    if (prec->ulStatus & NODESTAT_PARENTNOTFOLDER)
+        Append(&str, "Parent is not folder", "; ");
+
+    if (prec->ulStatus & NODESTAT_FOLDERPOSNOTFOLDER)
+        Append(&str, "Folderpos for non-folder", "; ");
+
+    if (prec->ulStatus & NODESTAT_ABSTRACTSNOTFOLDER)
+        Append(&str, "Abstracts in non-folder", "; ");
+
+    if (prec->arcResolve)
     {
-        // handle exists:
-        ULONG usSize = usMax - strlen(pszFname);
-        if (usSize > pNode->usNameSize)
-            usSize = pNode->usNameSize;
-        if (pNode->usParentHandle)
-        {
-            // node has parent:
-            if (!wphFastFindPartName(pNode->usParentHandle,
-                                     pszFname,
-                                     usMax))
-                // parent handle not found:
-                return (NULL);
-            strcat(pszFname, "\\");
-            strncat(pszFname, pNode->szName, usSize);
-            return pNode;
-        }
-        else
-        {
-            strncpy(pszFname, pNode->szName, usSize);
-            return pNode;
-        }
+        CHAR sz[100];
+        sprintf(sz, "Error %d occured", prec->arcResolve);
+        Append(&str, sz, "; ");
     }
 
-    return (pNode);
+    if (prec->pszStatusDescr)
+    {
+        free(prec->pszStatusDescr);
+        prec->pszStatusDescr = NULL;
+    }
+
+    if (str.ulLength)
+    {
+        // we had an error: set "picked" emphasis
+        prec->pszStatusDescr = str.psz;
+        prec->recc.flRecordAttr |= CRA_PICKED;
+    }
+    else
+        prec->recc.flRecordAttr &= ~CRA_PICKED;
+
+    // references
+    if (prec->pszRefcsDescr)
+    {
+        free(prec->pszRefcsDescr);
+        prec->pszRefcsDescr = NULL;
+    }
+
+    xstrInit(&str, 0);
+            // do not free, we've used that string above
+
+    if (prec->cAbstracts)
+    {
+        CHAR sz[50];
+        sprintf(sz, "%d ABS", prec->cAbstracts);
+        Append(&str, sz, "; ");
+    }
+
+    if (prec->fFolderPos)
+        Append(&str, "FPOS", "; ");
+
+    if (prec->pObjID)
+        Append(&str, prec->pObjID->pcszID, "\n");
+
+    if (str.ulLength)
+        prec->pszRefcsDescr = str.psz;
 }
 
 /*
@@ -314,46 +440,26 @@ PNODE wphFastFindPartName(USHORT usHandle,      // in: handle to search for
 BOOL ComposeFullName(PNODERECORD precc,
                      PNODE pNode)
 {
-    if (wphFastFindPartName(pNode->usHandle,
-                            precc->szLongName,
-                            sizeof(precc->szLongName)))
-        precc->pszLongName = precc->szLongName;
-    return (TRUE);
-}
-
-/*
- *@@ RebuildNodeHashTable:
- *
- */
-
-VOID RebuildNodeHashTable(VOID)
-{
-    memset(G_NodeHashTable, 0, sizeof(G_NodeHashTable));
-
-    PBYTE pEnd = G_pHandlesBuffer + G_cbHandlesBuffer;
-
-    // start at beginning of buffer
-    PBYTE pCur = G_pHandlesBuffer + 4;
-
-    // now set up hash table
-    while (pCur < pEnd)
+    if (!precc->arcResolve)
     {
-        if (!memicmp(pCur, "DRIV", 4))
+        APIRET arc = wphComposePath(G_pHandlesBuf,
+                                    pNode->usHandle,
+                                    precc->szLongName,
+                                    sizeof(precc->szLongName),
+                                    NULL);
+        if (!arc)
+            precc->pszLongName = precc->szLongName;
+        else
         {
-            // pCur points to a DRIVE node:
-            // these never have handles, so skip this
-            PDRIV pDriv = (PDRIV)pCur;
-            pCur += sizeof(DRIV) + strlen(pDriv->szName);
-        }
-        else if (!memicmp(pCur, "NODE", 4))
-        {
-            // pCur points to a regular NODE: offset pointer first
-            PNODE pNode = (PNODE)pCur;
-            // store PNODE in hash table
-            G_NodeHashTable[pNode->usHandle] = pNode;
-            pCur += sizeof (NODE) + pNode->usNameSize;
+            if (arc == ERROR_WPH_INVALID_PARENT_HANDLE)
+                precc->ulStatus |= NODESTAT_INVALID_PARENT;
+            else
+                precc->arcResolve = arc;
+            UpdateStatusDescr(precc);
         }
     }
+
+    return (TRUE);
 }
 
 /*
@@ -383,97 +489,139 @@ VOID RebuildRecordsHashTable(VOID)
 
 /* ******************************************************************
  *
- *   Handle records
+ *   Misc helpers
  *
  ********************************************************************/
 
 /*
- *@@ Append:
+ *@@ MessageBox:
+ *      wrapper for showing a message box.
  *
+ *@@added V0.9.15 (2001-09-14) [umoeller]
  */
 
-VOID Append(PXSTRING pstr, const char *pcsz)
+ULONG MessageBox(HWND hwndOwner,
+                 ULONG flFlags,             // in: standard message box flags
+                 const char *pcszFormat,
+                 ...)
 {
-    if (pstr->ulLength)
-        xstrcat(pstr, "; ", 0);
-    xstrcat(pstr, pcsz, 0);
+    MSGBOXSTRINGS Strings =
+        {
+            "~Yes",
+            "~No",
+            "~OK",
+            "~Cancel",
+            "~Abort",
+            "~Retry",
+            "~Ignore",
+            "~Enter",
+            "Yes to ~all"
+        };
+
+    CHAR szBuf[4000];
+    va_list     args;
+    int         i;
+    va_start(args, pcszFormat);
+    i = vsprintf(szBuf, pcszFormat, args);
+    va_end(args);
+
+    return (dlghMessageBox(hwndOwner,
+                           G_hptrMain,
+                           "xfix",
+                           szBuf,
+                           flFlags,
+                           "9.WarpSans",
+                           &Strings));
 }
 
 /*
- *@@ UpdateStatusDescr:
+ *@@ SetStatusBarText:
  *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
  */
 
-VOID UpdateStatusDescr(PNODERECORD prec)
+VOID SetStatusBarText(HWND hwndFrame,
+                      const char *pcszFormat,
+                      ...)
 {
-    XSTRING     str;
-    xstrInit(&str, 0);
+    CHAR szBuf[4000];
+    va_list     args;
+    int         i;
+    va_start(args, pcszFormat);
+    i = vsprintf(szBuf, pcszFormat, args);
+    va_end(args);
 
-    // node status
-    if (prec->ulStatus & NODESTAT_DUPLICATEDRIV)
-        Append(&str, "Duplicate DRIV");
+    WinSetWindowText(WinWindowFromID(hwndFrame, FID_STATUSBAR),
+                     szBuf);
+}
 
-    if (prec->ulStatus & NODESTAT_ISDUPLICATE)
-        Append(&str, "Duplicate");
+/*
+ *@@ StandardCommands:
+ *      handles WM_COMMANDs shared between several windows.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
 
-    if (prec->ulStatus & NODESTAT_INVALIDDRIVE)
-        Append(&str, "Invalid drive");
-
-    if (prec->ulStatus & NODESTAT_INVALID_PARENT)
-        Append(&str, "Orphaned");
-
-    if (prec->ulStatus & NODESTAT_FILENOTFOUND)
-        Append(&str, "File not found");
-
-    if (prec->ulStatus & NODESTAT_PARENTNOTFOLDER)
-        Append(&str, "Parent is not folder");
-
-    if (prec->ulStatus & NODESTAT_FOLDERPOSNOTFOLDER)
-        Append(&str, "Folderpos for non-folder");
-
-    if (prec->ulStatus & NODESTAT_ABSTRACTSNOTFOLDER)
-        Append(&str, "Abstracts in non-folder");
-
-    if (prec->pszStatusDescr)
+VOID StandardCommands(HWND hwndFrame, USHORT usCmd)
+{
+    switch (usCmd)
     {
-        free(prec->pszStatusDescr);
-        prec->pszStatusDescr = NULL;
-    }
+        case IDMI_EXIT:
+            WinPostMsg(hwndFrame,
+                       WM_QUIT,
+                       0,
+                       0);
+        break;
 
-    if (str.ulLength)
-    {
-        // we had an error: set "picked" emphasis
-        prec->pszStatusDescr = str.psz;
-        prec->recc.flRecordAttr |= CRA_PICKED;
-    }
-    else
-        prec->recc.flRecordAttr &= ~CRA_PICKED;
+        case IDMI_HELP_GENERAL:
+        case IDMI_HELP_USINGHELP:
+            if (G_hwndHelp)
+            {
+                winhDisplayHelpPanel(G_hwndHelp,
+                                    (usCmd == IDMI_HELP_GENERAL)
+                                        ? ID_XSH_XFIX_INTRO
+                                        : 0);       // "using help"
+            }
+        break;
 
-    // references
-    if (prec->pszRefcsDescr)
-    {
-        free(prec->pszRefcsDescr);
-        prec->pszRefcsDescr = NULL;
-    }
-
-    if (prec->cAbstracts || prec->fFolderPos)
-    {
-        xstrInit(&str, 20);
-                // do not free, we've used that string above
-
-        if (prec->cAbstracts)
+        case IDMI_HELP_PRODINFO:
         {
-            CHAR sz[50];
-            sprintf(sz, "%d ABS", prec->cAbstracts);
-            Append(&str, sz);
+            MessageBox(hwndFrame,
+                       MB_OK | MB_MOVEABLE,
+                       "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
+                       "(C) 2000-2001 Ulrich M”ller\n\n"
+                       "XWorkplace File Handles Fixer.");
         }
-
-        if (prec->fFolderPos)
-            Append(&str, "FPOS");
-
-        if (str.ulLength)
-            prec->pszRefcsDescr = str.psz;
+        break;
     }
+}
+
+LONG inline CompareULongs(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
+{
+    ULONG   ul1 = *(PULONG)((PBYTE)precc1 + ulFieldOfs),
+            ul2 = *(PULONG)((PBYTE)precc2 + ulFieldOfs);
+    if (ul1 < ul2)
+        return -1;
+    if (ul1 > ul2)
+        return 1;
+    return (0);
+}
+
+LONG inline CompareStrings(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
+{
+    char *psz1 = *(char**)((PBYTE)precc1 + ulFieldOfs);
+    char *psz2 = *(char**)((PBYTE)precc2 + ulFieldOfs);
+    if ((psz1) && (psz2))
+       return (strcmp(psz1,
+                      psz2));
+    else if (psz1)
+        // string 1 exists, but 2 doesn't:
+        return (1);
+    else if (psz2)
+        // string 2 exists, but 1 doesn't:
+        return (-1);
+
+    return (0);
 }
 
 /* ******************************************************************
@@ -501,18 +649,31 @@ int TREEENTRY CompareStrings(ULONG ul1, ULONG ul2)
  */
 
 BOOL HasFolderPos(TREE *pFolderPosTree,
-                  char *pcszDecimalHandle)
+                  ULONG ulHandle32)
 {
-    return (!!treeFind(pFolderPosTree,
-                       (ULONG)pcszDecimalHandle,
-                       CompareStrings));
+    CHAR szDecimalHandle[30];
+    sprintf(szDecimalHandle,
+            "%d",
+            ulHandle32);
+    return (NULL != treeFind(pFolderPosTree,
+                             (ULONG)szDecimalHandle,
+                             CompareStrings));
 }
+
+typedef struct _FOLDERPOSNODE
+{
+    TREE        Tree;                       // ulKey points to szDecimalHandle
+
+    CHAR        szDecimalHandle[30];        // decimal handle
+
+} FOLDERPOSNODE, *PFOLDERPOSNODE;
 
 /*
  *@@ fntInsertHandles:
  *
  *@@changed V0.9.9 (2001-04-07) [umoeller]: fixed wrong duplicates reports for UNC drive names
  *@@changed V0.9.9 (2001-04-07) [umoeller]: sped up folder pos search fourfold
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: fixed missing folderpos markers
  */
 
 void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
@@ -546,15 +707,90 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
         // invalidate records hash table
         memset(G_RecordHashTable, 0, sizeof(G_RecordHashTable));
 
-        if (G_pHandlesBuffer)
+        // invalidate abstracts hash V0.9.16 (2001-09-29) [umoeller]
+        memset(G_ausAbstractFolders, 0, sizeof(G_ausAbstractFolders));
+
+        // load object IDs from OS2.INI
+        APIRET arc;
+        PSZ pszObjIDs = NULL;
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                                        &pszObjIDs)))
+        {
+            treeInit(&G_ObjIDsTree);
+            G_cObjIDs = 0;
+
+            // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
+            const char *pcszObjIDThis = pszObjIDs;
+            while (*pcszObjIDThis)
+            {
+                OBJID    *pNewNode = NEW(OBJID);
+                pNewNode->pcszID = pcszObjIDThis;
+                ULONG cb = sizeof(pNewNode->Tree.ulKey);
+                PrfQueryProfileData(HINI_USER,
+                                    WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                                    pcszObjIDThis,
+                                    &pNewNode->Tree.ulKey,
+                                    &cb);
+                if (!treeInsert(&G_ObjIDsTree,
+                                (TREE*)pNewNode,
+                                treeCompareKeys))      // sort by handle
+                    G_cObjIDs++;
+
+                pcszObjIDThis += strlen(pcszObjIDThis) + 1;   // next key
+            }
+
+            // free(pszObjIDs);
+            // do not free, the tree uses pointers into this buffer
+
+        } // end  if (!(arc = prfhQueryKeysForApp(HINI_USER, "PM_Workplace:Location"
+
+        // build the abstract/folders hash table
+        PSZ pszFolderContent;
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
+                                        &pszFolderContent)))
+        {
+            const char *pcszFolderThis = pszFolderContent;
+            while (*pcszFolderThis)
+            {
+                ULONG cbFolderContent = 0;
+                PSZ pszAbstracts = prfhQueryProfileData(HINI_USER,
+                                                        WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
+                                                        pcszFolderThis,
+                                                        &cbFolderContent);
+                if (pszAbstracts && cbFolderContent)
+                {
+                    USHORT usFolderHandle = strtol(pcszFolderThis, NULL, 16);
+
+                    // this is an array of ULONGs really
+                    ULONG cAbstracts = cbFolderContent / sizeof(ULONG);
+                    PULONG paulAbstracts = (PULONG)pszAbstracts;
+
+                    ULONG ul;
+                    for (ul = 0;
+                         ul < cAbstracts;
+                         ul++)
+                    {
+                        G_ausAbstractFolders[paulAbstracts[ul]] = usFolderHandle;
+                    }
+
+                    free(pszAbstracts);
+                }
+
+                pcszFolderThis += strlen(pcszFolderThis) + 1;   // next key
+            }
+        }
+
+        if (G_pHandlesBuf)
         {
             // got handles buffer:
             // now set the pointer for the end of the BLOCKs buffer
-            PBYTE pEnd = G_pHandlesBuffer + G_cbHandlesBuffer;
+            PBYTE pEnd = G_pHandlesBuf->pbData + G_pHandlesBuf->cbData;
 
             // pCur is our variable pointer where we're at now; there
             // is some offset of 4 bytes at the beginning (duh)
-            PBYTE pCur = G_pHandlesBuffer + 4;
+            PBYTE pCur = G_pHandlesBuf->pbData + 4;
 
             // first count records we need
             while (pCur < pEnd)
@@ -598,20 +834,31 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                 APIRET arc;
                 PSZ pszFolderPoses = NULL;
                 if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                                "PM_Workplace:FolderPos",
+                                                WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                                 &pszFolderPoses)))
                 {
-                    TREE    *FolderPosTree;
-                    treeInit(&FolderPosTree);
+                    TREE    *FolderPosesTree;
+                    treeInit(&FolderPosesTree);
 
                     // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
+                    // fixed... this shouldn't have used the full key name for
+                    // indexing V0.9.16 (2001-09-29) [umoeller]
                     const char *pcszFolderPosThis = pszFolderPoses;
                     while (*pcszFolderPosThis)
                     {
-                        TREE    *pNewNode = NEW(TREE);
-                        pNewNode->ulKey = (ULONG)pcszFolderPosThis;
-                        treeInsert(&FolderPosTree,
-                                   pNewNode,
+                        FOLDERPOSNODE    *pNewNode = NEW(FOLDERPOSNODE);
+                        PCSZ p;
+                        ULONG c;
+                        if (p = strchr(pcszFolderPosThis, '@'))
+                            c = p - pcszFolderPosThis;
+                        else
+                            c = strlen(pcszFolderPosThis);
+
+                        strncpy(pNewNode->szDecimalHandle, pcszFolderPosThis, c);
+                        pNewNode->szDecimalHandle[c] = '\0';
+                        pNewNode->Tree.ulKey = (ULONG)pNewNode->szDecimalHandle;
+                        treeInsert(&FolderPosesTree,
+                                   (TREE*)pNewNode,
                                    CompareStrings);
                                 // @@ free the tree nodes
                         pcszFolderPosThis += strlen(pcszFolderPosThis) + 1;   // next type/filter
@@ -622,7 +869,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                         PNODERECORD preccThis = G_preccVeryFirst;
 
                         // restart at beginning of buffer
-                        pCur = G_pHandlesBuffer + 4;
+                        pCur = G_pHandlesBuf->pbData + 4;
                         // now set up records
                         ULONG   ulIndexThis = 0;
                         while (pCur < pEnd)
@@ -633,7 +880,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                             preccThis->pNextRecord = (PNODERECORD)(preccThis->recc.preccNextRecord);
 
                             preccThis->ulIndex = ulIndexThis++;
-                            preccThis->ulOfs = (pCur - G_pHandlesBuffer);
+                            preccThis->ulOfs = (pCur - G_pHandlesBuf->pbData);
 
                             preccThis->ulStatus = NODESTAT_OK;
 
@@ -752,7 +999,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                                 // four digits...
                                 ULONG cbFolderContent = 0;
                                 if (    (PrfQueryProfileSize(HINI_USER,
-                                                             "PM_Abstract:FldrContent",
+                                                             WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                                              szHandleShort,
                                                              &cbFolderContent))
                                      && (cbFolderContent)
@@ -768,15 +1015,21 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                 // for some reason, these are decimal,
                                 // followed by "@" and some other key...
                                 // XWP adds keys to this too.
-                                CHAR szDecimalHandle[30];
-                                sprintf(szDecimalHandle,
-                                        "%d@",
-                                        // compose full handle (hiword)
-                                        (ULONG)(pNode->usHandle)
-                                              | (G_ulHiwordFileSystem << 16L));
+                                preccThis->fFolderPos = HasFolderPos(FolderPosesTree,
+                                                                     // compose full handle (hiword)
+                                                                     (   (pNode->usHandle)
+                                                                       | (G_pHandlesBuf->usHiwordFileSystem << 16L)
+                                                                     ));
 
-                                preccThis->fFolderPos = HasFolderPos(FolderPosTree,
-                                                                     szDecimalHandle);
+
+                                // check if this node has an object ID assigned
+                                // V0.9.16 (2001-09-29) [umoeller]
+                                preccThis->pObjID = (POBJID)treeFind(G_ObjIDsTree,
+                                                                 // handle:
+                                                                 (   (pNode->usHandle)
+                                                                   | (G_pHandlesBuf->usHiwordFileSystem << 16L)
+                                                                 ),
+                                                                 treeCompareKeys);
 
                                 pCur += sizeof (NODE) + pNode->usNameSize;
                             }
@@ -792,8 +1045,8 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                             preccThis = preccThis->pNextRecord;
 
                             // report progress to thread 1
-                            ULONG ulMax = (pEnd - G_pHandlesBuffer);
-                            ULONG ulNow = (pCur - G_pHandlesBuffer);
+                            ULONG ulMax = (pEnd - G_pHandlesBuf->pbData);
+                            ULONG ulNow = (pCur - G_pHandlesBuf->pbData);
                             G_ulPercentDone = ulNow * 100 / ulMax;
                         } // end while (pCur < pEnd)
 
@@ -816,7 +1069,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     // parents tree
 
                                     // get the NODE from the record hash table
-                                    PNODE pNodeStart = G_NodeHashTable[preccThis->ulHandle],
+                                    PNODE pNodeStart = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle],
                                           pNodeThis = pNodeStart;
 
                                     PNODERECORD pPrevParent = NULL;
@@ -838,7 +1091,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                                 pParentRec->cChildren++;
 
                                                 // go for next higher parent
-                                                pNodeThis = G_NodeHashTable[pParentRec->ulHandle];
+                                                pNodeThis = G_pHandlesBuf->NodeHashTable[pParentRec->ulHandle];
 
                                             }
                                             else
@@ -903,9 +1156,9 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Check Files thread                                             *
- *                                                                  *
+ *
+ *   Check Files thread
+ *
  ********************************************************************/
 
 void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
@@ -977,7 +1230,7 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
         if (preccThis->ulHandle)
         {
             // get the NODE from the record hash table
-            PNODE pNodeThis = G_NodeHashTable[preccThis->ulHandle];
+            PNODE pNodeThis = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle];
             if (pNodeThis->usParentHandle)
             {
                 // record has parent:
@@ -1026,101 +1279,448 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Container sort procs                                           *
- *                                                                  *
+ *
+ *   Container sort procs
+ *
  ********************************************************************/
 
-LONG inline CompareULongs(PNODERECORD precc1, PNODERECORD precc2, ULONG ulFieldOfs)
-{
-    ULONG   ul1 = *(PULONG)((PBYTE)precc1 + ulFieldOfs),
-            ul2 = *(PULONG)((PBYTE)precc2 + ulFieldOfs);
-    if (ul1 < ul2)
-        return -1;
-    if (ul1 > ul2)
-        return 1;
-    return (0);
-}
-
-LONG inline CompareStrings(PNODERECORD precc1, PNODERECORD precc2, ULONG ulFieldOfs)
-{
-    char *psz1 = *(char**)((PBYTE)precc1 + ulFieldOfs);
-    char *psz2 = *(char**)((PBYTE)precc2 + ulFieldOfs);
-    if ((psz1) && (psz2))
-       return (strcmp(psz1,
-                      psz2));
-    else if (psz1)
-        // string 1 exists, but 2 doesn't:
-        return (1);
-    else if (psz2)
-        // string 2 exists, but 1 doesn't:
-        return (-1);
-
-    return (0);
-}
-
-SHORT EXPENTRY fnCompareIndex(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareIndex(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulIndex)));
 }
 
-SHORT EXPENTRY fnCompareStatus(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareStatus(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszStatusDescr)));
 }
 
-SHORT EXPENTRY fnCompareType(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareType(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszType)));
 }
 
-SHORT EXPENTRY fnCompareHandle(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareHandle(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulHandle)));
 }
 
-SHORT EXPENTRY fnCompareParent(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareParent(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulParentHandle)));
 }
 
-SHORT EXPENTRY fnCompareShortName(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareShortName(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszShortNameCopy)));
 }
 
-SHORT EXPENTRY fnCompareChildren(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareChildren(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (-CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, cChildren)));
 }
 
-SHORT EXPENTRY fnCompareDuplicates(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareDuplicates(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (-CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, cDuplicates)));
 }
 
-SHORT EXPENTRY fnCompareReferences(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareReferences(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (-CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszRefcsDescr)));
 }
 
-SHORT EXPENTRY fnCompareLongName(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
+SHORT EXPENTRY fnMainCompareLongName(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
     return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszLongName)));
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Container window proc                                          *
- *                                                                  *
+ *
+ *   View object IDs
+ *
  ********************************************************************/
 
+SHORT EXPENTRY fnObjIdsCompareIndex(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
+{
+    return (CompareULongs(p1, p2, FIELDOFFSET(OBJIDRECORD, ulIndex)));
+}
+
+SHORT EXPENTRY fnObjIdsCompareStatus(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
+{
+    return (CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pszStatus)));
+}
+
+SHORT EXPENTRY fnObjIdsCompareIDs(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
+{
+    return (CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pcszID)));
+}
+
+SHORT EXPENTRY fnObjIdsCompareHandles(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
+{
+    return (CompareULongs(p1, p2, FIELDOFFSET(OBJIDRECORD, ulHandle)));
+}
+
+SHORT EXPENTRY fnObjIdsCompareLongNames(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
+{
+    return (CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pszLongName)));
+}
+
 /*
- *@@ fnwpSubclassedCnr:
+ *@@ CheckObjIdsSortItem:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+VOID CheckObjIdsSortItem(HWND hwndFrame, USHORT usCmd)
+{
+    HWND    hmenuMain = WinWindowFromID(hwndFrame, FID_MENU);
+
+    static USHORT usLastCmd = 0;
+
+    if (usLastCmd)
+        WinCheckMenuItem(hmenuMain, usLastCmd, FALSE);
+    if (usLastCmd != usCmd)
+    {
+        WinCheckMenuItem(hmenuMain, usCmd, TRUE);
+        usLastCmd = usCmd;
+    }
+}
+
+/*
+ *@@ SetObjIDsSort:
  *
  */
 
-MRESULT EXPENTRY fnwpSubclassedCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM mp2)
+VOID SetObjIDsSort(HWND hwndFrame,
+                   USHORT usCmd)
+{
+    PVOID pvSortFunc = NULL;
+    switch (usCmd)
+    {
+        case IDMI_SORT_INDEX:
+            pvSortFunc = (PVOID)fnObjIdsCompareIndex;
+        break;
+
+        case IDMI_SORT_STATUS:
+            pvSortFunc = (PVOID)fnObjIdsCompareStatus;
+        break;
+
+        case IDMI_SORT_ID:
+            pvSortFunc = (PVOID)fnObjIdsCompareIDs;
+        break;
+
+        case IDMI_SORT_HANDLE:
+            pvSortFunc = (PVOID)fnObjIdsCompareHandles;
+        break;
+
+        case IDMI_SORT_LONGNAME:
+            pvSortFunc = (PVOID)fnObjIdsCompareLongNames;
+        break;
+    }
+
+    if (pvSortFunc)
+    {
+        HPOINTER hptrOld = winhSetWaitPointer();
+
+        WinSendDlgItemMsg(hwndFrame, FID_CLIENT,
+                          CM_SORTRECORD,
+                          (MPARAM)pvSortFunc,
+                          0);
+
+        CheckObjIdsSortItem(hwndFrame, usCmd);
+
+        WinSetPointer(HWND_DESKTOP, hptrOld);
+    }
+}
+
+/*
+ *@@ fnwpSubclassedObjIDsFrame:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpSubclassedObjIDsFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_SYSCOMMAND:
+            if (SHORT1FROMMP(mp1) == SC_CLOSE)
+            {
+                // intercept close since the original would
+                // post WM_QUIT
+                winhSaveWindowPos(hwndFrame,
+                                  HINI_USER,
+                                  INIAPP,
+                                  INIKEY_OBJIDSWINPOS);
+                WinDestroyWindow(hwndFrame);
+                G_hwndObjIDsFrame = NULLHANDLE;
+            }
+            else
+                mrc = G_fnwpObjIDsFrameOrig(hwndFrame, msg, mp1, mp2);
+        break;
+
+        case WM_COMMAND:
+        {
+            USHORT  usCmd = SHORT1FROMMP(mp1);
+            switch (usCmd)
+            {
+                case IDMI_CLOSETHIS:
+                    WinPostMsg(hwndFrame,
+                               WM_SYSCOMMAND,
+                               (MPARAM)SC_CLOSE,
+                               0);
+                break;
+
+                case IDMI_SORT_INDEX:
+                case IDMI_SORT_STATUS:
+                case IDMI_SORT_ID:
+                case IDMI_SORT_HANDLE:
+                case IDMI_SORT_LONGNAME:
+                    SetObjIDsSort(hwndFrame, usCmd);
+                break;
+
+                default:
+                    StandardCommands(hwndFrame, usCmd);
+            }
+        }
+        break;
+
+        default:
+            mrc = G_fnwpObjIDsFrameOrig(hwndFrame, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ ViewObjectIDs:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+VOID ViewObjectIDs(VOID)
+{
+    EXTFRAMECDATA xfd =
+        {
+            NULL,               // pswpFrame
+            FCF_TITLEBAR
+               | FCF_SYSMENU
+               | FCF_MINMAX
+               | FCF_SIZEBORDER
+               | FCF_ICON
+//                | FCF_MENU
+               | FCF_TASKLIST,
+            XFCF_STATUSBAR,
+            0,                      // frame style
+            "xfix: Object IDs",
+            1,     // icon resource
+            WC_CONTAINER,
+            CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
+               | WS_VISIBLE,
+            0,
+            NULL
+        };
+
+    HWND    hwndObjIDsCnr;
+
+    if (!G_hwndObjIDsFrame)
+    {
+        // not yet created:
+
+        if (    (G_hwndObjIDsFrame = winhCreateExtStdWindow(&xfd,
+                                                            &hwndObjIDsCnr))
+             && (hwndObjIDsCnr)
+           )
+        {
+            HWND hwndCnr = WinWindowFromID(G_hwndObjIDsFrame, FID_CLIENT);
+
+            // subclass frame for supporting msgs
+            G_fnwpObjIDsFrameOrig = WinSubclassWindow(G_hwndObjIDsFrame,
+                                                      fnwpSubclassedObjIDsFrame);
+
+            // load the different menu bar explicitly
+            WinLoadMenu(G_hwndObjIDsFrame,
+                        NULLHANDLE,
+                        IDM_OBJIDS);
+
+            CheckObjIdsSortItem(G_hwndObjIDsFrame, IDMI_SORT_INDEX);
+
+            // set up data for Details view columns
+            XFIELDINFO      xfi[13];
+            int             i = 0,
+                            iSplitAfter;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, ulIndex);
+            xfi[i].pszColumnTitle = "i";
+            xfi[i].ulDataType = CFA_ULONG;
+            xfi[i++].ulOrientation = CFA_RIGHT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pszStatus);
+            xfi[i].pszColumnTitle = "Status";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            iSplitAfter = i;
+            xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pcszID);
+            xfi[i].pszColumnTitle = "ID";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pcszHandle);
+            xfi[i].pszColumnTitle = "Handle";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_RIGHT;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pszLongName);
+            xfi[i].pszColumnTitle = "Long name";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
+            cnrhClearFieldInfos(hwndCnr, FALSE);
+
+            PFIELDINFO pFieldInfoLast
+                = cnrhSetFieldInfos(hwndCnr,
+                                    &xfi[0],
+                                    i,
+                                    TRUE,          // draw lines
+                                    iSplitAfter);            // column index to return
+            BEGIN_CNRINFO()
+            {
+                // set split bar
+                cnrhSetSplitBarAfter(pFieldInfoLast);
+                cnrhSetSplitBarPos(300);
+                // switch view
+                cnrhSetView(CV_DETAIL | CV_MINI | CA_DETAILSVIEWTITLES | CA_DRAWICON);
+            } END_CNRINFO(hwndCnr)
+
+            winhSetWindowFont(hwndCnr, NULL);
+
+            if (!winhRestoreWindowPos(G_hwndObjIDsFrame,
+                                      HINI_USER,
+                                      INIAPP,
+                                      INIKEY_OBJIDSWINPOS,
+                                      SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE))
+                WinSetWindowPos(G_hwndObjIDsFrame,
+                                HWND_TOP,
+                                10, 10, 500, 500,
+                                SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE);
+
+            // now go create the records
+            POBJIDRECORD precFirst = (POBJIDRECORD)cnrhAllocRecords(hwndCnr,
+                                                                    sizeof(OBJIDRECORD),
+                                                                    G_cObjIDs),
+                         precThis = precFirst;
+
+            POBJID      pobjidThis = (POBJID)treeFirst(G_ObjIDsTree);
+
+            ULONG ul,
+                  cRecords = 0;
+            for (ul = 0;
+                 ul < G_cObjIDs;
+                 ul++)
+            {
+                XSTRING strStatus;
+                xstrInit(&strStatus, 0);
+
+                ULONG ulHandle = pobjidThis->Tree.ulKey;        // 32 bits
+
+                precThis->ulIndex = cRecords++;
+                precThis->pcszID = pobjidThis->pcszID;
+                precThis->ulHandle = ulHandle;
+                sprintf(precThis->szHandle,
+                        "0x%lX",
+                        ulHandle);
+                precThis->pcszHandle = precThis->szHandle;
+
+                if (HIUSHORT(ulHandle) == G_pHandlesBuf->usHiwordFileSystem)
+                {
+                    // file-system object: check handle from table
+                    PNODERECORD p;
+                    if (p = G_RecordHashTable[LOUSHORT(ulHandle)])
+                        precThis->pszLongName = p->szLongName;
+                    else
+                        Append(&strStatus, "Invalid handle", ";");
+                }
+                else
+                {
+                    // abstract:
+                    USHORT usFolder;
+                    if (!(usFolder = G_ausAbstractFolders[LOUSHORT(ulHandle)]))
+                    {
+                        Append(&strStatus, "Abstract's folder handle lost", ";");
+                    }
+                    else
+                    {
+                        // OK, we got the folder handle:
+                        // check if that handle is valid
+                        PNODERECORD prec;
+                        if (prec = G_RecordHashTable[usFolder])
+                            sprintf(precThis->szLongName,
+                                    "Abstract in 0x%04lX (%s)",
+                                    usFolder,
+                                    prec->szLongName);
+                        else
+                        {
+                            // invalid folder handle:
+                            sprintf(precThis->szLongName,
+                                    "Abstract in 0x%04lX",
+                                    usFolder);
+                            Append(&strStatus, "Invalid folder handle", ";");
+                        }
+
+                        precThis->pszLongName = precThis->szLongName;
+                    }
+                }
+
+                if (strStatus.ulLength)
+                {
+                    precThis->pszStatus = strStatus.psz;
+                    precThis->recc.flRecordAttr |= CRA_PICKED;
+                }
+
+                // reverse linkage between objid and record
+                pobjidThis->pRecord = precThis;
+
+                if (!(pobjidThis = (POBJID)treeNext((TREE*)pobjidThis)))
+                    break;
+
+                if (!(precThis = (POBJIDRECORD)precThis->recc.preccNextRecord))
+                    break;
+            }
+
+            cnrhInsertRecords(hwndCnr,
+                              NULL,
+                              (PRECORDCORE)precFirst,
+                              TRUE,
+                              NULL,
+                              CRA_RECORDREADONLY,
+                              cRecords);
+
+            CHAR sz2[30], sz3[30];
+            SetStatusBarText(G_hwndObjIDsFrame,
+                             "%s IDs loaded, %s IDs inserted.",
+                             nlsThousandsULong(sz2, G_cObjIDs, G_cThousands[0]),
+                             nlsThousandsULong(sz3, cRecords, G_cThousands[0]));
+        }
+    }
+    else
+        WinSetActiveWindow(HWND_DESKTOP, G_hwndObjIDsFrame);
+}
+
+/* ******************************************************************
+ *
+ *   Main container window proc
+ *
+ ********************************************************************/
+
+/*
+ *@@ fnwpSubclassedMainCnr:
+ *
+ */
+
+MRESULT EXPENTRY fnwpSubclassedMainCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1142,11 +1742,11 @@ MRESULT EXPENTRY fnwpSubclassedCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM m
 }
 
 /*
- *@@ SetupCnr:
+ *@@ SetupMainCnr:
  *
  */
 
-VOID SetupCnr(HWND hwndCnr)
+VOID SetupMainCnr(HWND hwndCnr)
 {
     // set up data for Details view columns
     XFIELDINFO      xfi[13];
@@ -1156,7 +1756,7 @@ VOID SetupCnr(HWND hwndCnr)
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, ulIndex);
     xfi[i].pszColumnTitle = "i";
     xfi[i].ulDataType = CFA_ULONG;
-    xfi[i++].ulOrientation = CFA_RIGHT;
+    xfi[i++].ulOrientation = CFA_RIGHT | CFA_TOP;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszStatusDescr);
     xfi[i].pszColumnTitle = "";
@@ -1230,42 +1830,10 @@ VOID SetupCnr(HWND hwndCnr)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Frame window proc                                              *
- *                                                                  *
- ********************************************************************/
-
-/*
- *@@ MessageBox:
- *      wrapper for showing a message box.
  *
- *@@added V0.9.15 (2001-09-14) [umoeller]
- */
-
-ULONG MessageBox(const char *pcszMessage,   // in: message
-                 ULONG flFlags)             // in: standard message box flags
-{
-    MSGBOXSTRINGS Strings =
-        {
-            "~Yes",
-            "~No",
-            "~OK",
-            "~Cancel",
-            "~Abort",
-            "~Retry",
-            "~Ignore",
-            "~Enter",
-            "Yes to ~all"
-        };
-
-    return (dlghMessageBox(G_hwndMain,
-                           G_hptrMain,
-                           "xfix",
-                           pcszMessage,
-                           flFlags,
-                           "9.WarpSans",
-                           &Strings));
-}
+ *   Main frame window proc
+ *
+ ********************************************************************/
 
 /*
  *@@ UpdateStatusBar:
@@ -1277,28 +1845,21 @@ VOID UpdateStatusBar(LONG lSeconds)
     CHAR sz[100],
          sz2[100],
          sz3[100];
-    CHAR cThousands[10] = ".";
-    ULONG cb = sizeof(cThousands);
-    PrfQueryProfileData(HINI_USER,
-                        "PM_National",
-                        "sThousand",
-                        cThousands,
-                        &cb);
 
-    if (G_cSelected && lSeconds == -1)
+    if (G_cHandlesSelected && lSeconds == -1)
     {
         // any records selected:
         sprintf(sz,
                 "%s out of %s handles selected.",
-                strhThousandsULong(sz3, (ULONG)G_cSelected, cThousands[0]),
-                strhThousandsULong(sz2, (ULONG)G_cHandlesParsed, cThousands[0]));
+                nlsThousandsULong(sz3, (ULONG)G_cHandlesSelected, G_cThousands[0]),
+                nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
     }
     else
     {
         sprintf(sz,
                 "Done, %s bytes (%s handles).",
-                strhThousandsULong(sz3, (ULONG)G_cbHandlesBuffer, cThousands[0]),
-                strhThousandsULong(sz2, (ULONG)G_cHandlesParsed, cThousands[0]));
+                nlsThousandsULong(sz3, (ULONG)G_pHandlesBuf->cbData, G_cThousands[0]),
+                nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
         if (lSeconds != -1)
             sprintf(sz + strlen(sz) - 1,
                     ", %d seconds.",
@@ -1310,7 +1871,7 @@ VOID UpdateStatusBar(LONG lSeconds)
                 " -- WARNING: %d duplicate handles exist.",
                 G_cDuplicatesFound);
 
-    WinSetWindowText(G_hwndStatusBar, sz);
+    SetStatusBarText(G_hwndMain, sz);
 }
 
 /*
@@ -1333,6 +1894,10 @@ VOID UpdateMenuItems(USHORT usSortCmd)
                       fEnable);
     WinEnableMenuItem(hmenuMain, IDMI_WRITETOINI,
                       fEnable);
+
+    // disable "object IDs" window if already open
+    /* WinEnableMenuItem(hmenuMain, IDMI_VIEW_OBJIDS,
+                      (G_hwndObjIDsFrame == NULL)); */
 
     // disable "duplicates" if we have none
     WinEnableMenuItem(hmenuMain, IDMI_SORT_DUPS,
@@ -1367,53 +1932,53 @@ VOID SelectionChanged(VOID)
 }
 
 /*
- *@@ SetSort:
+ *@@ SetMainSort:
  *
  */
 
-VOID SetSort(USHORT usCmd)
+VOID SetMainSort(USHORT usCmd)
 {
     PVOID pvSortFunc = NULL;
     switch (usCmd)
     {
         case IDMI_SORT_INDEX:
-            pvSortFunc = (PVOID)fnCompareIndex;
+            pvSortFunc = (PVOID)fnMainCompareIndex;
         break;
 
         case IDMI_SORT_STATUS:
-            pvSortFunc = (PVOID)fnCompareStatus;
+            pvSortFunc = (PVOID)fnMainCompareStatus;
         break;
 
         case IDMI_SORT_TYPE:
-            pvSortFunc = (PVOID)fnCompareType;
+            pvSortFunc = (PVOID)fnMainCompareType;
         break;
 
         case IDMI_SORT_HANDLE:
-            pvSortFunc = (PVOID)fnCompareHandle;
+            pvSortFunc = (PVOID)fnMainCompareHandle;
         break;
 
         case IDMI_SORT_PARENT:
-            pvSortFunc = (PVOID)fnCompareParent;
+            pvSortFunc = (PVOID)fnMainCompareParent;
         break;
 
         case IDMI_SORT_SHORTNAME:
-            pvSortFunc = (PVOID)fnCompareShortName;
+            pvSortFunc = (PVOID)fnMainCompareShortName;
         break;
 
         case IDMI_SORT_CHILDREN:
-            pvSortFunc = (PVOID)fnCompareChildren;
+            pvSortFunc = (PVOID)fnMainCompareChildren;
         break;
 
         case IDMI_SORT_DUPS:
-            pvSortFunc = (PVOID)fnCompareDuplicates;
+            pvSortFunc = (PVOID)fnMainCompareDuplicates;
         break;
 
         case IDMI_SORT_REFCS:
-            pvSortFunc = (PVOID)fnCompareReferences;
+            pvSortFunc = (PVOID)fnMainCompareReferences;
         break;
 
         case IDMI_SORT_LONGNAME:
-            pvSortFunc = (PVOID)fnCompareLongName;
+            pvSortFunc = (PVOID)fnMainCompareLongName;
         break;
     }
 
@@ -1451,7 +2016,7 @@ VOID StartInsertHandles(HWND hwndCnr)
     WinStartTimer(WinQueryAnchorBlock(G_hwndMain),
                   G_hwndMain,
                   TIMERID_THREADRUNNING,
-                  100);
+                  200);
 
     UpdateMenuItems(IDMI_SORT_INDEX);
 }
@@ -1503,7 +2068,7 @@ PULONG GetAbstracts(PNODERECORD prec,
                     // yes, WPS uses "AB" if less than
                     // four digits...
     PSZ pszAbstracts = prfhQueryProfileData(HINI_USER,
-                                            "PM_Abstract:FldrContent",
+                                            WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                             pszHandleShort,
                                             &cbFolderContent);
     if (pszAbstracts && cbFolderContent)
@@ -1544,6 +2109,9 @@ VOID NukeAbstracts(PNODERECORD prec,
             CHAR szAbstract[10];
             sprintf(szAbstract, "%lX", ulAbstractThis);
 
+            // invalidate the hash table entry V0.9.16 (2001-09-29) [umoeller]
+            G_ausAbstractFolders[LOUSHORT(ulAbstractThis)] = 0;
+
             CreateDeferredNuke(HINI_USER,
                                "PM_Abstract:Objects",
                                szAbstract);
@@ -1556,7 +2124,7 @@ VOID NukeAbstracts(PNODERECORD prec,
 
         // nuke folder content entry
         CreateDeferredNuke(HINI_USER,
-                           "PM_Abstract:FldrContent",
+                           WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                            szHandleShort);
         free(paulAbstracts);
 
@@ -1588,7 +2156,7 @@ VOID NukeFolderPoses(PNODERECORD prec,
             "%d@",
             // compose full handle (hiword)
             prec->ulHandle
-                  | (G_ulHiwordFileSystem << 16L));
+                  | (G_pHandlesBuf->usHiwordFileSystem << 16L));
 
     ULONG DecimalLen = strlen(szDecimalHandle);
     while (*pcszFolderPosThis)
@@ -1608,7 +2176,7 @@ VOID NukeFolderPoses(PNODERECORD prec,
             {
                 // matches:
                 CreateDeferredNuke(HINI_USER,
-                                   "PM_Workplace:FolderPos",
+                                   WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                    pcszFolderPosThis);
                 (*pulNuked)++;
             }
@@ -1619,6 +2187,57 @@ VOID NukeFolderPoses(PNODERECORD prec,
 
     prec->ulStatus &= ~NODESTAT_FOLDERPOSNOTFOLDER;
     prec->fFolderPos = FALSE;
+    UpdateStatusDescr(prec);
+}
+
+/*
+ *@@ NukeObjID:
+ *      removes all object ID entries in OS2.INI related
+ *      to the specified handle record.
+ *
+ *@@added V0.9.7 (2001-01-25) [umoeller]
+ */
+
+VOID NukeObjID(PNODERECORD prec,
+               PULONG pulNuked)                // out: entries deleted
+{
+    if (prec->pObjID)
+    {
+        // this node has an object ID assigned:
+        CreateDeferredNuke(HINI_USER,
+                           WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                           prec->pObjID->pcszID);
+        (*pulNuked)++;
+    }
+
+    // if the objids window is currently open,
+    // remove the record
+    if (G_hwndObjIDsFrame)
+    {
+        if (prec->pObjID->pRecord)
+            WinSendMsg(WinWindowFromID(G_hwndObjIDsFrame, FID_CLIENT),
+                       CM_REMOVERECORD,
+                       (MPARAM)&prec->pObjID->pRecord,
+                       MPFROM2SHORT(1,
+                                    CMA_FREE | CMA_INVALIDATE));
+    }
+
+    // remove the objid from the tree
+    if (!treeDelete(&G_ObjIDsTree,
+                    (TREE*)prec->pObjID))
+    {
+        G_cObjIDs--;
+        CHAR sz2[30];
+
+        if (G_hwndObjIDsFrame)
+            SetStatusBarText(G_hwndObjIDsFrame,
+                             "%s IDs loaded.",
+                             nlsThousandsULong(sz2, G_cObjIDs, G_cThousands[0]));
+    }
+    free(prec->pObjID);
+
+    prec->pObjID = NULL;
+
     UpdateStatusDescr(prec);
 }
 
@@ -1678,7 +2297,7 @@ VOID MoveAbstracts(PLINKLIST pll,               // in: linked list of NODERECORD
                     G_cAbstractsDesktop = cAbstractsTargetNew;
 
                     CreateDeferredNuke(HINI_USER,
-                                       "PM_Abstract:FldrContent",
+                                       WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                        szHandleSource);
 
                     *pulAbstractsMoved += cAbstractsSource;
@@ -1747,13 +2366,14 @@ ULONG RemoveHandles(HWND hwndCnr,
     PLISTNODE   pNode;
 
     ULONG       cAbstractsNuked = 0,
-                cFolderPosesNuked = 0;
+                cFolderPosesNuked = 0,
+                cObjIDsNuked = 0;
 
     // load folderpos entries from OS2.INI
     PSZ pszFolderPoses = NULL;
 
     if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                    "PM_Workplace:FolderPos",
+                                    WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                     &pszFolderPoses)))
     {
         // for each record, remove the corresponding NODE in the global NODE data
@@ -1767,7 +2387,7 @@ ULONG RemoveHandles(HWND hwndCnr,
              *
              */
 
-            PBYTE pbItem = G_pHandlesBuffer + precDelete->ulOfs;
+            PBYTE pbItem = G_pHandlesBuf->pbData + precDelete->ulOfs;
             // address of next node in buffer: depends on whether
             // it's a DRIV or a NODE
             ULONG   cbDelete = 0;
@@ -1805,12 +2425,14 @@ ULONG RemoveHandles(HWND hwndCnr,
             {
                 // regular node:
 
-                // nuke abstracts, folderpos
+                // nuke abstracts, folderpos, objids
                 NukeAbstracts(precDelete,
                               &cAbstractsNuked);
                 NukeFolderPoses(precDelete,
                                 pszFolderPoses,
                                 &cFolderPosesNuked);
+                NukeObjID(precDelete,
+                          &cObjIDsNuked);
             }
 
             /*
@@ -1819,14 +2441,14 @@ ULONG RemoveHandles(HWND hwndCnr,
              */
 
             // overwrite node with everything that comes after it
-            ULONG   ulOfsOfNextItem = (pbNextItem - G_pHandlesBuffer);
+            ULONG   ulOfsOfNextItem = (pbNextItem - G_pHandlesBuf->pbData);
             memmove(pbItem,
                     pbNextItem,
                     // byte count to move:
-                    G_cbHandlesBuffer - ulOfsOfNextItem);
+                    G_pHandlesBuf->cbData - ulOfsOfNextItem);
 
             // shrink handles buffer
-            G_cbHandlesBuffer -= cbDelete;
+            G_pHandlesBuf->cbData -= cbDelete;
 
             /*
              *   update NODERECORD pointers
@@ -1878,7 +2500,7 @@ ULONG RemoveHandles(HWND hwndCnr,
             pNode = pNode->pNext;
         } // end while (pNode)
 
-        RebuildNodeHashTable();
+        wphRebuildNodeHashTable(G_pHandlesBuf);
         RebuildRecordsHashTable();
 
         // only now that we have rebuilt all record
@@ -1968,6 +2590,15 @@ ULONG RemoveHandles(HWND hwndCnr,
                 xstrcat(&str, sz, 0);
             }
 
+            if (cObjIDsNuked)
+            {
+                if (sz[0])
+                    xstrcat(&str, " and ", 0);
+                sprintf(sz, "%d object ID(s)",
+                        cObjIDsNuked);
+                xstrcat(&str, sz, 0);
+            }
+
             if (str.ulLength)
                 xstrcat(&str, " have been scheduled for deletion. ", 0);
 
@@ -2006,11 +2637,11 @@ BOOL WriteAllBlocks(PSZ pszHandles,
 {
     BYTE    szBlockName[10];
 
-    PBYTE   pStart = G_pHandlesBuffer;
+    PBYTE   pStart = G_pHandlesBuf->pbData;
     ULONG   ulCurSize = 4;
 
-    PBYTE   p = G_pHandlesBuffer + 4,
-            pEnd = G_pHandlesBuffer + G_cbHandlesBuffer;
+    PBYTE   p = G_pHandlesBuf->pbData + 4,
+            pEnd = G_pHandlesBuf->pbData + G_pHandlesBuf->cbData;
 
     ULONG   ulCurrentBlock = 1;
 
@@ -2081,118 +2712,93 @@ BOOL WriteAllBlocks(PSZ pszHandles,
 
 VOID WriteBack(VOID)
 {
-    if (MessageBox("This will write all changes back to the OS2.INI and OS2SYS.INI files. "
+    if (MessageBox(G_hwndMain,
+                   MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
+                   "This will write all changes back to the OS2.INI and OS2SYS.INI files. "
                    "You should be sure of at least the following:\n"
                    "-- your changes won't nuke your system;\n"
                    "-- the WPS is not currently running, or you have started xfix from "
                    "the XWorkplace \"Panic\" dialog;\n"
                    "-- you have a working WPS backup somewhere.\n"
-                   "So, are you sure you want to do this?",
-                   MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+                   "So, are you sure you want to do this?")
             != MBID_YES)
     {
         // "no":
-        MessageBox("No changes have been made to your system. To leave xfix, just close the main window.",
-                   MB_OK | MB_MOVEABLE);
+        MessageBox(G_hwndMain,
+                   MB_OK | MB_MOVEABLE,
+                   "No changes have been made to your system. To leave xfix, just close the main window."
+                   );
     }
     else
     {
         // "yes":
-        CHAR szActiveHandles[200];
-        wphQueryActiveHandles(HINI_SYSTEM,
-                              szActiveHandles,
-                              sizeof(szActiveHandles));
-
-        ULONG   ulLastChar = strlen(szActiveHandles) - 1;
-        ULONG   ulLastBlock = 0;
-
-        szActiveHandles[ulLastChar] = '0';
-        WriteAllBlocks(szActiveHandles, &ulLastBlock);
-        szActiveHandles[ulLastChar] = '1';
-        WriteAllBlocks(szActiveHandles, &ulLastBlock);
-
-        // from main(), return 1 now... this tells XWorkplace
-        // that the handles have changed
-        G_ulrc = 1;
-
         CHAR szText[300];
-        sprintf(szText,
-                "%d BLOCKs have been written to both handles sections. ",
-                ulLastBlock);
+        APIRET arc;
 
-        // update desktop
-        if (G_paulAbstractsTarget)
+        PSZ pszActiveHandles;
+        if (arc = wphQueryActiveHandles(HINI_SYSTEM,
+                                        &pszActiveHandles))
+            strcpy(szText, "Cannot get the active handles from OS2SYS.INI.");
+        else
         {
-            // deferred changes:
-            PrfWriteProfileData(HINI_USER,
-                                "PM_Abstract:FldrContent",
-                                G_szHandleDesktop,
-                                G_paulAbstractsTarget,
-                                G_cAbstractsDesktop * sizeof(ULONG));
+            ULONG   ulLastChar = strlen(pszActiveHandles) - 1;
+            ULONG   ulLastBlock = 0;
 
-            sprintf(szText + strlen(szText),
-                    "%d objects have been moved to the desktop. ",
-                    G_cTotalAbstractsMoved);
+            pszActiveHandles[ulLastChar] = '0';
+            WriteAllBlocks(pszActiveHandles, &ulLastBlock);
+            pszActiveHandles[ulLastChar] = '1';
+            WriteAllBlocks(pszActiveHandles, &ulLastBlock);
+
+            // from main(), return 1 now... this tells XWorkplace
+            // that the handles have changed
+            G_ulrc = 1;
+
+            sprintf(szText,
+                    "%d BLOCKs have been written to both handles sections. ",
+                    ulLastBlock);
+
+            // update desktop
+            if (G_paulAbstractsTarget)
+            {
+                // deferred changes:
+                PrfWriteProfileData(HINI_USER,
+                                    WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
+                                    G_szHandleDesktop,
+                                    G_paulAbstractsTarget,
+                                    G_cAbstractsDesktop * sizeof(ULONG));
+
+                sprintf(szText + strlen(szText),
+                        "%d objects have been moved to the desktop. ",
+                        G_cTotalAbstractsMoved);
+            }
+
+            // now nuke the entries in OS2.INI as well
+            ULONG cNukes = 0;
+            PLISTNODE pNode = lstQueryFirstNode(&G_llDeferredNukes);
+            while (pNode)
+            {
+                PDEFERREDINI pNuke = (PDEFERREDINI)pNode->pItemData;
+                PrfWriteProfileData(pNuke->hini,
+                                    pNuke->pcszApp,
+                                    pNuke->pszKey,
+                                    NULL,
+                                    0);
+                cNukes++;
+
+                pNode = pNode->pNext;
+            }
+
+            if (cNukes)
+                sprintf(szText + strlen(szText),
+                        "%d keys in OS2.INI have been deleted. ", cNukes);
+
+            strcat(szText, "To end xfix, just close the main window now.");
         }
 
-        // now nuke the entries in OS2.INI as well
-        ULONG cNukes = 0;
-        PLISTNODE pNode = lstQueryFirstNode(&G_llDeferredNukes);
-        while (pNode)
-        {
-            PDEFERREDINI pNuke = (PDEFERREDINI)pNode->pItemData;
-            PrfWriteProfileData(pNuke->hini,
-                                pNuke->pcszApp,
-                                pNuke->pszKey,
-                                NULL,
-                                0);
-            cNukes++;
-
-            pNode = pNode->pNext;
-        }
-
-        if (cNukes)
-            sprintf(szText + strlen(szText),
-                    "%d keys in OS2.INI have been deleted. ", cNukes);
-
-        strcat(szText, "To end xfix, just close the main window now.");
-        MessageBox(szText,
-                   MB_OK | MB_MOVEABLE);
+        MessageBox(G_hwndMain,
+                   MB_OK | MB_MOVEABLE,
+                   szText);
     }
-}
-
-/*
- *@@ winhCreateStatusBar:
- *
- *@@added V0.9.5 (2000-08-13) [umoeller]
- */
-
-HWND winhCreateStatusBar(HWND hwndFrame,
-                         HWND hwndOwner,
-                         USHORT usID,
-                         PSZ pszFont,
-                         LONG lColor)
-{
-    // create status bar
-    HWND        hwndReturn = NULLHANDLE;
-    PPRESPARAMS ppp = NULL;
-    winhStorePresParam(&ppp, PP_FONTNAMESIZE, strlen(pszFont)+1, pszFont);
-    lColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
-    winhStorePresParam(&ppp, PP_BACKGROUNDCOLOR, sizeof(lColor), &lColor);
-    lColor = CLR_BLACK;
-    winhStorePresParam(&ppp, PP_FOREGROUNDCOLOR, sizeof(lColor), &lColor);
-    hwndReturn = WinCreateWindow(G_hwndMain,
-                                  WC_STATIC,
-                                  "Welcome.",
-                                  SS_TEXT | DT_VCENTER | WS_VISIBLE,
-                                  0, 0, 0, 0,
-                                  hwndOwner,
-                                  HWND_TOP,
-                                  usID,
-                                  NULL,
-                                  ppp);
-    free(ppp);
-    return (hwndReturn);
 }
 
 /*
@@ -2325,14 +2931,14 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
                                 {
                                     if (0 == (prec->recc.flRecordAttr & CRA_SELECTED))
                                     {
-                                        G_cSelected++;
+                                        G_cHandlesSelected++;
                                         prec->recc.flRecordAttr |= CRA_SELECTED;
                                     }
                                 }
                                 else
                                     if (prec->recc.flRecordAttr & CRA_SELECTED)
                                     {
-                                        G_cSelected--;
+                                        G_cHandlesSelected--;
                                         prec->recc.flRecordAttr &= ~CRA_SELECTED;
                                     }
                             }
@@ -2363,14 +2969,14 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
                         {
                             if (0 == (prec->recc.flRecordAttr & CRA_SELECTED))
                             {
-                                G_cSelected++;
+                                G_cHandlesSelected++;
                                 prec->recc.flRecordAttr |= CRA_SELECTED;
                             }
                         }
                         else
                             if (prec->recc.flRecordAttr & CRA_SELECTED)
                             {
-                                G_cSelected--;
+                                G_cHandlesSelected--;
                                 prec->recc.flRecordAttr &= ~CRA_SELECTED;
                             }
 
@@ -2475,7 +3081,7 @@ VOID SelectByName(HWND hwndCnr)
                             { 100, 30 },    // size
                             5               // spacing
                          };
-    DLGHITEM DlgTemplate[] =
+    DLGHITEM dlgTemplate[] =
         {
             START_TABLE,
                 START_ROW(0),
@@ -2501,8 +3107,8 @@ VOID SelectByName(HWND hwndCnr)
                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                   fnwpSelectByName,
                                   "xfix: Select By Name",
-                                  DlgTemplate,      // DLGHITEM array
-                                  ARRAYITEMCOUNT(DlgTemplate),
+                                  dlgTemplate,      // DLGHITEM array
+                                  ARRAYITEMCOUNT(dlgTemplate),
                                   NULL,
                                   "9.WarpSans"))
     {
@@ -2523,7 +3129,7 @@ VOID SelectByName(HWND hwndCnr)
 }
 
 /*
- *@@ FrameCommand:
+ *@@ &ouml;FrameCommand:
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
  */
@@ -2546,11 +3152,8 @@ VOID FrameCommand(HWND hwndFrame,
                 WriteBack();
             break;
 
-            case IDMI_EXIT:
-                WinPostMsg(hwndFrame,
-                           WM_SYSCOMMAND,
-                           (MPARAM)SC_CLOSE,
-                           0);
+            case IDMI_VIEW_OBJIDS:
+                ViewObjectIDs();
             break;
 
             case IDMI_SORT_INDEX:
@@ -2563,7 +3166,7 @@ VOID FrameCommand(HWND hwndFrame,
             case IDMI_SORT_DUPS:
             case IDMI_SORT_REFCS:
             case IDMI_SORT_LONGNAME:
-                SetSort(usCmd);
+                SetMainSort(usCmd);
             break;
 
             case IDMI_ACTIONS_FILES:
@@ -2576,7 +3179,7 @@ VOID FrameCommand(HWND hwndFrame,
                 WinStartTimer(WinQueryAnchorBlock(hwndFrame),
                               G_hwndMain,
                               TIMERID_THREADRUNNING,
-                              500);
+                              200);
                 UpdateMenuItems(0);
             break;
 
@@ -2608,16 +3211,18 @@ VOID FrameCommand(HWND hwndFrame,
                     sprintf(szText, "You have selected %d handle(s) for removal. "
                                     "Are you sure you want to do this?", cRecs);
 
-                    if (MessageBox(szText,
-                                   MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+                    if (MessageBox(hwndFrame,
+                                   MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
+                                   szText)
                             == MBID_YES)
                     {
                         ULONG ulrc;
                         if (ulrc = RemoveHandles(hwndCnr, pll))
                         {
                             sprintf(szText, "Error %d occured.", ulrc);
-                            MessageBox(szText,
-                                       MB_OK | MB_MOVEABLE);
+                            MessageBox(hwndFrame,
+                                       MB_OK | MB_MOVEABLE,
+                                       szText);
                         }
                     }
 
@@ -2638,7 +3243,7 @@ VOID FrameCommand(HWND hwndFrame,
                     PSZ pszFolderPoses = NULL;
 
                     if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                                    "PM_Workplace:FolderPos",
+                                                    WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                                     &pszFolderPoses)))
                     {
                         PLISTNODE pNode = lstQueryFirstNode(pll);
@@ -2683,6 +3288,48 @@ VOID FrameCommand(HWND hwndFrame,
             }
             break;
 
+            case IDMI_NUKEOBJID:
+            {
+                ULONG       cRecs = 0;
+                PLINKLIST   pll = GetSelectedRecords(hwndCnr,
+                                                     precSource,
+                                                     &cRecs);
+                if (pll && cRecs)
+                {
+                    PLISTNODE pNode = lstQueryFirstNode(pll);
+                    ULONG cTotalNuked = 0;
+                    while (pNode)
+                    {
+                        PNODERECORD prec = (PNODERECORD)pNode->pItemData;
+
+                        if (prec->pObjID)
+                        {
+                            ULONG cNukedThis = 0;
+                            NukeObjID(prec,
+                                      &cNukedThis);
+
+                            if (cNukedThis)
+                                cTotalNuked += cNukedThis;
+                        }
+
+                        pNode = pNode->pNext;
+                    }
+
+                    if (cTotalNuked)
+                        cnrhInvalidateAll(hwndCnr);
+
+                    CHAR sz[200];
+                    sprintf(sz, "%d object ID(s) have been scheduled for deletion.",
+                            cTotalNuked);
+                    winhDebugBox(G_hwndMain,
+                                 "xfix",
+                                 sz);
+
+                    lstFree(&pll);
+                }
+            }
+            break;
+
             /*
              * IDMI_MOVEABSTRACTS:
              *      move abstracts to desktop
@@ -2699,8 +3346,8 @@ VOID FrameCommand(HWND hwndFrame,
                     ULONG       hobjDesktop = 0;
                     ULONG       cb = sizeof(hobjDesktop);
                     if (    (PrfQueryProfileData(HINI_USER,
-                                                 "PM_Workplace:Location",
-                                                 "<WP_DESKTOP>",
+                                                 WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                                                 WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                                  &hobjDesktop,
                                                  &cb))
                          && (hobjDesktop)
@@ -2731,8 +3378,9 @@ VOID FrameCommand(HWND hwndFrame,
                                         "should be moved to the deskop.\n"
                                         "Are you sure you want to do this?",
                                         cRecs);
-                        if (MessageBox(szText,
-                                       MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+                        if (MessageBox(hwndFrame,
+                                       MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
+                                       szText)
                                 == MBID_YES)
                         {
                             // user really wants this:
@@ -2749,7 +3397,7 @@ VOID FrameCommand(HWND hwndFrame,
                 {
                     CHAR sz[200];
                     sprintf(sz, "%d abstracts have been moved to the desktop. They will "
-                            "appear after the next WPS startup.",
+                            "appear after the next Desktop startup.",
                             cAbstractsMoved);
                     winhDebugBox(G_hwndMain, "xfix", sz);
                 }
@@ -2758,30 +3406,8 @@ VOID FrameCommand(HWND hwndFrame,
             }
             break;
 
-            case IDMI_HELP_GENERAL:
-            case IDMI_HELP_USINGHELP:
-                if (G_hwndHelp)
-                {
-                    winhDisplayHelpPanel(G_hwndHelp,
-                                        (usCmd == IDMI_HELP_GENERAL)
-                                            ? ID_XSH_XFIX_INTRO
-                                            : 0);       // "using help"
-                }
-            break;
-
-            case IDMI_HELP_PRODINFO:
-            {
-                CHAR szInfo[500];
-
-                sprintf(szInfo,
-                        "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
-                        "(C) 2000-2001 Ulrich M”ller\n\n"
-                        "XWorkplace File Handles Fixer.");
-
-                MessageBox(szInfo,
-                           MB_OK | MB_MOVEABLE);
-            }
-            break;
+            default:
+                StandardCommands(G_hwndMain, usCmd);
         }
     }
     CATCH(excpt1) {} END_CATCH();
@@ -2829,7 +3455,8 @@ MRESULT FrameWMControl(HWND hwndFrame,
                     // go thru selected records and disable menu
                     // items accordingly
                     BOOL    fGotAbstracts = FALSE,
-                            fGotFolderPoses = FALSE;
+                            fGotFolderPoses = FALSE,
+                            fGotIDs = FALSE;
 
                     PLISTNODE pNode = lstQueryFirstNode(pll);
                     while (pNode)
@@ -2840,6 +3467,8 @@ MRESULT FrameWMControl(HWND hwndFrame,
                             fGotAbstracts = TRUE;
                         if (prec->fFolderPos)
                             fGotFolderPoses = TRUE;
+                        if (prec->pObjID)
+                            fGotIDs = TRUE;
 
                         pNode = pNode->pNext;
                     }
@@ -2850,6 +3479,9 @@ MRESULT FrameWMControl(HWND hwndFrame,
                     WinEnableMenuItem(hwndMenu,
                                       IDMI_MOVEABSTRACTS,
                                       fGotAbstracts);
+                    WinEnableMenuItem(hwndMenu,
+                                      IDMI_NUKEOBJID,
+                                      fGotIDs);
 
                     cnrhShowContextMenu(hwndCnr,
                                         G_preccSource,
@@ -2875,11 +3507,11 @@ MRESULT FrameWMControl(HWND hwndFrame,
                  && (prec = G_preccVeryFirst)
                )
             {
-                G_cSelected = 0;
+                G_cHandlesSelected = 0;
                 while (prec)
                 {
                     if (prec->recc.flRecordAttr & CRA_SELECTED)
-                        G_cSelected++;
+                        G_cHandlesSelected++;
 
                     prec = prec->pNextRecord;
                 }
@@ -2894,87 +3526,17 @@ MRESULT FrameWMControl(HWND hwndFrame,
 }
 
 /*
- *@@ winh_fnwpFrameWithStatusBar:
- *      subclassed frame window proc.
+ *@@ fnwpSubclassedMainFrame:
  *
- *@@added V0.9.5 (2000-08-13) [umoeller]
+ *@@added V0.9.16 (2001-09-29) [umoeller]
  */
 
-MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
     switch (msg)
     {
-        case WM_QUERYFRAMECTLCOUNT:
-        {
-            // query the standard frame controls count
-            ULONG ulrc = (ULONG)(G_fnwpFrameOrig(hwndFrame, msg, mp1, mp2));
-
-            // if we have a status bar, increment the count
-            ulrc++;
-
-            mrc = (MPARAM)ulrc;
-        }
-        break;
-
-        case WM_FORMATFRAME:
-        {
-            //  query the number of standard frame controls
-            ULONG ulCount = (ULONG)(G_fnwpFrameOrig(hwndFrame, msg, mp1, mp2));
-
-            // we have a status bar:
-            // format the frame
-            ULONG       ul;
-            PSWP        swpArr = (PSWP)mp1;
-
-            for (ul = 0; ul < ulCount; ul++)
-            {
-                if (WinQueryWindowUShort( swpArr[ul].hwnd, QWS_ID ) == 0x8008 )
-                                                                 // FID_CLIENT
-                {
-                    POINTL      ptlBorderSizes;
-                    ULONG       ulStatusBarHeight = 20;
-                    WinSendMsg(hwndFrame,
-                               WM_QUERYBORDERSIZE,
-                               (MPARAM)&ptlBorderSizes,
-                               0);
-
-                    // first initialize the _new_ SWP for the status bar.
-                    // Since the SWP array for the std frame controls is
-                    // zero-based, and the standard frame controls occupy
-                    // indices 0 thru ulCount-1 (where ulCount is the total
-                    // count), we use ulCount for our static text control.
-                    swpArr[ulCount].fl = SWP_MOVE | SWP_SIZE | SWP_NOADJUST | SWP_ZORDER;
-                    swpArr[ulCount].x  = ptlBorderSizes.x;
-                    swpArr[ulCount].y  = ptlBorderSizes.y;
-                    swpArr[ulCount].cx = swpArr[ul].cx;  // same as cnr's width
-                    swpArr[ulCount].cy = ulStatusBarHeight;
-                    swpArr[ulCount].hwndInsertBehind = HWND_BOTTOM; // HWND_TOP;
-                    swpArr[ulCount].hwnd = G_hwndStatusBar;
-
-                    // adjust the origin and height of the container to
-                    // accomodate our static text control
-                    swpArr[ul].y  += swpArr[ulCount].cy;
-                    swpArr[ul].cy -= swpArr[ulCount].cy;
-                }
-            }
-
-            // increment the number of frame controls
-            // to include our status bar
-            mrc = (MRESULT)(ulCount + 1);
-        }
-        break;
-
-        case WM_CALCFRAMERECT:
-        {
-            mrc = G_fnwpFrameOrig(hwndFrame, msg, mp1, mp2);
-
-            // we have a status bar: calculate its rectangle
-            // CalcFrameRect(mp1, mp2);
-        }
-        break;
-
         case WM_TIMER:
         {
             ULONG ulID = (ULONG)mp1;
@@ -2992,21 +3554,20 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
                     {
                         CHAR sz[100];
                         if (G_fResolvingRefs)
-                            sprintf(sz, "Resolving cross-references, %03d%% done...",
-                                    G_ulPercentDone);
+                            SetStatusBarText(G_hwndMain,
+                                             "Resolving cross-references, %03d%% done...",
+                                             G_ulPercentDone);
                         else
-                            sprintf(sz, "Parsing handles section, %03d%% done...",
-                                    G_ulPercentDone);
-                        WinSetWindowText(G_hwndStatusBar,
-                                         sz);
+                            SetStatusBarText(G_hwndMain,
+                                             "Parsing handles section, %03d%% done...",
+                                             G_ulPercentDone);
+                        SetStatusBarText(G_hwndMain, sz);
                     }
                     else if (G_tidCheckFilesRunning)
                     {
-                        CHAR sz[100];
-                        sprintf(sz, "Checking files, %03d%% done...",
-                                G_ulPercentDone);
-                        WinSetWindowText(G_hwndStatusBar,
-                                         sz);
+                        SetStatusBarText(G_hwndMain,
+                                         "Checking files, %03d%% done...",
+                                         G_ulPercentDone);
                     }
             }
         }
@@ -3028,7 +3589,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
             if ((LONG)mp1 == -1)
             {
                 // resolving cross-references:
-                WinSetWindowText(G_hwndStatusBar, "Resolving cross-references...");
+                SetStatusBarText(G_hwndMain, "Resolving cross-references...");
             }
             else
             {
@@ -3041,7 +3602,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
                 }
                 else
                     // done, error:
-                    WinSetWindowText(G_hwndStatusBar,
+                    SetStatusBarText(G_hwndMain,
                                      "An error occured parsing the handles section.");
 
                 thrWait(&G_tiInsertHandles);
@@ -3052,7 +3613,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
         break;
 
         case WM_USER + 1:
-            WinSetWindowText(G_hwndStatusBar,
+            SetStatusBarText(G_hwndMain,
                              "Done checking files.");
             cnrhInvalidateAll(WinWindowFromID(G_hwndMain, FID_CLIENT));
             thrWait(&G_tiCheckFiles);
@@ -3093,7 +3654,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
         break;
 
         default:
-            mrc = G_fnwpFrameOrig(hwndFrame, msg, mp1, mp2);
+            mrc = G_fnwpMainFrameOrig(hwndFrame, msg, mp1, mp2);
     }
 
     return (mrc);
@@ -3105,8 +3666,16 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
  *
  ********************************************************************/
 
+/*
+ *@@ main:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
 int main(int argc, char* argv[])
 {
+    APIRET      arc;
+
     HMQ         hmq;
     QMSG        qmsg;
 
@@ -3120,84 +3689,60 @@ int main(int argc, char* argv[])
 
     G_hptrMain = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
 
-    // get the index of WPFileSystem from the base classes list...
-    // we need this to determine the hiword for file-system handles
-    // properly. Normally, this should be 3.
-    ULONG cbBaseClasses = 0;
-    PSZ pszBaseClasses = prfhQueryProfileData(HINI_USER,
-                                              "PM_Workplace:BaseClass",
-                                              "ClassList",
-                                              &cbBaseClasses);
-    if (pszBaseClasses)
-    {
-        // parse that buffer... these has the base class names,
-        // separated by 0. List is terminated by two zeroes.
-        PSZ     pszClassThis = pszBaseClasses;
-        ULONG   ulHiwordThis = 1;
-        while (    (*pszClassThis)
-                && (pszClassThis - pszBaseClasses < cbBaseClasses)
-              )
-        {
-            if (strcmp(pszClassThis, "WPFileSystem") == 0)
-            {
-                G_ulHiwordFileSystem = ulHiwordThis;
-                break;
-            }
-            ulHiwordThis++;
-            pszClassThis += strlen(pszClassThis) + 1;
-        }
+    ULONG cb = sizeof(G_cThousands);
+    PrfQueryProfileData(HINI_USER,
+                        "PM_National",
+                        "sThousand",
+                        G_cThousands,
+                        &cb);
 
-        free(pszBaseClasses);
-    }
-
-    lstInit(&G_llDeferredNukes, TRUE);
-
-    if (!G_ulHiwordFileSystem)
-    {
+    /* if (arc = wphQueryBaseClassesHiwords(&G_usHiwordAbstract,
+                                         &G_pHandlesBuf->usHiwordFileSystem))
         winhDebugBox(NULLHANDLE,
                      "xfix",
                      "xfix was unable to determine the storage class index for "
                      "WPFileSystem objects. Terminating.");
-    }
-    else
+    else */
     {
-        // create frame and container
+        lstInit(&G_llDeferredNukes, TRUE);
+
+        // create frame and handles container
         HWND hwndCnr = NULLHANDLE;
-        G_hwndMain = winhCreateStdWindow(HWND_DESKTOP,
-                                         0,
-                                         FCF_TITLEBAR
-                                            | FCF_SYSMENU
-                                            | FCF_MINMAX
-                                            | FCF_SIZEBORDER
-                                            | FCF_ICON
-                                            | FCF_MENU
-                                            | FCF_TASKLIST,
-                                         0,
-                                         "XWorkplace Handles Fixer",
-                                         1,     // icon resource
-                                         WC_CONTAINER,
-                                         CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
-                                            | WS_VISIBLE,
-                                         0,
-                                         NULL,
-                                         &hwndCnr);
+
+        EXTFRAMECDATA xfd =
+            {
+                      0,
+                      FCF_TITLEBAR
+                         | FCF_SYSMENU
+                         | FCF_MINMAX
+                         | FCF_SIZEBORDER
+                         | FCF_ICON
+                         | FCF_MENU
+                         | FCF_TASKLIST,
+                      XFCF_STATUSBAR,
+                      0,
+                      "xfix: Handles list",
+                      1,     // icon resource
+                      WC_CONTAINER,
+                      CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
+                         | WS_VISIBLE,
+                      0,
+                      NULL
+            };
+
+        G_hwndMain = winhCreateExtStdWindow(&xfd,
+                                            &hwndCnr);
 
         if ((G_hwndMain) && (hwndCnr))
         {
             // subclass cnr (it's our client)
-            G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedCnr);
+            G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedMainCnr);
 
-            // create status bar as child of the frame
-            G_hwndStatusBar = winhCreateStatusBar(G_hwndMain,
-                                                  hwndCnr,
-                                                  0,
-                                                  "9.WarpSans",
-                                                  CLR_BLACK);
-            // subclass frame for supporting status bar and msgs
-            G_fnwpFrameOrig = WinSubclassWindow(G_hwndMain,
-                                                winh_fnwpFrameWithStatusBar);
+            // subclass frame for supporting msgs
+            G_fnwpMainFrameOrig = WinSubclassWindow(G_hwndMain,
+                                                    fnwpSubclassedMainFrame);
 
-            SetupCnr(hwndCnr);
+            SetupMainCnr(hwndCnr);
 
             // load icons
 
@@ -3243,7 +3788,6 @@ int main(int argc, char* argv[])
                 }
             }
 
-
             if (!winhRestoreWindowPos(G_hwndMain,
                                       HINI_USER,
                                       INIAPP,
@@ -3255,35 +3799,44 @@ int main(int argc, char* argv[])
                                 SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE);
 
             // load handles from OS2.INI
-            CHAR szActiveHandles[200];
-            wphQueryActiveHandles(HINI_SYSTEM,
-                                  szActiveHandles,
-                                  sizeof(szActiveHandles));
+            PSZ pszActiveHandles;
+            if (arc = wphQueryActiveHandles(HINI_SYSTEM,
+                                            &pszActiveHandles))
+                MessageBox(NULLHANDLE,
+                           MB_CANCEL,
+                           "Cannot get the active handles from OS2SYS.INI.");
+            else
+            {
+                if (arc = wphLoadHandles(HINI_USER,
+                                         HINI_SYSTEM,
+                                         pszActiveHandles,
+                                         &G_pHandlesBuf))
+                    MessageBox(NULLHANDLE,
+                               MB_CANCEL,
+                               "Error %d occured loading the handles from the INI files.",
+                               arc);
+                else
+                {
+                    wphRebuildNodeHashTable(G_pHandlesBuf);
 
-            if (!wphReadAllBlocks(HINI_SYSTEM,
-                                  szActiveHandles,
-                                  &G_pHandlesBuffer,
-                                  &G_cbHandlesBuffer))
-                G_pHandlesBuffer = NULL;
+                    StartInsertHandles(hwndCnr);
 
-            RebuildNodeHashTable();
+                    // display introductory help with warnings
+                    WinPostMsg(G_hwndMain,
+                               WM_COMMAND,
+                               (MPARAM)IDMI_HELP_GENERAL,
+                               0);
 
-            StartInsertHandles(hwndCnr);
+                    // standard PM message loop
+                    while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
+                        WinDispatchMsg(G_hab, &qmsg);
 
-            // display introductory help with warnings
-            WinPostMsg(G_hwndMain,
-                       WM_COMMAND,
-                       (MPARAM)IDMI_HELP_GENERAL,
-                       0);
-
-            // standard PM message loop
-            while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
-                WinDispatchMsg(G_hab, &qmsg);
-
-            if (G_tidInsertHandlesRunning)
-                thrFree(&G_tiInsertHandles);
-            if (G_tidCheckFilesRunning)
-                thrFree(&G_tiCheckFiles);
+                    if (G_tidInsertHandlesRunning)
+                        thrFree(&G_tiInsertHandles);
+                    if (G_tidCheckFilesRunning)
+                        thrFree(&G_tiCheckFiles);
+                }
+            }
         }
     }
 

@@ -17,7 +17,7 @@
  *      --  It can process C include files to allow for
  *          character entity references. In those include
  *          files, only #define statements are evaluated.
- *          This can be used for
+ *          This can be used for string replacements.
  *
  *      --  It supports a RESID attribute to the HTML
  *          tag to allow for setting a resid explicitly.
@@ -69,6 +69,7 @@
 #include "bldlevel.h"
 
 #include "helpers\dosh.h"
+#include "helpers\except.h"
 #include "helpers\linklist.h"
 #include "helpers\standards.h"
 #include "helpers\stringh.h"
@@ -498,8 +499,7 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
         if (ulCurrentLevel != -1)
         {
             // create new one
-            pMapping = NEW(ARTICLETREENODE);
-            if (pMapping)
+            if (pMapping = NEW(ARTICLETREENODE))
             {
                 ZERO(pMapping);
 
@@ -525,7 +525,7 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
                                    "  Referenced from file \"%s\".\n",
                                    (PSZ)pMapping->Tree.ulKey, // pszFilename,
                                    (pParent)
-                                       ? (PSZ)pMapping->Tree.ulKey // pszFilename,
+                                       ? (PSZ)pParent->Tree.ulKey // pszFilename,
                                        : "none");
                         pMapping->ulHeaderLevel = -1; // special flag
                     }
@@ -1648,7 +1648,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
             if (!(arc = doshLoadTextFile((PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                                          &pszContents)))
             {
-                xstrcpy(&strSource, pszContents, 0);
+                xstrset(&strSource, pszContents);
                 xstrConvertLineFormat(&strSource, CRLF2LF);
 
                 ResolveEntities(pFile2Process,
@@ -1721,13 +1721,16 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
          *
          */
 
+        if (G_ulVerbosity > 1)
+            printf("Replacing link strings...\n");
+
         // go through the entire file list again
         // and in each IPF buffer, replace the
         // special link strings with the good resids,
         // which are known by now
 
         pNode = lstQueryFirstNode(&G_llFiles2Process);
-        while (pNode)
+        while (pNode && !arc)
         {
             PARTICLETREENODE pFile2Process = (PARTICLETREENODE)pNode->pItemData;
 
@@ -1743,7 +1746,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                                    "@#!LINK@#!")))
                 {
                     #define KEYLEN (sizeof("@#!LINK@#!") - 1)
-                    PSZ p2 = strstr(p + 10, "@#!LINK@#!");
+                    PSZ p2 = strstr(p + KEYLEN, "@#!LINK@#!");
                     CHAR szResID[30];
                     CHAR cSaved = *p2;
                     *p2 = '\0';
@@ -1752,10 +1755,15 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                                                                   NULL);
 
                     if (!pTarget)
+                    {
                         Error(2,
                               __FILE__, __LINE__, __FUNCTION__,
-                              "Cannot resolve cross reference for \"%s\"\n",
-                              p + KEYLEN);
+                              "Cannot resolve cross reference for \"%s\"\nFile: \"%s\"\n",
+                              p + KEYLEN,
+                              (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
+                        arc = 1;
+                        break;
+                    }
 
                     *p2 = cSaved;
 
@@ -1769,108 +1777,114 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                             szResID,
                             strlen(szResID));
 
-                    p += 10;
+                    pStart = pFile2Process->strIPF.psz + (p - pStart);
                 }
             }
 
             pNode = pNode->pNext;
         }
 
-        XSTRING strExtras;
-        xstrInit(&strExtras, 0);
-
-        /*
-         * loop 3:
-         *
-         */
-
-        LINKLIST llSubarticles;
-        lstInit(&llSubarticles, FALSE);
-
-        // now dump out IPF into one huge buffer...
-        // note, this loop will go thru all files again,
-        // but since we have a second loop within which
-        // marks files as written, this will effectively
-        // only process the root items
-        DumpArticlesWithParent(pxstrIPF,
-                               NULL,       // root documents only
-                               &strExtras);
-                // this will recurse
-
-        /*
-         * loop 4:
-         *
-         */
-
-        // add all the special links
-        // to the bottom; these should be the only
-        // unprocessed files, or something went wrong here
-        pNode = lstQueryFirstNode(&G_llFiles2Process);
-        BOOL fFirst = TRUE;
-        XSTRING strEncode;
-        xstrInit(&strEncode, 0);
-        while (pNode)
+        if (!arc)
         {
-            PARTICLETREENODE pFile2Process = (PARTICLETREENODE)pNode->pItemData;
+            XSTRING strExtras;
+            xstrInit(&strExtras, 0);
 
-            // process only the special files now
-            if (pFile2Process->ulHeaderLevel == -1)
+            /*
+             * loop 3:
+             *
+             */
+
+            if (G_ulVerbosity > 1)
+                printf("Composing IPF buffer...\n");
+
+            LINKLIST llSubarticles;
+            lstInit(&llSubarticles, FALSE);
+
+            // now dump out IPF into one huge buffer...
+            // note, this loop will go thru all files again,
+            // but since we have a second loop within which
+            // marks files as written, this will effectively
+            // only process the root items
+            DumpArticlesWithParent(pxstrIPF,
+                                   NULL,       // root documents only
+                                   &strExtras);
+                    // this will recurse
+
+            /*
+             * loop 4:
+             *
+             */
+
+            // add all the special links
+            // to the bottom; these should be the only
+            // unprocessed files, or something went wrong here
+            pNode = lstQueryFirstNode(&G_llFiles2Process);
+            BOOL fFirst = TRUE;
+            XSTRING strEncode;
+            xstrInit(&strEncode, 0);
+            while (pNode)
             {
-                if (fFirst)
+                PARTICLETREENODE pFile2Process = (PARTICLETREENODE)pNode->pItemData;
+
+                // process only the special files now
+                if (pFile2Process->ulHeaderLevel == -1)
                 {
-                    xstrcat(pxstrIPF,
-                            ":h1 group=99 x=right width=30%.Resources on the Internet\n",
+                    if (fFirst)
+                    {
+                        xstrcat(pxstrIPF,
+                                ":h1 group=99 x=right width=30%.Resources on the Internet\n",
+                                0);
+                        xstrcat(pxstrIPF,
+                                "This chapter contains all external links referenced in this "
+                                "book.\nEach link contained herein is an Unified Resource "
+                                "Locator (URL) to a certain location\non the Internet. "
+                                "Simply double-click on one of them to launch Netscape\n"
+                                "with the respective URL.\n",
+                                0);
+                        fFirst = FALSE;
+                    }
+
+                    // encode the strings again because STUPID ipf
+                    // gets confused otherwise
+                    xstrcpy(&strEncode,
+                            (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                             0);
-                    xstrcat(pxstrIPF,
-                            "This chapter contains all external links referenced in this "
-                            "book.\nEach link contained herein is an Unified Resource "
-                            "Locator (URL) to a certain location\non the Internet. "
-                            "Simply double-click on one of them to launch Netscape\n"
-                            "with the respective URL.\n",
-                            0);
-                    fFirst = FALSE;
+                    ConvertEscapes(&strEncode);
+                    ULONG ulOfs = 0;
+                    while (xstrFindReplaceC(&strEncode,
+                                            &ulOfs,
+                                            ":",
+                                            "&colon."))
+                        ;
+
+                    xstrprintf(pxstrIPF,
+                               ":h2 res=%d group=98 x=right y=bottom width=60%% height=40%%.%s\n",
+                               pFile2Process->ulResID,
+                               strEncode.psz);
+                    xstrprintf(pxstrIPF,
+                               ":p.:lines align=center."
+                                    "\nClick below to launch Netscape with this URL&colon.\n"
+                                    ":p.:link reftype=launch object='netscape.exe' data='%s'.\n"
+                                    "%s\n"
+                                    ":elink.:elines.\n",
+                               (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
+                               strEncode.psz);
                 }
+                else
+                    if (!pFile2Process->fProcessed)
+                        Error(2,
+                              __FILE__, __LINE__, __FUNCTION__,
+                              "Strange, file \"%s\" wasn't processed.",
+                              (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
 
-                // encode the strings again because STUPID ipf
-                // gets confused otherwise
-                xstrcpy(&strEncode,
-                        (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
-                        0);
-                ConvertEscapes(&strEncode);
-                ULONG ulOfs = 0;
-                while (xstrFindReplaceC(&strEncode,
-                                        &ulOfs,
-                                        ":",
-                                        "&colon."))
-                    ;
-
-                xstrprintf(pxstrIPF,
-                           ":h2 res=%d group=98 x=right y=bottom width=60%% height=40%%.%s\n",
-                           pFile2Process->ulResID,
-                           strEncode.psz);
-                xstrprintf(pxstrIPF,
-                           ":p.:lines align=center."
-                                "\nClick below to launch Netscape with this URL&colon.\n"
-                                ":p.:link reftype=launch object='netscape.exe' data='%s'.\n"
-                                "%s\n"
-                                ":elink.:elines.\n",
-                           (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
-                           strEncode.psz);
+                pNode = pNode->pNext;
             }
+
+            if (G_ulVerbosity > 1)
+                printf("\nDone processing files.\n");
             else
-                if (!pFile2Process->fProcessed)
-                    Error(2,
-                          __FILE__, __LINE__, __FUNCTION__,
-                          "Strange, file \"%s\" wasn't processed.",
-                          (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
-
-            pNode = pNode->pNext;
+                printf("\n");
         }
-
-        if (G_ulVerbosity > 1)
-            printf("\nDone processing files.\n");
-        else
-            printf("\n");
     }
 
     return (arc);
@@ -2103,210 +2117,236 @@ APIRET ParseCHeader(const char *pcszHeaderFile,
 int main(int argc, char* argv[])
 {
     int     rc = 0;
-    CHAR    szRootFile[CCHMAXPATH] = "";
 
-    BOOL    fShowStatistics = FALSE;
+    PCSZ    pcszCrashContext = "Startup";
 
-    treeInit(&G_LinkIDsTreeRoot);
-    treeInit(&G_DefinesTreeRoot);
-    // lstInit(&G_llDefines, FALSE);
-    lstInit(&G_llFiles2Process, FALSE);
-
-    LINKLIST llIncludes;
-    lstInit(&llIncludes, TRUE);         // will hold plain -i filenames from strdup
-
-    if (argc < 2)
+    TRY_LOUD(excpt1)
     {
-        Explain(NULL);
-        rc = 999;
-    }
-    else
-    {
-        SHORT i = 0;
-        while (    (i++ < argc - 1)
-                && (!rc)
-              )
+        CHAR    szRootFile[CCHMAXPATH] = "";
+
+        BOOL    fShowStatistics = FALSE;
+
+        treeInit(&G_LinkIDsTreeRoot);
+        treeInit(&G_DefinesTreeRoot);
+        // lstInit(&G_llDefines, FALSE);
+        lstInit(&G_llFiles2Process, FALSE);
+
+        LINKLIST llIncludes;
+        lstInit(&llIncludes, TRUE);         // will hold plain -i filenames from strdup
+
+        pcszCrashContext = "Parsing command line";
+
+        if (argc < 2)
         {
-            if (argv[i][0] == '-')
+            Explain(NULL);
+            rc = 999;
+        }
+        else
+        {
+            SHORT i = 0;
+            while (    (i++ < argc - 1)
+                    && (!rc)
+                  )
             {
-                // option found:
-                SHORT i2;
-                for (i2 = 1;
-                     i2 < strlen(argv[i]) && (!rc);
-                     i2++)
+                if (argv[i][0] == '-')
                 {
-                    CHAR cOption = argv[i][i2];
-                    switch (cOption)
+                    // option found:
+                    SHORT i2;
+                    for (i2 = 1;
+                         i2 < strlen(argv[i]) && (!rc);
+                         i2++)
                     {
-                        case 'h':
-                        case '?':
-                            Explain(NULL);
-                            rc = 1;
-                        break;
+                        CHAR cOption = argv[i][i2];
+                        switch (cOption)
+                        {
+                            case 'h':
+                            case '?':
+                                Explain(NULL);
+                                rc = 1;
+                            break;
 
-                        case 's':
-                            fShowStatistics = TRUE;
-                        break;
+                            case 's':
+                                fShowStatistics = TRUE;
+                            break;
 
-                        case 'v':
-                            i2++;
-                            switch (argv[i][i2])
-                            {
-                                case '0': G_ulVerbosity = 0; break;
-                                case '1': G_ulVerbosity = 1; break;     // default also
-                                case '3': G_ulVerbosity = 3; break;
-                                case '4': G_ulVerbosity = 4; break;
-                                default: G_ulVerbosity = 2;
-                            }
-                        break;
+                            case 'v':
+                                i2++;
+                                switch (argv[i][i2])
+                                {
+                                    case '0': G_ulVerbosity = 0; break;
+                                    case '1': G_ulVerbosity = 1; break;     // default also
+                                    case '3': G_ulVerbosity = 3; break;
+                                    case '4': G_ulVerbosity = 4; break;
+                                    default: G_ulVerbosity = 2;
+                                }
+                            break;
 
-                        case 'i':
-                            if (strlen(&argv[i][i2+1]))
-                            {
-                                lstAppendItem(&llIncludes,
-                                              strdup(&argv[i][i2+1]));
-                            }
-                            else
-                            {
-                                Error(2,
-                                      __FILE__, __LINE__, __FUNCTION__,
-                                      "No filename specified with -i option.");
-                                rc = 99;
-                            }
-                            i2 = 999999999;
-                        break;
+                            case 'i':
+                                if (strlen(&argv[i][i2+1]))
+                                {
+                                    lstAppendItem(&llIncludes,
+                                                  strdup(&argv[i][i2+1]));
+                                }
+                                else
+                                {
+                                    Error(2,
+                                          __FILE__, __LINE__, __FUNCTION__,
+                                          "No filename specified with -i option.");
+                                    rc = 99;
+                                }
+                                i2 = 999999999;
+                            break;
 
-                        case 'r':
-                            G_fNoMoveToRoot = TRUE;
-                        break;
+                            case 'r':
+                                G_fNoMoveToRoot = TRUE;
+                            break;
 
-                        default:  // unknown option
-                            Explain("Unknown option '%c'.",
-                                    cOption);
-                            rc = 999;
-                        break;
+                            default:  // unknown option
+                                Explain("Unknown option '%c'.",
+                                        cOption);
+                                rc = 999;
+                            break;
+                        }
                     }
-                }
-            } // end if (argv[i][0] == '-')
-            else
-            {
-                /*
-                 * collect file names:
-                 *
-                 */
-
-                if (!szRootFile[0])
-                    strcpy(szRootFile, argv[i]);
+                } // end if (argv[i][0] == '-')
                 else
                 {
-                    Explain("More than one root file specified.");
-                    rc = 999;
-                }
-            } // end elseif (argv[i][0] == '-')
-        }
-    }
+                    /*
+                     * collect file names:
+                     *
+                     */
 
-    if (!szRootFile[0] && !rc)
-    {
-        Explain("You have not specified any input file.");
-        rc = 999;
-    }
-
-    if (!rc)
-    {
-        // parse includes, if any
-        PLISTNODE pNode = lstQueryFirstNode(&llIncludes);
-        while (pNode)
-        {
-            PSZ pszInclude = (PSZ)pNode->pItemData;
-            ULONG cDefines = 0;
-            if (!(rc = ParseCHeader(pszInclude,
-                                    &cDefines)))
-            {
-                if (G_ulVerbosity)
-                    printf("Found %d valid #define's in \"%s\".\n",
-                           cDefines,
-                           pszInclude);
+                    if (!szRootFile[0])
+                        strcpy(szRootFile, argv[i]);
+                    else
+                    {
+                        Explain("More than one root file specified.");
+                        rc = 999;
+                    }
+                } // end elseif (argv[i][0] == '-')
             }
-            else
-                 Error(2,
-                       __FILE__, __LINE__, __FUNCTION__,
-                       "Error %d opening include file \"%s\".",
-                       rc,
-                       pszInclude);
-
-            pNode = pNode->pNext;
         }
 
+        if (!szRootFile[0] && !rc)
+        {
+            Explain("You have not specified any input file.");
+            rc = 999;
+        }
 
-        XSTRING str;
-        xstrInit(&str, 100*1000);
-
-        xstrcpy(&str,
-                ":userdoc.\n",
-                0);
-        xstrcat(&str,
-                ":docprof toc=12345.\n",   // let heading levels 1-5 appear in TOC
-                0);
-
-        GetOrCreateArticle(szRootFile,
-                           0,             // current nesting level will be 1 then
-                           NULL);
-
-        rc = ProcessFiles(&str);
-
-        xstrcat(&str,
-                ":euserdoc.",
-                0);
         if (!rc)
         {
-            CHAR szOutputFile[CCHMAXPATH];
-            strcpy(szOutputFile, szRootFile);
-            PSZ p = strrchr(szOutputFile, '.');
-            if (p)
-                strcpy(p, ".ipf");
-            else
-                strcat(szOutputFile, ".ipf");
+            // parse includes, if any
+            pcszCrashContext = "Parsing include files";
 
-            ULONG cbWritten = 0;
-
-            XSTRING str2;
-            xstrInit(&str2, str.ulLength * 2 / 3);
-
-            p = str.psz;
-            CHAR c;
-            while (c = *p++)
+            PLISTNODE pNode = lstQueryFirstNode(&llIncludes);
+            while (pNode)
             {
-                if (c == '\n')
-                    xstrcatc(&str2, '\r');
-                xstrcatc(&str2, c);
-            }
-            xstrcatc(&str2, '\0');
-
-            if (rc = doshWriteTextFile(szOutputFile,
-                                       str2.psz,
-                                       &cbWritten,
-                                       NULL))
-                Error(2,
-                      __FILE__, __LINE__, __FUNCTION__,
-                      "Error %d writing output file \"%s\".",
-                      rc,
-                      szOutputFile);
-            else
-                if ((fShowStatistics) || (G_ulVerbosity > 1))
+                PSZ pszInclude = (PSZ)pNode->pItemData;
+                ULONG cDefines = 0;
+                if (!(rc = ParseCHeader(pszInclude,
+                                        &cDefines)))
                 {
-                    printf("%d HTML files were processed\n",
-                           lstCountItems(&G_llFiles2Process));
-                    printf("%d #defines were active\n",
-                           G_cDefines);
-                    printf("%d character entities were replaced\n",
-                           G_ulReplacements);
-                    printf("Output file \"%s\" successfully written, %d bytes\n",
-                            szOutputFile,
-                            cbWritten);
+                    if (G_ulVerbosity)
+                        printf("Found %d valid #define's in \"%s\".\n",
+                               cDefines,
+                               pszInclude);
                 }
+                else
+                     Error(2,
+                           __FILE__, __LINE__, __FUNCTION__,
+                           "Error %d opening include file \"%s\".",
+                           rc,
+                           pszInclude);
+
+                pNode = pNode->pNext;
+            }
+
+
+            XSTRING str;
+            xstrInit(&str, 100*1000);
+
+            xstrcpy(&str,
+                    ":userdoc.\n",
+                    0);
+            xstrcat(&str,
+                    ":docprof toc=12345.\n",   // let heading levels 1-5 appear in TOC
+                    0);
+            xstrcat(&str,
+                    ".* Created by h2i (C) Ulrich M”ller\n",
+                    0);
+
+            pcszCrashContext = "Reading root article";
+
+            GetOrCreateArticle(szRootFile,
+                               0,             // current nesting level will be 1 then
+                               NULL);
+
+            rc = ProcessFiles(&str);
+
+            xstrcat(&str,
+                    ":euserdoc.",
+                    0);
+
+            pcszCrashContext = "Writing IPF";
+
+            if (!rc)
+            {
+                CHAR szOutputFile[CCHMAXPATH];
+                strcpy(szOutputFile, szRootFile);
+                PSZ p = strrchr(szOutputFile, '.');
+                if (p)
+                    strcpy(p, ".ipf");
+                else
+                    strcat(szOutputFile, ".ipf");
+
+                ULONG cbWritten = 0;
+
+                XSTRING str2;
+                xstrInit(&str2, str.ulLength * 2 / 3);
+
+                p = str.psz;
+                CHAR c;
+                while (c = *p++)
+                {
+                    if (c == '\n')
+                        xstrcatc(&str2, '\r');
+                    xstrcatc(&str2, c);
+                }
+                xstrcatc(&str2, '\0');
+
+                if (rc = doshWriteTextFile(szOutputFile,
+                                           str2.psz,
+                                           &cbWritten,
+                                           NULL))
+                    Error(2,
+                          __FILE__, __LINE__, __FUNCTION__,
+                          "Error %d writing output file \"%s\".",
+                          rc,
+                          szOutputFile);
+                else
+                    if ((fShowStatistics) || (G_ulVerbosity > 1))
+                    {
+                        printf("%d HTML files were processed\n",
+                               lstCountItems(&G_llFiles2Process));
+                        printf("%d #defines were active\n",
+                               G_cDefines);
+                        printf("%d character entities were replaced\n",
+                               G_ulReplacements);
+                        printf("Output file \"%s\" successfully written, %d bytes\n",
+                                szOutputFile,
+                                cbWritten);
+                    }
+            }
         }
     }
+    CATCH(excpt1)
+    {
+        Error(2,
+              __FILE__, __LINE__, __FUNCTION__,
+              "Exception caught in main(), context: %s",
+              pcszCrashContext);
+        rc = 1;
+    } END_CATCH();
 
     return (rc);
 }

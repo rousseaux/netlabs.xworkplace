@@ -318,163 +318,120 @@ VOID ctrpInitData(XCenter *somSelf)
  *@@added V0.9.7 (2000-12-09) [umoeller]
  */
 
-ULONG ctrpQuerySetup(XCenter *somSelf,
-                     PSZ pszSetupString,
-                     ULONG cbSetupString)
+BOOL ctrpQuerySetup(XCenter *somSelf,
+                    PVOID pstrSetup)
 {
-    ULONG ulReturn = 0;
+    BOOL brc = TRUE;
 
-    WPSHLOCKSTRUCT Lock;
-    TRY_LOUD(excpt1)
+    // V0.9.16 (2001-10-11) [umoeller]:
+    // removed object lock
+    // this is properly handled by xwpQuerySetup already
+
+    // compose setup string
+
+    TRY_LOUD(excpt2)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        XCenterData *somThis = XCenterGetData(somSelf);
+
+        // temporary buffer for building the setup string
+        PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
+        PLISTNODE pNode;
+
+        /*
+         * build string
+         *
+         */
+
+        if (_ulPosition == XCENTER_TOP)
+            xstrcat(pstrSetup, "POSITION=TOP;", 0);
+
+        // use array for the rest...
+        cmnSetupBuildString(G_XCenterSetupSet,
+                            ARRAYITEMCOUNT(G_XCenterSetupSet),
+                            somThis,
+                            pstrSetup);
+
+        // now build widgets string... this is complex.
+        pNode = lstQueryFirstNode(pllSettings);
+        if (pNode)
         {
-            // method pointer for parent class
-            somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
+            BOOL    fFirstWidget = TRUE;
+            xstrcat(pstrSetup, "WIDGETS=", 0);
 
-            // compose setup string
-
-            TRY_LOUD(excpt2)
+            // we have widgets:
+            // go thru all of them and list all widget classes and setup strings.
+            while (pNode)
             {
-                XCenterData *somThis = XCenterGetData(somSelf);
+                PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
 
-                // temporary buffer for building the setup string
-                // CHAR szTemp[100];
-                XSTRING strTemp;
-                PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
-                PLISTNODE pNode;
-
-                xstrInit(&strTemp, 400);
-
-                /*
-                 * build string
-                 *
-                 */
-
-                if (_ulPosition == XCENTER_TOP)
-                    xstrcat(&strTemp, "POSITION=TOP;", 0);
-
-                // use array for the rest...
-                cmnSetupBuildString(G_XCenterSetupSet,
-                                    ARRAYITEMCOUNT(G_XCenterSetupSet),
-                                    somThis,
-                                    &strTemp);
-
-                // now build widgets string... this is complex.
-                pNode = lstQueryFirstNode(pllSettings);
-                if (pNode)
-                {
-                    BOOL    fFirstWidget = TRUE;
-                    xstrcat(&strTemp, "WIDGETS=", 0);
-
-                    // we have widgets:
-                    // go thru all of them and list all widget classes and setup strings.
-                    while (pNode)
-                    {
-                        PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
-
-                        if (!fFirstWidget)
-                            // not first run:
-                            // add separator
-                            xstrcatc(&strTemp, ',');
-                        else
-                            fFirstWidget = FALSE;
-
-                        // add widget class
-                        xstrcat(&strTemp, pSetting->pszWidgetClass, 0);
-
-                        if (    (pSetting->pszSetupString)
-                             && (strlen(pSetting->pszSetupString))
-                           )
-                        {
-                            // widget has a setup string:
-                            // add that in brackets
-                            XSTRING strSetup2;
-
-                            // characters that must be encoded
-                            // CHAR    achEncode[] = ;
-
-                            // ULONG   ul = 0;
-
-                            // copy widget setup string to temporary buffer
-                            // for encoding... this has "=" and ";"
-                            // chars in it, and these should not appear
-                            // in the WPS setup string
-                            xstrInitCopy(&strSetup2,
-                                         pSetting->pszSetupString,
-                                         40);
-
-                            // add first separator
-                            xstrcatc(&strTemp, '(');
-
-                            xstrEncode(&strSetup2,
-                                       "%,();=");
-
-                            // now append encoded widget setup string
-                            xstrcats(&strTemp, &strSetup2);
-
-                            // add terminator
-                            xstrcatc(&strTemp, ')');
-
-                            xstrClear(&strSetup2);
-                        } // end if (    (pSetting->pszSetupString)...
-
-                        pNode = pNode->pNext;
-                    } // end for widgets
-
-                    xstrcatc(&strTemp, ';');
-                }
-
-                /*
-                 * append string
-                 *
-                 */
-
-                if (strTemp.ulLength)
-                {
-                    // return string if buffer is given
-                    if ((pszSetupString) && (cbSetupString))
-                        strhncpy0(pszSetupString,   // target
-                                  strTemp.psz,      // source
-                                  cbSetupString);   // buffer size
-
-                    // always return length of string
-                    ulReturn = strTemp.ulLength;
-                }
-
-                xstrClear(&strTemp);
-            }
-            CATCH(excpt2)
-            {
-                ulReturn = 0;
-            } END_CATCH();
-
-            // manually resolve parent method
-            pfn_xwpQuerySetup2
-                = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
-                                                                 _somGetParent(_XCenter),
-                                                                 "xwpQuerySetup2");
-            if (pfn_xwpQuerySetup2)
-            {
-                // now call parent method
-                if ( (pszSetupString) && (cbSetupString) )
-                    // string buffer already specified:
-                    // tell parent to append to that string
-                    ulReturn += pfn_xwpQuerySetup2(somSelf,
-                                                   pszSetupString + ulReturn, // append to existing
-                                                   cbSetupString - ulReturn); // remaining size
+                if (!fFirstWidget)
+                    // not first run:
+                    // add separator
+                    xstrcatc(pstrSetup, ',');
                 else
-                    // string buffer not yet specified: return length only
-                    ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
-            }
+                    fFirstWidget = FALSE;
+
+                // add widget class
+                xstrcat(pstrSetup, pSetting->pszWidgetClass, 0);
+
+                if (    (pSetting->pszSetupString)
+                     && (strlen(pSetting->pszSetupString))
+                   )
+                {
+                    // widget has a setup string:
+                    // add that in brackets
+                    XSTRING strSetup2;
+
+                    // copy widget setup string to temporary buffer
+                    // for encoding... this has "=" and ";"
+                    // chars in it, and these should not appear
+                    // in the WPS setup string
+                    xstrInitCopy(&strSetup2,
+                                 pSetting->pszSetupString,
+                                 40);
+
+                    // add first separator
+                    xstrcatc(pstrSetup, '(');
+
+                    xstrEncode(&strSetup2,
+                               "%,();=");
+
+                    // now append encoded widget setup string
+                    xstrcats(pstrSetup, &strSetup2);
+
+                    // add terminator
+                    xstrcatc(pstrSetup, ')');
+
+                    xstrClear(&strSetup2);
+                } // end if (    (pSetting->pszSetupString)...
+
+                pNode = pNode->pNext;
+            } // end for widgets
+
+            xstrcatc(pstrSetup, ';');
         }
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt2)
+    {
+        brc = FALSE;
+    } END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    // if we haven't crashed
+    if (brc)
+    {
+        // manually resolve parent method
+        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2 = 0;
 
-    return (ulReturn);
+        if (pfn_xwpQuerySetup2
+            = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(somSelf,
+                                                              _somGetParent(_XCenter),
+                                                              "xwpQuerySetup2"))
+        {
+            brc = pfn_xwpQuerySetup2(somSelf, pstrSetup);
+        }
+    }
+
+    return (brc);
 }
 
 /*
@@ -644,7 +601,7 @@ BOOL ctrpSaveState(XCenter *somSelf)
             // settings haven't even been unpacked yet:
             // just store the packed settings
             _wpSaveData(somSelf,
-                        (PSZ)G_pcszXCenter,
+                        (PSZ)G_pcszXCenterReal,
                         1,
                         _pszPackedWidgetSettings,
                         _cbPackedWidgetSettings);
@@ -661,7 +618,7 @@ BOOL ctrpSaveState(XCenter *somSelf)
                 if (pszSettingsArray)
                 {
                     _wpSaveData(somSelf,
-                                (PSZ)G_pcszXCenter,
+                                (PSZ)G_pcszXCenterReal,
                                 1,
                                 pszSettingsArray,
                                 cbSettingsArray);
@@ -677,7 +634,7 @@ BOOL ctrpSaveState(XCenter *somSelf)
         cmnSetupSave(somSelf,
                      G_XCenterSetupSet,
                      ARRAYITEMCOUNT(G_XCenterSetupSet),
-                     G_pcszXCenter,     // class name
+                     G_pcszXCenterReal,     // class name
                      somThis);
     }
     CATCH(excpt1)
@@ -718,7 +675,7 @@ BOOL ctrpRestoreState(XCenter *somSelf)
         _cbPackedWidgetSettings = 0;
         // get size of array
         if (_wpRestoreData(somSelf,
-                           (PSZ)G_pcszXCenter,
+                           (PSZ)G_pcszXCenterReal,
                            1,
                            NULL,    // query size
                            &_cbPackedWidgetSettings))
@@ -727,7 +684,7 @@ BOOL ctrpRestoreState(XCenter *somSelf)
             if (_pszPackedWidgetSettings)
             {
                 if (!_wpRestoreData(somSelf,
-                                   (PSZ)G_pcszXCenter,
+                                   (PSZ)G_pcszXCenterReal,
                                    1,
                                    _pszPackedWidgetSettings,
                                    &_cbPackedWidgetSettings))
@@ -757,7 +714,7 @@ BOOL ctrpRestoreState(XCenter *somSelf)
         cmnSetupRestore(somSelf,
                         G_XCenterSetupSet,
                         ARRAYITEMCOUNT(G_XCenterSetupSet),
-                        G_pcszXCenter,     // class name
+                        G_pcszXCenterReal,     // class name
                         somThis);
     }
     CATCH(excpt1)

@@ -3,6 +3,8 @@ This file lists feature suggestions from XWorkplace users.
 Please don't suggest features which are already listed in
 this file. Thank you.
 
+italian: http://www.quasarbbs.com/xwp/
+
 alt-f4 on desktop shuts down
 
 add zip folders
@@ -69,6 +71,9 @@ hook:
        accidental open.
 
 PageMage:
+    --  draw small icons in pagemage
+    --  add backgrounds
+    --  add new titlebar button for make sticky
     --  feature to snap all windows to current (context menu item)
     -- When moving windows within the virtual desktop display,
         >they should only be moved from a position in one desktop to

@@ -384,9 +384,13 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                         // XFolder's, for XFldDisk's we only check the
                         // global setting, because there's no instance
                         // setting for this with XFldDisk's
-                        if (    (pGlobalSettings->fEnableStatusBars)
+                        if (
+#ifndef __NOCFGSTATUSBARS__
+                                (cmnIsFeatureEnabled(StatusBars))
                                                         // feature enabled?
-                             && (pGlobalSettings->fDefaultStatusBarVisibility)
+                             &&
+#endif
+                                (pGlobalSettings->fDefaultStatusBarVisibility)
                                                         // bars visible per default?
                            )
                             // assert that subclassed list item is valid
@@ -445,7 +449,9 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddDiskDetailsPage");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
+#endif
     {
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
 
@@ -464,9 +470,11 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
 
         return (ntbInsertPage(pcnbp));
     }
+#ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
                                                             hwndNotebook));
+#endif
 }
 
 /* ******************************************************************
@@ -489,15 +497,7 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
 
     M_XFldDisk_parent_M_WPDisk_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXFldDisk = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXFldDisk);
 }
 
 /*

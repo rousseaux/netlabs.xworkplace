@@ -1,5 +1,5 @@
 
-src\startshut has WPS startup and shutdown code,
+src\startshut has Desktop startup and shutdown code,
 such as the archiving replacements and XShutdown.
 
 All this code goes into XFLDR.DLL.

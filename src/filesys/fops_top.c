@@ -91,6 +91,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
@@ -448,12 +449,14 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                         // so file operations are suspended until we
                         // return TRUE from here!
                         PSZ pszTitle = winhQueryWindowText(hwndProgress);
-                        CHAR szMsg[1000];
-                        cmnGetMessage(NULL, 0, szMsg, sizeof(szMsg),
+                        XSTRING strMsg;
+                        xstrInit(&strMsg, 0);
+                        cmnGetMessage(NULL, 0,
+                                      &strMsg,
                                       186);     // "really cancel?"
                         if (cmnMessageBox(hwndProgress, // owner
                                           pszTitle,
-                                          szMsg,
+                                          strMsg.psz,
                                           MB_RETRYCANCEL)
                                 != MBID_RETRY)
                         {
@@ -468,6 +471,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
 
                         if (pszTitle)
                             free(pszTitle);
+                        xstrClear(&strMsg);
                     }
                 } // end if (pfu)
                 else

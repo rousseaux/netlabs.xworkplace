@@ -66,6 +66,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\prfh.h"               // INI file helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xfontfile.ih"
@@ -161,7 +162,7 @@ SOM_Scope void  SOMLINK fonf_wpObjectReady(XWPFontFile *somSelf,
         ULONG cb = 0;
         strupr(szFilename);
         if (   (PrfQueryProfileSize(HINI_USER,
-                                    "PM_Fonts",
+                                    (PSZ)PMINIAPP_FONTS, // "PM_Fonts",
                                     szFilename,
                                     &cb))
             && (cb)
@@ -213,15 +214,7 @@ SOM_Scope void  SOMLINK fonfM_wpclsInitData(M_XWPFontFile *somSelf)
 
     M_XWPFontFile_parent_M_WPDataFile_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPFontFile = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPFontFile);
 }
 
 /*

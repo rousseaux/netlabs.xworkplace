@@ -101,7 +101,7 @@
  *
  ********************************************************************/
 
-static const char   *G_pcszFontsApp = "PM_Fonts";
+// static const char   *G_pcszFontsApp = "PM_Fonts";
 
 // static BOOL         G_fCreateFontObjectsThreadRunning = FALSE;
 // static THREADINFO   G_ptiCreateFontObjects = {0};
@@ -408,7 +408,7 @@ APIRET fonInstallFont(HAB hab,
                         {
                             // write!
                             if (!PrfWriteProfileString(HINI_USER,
-                                                       (PSZ)G_pcszFontsApp, // "PM_Fonts";
+                                                       (PSZ)PMINIAPP_FONTS, // "PM_Fonts";
                                                        // key:
                                                        pLastBackslash + 1,
                                                        // data: full path spec
@@ -501,7 +501,7 @@ APIRET fonDeInstallFont(HAB hab,
                 // check if the font is still in OS2.INI
                 ULONG cb = 0;
                 if (    (!PrfQueryProfileSize(HINI_USER,
-                                              (PSZ)G_pcszFontsApp, // "PM_Fonts"
+                                              (PSZ)PMINIAPP_FONTS, // "PM_Fonts"
                                               pLastBackslash + 1,
                                               &cb))
                      || (cb == 0)
@@ -511,7 +511,7 @@ APIRET fonDeInstallFont(HAB hab,
                 {
                     // remove the font from OS2.INI
                     PrfWriteProfileString(HINI_USER,
-                                          (PSZ)G_pcszFontsApp, // "PM_Fonts"
+                                          (PSZ)PMINIAPP_FONTS, // "PM_Fonts"
                                           pLastBackslash + 1,
                                           // remove key:
                                           NULL);
@@ -573,7 +573,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
             _ulFontsCurrent = 0;
 
             if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                            G_pcszFontsApp, // "PM_Fonts"
+                                            PMINIAPP_FONTS, // "PM_Fonts"
                                             &pszFontKeys)))
             {
                 PSZ     pKey2 = pszFontKeys;
@@ -594,11 +594,11 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
                 pKey2 = pszFontKeys;
                 while (*pKey2 != 0)
                 {
-                    PSZ pszFilename = prfhQueryProfileData(HINI_USER,
-                                                           G_pcszFontsApp, // "PM_Fonts",
+                    PSZ pszFilename;
+                    if (pszFilename = prfhQueryProfileData(HINI_USER,
+                                                           PMINIAPP_FONTS, // "PM_Fonts",
                                                            pKey2,
-                                                           NULL);
-                    if (pszFilename)
+                                                           NULL))
                     {
                         // always retrieve first font only...
                         CHAR    szFamily[100] = "unknown";
@@ -1185,6 +1185,8 @@ VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
 /*
  *@@ FontSamplePaint:
  *      implementation for WM_PAINT.
+ *
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: now painting small sizes first
  */
 
 VOID FontSamplePaint(HWND hwnd,
@@ -1214,7 +1216,20 @@ VOID FontSamplePaint(HWND hwnd,
         RECTL       rclClient;
         ULONG       aulSizes[] =
                 {
-                    144,
+                    // paint small sizes first V0.9.16 (2001-09-29) [umoeller]
+                    6,
+                    8,
+                    10,
+                    12,
+                    16,
+                    24,
+                    30,
+                    36,
+                    48,
+                    72,
+                    144
+
+                    /* 144,
                     72,
                     48,
                     36,
@@ -1224,7 +1239,7 @@ VOID FontSamplePaint(HWND hwnd,
                     12,
                     10,
                     8,
-                    6
+                    6 */
                 };
         POINTL      ptlCurrent;
         ULONG       ul = 0;
@@ -1450,7 +1465,7 @@ VOID FontSamplePaint(HWND hwnd,
 /*
  *@@ HandleContextMenu:
  *      handles WM_CONTEXTMENU and WM_MENUEND for open
- *      views of WPS objects.
+ *      views of Desktop objects.
  *
  *      On WM_CONTEXTMENU, this calls _wpDisplayMenu.
  *      Pass this in from your client window proc

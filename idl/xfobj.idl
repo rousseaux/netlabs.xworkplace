@@ -91,11 +91,10 @@ interface XFldObject : WPObject
                             in UCHAR ucScanCode,
                             in USHORT usKeyCode);
 
-    ULONG xwpQuerySetup(in PSZ pszSetupString,
-                        in ULONG cbSetupString);
+    PSZ xwpQuerySetup(in PULONG pulLength);
+    VOID xwpFreeSetupBuffer(in PSZ pszSetupBuffer);
 
-    ULONG xwpQuerySetup2(in PSZ pszSetupString,
-                         in ULONG cbSetupString);
+    BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
     ULONG xwpSetNextObj(in WPObject pobjNext);
     WPObject xwpQueryNextObj();
@@ -118,7 +117,9 @@ interface XFldObject : WPObject
                   xwpRemoveDestroyNotify,
                   xwpSetNextObj,
                   xwpQueryNextObj,
-                  xwpNukePhysical;
+                  xwpNukePhysical,
+                  xwpQueryRealDefaultView,
+                  xwpFreeSetupBuffer;
 
     /*
      * Class Modifiers:

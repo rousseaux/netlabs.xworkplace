@@ -1055,8 +1055,8 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         // _Pmpf(("Real-delete object %s", _wpQueryTitle(pSubObjThis) ));
 
                         // delete the object: we get here for any instantiated
-                        // WPS object which must be deleted, that is
-                        // -- for any awake WPS object in any subfolder (before the folder)
+                        // Desktop object which must be deleted, that is
+                        // -- for any awake Desktop object in any subfolder (before the folder)
                         // -- for any folder after its contents have been deleted
                         //    (either sneakily or by a previous wpFree)
 

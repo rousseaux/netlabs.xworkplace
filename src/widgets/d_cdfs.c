@@ -673,7 +673,7 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                             { 100, 30 },    // size
                             5               // spacing
                          };
-    DLGHITEM DlgTemplate[] =
+    DLGHITEM dlgTemplate[] =
         {
             START_TABLE,
                 START_ROW(0),
@@ -734,8 +734,8 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                                    FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                    fnwpConfigJFS,
                                    szTitle,
-                                   DlgTemplate,      // DLGHITEM array
-                                   ARRAYITEMCOUNT(DlgTemplate),
+                                   dlgTemplate,      // DLGHITEM array
+                                   ARRAYITEMCOUNT(dlgTemplate),
                                    pDlgData,
                                    pcmnQueryDefaultFont()))
     {

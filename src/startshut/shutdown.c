@@ -6,7 +6,7 @@
  *
  *      XShutdown is a (hopefully) complete rewrite of what
  *      WinShutdownSystem does. This code is also used for
- *      "Restart WPS", since it does in part the same thing.
+ *      "Restart Desktop", since it does in part the same thing.
  *
  *      This file implements (in this order):
  *
@@ -75,6 +75,7 @@
 #define INCL_WINSWITCHLIST
 #define INCL_WINCOUNTRY
 #define INCL_WINMENUS
+#define INCL_WINSTATICS
 #define INCL_WINENTRYFIELDS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
@@ -92,13 +93,16 @@
 // headers in /helpers
 #include "helpers\animate.h"            // icon and other animations
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xprf.h"               // replacement profile (INI) functions
 
 // SOM headers which don't crash with prec. header files
@@ -246,7 +250,7 @@ MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ xsdConfirmShutdown:
- *      this displays the eXtended Shutdown (not Restart WPS)
+ *      this displays the eXtended Shutdown (not Restart Desktop)
  *      confirmation box. Returns MBID_YES/NO.
  *
  *@@changed V0.9.0 [umoeller]: redesigned the whole confirmation window.
@@ -460,7 +464,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
 /*
  *@@ xsdConfirmRestartWPS:
- *      this displays the WPS restart
+ *      this displays the Desktop restart
  *      confirmation box. Returns MBID_YES/NO.
  *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
@@ -529,7 +533,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                                                             ID_SDDI_WPS_CLOSEWINDOWS);
         if (psdParms->ulRestartWPS != 2)
         {
-            // regular restart WPS:
+            // regular restart Desktop:
             // save close windows/startup folder settings
             if (psdParms->optWPSCloseWindows)
                 pGlobalSettings->ulXShutdownFlags |= XSD_WPS_CLOSEWINDOWS;
@@ -1650,8 +1654,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *         zeroed.
  *
  *      -- Neither is there a "current setting" for whether
- *         to use "restart WPS" or "logoff" instead. To later use
- *         "restart WPS", set psdp->ulRestartWPS and maybe
+ *         to use "restart Desktop" or "logoff" instead. To later use
+ *         "restart Desktop", set psdp->ulRestartWPS and maybe
  *         psdp->optWPSReuseStartupFolder also.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
@@ -2018,6 +2022,175 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
  *
  ********************************************************************/
 
+CONTROLDEF
+    ShutdownGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "File menus",
+                            ID_SDDI_SHUTDOWNGROUP),
+    RebootAfterwardsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "~Reboot afterwards"
+                            ID_SDDI_REBOOT,
+                            200,
+                            -1),
+    RebootActionsButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "Reboot actio~ns..."
+                            ID_SDDI_REBOOTEXT,
+                            200,
+                            30),
+    AnimationBeforeShutdownCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "An~imation before shutdown"
+                            ID_SDDI_ANIMATE_SHUTDOWN,
+                            -1,
+                            -1),
+    AnimationBeforeRebootCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "An~imation before reboot"
+                            ID_SDDI_ANIMATE_REBOOT,
+                            -1,
+                            -1),
+    PowerOffCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Attempt APM ~1.2 power-off"
+                            ID_SDDI_APMPOWEROFF,
+                            200,
+                            -1),
+    PowerOffDelayCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Dela~y"
+                            ID_SDDI_DELAY,
+                            -1,
+                            -1),
+    APMLevelText1 = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "APM level:"
+                            ID_SDDI_APMVERSION_TXT,
+                            100,
+                            -1),
+    APMLevelText2 = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "unknown"
+                            ID_SDDI_APMVERSION,
+                            -1,
+                            -1),
+    APMDriverText1 = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "APM.SYS driver:"
+                            ID_SDDI_APMSYS_TXT,
+                            100,
+                            -1),
+    APMDriverText2 = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "unknown"
+                            ID_SDDI_APMSYS,
+                            -1,
+                            -1),
+#ifndef __EASYSHUTDOWN__
+    SaveINIFilesText = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "Save INI files:"
+                            ID_SDDI_SAVEINIS_TXT,
+                            -1,
+                            -1),
+    SaveINIFilesCombo =
+        {
+            WC_COMBOBOX,
+            "",
+            CBS_DROPDOWNLIST | LS_HORZSCROLL | WS_TABSTOP | WS_VISIBLE,
+            ID_SDDI_SAVEINIS_LIST,
+            CTL_COMMON_FONT,
+            0,
+            {300, 20},
+            COMMON_SPACING
+        },
+#endif
+    SharedGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "Shutdown and Desktop restart settings"
+                            ID_SDDI_SHAREDGROUP),
+    EmptyTrashCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "~Empty trash can"
+                            ID_SDDI_EMPTYTRASHCAN,
+                            -1,
+                            -1),
+    ConfirmCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "~Confirm"
+                            ID_SDDI_CONFIRM,
+                            -1,
+                            -1),
+    WarpCenterFirstCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Close ~WarpCenter before Desktop"
+                            ID_SDDI_WARPCENTERFIRST,
+                            -1,
+                            -1),
+    AutoCloseVIOCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Auto-close non-~PM sessions"
+                            ID_SDDI_AUTOCLOSEVIO,
+                            200,
+                            -1),
+    AutoCloseButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "Auto-close det~ails..."
+                            ID_SDDI_AUTOCLOSEDETAILS,
+                            200,
+                            30),
+    LogCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Write XSHUTDWN.LO~G file"
+                            ID_SDDI_LOG,
+                            -1,
+                            -1),
+    CreateShutdownFldrButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "Create XShutdown folder"
+                            ID_SDDI_CREATESHUTDOWNFLDR,
+                            300,
+                            30);
+
+DLGHITEM dlgShutdown[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // shared settings group
+                START_GROUP_TABLE(&SharedGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&EmptyTrashCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&ConfirmCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&WarpCenterFirstCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&AutoCloseVIOCB),
+                        CONTROL_DEF(&AutoCloseButton),
+                    START_ROW(0),
+                        CONTROL_DEF(&LogCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&CreateShutdownFldrButton),
+                END_TABLE,      // end of group
+            START_ROW(0),       // shutdown only group
+                // create group on top
+                START_GROUP_TABLE(&ShutdownGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&RebootAfterwardsCB),
+                        CONTROL_DEF(&RebootActionsButton),
+                    START_ROW(0),
+                        CONTROL_DEF(&AnimationBeforeShutdownCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AnimationBeforeRebootCB),
+                    START_ROW(0),
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&PowerOffCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&G_Spacing),        // notebook.c
+                                CONTROL_DEF(&PowerOffDelayCB),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&APMLevelText1),
+                                CONTROL_DEF(&APMLevelText2),
+                            START_ROW(0),
+                                CONTROL_DEF(&APMDriverText1),
+                                CONTROL_DEF(&APMDriverText2),
+                        END_TABLE,
+#ifndef __EASYSHUTDOWN__
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&SaveINIFilesText),
+                        CONTROL_DEF(&SaveINIFilesCombo),
+#endif
+                END_TABLE,      // end of group
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
 /*
  * xsdShutdownInitPage:
  *      notebook callback function (notebook.c) for the
@@ -2031,6 +2204,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
  *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
+ *@@changed V0.9.16 (2001-10-08) [umoeller]: now using dialog formatter
  */
 
 VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2056,6 +2230,12 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-10-08) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgShutdown,
+                          ARRAYITEMCOUNT(dlgShutdown));
         }
 
         sprintf(szAPMVersion, "APM %s", apmQueryVersion());
@@ -2086,6 +2266,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             doshExecClose(pExec);
         }
 
+#ifndef __EASYSHUTDOWN__
         hwndINICombo = WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST);
         for (ul = 0;
              ul < 3;
@@ -2102,6 +2283,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               ul,
                               psz);
         }
+#endif
     }
 
     if (flFlags & CBI_SET)
@@ -2132,10 +2314,12 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
             (pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
 
+#ifndef __EASYSHUTDOWN__
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
                           LM_SELECTITEM,
-                          (MPARAM)(pGlobalSettings->bSaveINIS),
+                          (MPARAM)(pGlobalSettings->_bSaveINIS),
                           (MPARAM)TRUE);        // select
+#endif
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2188,8 +2372,10 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
+#ifndef __EASYSHUTDOWN__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
+#endif
 
         if (WinQueryObject((PSZ)XFOLDER_SHUTDOWNID))
             // shutdown folder exists already: disable button
@@ -2217,8 +2403,10 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     ULONG ulChange = 1;
-    ULONG ulFlag = -1,
-          ulSaveINIS = -1;
+    ULONG ulFlag = -1;
+#ifndef __EASYSHUTDOWN__
+    ULONG ulSaveINIS = -1;
+#endif
 
     switch (ulItemID)
     {
@@ -2262,6 +2450,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ulFlag = XSD_LOG;
         break;
 
+#ifndef __EASYSHUTDOWN__
         case ID_SDDI_SAVEINIS_LIST:
         {
             ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
@@ -2271,6 +2460,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (ul >= 0 && ul <= 2)
                 ulSaveINIS = ul;
         break; }
+#endif
 
         // Reboot Actions (Desktop page 1)
         case ID_SDDI_REBOOTEXT:
@@ -2325,8 +2515,9 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 // and restore the settings for this page
                 pGlobalSettings->ulXShutdownFlags = pGSBackup->ulXShutdownFlags;
-                pGlobalSettings->bSaveINIS = pGSBackup->bSaveINIS;
-
+#ifndef __EASYSHUTDOWN__
+                pGlobalSettings->_bSaveINIS = pGSBackup->_bSaveINIS;
+#endif
                 // update the display by calling the INIT callback
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 cmnUnlockGlobalSettings();
@@ -2340,7 +2531,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 // set the default settings for this settings page
                 // (this is in common.c because it's also used at
-                // WPS startup)
+                // Desktop startup)
                 cmnSetDefaultSettings(pcnbp->ulPageID);
                 // update the display by calling the INIT callback
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2353,7 +2544,9 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     }
 
     if (   (ulFlag != -1)
+#ifndef __EASYSHUTDOWN__
         || (ulSaveINIS != -1)
+#endif
        )
     {
         GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
@@ -2365,8 +2558,10 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 else
                     pGlobalSettings->ulXShutdownFlags &= ~ulFlag;
 
+#ifndef __EASYSHUTDOWN__
             if (ulSaveINIS != -1)
-                pGlobalSettings->bSaveINIS = (CHAR) ulSaveINIS;
+                pGlobalSettings->_bSaveINIS = (CHAR) ulSaveINIS;
+#endif
 
             cmnUnlockGlobalSettings();
         }
@@ -2455,7 +2650,7 @@ VOID xsdFreeAnimation(PSHUTDOWNANIM psda)
 /*
  *@@ xsdRestartWPS:
  *      terminated the WPS process, which will lead
- *      to a WPS restart.
+ *      to a Desktop restart.
  *
  *      If (fLogoff == TRUE), this will perform a logoff
  *      as well. If XWPShell is not running, this flag
@@ -2967,7 +3162,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
  *      NOTE: It is entirely the job of the caller to serialize
  *      access to the list, using mutex semaphores.
  *      The item to add is to be specified by swctl and possibly
- *      *pObject (if swctl describes an open WPS object).
+ *      *pObject (if swctl describes an open Desktop object).
  *
  *      Since this gets called from xsdBuildShutList, this runs
  *      on both the Shutdown and Update threads.
@@ -2980,7 +3175,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
 PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
                                     PLINKLIST pList,    // in/out: linked list to work on
                                     SWCNTRL* pswctl,    // in: tasklist entry to add
-                                    WPObject *pObject,  // in: !=NULL: WPS object
+                                    WPObject *pObject,  // in: !=NULL: Desktop object
                                     LONG lSpecial)
 {
     PSHUTLISTITEM  pNewItem = NULL;
@@ -2998,7 +3193,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
 
         if (pObject)
         {
-            // for WPS objects, store additional data
+            // for Desktop objects, store additional data
             if (wpshCheckObject(pObject))
             {
                 strncpy(pNewItem->szClass,
@@ -3012,7 +3207,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
 
                 // always set PID and SID to that of the WPS,
                 // because the tasklist returns garbage for
-                // WPS objects
+                // Desktop objects
                 pNewItem->swctl.idProcess = pShutdownData->SDConsts.pidWPS;
                 pNewItem->swctl.idSession = pShutdownData->sidWPS;
 
@@ -3033,7 +3228,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
         }
         else
         {
-            // no WPS object: get window class name
+            // no Desktop object: get window class name
             WinQueryClassName(pswctl->hwnd,               // old V0.9.3 code
                               sizeof(pNewItem->szClass)-1,
                               pNewItem->szClass);
@@ -3045,7 +3240,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
                 strcpy(pNewItem->szClass, "!!WarpCenter");
             }
             else
-                // no WPS object: get window class name
+                // no Desktop object: get window class name
                 WinQueryClassName(pswctl->hwnd,
                                   sizeof(pNewItem->szClass)-1,
                                   pNewItem->szClass); */
@@ -3067,7 +3262,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
  *      While we're at it, we also change some of the
  *      data in the switch list entry if needed.
  *
- *      If the switch list entry represents a WPS object,
+ *      If the switch list entry represents a Desktop object,
  *      *ppObject is set to that object's SOM pointer.
  *      Otherwise *ppObject receives NULL.
  *
@@ -3241,8 +3436,8 @@ void xsdBuildShutList(PSHUTDOWNDATA pShutdownData,
                 Append = FALSE;
 
             if (Append)
-                // if we have (Restart WPS) && ~(close all windows), append
-                // only open WPS objects and not all windows
+                // if we have (Restart Desktop) && ~(close all windows), append
+                // only open Desktop objects and not all windows
                 if (   (!(pShutdownData->sdParams.optWPSCloseWindows))
                     && (pObj == NULL)
                    )
@@ -3450,7 +3645,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *      the "Shift" key while selecting "Shutdown" from the
  *      Desktop's context menu.
  *
- *      Shutdown / Restart WPS runs in the following phases:
+ *      Shutdown / Restart Desktop runs in the following phases:
  *
  *      1)  First, all necessary preparations are done, i.e. two
  *          windows are created (the status window with the progress
@@ -3506,7 +3701,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *              Update thread then. Go back to b).
  *
  *          f)  ID_SDMI_PREPARESAVEWPS will save the state of all currently
- *              awake WPS objects by using the list which was maintained
+ *              awake Desktop objects by using the list which was maintained
  *              by the Worker thread all the while during the whole WPS session.
  *
  *          g)  After this, ID_SDMI_FLUSHBUFFERS is posted, which will
@@ -3533,7 +3728,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.0 [umoeller]: code has been re-ordered for semaphore safety.
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted auto-close list code to xsdLoadAutoCloseItems
  *@@changed V0.9.9 (2001-04-04) [umoeller]: moved all post-close stuff from xsd_fnwpShutdown here
- *@@changed V0.9.9 (2001-04-04) [umoeller]: rewrote "save WPS objects" to use dirty list from object.c
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: rewrote "save Desktop objects" to use dirty list from object.c
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed logoff
  *@@changed V0.9.12 (2001-04-29) [umoeller]: deferred update thread startup to fnwpShutdown; this fixes shutdown folder
  *@@changed V0.9.12 (2001-05-15) [umoeller]: now telling PageMage to recover windows first
@@ -3833,7 +4028,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // are children of the desktop
         // V0.9.12 (2001-05-29) [umoeller]
         // V0.9.13 (2001-06-17) [umoeller]: nope, go back to doing this for each window
-        /* if (    (0 == pShutdownData->sdParams.ulRestartWPS) // restart WPS (1) or logoff (2)
+        /* if (    (0 == pShutdownData->sdParams.ulRestartWPS) // restart Desktop (1) or logoff (2)
              || (pShutdownData->sdParams.optWPSCloseWindows)
            )
         {
@@ -3997,7 +4192,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             /*************************************************
              *
-             *      save WPS objects
+             *      save Desktop objects
              *
              *************************************************/
 
@@ -4005,14 +4200,14 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             sprintf(szTitle,
                     cmnGetString(ID_SDSI_SAVINGDESKTOP), // cmnQueryNLSStrings()->pszSDSavingDesktop,
-                        // "Saving xxx awake WPS objects..."
+                        // "Saving xxx awake Desktop objects..."
                     cObjectsToSave);
             WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
                               ID_SDDI_STATUS,
                               szTitle);
 
             xsdLog(LogFile,
-                   __FUNCTION__ ": Saving %d awake WPS objects...\n",
+                   __FUNCTION__ ": Saving %d awake Desktop objects...\n",
                    cObjectsToSave);
 
             // reset progress bar
@@ -4059,7 +4254,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             if (pShutdownData->sdParams.ulRestartWPS)
             {
-                // "Restart WPS" mode
+                // "Restart Desktop" mode
 
                 WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
                                   ID_SDDI_STATUS,
@@ -4101,7 +4296,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                         "shutdown to prevent loss of your WPS data."
                         "\n\nRestart the Workplace Shell now?");
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
-                                        (MPARAM)1); // enforce WPS restart
+                                        (MPARAM)1); // enforce Desktop restart
 
                 xsdLog(LogFile,
                        "\n*** CRASH\n%s\n", pszErrMsg);
@@ -4196,7 +4391,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     xsdLog(LogFile, "  Done freeing lists.\n");
 
     /*
-     * Restart WPS or shutdown:
+     * Restart Desktop or shutdown:
      *
      */
 
@@ -4207,10 +4402,10 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // been successfully closed and we can actually shut
         // down the system
 
-        if (pShutdownData->sdParams.ulRestartWPS) // restart WPS (1) or logoff (2)
+        if (pShutdownData->sdParams.ulRestartWPS) // restart Desktop (1) or logoff (2)
         {
             // here we will actually restart the WPS
-            xsdLog(LogFile, "Preparing WPS restart...\n");
+            xsdLog(LogFile, "Preparing Desktop restart...\n");
 
             ctlStopAnimation(WinWindowFromID(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_ICON));
             WinDestroyWindow(pShutdownData->SDConsts.hwndShutdownStatus);
@@ -4233,7 +4428,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         }
         else
         {
-            // *** no restart WPS:
+            // *** no restart Desktop:
             // call the termination routine, which
             // will do the rest
 
@@ -4241,7 +4436,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // this will not return, except in debug mode
 
             if (pShutdownData->sdParams.optDebug)
-                // in debug mode, restart WPS
+                // in debug mode, restart Desktop
                 pShutdownData->sdParams.ulRestartWPS = 1;     // V0.9.0
         }
     } // end if (fAllWindowsClosed)
@@ -4266,7 +4461,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         LogFile = NULL;
     }
 
-    // moved this down, because we need a msg queue for restart WPS
+    // moved this down, because we need a msg queue for restart Desktop
     // V0.9.3 (2000-04-26) [umoeller]
 
     WinDestroyWindow(pShutdownData->SDConsts.hwndShutdownStatus);
@@ -4558,7 +4753,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
                     // useitems and sends WM_CLOSE to each of them
 
         xsdLog(pShutdownData->ShutdownLogFile,
-               "      Open WPS object, called wpClose(pObject)\n");
+               "      Open Desktop object, called wpClose(pObject)\n");
     }
     else if (pItem->swctl.hwnd)
     {
@@ -4648,7 +4843,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
  *@@changed V0.9.0 [umoeller]: fixed some inconsistensies in ID_SDMI_CLOSEVIO
  *@@changed V0.9.0 [umoeller]: changed shutdown logging to stdio functions (fprintf etc.)
- *@@changed V0.9.0 [umoeller]: changed "reuse WPS startup folder" to use XWPGLOBALSHARED
+ *@@changed V0.9.0 [umoeller]: changed "reuse Desktop startup folder" to use XWPGLOBALSHARED
  *@@changed V0.9.0 [umoeller]: added xsdFlushWPS2INI call
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted VIO code to xsdCloseVIO
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added wpWaitForClose for Desktop
@@ -5164,7 +5359,7 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
  *      xsdFinishAPMPowerOff, or xsdFinishStandardMessage.
  *
  *      Note that this is only called for "real" shutdown.
- *      For "Restart WPS", xsdRestartWPS is called instead.
+ *      For "Restart Desktop", xsdRestartWPS is called instead.
  *
  *      Runs on the Shutdown thread.
  *
@@ -5186,7 +5381,8 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
                       cmnGetString(ID_SDSI_SAVINGPROFILES)) ; // pszSDSavingProfiles
 
-    switch (pGlobalSettings->bSaveINIS)
+#ifndef __EASYSHUTDOWN__
+    switch (pGlobalSettings->_bSaveINIS)
     {
         case 2:         // do nothing:
             xsdLog(pShutdownData->ShutdownLogFile, "Saving INIs has been disabled, skipping.\n");
@@ -5207,14 +5403,17 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
         break;
 
         default:    // includes 0, new method
+#endif
             xsdLog(pShutdownData->ShutdownLogFile, "Saving INIs, new method (xprfSaveINIs)...\n");
 
             arc = xprfSaveINIs(pShutdownData->habShutdownThread,
                                xsd_fnSaveINIsProgress,
                                pShutdownData->hwndProgressBar);
             xsdLog(pShutdownData->ShutdownLogFile, "Done with xprfSaveINIs.\n");
+#ifndef __EASYSHUTDOWN__
         break;
     }
+#endif
 
     if (arc != NO_ERROR)
     {
@@ -5227,7 +5426,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
                              MB_YESNO)
                     == MBID_YES)
         {
-            xsdLog(pShutdownData->ShutdownLogFile, "User requested to restart WPS.\n");
+            xsdLog(pShutdownData->ShutdownLogFile, "User requested to restart Desktop.\n");
             xsdRestartWPS(pShutdownData->habShutdownThread,
                           FALSE);
                     // doesn't return
@@ -5548,7 +5747,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 
         cmnMessageBox(HWND_DESKTOP, "APM Error", szAPMError,
                 MB_CANCEL | MB_SYSTEMMODAL);
-        // restart WPS
+        // restart Desktop
         xsdRestartWPS(pShutdownData->habShutdownThread,
                       FALSE);
         // this does not return
@@ -5810,7 +6009,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                             "file XSHUTDWN.LOG there. If not, please enable shutdown "
                             "logging in the Desktop's settings notebook. ");
                     krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
-                            (MPARAM)0); // don't enforce WPS restart
+                            (MPARAM)0); // don't enforce Desktop restart
 
                     xsdLog(pShutdownData->ShutdownLogFile, "\n*** CRASH\n%s\n", pszErrMsg);
                 }

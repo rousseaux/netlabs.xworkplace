@@ -626,14 +626,18 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile1Page");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
     {
+#endif
         return (fsysInsertFilePages(somSelf,
                                     hwndNotebook));
+#ifndef __ALWAYSREPLACEFILEPAGE__
     }
     else
         return (XFldDataFile_parent_WPDataFile_wpAddFile1Page(somSelf,
                                                               hwndNotebook));
+#endif
 }
 
 /*
@@ -656,11 +660,15 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile2Page");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
+#endif
         return (SETTINGS_PAGE_REMOVED);
+#ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFldDataFile_parent_WPDataFile_wpAddFile2Page(somSelf,
                                                               hwndNotebook));
+#endif
 }
 
 /*
@@ -683,11 +691,15 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile3Page");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
+#endif
         return (SETTINGS_PAGE_REMOVED);
+#ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
                                                               hwndNotebook));
+#endif
 }
 
 /*
@@ -886,15 +898,7 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
 
     M_XFldDataFile_parent_M_WPDataFile_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXFldDataFile = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXFldDataFile);
 
     /*
      *  Manually patch method tables of this class...
@@ -998,11 +1002,12 @@ SOM_Scope ULONG  SOMLINK xfdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
 {
     ULONG       ulrc;
     HMODULE     hmodIconsDLL = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
     M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryIconData");
 
-    if (pGlobalSettings->fReplaceIcons)
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnIsFeatureEnabled(IconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -1016,6 +1021,7 @@ SOM_Scope ULONG  SOMLINK xfdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
     }
 
     if (hmodIconsDLL == NULLHANDLE)
+#endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDataFile_parent_M_WPDataFile_wpclsQueryIconData(somSelf,
                                                                   pIconInfo);

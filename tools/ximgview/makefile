@@ -63,8 +63,8 @@ $(OUTPUTDIR)\ximgview.obj: $(@B).c $(HEADERS) ..\..\include\bldlevel.h
           $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 
 # build targets
-ximgview.def: ..\..\include\bldlevel.h
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace image viewer"
+ximgview.def: ..\..\include\bldlevel.h makefile
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) image viewer"
 
 $(OUTPUTDIR)\ximgview.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

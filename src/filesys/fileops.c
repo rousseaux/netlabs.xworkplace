@@ -94,6 +94,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
@@ -1053,14 +1054,14 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
     DosQueryPathInfo(szExistingFilename,
                      FIL_STANDARD,
                      &fs3, sizeof(fs3));
-    strhFileDate(szTemp, &(fs3.fdateLastWrite),
+    nlsFileDate(szTemp, &(fs3.fdateLastWrite),
                  pcs->ulDateFormat, pcs->cDateSep);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
-    strhFileTime(szTemp, &(fs3.ftimeLastWrite),
+    nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
                  pcs->ulTimeFormat, pcs->cTimeSep);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
 
-    strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
+    nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
                        pcs->cThousands);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
 
@@ -1074,13 +1075,13 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
         DosQueryPathInfo(szSelfFilename,
                          FIL_STANDARD,
                          &fs3, sizeof(fs3));
-        strhFileDate(szTemp, &(fs3.fdateLastWrite),
+        nlsFileDate(szTemp, &(fs3.fdateLastWrite),
                      pcs->ulDateFormat, pcs->cDateSep);
         WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
-        strhFileTime(szTemp, &(fs3.ftimeLastWrite),
+        nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
                      pcs->ulTimeFormat, pcs->cTimeSep);
         WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
-        strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
+        nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
                            pcs->cThousands);
         WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
     }

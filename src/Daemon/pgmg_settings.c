@@ -65,7 +65,7 @@ VOID pgmsSetDefaults(VOID)
     G_szlEachDesktopReal.cx = G_pHookData->lCXScreen + 8;
     G_szlEachDesktopReal.cy = G_pHookData->lCYScreen + 8;
 
-    _Pmpf(("pgmsSetDefaults"));
+    // _Pmpf(("pgmsSetDefaults"));
     // Misc 1
     pptlMaxDesktops->x = 3;
     pptlMaxDesktops->y = 2;
@@ -154,7 +154,7 @@ BOOL pgmsLoadSettings(ULONG flConfig)
     PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
     ULONG   cb;
-    _Pmpf(("pgmsLoadSettings"));
+    // _Pmpf(("pgmsLoadSettings"));
 
     cb = sizeof(PAGEMAGECONFIG);
     if (PrfQueryProfileData(HINI_USER,
@@ -206,7 +206,7 @@ BOOL pgmsLoadSettings(ULONG flConfig)
 
 BOOL pgmsSaveSettings(VOID)
 {
-    _Pmpf(("pgmsSaveSettings"));
+    // _Pmpf(("pgmsSaveSettings"));
     return (PrfWriteProfileData(HINI_USER,
                                 INIAPP_XWPHOOK,
                                 INIKEY_HOOK_PGMGCONFIG,

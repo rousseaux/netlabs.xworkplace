@@ -17,7 +17,7 @@
  *      for all Netscape versions at
  *      http://developer.netscape.com/library/documentation/communicator/DDE
  *
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2001 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -48,47 +48,86 @@
 
 #include "setup.h"
 
+#include "xwpapi.h"
 #include "netscdde.h"
 #include "dlgids.h"
 
-void            ShowMessage(PSZ);
 MRESULT EXPENTRY fnwpMain(HWND, ULONG, MPARAM, MPARAM);
 
-HAB             hab;
-HWND            hwndDebug, hwndListbox, hServerWnd = NULLHANDLE;
-PFNWP           SysWndProc;
+HAB             G_hab;
+HWND            G_hwndDebug = NULLHANDLE,
+                G_hwndListbox = NULLHANDLE,
+                G_hServerWnd = NULLHANDLE;
+PFNWP           G_SysWndProc;
 
 // NLS Resource DLL
-HMODULE     hmodNLS = NULLHANDLE;
+HMODULE         G_hmodNLS = NULLHANDLE;
 
-CHAR            szURL[400] = "";
+CHAR            G_szURL[400] = "";
 
-ULONG           idTimer = 0;
+ULONG           G_idTimer = 0;
 
-CONVCONTEXT     context;
+CONVCONTEXT     G_context;
 
-CHAR            szDDENetscape[] = "NETSCAPE",   // DDE server name
-                szNetscapeApp[CCHMAXPATH] = "NETSCAPE.EXE",     // default program to start
+CHAR            G_szDDENetscape[] = "NETSCAPE",   // DDE server name
+                G_szNetscapeApp[CCHMAXPATH] = "NETSCAPE.EXE",     // default program to start
                                                         // if not running
-                szNetscapeParams[CCHMAXPATH] = "";  // space for params
+                G_szNetscapeParams[CCHMAXPATH] = "",  // space for params
 
-PSZ             szOpenURLTopic = "WWW_OpenURL";     // open URL DDE topic
+                G_szStartupDir[CCHMAXPATH] = "";        // startup dir V0.9.16 (2001-10-02) [umoeller]
+PSZ             G_szOpenURLTopic = "WWW_OpenURL";     // open URL DDE topic
 
                                                         // (see Netscape docs)
 
 // options flags, modified by command line interface
-BOOL            optNewWindow = FALSE,
-                optDebug = FALSE,
-                optExecute = TRUE,
-                optConfirmStart = TRUE,
-                optMinimized = FALSE,
-                optHidden = FALSE,
-                optQuiet = FALSE;           // "-q", don't show status windows
+BOOL            G_optNewWindow = FALSE,
+                G_optDebug = FALSE,
+                G_optExecute = TRUE,
+                G_optConfirmStart = TRUE,
+                G_optMinimized = FALSE,
+                G_optHidden = FALSE,
+                G_optQuiet = FALSE;           // "-q", don't show status windows
 
-BOOL            NetscapeFound = FALSE;
+BOOL            G_NetscapeFound = FALSE;
 
 // status window handle
-HWND            hwndContacting = NULLHANDLE;
+HWND            G_hwndContacting = NULLHANDLE;
+
+/*
+ * ShowMessage:
+ *      add a string to the listbox.
+ */
+
+void ShowMessage(const char *pcszFormat, ...)
+{
+    CHAR szbuf[1000];
+    va_list     args;
+    va_start(args, pcszFormat);
+    vsprintf(szbuf, pcszFormat, args);
+    va_end(args);
+
+    WinSendMsg(G_hwndListbox,
+               LM_INSERTITEM,
+               MPFROMSHORT(LIT_END),
+               szbuf);
+}
+
+/*
+ *@@ DisplayError:
+ *
+ *@@added V0.9.16 (2001-10-02) [umoeller]
+ */
+
+VOID DisplayError(PCSZ pcsz)
+{
+    WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                  (PSZ)pcsz,
+                  "Netscape DDE",
+                  0,
+                  MB_CANCEL | MB_MOVEABLE);
+    if (G_hwndDebug)
+        WinPostMsg(G_hwndDebug, WM_QUIT, 0, 0);
+}
 
 /*
  * CenterWindow:
@@ -134,9 +173,7 @@ ULONG WinCenteredDlgBox(HWND hwndParent,
         WinDestroyWindow(hwndDlg);
     }
     else
-        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                        "Error loading dlg", "NetscDDE",
-                        0, MB_OK | MB_MOVEABLE);
+        DisplayError("Cannot load dialog");
 
     return (ulReply);
 }
@@ -147,15 +184,39 @@ ULONG WinCenteredDlgBox(HWND hwndParent,
  *      NetscDDE's usage in brief; called when the
  *      parameters on the cmd line don't seem to
  *      be complete
+ *
+ *@@changed V0.9.16 (2001-10-02) [umoeller]: now displaying xwp help panel
  */
 
 VOID ExplainParams(VOID)
 {
-    WinCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
+    /* WinCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
                       WinDefDlgProc,
-                      hmodNLS,
+                      G_hmodNLS,
                       ID_NDD_EXPLAIN,
-                      NULL);
+                      NULL); */
+    if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                      "The syntax for the NetscDDE command line is incorrect."
+                      "Would you like to view the NetscDDE online help?",
+                      "NetscDDE",
+                      0, MB_YESNO | MB_MOVEABLE)
+            == MBID_YES)
+    {
+        // tell xwp to display the help
+        PXWPGLOBALSHARED   pXwpGlobalShared = NULL;
+        if (!(DosGetNamedSharedMem((PVOID*)&pXwpGlobalShared,
+                                   SHMEM_XWPGLOBAL,
+                                   PAG_READ | PAG_WRITE)))
+        {
+            WinPostMsg(pXwpGlobalShared->hwndAPIObject,
+                       APIM_NETSCDDEHELP,
+                       0,
+                       0);
+            DosFreeMem(pXwpGlobalShared);
+        }
+        else
+            DisplayError("Cannot open the NetscDDE online help. Maybe XWorkplace is not installed and running.");
+    }
 }
 
 /*
@@ -177,14 +238,11 @@ BOOL LoadNLS(VOID)
                               szNLSDLL, sizeof(szNLSDLL)) < 3)
 
     {
-        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                      "NetscapeDDE was unable to determine the location of the "
-                      "XWorkplace National Language Support DLL, which is "
-                      "required for operation. The OS2.INI file does not contain "
-                      "this information. "
-                      "NetscapeDDE cannot proceed. Please re-install XWorkplace.",
-                      "NetscapeDDE: Fatal Error",
-                      0, MB_OK | MB_MOVEABLE);
+        DisplayError("NetscapeDDE was unable to determine the location of the "
+                     "XWorkplace National Language Support DLL, which is "
+                     "required for operation. The OS2.INI file does not contain "
+                     "this information. "
+                     "NetscapeDDE cannot proceed. Please re-install XWorkplace.");
         Proceed = FALSE;
     }
     else
@@ -205,7 +263,7 @@ BOOL LoadNLS(VOID)
         if (DosLoadModule(NULL,
                           0,
                           szNLSDLL,
-                          &hmodNLS))
+                          &G_hmodNLS))
         {
             CHAR    szMessage[2000];
             sprintf(szMessage,
@@ -213,14 +271,11 @@ BOOL LoadNLS(VOID)
                     "the National Language DLL which "
                     "is specified for XWorkplace in OS2.INI.",
                     szNLSDLL);
-            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                          szMessage,
-                          "NetscapeDDE: Fatal Error",
-                          0, MB_OK | MB_MOVEABLE);
+            DisplayError(szMessage);
             Proceed = FALSE;
         }
 
-        _Pmpf(("Loaded %s --> hmodNLS 0x%lX", szNLSDLL, hmodNLS));
+        _Pmpf(("Loaded %s --> hmodNLS 0x%lX", szNLSDLL, G_hmodNLS));
     }
 
     return (Proceed);
@@ -241,10 +296,10 @@ int main(int argc,
     QMSG            qmsg;
     BOOL            Proceed = TRUE;
 
-    if (!(hab = WinInitialize(0)))
+    if (!(G_hab = WinInitialize(0)))
         return (1);
 
-    if (!(hmq = WinCreateMsgQueue(hab, 0)))
+    if (!(hmq = WinCreateMsgQueue(G_hab, 0)))
         return (1);
 
     // now attempt to find the XWorkplace NLS resource DLL,
@@ -269,30 +324,60 @@ int main(int argc,
                         switch (argv[i][i2])
                         {
                             case 'n':
-                                optNewWindow = TRUE;
+                                G_optNewWindow = TRUE;
                                 break;
 
                             case 'x':
-                                optExecute = FALSE;
+                                G_optExecute = FALSE;
                                 break;
 
                             case 'm':
-                                optMinimized = TRUE;
+                                G_optMinimized = TRUE;
                                 break;
 
                             case 'h':
-                                optHidden = TRUE;
+                                G_optHidden = TRUE;
                                 break;
 
                             case 'X':
-                                optConfirmStart = FALSE;
+                                G_optConfirmStart = FALSE;
                                 break;
 
                             case 'p':   // netscape path
 
                                 if (i < argc)
                                 {
-                                    strcpy(szNetscapeApp, argv[i + 1]);
+                                    strcpy(G_szNetscapeApp, argv[i + 1]);
+                                    i++;
+                                    i2 = 1000;
+                                }
+                                else
+                                {
+                                    ExplainParams();
+                                    Proceed = FALSE;
+                                }
+                                break;
+
+                            case 's':   // startup dir V0.9.16 (2001-10-02) [umoeller]
+                            {
+                                if (i < argc)
+                                {
+                                    strcpy(G_szStartupDir, argv[i + 1]);
+                                    i++;
+                                    i2 = 1000;
+                                }
+                                else
+                                {
+                                    ExplainParams();
+                                    Proceed = FALSE;
+                                }
+                                break;
+                            }
+
+                            case 'S':   // DDE server name V0.9.16 (2001-10-02) [umoeller]
+                                if (i < argc)
+                                {
+                                    strcpy(G_szDDENetscape, argv[i + 1]);
                                     i++;
                                     i2 = 1000;
                                 }
@@ -307,7 +392,7 @@ int main(int argc,
 
                                 if (i < argc)
                                 {
-                                    strcpy(szNetscapeParams, argv[i + 1]);
+                                    strcpy(G_szNetscapeParams, argv[i + 1]);
                                     i++;
                                     i2 = 1000;
                                 }
@@ -320,11 +405,11 @@ int main(int argc,
 
                             case 'D':   // debug, show list box window w/ DDE msgs
 
-                                optDebug = TRUE;
+                                G_optDebug = TRUE;
                                 break;
 
                             case 'q': // added V0.9.1 (2000-02-07) [umoeller]
-                                optQuiet = TRUE;
+                                G_optQuiet = TRUE;
                                 break;
 
                             default:    // unknown parameter
@@ -340,15 +425,15 @@ int main(int argc,
                     if (strchr(argv[i], ' '))
                     {
                         // if the URL contains spaces, we enclose it in quotes
-                        sprintf(szURL, "\"%s\"", argv[i]);
+                        sprintf(G_szURL, "\"%s\"", argv[i]);
                     }
                     else
-                        strcpy(szURL, argv[i]);
+                        strcpy(G_szURL, argv[i]);
                 }
             }
         }
 
-        if (strlen(szURL) == 0)
+        if (strlen(G_szURL) == 0)
         {
             // no URL given: explain
             ExplainParams();
@@ -375,76 +460,80 @@ int main(int argc,
             // set our resource key (so PM can find menus, icons, etc).
             fcd.idResources = DDEC;
             // create the frame
-            hwndDebug = WinCreateWindow(HWND_DESKTOP,
-                                        WC_FRAME,
-                                        "Netscape DDE",
-                                        0, 0, 0, 0, 0,
-                                        NULLHANDLE,
-                                        HWND_TOP,
-                                        DDEC,
-                                        &fcd,
-                                        NULL);
+            G_hwndDebug = WinCreateWindow(HWND_DESKTOP,
+                                          WC_FRAME,
+                                          "Netscape DDE",
+                                          0, 0, 0, 0, 0,
+                                          NULLHANDLE,
+                                          HWND_TOP,
+                                          DDEC,
+                                          &fcd,
+                                          NULL);
 
-            if (!hwndDebug)
+            if (!G_hwndDebug)
                 return (1);
 
             // set the NetscDDE icon for the frame window
-            WinSendMsg(hwndDebug,
+            WinSendMsg(G_hwndDebug,
                        WM_SETICON,
-                       (MPARAM)WinLoadPointer(HWND_DESKTOP, hmodNLS,
+                       (MPARAM)WinLoadPointer(HWND_DESKTOP, G_hmodNLS,
                                               ID_ND_ICON),
                        NULL);
 
             // create a list window child
-            hwndListbox = WinCreateWindow(hwndDebug,
-                                          WC_LISTBOX,
-                                          NULL,
-                                          LS_HORZSCROLL,
-                                          0, 0, 0, 0,
-                                          hwndDebug,
-                                          HWND_BOTTOM,
-                                          FID_CLIENT,
-                                          NULL,
-                                          NULL);
+            G_hwndListbox = WinCreateWindow(G_hwndDebug,
+                                            WC_LISTBOX,
+                                            NULL,
+                                            LS_HORZSCROLL,
+                                            0, 0, 0, 0,
+                                            G_hwndDebug,
+                                            HWND_BOTTOM,
+                                            FID_CLIENT,
+                                            NULL,
+                                            NULL);
 
             // we must intercept the frame window's messages;
             // we save the return value (the current WndProc),
             // so we can pass it all the other messages the frame gets.
-            SysWndProc = WinSubclassWindow(hwndDebug, (PFNWP) fnwpMain);
+            G_SysWndProc = WinSubclassWindow(G_hwndDebug, (PFNWP) fnwpMain);
 
             // the window we just created is normally invisible; we
             // will only display it if the (undocumented) "-D" option
             // was given on the command line.
-            if (optDebug)
-                WinShowWindow(hwndDebug, TRUE);
+            if (G_optDebug)
+            {
+                WinShowWindow(G_hwndDebug, TRUE);
+                ShowMessage("Entering msg loop");
+            }
 
             // now show "Contacting Netscape"
-            if (!optQuiet)
+            if (!G_optQuiet)
             {
-                hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
+                G_hwndContacting = WinLoadDlg(HWND_DESKTOP, G_hwndDebug,
                                             WinDefDlgProc,
-                                            hmodNLS, ID_NDD_CONTACTING,
+                                            G_hmodNLS, ID_NDD_CONTACTING,
                                             0);
-                WinShowWindow(hwndContacting, TRUE);
+                WinShowWindow(G_hwndContacting, TRUE);
             }
 
             // now post msg to main window to initiate DDE
-            WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_INITIATE, 0), 0);
+            if (!G_optDebug)
+                WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_INITIATE, 0), 0);
 
             //  standard PM message loop
-            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+            while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
             {
-                WinDispatchMsg(hab, &qmsg);
+                WinDispatchMsg(G_hab, &qmsg);
             }
         }                           // end if (proceed)
 
         // clean up on the way out
-        if (hwndContacting)
-            WinDestroyWindow(hwndContacting);
+        if (G_hwndContacting)
+            WinDestroyWindow(G_hwndContacting);
     }
 
     WinDestroyMsgQueue(hmq);
-    WinTerminate(hab);
+    WinTerminate(G_hab);
 
     return (0);
 }
@@ -465,7 +554,7 @@ BOOL DDERequest(HWND hwndClient,
     PSZ             pszDDEItemName;
 
     // get some sharable memory
-    DosAllocSharedMem((PVOID) & mem,
+    DosAllocSharedMem((PVOID)&mem,
                       NULL,
                       sizeof(DDESTRUCT) + 1000,
                       PAG_COMMIT |
@@ -475,7 +564,7 @@ BOOL DDERequest(HWND hwndClient,
 
     // get the server's ID and give it access
     // to the shared memory
-    WinQueryWindowProcess(hServerWnd, &pid, &tid);
+    WinQueryWindowProcess(G_hServerWnd, &pid, &tid);
     DosGiveSharedMem(&mem, pid, PAG_READ | PAG_WRITE);
 
     /* here is definition for DDESTRUCT, for further reference:
@@ -536,14 +625,21 @@ BOOL DDERequest(HWND hwndClient,
     pddeStruct->cbData = 500;
     // length of the data
 
-    // post our request to the server program
-    NetscapeFound = (WinDdePostMsg(hServerWnd,
-                                   hwndClient,
-                                   WM_DDE_REQUEST,
-                                   pddeStruct,
-                                   0));
+    ShowMessage(__FUNCTION__ ": sending request \"%s\"",
+                pszItemString);
 
-    return (NetscapeFound);
+    // post our request to the server program
+    if (G_NetscapeFound = WinDdePostMsg(G_hServerWnd,
+                                        hwndClient,
+                                        WM_DDE_REQUEST,
+                                        pddeStruct,
+                                        0))
+                    // WinDdePostMsg frees the shared mem!
+        ShowMessage("    --> success");
+    else
+        ShowMessage("    --> failed");
+
+    return (G_NetscapeFound);
 }
 
 /*
@@ -575,11 +671,16 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
             PSZ             szInApp, szInTopic;
             static BOOL bNetscapeAnswered = FALSE;
 
-            pddeInit = (PDDEINIT) mp2;
+            pddeInit = (PDDEINIT)mp2;
             szInApp = pddeInit->pszAppName;
             szInTopic = pddeInit->pszTopic;
-            ShowMessage("!! Netscape answered.");
-            hServerWnd = (HWND) mp1;
+            G_hServerWnd = (HWND)mp1;
+
+            ShowMessage("WM_DDE_INITIATEACK (resp to WinDDEInitiate)");
+            ShowMessage("  application: \"%s\"",
+                        pddeInit->pszAppName);
+            ShowMessage("  topic: \"%s\"",
+                        pddeInit->pszTopic);
 
             // RDP 2000-07-07 07:24:18
             // There was no check on which application responded.
@@ -590,22 +691,20 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
             // If the app is not Netscape then the handle is nullified.
             // I don't know if assigning 0 to the handle is correct but
             // is seems to solve the problem.
-            if (!strcmp(pddeInit->pszAppName, "NETSCAPE"))
+            if (!strcmp(pddeInit->pszAppName,
+                        G_szDDENetscape))     // V0.9.16 (2001-10-02) [umoeller]
             {
-                ShowMessage("!! Netscape answered.");
-                hServerWnd = (HWND)mp1;
+                // ShowMessage("!! Netscape answered.");
+                G_hServerWnd = (HWND)mp1;
                 bNetscapeAnswered = TRUE;
             }
             else
             {
-                ShowMessage("!! Other application aswered.");
-                hServerWnd = (HWND)0;
+                // ShowMessage("!! Other application aswered.");
+                G_hServerWnd = (HWND)0;
             }
-
-            // Show the application name and the topic in the debug-window.
-            ShowMessage(pddeInit->pszAppName);
-            ShowMessage(pddeInit->pszTopic);
-        break; }
+        }
+        break;
 
         // all answers to DDE requests arrive here
         case WM_DDE_DATA:
@@ -615,8 +714,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
             DosGetSharedMem(pddeStruct, PAG_READ | PAG_WRITE);
             szData = (BYTE *) (pddeStruct + (pddeStruct->offabData));
             ShowMessage(szData);
-            break;
         }
+        break;
 
         // menu item processing (in debug mode, otherwise these
         // WM_COMMAND msgs have been posted automatically)
@@ -625,15 +724,16 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 // start DDE conversation: this was posted
                 // by "main" before the PM loop was entered
+                // (even if we're in debug mode)
                 case IDM_INITIATE:
-                    WinPostMsg(hwndListbox, LM_DELETEALL, 0, 0);
-                    ShowMessage("--- Initiating DDE... Topic:");
-                    ShowMessage(szOpenURLTopic);
-                    context.cb = sizeof(CONVCONTEXT);
-                    context.fsContext = 0;
-                    WinDdeInitiate(hwndFrame, szDDENetscape,
-                                   szOpenURLTopic, &context);
-                    if (!optDebug)
+                    // WinPostMsg(G_hwndListbox, LM_DELETEALL, 0, 0);
+                    ShowMessage("IDM_INITIATE:");
+                    ShowMessage("Topic: \"%s\"", G_szOpenURLTopic);
+                    G_context.cb = sizeof(CONVCONTEXT);
+                    G_context.fsContext = 0;
+                    WinDdeInitiate(hwndFrame, G_szDDENetscape,
+                                   G_szOpenURLTopic, &G_context);
+                    if (!G_optDebug)
                         // if we're not in debug mode, post subsequent
                         // menu commands automatically
                         WinPostMsg(hwndFrame, WM_COMMAND, MPFROM2SHORT(IDM_CHAIN2, 0), 0);
@@ -642,36 +742,25 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                 // "Open URL": request data from server
                 case IDM_OPENURL:
                 {
-                    ShowMessage("--- URL is:");
-                    ShowMessage(szURL);
-                    strcpy(szBuffer, szURL);
+                    ShowMessage("IDM_OPENURL");
+                    ShowMessage("  URL: \"%s\"", G_szURL);
+                    strcpy(szBuffer, G_szURL);
                     strcat(szBuffer, ",,0xFFFFFFFF,0x0");
-                    ShowMessage("Sending request:");
-                    ShowMessage(szBuffer);
-
-                    if (DDERequest(hwndFrame, szBuffer))
-                        ShowMessage("DDE Message sent.");
-                    else
-                        ShowMessage("DDE Message sending failed.");
-                    break;
+                    DDERequest(hwndFrame, szBuffer);
                 }
+                break;
 
                 // "Open URL in new window": request data from server,
                 // but with different parameters
                 case IDM_OPENURLNEW:
                 {
-                    ShowMessage("--- URL is:");
-                    ShowMessage(szURL);
-                    strcpy(szBuffer, szURL);
+                    ShowMessage("IDM_OPENURLNEW");
+                    ShowMessage("  URL: \"%s\"", G_szURL);
+                    strcpy(szBuffer, G_szURL);
                     strcat(szBuffer, ",,0x0,0x0");
-                    ShowMessage("Sending request:");
-                    ShowMessage(szBuffer);
-                    if (DDERequest(hwndFrame, szBuffer))
-                        ShowMessage("DDE Message sent.");
-                    else
-                        ShowMessage("DDE Message sending failed.");
-                    break;
+                    DDERequest(hwndFrame, szBuffer);
                 }
+                break;
 
                 /*
                  * IDM_CHAIN2:
@@ -681,11 +770,11 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 case IDM_CHAIN2:
                 {
-                    if (optNewWindow)
-                        WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_OPENURLNEW, 0), 0);
+                    if (G_optNewWindow)
+                        WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_OPENURLNEW, 0), 0);
                     else
-                        WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_OPENURL, 0), 0);
-                    WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_CHAIN3, 0), 0);
+                        WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_OPENURL, 0), 0);
+                    WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_CHAIN3, 0), 0);
                 }
                 break;
 
@@ -697,8 +786,14 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                  */
 
                 case IDM_CHAIN3:
-                    WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_CLOSE, 0), 0);
+                    WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_CLOSE, 0), 0);
                 break;
+
+                case IDM_FULLSEQUENCE:
+                    WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_INITIATE, 0), 0);
+                    WinPostMsg(G_hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_CHAIN2, 0), 0);
+                break;
+
 
                 /*
                  * IDM_CLOSE:
@@ -706,14 +801,14 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                  */
 
                 case IDM_CLOSE:
-                    WinDdePostMsg(hServerWnd,
+                    WinDdePostMsg(G_hServerWnd,
                                   hwndFrame,
                                   WM_DDE_TERMINATE,
                                   NULL,
                                   DDEPM_RETRY);
                     ShowMessage("DDE connection closed.");
 
-                    if (!optDebug)
+                    if (!G_optDebug)
                         WinPostMsg(hwndFrame, WM_COMMAND, MPFROM2SHORT(IDM_DELAYEXIT, 0), 0);
                 break;
 
@@ -728,90 +823,80 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 case IDM_DELAYEXIT:
                 {
-                    if (    (!NetscapeFound)
-                         && (optExecute)
+                    if (    (!G_NetscapeFound)
+                         && (G_optExecute)
                        )
                     {
                         // confirm start netscape
-                        if (    (!optConfirmStart)
+                        if (    (!G_optConfirmStart)
                              || (WinCenteredDlgBox(HWND_DESKTOP,
-                                                   hwndDebug,
+                                                   G_hwndDebug,
                                                    WinDefDlgProc,
-                                                   hmodNLS,
+                                                   G_hmodNLS,
                                                    ID_NDD_QUERYSTART,
                                                    NULL)
                                       == DID_OK)
                            )
                         {
-                            STARTDATA       SData =
+                            /* STARTDATA       SData =
                             {0};
                             APIRET          rc = 0;
                             PID             pid = 0;    // PID returned
 
                             ULONG           ulSessID = 0;   // session ID returned
-
-                            UCHAR           achObjBuf[256] =
-                            {0};    // Error data if DosStart fails
+                               */
+                            UCHAR           achObjBuf[256] = "";
 
                             CHAR            szArgs[CCHMAXPATH];
-                            CHAR            szMsg[100];     // message
+                            CHAR            szMsg[1000];     // message
 
                             HWND            hwndNotify = HWND_DESKTOP;
-                            PROGDETAILS     Details;
+                            PROGDETAILS     pd;
                             HAPP            happ;
 
                             // destroy "Contacting", create "Starting Netscape"
                             // window
-                            if (hwndContacting)
-                                WinDestroyWindow(hwndContacting);
-                            if (!optQuiet)
+                            if (G_hwndContacting)
+                                WinDestroyWindow(G_hwndContacting);
+                            if (!G_optQuiet)
                             {
-                                hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
+                                G_hwndContacting = WinLoadDlg(HWND_DESKTOP, G_hwndDebug,
                                                             WinDefDlgProc,
-                                                            hmodNLS, ID_NDD_STARTING,
+                                                            G_hmodNLS, ID_NDD_STARTING,
                                                             0);
-                                WinShowWindow(hwndContacting, TRUE);
+                                WinShowWindow(G_hwndContacting, TRUE);
                             }
 
-                            // now start session
-                            strcpy(szArgs, szNetscapeParams);
+                            strcpy(szArgs, G_szNetscapeParams);
                             strcat(szArgs, " ");
-                            strcat(szArgs, szURL);
+                            strcat(szArgs, G_szURL);
 
-                            SData.Length = sizeof(STARTDATA);
-                            SData.Related = SSF_RELATED_INDEPENDENT;
-                            SData.FgBg = SSF_FGBG_FORE;
-                            SData.TraceOpt = SSF_TRACEOPT_NONE;
+                            // now start app
+                            memset(&pd, 0, sizeof(pd));
+                            pd.Length = sizeof(pd);
+                            pd.progt.progc = PROG_DEFAULT;
+                            pd.progt.fbVisible = SHE_VISIBLE;
+                            pd.pszExecutable = G_szNetscapeApp;
+                            pd.pszParameters = szArgs;
+                            pd.pszStartupDir = G_szStartupDir;
 
-                            SData.PgmTitle = "Netscape";
-                            SData.PgmName = szNetscapeApp;
-                            SData.PgmInputs = szArgs;
-
-                            SData.TermQ = 0;
-                            SData.Environment = 0;
-                            SData.InheritOpt = SSF_INHERTOPT_SHELL;
-                            SData.SessionType = SSF_TYPE_DEFAULT;
-                            SData.IconFile = 0;
-                            SData.PgmHandle = 0;
-
-                            SData.PgmControl = (optMinimized)
-                                ? (SSF_CONTROL_MINIMIZE |
-                                   ((optHidden) ? SSF_CONTROL_INVISIBLE : SSF_CONTROL_VISIBLE)
-                                )
-                                : SSF_CONTROL_VISIBLE;
-                            SData.InitXPos = 30;
-                            SData.InitYPos = 40;
-                            SData.InitXSize = 200;
-                            SData.InitYSize = 140;
-                            SData.Reserved = 0;
-                            SData.ObjectBuffer = achObjBuf;
-                            SData.ObjectBuffLen = (ULONG) sizeof(achObjBuf);
-
-                            rc = DosStartSession(&SData, &ulSessID, &pid);
+                            if (!(happ = WinStartApp(NULLHANDLE,
+                                                     &pd,
+                                                     szArgs,
+                                                     NULL,
+                                                     SAF_INSTALLEDCMDLINE)))
+                            {
+                                sprintf(szMsg,
+                                        "WinStartApp failed for app \"%s\", params \"%s\", startup dir \"%s\"",
+                                        G_szNetscapeApp,
+                                        szArgs,
+                                        G_szStartupDir);
+                                DisplayError(szMsg);
+                            }
                         }
                     }
                     // keep "Contacting" / "Starting" window visible for two seconds
-                    idTimer = WinStartTimer(hab, hwndFrame, 1, 2000);
+                    G_idTimer = WinStartTimer(G_hab, hwndFrame, 1, 2000);
                     break;
                 }
 
@@ -824,27 +909,16 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_TIMER:
             // after two seconds, close status window
-            WinStopTimer(hab, hwndFrame, idTimer);
+            WinStopTimer(G_hab, hwndFrame, G_idTimer);
             WinPostMsg(hwndFrame, WM_CLOSE, 0, 0);
         break;
 
         // Send the message to the usual WC_FRAME WndProc
         default:
-            return (*SysWndProc) (hwndFrame, msg, mp1, mp2);
+            return G_SysWndProc(hwndFrame, msg, mp1, mp2);
     }
 
     return FALSE;
 }
 
-/*
- * ShowMessage:
- *      add a string to the listbox.
- */
 
-void ShowMessage(PSZ szText)
-{
-    WinPostMsg(hwndListbox,
-               LM_INSERTITEM,
-               MPFROMSHORT(LIT_END),
-               szText);
-}

@@ -383,15 +383,7 @@ SOM_Scope void  SOMLINK xfsysM_wpclsInitData(M_XFldSystem *somSelf)
 
     M_XFldSystem_parent_M_WPSystem_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXFldSystem = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXFldSystem);
 }
 
 /*

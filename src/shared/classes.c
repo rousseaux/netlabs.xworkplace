@@ -890,7 +890,8 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
          */
 
         case WM_DRAWITEM:
-            mrc = cnrhOwnerDrawRecord(mp2);
+            mrc = cnrhOwnerDrawRecord(mp2,
+                                      CODFL_DISABLEDTEXT);
         break;
 
         /*

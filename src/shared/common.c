@@ -95,14 +95,16 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
-#include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
+
+#include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
 
 // SOM headers which don't crash with prec. header files
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -146,7 +148,9 @@ static HMODULE         G_hmodRes = NULLHANDLE;
 // NLS
 static HMODULE         G_hmodNLS = NULLHANDLE;
 // static NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
-static GLOBALSETTINGS  *G_pGlobalSettings = NULL;
+static GLOBALSETTINGS  G_GlobalSettings = {0};
+            // removed the pointer here V0.9.16 (2001-10-02) [umoeller]
+static BOOL            G_fGlobalSettingsLoaded = FALSE;
 
 static HMODULE         G_hmodIconsDLL = NULLHANDLE;
 static CHAR            G_szLanguageCode[20] = "";
@@ -163,6 +167,8 @@ static ULONG           G_ulStatusBarHeight;
 
 static CHAR            G_szRunDirectory[CCHMAXPATH]; // V0.9.14
 
+static PTMFMSGFILE     G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [umoeller]
+
 // Declare C runtime prototypes, because there are no headers
 // for these:
 
@@ -174,263 +180,6 @@ int _CRT_init(void);
 // It only needs to be called when the C run-time functions are statically
 // linked, as is the case with XFolder.
 void _CRT_term(void);
-
-#if 0
-/********************************************************************
- *
- *   INI keys
- *
- ********************************************************************/
-
-/*
- *  All these constants are declared as "extern" in
- *  common.h. They all used to be #define's in common.h,
- *  which put a lot of duplicates of them into the .obj
- *  files (and also stress on the compiler, since it had
- *  to do comparisons on them... and didn't even know that
- *  they were really constant).
- *
- *  These have been moved here with V0.9.7 (2001-01-17) [umoeller]
- *  and converted to DECLARE_STRING macros with
- *  V0.9.14 V0.9.14 (2001-07-31) [umoeller].
- */
-
-/*
- * XWorkplace application:
- *
- */
-
-// INI key used with V0.9.1 and above
-const char      *INIAPP_XWORKPLACE       = "XWorkplace";
-
-// INI key used by XFolder and XWorkplace 0.9.0;
-// this is checked for if INIAPP_XWORKPLACE is not
-// found and converted
-// const char      *INIAPP_OLDXFOLDER       = "XFolder";
-const char      *INIAPP_OLDXFOLDER       = "XFolder";
-
-/*
- * XWorkplace keys:
- *      Add the keys you are using for storing your data here.
- *      Note: If anything has been marked as "removed" here,
- *      do not use that string, because it might still exist
- *      in a user's OS2.INI file.
- */
-
-// const char      *INIKEY_DEFAULTTITLE     = "DefaultTitle";       removed V0.9.0
-const char      *INIKEY_GLOBALSETTINGS   = "GlobalSettings";
-// const char      *INIKEY_XFOLDERPATH      = "XFolderPath";        removed V0.81 (I think)
-const char      *INIKEY_ACCELERATORS     = "Accelerators";
-const char      *INIKEY_LANGUAGECODE     = "Language";
-const char      *INIKEY_JUSTINSTALLED    = "JustInstalled";
-// const char      *INIKEY_DONTDOSTARTUP    = "DontDoStartup";      removed V0.84 (I think)
-// const char      *INIKEY_LASTPID          = "LastPID";            removed V0.84 (I think)
-const char      *INIKEY_FAVORITEFOLDERS  = "FavoriteFolders";
-const char      *INIKEY_QUICKOPENFOLDERS = "QuickOpenFolders";
-
-const char      *INIKEY_WNDPOSSTARTUP    = "WndPosStartup";
-const char      *INIKEY_WNDPOSNAMECLASH  = "WndPosNameClash";
-const char      *INIKEY_NAMECLASHFOCUS   = "NameClashLastFocus";
-
-const char      *INIKEY_STATUSBARFONT    = "SB_Font";
-const char      *INIKEY_SBTEXTNONESEL    = "SB_NoneSelected";
-const char      *INIKEY_SBTEXT_WPOBJECT  = "SB_WPObject";
-const char      *INIKEY_SBTEXT_WPPROGRAM = "SB_WPProgram";
-const char      *INIKEY_SBTEXT_WPFILESYSTEM = "SB_WPDataFile";
-const char      *INIKEY_SBTEXT_WPURL        = "SB_WPUrl";
-const char      *INIKEY_SBTEXT_WPDISK    = "SB_WPDisk";
-const char      *INIKEY_SBTEXT_WPFOLDER  = "SB_WPFolder";
-const char      *INIKEY_SBTEXTMULTISEL   = "SB_MultiSelected";
-const char      *INIKEY_SB_LASTCLASS     = "SB_LastClass";
-const char      *INIKEY_DLGFONT          = "DialogFont";
-
-const char      *INIKEY_BOOTMGR          = "RebootTo";
-const char      *INIKEY_AUTOCLOSE        = "AutoClose";
-
-const char      *DEFAULT_LANGUAGECODE    = "001";
-
-// window position of "WPS Class list" window (V0.9.0)
-const char      *INIKEY_WNDPOSCLASSINFO  = "WndPosClassInfo";
-
-// last directory used on "Sound" replacement page (V0.9.0)
-const char      *INIKEY_XWPSOUNDLASTDIR  = "XWPSound:LastDir";
-// last sound scheme selected (V0.9.0)
-const char      *INIKEY_XWPSOUNDSCHEME   = "XWPSound:Scheme";
-
-// boot logo .BMP file (V0.9.0)
-const char      *INIKEY_BOOTLOGOFILE     = "BootLogoFile";
-
-// last ten selections in "Select some" (V0.9.0)
-const char      *INIKEY_LAST10SELECTSOME = "SelectSome";
-
-// supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
-const char      *INIKEY_TRASHCANDRIVES   = "TrashCan::Drives";
-
-// window pos of file operations status window V0.9.1 (2000-01-30) [umoeller]
-const char      *INIKEY_FILEOPSPOS       = "WndPosFileOpsStatus";
-
-// window pos of "Partitions" view V0.9.2 (2000-02-29) [umoeller]
-const char      *INIKEY_WNDPOSPARTITIONS = "WndPosPartitions";
-
-// window position of XMMVolume control V0.9.6 (2000-11-09) [umoeller]
-const char      *INIKEY_WNDPOSXMMVOLUME  = "WndPosXMMVolume";
-
-// window position of XMMCDPlayer V0.9.7 (2000-12-20) [umoeller]
-const char      *INIKEY_WNDPOSXMMCDPLAY  = "WndPosXMMCDPlayer::";
-                // object handle appended
-
-// font samples (XWPFontObject) V0.9.7 (2001-01-17) [umoeller]
-const char      *INIKEY_FONTSAMPLEWNDPOS = "WndPosFontSample";
-const char      *INIKEY_FONTSAMPLESTRING = "FontSampleString";
-const char      *INIKEY_FONTSAMPLEHINTS  = "FontSampleHints";
-
-// XFldStartup V0.9.9 (2001-03-19) [pr]
-const char      *INIKEY_XSTARTUPFOLDERS  = "XStartupFolders";
-const char      *INIKEY_XSAVEDSTARTUPFOLDERS  = "XSavedStartupFolders";
-
-// file dialog V0.9.11 (2001-04-18) [umoeller]
-const char      *INIKEY_WNDPOSFILEDLG   = "WndPosFileDlg";
-const char      *INIKEY_FILEDLGSETTINGS = "FileDlgSettings";
-
-/*
- * file type hierarchies:
- *
- */
-
-// application for file type hierarchies
-const char      *INIAPP_XWPFILETYPES     = "XWorkplace:FileTypes";   // added V0.9.0
-const char      *INIAPP_XWPFILEFILTERS   = "XWorkplace:FileFilters"; // added V0.9.0
-
-const char      *INIAPP_REPLACEFOLDERREFRESH = "ReplaceFolderRefresh";
-                                    // V0.9.9 (2001-01-31) [umoeller]
-
-/*
- * some default WPS INI keys:
- *
- */
-
-const char      *WPINIAPP_LOCATION       = "PM_Workplace:Location";
-const char      *WPINIAPP_FOLDERPOS      = "PM_Workplace:FolderPos";
-const char      *WPINIAPP_ASSOCTYPE      = "PMWP_ASSOC_TYPE";
-const char      *WPINIAPP_ASSOCFILTER    = "PMWP_ASSOC_FILTER";
-
-/********************************************************************
- *
- *   Standard WPS object IDs
- *
- ********************************************************************/
-
-const char *WPOBJID_DESKTOP = "<WP_DESKTOP>";
-
-const char *WPOBJID_KEYB = "<WP_KEYB>";
-const char *WPOBJID_MOUSE = "<WP_MOUSE>";
-const char *WPOBJID_CNTRY = "<WP_CNTRY>";
-const char *WPOBJID_SOUND = "<WP_SOUND>";
-const char *WPOBJID_SYSTEM = "<WP_SYSTEM>"; // V0.9.9
-const char *WPOBJID_POWER = "<WP_POWER>";
-const char *WPOBJID_WINCFG = "<WP_WINCFG>";
-
-const char *WPOBJID_HIRESCLRPAL = "<WP_HIRESCLRPAL>";
-const char *WPOBJID_LORESCLRPAL = "<WP_LORESCLRPAL>";
-const char *WPOBJID_FNTPAL = "<WP_FNTPAL>";
-const char *WPOBJID_SCHPAL96 = "<WP_SCHPAL96>";
-
-const char *WPOBJID_LAUNCHPAD = "<WP_LAUNCHPAD>";
-const char *WPOBJID_WARPCENTER = "<WP_WARPCENTER>";
-
-const char *WPOBJID_SPOOL = "<WP_SPOOL>";
-const char *WPOBJID_VIEWER = "<WP_VIEWER>";
-const char *WPOBJID_SHRED = "<WP_SHRED>";
-const char *WPOBJID_CLOCK = "<WP_CLOCK>";
-
-const char *WPOBJID_START = "<WP_START>";
-const char *WPOBJID_TEMPS = "<WP_TEMPS>";
-const char *WPOBJID_DRIVES = "<WP_DRIVES>";
-
-/********************************************************************
- *
- *   XWorkplace object IDs
- *
- ********************************************************************/
-
-// all of these have been redone with V0.9.2
-
-// folders
-const char      *XFOLDER_MAINID          = "<XWP_MAINFLDR>";
-const char      *XFOLDER_CONFIGID        = "<XWP_CONFIG>";
-
-const char      *XFOLDER_STARTUPID       = "<XWP_STARTUP>";
-const char      *XFOLDER_SHUTDOWNID      = "<XWP_SHUTDOWN>";
-const char      *XFOLDER_FONTFOLDERID    = "<XWP_FONTFOLDER>";
-
-const char      *XFOLDER_WPSID           = "<XWP_WPS>";
-const char      *XFOLDER_KERNELID        = "<XWP_KERNEL>";
-const char      *XFOLDER_SCREENID        = "<XWP_SCREEN>";
-const char      *XFOLDER_MEDIAID         = "<XWP_MEDIA>";
-
-const char      *XFOLDER_CLASSLISTID     = "<XWP_CLASSLIST>";
-const char      *XFOLDER_TRASHCANID      = "<XWP_TRASHCAN>";
-const char      *XFOLDER_XCENTERID       = "<XWP_XCENTER>";
-const char      *XFOLDER_STRINGTPLID     = "<XWP_STRINGTPL>"; // V0.9.9
-
-const char      *XFOLDER_INTROID         = "<XWP_INTRO>";
-const char      *XFOLDER_USERGUIDE       = "<XWP_REF>";
-
-// const char      *XWORKPLACE_ARCHIVE_MARKER   = "xwparchv.tmp";
-            // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
-            // removed V0.9.13 (2001-06-14) [umoeller]
-
-/********************************************************************
- *
- *   XWorkplace class names V0.9.14 (2001-07-31) [umoeller]
- *
- ********************************************************************/
-
-const char *G_pcszXFldObject = "XFldObject";
-const char *G_pcszXFolder = "XFolder";
-const char *G_pcszXFldDisk = "XFldDisk";
-const char *G_pcszXFldDesktop = "XFldDesktop";
-const char *G_pcszXFldDataFile = "XFldDataFile";
-const char *G_pcszXFldProgramFile = "XFldProgramFile";
-const char *G_pcszXWPSound = "XWPSound";
-const char *G_pcszXWPMouse = "XWPMouse";
-const char *G_pcszXWPKeyboard = "XWPKeyboard";
-
-const char *G_pcszXWPSetup = "XWPSetup";
-const char *G_pcszXFldSystem = "XFldSystem";
-const char *G_pcszXFldWPS = "XFldWPS";
-const char *G_pcszXWPScreen = "XWPScreen";
-const char *G_pcszXWPMedia = "XWPMedia";
-const char *G_pcszXFldStartup = "XFldStartup";
-const char *G_pcszXFldShutdown = "XFldShutdown";
-const char *G_pcszXWPClassList = "XWPClassList";
-const char *G_pcszXWPTrashCan = "XWPTrashCan";
-const char *G_pcszXWPTrashObject = "XWPTrashObject";
-const char *G_pcszXWPString = "XWPString";
-const char *G_pcszXCenter = "XCenter";
-const char *G_pcszXWPFontFolder = "XWPFontFolder";
-const char *G_pcszXWPFontFile = "XWPFontFile";
-const char *G_pcszXWPFontObject = "XWPFontObject";
-
-// @@todo
-const char *G_pcszXWPProgram = "XWPProgram";
-
-/********************************************************************
- *
- *   Thread object windows
- *
- ********************************************************************/
-
-// object window class names (added V0.9.0)
-const char      *WNDCLASS_WORKEROBJECT         = "XWPWorkerObject";
-const char      *WNDCLASS_QUICKOBJECT          = "XWPQuickObject";
-const char      *WNDCLASS_FILEOBJECT           = "XWPFileObject";
-
-const char      *WNDCLASS_THREAD1OBJECT        = "XWPThread1Object";
-const char      *WNDCLASS_SUPPLOBJECT          = "XWPSupplFolderObject";
-const char      *WNDCLASS_APIOBJECT            = "XWPAPIObject";
-
-#endif // #if 0
 
 /* ******************************************************************
  *
@@ -446,7 +195,7 @@ const char      *WNDCLASS_APIOBJECT            = "XWPAPIObject";
  *
  *      Since this is a SOM DLL for the WPS, this gets called
  *      right when the WPS is starting and when the WPS process
- *      ends, e.g. due to a WPS restart or trap. Since the WPS
+ *      ends, e.g. due to a Desktop restart or trap. Since the WPS
  *      is the only process loading this DLL, we need not bother
  *      with details.
  *
@@ -576,8 +325,7 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             if (G_hmodRes == NULLHANDLE)
             {
@@ -666,6 +414,48 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
  *
  ********************************************************************/
 
+typedef struct _XWPENTITY
+{
+    const char *pcszEntity,
+               **ppcszString;
+} XWPENTITY, *PXWPENTITY;
+
+XWPENTITY  G_aEntities[] =
+    {
+        "&xwp;", &ENTITY_XWORKPLACE,
+        "&os2;", &ENTITY_OS2,
+        "&warpcenter;", &ENTITY_WARPCENTER,
+        "&xcenter;", &ENTITY_XCENTER,
+        "&xsd;", &ENTITY_XSHUTDOWN,
+    };
+
+/*
+ *@@ ReplaceEntities:
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+ULONG ReplaceEntities(PXSTRING pstr)
+{
+    ULONG ul,
+          rc = 0;
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(G_aEntities);
+         ul++)
+    {
+        ULONG ulOfs = 0;
+        PXWPENTITY pThis = &G_aEntities[ul];
+        while (xstrFindReplaceC(pstr,
+                                &ulOfs,
+                                pThis->pcszEntity,
+                                *(pThis->ppcszString)))
+            rc++;
+    }
+
+    return (rc);
+}
+
 /*
  *@@ cmnLoadString:
  *      pretty similar to WinLoadString, but allocates
@@ -673,7 +463,7 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
  *      to a PSZ; if this PSZ is != NULL, whatever it
  *      points to will be free()d, so you should set this
  *      to NULL if you initially call this function.
- *      This is used at WPS startup and when XFolder's
+ *      This is used at Desktop startup and when XFolder's
  *      language is changed later to load all the strings
  *      from a NLS DLL (cmnQueryNLSModuleHandle).
  *
@@ -687,17 +477,31 @@ void cmnLoadString(HAB habDesktop,
                    ULONG ulID,
                    PSZ *ppsz)
 {
-    CHAR    szBuf[500] = "";
+    CHAR szBuf[500];
     if (*ppsz)
         free(*ppsz);
-    if (WinLoadString(habDesktop, hmodResource, ulID , sizeof(szBuf), szBuf))
-        *ppsz = strdup(szBuf);
+
+    if (WinLoadString(habDesktop,
+                      hmodResource,
+                      ulID,
+                      sizeof(szBuf),
+                      szBuf))
+    {
+        XSTRING str;
+        xstrInitCopy(&str, szBuf, 0);
+        ReplaceEntities(&str);
+        *ppsz = str.psz;
+    }
     else
     {
-        sprintf(szBuf, "cmnLoadString error: string resource %d not found in module 0x%lX",
-                       ulID, hmodResource);
-        *ppsz = strdup(szBuf); // V0.9.0
+        sprintf(szBuf,
+                "cmnLoadString error: string resource %d not found in module 0x%lX",
+                ulID,
+                hmodResource);
+        *ppsz = strdup(szBuf);
     }
+
+    // do not free string
 }
 
 HMTX        G_hmtxStringsCache = NULLHANDLE;
@@ -768,7 +572,7 @@ typedef struct _STRINGTREENODE
  *         used. The NLSSTRINGS array had become terribly big,
  *         and lots of strings were loaded that were never used.
  *
- *      -- WPS bootup should be a bit faster because we don't have
+ *      -- Desktop startup should be a bit faster because we don't have
  *         to load a thousand strings at startup.
  *
  *      -- The memory buffer holding the string is probably close
@@ -918,6 +722,62 @@ VOID UnloadAllStrings(VOID)
 
     if (fLocked)
         UnlockStrings();
+}
+
+/* some frequently used dialog controls
+    V0.9.16 (2001-10-08) [umoeller] */
+
+CONTROLDEF
+    G_UndoButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "~Undo",
+                            DID_UNDO,
+                            100,
+                            30),
+    G_DefaultButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING, // "~Default",
+                            DID_DEFAULT,
+                            100,
+                            30),
+    G_HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+                            LOAD_STRING, // "~Help",
+                            DID_HELP,
+                            100,
+                            30),
+    G_Spacing = CONTROLDEF_TEXT(
+                            "",
+                            -1,
+                            20,
+                            2);
+
+/*
+ *@@ cmnLoadDialogStrings:
+ *
+ *      Used by ntbFormatPage.
+ *
+ *@@added V0.9.16 (2001-10-08) [umoeller]
+ */
+
+VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
+                          ULONG cDlgItems)           // in: array item count (NOT array size)
+{
+    // load the strings
+    ULONG ul;
+    for (ul = 0;
+         ul < cDlgItems;
+         ul++)
+    {
+        PDLGHITEM pThis = &paDlgItems[ul];
+        PCONTROLDEF pDef;
+        if (    (    (pThis->Type == TYPE_CONTROL_DEF)
+                  || (pThis->Type == TYPE_START_NEW_TABLE)
+                )
+             && (pDef = (PCONTROLDEF)pThis->ulData)
+             && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
+           )
+        {
+            pDef->pcszText = cmnGetString(pDef->usID);
+        }
+    }
 }
 
 /*
@@ -1275,6 +1135,8 @@ HMODULE cmnQueryIconsDLL(VOID)
     return (G_hmodIconsDLL);
 }
 
+#ifndef __NOBOOTLOGO__
+
 /*
  *@@ cmnQueryBootLogoFile:
  *      this returns the boot logo file as stored
@@ -1294,8 +1156,6 @@ PSZ cmnQueryBootLogoFile(VOID)
     PSZ pszReturn = 0;
 
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1322,10 +1182,10 @@ PSZ cmnQueryBootLogoFile(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
-
     return (pszReturn);
 }
+
+#endif
 
 /*
  *@@ cmnQueryNLSModuleHandle:
@@ -1583,7 +1443,7 @@ PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
 {
     if ((!G_fCountrySettingsLoaded) || (fReload))
     {
-        prfhQueryCountrySettings(&G_CountrySettings);
+        nlsQueryCountrySettings(&G_CountrySettings);
         G_fCountrySettingsLoaded = TRUE;
     }
 
@@ -1811,7 +1671,7 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
     // add "Close" menu item
     winhInsertMenuSeparator(hwndMenu,
                             MIT_END,
-                            (G_pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                            (G_GlobalSettings.VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
     winhInsertMenuItem(hwndMenu,
                        MIT_END,
                        WPMENUID_CLOSE,
@@ -1846,8 +1706,6 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
     const char *rc = 0;
 
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1857,13 +1715,16 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
             switch (usSetting)
             {
                 case SBS_STATUSBARFONT:
-                        rc = G_szStatusBarFont;
-                    break;
+                    rc = G_szStatusBarFont;
+                break;
+
                 case SBS_TEXTNONESEL:
-                        rc = G_szSBTextNoneSel;
-                    break;
+                    rc = G_szSBTextNoneSel;
+                break;
+
                 case SBS_TEXTMULTISEL:
-                        rc = G_szSBTextMultiSel;
+                    rc = G_szSBTextMultiSel;
+                break;
             }
         }
     }
@@ -1871,8 +1732,6 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
 
     if (fLocked)
         krnUnlock();
-
-    DosExitMustComplete(&ulNesting);
 
     return (rc);
 }
@@ -1884,6 +1743,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
  *      usSetting works just like in cmnQueryStatusBarSetting.
  *
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: now using XWP default font for status bars instead of 8.Helv always
  */
 
 BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
@@ -1891,8 +1751,6 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
     BOOL    brc = FALSE;
 
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1908,51 +1766,58 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
             {
                 case SBS_STATUSBARFONT:
                 {
-                        CHAR szDummy[CCHMAXMNEMONICS];
-                        if (pszSetting)
-                        {
-                            strcpy(G_szStatusBarFont, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE,
-                                                  (PSZ)INIAPP_XWORKPLACE,
-                                                  (PSZ)INIKEY_STATUSBARFONT,
-                                                  G_szStatusBarFont);
-                        }
-                        else
-                            strcpy(G_szStatusBarFont, "8.Helv");
-                        sscanf(G_szStatusBarFont, "%d.%s", &(G_ulStatusBarHeight), &szDummy);
-                        G_ulStatusBarHeight += 15;
+                    CHAR szDummy[CCHMAXMNEMONICS];
+#ifndef __NOCFGSTATUSBARS__
+                    if (pszSetting)
+                    {
+                        strcpy(G_szStatusBarFont, pszSetting);
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_STATUSBARFONT,
+                                              G_szStatusBarFont);
+                    }
+                    else
+#endif
+                        strcpy(G_szStatusBarFont,
+                               cmnQueryDefaultFont());      // V0.9.16 (2001-09-29) [umoeller]
+                    sscanf(G_szStatusBarFont, "%d.%s", &(G_ulStatusBarHeight), &szDummy);
+                    G_ulStatusBarHeight += 15;
                 break; }
 
                 case SBS_TEXTNONESEL:
                 {
-                        if (pszSetting)
-                        {
-                            strcpy(G_szSBTextNoneSel, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE,
-                                                  (PSZ)INIAPP_XWORKPLACE,
-                                                  (PSZ)INIKEY_SBTEXTNONESEL,
-                                                  G_szSBTextNoneSel);
-                        }
-                        else
-                            WinLoadString(habDesktop,
-                                          hmodResource, ID_XSSI_SBTEXTNONESEL,
-                                          sizeof(G_szSBTextNoneSel), G_szSBTextNoneSel);
+#ifndef __NOCFGSTATUSBARS__
+                    if (pszSetting)
+                    {
+                        strcpy(G_szSBTextNoneSel, pszSetting);
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_SBTEXTNONESEL,
+                                              G_szSBTextNoneSel);
+                    }
+                    else
+#endif
+                        WinLoadString(habDesktop,
+                                      hmodResource, ID_XSSI_SBTEXTNONESEL,
+                                      sizeof(G_szSBTextNoneSel), G_szSBTextNoneSel);
                 break; }
 
                 case SBS_TEXTMULTISEL:
                 {
-                        if (pszSetting)
-                        {
-                            strcpy(G_szSBTextMultiSel, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE,
-                                                  (PSZ)INIAPP_XWORKPLACE,
-                                                  (PSZ)INIKEY_SBTEXTMULTISEL,
-                                                  G_szSBTextMultiSel);
-                        }
-                        else
-                            WinLoadString(habDesktop,
-                                          hmodResource, ID_XSSI_SBTEXTMULTISEL,
-                                          sizeof(G_szSBTextMultiSel), G_szSBTextMultiSel);
+#ifndef __NOCFGSTATUSBARS__
+                    if (pszSetting)
+                    {
+                        strcpy(G_szSBTextMultiSel, pszSetting);
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_SBTEXTMULTISEL,
+                                              G_szSBTextMultiSel);
+                    }
+                    else
+#endif
+                        WinLoadString(habDesktop,
+                                      hmodResource, ID_XSSI_SBTEXTMULTISEL,
+                                      sizeof(G_szSBTextMultiSel), G_szSBTextMultiSel);
                 break; }
 
                 default:
@@ -1965,8 +1830,6 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
     if (fLocked)
         krnUnlock();
-
-    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -2002,13 +1865,12 @@ ULONG cmnQueryStatusBarHeight(VOID)
  *@@changed V0.9.0 [umoeller]: added fResetDefaults to prototype
  *@@changed V0.9.0 [umoeller]: changed initializations for new settings pages
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: fixed duplicate status bars code
  */
 
 PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 {
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -2017,11 +1879,11 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         {
             ULONG       ulCopied1;
 
-            if (G_pGlobalSettings == NULL)
+            /* if (G_pGlobalSettings == NULL)
             {
                 G_pGlobalSettings = malloc(sizeof(GLOBALSETTINGS));
                 memset(G_pGlobalSettings, 0, sizeof(GLOBALSETTINGS));
-            }
+            } */
 
             // first set default settings for each settings page;
             // we only load the "real" settings from OS2.INI afterwards
@@ -2056,11 +1918,20 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
             // cmnSetDefaultSettings(SP_MOUSE_CORNERS);  does nothing
 
             // reset help panels
-            G_pGlobalSettings->ulIntroHelpShown = 0;
+            G_GlobalSettings.ulIntroHelpShown = 0;
 
             if (fResetDefaults == FALSE)
             {
                 // get global XFolder settings from OS2.INI
+
+                // V0.9.16 (2001-09-29) [umoeller]:
+                // now calling cmnSetStatusBarSetting, which will
+                // load the defaults... disabled the duplicate
+                // code below
+                cmnSetStatusBarSetting(SBS_STATUSBARFONT, NULL);
+                cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
+                cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
+/*
                 PrfQueryProfileString(HINI_USERPROFILE,
                                       (PSZ)INIAPP_XWORKPLACE,
                                       (PSZ)INIKEY_STATUSBARFONT,
@@ -2082,15 +1953,15 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
                                       NULL,
                                       &(G_szSBTextMultiSel),
                                       sizeof(G_szSBTextMultiSel));
-
+    end V0.9.16 (2001-09-29) [umoeller]
+   */
                 ulCopied1 = sizeof(GLOBALSETTINGS);
                 PrfQueryProfileData(HINI_USERPROFILE,
                                     (PSZ)INIAPP_XWORKPLACE,
                                     (PSZ)INIKEY_GLOBALSETTINGS,
-                                    G_pGlobalSettings,
+                                    &G_GlobalSettings,
                                     &ulCopied1);
             }
-
         }
     }
     CATCH(excpt1) { } END_CATCH();
@@ -2098,9 +1969,7 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
-
-    return (G_pGlobalSettings);
+    return (&G_GlobalSettings);
 }
 
 /*
@@ -2124,17 +1993,18 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 {
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
         fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
         if (fLocked)
         {
-            if (G_pGlobalSettings == NULL)
+            if (!G_fGlobalSettingsLoaded)
+            {
                 cmnLoadGlobalSettings(FALSE);       // load from INI
                         // this locks again
+                G_fGlobalSettingsLoaded = TRUE;
+            }
         }
     }
     CATCH(excpt1) { } END_CATCH();
@@ -2142,9 +2012,7 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
-
-    return (G_pGlobalSettings);
+    return (&G_GlobalSettings);
 }
 
 /*
@@ -2167,7 +2035,7 @@ GLOBALSETTINGS* cmnLockGlobalSettings(const char *pcszSourceFile,
                                       const char *pcszFunction)
 {
     if (krnLock(pcszSourceFile, ulLine, pcszFunction))
-        return (G_pGlobalSettings);
+        return (&G_GlobalSettings);
     else
     {
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -2223,101 +2091,101 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         case SP_1GENERIC:
             // pGlobalSettings->ShowInternals = 1;   // removed V0.9.0
             // pGlobalSettings->ReplIcons = 1;       // removed V0.9.0
-            G_pGlobalSettings->FullPath = 1;
-            G_pGlobalSettings->KeepTitle = 1;
-            G_pGlobalSettings->MaxPathChars = 25;
-            G_pGlobalSettings->TreeViewAutoScroll = 1;
+            G_GlobalSettings.FullPath = 1;
+            G_GlobalSettings.KeepTitle = 1;
+            G_GlobalSettings.MaxPathChars = 25;
+            G_GlobalSettings.TreeViewAutoScroll = 1;
 
-            G_pGlobalSettings->fFdrDefaultDoc = 0;
-            G_pGlobalSettings->fFdrDefaultDocView = 0;
+            G_GlobalSettings._fFdrDefaultDoc = 0;
+            G_GlobalSettings._fFdrDefaultDocView = 0;
 
-            G_pGlobalSettings->fFdrAutoRefreshDisabled = 0;
+            G_GlobalSettings.fFdrAutoRefreshDisabled = 0;
 
-            G_pGlobalSettings->bDefaultFolderView = 0;  // V0.9.12 (2001-04-30) [umoeller]
+            G_GlobalSettings.bDefaultFolderView = 0;  // V0.9.12 (2001-04-30) [umoeller]
         break;
 
         case SP_2REMOVEITEMS:
-            G_pGlobalSettings->DefaultMenuItems = 0;
-            G_pGlobalSettings->RemoveLockInPlaceItem = 0;
-            G_pGlobalSettings->RemoveCheckDiskItem = 0;
-            G_pGlobalSettings->RemoveFormatDiskItem = 0;
-            G_pGlobalSettings->RemoveViewMenu = 0;
-            G_pGlobalSettings->RemovePasteItem = 0;
-            G_pGlobalSettings->fFixLockInPlace = 0;     // V0.9.7 (2000-12-10) [umoeller]
+            G_GlobalSettings.DefaultMenuItems = 0;
+            G_GlobalSettings.RemoveLockInPlaceItem = 0;
+            G_GlobalSettings.RemoveCheckDiskItem = 0;
+            G_GlobalSettings.RemoveFormatDiskItem = 0;
+            G_GlobalSettings.RemoveViewMenu = 0;
+            G_GlobalSettings.RemovePasteItem = 0;
+            G_GlobalSettings.fFixLockInPlace = 0;     // V0.9.7 (2000-12-10) [umoeller]
         break;
 
         case SP_25ADDITEMS:
-            G_pGlobalSettings->FileAttribs = 1;
-            G_pGlobalSettings->AddCopyFilenameItem = 1;
-            G_pGlobalSettings->ExtendFldrViewMenu = 1;
-            G_pGlobalSettings->MoveRefreshNow = (doshIsWarp4() ? 1 : 0);
-            G_pGlobalSettings->AddSelectSomeItem = 1;
-            G_pGlobalSettings->AddFolderContentItem = 1;
-            G_pGlobalSettings->FCShowIcons = 0;
-            // G_pGlobalSettings->fExtendCloseMenu = 0;
+            G_GlobalSettings.FileAttribs = 1;
+            G_GlobalSettings.AddCopyFilenameItem = 1;
+            G_GlobalSettings.ExtendFldrViewMenu = 1;
+            G_GlobalSettings.__fMoveRefreshNow = (doshIsWarp4() ? 1 : 0);
+            G_GlobalSettings.AddSelectSomeItem = 1;
+            G_GlobalSettings.__fAddFolderContentItem = 1;
+            G_GlobalSettings.__fFolderContentShowIcons = 1;
+            // G_GlobalSettings.fExtendCloseMenu = 0;
         break;
 
         case SP_26CONFIGITEMS:
-            G_pGlobalSettings->MenuCascadeMode = 0;
-            G_pGlobalSettings->RemoveX = 1;
-            G_pGlobalSettings->AppdParam = 1;
-            G_pGlobalSettings->TemplatesOpenSettings = BM_INDETERMINATE;
-            G_pGlobalSettings->TemplatesReposition = 1;
+            G_GlobalSettings.MenuCascadeMode = 0;
+            G_GlobalSettings.RemoveX = 1;
+            G_GlobalSettings.AppdParam = 1;
+            G_GlobalSettings.TemplatesOpenSettings = BM_INDETERMINATE;
+            G_GlobalSettings.TemplatesReposition = 1;
         break;
 
         case SP_27STATUSBAR:
-            G_pGlobalSettings->fDefaultStatusBarVisibility = 1;       // changed V0.9.0
-            G_pGlobalSettings->SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
-            G_pGlobalSettings->SBForViews = SBV_ICON | SBV_DETAILS;
-            G_pGlobalSettings->lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
-            G_pGlobalSettings->lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
+            G_GlobalSettings.fDefaultStatusBarVisibility = 1;       // changed V0.9.0
+            G_GlobalSettings.SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
+            G_GlobalSettings.SBForViews = SBV_ICON | SBV_DETAILS;
+            G_GlobalSettings.lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
+            G_GlobalSettings.lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
-            G_pGlobalSettings->bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
+            G_GlobalSettings.bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
         break;
 
         case SP_3SNAPTOGRID:
-            G_pGlobalSettings->fAddSnapToGridDefault = 1;
-            G_pGlobalSettings->GridX = 15;
-            G_pGlobalSettings->GridY = 10;
-            G_pGlobalSettings->GridCX = 20;
-            G_pGlobalSettings->GridCY = 35;
+            G_GlobalSettings.fAddSnapToGridDefault = 1;
+            G_GlobalSettings.GridX = 15;
+            G_GlobalSettings.GridY = 10;
+            G_GlobalSettings.GridCX = 20;
+            G_GlobalSettings.GridCY = 35;
         break;
 
         case SP_4ACCELERATORS:
-            G_pGlobalSettings->fFolderHotkeysDefault = 1;
-            G_pGlobalSettings->fShowHotkeysInMenus = 1;
+            G_GlobalSettings.fFolderHotkeysDefault = 1;
+            G_GlobalSettings.fShowHotkeysInMenus = 1;
         break;
 
         case SP_FLDRSORT_GLOBAL:
-            // G_pGlobalSettings->ReplaceSort = 0;        removed V0.9.0
-            G_pGlobalSettings->lDefSortCrit = -2;        // sort by name
-            G_pGlobalSettings->AlwaysSort = FALSE;
-            G_pGlobalSettings->fFoldersFirst = FALSE;   // V0.9.12 (2001-05-18) [umoeller]
+            // G_GlobalSettings.ReplaceSort = 0;        removed V0.9.0
+            G_GlobalSettings.lDefSortCrit = -2;        // sort by name
+            G_GlobalSettings.AlwaysSort = FALSE;
+            G_GlobalSettings.fFoldersFirst = FALSE;   // V0.9.12 (2001-05-18) [umoeller]
         break;
 
         case SP_DTP_MENUITEMS:  // extra Desktop page
-            G_pGlobalSettings->fDTMSort = 1;
-            G_pGlobalSettings->fDTMArrange = 1;
-            G_pGlobalSettings->fDTMSystemSetup = 1;
-            G_pGlobalSettings->fDTMLockup = 1;
-            G_pGlobalSettings->fDTMLogoffNetwork = 1; // V0.9.7 (2000-12-13) [umoeller]
-            G_pGlobalSettings->fDTMShutdown = 1;
-            G_pGlobalSettings->fDTMShutdownMenu = 1;
+            G_GlobalSettings.fDTMSort = 1;
+            G_GlobalSettings.fDTMArrange = 1;
+            G_GlobalSettings.fDTMSystemSetup = 1;
+            G_GlobalSettings.fDTMLockup = 1;
+            G_GlobalSettings.fDTMLogoffNetwork = 1; // V0.9.7 (2000-12-13) [umoeller]
+            G_GlobalSettings.fDTMShutdown = 1;
+            G_GlobalSettings.fDTMShutdownMenu = 1;
         break;
 
         case SP_DTP_STARTUP:
-            G_pGlobalSettings->fWriteXWPStartupLog = 0;
-            G_pGlobalSettings->ShowBootupStatus = 0;
-            G_pGlobalSettings->BootLogo = 0;
-            G_pGlobalSettings->bBootLogoStyle = 0;
-            G_pGlobalSettings->fNumLockStartup = 0;
+            G_GlobalSettings.fWriteXWPStartupLog = 0;
+            G_GlobalSettings._fShowBootupStatus = 0;
+            G_GlobalSettings.__fBootLogo = 0;
+            G_GlobalSettings._bBootLogoStyle = 0;
+            G_GlobalSettings.fNumLockStartup = 0;
         break;
 
         case SP_DTP_SHUTDOWN:
-            G_pGlobalSettings->ulXShutdownFlags = // changed V0.9.0
+            G_GlobalSettings.ulXShutdownFlags = // changed V0.9.0
                 XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN;
-            G_pGlobalSettings->bSaveINIS = 0; // new method, V0.9.5 (2000-08-16) [umoeller]
+            G_GlobalSettings._bSaveINIS = 0; // new method, V0.9.5 (2000-08-16) [umoeller]
         break;
 
         case SP_DTP_ARCHIVES:  // all new with V0.9.0
@@ -2325,67 +2193,120 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         break;
 
         case SP_SETUP_FEATURES:   // all new with V0.9.0
-            G_pGlobalSettings->fReplaceIcons = 0;
-            G_pGlobalSettings->fResizeSettingsPages = 0;
-            G_pGlobalSettings->AddObjectPage = 0;
-            G_pGlobalSettings->fReplaceFilePage = 0;
-            G_pGlobalSettings->fXSystemSounds = 0;
-            G_pGlobalSettings->fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
+            G_GlobalSettings.__fIconReplacements = 0;
+            G_GlobalSettings.__fResizeSettingsPages = 0;
+            G_GlobalSettings.AddObjectPage = 0;
+            G_GlobalSettings.__fReplaceFilePage = 0;
+            G_GlobalSettings.fXSystemSounds = 0;
+            G_GlobalSettings.fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
 
-            G_pGlobalSettings->fEnableStatusBars = 0;
-            G_pGlobalSettings->fEnableSnap2Grid = 0;
-            G_pGlobalSettings->fEnableFolderHotkeys = 0;
-            G_pGlobalSettings->ExtFolderSort = 0;
+            G_GlobalSettings.__fEnableStatusBars = 0;
+            G_GlobalSettings.__fEnableSnap2Grid = 0;
+            G_GlobalSettings.__fEnableFolderHotkeys = 0;
+            G_GlobalSettings.ExtFolderSort = 0;
 
-            G_pGlobalSettings->fAniMouse = 0;
-            G_pGlobalSettings->fEnableXWPHook = 0;
-            G_pGlobalSettings->fEnablePageMage = 0;
+            G_GlobalSettings.fAniMouse = 0;
+            G_GlobalSettings.fEnableXWPHook = 0;
+            G_GlobalSettings.fEnablePageMage = 0;
 
-            G_pGlobalSettings->fReplaceArchiving = 0;
-            G_pGlobalSettings->fRestartWPS = 0;
-            G_pGlobalSettings->fXShutdown = 0;
+            G_GlobalSettings.fReplaceArchiving = 0;
+            G_GlobalSettings.fRestartWPS = 0;
+            G_GlobalSettings.fXShutdown = 0;
 
-            // G_pGlobalSettings->fMonitorCDRoms = 0;
+            // G_GlobalSettings.fMonitorCDRoms = 0;
 
-            G_pGlobalSettings->fExtAssocs = 0;
-            // G_pGlobalSettings->CleanupINIs = 0;
+            G_GlobalSettings.fExtAssocs = 0;
+            // G_GlobalSettings.CleanupINIs = 0;
                     // removed for now V0.9.12 (2001-05-12) [umoeller]
 
 #ifdef __REPLHANDLES__
-            G_pGlobalSettings->fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
+            G_GlobalSettings.fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
 #endif
-            G_pGlobalSettings->fReplFileExists = 0;
-            G_pGlobalSettings->fReplDriveNotReady = 0;
-            G_pGlobalSettings->fTrashDelete = 0;
-            G_pGlobalSettings->fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
+            G_GlobalSettings.fReplFileExists = 0;
+            G_GlobalSettings.fReplDriveNotReady = 0;
+            G_GlobalSettings.fTrashDelete = 0;
+            G_GlobalSettings.fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
         break;
 
         case SP_SETUP_PARANOIA:   // all new with V0.9.0
-            G_pGlobalSettings->VarMenuOffset   = 700;     // raised (V0.9.0)
-            G_pGlobalSettings->fNoFreakyMenus   = 0;
-            G_pGlobalSettings->fNoSubclassing   = 0;
-            G_pGlobalSettings->NoWorkerThread  = 0;
-            G_pGlobalSettings->fUse8HelvFont   = (!doshIsWarp4());
-            G_pGlobalSettings->fNoExcptBeeps    = 0;
-            G_pGlobalSettings->bDefaultWorkerThreadPriority = 1;  // idle +31
-            G_pGlobalSettings->fWorkerPriorityBeep = 0;
+            G_GlobalSettings.VarMenuOffset   = 700;     // raised (V0.9.0)
+            G_GlobalSettings.fNoFreakyMenus   = 0;
+            G_GlobalSettings.__fNoSubclassing   = 0;
+            G_GlobalSettings.NoWorkerThread  = 0;
+            G_GlobalSettings.fUse8HelvFont   = (!doshIsWarp4());
+            G_GlobalSettings.fNoExcptBeeps    = 0;
+            G_GlobalSettings.bDefaultWorkerThreadPriority = 1;  // idle +31
+            G_GlobalSettings.fWorkerPriorityBeep = 0;
         break;
 
         case SP_STARTUPFOLDER:        // all new with V0.9.0
-            G_pGlobalSettings->ShowStartupProgress = 1;
-            G_pGlobalSettings->ulStartupInitialDelay = 1000;
-            G_pGlobalSettings->ulStartupObjectDelay = 1000;
+            G_GlobalSettings.ShowStartupProgress = 1;
+            G_GlobalSettings.ulStartupInitialDelay = 1000;
+            G_GlobalSettings.ulStartupObjectDelay = 1000;
         break;
 
         case SP_TRASHCAN_SETTINGS:             // all new with V0.9.0
-            // G_pGlobalSettings->fTrashDelete = 0;  // removedV0.9.3 (2000-04-10) [umoeller]
-            // G_pGlobalSettings->fTrashEmptyStartup = 0;
-            // G_pGlobalSettings->fTrashEmptyShutdown = 0;
-            G_pGlobalSettings->ulTrashConfirmEmpty = TRSHCONF_DESTROYOBJ | TRSHCONF_EMPTYTRASH;
+            // G_GlobalSettings.fTrashDelete = 0;  // removedV0.9.3 (2000-04-10) [umoeller]
+            // G_GlobalSettings.fTrashEmptyStartup = 0;
+            // G_GlobalSettings.fTrashEmptyShutdown = 0;
+            G_GlobalSettings.ulTrashConfirmEmpty = TRSHCONF_DESTROYOBJ | TRSHCONF_EMPTYTRASH;
         break;
     }
 
     return (TRUE);
+}
+
+/*
+ *@@ cmnIsFeatureEnabled:
+ *      returns TRUE if the specified feature is
+ *      currently enabled.
+ *
+ *      This is reasonably sick code but allows
+ *      for maximum safety with the code when
+ *      adapted XWorkplace versions are built.
+ *
+ *@@added V0.9.16 (2001-10-11) [umoeller]
+ */
+
+BOOL cmnIsFeatureEnabled(XWPFEATURE f)
+{
+    switch (f)
+    {
+#ifndef __NOICONREPLACEMENTS__
+        case IconReplacements: return G_GlobalSettings.__fIconReplacements;
+#endif
+#ifndef __NOMOVEREFRESHNOW__
+        case MoveRefreshNow: return G_GlobalSettings.__fMoveRefreshNow;
+#endif
+#ifndef __ALWAYSSUBCLASS__
+        case NoSubclassing: return G_GlobalSettings.__fNoSubclassing;
+#endif
+#ifndef __NOFOLDERCONTENTS__
+        case AddFolderContentItem: return G_GlobalSettings.__fAddFolderContentItem;
+        case FolderContentShowIcons: return G_GlobalSettings.__fFolderContentShowIcons;
+#endif
+#ifndef __NOBOOTLOGO__
+        case BootLogo: return G_GlobalSettings.__fBootLogo;
+#endif
+#ifndef __ALWAYSREPLACEFILEPAGE__
+        case ReplaceFilePage: return G_GlobalSettings.__fReplaceFilePage;
+#endif
+#ifndef __NOCFGSTATUSBARS__
+        case StatusBars: return G_GlobalSettings.__fEnableStatusBars;
+#endif
+#ifndef __NOSNAPTOGRID__
+        case Snap2Grid: return G_GlobalSettings.__fEnableSnap2Grid;
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
+        case FolderHotkeys: return G_GlobalSettings.__fEnableFolderHotkeys;
+#endif
+
+        default:
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Warning: Invalid feature %d queried.", f);
+    }
+
+    return FALSE;
 }
 
 /* ******************************************************************
@@ -3162,7 +3083,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
                 cmnMessageBoxMsg(hwndOwner,
                                  148,       // XWPSetup
-                                 173,       // "done, restart WPS"
+                                 173,       // "done, restart Desktop"
                                  MB_OK);
             }
         }
@@ -3495,8 +3416,7 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                         ULONG ulSound)      // in: sound intex to play
 {
     // advertise for myself
-    CHAR    szGPLInfo[2000];
-    PSZ     pszGPLInfo;
+    XSTRING strGPLInfo;
     LONG    lBackClr = CLR_WHITE;
     HWND hwndInfo = WinLoadDlg(HWND_DESKTOP,
                                hwndOwner,
@@ -3505,6 +3425,8 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                                ID_XFD_PRODINFO,
                                NULL),
          hwndTextView;
+
+    xstrInit(&strGPLInfo, 0);
 
     // text view (GPL info)
     txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
@@ -3525,21 +3447,24 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
 
     // load and convert info text
     cmnGetMessage(NULL, 0,
-                  szGPLInfo, sizeof(szGPLInfo),
+                  &strGPLInfo,
                   140);
-    pszGPLInfo = strdup(szGPLInfo);
-    txvStripLinefeeds(&pszGPLInfo, 4);
-    WinSetWindowText(hwndTextView, pszGPLInfo);
-    free(pszGPLInfo);
+    /* pszGPLInfo = strdup(szGPLInfo);
+    txvStripLinefeeds(&pszGPLInfo, 4); */
+    WinSetWindowText(hwndTextView, strGPLInfo.psz);
 
     // version string
-    sprintf(szGPLInfo, "XWorkplace V%s (%s)", BLDLEVEL_VERSION, __DATE__);
-    WinSetDlgItemText(hwndInfo, ID_XFDI_XFLDVERSION, szGPLInfo);
+    winhSetWindowText(WinWindowFromID(hwndInfo, ID_XFDI_XFLDVERSION),
+                      "XWorkplace V%s (%s)",
+                      BLDLEVEL_VERSION,
+                      __DATE__);
 
     cmnSetDlgHelpPanel(0);
     winhCenterWindow(hwndInfo);
     WinProcessDlg(hwndInfo);
     WinDestroyWindow(hwndInfo);
+
+    xstrClear(&strGPLInfo);
 }
 
 const char *G_apcszExtensions[]
@@ -3612,11 +3537,12 @@ PSZ StripParams(PSZ pcszCommand,
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-BOOL GetExeFromControl(HWND hwnd,
-                       PSZ pszExecutable,
-                       USHORT usExeLength)
+APIRET GetExeFromControl(HWND hwnd,
+                         PSZ pszExecutable,
+                         USHORT usExeLength)
 {
-    BOOL bOK = FALSE;
+    APIRET arc = ERROR_FILE_NOT_FOUND;
+
     PSZ pszCommand;
     if (pszCommand = winhQueryWindowText(hwnd))
     {
@@ -3625,15 +3551,14 @@ BOOL GetExeFromControl(HWND hwnd,
         if (pszExec = StripParams(pszCommand,
                                   NULL))
         {
-            if (!doshFindExecutable(pszExec,
-                                    pszExecutable,
-                                    usExeLength,
-                                    G_apcszExtensions,
-                                    ARRAYITEMCOUNT(G_apcszExtensions)))
-            {
+            if (!(arc = doshFindExecutable(pszExec,
+                                           pszExecutable,
+                                           usExeLength,
+                                           G_apcszExtensions,
+                                           ARRAYITEMCOUNT(G_apcszExtensions))))
                 strupr(pszExecutable);
-                bOK = TRUE;
-            }
+
+            _Pmpf((__FUNCTION__ ": doshFindExecutable returned %d", arc));
 
             free(pszExec);
         }
@@ -3641,7 +3566,7 @@ BOOL GetExeFromControl(HWND hwnd,
         free(pszCommand);
     }
 
-    return(bOK);
+    return(arc);
 }
 
 /*
@@ -3673,7 +3598,7 @@ BOOL LoadRunHistory(HWND hwnd)
             if (i == 0)
             {
                 WinSetWindowText(hwnd, szData);
-                bOK = GetExeFromControl(hwnd, szData, sizeof(szData));
+                bOK = !GetExeFromControl(hwnd, szData, sizeof(szData));
             }
         }
     }
@@ -3789,10 +3714,10 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                         BOOL bOK, bIsWinProg;
                         HWND hwndOK = WinWindowFromID(hwnd, DID_OK);
                         HWND hwndCancel = WinWindowFromID(hwnd, DID_CANCEL);
-                        HWND hwndCommand = (HWND) mp2;
+                        HWND hwndCommand = (HWND)mp2;
 
                         // Remove leading spaces
-                        WinQueryWindowText (hwndCommand, sizeof(szExecutable), szExecutable);
+                        WinQueryWindowText(hwndCommand, sizeof(szExecutable), szExecutable);
                         if (szExecutable[0] == ' ')
                         {
                             PSZ p;
@@ -3807,7 +3732,9 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                        MPFROM2SHORT(0, VK_HOME));
                         }
 
-                        bOK = GetExeFromControl(hwndCommand, szExecutable, sizeof(szExecutable));
+                        bOK = !GetExeFromControl(hwndCommand,
+                                                 szExecutable,
+                                                 sizeof(szExecutable));
                         bIsWinProg = (    (bOK)
                                        && (!appQueryAppType(szExecutable,
                                                             &ulDosAppType,
@@ -3821,6 +3748,10 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                             HWND hwndTmp = hwndOK;
                             hwndOK = hwndCancel;
                             hwndCancel = hwndTmp;
+                            // do not display the full path
+                            // if the file wasn't found
+                            szExecutable[0] = '\0';
+                                    // V0.9.16 (2001-10-08) [umoeller]
                         }
 
                         WinSetWindowULong(hwnd,
@@ -3841,7 +3772,9 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                           (   (bIsWinProg)
                                            && (!winhIsDlgItemChecked(hwnd,
                                                                      ID_XFD_RUN_FULLSCREEN))));
-                        WinSetDlgItemText(hwnd, ID_XFD_RUN_FULLPATH, szExecutable);
+                        WinSetDlgItemText(hwnd,
+                                          ID_XFD_RUN_FULLPATH,
+                                          szExecutable);
                     }
                 break;
 
@@ -3880,7 +3813,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                     FILEDLG filedlg;
                     APSZ typelist[] = { "DOS Command File",
                                         "Executable",
-                                        "OS2 Command File",
+                                        "OS/2 Command File",        // V0.9.16 (2001-09-29) [umoeller]
                                         NULL };
                     PSZ pszFilespec = "*.COM;*.EXE;*.CMD;*.BAT";
 
@@ -3962,21 +3895,21 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
     static HWND hwndDlg = NULLHANDLE;
     HAPP        happ = NULLHANDLE;
 
-    // Activate the current Run dialog if user tries to open a new one V0.9.14
+    // activate the current Run dialog if user tries to open a new one V0.9.14
     if (hwndDlg)
     {
         HWND    hwnd = hwndDlg, hwndTmp;
-        HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
 
-        // Find the Browse dialog if it is open
+        // find the Browse dialog if it is open
+        HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
         while (hwndTmp = WinGetNextWindow(henum))
             if (WinQueryWindow(hwndTmp, QW_OWNER) == hwndDlg)
             {
                 hwnd = hwndTmp;
                 break;
             }
-
         WinEndEnumWindows(henum);
+
         WinSetFocus (HWND_DESKTOP, hwnd);
         return(happ);
     }
@@ -3996,11 +3929,9 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
     {
         HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
                 hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
-        BOOL    bOK;
 
         winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
-        bOK = LoadRunHistory(hwndCommand);
-        if (bOK)
+        if (LoadRunHistory(hwndCommand))
         {
             HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
             HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
@@ -4134,9 +4065,11 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
 
 const char* cmnQueryDefaultFont(VOID)
 {
-    if (G_pGlobalSettings->fUse8HelvFont)
+#ifndef __XWPLITE__
+    if (G_GlobalSettings.fUse8HelvFont)
         return ("8.Helv");
     else
+#endif
         return ("9.WarpSans");
 }
 
@@ -4253,59 +4186,67 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
  *      using the TMF message ID string directly.
  *      This gets called from cmnGetMessage.
  *
+ *      The XSTRING is assumed to be initialized.
+ *
  *@@added V0.9.4 (2000-06-17) [umoeller]
+ *@@changed V0.9.16 (2001-10-08) [umoeller]: now using XSTRING
  */
 
 APIRET cmnGetMessageExt(PCHAR *pTable,     // in: replacement PSZ table or NULL
                         ULONG ulTable,     // in: size of that table or 0
-                        PSZ pszBuf,        // out: buffer to hold message string
-                        ULONG cbBuf,       // in: size of pszBuf
-                        PSZ pszMsgID)      // in: msg ID to retrieve
+                        PXSTRING pstr,     // in/out: string
+                        PCSZ pcszMsgID)    // in: msg ID to retrieve
 {
     APIRET  arc = NO_ERROR;
+    BOOL fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        const char *pszMessageFile = cmnQueryMessageFile();
-        ULONG   ulReturned;
-
         #ifdef DEBUG_LANGCODES
             _Pmpf(("cmnGetMessage %s %s", pszMessageFile, pszMsgId));
         #endif
 
-        arc = tmfGetMessage(pTable,
-                            ulTable,
-                            pszBuf,
-                            cbBuf,
-                            pszMsgID,      // string (!) message identifier
-                            (PSZ)pszMessageFile,     // .TMF file
-                            &ulReturned);
-
-        #ifdef DEBUG_LANGCODES
-            _Pmpf(("  tmfGetMessage rc: %d", arc));
-        #endif
-
-        if (arc == NO_ERROR)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
-            pszBuf[ulReturned] = '\0';
-
-            // remove trailing newlines
-            while (TRUE)
+            if (!G_pXWPMsgFile)
             {
-                PSZ p = pszBuf + strlen(pszBuf) - 1;
-                if (    (*p == '\n')
-                     || (*p == '\r')
-                   )
-                    *p = '\0';
+                // first call:
+                // go load the XWP message file
+                arc = tmfOpenMessageFile(cmnQueryMessageFile(),
+                                         &G_pXWPMsgFile);
+            }
+
+            if (!arc)
+            {
+                arc = tmfGetMessage(G_pXWPMsgFile,
+                                    pcszMsgID,
+                                    pstr,
+                                    pTable,
+                                    ulTable);
+
+                #ifdef DEBUG_LANGCODES
+                    _Pmpf(("  tmfGetMessage rc: %d", arc));
+                #endif
+
+                if (!arc)
+                    ReplaceEntities(pstr);
                 else
-                    break; // while (TRUE)
+                {
+                    CHAR sz[500];
+                    sprintf(sz,
+                            "Message %s not found in %s, rc = %d",
+                            pcszMsgID,
+                            cmnQueryMessageFile(),
+                            arc);
+                    xstrcpy(pstr, sz, 0);
+                }
             }
         }
-        else
-            sprintf(pszBuf, "Message %s not found in %s",
-                            pszMsgID, pszMessageFile);
     }
     CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     return (arc);
 }
@@ -4318,23 +4259,25 @@ APIRET cmnGetMessageExt(PCHAR *pTable,     // in: replacement PSZ table or NULL
  *      The message code (ulMsgNumber) is automatically
  *      converted to a TMF message ID.
  *
+ *      The XSTRING is assumed to be initialized.
+ *
  *      <B>Returns:</B> the error code of tmfGetMessage.
  *
  *@@changed V0.9.0 [umoeller]: changed, this now uses the TMF file format (tmsgfile.c).
  *@@changed V0.9.4 (2000-06-18) [umoeller]: extracted cmnGetMessageExt
+ *@@changed V0.9.16 (2001-10-08) [umoeller]: now using XSTRING
  */
 
 APIRET cmnGetMessage(PCHAR *pTable,     // in: replacement PSZ table or NULL
                      ULONG ulTable,     // in: size of that table or 0
-                     PSZ pszBuf,        // out: buffer to hold message string
-                     ULONG cbBuf,       // in: size of pszBuf
+                     PXSTRING pstr,     // in/out: string
                      ULONG ulMsgNumber) // in: msg number to retrieve
 {
     CHAR szMessageName[40];
     // create string message identifier from ulMsgNumber
     sprintf(szMessageName, "XFL%04d", ulMsgNumber);
 
-    return (cmnGetMessageExt(pTable, ulTable, pszBuf, cbBuf, szMessageName));
+    return (cmnGetMessageExt(pTable, ulTable, pstr, szMessageName));
 }
 
 /*
@@ -4344,6 +4287,8 @@ APIRET cmnGetMessage(PCHAR *pTable,     // in: replacement PSZ table or NULL
  *      of real PSZs. This calls cmnGetMessage for retrieving
  *      the messages, but placeholder replacement does not work
  *      here (use cmnMessageBoxMsgExt for that).
+ *
+ *@@changed V0.9.16 (2001-10-08) [umoeller]: now using XSTRINGs
  */
 
 ULONG cmnMessageBoxMsg(HWND hwndOwner,
@@ -4351,16 +4296,25 @@ ULONG cmnMessageBoxMsg(HWND hwndOwner,
                        ULONG ulMessage,     // in: msg index for message
                        ULONG flStyle)       // in: like cmnMsgBox
 {
-    CHAR    szTitle[200], szMessage[2000];
+    ULONG ulrc;
+
+    XSTRING strTitle, strMessage;
+    xstrInit(&strTitle, 0);
+    xstrInit(&strMessage, 0);
 
     cmnGetMessage(NULL, 0,
-                  szTitle, sizeof(szTitle)-1,
+                  &strTitle,
                   ulTitle);
     cmnGetMessage(NULL, 0,
-                  szMessage, sizeof(szMessage)-1,
+                  &strMessage,
                   ulMessage);
 
-    return (cmnMessageBox(hwndOwner, szTitle, szMessage, flStyle));
+    ulrc = cmnMessageBox(hwndOwner, strTitle.psz, strMessage.psz, flStyle);
+
+    xstrClear(&strTitle);
+    xstrClear(&strMessage);
+
+    return (ulrc);
 }
 
 /*
@@ -4378,16 +4332,25 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
                           ULONG ulMessage,  // in: msg number for message
                           ULONG flStyle)    // in: msg box style flags (cmnMessageBox)
 {
-    CHAR    szTitle[200], szMessage[2000];
+    ULONG ulrc;
+
+    XSTRING strTitle, strMessage;
+    xstrInit(&strTitle, 0);
+    xstrInit(&strMessage, 0);
 
     cmnGetMessage(NULL, 0,
-                  szTitle, sizeof(szTitle)-1,
+                  &strTitle,
                   ulTitle);
     cmnGetMessage(pTable, ulTable,
-                  szMessage, sizeof(szMessage)-1,
+                  &strMessage,
                   ulMessage);
 
-    return (cmnMessageBox(hwndOwner, szTitle, szMessage, flStyle));
+    ulrc = cmnMessageBox(hwndOwner, strTitle.psz, strMessage.psz, flStyle);
+
+    xstrClear(&strTitle);
+    xstrClear(&strMessage);
+
+    return (ulrc);
 }
 
 /*
@@ -4420,40 +4383,40 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
 
     xstrInit(&strError, 0);
 
-    arc2 = DosGetMessage(&pszTable, 1,
-                         szMsgBuf, sizeof(szMsgBuf),
-                         arc,
-                         "OSO001.MSG",        // default OS/2 message file
-                         &ulLen);
-    szMsgBuf[ulLen] = 0;
-
-    if (arc2 != NO_ERROR)
+    if (!(arc2 = DosGetMessage(&pszTable, 1,
+                               szMsgBuf, sizeof(szMsgBuf),
+                               arc,
+                               "OSO001.MSG",        // default OS/2 message file
+                               &ulLen)))
     {
+        szMsgBuf[ulLen] = 0;
+        xstrcpy(&strError, szMsgBuf, 0);
+
+        if (fShowExplanation)
+        {
+            // get help too
+            if (!(arc2 = DosGetMessage(&pszTable, 1,
+                                       szMsgBuf, sizeof(szMsgBuf),
+                                       arc,
+                                       "OSO001H.MSG",        // default OS/2 help message file
+                                       &ulLen)))
+            {
+                szMsgBuf[ulLen] = 0;
+                xstrcatc(&strError, '\n');
+                xstrcat(&strError, szMsgBuf, 0);
+            }
+        }
+    }
+    else
+    {
+        // cannot find msg:
         CHAR szError3[20];
         PSZ apsz = szError3;
         sprintf(szError3, "%d", arc);
         cmnGetMessage(&apsz,
                       1,
-                      szMsgBuf,
-                      sizeof(szMsgBuf),
+                      &strError,
                       219);          // "error %d occured"
-    }
-
-    xstrcpy(&strError, szMsgBuf, 0);
-
-    if (!arc2 && fShowExplanation)
-    {
-        arc2 = DosGetMessage(&pszTable, 1,
-                             szMsgBuf, sizeof(szMsgBuf),
-                             arc,
-                             "OSO001H.MSG",        // default OS/2 help message file
-                             &ulLen);
-        if (arc2 == NO_ERROR)
-        {
-            szMsgBuf[ulLen] = 0;
-            xstrcatc(&strError, '\n');
-            xstrcat(&strError, szMsgBuf, 0);
-        }
     }
 
     mbrc = cmnMessageBox(HWND_DESKTOP,

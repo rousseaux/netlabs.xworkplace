@@ -7,7 +7,7 @@
  *      whether the WPS backup functionality should be enabled.
  *
  *      These checks are performed in arcCheckIfBackupNeeded, which
- *      gets called during WPS startup.
+ *      gets called during Desktop startup.
  *
  *      This file is ALL new with V0.9.0.
  *
@@ -98,7 +98,7 @@
 #include "helpers\prfh.h"
 #include "helpers\stringh.h"
 #include "helpers\winh.h"               // PM helper routines
-#include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -449,7 +449,8 @@ PARCHIVINGSETTINGS arcQuerySettings(VOID)
         G_fSettingsLoaded = TRUE;
         // load settings
         brc = PrfQueryProfileData(HINI_USER,
-                                  WPSARCO_INIAPP, WPSARCO_INIKEY_SETTINGS,    // archives.h
+                                  (PSZ)INIAPP_XWORKPLACE,
+                                  (PSZ)INIKEY_ARCHIVE_SETTINGS,
                                   &G_ArcSettings,
                                   &cbData);
         if ((!brc) || cbData != sizeof(G_ArcSettings))
@@ -463,7 +464,8 @@ PARCHIVINGSETTINGS arcQuerySettings(VOID)
 
         cbData = sizeof(G_dtLastArchived);
         brc = PrfQueryProfileData(HINI_USER,
-                                  WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
+                                  (PSZ)INIAPP_XWORKPLACE,
+                                  (PSZ)INIKEY_ARCHIVE_LASTBACKUP,
                                   &G_dtLastArchived,
                                   &cbData);
         if ((!brc) || cbData != sizeof(G_dtLastArchived))
@@ -491,7 +493,8 @@ PARCHIVINGSETTINGS arcQuerySettings(VOID)
 BOOL arcSaveSettings(VOID)
 {
     return (PrfWriteProfileData(HINI_USER,
-                                WPSARCO_INIAPP, WPSARCO_INIKEY_SETTINGS,    // archives.h
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_ARCHIVE_SETTINGS,
                                 &G_ArcSettings,
                                 sizeof(G_ArcSettings)));
 }
@@ -628,7 +631,7 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
  *
  *      This gets called from initMain
  *      while the WPS is booting up (see remarks there).
- *      If we enable WPS archiving here, the WPS will
+ *      If we enable Desktop archiving here, the WPS will
  *      archive the Desktop soon afterwards.
  *
  *      If (ARCHIVINGSETTINGS.fShowStatus == TRUE), hwndNotify
@@ -781,7 +784,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     }
 
                     fBackup = arcCheckINIFiles(&G_ArcSettings.dIniFilesPercent,
-                                               WPSARCO_INIAPP,  // ignore this
+                                               (PSZ)INIAPP_XWORKPLACE,  // ignore this
                                                &G_ArcSettings.dAppsSizeLast,
                                                &G_ArcSettings.dKeysSizeLast,
                                                &G_ArcSettings.dDataSumLast,
@@ -814,12 +817,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     // save "last app" etc. data so we won't get this twice
                     arcSaveSettings();
                     xstrcat(&strMsg,
-                            cmnGetString(ID_XSSI_ARCENABLED),  // "WPS archiving enabled"
+                            cmnGetString(ID_XSSI_ARCENABLED),  // "Desktop archiving enabled"
                             0);
                 }
                 else
                     xstrcat(&strMsg,
-                            cmnGetString(ID_XSSI_ARCNOTNECC),  // "WPS archiving not necessary"
+                            cmnGetString(ID_XSSI_ARCNOTNECC),  // "Desktop archiving not necessary"
                             0);
 
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, strMsg.psz);
@@ -850,7 +853,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
 /*
  *@@ arcSwitchArchivingOn:
- *      depending on fSwitchOn, this switches WPS archiving on or off
+ *      depending on fSwitchOn, this switches Desktop archiving on or off
  *      by manipulating the \OS2\BOOT\ARCHBASE.$$$ file.
  *
  *      In addition, this stores the date of the last archive in OS2.INI
@@ -880,7 +883,8 @@ APIRET arcSwitchArchivingOn(BOOL fSwitchOn)
             // store date of backup in OS2.INI
             DosGetDateTime(&G_dtLastArchived);
             PrfWriteProfileData(HINI_USER,
-                                WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_ARCHIVE_LASTBACKUP,
                                 &G_dtLastArchived,
                                 sizeof(G_dtLastArchived));
         }
@@ -957,7 +961,7 @@ BOOL arcSetNumArchives(PCHAR pcArchives,        // in/out: number of archives
  *
  *      If any of these values differs more than cPercent from the old
  *      data passed to this function, we update that data and return TRUE,
- *      which means that WPS archiving should be turned on.
+ *      which means that Desktop archiving should be turned on.
  *
  *      Otherwise FALSE is returned, and the data is not changed.
  *

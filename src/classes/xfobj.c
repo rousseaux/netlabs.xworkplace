@@ -8,7 +8,7 @@
  *      XFldObject gives the other classes access to WPS
  *      internals that cannot be reached otherwise. It
  *      also initializes the whole XWorkplace environment
- *      at WPS bootup by overriding M_XFldObject::wpclsInitData.
+ *      at Desktop startup by overriding M_XFldObject::wpclsInitData.
  *
  *      Also this class is needed for storing some extra data
  *      when objects have been deleted into the trash can.
@@ -88,6 +88,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
@@ -513,7 +514,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
  *      internal widget-notify list.
  *
  *      Widget notifies are used to establish a link
- *      between a WPS object and an object button widget
+ *      between a Desktop object and an object button widget
  *      in the XCenter. This will post a WM_CONTROL
  *      message to the given HWND in the following
  *      situations:
@@ -707,58 +708,95 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
  *      has never implemented a "query setup" method, so
  *      I did this now.
  *
- *      Since you can never be sure how long the setup string
- *      will be, you'll have to call this method twice:
+ *      Notes:
  *
- *      1) On the first call, pass both pszSetupString and
- *         cbSetupString as NULL. The method will then
- *         return the length of the setup string for this
- *         object, _not_ including the terminating null byte.
+ *      --  Starting with V0.9.16, this returns a string
+ *          in a new buffer. If pulLength is != NULL, it
+ *          receives the length of the string that was
+ *          composed, excluding the null terminator.
  *
- *      2) Then, allocate a buffer of that size (+1 for the
- *         null-terminator) and call this method again with
- *         pszSetupString being that buffer and cbSetupString
- *         the size of that buffer (including the null byte).
+ *          Call XFldObject::xwpFreeSetupBuffer to free
+ *          the return value.
  *
- *      This method only returns setup strings which have
- *      non-default values.
+ *      --  This only returns setup strings which have
+ *          non-default values. Since it can be hard to
+ *          find out what the "default" really is for a
+ *          setting, the values may differ between system
+ *          reboots.
  *
- *      This method only resolves the method pointer for
- *      the "xwpQuerySetup2" method, which must to the actual
- *      setup string composing. See XFldObject::xwpQuerySetup2
- *      for details.
+ *      --  This method only resolves the method pointer for
+ *          the "xwpQuerySetup2" method, which must to the actual
+ *          setup string composing. See XFldObject::xwpQuerySetup2
+ *          for details. Never override this method for subclasses;
+ *          override xwpQuerySetup2 instead.
  *
  *@@added V0.9.1 (2000-01-16) [umoeller]
  *@@changed V0.9.12 (2001-05-19) [umoeller]: added object lock
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: changed implementation to using XSTRINGs
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
-                                             PSZ pszSetupString,
-                                             ULONG cbSetupString)
+SOM_Scope PSZ  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
+                                           PULONG pulLength)
 {
-    ULONG ulrc = 0;
+    PSZ pszReturn = NULL;
+    XSTRING str;
     WPSHLOCKSTRUCT Lock;
+
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup");
+
+    xstrInit(&str, 500);
 
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
         {
             // obtain "xwpQuerySetup2" method pointer
-            somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2
-                = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(somSelf,
-                                                                    "xwpQuerySetup2");
-            if (pfn_xwpQuerySetup2)
+            somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
+
+            if (pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(
+                                                    somSelf,
+                                                    "xwpQuerySetup2"))
+            {
                 // method resolved: call it
-                ulrc  = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
+                if (    (pfn_xwpQuerySetup2(somSelf, &str))
+                     && (str.ulLength)
+                   )
+                {
+                    pszReturn = str.psz;
+                            // do not free
+                    if (pulLength)
+                        *pulLength = str.ulLength;
+                }
+                else
+                    xstrClear(&str);
+            }
         }
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt1)
+    {
+        // crash:
+        xstrClear(&str);
+        pszReturn = NULL;
+    } END_CATCH();
 
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (ulrc);
+    return (pszReturn);
+}
+
+SOM_Scope void  SOMLINK xfobj_xwpFreeSetupBuffer(XFldObject *somSelf,
+                                                 PSZ pszSetupBuffer)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpFreeSetupBuffer");
+
+    TRY_LOUD(excpt1)
+    {
+        if (pszSetupBuffer)
+            free(pszSetupBuffer);
+    }
+    CATCH(excpt1) {} END_CATCH();
 }
 
 /*
@@ -771,14 +809,16 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *      resolution to support overriding it in subclasses
  *      of XFldObject (WPObject), which xwpQuerySetup does.
  *
- *      --  Call xwpQuerySetup for getting a setup string.
+ *      In other words:
  *
- *      --  Override xwpQuerySetup2 for adding setup-string support
+ *      --  _call_ xwpQuerySetup for getting a setup string.
+ *
+ *      --  _override_ xwpQuerySetup2 for adding setup-string support
  *          to your class.
  *
  *      Guidelines:
  *
- *      1.  You cannot simply use _parent_xwpQuerySetup
+ *      1.  You cannot simply use _parent_xwpQuerySetup2
  *          to call the parent method, because there's no C binding
  *          for this. The SOM header files do not know that WPObject
  *          has been replaced with XFldObject and therefore have no
@@ -793,10 +833,14 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *          complete setup string (IBM says), and that string is implemented
  *          by the XFldObject method.
  *
- *      3.  When calling the parent method, modify the buffer and size
- *          parameters to reflect the string you have already composed.
- *          As a result, the parent method will append its string to
- *          the data you have composed.
+ *      3.  The implementation of this method has been changed with
+ *          V0.9.16. The PVOID is a pointer to an XSTRING buffer which
+ *          has been initialized by XFldObject::xwpQuerySetup. Use
+ *          the xstr* functions for appending stuff to the buffer.
+ *
+ *          This was changed because the double call to this method
+ *          that was previously required always had the slight risk
+ *          that the object data would change in between the two calls.
  *
  *      4.  Always terminate your setup strings with a semicolon (";"),
  *          even if it's the last.
@@ -805,7 +849,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *          using its object mutex. So sending messages and other
  *          stuff is a no-no.
  *
- *      So use the following code to call the parent method:
+ *      Use the following code to call the parent method:
  *
  +          PSZ pszMySetupStringSoFar = ...;
  +                  // setup strings for your class
@@ -842,22 +886,17 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *      which adds setup strings for a subclass of XFldObject.
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
-                                              PSZ pszSetupString,
-                                              ULONG cbSetupString)
+SOM_Scope BOOL  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
+                                             PVOID pstrSetup)
 {
-    ULONG ulReturn = 0;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup2");
 
-    ulReturn += objQuerySetup(somSelf,
-                              pszSetupString,
-                              cbSetupString);
-
-    return (ulReturn);
-
+    return (objQuerySetup(somSelf,
+                          pstrSetup));
 }
 
 /*
@@ -1147,6 +1186,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
             mnuInvalidateConfigCache();
         }
 
+#ifndef __NOFOLDERCONTENTS__
         if (_ulListNotify & OBJLIST_FAVORITEFOLDER)
         {
             _ulListNotify &= ~OBJLIST_FAVORITEFOLDER;
@@ -1156,7 +1196,9 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
                          INIKEY_FAVORITEFOLDERS,
                          0);            // no modify flags... we're being destroyed
         }
+#endif
 
+#ifndef __NOQUICKOPEN__
         if (_ulListNotify & OBJLIST_QUICKOPENFOLDER)
         {
             _ulListNotify &= ~OBJLIST_QUICKOPENFOLDER;
@@ -1166,6 +1208,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
                          INIKEY_QUICKOPENFOLDERS,
                          0);            // no modify flags... we're being destroyed
         }
+#endif
 
         if (_ulListNotify & OBJLIST_HANDLESCACHE)
         {
@@ -2059,7 +2102,7 @@ SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
 SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
 {
     BOOL    fOpenFoldersFound = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                         // this will load the global settings from OS2.INI
 
     // M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf);
@@ -2076,14 +2119,18 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
     // called for the first time
     if (!G_fXWorkplaceInitialized)
     {
+        HENUM   henum;
+        HWND    hwndThis;
+
+        G_fXWorkplaceInitialized = TRUE;
+
         // check if we have any open folder windows;
         // if so, we're not really in the process of starting
         // up. This check is necessary because this class
         // method also gets called when the classes are installed
         // by WinRegisterObjectClass, unfortunately, and we don't
         // want to start threads etc. then.
-        HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
-        HWND    hwndThis;
+        henum = WinBeginEnumWindows(HWND_DESKTOP);
         while (     (!fOpenFoldersFound)
                  && (hwndThis = WinGetNextWindow(henum))
               )
@@ -2096,33 +2143,27 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         }
         WinEndEnumWindows(henum);
 
-        G_fXWorkplaceInitialized = TRUE;
-
         if (!fOpenFoldersFound)
             // only if no open folders are found:
             // initialize the kernel (kernel.c)
             initMain();
 
-        {
-            // store the class object in KERNELGLOBALS
-            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-            if (pKernelGlobals)
-            {
-                // store the XFldObject class object in KERNELGLOBALS
-                pKernelGlobals->fXFldObject = TRUE;
-                krnUnlockGlobals();
-            }
-        }
+        krnClassInitialized(G_pcszXFldObject);
     }
 
+#ifndef __NOBOOTUPSTATUS__
     if (!fOpenFoldersFound)
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // even if not first invocation (i.e. some class other
         // than WPObject gets initialized): notify Speedy thread
         // of class initialization
-        if (pGlobalSettings->ShowBootupStatus)
+        if (pGlobalSettings->_fShowBootupStatus)
             xthrPostSpeedyMsg(QM_BOOTUPSTATUS,
                              (MPARAM)somSelf,       // class object
                              MPNULL);
+    }
+#endif
 }
 
 /*

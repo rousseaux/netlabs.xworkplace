@@ -434,31 +434,25 @@ SOM_Scope void  SOMLINK fonM_wpclsInitData(M_XWPFontFolder *somSelf)
 
     M_XWPFontFolder_parent_M_WPFolder_wpclsInitData(somSelf);
 
-    // enforce initialization of XWPFontObject class
-    pFontObjectClassObject = XWPFontObjectNewClass(XWPFontObject_MajorVersion,
-                                                    XWPFontObject_MinorVersion);
-
-    if (pFontObjectClassObject)
+    if (krnClassInitialized(G_pcszXWPFontFolder))
     {
-        // now increment the class's usage count by one to
-        // ensure that the class is never unloaded; if we
-        // didn't do this, we'd get WPS CRASHES in some
-        // background class because if no more trash objects
-        // exist, the class would get unloaded automatically -- sigh...
-        _wpclsIncUsage(pFontObjectClassObject);
+        // first call:
+
+        // enforce initialization of XWPFontObject class
+        if (pFontObjectClassObject = XWPFontObjectNewClass(XWPFontObject_MajorVersion,
+                                                           XWPFontObject_MinorVersion))
         {
-            // store the class object in KERNELGLOBALS
-            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-            if (pKernelGlobals)
-            {
-                pKernelGlobals->fXWPFontFolder = TRUE;
-                krnUnlockGlobals();
-            }
+            // now increment the class's usage count by one to
+            // ensure that the class is never unloaded; if we
+            // didn't do this, we'd get WPS CRASHES in some
+            // background class because if no more trash objects
+            // exist, the class would get unloaded automatically -- sigh...
+            _wpclsIncUsage(pFontObjectClassObject);
         }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot initialize XWPFontObject class. Is it installed?!?");
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Cannot initialize XWPFontObject class. Is it installed?!?");
 }
 
 /*

@@ -20,7 +20,7 @@
  *      of dynamically loading and unloading plugin widgets from a DLL.
  *      Best of all, it will automatically free the DLL when it's
  *      no longer used (e.g. when all XCenters are closed) so that
- *      WPS restarts are _not_ needed for writing plugins.
+ *      Desktop restarts are _not_ needed for writing plugins.
  *
  *      See fnwpXCenterMainClient for a description of the XCenter
  *      window hierarchy.
@@ -93,7 +93,7 @@
  *      with the XCenter instance settings as a "setup string".
  *      These look similar to regular WPS setup strings (in the
  *      "keyword1=value1" form), even though the widgets are not
- *      WPS objects themselves.
+ *      Desktop objects themselves.
  *
  *      Since the XCenter is derived from WPAbstract, if a widget
  *      chooses to do so, its instance data ends up somewhere in

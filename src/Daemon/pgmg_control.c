@@ -182,7 +182,7 @@ BOOL pgmcDisableSwitching(VOID)
 
     if (!WinRequestMutexSem(G_hmtxDisableSwitching, 4000))
     {
-        _Pmpf((__FUNCTION__));
+        // _Pmpf((__FUNCTION__));
         G_pHookData->fDisablePgmgSwitching = TRUE;
         return TRUE;
     }
@@ -201,7 +201,7 @@ VOID pgmcReenableSwitching(VOID)
 {
     if (G_pHookData->fDisablePgmgSwitching)
     {
-        _Pmpf((__FUNCTION__));
+        // _Pmpf((__FUNCTION__));
         G_pHookData->fDisablePgmgSwitching = FALSE;
         DosReleaseMutexSem(G_hmtxDisableSwitching);
     }
@@ -271,7 +271,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
 {
     BOOL    brc = TRUE;
 
-    _Pmpf(("Entering pgmcCreateMainControlWnd"));
+    // _Pmpf(("Entering pgmcCreateMainControlWnd"));
 
     if (!G_pHookData->hwndPageMageFrame)
     {
@@ -1400,7 +1400,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
              */
 
             case WM_COMMAND:
-                break;
+            break;
 
             /*
              * WM_BUTTON1CLICK:

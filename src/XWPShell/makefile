@@ -78,7 +78,7 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 .c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
         $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
@@ -87,8 +87,8 @@ dep:
 !endif
 
 # build targets
-xwpshell.def: ..\..\include\bldlevel.h
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace Security shell starter"
+xwpshell.def: ..\..\include\bldlevel.h makefile
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Security shell starter"
 
 $(OUTPUTDIR)\xwpshell.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

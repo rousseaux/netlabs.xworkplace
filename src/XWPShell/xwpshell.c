@@ -237,7 +237,7 @@
  *
  *          For obvious reasons, the OS/2 directories should be
  *          given read and execute rights for all users. So in
- *          this case, access is granted, and the WPS starts up.
+ *          this case, access is granted, and the Desktop starts up.
  *
  *          (For each file and directory accessed by the WPS, such
  *          as the Desktop hierachies, SOM DLLs and such, this is

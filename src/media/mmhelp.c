@@ -277,7 +277,7 @@ ULONG xmmCloseDevice(PUSHORT pusDeviceID)
  *@@ xmmCleanup:
  *      closes all leftover open devices. This is
  *      used during XShutdown because otherwise
- *      the WPS hangs after the WPS restart. So
+ *      the WPS hangs after the Desktop restart. So
  *      much for exit-list cleanup, IBM.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]

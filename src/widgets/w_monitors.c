@@ -101,6 +101,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines;
                                         // this include is required for some
                                         // of the structures in shared\center.h
@@ -253,8 +254,8 @@ PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
 PKRNQUERYDAEMONOBJECT pkrnQueryDaemonObject = NULL;
 
-PSTRHDATETIME pstrhDateTime = NULL;
-PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
+PNLSDATETIME pnlsDateTime = NULL;
+PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
@@ -295,8 +296,8 @@ RESOLVEFUNCTION G_aImports[] =
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
         "krnQueryDaemonObject", (PFN*)&pkrnQueryDaemonObject,
-        "strhDateTime", (PFN*)&pstrhDateTime,
-        "strhThousandsULong", (PFN*)&pstrhThousandsULong,
+        "nlsDateTime", (PFN*)&pnlsDateTime,
+        "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhFree", (PFN*)&pwinhFree,
@@ -926,7 +927,7 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                  = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
                              DATETIME dt;
                              DosGetDateTime(&dt);
-                             pstrhDateTime(pPrivate->szDateTime,
+                             pnlsDateTime(pPrivate->szDateTime,
                                            NULL,
                                            &dt,
                                            pCountrySettings->ulDateFormat,
@@ -1158,7 +1159,7 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
                                              // drive letter:
                                              c,
                                              // free KB:
-                                             pstrhThousandsULong(szTemp3,
+                                             pnlsThousandsULong(szTemp3,
                                                                  (l + 512) / 1024,
                                                                  pCountrySettings->cThousands));
                             }
@@ -1393,7 +1394,7 @@ VOID MwgtPaint(HWND hwnd,
             DATETIME    DateTime;
 
             DosGetDateTime(&DateTime);
-            pstrhDateTime((pPrivate->ulType == MWGT_DATE) ? szPaint : NULL,
+            pnlsDateTime((pPrivate->ulType == MWGT_DATE) ? szPaint : NULL,
                           (pPrivate->ulType == MWGT_TIME) ? szPaint : NULL,
                           &DateTime,
                           pCountrySettings->ulDateFormat,
@@ -1411,7 +1412,7 @@ VOID MwgtPaint(HWND hwnd,
                //    ulLogicalSwapDrive = 8;
             if (Dos16MemAvail(&ulMem) == NO_ERROR)
             {
-                pstrhThousandsULong(szPaint,
+                pnlsThousandsULong(szPaint,
                                     ulMem / 1024,
                                     pCountrySettings->cThousands);
                 strcat(szPaint, " KB");

@@ -96,7 +96,7 @@
  *      sorting records by file name extension.
  *
  *      This one should work with any MINIRECORDCORE,
- *      not just WPS objects.
+ *      not just Desktop objects.
  */
 
 SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -200,7 +200,7 @@ SHORT EXPENTRY fnCompareExtFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE p
  *      comparison func for sort by name.
  *
  *      This one should work with any MINIRECORDCORE,
- *      not just WPS objects.
+ *      not just Desktop objects.
  */
 
 SHORT EXPENTRY fnCompareName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)

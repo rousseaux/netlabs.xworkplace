@@ -51,44 +51,8 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = \
-!ifdef ANIMATED_MOUSE_POINTERS
-       $(OUTPUTDIR)\anand.obj \
-       $(OUTPUTDIR)\anos2ptr.obj \
-       $(OUTPUTDIR)\anwani.obj \
-       $(OUTPUTDIR)\anwcur.obj \
-!endif
-#       $(OUTPUTDIR)\xdebug.obj \
-#       $(OUTPUTDIR)\xdebug_folder.obj \
-       $(OUTPUTDIR)\xcenter.obj \
-       $(OUTPUTDIR)\xclslist.obj \
-       $(OUTPUTDIR)\xfdataf.obj \
-       $(OUTPUTDIR)\xfdesk.obj \
-       $(OUTPUTDIR)\xfdisk.obj \
-       $(OUTPUTDIR)\xfldr.obj \
-       $(OUTPUTDIR)\xfobj.obj \
-       $(OUTPUTDIR)\xfont.obj \
-       $(OUTPUTDIR)\xfontfile.obj \
-       $(OUTPUTDIR)\xfontobj.obj \
-       $(OUTPUTDIR)\xfpgmf.obj \
-       $(OUTPUTDIR)\xfstart.obj \
-       $(OUTPUTDIR)\xfsys.obj \
-       $(OUTPUTDIR)\xfwps.obj \
-       $(OUTPUTDIR)\xmmcdplay.obj \
-       $(OUTPUTDIR)\xmmvolume.obj \
-       $(OUTPUTDIR)\xtrash.obj \
-       $(OUTPUTDIR)\xtrashobj.obj \
-       $(OUTPUTDIR)\xwpadmin.obj \
-       $(OUTPUTDIR)\xwpfsys.obj \
-       $(OUTPUTDIR)\xwpkeybd.obj \
-       $(OUTPUTDIR)\xwpmedia.obj \
-       $(OUTPUTDIR)\xwpmouse.obj \
-       $(OUTPUTDIR)\xwppgm.obj \
-       $(OUTPUTDIR)\xwpscreen.obj \
-       $(OUTPUTDIR)\xwpsetup.obj \
-       $(OUTPUTDIR)\xwpshadow.obj \
-       $(OUTPUTDIR)\xwpsound.obj \
-       $(OUTPUTDIR)\xwpstring.obj
+!include ..\..\objects.in
+OBJS = $(XFLDR_OBJS_CLASSES)
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -105,10 +69,10 @@ all:   \
 !endif
 
 callmainmake:
-    @echo $(MAKEDIR)\makefile: Recursing to main makefile.
+    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
     @nmake
-    @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
+    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
 # "nmake dep" gets called from src\makefile if nmake dep
@@ -132,7 +96,7 @@ dep:
 #    the OUTPUTDIR variable (set above).
 
 .c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
         $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c

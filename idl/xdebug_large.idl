@@ -16,7 +16,7 @@
  *      a)  Register DbgObject with the WPS class list.
  *      b)  Replace WPObject with DbgObject.
  *
- *      After the next WPS restart, you'll see an additional
+ *      After the next Desktop restart, you'll see an additional
  *      "Debug" menu item in all object context menus, where
  *      you can enable debugging.
  *

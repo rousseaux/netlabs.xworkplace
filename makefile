@@ -70,97 +70,20 @@
 # VARIABLES
 # ---------
 
+!include objects.in
+
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+
 # The OBJS macro contains all the .OBJ files which have been
 # created from the files in MAIN\.
 OBJS = \
-# code from classes\
-$(XWP_OUTPUT_ROOT)\xcenter.obj \
-$(XWP_OUTPUT_ROOT)\xclslist.obj \
-$(XWP_OUTPUT_ROOT)\xfdataf.obj \
-$(XWP_OUTPUT_ROOT)\xfdesk.obj \
-$(XWP_OUTPUT_ROOT)\xfdisk.obj \
-$(XWP_OUTPUT_ROOT)\xfldr.obj \
-$(XWP_OUTPUT_ROOT)\xfont.obj \
-$(XWP_OUTPUT_ROOT)\xfontfile.obj \
-$(XWP_OUTPUT_ROOT)\xfontobj.obj \
-$(XWP_OUTPUT_ROOT)\xfobj.obj \
-$(XWP_OUTPUT_ROOT)\xfpgmf.obj \
-$(XWP_OUTPUT_ROOT)\xfsys.obj \
-$(XWP_OUTPUT_ROOT)\xfwps.obj \
-$(XWP_OUTPUT_ROOT)\xfstart.obj \
-$(XWP_OUTPUT_ROOT)\xmmcdplay.obj \
-$(XWP_OUTPUT_ROOT)\xmmvolume.obj \
-$(XWP_OUTPUT_ROOT)\xtrash.obj \
-$(XWP_OUTPUT_ROOT)\xtrashobj.obj \
-$(XWP_OUTPUT_ROOT)\xwpadmin.obj \
-$(XWP_OUTPUT_ROOT)\xwpfsys.obj \
-$(XWP_OUTPUT_ROOT)\xwpkeybd.obj \
-$(XWP_OUTPUT_ROOT)\xwpmedia.obj \
-$(XWP_OUTPUT_ROOT)\xwpmouse.obj \
-$(XWP_OUTPUT_ROOT)\xwppgm.obj \
-$(XWP_OUTPUT_ROOT)\xwpsetup.obj \
-$(XWP_OUTPUT_ROOT)\xwpscreen.obj \
-$(XWP_OUTPUT_ROOT)\xwpsound.obj \
-$(XWP_OUTPUT_ROOT)\xwpstring.obj \
-# code from shared \
-$(XWP_OUTPUT_ROOT)\center.obj \
-$(XWP_OUTPUT_ROOT)\classes.obj \
-$(XWP_OUTPUT_ROOT)\cnrsort.obj \
-$(XWP_OUTPUT_ROOT)\common.obj \
-$(XWP_OUTPUT_ROOT)\contentmenus.obj \
-$(XWP_OUTPUT_ROOT)\init.obj \
-$(XWP_OUTPUT_ROOT)\notebook.obj \
-$(XWP_OUTPUT_ROOT)\kernel.obj \
-$(XWP_OUTPUT_ROOT)\xsetup.obj \
-$(XWP_OUTPUT_ROOT)\wpsh.obj \
-# code from config\
-$(XWP_OUTPUT_ROOT)\cfgsys.obj \
-$(XWP_OUTPUT_ROOT)\classlst.obj \
-$(XWP_OUTPUT_ROOT)\drivdlgs.obj \
-$(XWP_OUTPUT_ROOT)\drivers.obj \
-$(XWP_OUTPUT_ROOT)\fonts.obj \
-$(XWP_OUTPUT_ROOT)\hookintf.obj \
-$(XWP_OUTPUT_ROOT)\pagemage.obj \
-#$(XWP_OUTPUT_ROOT)\partitions.obj \
-$(XWP_OUTPUT_ROOT)\sound.obj \
-# code from filesys\
-$(XWP_OUTPUT_ROOT)\desktop.obj \
-$(XWP_OUTPUT_ROOT)\disk.obj \
-$(XWP_OUTPUT_ROOT)\fdrhotky.obj \
-$(XWP_OUTPUT_ROOT)\fdrnotebooks.obj \
-$(XWP_OUTPUT_ROOT)\fdrsort.obj \
-$(XWP_OUTPUT_ROOT)\fdrsubclass.obj \
-$(XWP_OUTPUT_ROOT)\fdrmenus.obj \
-$(XWP_OUTPUT_ROOT)\fhandles.obj \
-$(XWP_OUTPUT_ROOT)\filedlg.obj \
-$(XWP_OUTPUT_ROOT)\fileops.obj \
-$(XWP_OUTPUT_ROOT)\filesys.obj \
-$(XWP_OUTPUT_ROOT)\filetype.obj \
-$(XWP_OUTPUT_ROOT)\folder.obj \
-$(XWP_OUTPUT_ROOT)\fops_bottom.obj \
-$(XWP_OUTPUT_ROOT)\fops_top.obj \
-$(XWP_OUTPUT_ROOT)\object.obj \
-$(XWP_OUTPUT_ROOT)\program.obj \
-$(XWP_OUTPUT_ROOT)\refresh.obj \
-$(XWP_OUTPUT_ROOT)\statbars.obj \
-$(XWP_OUTPUT_ROOT)\trash.obj \
-$(XWP_OUTPUT_ROOT)\xthreads.obj \
-# code from media\
-$(XWP_OUTPUT_ROOT)\mmcdplay.obj \
-$(XWP_OUTPUT_ROOT)\mmhelp.obj \
-$(XWP_OUTPUT_ROOT)\mmthread.obj \
-$(XWP_OUTPUT_ROOT)\mmvolume.obj \
-# code from startshut\
-$(XWP_OUTPUT_ROOT)\apm.obj \
-$(XWP_OUTPUT_ROOT)\archives.obj \
-$(XWP_OUTPUT_ROOT)\shutdown.obj \
-$(XWP_OUTPUT_ROOT)\winlist.obj \
-# code from xcenter\
-$(XWP_OUTPUT_ROOT)\ctr_engine.obj \
-$(XWP_OUTPUT_ROOT)\ctr_notebook.obj \
-$(XWP_OUTPUT_ROOT)\w_objbutton.obj \
-$(XWP_OUTPUT_ROOT)\w_pulse.obj \
-$(XWP_OUTPUT_ROOT)\w_tray.obj
+$(XFLDR_OBJS_CLASSES) \
+$(XFLDR_OBJS_SHARED) \
+$(XFLDR_OBJS_CONFIG) \
+$(XFLDR_OBJS_FILESYS) \
+$(XFLDR_OBJS_MEDIA) \
+$(XFLDR_OBJS_STARTSHUT) \
+$(XFLDR_OBJS_XCENTER)
 
 OBJS_ANICLASSES = $(XWP_OUTPUT_ROOT)\anand.obj $(XWP_OUTPUT_ROOT)\anos2ptr.obj $(XWP_OUTPUT_ROOT)\anwani.obj $(XWP_OUTPUT_ROOT)\anwcur.obj
 OBJS_ANICONVERT = $(XWP_OUTPUT_ROOT)\cursor.obj $(XWP_OUTPUT_ROOT)\pointer.obj $(XWP_OUTPUT_ROOT)\script.obj
@@ -382,24 +305,31 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !ifdef DYNAMIC_TRACE
-        @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
+        @echo $(MAKEDIR)\makefile [$@]: Creating TRACE files for $(@B).dll
         maptsf $(@B).map /MAJOR=255 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
         trcust $(@B).tsf /I /L=bin\$(@B).dll /node /M=$(@B).map
-        @echo $(MAKEDIR)\makefile: Done creating TRACE files for $(@B).dll
+        @echo $(MAKEDIR)\makefile [$@]: Done creating TRACE files for $(@B).dll
         cmd.exe /c copy $(@B).tdf $(XWPRUNNING)\bin
         cmd.exe /c del $(@B).tdf
         cmd.exe /c copy TRC00FF.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
         cmd.exe /c del TRC00FF.TFF
 !endif
 
-# update DEF file if buildlevel has changed
-src\shared\xwp.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace main WPS classes module"
+MODDEFFILE = \
+!ifdef XWPLITE
+src\shared\xwp_lite.def
+!else
+src\shared\xwp.def
+!endif
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
-        @echo $(MAKEDIR)\makefile: Linking $@
+# update DEF file if buildlevel has changed
+src\shared\xwp.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) main module"
+
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) $(MODDEFFILE) objects.in
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) @<<
-/OUT:$@ src\shared\xwp.def $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
+/OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -423,11 +353,11 @@ $(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
-src\shared\xwpres.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace resources module"
+src\shared\xwpres.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) resources module"
 
-$(MODULESDIR)\xwpres.dll: $(XWP_OUTPUT_ROOT)\dummyfont.obj src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\xwpres.res
-        @echo $(MAKEDIR)\makefile: Linking $@
+$(MODULESDIR)\xwpres.dll: src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\xwpres.res $(XWP_OUTPUT_ROOT)\dummyfont.obj
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK_ALWAYSPACK) /OUT:$@ src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\dummyfont.obj
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -447,11 +377,11 @@ $(MODULESDIR)\xwpres.dll: $(XWP_OUTPUT_ROOT)\dummyfont.obj src\shared\xwpres.def
 #
 
 # update DEF file if buildlevel has changed
-src\widgets\winlist.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter window-list plugin DLL"
+src\widgets\winlist.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) window-list plugin DLL"
 
 $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def $(WINLISTOBJS)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -474,11 +404,11 @@ $(XWPRUNNING)\plugins\xcenter\diskfree.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\w_diskfree.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter diskfree plugin DLL"
+src\widgets\w_diskfree.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) diskfree plugin DLL"
 
 $(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\w_diskfree.def @<<
 $(DISKFREEOBJS)
 <<
@@ -503,11 +433,11 @@ $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\monitors.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter monitors plugin DLL"
+src\widgets\monitors.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) monitors plugin DLL"
 
 $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(MONITOROBJS)
 <<
@@ -532,11 +462,11 @@ $(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\sentinel.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter memory sentinel plugin DLL"
+src\widgets\sentinel.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) memory sentinel plugin DLL"
 
 $(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def $(SENTINELOBJS)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -559,11 +489,11 @@ $(XWPRUNNING)\plugins\xcenter\xwHealth.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\xwHealth.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter xwHealth plugin DLL"
+src\widgets\xwHealth.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) xwHealth plugin DLL"
 
 $(MODULESDIR)\xwHealth.dll: $(HEALTHOBJS) src\widgets\$(@B).def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(HEALTHOBJS)
 <<
@@ -588,11 +518,11 @@ $(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\sample.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter sample plugin DLL"
+src\widgets\sample.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) sample plugin DLL"
 
 $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(SAMPLEOBJS)
 <<
@@ -613,11 +543,11 @@ $(SAMPLEOBJS)
 #
 
 # update DEF file if buildlevel has changed
-src\widgets\d_cdfs.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "CDFS.IFS driver plugin DLL"
+src\widgets\d_cdfs.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) CDFS.IFS driver plugin DLL"
 
 $(MODULESDIR)\d_cdfs.dll: $(D_CDFSOBJS) src\widgets\$(@B).def
-        @echo $(MAKEDIR)\makefile: Linking $@
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(D_CDFSOBJS)
 <<
@@ -641,12 +571,12 @@ $(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
         cmd.exe /c copy $(MODULESDIR)\$(@B).fon $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
-src\shared\xwpfonts.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace bitmap fonts"
+src\shared\xwpfonts.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) bitmap fonts"
 
-$(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\dummyfont.obj $(XWP_OUTPUT_ROOT)\$(@B).res
-        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).fon
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(XWP_OUTPUT_ROOT)\dummyfont.obj
+$(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\$(@B).res
+        @echo $(MAKEDIR)\makefile [$@]: Linking $(MODULESDIR)\$(@B).fon
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def
         @cd $(MODULESDIR)
 # rename manually because otherwise the linker warns
 #        cmd.exe /c del $(@B).fon
@@ -674,7 +604,7 @@ $(MODULESDIR)\xdebug.dll: src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(XWP_OU
 
 dlgedit:
 # added (UM 99-10-24)
-    @echo $(MAKEDIR)\makefile: Calling DLGEDIT.EXE
+    @echo $(MAKEDIR)\makefile [$@]: Calling DLGEDIT.EXE
     @cd $(XWP_LANG_CODE)\dll
 # rebuild RES file in bin
     @nmake -nologo all "MAINMAKERUNNING=YES"
@@ -692,7 +622,7 @@ dlgedit:
 
 dlgedit049:
 # added V0.9.1 (99-12-19) [umoeller]
-    @echo $(MAKEDIR)\makefile: Calling DLGEDIT.EXE
+    @echo $(MAKEDIR)\makefile [$@]: Calling DLGEDIT.EXE
     @cd 049_de\dll
 # rebuild RES file in bin
     @nmake -nologo all "MAINMAKERUNNING=YES"
@@ -731,7 +661,7 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAP) 2> NUL]
 !endif
-    @echo $(MAKEDIR)\makefile: Now copying files to $(XWPRELEASE).
+    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
     $(COPY) release\* $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
@@ -794,7 +724,7 @@ release: really_all
 !if [@md $(XWPRELEASE_MAIN)\wav 2> NUL]
 !endif
     $(COPY) release\wav\* $(XWPRELEASE_MAIN)\wav
-    @echo $(MAKEDIR)\makefile: Done copying files.
+    @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 # 8) plugins
 !if [@md $(XWPRELEASE_MAIN)\plugins 2> NUL]
 !endif
@@ -828,7 +758,7 @@ release: really_all
     $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
     $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
     $(COPY) include\config\drivdlgs.h $(XWPRELEASE_MAIN)\toolkit\config
-    @echo $(MAKEDIR)\makefile: Done copying files.
+    @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 # now go shrink executables V0.9.13 (2001-06-17) [umoeller]
 !ifndef XWP_DEBUG
 !ifdef LXLITEPATH
@@ -849,7 +779,7 @@ $(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll \
 #
 
 warpin: release
-    @echo $(MAKEDIR)\makefile: Building WPI from $(XWPRELEASE).
+    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
     cd $(XWPRELEASE)
     cd ..
     warpin_001.cmd
@@ -862,7 +792,7 @@ warpin: release
 #
 
 transfer: warpin
-    @echo $(MAKEDIR)\makefile: Transferring WPI from $(XWPRELEASE).
+    @echo $(MAKEDIR)\makefile [$@]: Transferring WPI from $(XWPRELEASE).
     cd $(XWPRELEASE)
     cd ..
     sendfile laptop xwp-temp.wpi D:\install\xwp-transferred.wpi

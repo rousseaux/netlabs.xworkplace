@@ -83,12 +83,14 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -2110,7 +2112,7 @@ BOOL CheckIfPresent(XCenter *somSelf,
  *      implementation for DM_DRAGOVER in fnwpXCenterMainClient
  *      and for the tray widget as well.
  *
- *      Handles WPS objects being dragged over the client.
+ *      Handles Desktop objects being dragged over the client.
  *
  *@@changed V0.9.9 (2001-03-10) [umoeller]: target emphasis was never drawn
  *@@changed V0.9.9 (2001-03-10) [umoeller]: made target emphasis clearer
@@ -2209,7 +2211,7 @@ MRESULT ctrpDragOver(HWND hwndClient,
 
                 if (pll)
                 {
-                    // WPS object(s) being dragged over client:
+                    // Desktop object(s) being dragged over client:
                     fDrawTargetEmph = TRUE;
                     lstFree(&pll);
                 }
@@ -2282,7 +2284,7 @@ MRESULT ctrpDragOver(HWND hwndClient,
  *      implementation for DM_DROP in fnwpXCenterMainClient
  *      and for the tray widget as well.
  *
- *      Creates object button widgets for WPS objects dropped
+ *      Creates object button widgets for Desktop objects dropped
  *      on the client.
  *
  *@@changed V0.9.9 (2001-02-08) [umoeller]: fixed wrong leftmost widget add
@@ -2714,15 +2716,16 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                         if (pWidget->hwndWidget)
                         {
                             // V0.9.13 (2001-06-09) [pr]
-                            PSZ pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                      "PM_SystemFonts",
-                                                                      "Menus",
-                                                                      NULL);
-                            if (!pszStdMenuFont)
+                            PSZ pszStdMenuFont;
+                            if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                        PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                        PMINIKEY_MENUSFONT, // "Menus",
+                                                                        NULL)))
                                 pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                      "PM_SystemFonts",
-                                                                      "DefaultFont",
+                                                                      PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                      PMINIKEY_DEFAULTFONT, // "DefaultFont",
                                                                       NULL);
+                                        // @@todo this still doesn't work on eCS
 
                             // store view data in widget's QWL_USER,
                             // in case the widget forgot; but this won't help
@@ -3345,6 +3348,7 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.10 (2001-04-11) [umoeller]: added WM_HITTEST, as requested by Alessandro Cantatore
  *@@changed V0.9.13 (2001-06-19) [umoeller]: extracted FrameDestroy
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added WM_QUERYFRAMEINFO, which returns 0
+ *@@changed V0.9.16 (2001-10-02) [umoeller]: fixed 100% CPU load while mouse was over disabled XCenter (settings dlg etc)
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3381,6 +3385,10 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                         WinPostMsg(hwnd, WM_CLOSE, 0, 0);
                                 // changed V0.9.9 (2001-02-06) [umoeller]
                     break;
+
+                    default:
+                        fCallDefault = TRUE;
+                                // was missing V0.9.16 (2001-10-02) [umoeller]
                 }
             break;
 
@@ -3400,12 +3408,46 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                         // after this pXCenterData is INVALID!
             break;
 
+            case WM_QUERYFOCUSCHAIN:
+            {
+                PCSZ pcsz;
+                switch (SHORT1FROMMP(mp1))
+                {
+                    case QFC_NEXTINCHAIN: pcsz = "QFC_NEXTINCHAIN"; break;
+
+                    case QFC_ACTIVE: pcsz = "QFC_ACTIVE"; break;
+
+                    case QFC_FRAME: pcsz = "QFC_FRAME"; break;
+
+                    case QFC_SELECTACTIVE: pcsz = "QFC_SELECTACTIVE"; break;
+
+                    case QFC_PARTOFCHAIN: pcsz = "QFC_PARTOFCHAIN"; break;
+
+                    default:
+                        pcsz = "unknown mp1";
+                }
+
+                if (SHORT1FROMMP(mp1) == QFC_ACTIVE)
+                    mrc = 0;            // not supported
+                else
+                {
+                    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                    mrc = pXCenterData->pfnwpFrameOrig(hwnd, msg, mp1, mp2);
+                }
+
+                _Pmpf((__FUNCTION__ ": WM_QUERYFOCUSCHAIN 0x%lX", hwnd));
+                _Pmpf(("   %d (%s) --> 0x%lX",
+                        mp1,
+                        pcsz,
+                        mrc));
+            break; }
+
             /*
              * WM_ADJUSTWINDOWPOS:
              *      we never want to become active.
              */
 
-            case WM_ADJUSTWINDOWPOS:
+            /* case WM_ADJUSTWINDOWPOS:
             {
                 PSWP pswp = (PSWP)mp1;
                 if (pswp->fl & SWP_ACTIVATE)
@@ -3415,7 +3457,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 }
                 mrc = (MRESULT)AWP_DEACTIVATE;
             }
-            break;
+            break; */       // @@disabled V0.9.16 (2001-10-02) [umoeller]
 
             /*
              * WM_QUERYFRAMEINFO:
@@ -3423,11 +3465,11 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              *added V0.9.14 (2001-08-21) [umoeller]
              */
 
-            case WM_QUERYFRAMEINFO:
+            /* case WM_QUERYFRAMEINFO:
                 mrc = (MPARAM)(0);
                         // default frame window proc returns
                         // FI_FRAME | FI_OWNERHIDE | FI_NOMOVEWITHOWNER | FI_ACTIVATEOK
-            break;
+            break; */ // @@disabled V0.9.16 (2001-10-02) [umoeller]
 
             /*
              * WM_FOCUSCHANGE:
@@ -3463,14 +3505,14 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              *      button depressed.
              */
 
-            case WM_FOCUSCHANGE:
+            /* case WM_FOCUSCHANGE:
                 // do nothing!
                 // DosBeep(100, 100);
             break;
 
             case WM_ADJUSTFRAMEPOS:
                 // do NOTHING!
-            break;
+            break; */ // @@disabled V0.9.16 (2001-10-02) [umoeller]
 
             /*
              * WM_HITTEST:
@@ -3506,6 +3548,13 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_ACTIVATE:
+                // test added V0.9.16 (2001-10-02) [umoeller]
+                _Pmpf((__FUNCTION__ ": WM_ACTIVATE %d", mp1));
+                if (mp1)
+                    DosBeep(5000, 30);
+                else
+                    DosBeep(3000, 30);
+                fCallDefault = TRUE;
             break;
 
             /*
@@ -3535,8 +3584,13 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_MOUSEMOVE:
-                ctrpReformat((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
-                             0);        // just show
+                // do this only if the frame is actually enabled;
+                // we got a 100% CPU load if the mouse was over the
+                // XCenter while a settings dialog was open...
+                // V0.9.16 (2001-10-02) [umoeller]
+                if (WinIsWindowEnabled(hwnd))
+                    ctrpReformat((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
+                                 0);        // just show
                 fCallDefault = TRUE;
             break;
 
@@ -3547,13 +3601,11 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_TIMER:
-            {
                 if (!FrameTimer(hwnd,
                                 (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
                                 (USHORT)mp1))
                     // not processed:
                     fCallDefault = TRUE;
-            }
             break;
 
             /*
@@ -4290,10 +4342,10 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
              *      See WM_FOCUSCHANGE in fnwpXCenterMainFrame for details.
              */
 
-            case WM_FOCUSCHANGE:
+            /* case WM_FOCUSCHANGE:
                 // do nothing!
                 // DosBeep(200, 100);
-            break;
+            break; */ // @@disabled V0.9.16 (2001-10-02) [umoeller]
 
             /*
              * WM_MOUSEMOVE:
@@ -6660,7 +6712,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                 // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                                   G_pcszXCenter,
+                                   ENTITY_XCENTER,
                                    MIS_TEXT, 0);
             }
 
@@ -6757,9 +6809,9 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
     BOOL fCreated = FALSE;
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)ptiMyself->ulData;
 
-    #ifdef __DEBUG__
+    /* #ifdef __DEBUG__
         DosBeep(3000, 30);
-    #endif
+    #endif */
 
     if (pXCenterData)
     {
@@ -6788,7 +6840,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                     FALSE);      // no auto-free
 
             pGlobals->pCountrySettings = &G_CountrySettings;
-            prfhQueryCountrySettings(&G_CountrySettings);
+            nlsQueryCountrySettings(&G_CountrySettings);
 
             pXCenterData->cxFrame = winhQueryScreenCX();
 
@@ -6842,9 +6894,9 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
         }
         CATCH(excpt1) {} END_CATCH();
 
-        // in any case, post the event semaphore
-        // to notify thread 1 that we're done; this is
-        // waiting in XCenter::wpOpen to return the
+        // in any case (even if we crashed), post the event
+        // semaphore to notify thread 1 that we're done; this
+        // is waiting in XCenter::wpOpen to return the
         // frame window handle
         DosPostEventSem(pXCenterData->hevRunning);
 
@@ -6903,17 +6955,15 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                 pXCenterData->ViewItem.view,
                                             // has been set already, so we pass this in
                                 pGlobals->hwndFrame,
-                                G_pcszXCenter);
+                                ENTITY_XCENTER);
 
                 // subclass the frame AGAIN (the WPS has subclassed it
                 // with wpRegisterView)
-                pXCenterData->pfnwpFrameOrig = WinSubclassWindow(pGlobals->hwndFrame,
-                                                                 fnwpXCenterMainFrame);
-                if (pXCenterData->pfnwpFrameOrig)
+                if (pXCenterData->pfnwpFrameOrig = WinSubclassWindow(pGlobals->hwndFrame,
+                                                                     fnwpXCenterMainFrame))
                 {
-                    QMSG qmsg;
-
                     // subclassing succeeded:
+                    QMSG qmsg;
 
                     // register tooltip class
                     ctlRegisterTooltip(pGlobals->hab);
@@ -7045,9 +7095,9 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
     } // if (pXCenterData)
 
-    #ifdef __DEBUG__
+    /* #ifdef __DEBUG__
         DosBeep(1500, 30);
-    #endif
+    #endif */
 
     // exit! end of thread!
 }
@@ -7126,7 +7176,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                     if (thrCreate(NULL,
                                   ctrp_fntXCenter,
                                   &_tidRunning,     // V0.9.12 (2001-05-20) [umoeller]
-                                  G_pcszXCenter,
+                                  ENTITY_XCENTER,
                                   THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
                                   (ULONG)pXCenterData))
                     {

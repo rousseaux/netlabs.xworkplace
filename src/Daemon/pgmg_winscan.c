@@ -340,7 +340,7 @@ BOOL pgmwWinInfosEqual(PPGMGWININFO pWinInfo1,
 
 VOID pgmwScanAllWindows(VOID)
 {
-    _Pmpf(("Entering pgmwScanAllWindows..."));
+    // _Pmpf(("Entering pgmwScanAllWindows..."));
 
     if (pgmwLock())
     {
@@ -391,7 +391,7 @@ VOID pgmwScanAllWindows(VOID)
                (MPARAM)FALSE,       // delayed
                0);
 
-    _Pmpf(("Done with pgmwScanAllWindows."));
+    // _Pmpf(("Done with pgmwScanAllWindows."));
 }
 
 /*

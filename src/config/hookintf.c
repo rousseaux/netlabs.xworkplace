@@ -407,15 +407,13 @@ VOID hifEnableObjectHotkeys(BOOL fEnable)
 
 PVOID hifQueryObjectHotkeys(PULONG pcHotkeys)   // out: hotkey count (req.)
 {
-    PGLOBALHOTKEY   pHotkeys = NULL;
+    PGLOBALHOTKEY   pHotkeys;
     ULONG           cbHotkeys = 0;
 
-    pHotkeys = (PGLOBALHOTKEY)prfhQueryProfileData(HINI_USER,
-                                                   INIAPP_XWPHOOK,
-                                                   INIKEY_HOOK_HOTKEYS,
-                                                   &cbHotkeys);
-
-    if (pHotkeys)
+    if (pHotkeys = (PGLOBALHOTKEY)prfhQueryProfileData(HINI_USER,
+                                                       INIAPP_XWPHOOK,
+                                                       INIKEY_HOOK_HOTKEYS,
+                                                       &cbHotkeys))
         // found: calc no. of items in array
         *pcHotkeys = cbHotkeys / sizeof(GLOBALHOTKEY);
 

@@ -124,7 +124,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
-#include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
+#include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
@@ -165,8 +165,12 @@ static XFolder      *G_pConfigFolder = NULL;
 
 // roots of linked lists for favorite/quick-open folders
 // these hold plain WPObject pointers, no auto-free
-OBJECTLIST          G_llFavoriteFolders = {0},
-                    G_llQuickOpenFolders = {0};
+#ifndef __NOFOLDERCONTENTS__
+OBJECTLIST          G_llFavoriteFolders = {0};
+#endif
+#ifndef __NOQUICKOPEN__
+OBJECTLIST          G_llQuickOpenFolders = {0};
+#endif
                             // these two are exported in folder.h
 
 /* ******************************************************************
@@ -832,11 +836,15 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
     // XFolderData     *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
+#ifndef __NOFOLDERCONTENTS__
     return (objAddToList(somSelf,
                          &G_llFavoriteFolders,
                          fInsert,
                          INIKEY_FAVORITEFOLDERS,
                          OBJLIST_FAVORITEFOLDER));
+#else
+    return FALSE;
+#endif
 }
 
 /*
@@ -852,14 +860,18 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
     // XFolderData     *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
+#ifndef __NOFOLDERCONTENTS__
     return (objIsOnList(somSelf,
                         &G_llFavoriteFolders));
+#else
+    return FALSE;
+#endif
 }
 
 /*
  *@@ xwpSetQuickOpen:
  *      if fQuickOpen == TRUE, somSelf will automatically be
- *      populated at WPS bootup.
+ *      populated at Desktop startup.
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
  *@@changed V0.9.1: made folder list code generic in folder.c
@@ -872,11 +884,15 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
     // XFolderData     *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
+#ifndef __NOQUICKOPEN__
     return (objAddToList(somSelf,
                          &G_llQuickOpenFolders,
                          fQuickOpen,
                          INIKEY_QUICKOPENFOLDERS,
                          OBJLIST_QUICKOPENFOLDER));
+#else
+    return FALSE;
+#endif
 }
 
 /*
@@ -892,8 +908,12 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
     // XFolderData     *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
+#ifndef __NOQUICKOPEN__
     return (objIsOnList(somSelf,
                         &G_llQuickOpenFolders));
+#else
+    return FALSE;
+#endif
 }
 
 /*
@@ -1032,8 +1052,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
                     CHAR    szTemp[20] = "";
                     // default value set: get the default value
                     PrfQueryProfileString(HINI_USER,
-                                          "PM_Workplace",
-                                          "FolderMenuBar",
+                                          (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                          (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
                                           "ON",         // V0.9.9 (2001-03-27) [umoeller]
                                           szTemp,
                                           sizeof(szTemp));
@@ -1266,7 +1286,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDR1;
+    pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_SETTINGS_FLDR1; V0.9.16 (2001-09-29) [umoeller]
     pcnbp->ulPageID = SP_XFOLDER_FLDR;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = "~XFolder";
@@ -1285,42 +1305,29 @@ SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
  *      See XFldObject::xwpQuerySetup2 for details.
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
-                                           PSZ pszSetupString,
-                                           ULONG cbSetupString)
+SOM_Scope BOOL  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf, PVOID pstrSetup)
 {
-    ULONG ulReturn = 0;
-    // method pointer for parent class
-    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
-
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpQuerySetup2");
 
     // call XFolder implementation
-    ulReturn = fdrQuerySetup(somSelf, pszSetupString, cbSetupString);
-
-    // manually resolve parent method
-    pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
-                                                         _somGetParent(_XFolder),
-                                                         "xwpQuerySetup2");
-    if (pfn_xwpQuerySetup2)
+    if (fdrQuerySetup(somSelf, pstrSetup))
     {
-        // now call parent method
-        if ( (pszSetupString) && (cbSetupString) )
-            // string buffer already specified:
-            // tell parent to append to that string
-            ulReturn += pfn_xwpQuerySetup2(somSelf,
-                                           pszSetupString + ulReturn, // append to existing
-                                           cbSetupString - ulReturn); // remaining size
-        else
-            // string buffer not yet specified: return length only
-            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+        // manually resolve parent method
+        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
+        if (pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(
+                                                         somSelf,
+                                                         _somGetParent(_XFolder),
+                                                         "xwpQuerySetup2"))
+        {
+            return (pfn_xwpQuerySetup2(somSelf, pstrSetup));
+        }
     }
 
-    return (ulReturn);
+    return (FALSE);
 }
 
 /*
@@ -2398,8 +2405,9 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
          && (!cmnIsADesktop(somSelf))
        )
     {
-        if (    (pGlobalSettings->fFdrDefaultDoc)
-             && (pGlobalSettings->fFdrDefaultDocView)
+#ifndef __NOFDRDEFAULTDOCS__
+        if (    (pGlobalSettings->_fFdrDefaultDoc)
+             && (pGlobalSettings->_fFdrDefaultDocView)
            )
         {
             // XFolderData *somThis = XFolderGetData(somSelf);
@@ -2410,6 +2418,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // (same as in mnuModifyDataFilePopupMenu)
                 ulDefaultView = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC;
         }
+#endif
 
         // _Pmpf((__FUNCTION__ "1: default view is %u", ulDefaultView));
 
@@ -2567,11 +2576,12 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                     param));
     #endif
 
+#ifndef __NOFDRDEFAULTDOCS__
     // default document support
     if (ulView == OPEN_DEFAULT)
     {
-        if (    (pGlobalSettings->fFdrDefaultDoc)
-             && (pGlobalSettings->fFdrDefaultDocView)
+        if (    (pGlobalSettings->_fFdrDefaultDoc)
+             && (pGlobalSettings->_fFdrDefaultDocView)
              && (!cmnIsADesktop(somSelf))
            )
         {
@@ -2588,6 +2598,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
             _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
     }
     else
+#endif
     {
         // not default document:
         TRY_LOUD(excpt1)
@@ -2805,13 +2816,17 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile1Page");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
     {
+#endif
         return (fsysInsertFilePages(somSelf,
                                     hwndNotebook));
+#ifndef __ALWAYSREPLACEFILEPAGE__
     }
     else
         return (XFolder_parent_WPFolder_wpAddFile1Page(somSelf, hwndNotebook));
+#endif
 }
 
 /*
@@ -2834,10 +2849,14 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile2Page");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
+#endif
         return (SETTINGS_PAGE_REMOVED);
+#ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFolder_parent_WPFolder_wpAddFile2Page(somSelf, hwndNotebook));
+#endif
 }
 
 /*
@@ -2860,10 +2879,14 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile3Page");
 
-    if (pGlobalSettings->fReplaceFilePage)
+#ifndef __ALWAYSREPLACEFILEPAGE__
+    if (cmnIsFeatureEnabled(ReplaceFilePage))
+#endif
         return (SETTINGS_PAGE_REMOVED);
+#ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFolder_parent_WPFolder_wpAddFile3Page(somSelf, hwndNotebook));
+#endif
 }
 
 /*
@@ -3645,10 +3668,14 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryFavoriteFolder");
 
+#ifndef __NOFOLDERCONTENTS__
     return (objEnumList(&G_llFavoriteFolders,
                         pFolder,
                         INIKEY_FAVORITEFOLDERS,
                         OBJLIST_FAVORITEFOLDER));
+#else
+    return NULL;
+#endif
 }
 
 /*
@@ -3671,10 +3698,14 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryQuickOpenFolder");
 
+#ifndef __NOQUICKOPEN__
     return (objEnumList(&G_llQuickOpenFolders,
                         pFolder,
                         INIKEY_QUICKOPENFOLDERS,
                         OBJLIST_QUICKOPENFOLDER));
+#else
+    return NULL;
+#endif
 }
 
 /*
@@ -3696,10 +3727,11 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
 
     if (doshIsWarp4())
     {
-        PSZ psz = prfhQueryProfileData(HINI_USER,
-                                       "PM_Workplace", "FolderMenuBar",
-                                       NULL);
-        if (psz)
+        PSZ psz;
+        if (psz = prfhQueryProfileData(HINI_USER,
+                                       WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                       WPINIKEY_MENUBAR, // "FolderMenuBar",
+                                       NULL))
         {
             if (strcmp(psz, "OFF") != 0)
                 brc = TRUE;
@@ -3726,47 +3758,38 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
 
     M_XFolder_parent_M_WPFolder_wpclsInitData(somSelf);
 
+    if (krnClassInitialized(G_pcszXFolder))
     {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            if (pKernelGlobals->fXFolder == FALSE)
-            {
-                // first call:
+        // first call:
 
-                // store the class object in KERNELGLOBALS
-                pKernelGlobals->fXFolder = TRUE;
+        // initialize other data
+#ifndef __NOFOLDERCONTENTS__
+        lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
+        G_llFavoriteFolders.fLoaded = FALSE;
+#endif
+#ifndef __NOQUICKOPEN__
+        lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
+        G_llQuickOpenFolders.fLoaded = FALSE;
+#endif
 
-                // initialize other data
-                lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
-                G_llFavoriteFolders.fLoaded = FALSE;
+        fdrLoadFolderHotkeys();
 
-                lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
-                G_llQuickOpenFolders.fLoaded = FALSE;
+        // register class for supplementary object
+        // windows, which are created for each folder view
+        // which is opened
+        WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                         (PSZ)WNDCLASS_SUPPLOBJECT,    // class name
+                         (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
+                         0,       // class style
+                         4);      // extra window words for SUBCLASSEDFOLDERVIEW
+                                  // pointer (see fdrSubclassFolderView)
 
-                fdrLoadFolderHotkeys();
-
-                // register class for supplementary object
-                // windows, which are created for each folder view
-                // which is opened
-                WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                                 (PSZ)WNDCLASS_SUPPLOBJECT,    // class name
-                                 (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
-                                 0,       // class style
-                                 4);      // extra window words for SUBCLASSEDFOLDERVIEW
-                                          // pointer (see fdrSubclassFolderView)
-
-                // install local hook (fdrsubclass.c)
-                WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
-                           HMQ_CURRENT,
-                           HK_SENDMSG,
-                           (PFN)fdr_SendMsgHook,
-                           NULLHANDLE);  // module handle, can be 0 for local hook
-
-            }
-            krnUnlockGlobals();
-        }
+        // install local hook (fdrsubclass.c)
+        WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
+                   HMQ_CURRENT,
+                   HK_SENDMSG,
+                   (PFN)fdr_SendMsgHook,
+                   NULLHANDLE);  // module handle, can be 0 for local hook
     }
 }
 
@@ -3899,11 +3922,12 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
 {
     ULONG       ulrc;
     HMODULE     hmodIconsDLL = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconData");
 
-    if (pGlobalSettings->fReplaceIcons)
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnIsFeatureEnabled(IconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -3917,6 +3941,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
     }
 
     if (hmodIconsDLL == NULLHANDLE)
+#endif
         // icon replacements not allowed: call default
         ulrc = M_XFolder_parent_M_WPFolder_wpclsQueryIconData(somSelf,
                                                               pIconInfo);
@@ -3936,11 +3961,12 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
 {
     ULONG       ulrc;
     HMODULE     hmodIconsDLL = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconDataN");
 
-    if (pGlobalSettings->fReplaceIcons)
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnIsFeatureEnabled(IconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -3954,6 +3980,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
     }
 
     if (hmodIconsDLL == NULLHANDLE)
+#endif
         // icon replacements not allowed: call default
         ulrc = M_XFolder_parent_M_WPFolder_wpclsQueryIconDataN(somSelf,
                                                                pIconInfo,

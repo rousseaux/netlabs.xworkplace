@@ -79,7 +79,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
@@ -1267,6 +1267,32 @@ VOID PwgtPresParamChanged(HWND hwnd,
 }
 
 /*
+ *@@ PwgtButton1DblClick:
+ *      open the OS/2 Kernel object on double-click.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+VOID PwgtButton1DblClick(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
+    {
+        HOBJECT hobj;
+        if (hobj = WinQueryObject("<XWP_KERNEL>"))
+        {
+            WinOpenObject(hobj,
+                          2, // OPEN_SETTINGS,
+                          TRUE);
+        }
+    }
+}
+
+/*
  *@@ PwgtDestroy:
  *      implementation for WM_DESTROY.
  *
@@ -1332,6 +1358,8 @@ VOID PwgtDestroy(HWND hwnd)
  *      --  "FONT=point.face": presentation font.
  *
  *      --  "WIDTH=cx": widget display width.
+ *
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: added OS/2 Kernel open on double-click
  */
 
 MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1407,6 +1435,17 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_PRESPARAMCHANGED:
             PwgtPresParamChanged(hwnd, (ULONG)mp1);
+        break;
+
+        /*
+         *@@ WM_BUTTON1DBLCLK:
+         *      on double-click on clock, open
+         *      system clock settings.
+         */
+
+        case WM_BUTTON1DBLCLK:
+            PwgtButton1DblClick(hwnd);
+            mrc = (MPARAM)TRUE;     // message processed
         break;
 
         /*

@@ -14,47 +14,42 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
---  spacing lines are missing on trays
+--  XShutdown:
+    --  messes up desktops with multiple partitions
+    --  reboot hangs on "releasing filesystems" on some systems
+
+--  XCenter:
+    --  double-click on tray empty space produces click on icon too
+    --  crashes with DragText
+    --  spacing lines are missing on trays
+    --  if tray is on top, icons are moved down (xwpbug.jpg)
+    --  make obj button hatching optional
+    --  Folder content menus: data files associated
+        with VIO windows being started by selecting the data file icon
+        (a S3M file, by example) using some folder object on XCenter
+        (like the drive folder object) hang the system
+    --  dragging XCenter widget text files can hang WPS (check file types?)
 
 --  rc.exe fails on recreating icons.dll
 
 --  add spacing between icons in folder content menus
 
---  reboot hangs on "releasing filesystems" on some systems
-
---  startup folders:
-    run in a loop sometimes
-
 --  PageMage:
     window list comes up hidden on different screen
 
---  XCenter:
-    --  if tray is on top, icons are moved down (xwpbug.jpg)
-    --  make obj button hatching optional
-
 --  startup:
-    boot logo remains on screen forever (check startup sequence for whether
-    this might be lost somwhere)
+    --  boot logo remains on screen forever (check startup sequence for whether
+        this might be lost somwhere)
+    --  startup folders run in a loop sometimes
 
 --  drive not ready:
     reports garbage with TVFS drives
 
 --  Font folder:
-    >b8) Fontfolder: Deinstalling OS2\DLL\COURIERI.FON, HELVI.FON,
-    >TIMESI.FON (file not found errors), fails with error 30024.
-    >b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
-    >(i.e. non-sized)
-
---  XCenter pulse:
-    double click should open kernel obj
-
---  XCenter / folder content menus
-     The problem is complex and is related to data files associated
-    with VIO windows being started by selecting the data file icon
-    (a S3M file, by example) using some folder object on XCenter
-    (like the drive folder object).
-
---  dragging XCenter text files can hang WPS (check file types?)
+    b8) Fontfolder: Deinstalling OS2\DLL\COURIERI.FON, HELVI.FON,
+    TIMESI.FON (file not found errors), fails with error 30024.
+    b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
+    (i.e. non-sized)
 
 --  file exists dlg:
 
@@ -85,7 +80,18 @@ Ulrich M”ller.
 
     4) After screen lockup, hook stops working. OK, that one is easy to trace.
 
+    --  fix separator program objects in config folder
+
 --  if trash can doesn't exist, "drive not supported" comes up
+
+--  icons.cmd broken
+
+--  ext assocs:
+    >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object  associated with ZIP files, that has this string as parameter:
+    >"O:\TMP %*"
+    >to specify where to unpack and Zip file name. Using extended file type association, the script fails to open Zip files stored in folders containing spaces in their
+    >name. Maybe this problem is common to all objects that use "%*" as parameter...
+
 
 MINOR PROBLEMS
 --------------
@@ -148,10 +154,6 @@ prog start:
     --  cmd files not started minimized?
 
 XCenter:
-    --  in XCenter X->Run the lookup that finds the executable
-        hits on directories as well. Typing Netscape results
-        in E:\OS2\INSTALL\NETSCAPE here (which is a directory).
-
     --  dragging locale object over XCenter crashes WPS
 
     --  "show frame" setting on a per-widget basis
@@ -175,8 +177,6 @@ XCenter:
     --  add option for tooltip shadows.
 
     --  winlist: truncate titles with "..."
-
-    --  XCenter "Run": causes black screen with Win-OS/2 execs
 
     --  XCenter xbutton: suspend doesn't always work
 

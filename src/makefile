@@ -28,7 +28,8 @@ hook \
 Daemon
 
 !ifdef REALLYALL
-SUBDIRS = $(SUBDIRS) Drvchk Treesize NetscapeDDE Xfix
+SUBDIRS = $(SUBDIRS) Treesize NetscapeDDE Xfix
+# Drvchk
 !ifdef XWPSECURITY
 SUBDIRS = $(SUBDIRS) xwpsec_ring0 XWPShell
 !endif

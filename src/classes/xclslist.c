@@ -55,7 +55,7 @@
  *              standard PM programming comes in (see 2) below).
  *              To do this, XWPClassList::wpOpen calls cllCreateClassListView.
  *
- *              For WPS objects, there's additional work
+ *              For Desktop objects, there's additional work
  *              required to have the object's "use list" maintained.
  *              This requires calling wpAddToObjUseList and wpRegisterView.
  *              The view is added when WM_CREATE is received
@@ -513,15 +513,7 @@ SOM_Scope void  SOMLINK xwlistM_wpclsInitData(M_XWPClassList *somSelf)
 
     M_XWPClassList_parent_M_WPAbstract_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXWPClassList = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXWPClassList);
 }
 
 /*
@@ -586,4 +578,5 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryIconData(M_XWPClassList *somSelf,
 
     return (sizeof(ICONINFO));
 }
+
 

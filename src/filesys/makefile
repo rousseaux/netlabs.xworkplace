@@ -52,27 +52,8 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 # created from the files in this directory.
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = $(OUTPUTDIR)\desktop.obj \
-       $(OUTPUTDIR)\disk.obj \
-       $(OUTPUTDIR)\fdrhotky.obj \
-       $(OUTPUTDIR)\fdrmenus.obj \
-       $(OUTPUTDIR)\fdrnotebooks.obj \
-       $(OUTPUTDIR)\fdrsort.obj \
-       $(OUTPUTDIR)\fdrsubclass.obj \
-       $(OUTPUTDIR)\fhandles.obj \
-       $(OUTPUTDIR)\filedlg.obj \
-       $(OUTPUTDIR)\fileops.obj \
-       $(OUTPUTDIR)\filesys.obj \
-       $(OUTPUTDIR)\filetype.obj \
-       $(OUTPUTDIR)\folder.obj \
-       $(OUTPUTDIR)\fops_bottom.obj \
-       $(OUTPUTDIR)\fops_top.obj \
-       $(OUTPUTDIR)\object.obj \
-       $(OUTPUTDIR)\program.obj \
-       $(OUTPUTDIR)\refresh.obj \
-       $(OUTPUTDIR)\statbars.obj \
-       $(OUTPUTDIR)\trash.obj \
-       $(OUTPUTDIR)\xthreads.obj
+!include ..\..\objects.in
+OBJS = $(XFLDR_OBJS_FILESYS)
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -89,10 +70,10 @@ all:   \
 !endif
 
 callmainmake:
-    @echo $(MAKEDIR)\makefile: Recursing to main makefile.
+    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
     @nmake
-    @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
+    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
 # "nmake dep" gets called from src\makefile if nmake dep
@@ -116,7 +97,7 @@ dep:
 #    the OUTPUTDIR variable (set above).
 
 .c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
         $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c

@@ -51,8 +51,7 @@ interface XFldProgramFile : WPProgramFile
 
     ULONG xwpQueryProgType();
 
-    ULONG xwpQuerySetup2(in PSZ pszSetupString,
-                         in ULONG cbSetupString);
+    BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
     BOOL xwpNukePhysical();
 

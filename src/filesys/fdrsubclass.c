@@ -244,7 +244,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
             {
                 // it's a folder:
                 // OK, we have the first WM_CREATE for a folder window
-                // after WPS startup now...
+                // after Desktop startup now...
                 if (WinQueryClassInfo(hab,
                                       "wpFolder window",
                                       &G_WPFolderWinClassInfo))
@@ -489,7 +489,9 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
-    if (!pGlobalSettings->fNoSubclassing) // V0.9.3 (2000-04-26) [umoeller]
+#ifndef __ALWAYSSUBCLASS__
+    if (!cmnIsFeatureEnabled(NoSubclassing)) // V0.9.3 (2000-04-26) [umoeller]
+#endif
     {
         // subclass the new folder frame window;
         // this creates a SUBCLASSEDFOLDERVIEW for the view
@@ -506,8 +508,12 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 
         // add status bar, if allowed:
             // 1) status bar only if allowed for the current folder
-        if (   (pGlobalSettings->fEnableStatusBars)
-            && (    (_bStatusBarInstance == STATUSBAR_ON)
+        if (
+#ifndef __NOCFGSTATUSBARS__
+               (cmnIsFeatureEnabled(StatusBars))
+            &&
+#endif
+               (    (_bStatusBarInstance == STATUSBAR_ON)
                  || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
                      && (pGlobalSettings->fDefaultStatusBarVisibility)
                     )
@@ -793,7 +799,9 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
     {
         // okay, let's go
-        if (pGlobalSettings->FCShowIcons)
+#ifndef __NOFOLDERCONTENTS__
+        if (cmnIsFeatureEnabled(FolderContentShowIcons))
+#endif
         {
             // show folder content icons ON:
 
@@ -1575,9 +1583,13 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     }
 
                     // check whether folder hotkeys are allowed at all
-                    if (    (pGlobalSettings->fEnableFolderHotkeys)
-                        // yes: check folder and global settings
-                         && (   (_bFolderHotkeysInstance == 1)
+                    if (
+#ifndef __ALWAYSFDRHOTKEYS__
+                            (cmnIsFeatureEnabled(FolderHotkeys))
+                         &&
+#endif
+                            // yes: check folder and global settings
+                            (   (_bFolderHotkeysInstance == 1)
                             ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
                                  && (pGlobalSettings->fFolderHotkeysDefault)
                                 )

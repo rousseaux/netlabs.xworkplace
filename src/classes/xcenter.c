@@ -368,18 +368,18 @@ SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
  *
  *      See XFldObject::xwpQuerySetup2 for details.
  *
- *V0.9.7 (2000-12-09) [umoeller]
+ *@@added V0.9.7 (2000-12-09) [umoeller]
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope ULONG  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
-                                             PSZ pszSetupString,
-                                             ULONG cbSetupString)
+SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
+                                            PVOID pstrSetup)
 {
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpQuerySetup2");
 
     // call implementation
-    return (ctrpQuerySetup(somSelf, pszSetupString, cbSetupString));
+    return (ctrpQuerySetup(somSelf, pstrSetup));
 }
 
 /*
@@ -841,15 +841,7 @@ SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
 
     M_XCenter_parent_M_WPAbstract_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXCenter = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXCenterReal);
 
     // resolve WinSetDesktopWorkArea etc. (ctr_engine.c)
     arc = ctrpDesktopWorkareaSupported();
@@ -884,7 +876,7 @@ SOM_Scope PSZ  SOMLINK xctrM_wpclsQueryTitle(M_XCenter *somSelf)
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryTitle");
 
-    return ((PSZ)G_pcszXCenter);
+    return ((PSZ)ENTITY_XCENTER);
 }
 
 /*

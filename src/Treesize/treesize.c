@@ -61,6 +61,7 @@
 #include "helpers\cnrh.h"
 #include "helpers\eah.h"
 #include "helpers\dosh.h"
+#include "helpers\nls.h"
 #include "helpers\standards.h"
 #include "helpers\stringh.h"
 #include "helpers\tree.h"
@@ -622,7 +623,7 @@ VOID Insert100LargestFiles(VOID)
             sprintf(szTemp,
                     "%s (%s %s)",
                     ComposeFilename(szFilename, pEntry),
-                    strhThousandsDouble(szSize,
+                    nlsThousandsDouble(szSize,
                                         (Settings.ulSizeDisplay == SD_BYTES)
                                                 ? precThis->dTotalSize
                                             : (Settings.ulSizeDisplay == SD_KBYTES)
@@ -869,7 +870,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                         // title:
                         pdiThis->szThis,
                         // value:
-                        strhThousandsDouble(szSize,
+                        nlsThousandsDouble(szSize,
                                             (Settings.ulSizeDisplay == SD_BYTES)
                                                     ? pdiThis->dTotalSize0
                                                 : (Settings.ulSizeDisplay == SD_KBYTES)
@@ -882,7 +883,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                             : (Settings.ulSizeDisplay == SD_KBYTES)
                                 ? "KBytes"
                             : "MBytes",
-                        strhThousandsULong(szFiles,
+                        nlsThousandsULong(szFiles,
                                            pdiThis->ulFiles,
                                            szThousand[0]),
                         "Files");
@@ -890,7 +891,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 if (Settings.CollectEAs)
                     sprintf(pdiThis->szRecordText + strlen(pdiThis->szRecordText),
                             ", %s %s EAs",
-                            strhThousandsDouble(szSize,
+                            nlsThousandsDouble(szSize,
                                                 (Settings.ulSizeDisplay == SD_BYTES)
                                                         ? pdiThis->dTotalEASize
                                                     : (Settings.ulSizeDisplay == SD_KBYTES)

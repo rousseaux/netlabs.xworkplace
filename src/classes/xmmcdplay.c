@@ -851,8 +851,6 @@ SOM_Scope ULONG  SOMLINK cdp_wpAddObjectWindowPage(XMMCDPlayer *somSelf,
  *      when the Settings view is opened to have all the
  *      settings page inserted into hwndNotebook.
  *
- *      We call XCenter::xwpAddXXenterPages to have the
- *      "XCenter" pages inserted on top.
  */
 
 SOM_Scope BOOL  SOMLINK cdp_wpAddSettingsPages(XMMCDPlayer *somSelf,
@@ -888,15 +886,7 @@ SOM_Scope void  SOMLINK cdpM_wpclsInitData(M_XMMCDPlayer *somSelf)
 
     M_XMMCDPlayer_parent_M_WPAbstract_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXMMCDPlayer = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXMMCDPlayer);
 }
 
 /*

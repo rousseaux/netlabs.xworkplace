@@ -89,6 +89,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -105,6 +106,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "filesys\program.h"            // program implementation
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -166,16 +168,16 @@ PSZ stbVar1000Double(PSZ pszTarget,
                                  : ID_XSSI_BYTES));  // pszBytes
     else
         if (space < 10000.0)
-            strhVariableDouble(pszTarget, space, cmnGetString(ID_XSSI_BYTES),  cThousands); // pszBytes
+            nlsVariableDouble(pszTarget, space, cmnGetString(ID_XSSI_BYTES),  cThousands); // pszBytes
         else
         {
             space /= 1000;
             if (space < 10000.0)
-                strhVariableDouble(pszTarget, space, " kB", cThousands);
+                nlsVariableDouble(pszTarget, space, " kB", cThousands);
             else
             {
                 space /= 1000;
-                strhVariableDouble(pszTarget, space,
+                nlsVariableDouble(pszTarget, space,
                                    space < 10000.0 ? " mB" : " gB", cThousands);
             }
         }
@@ -204,43 +206,21 @@ PSZ stbVar1024Double(PSZ pszTarget,
                                   : ID_XSSI_BYTES));  // pszBytes
     else
         if (space < 10240.0)
-            strhVariableDouble(pszTarget, space, cmnGetString(ID_XSSI_BYTES),  cThousands); // pszBytes
+            nlsVariableDouble(pszTarget, space, cmnGetString(ID_XSSI_BYTES),  cThousands); // pszBytes
         else
         {
             space /= 1024;
             if (space < 10240.0)
-                strhVariableDouble(pszTarget, space, " KB", cThousands);
+                nlsVariableDouble(pszTarget, space, " KB", cThousands);
             else
             {
                 space /= 1024;
-                strhVariableDouble(pszTarget, space,
+                nlsVariableDouble(pszTarget, space,
                                    space < 10240.0 ? " MB" : " GB", cThousands);
             }
         }
 
     return(pszTarget);
-}
-
-
-/*
- *@@ stbClassAddsNewMnemonics:
- *      returns TRUE if a class introduces new status bar
- *      mnemonics. Used by the "Status bars" notebook page
- *      in the "Select class" dialog to enable/disable
- *      classes which may be selected to set new status
- *      bar single-object information.
- *
- *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
- */
-
-BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
-{
-    return (    (pClassObject == _XFldObject)
-             || (pClassObject == _WPProgram)
-             || (pClassObject == _WPDisk)
-             || (pClassObject == _WPFileSystem)
-             || ( (G_WPUrl != NULL) && (pClassObject == G_WPUrl) )
-           );
 }
 
 /*
@@ -264,6 +244,29 @@ VOID ResolveWPUrl(VOID)
         // In this case, the object will be treated as a regular
         // file-system object.
     }
+}
+
+#ifndef __NOCFGSTATUSBARS__
+
+/*
+ *@@ stbClassAddsNewMnemonics:
+ *      returns TRUE if a class introduces new status bar
+ *      mnemonics. Used by the "Status bars" notebook page
+ *      in the "Select class" dialog to enable/disable
+ *      classes which may be selected to set new status
+ *      bar single-object information.
+ *
+ *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
+ */
+
+BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
+{
+    return (    (pClassObject == _XFldObject)
+             || (pClassObject == _WPProgram)
+             || (pClassObject == _WPDisk)
+             || (pClassObject == _WPFileSystem)
+             || ( (G_WPUrl != NULL) && (pClassObject == G_WPUrl) )
+           );
 }
 
 /*
@@ -382,6 +385,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     return (FALSE);
 }
 
+#endif
+
 /*
  *@@ stbQueryClassMnemonics:
  *      this returns the status bar mnemonics for "single object"
@@ -421,6 +426,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (_somDescendedFrom(pClassObject, G_WPUrl))
         {
             if (G_szWPUrlStatusBarMnemonics[0] == '\0')
+#ifndef __NOCFGSTATUSBARS__
                 // load string if this is the first time
                 if (PrfQueryProfileString(HINI_USERPROFILE,
                                           (PSZ)INIAPP_XWORKPLACE,
@@ -429,6 +435,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
                                           &(G_szWPUrlStatusBarMnemonics),
                                           sizeof(G_szWPUrlStatusBarMnemonics))
                         == 0)
+#endif
                     // string not found in profile: set default
                     strcpy(G_szWPUrlStatusBarMnemonics, "\"$U\"$x(70%)$D $T");
 
@@ -443,6 +450,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
        )
     {
         if (G_szWPDiskStatusBarMnemonics[0] == '\0')
+#ifndef __NOCFGSTATUSBARS__
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                                       (PSZ)INIAPP_XWORKPLACE,
@@ -451,6 +459,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
                                       &(G_szWPDiskStatusBarMnemonics),
                                       sizeof(G_szWPDiskStatusBarMnemonics))
                     == 0)
+#endif
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
@@ -463,6 +472,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
     else if (_somDescendedFrom(pClassObject, _WPFileSystem))
     {
         if (G_szWPFileSystemStatusBarMnemonics[0] == '\0')
+#ifndef __NOCFGSTATUSBARS__
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                         (PSZ)INIAPP_XWORKPLACE,
@@ -471,6 +481,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
                         sizeof(G_szWPFileSystemStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
+#endif
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
                               ID_XSSI_SBTEXTWPDATAFILE,
@@ -483,6 +494,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
     else if (_somDescendedFrom(pClassObject, _WPProgram))  // fixed V0.85
     {
         if (G_szWPProgramStatusBarMnemonics[0] == '\0')
+#ifndef __NOCFGSTATUSBARS__
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                                       (PSZ)INIAPP_XWORKPLACE,
@@ -491,6 +503,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
                                       &(G_szWPProgramStatusBarMnemonics),
                                       sizeof(G_szWPProgramStatusBarMnemonics))
                     == 0)
+#endif
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
@@ -505,6 +518,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
     {
         // should always be TRUE
         if (G_szXFldObjectStatusBarMnemonics[0] == '\0')
+#ifndef __NOCFGSTATUSBARS__
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
                                       (PSZ)INIAPP_XWORKPLACE,
@@ -513,6 +527,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
                                       &(G_szXFldObjectStatusBarMnemonics),
                                       sizeof(G_szXFldObjectStatusBarMnemonics))
                         == 0)
+#endif
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
                               cmnQueryNLSModuleHandle(FALSE),
@@ -631,7 +646,7 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
         break;
 
         case 1:     // no division needed, avoid the calc below
-            strhThousandsDouble(pszBuf,
+            nlsThousandsDouble(pszBuf,
                                 dbl,
                                 pcs->cThousands);
         break;
@@ -644,7 +659,7 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
         default:        // "real" divisor specified:
         {
             double dValue = (dbl + (ulDivisor / 2)) / ulDivisor;
-            strhThousandsDouble(pszBuf,
+            nlsThousandsDouble(pszBuf,
                                 dValue,
                                 pcs->cThousands);
         break; }
@@ -665,6 +680,7 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
  *      Returns TRUE if *pulLogicalDrive is != 0.
  *
  *@@added V0.9.13 (2001-06-14) [umoeller]
+ *@@changed V0.9.16 (2001-10-04) [umoeller]: stopped the disk A: clicking for remote disks
  */
 
 BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
@@ -672,9 +688,21 @@ BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
 {
     if (*pulLogicalDrive == -1)
     {
-        *pulLogicalDrive = _wpQueryLogicalDrive(pDisk);
-        if (doshAssertDrive(*pulLogicalDrive, 0) != NO_ERROR)
+        // make sure this disk is local;
+        // _wpQueryLogicalDrive returns 1 for remote disks
+        // and therefore used to provoke a click in drive A:
+        // all the time... (how much stupidity can there be?!?)
+        // V0.9.16 (2001-10-04) [umoeller]
+        if (_somIsA(pDisk, _WPSharedDir))
             *pulLogicalDrive = 0;
+        else
+        {
+            *pulLogicalDrive = _wpQueryLogicalDrive(pDisk);
+            if (doshAssertDrive(*pulLogicalDrive, 0) != NO_ERROR)
+                *pulLogicalDrive = 0;
+        }
+
+        _Pmpf((__FUNCTION__ ": *pulLogicalDrive = %d", *pulLogicalDrive));
     }
 
     return (*pulLogicalDrive != 0);
@@ -764,6 +792,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
             ULONG   ulFoundOfs = (p - pstrText->psz);
 
             if (pszFilename)
+            {
                 doshLoadTextFile(pszFilename, &pszURL);
                 if (pszURL)
                 {
@@ -776,6 +805,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                             strlen(pszURL));
                     free(pszURL);
                 }
+            }
+
             if (!pszURL)
                 xstrrpl(pstrText,
                         ulFoundOfs,
@@ -1018,7 +1049,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
             strcpy(szTemp, "?");
             _wpQueryDateInfo(pObject, &ffbuf4);
             fBufLoaded = TRUE;
-            strhFileDate(szTemp,
+            nlsFileDate(szTemp,
                          &(ffbuf4.fdateLastWrite),
                          pcs->ulDateFormat,
                          pcs->cDateSep);
@@ -1038,7 +1069,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
             strcpy(szTemp, "?");
             if (!fBufLoaded)
                 _wpQueryDateInfo(pObject, &ffbuf4);
-            strhFileTime(szTemp,
+            nlsFileTime(szTemp,
                          &(ffbuf4.ftimeLastWrite),
                          pcs->ulTimeFormat,
                          pcs->cTimeSep);
@@ -1134,7 +1165,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
     else if (_somIsA(pObject, _WPProgram))
     {
-        PPROGDETAILS pProgDetails = NULL;
+        PPROGDETAILS pDetails = NULL;
         ULONG       ulSize;
 
         /* single-object status bar text mnemonics understood by WPProgram
@@ -1148,14 +1179,12 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         if (p = strstr(pstrText->psz, "\tp"))  // program executable
         {
             strcpy(szTemp, "?");
-            if (!pProgDetails)
-                if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
-                    if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pObject, ulSize, NULL)) != NULL)
-                        _wpQueryProgDetails(pObject, pProgDetails, &ulSize);
+            if (!pDetails)
+                pDetails = progQueryDetails(pObject);
 
-            if (pProgDetails)
-                if (pProgDetails->pszExecutable)
-                    strcpy(szTemp, pProgDetails->pszExecutable);
+            if (pDetails)
+                if (pDetails->pszExecutable)
+                    strcpy(szTemp, pDetails->pszExecutable);
                 else strcpy(szTemp, "");
 
             xstrrpl(pstrText,
@@ -1172,15 +1201,14 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         if (p = strstr(pstrText->psz, "\tP"))  // program parameters
         {
             strcpy(szTemp, "?");
-            if (!pProgDetails)
-                if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
-                    if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pObject, ulSize, NULL)) != NULL)
-                        _wpQueryProgDetails(pObject, pProgDetails, &ulSize);
+            if (!pDetails)
+                pDetails = progQueryDetails(pObject);
 
-            if (pProgDetails)
-                if (pProgDetails->pszParameters)
-                    strcpy(szTemp, pProgDetails->pszParameters);
-                else strcpy(szTemp, "");
+            if (pDetails)
+                if (pDetails->pszParameters)
+                    strcpy(szTemp, pDetails->pszParameters);
+                else
+                    strcpy(szTemp, "");
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -1196,15 +1224,14 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         if (p = strstr(pstrText->psz, "\td"))  // startup dir
         {
             strcpy(szTemp, "?");
-            if (!pProgDetails)
-                if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
-                    if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pObject, ulSize, NULL)) != NULL)
-                        _wpQueryProgDetails(pObject, pProgDetails, &ulSize);
+            if (!pDetails)
+                pDetails = progQueryDetails(pObject);
 
-            if (pProgDetails)
-                if (pProgDetails->pszStartupDir)
-                    strcpy(szTemp, pProgDetails->pszStartupDir);
-                else strcpy(szTemp, "");
+            if (pDetails)
+                if (pDetails->pszStartupDir)
+                    strcpy(szTemp, pDetails->pszStartupDir);
+                else
+                    strcpy(szTemp, "");
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -1217,8 +1244,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
             ulrc++;
         }
 
-        if (pProgDetails)
-            _wpFreeMem(pObject, (PBYTE)pProgDetails);
+        if (pDetails)
+            free(pDetails);
     }
 
     /*
@@ -1533,6 +1560,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
         // dereference shadows (V0.9.0)
         if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_SINGLE)
+                // @@todo xwplite
             if (_somIsA(pobjSelected, pclsWPShadow))
                 pobjSelected = _wpQueryShadowedObject(pobjSelected, TRUE);
 
@@ -1770,6 +1798,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
  *                                                                  *
  ********************************************************************/
 
+#ifndef __NOCFGSTATUSBARS__
+
 /*
  *@@ STATUSBARPAGEDATA:
  *      data for status bar pages while they're open.
@@ -1924,6 +1954,8 @@ MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
     return (mrc);
 }
 
+#endif
+
 /*
  *@@ stbStatusBar1InitPage:
  *      notebook callback function (notebook.c) for the
@@ -1977,7 +2009,8 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        BOOL fEnable = !(pGlobalSettings->fNoSubclassing);
+#ifndef __ALWAYSSUBCLASS__
+        BOOL fEnable = !cmnIsFeatureEnabled(NoSubclassing);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
@@ -1987,6 +2020,7 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+#endif
     }
 }
 
@@ -2082,7 +2116,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2118,6 +2152,8 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     return (mrc);
 }
+
+#ifndef __NOCFGSTATUSBARS__
 
 /*
  *@@ stbStatusBar2InitPage:
@@ -2576,13 +2612,14 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             SELECTCLASSDATA         scd;
             STATUSBARSELECTCLASS    sbsc;
 
-            CHAR szTitle[100] = "title";
-            CHAR szIntroText[2000] = "intro";
-
-            cmnGetMessage(NULL, 0, szTitle, sizeof(szTitle), 112);
-            cmnGetMessage(NULL, 0, szIntroText, sizeof(szIntroText), 113);
-            scd.pszDlgTitle = szTitle;
-            scd.pszIntroText = szIntroText;
+            XSTRING strTitle,
+                    strIntroText;
+            xstrInit(&strTitle, 0);
+            xstrInit(&strIntroText, 0);
+            cmnGetMessage(NULL, 0, &strTitle, 112);
+            cmnGetMessage(NULL, 0, &strIntroText, 113);
+            scd.pszDlgTitle = strTitle.psz;
+            scd.pszIntroText = strIntroText.psz;
             scd.pszRootClass = "WPObject";
             scd.pszOrphans = NULL;
             strcpy(scd.szClassSelected, psbpd->szSBClassSelected);
@@ -2628,6 +2665,9 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                        stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
 
             }
+
+            xstrClear(&strTitle);
+            xstrClear(&strIntroText);
         break; }
 
         // "Keys" buttons next to entry field
@@ -2678,7 +2718,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);  // load default
@@ -2853,4 +2893,4 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-
+#endif // XWPLITE

@@ -87,7 +87,7 @@
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
-#include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -375,11 +375,10 @@ BOOL fdrSetup(WPFolder *somSelf,
  *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
  */
 
-ULONG fdrQuerySetup(WPObject *somSelf,
-                    PSZ pszSetupString,
-                    ULONG cbSetupString)
+BOOL fdrQuerySetup(WPObject *somSelf,
+                   PVOID pstrSetup)
 {
-    ULONG   ulReturn = 0;
+    BOOL brc = TRUE;
 
     TRY_LOUD(excpt1)
     {
@@ -390,7 +389,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
         // temporary buffer for building the setup string
-        XSTRING strTemp,
+        XSTRING // strTemp,
                 strView;
         ULONG   ulValue = 0;
         PSZ     pszValue = 0,
@@ -407,21 +406,21 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         // not sure if it's really needed
         BOOL    fInitialized = _wpIsObjectInitialized(somSelf);
 
-        xstrInit(&strTemp, 400);
+        // xstrInit(pstrSetup, 400);
         xstrInit(&strView, 200);
 
         // WORKAREA
         if (_wpQueryFldrFlags(somSelf) & FOI_WORKAREA)
-            xstrcat(&strTemp, "WORKAREA=YES;", 0);
+            xstrcat(pstrSetup, "WORKAREA=YES;", 0);
 
         // MENUBAR
         ulValue = _xwpQueryMenuBarVisibility(somSelf);
         if (ulValue != _xwpclsQueryMenuBarVisibility(_XFolder))
             // non-default value:
             if (ulValue)
-                xstrcat(&strTemp, "MENUBAR=YES;", 0);
+                xstrcat(pstrSetup, "MENUBAR=YES;", 0);
             else
-                xstrcat(&strTemp, "MENUBAR=NO;", 0);
+                xstrcat(pstrSetup, "MENUBAR=NO;", 0);
 
         /*
          * folder sort settings
@@ -435,23 +434,23 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             if (_lAlwaysSort != SET_DEFAULT)
             {
                 if (_lAlwaysSort)
-                    xstrcat(&strTemp, "ALWAYSSORT=YES;", 0);
+                    xstrcat(pstrSetup, "ALWAYSSORT=YES;", 0);
                 else
-                    xstrcat(&strTemp, "ALWAYSSORT=NO;", 0);
+                    xstrcat(pstrSetup, "ALWAYSSORT=NO;", 0);
             }
 
             if (_lFoldersFirst != SET_DEFAULT)
             {
                 if (_lFoldersFirst)
-                    xstrcat(&strTemp, "SORTFOLDERSFIRST=YES;", 0);
+                    xstrcat(pstrSetup, "SORTFOLDERSFIRST=YES;", 0);
                 else
-                    xstrcat(&strTemp, "SORTFOLDERSFIRST=NO;", 0);
+                    xstrcat(pstrSetup, "SORTFOLDERSFIRST=NO;", 0);
             }
 
             if (_lDefSortCrit != SET_DEFAULT)
             {
                 sprintf(szTemp, "DEFAULTSORT=%d;", _lDefSortCrit);
-                xstrcat(&strTemp, szTemp, 0);
+                xstrcat(pstrSetup, szTemp, 0);
             }
         } // end V0.9.12 (2001-05-20) [umoeller]
 
@@ -460,7 +459,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (pClassObject != _WPFileSystem)
         {
             sprintf(szTemp, "SORTCLASS=%s;", _somGetName(pClassObject));
-            xstrcat(&strTemp, szTemp, 0);
+            xstrcat(pstrSetup, szTemp, 0);
         }
 
         /*
@@ -499,7 +498,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                             ? 'I'
                             : 'C', // I = image, C = color only
                         *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
-                xstrcat(&strTemp, szTemp, 0);
+                xstrcat(pstrSetup, szTemp, 0);
 
                 free(pszBitmapFile);
             }
@@ -513,15 +512,15 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // ICONFONT
         pszValue = _wpQueryFldrFont(somSelf, OPEN_CONTENTS);
-        pszDefaultValue = prfhQueryProfileData(HINI_USER,
-                                               "PM_SystemFonts",
-                                               "IconText", NULL);
-        if (pszDefaultValue)
+        if (pszDefaultValue = prfhQueryProfileData(HINI_USER,
+                                                   PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                   PMINIKEY_ICONTEXTFONT, // "IconText",
+                                                   NULL))
         {
             if (strcmp(pszValue, pszDefaultValue) != 0)
             {
                 sprintf(szTemp, "ICONFONT=%s;", pszValue);
-                xstrcat(&strTemp, szTemp, 0);
+                xstrcat(pstrSetup, szTemp, 0);
             }
             free(pszDefaultValue);
         }
@@ -567,7 +566,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (strView.ulLength)
         {
             sprintf(szTemp, "ICONVIEW=%s;", strView.psz);
-            xstrcat(&strTemp, szTemp, 0);
+            xstrcat(pstrSetup, szTemp, 0);
         }
 
         xstrClear(&strView);
@@ -592,7 +591,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     BYTE bBlue  = *(pbArrayField );
 
                     sprintf(szTemp, "ICONTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(&strTemp, szTemp, 0);
+                    xstrcat(pstrSetup, szTemp, 0);
                 }
             }
 
@@ -612,7 +611,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bBlue  = *(pbArrayField );
 
                         sprintf(szTemp, "ICONSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(&strTemp, szTemp, 0);
+                        xstrcat(pstrSetup, szTemp, 0);
                     }
                 }
 
@@ -623,15 +622,15 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // TREEFONT
         pszValue = _wpQueryFldrFont(somSelf, OPEN_TREE);
-        pszDefaultValue = prfhQueryProfileData(HINI_USER,
-                                               "PM_SystemFonts",
-                                               "IconText", NULL);
-        if (pszDefaultValue)
+        if (pszDefaultValue = prfhQueryProfileData(HINI_USER,
+                                                   PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                   PMINIKEY_ICONTEXTFONT, // "IconText",
+                                                   NULL))
         {
             if (strcmp(pszValue, pszDefaultValue) != 0)
             {
                 sprintf(szTemp, "TREEFONT=%s;", pszValue);
-                xstrcat(&strTemp, szTemp, 0);
+                xstrcat(pstrSetup, szTemp, 0);
             }
             free(pszDefaultValue);
         }
@@ -691,7 +690,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (strView.ulLength)
         {
             sprintf(szTemp, "TREEVIEW=%s;", strView);
-            xstrcat(&strTemp, szTemp, 0);
+            xstrcat(pstrSetup, szTemp, 0);
         }
 
         xstrClear(&strView);
@@ -714,7 +713,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     BYTE bBlue  = *(pbArrayField );
 
                     sprintf(szTemp, "TREETEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(&strTemp, szTemp, 0);
+                    xstrcat(pstrSetup, szTemp, 0);
                 }
 
                 // TREESHADOWCOLOR
@@ -731,7 +730,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bBlue  = *(pbArrayField );
 
                         sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(&strTemp, szTemp, 0);
+                        xstrcat(pstrSetup, szTemp, 0);
                     }
                 }
             }
@@ -740,7 +739,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (    (fInitialized)
              && (fdrHasShowAllInTreeView(somSelf))
            )
-            xstrcat(&strTemp, "SHOWALLINTREEVIEW=YES;", 0);
+            xstrcat(pstrSetup, "SHOWALLINTREEVIEW=YES;", 0);
 
         /*
          * Details view
@@ -752,20 +751,20 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (pClassObject != _WPFileSystem)
         {
             sprintf(szTemp, "DETAILSCLASS=%s;", _somGetName(pClassObject));
-            xstrcat(&strTemp, szTemp, 0);
+            xstrcat(pstrSetup, szTemp, 0);
         }
 
         // DETAILSFONT
         pszValue = _wpQueryFldrFont(somSelf, OPEN_DETAILS);
-        pszDefaultValue = prfhQueryProfileData(HINI_USER,
-                                               "PM_SystemFonts",
-                                               "IconText", NULL);
-        if (pszDefaultValue)
+        if (pszDefaultValue = prfhQueryProfileData(HINI_USER,
+                                                   PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                   PMINIKEY_ICONTEXTFONT, // "IconText",
+                                                   NULL))
         {
             if (strcmp(pszValue, pszDefaultValue) != 0)
             {
                 sprintf(szTemp, "DETAILSFONT=%s;", pszValue);
-                xstrcat(&strTemp, szTemp, 0);
+                xstrcat(pstrSetup, szTemp, 0);
             }
             free(pszDefaultValue);
         }
@@ -789,7 +788,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     BYTE bBlue  = *(pbArrayField );
 
                     sprintf(szTemp, "DETAILSTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(&strTemp, szTemp, 0);
+                    xstrcat(pstrSetup, szTemp, 0);
                 }
 
                 // DETAILSSHADOWCOLOR
@@ -806,7 +805,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bBlue  = *(pbArrayField );
 
                         sprintf(szTemp, "DETAILSSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(&strTemp, szTemp, 0);
+                        xstrcat(pstrSetup, szTemp, 0);
                     }
                 }
             }
@@ -819,11 +818,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bFolderHotkeysInstance)
         {
             case 0:
-                xstrcat(&strTemp, "ACCELERATORS=NO;", 0);
+                xstrcat(pstrSetup, "ACCELERATORS=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "ACCELERATORS=YES;", 0);
+                xstrcat(pstrSetup, "ACCELERATORS=YES;", 0);
             break;
 
             // 2 means default
@@ -832,11 +831,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bSnapToGridInstance)
         {
             case 0:
-                xstrcat(&strTemp, "SNAPTOGRID=NO;", 0);
+                xstrcat(pstrSetup, "SNAPTOGRID=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "SNAPTOGRID=YES;", 0);
+                xstrcat(pstrSetup, "SNAPTOGRID=YES;", 0);
             break;
 
             // 2 means default
@@ -845,11 +844,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bFullPathInstance)
         {
             case 0:
-                xstrcat(&strTemp, "FULLPATH=NO;", 0);
+                xstrcat(pstrSetup, "FULLPATH=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "FULLPATH=YES;", 0);
+                xstrcat(pstrSetup, "FULLPATH=YES;", 0);
             break;
 
             // 2 means default
@@ -858,25 +857,25 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bStatusBarInstance)
         {
             case 0:
-                xstrcat(&strTemp, "STATUSBAR=NO;", 0);
+                xstrcat(pstrSetup, "STATUSBAR=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "STATUSBAR=YES;", 0);
+                xstrcat(pstrSetup, "STATUSBAR=YES;", 0);
             break;
 
             // 2 means default
         }
 
         if (_xwpIsFavoriteFolder(somSelf))
-            xstrcat(&strTemp, "FAVORITEFOLDER=YES;", 0);
+            xstrcat(pstrSetup, "FAVORITEFOLDER=YES;", 0);
 
         /*
          * append string
          *
          */
 
-        if (strTemp.ulLength)
+        /* if (strTemp.ulLength)
         {
             // return string if buffer is given
             if ((pszSetupString) && (cbSetupString))
@@ -888,14 +887,14 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             ulReturn = strTemp.ulLength;
         }
 
-        xstrClear(&strTemp);
+        xstrClear(&strTemp); */
     }
     CATCH(excpt1)
     {
-        ulReturn = 0;
+        brc = FALSE;
     } END_CATCH();
 
-    return (ulReturn);
+    return (brc);
 }
 
 /* ******************************************************************
@@ -1698,8 +1697,10 @@ MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView,        // folder frame
                 XFolderData *somThis = XFolderGetData(mpFolder);
                 BOOL fVisible = (
                                     // status bar feature enabled?
-                                    (pGlobalSettings->fEnableStatusBars)
+#ifndef __NOCFGSTATUSBARS__
+                                    (cmnIsFeatureEnabled(StatusBars))
                                 &&
+#endif
                                     // status bars either enabled for this instance
                                     // or in global settings?
                                     (    (_bStatusBarInstance == STATUSBAR_ON)

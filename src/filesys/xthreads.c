@@ -5,7 +5,7 @@
  *      to offload tasks to the background.
  *
  *      Currently, there are three additional threads which
- *      are started by xthrStartThreads upon WPS startup
+ *      are started by xthrStartThreads upon Desktop startup
  *      and are _always_ running:
  *
  *      --  XFolder "Worker" thread / object window (fntWorkerThread, fnwpWorkerObject),
@@ -87,6 +87,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\stringh.h"            // string helper routines
@@ -94,6 +95,7 @@
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 // SOM headers which don't crash with prec. header files
@@ -160,7 +162,9 @@ static BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) 
 static HAB          G_habSpeedyThread = NULLHANDLE;
 static HMQ          G_hmqSpeedyThread = NULLHANDLE;
 static CHAR         G_szBootupStatus[256];
+#ifndef __NOBOOTUPSTATUS__
 static HWND         G_hwndBootupStatus = NULLHANDLE;
+#endif
 
 // File thread
 static HAB          G_habFileThread = NULLHANDLE;
@@ -237,26 +241,26 @@ BOOL xthrLockAwakeObjectsList(VOID)
 
     if (G_hmtxAwakeObjectsList == NULLHANDLE)
     {
-        brc = !DosCreateMutexSem(NULL,
-                                 &G_hmtxAwakeObjectsList,
-                                 0,
-                                 TRUE);
-        treeInit(&G_AwakeObjectsTree);
-        G_lAwakeObjectsCount = 0;
+        if (brc = !DosCreateMutexSem(NULL,
+                                     &G_hmtxAwakeObjectsList,
+                                     0,
+                                     TRUE))
+        {
+            treeInit(&G_AwakeObjectsTree);
+            G_lAwakeObjectsCount = 0;
 
-        G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
-                                      _HEAP_MIN_SIZE,
-                                      !_BLOCK_CLEAN,    // memory is not set to 0
-                                      _HEAP_REGULAR,    // regular memory
-                                      WorkerExpandHeap,
-                                      WorkerShrinkHeap);
-
-        if (G_AwakeObjectsHeap == NULL)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "_ucreate failed for Worker heap.");
-        else if (_uopen(G_AwakeObjectsHeap))        // open heap and check for failure
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "_uopen failed for Worker heap.");
+            if (!(G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
+                                                _HEAP_MIN_SIZE,
+                                                !_BLOCK_CLEAN,    // memory is not set to 0
+                                                _HEAP_REGULAR,    // regular memory
+                                                WorkerExpandHeap,
+                                                WorkerShrinkHeap)))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "_ucreate failed for Worker heap.");
+            else if (_uopen(G_AwakeObjectsHeap))        // open heap and check for failure
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "_uopen failed for Worker heap.");
+        }
     }
     else
         brc = !WinRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
@@ -1344,6 +1348,8 @@ BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
     return (!pqod->fCancelled);
 }
 
+#ifndef __NOQUICKOPEN__
+
 /*
  *@@ fntQuickOpenFolders:
  *      synchronous thread created from fntStartupThread
@@ -1405,6 +1411,8 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
                WM_USER,
                0, 0);
 }
+
+#endif
 
 /*
  *@@ fntStartupThread:
@@ -1534,6 +1542,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
          *
          */
 
+#ifndef __NOQUICKOPEN__
         // "quick open" disabled because Shift key pressed?
         if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
         {
@@ -1591,6 +1600,8 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 
             }
         } // end if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+#endif
+
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -1599,8 +1610,10 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
      *
      */
 
+#ifndef __NOBOOTLOGO__
     // destroy boot logo, if present
     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
+#endif
 
     // if XWorkplace was just installed, check for
     // existence of config folders and
@@ -1874,9 +1887,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *
          *      (ULONG)mp1 must be one of the following:
          *
-         *      -- RCF_QUERYACTION: prompt the user for what
-         *         should be created.
-         *
          *      -- RCF_EMPTYCONFIGFOLDERONLY: produce empty
          *         config folder.
          *
@@ -1888,6 +1898,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *         install\instlXXX.cmd, which calls crobjXXX.cmd
          *         in turn.
          *
+         *@@changed V0.9.16 (2001-10-11) [umoeller]: removed RCF_QUERYACTION
          */
 
         case FIM_RECREATECONFIGFOLDER:
@@ -1896,7 +1907,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             ULONG   ulAction = (ULONG)mp1;
             ULONG   ulReturn = ulAction;
 
-            if (ulAction == RCF_QUERYACTION)
+            // removed RCF_QUERYACTION V0.9.16 (2001-10-11) [umoeller]
+            /* if (ulAction == RCF_QUERYACTION)
             {
                 HWND  hwndDlg;
 
@@ -1917,7 +1929,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                             :  RCF_EMPTYCONFIGFOLDERONLY;
                 WinDestroyWindow(hwndDlg);
                 fWarningOpen = FALSE;
-            }
+            } */
 
             // ulReturn is either set from dialog or
             // from initial value, if no prompt
@@ -1931,9 +1943,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                 (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",                 // on desktop
                                 CO_UPDATEIFEXISTS);
             }
-            else if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
-                     || (ulReturn == RCF_MAININSTALLFOLDER)
-                    )
+            else   if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
+                       || (ulReturn == RCF_MAININSTALLFOLDER)
+                      )
             {
                 HWND    hwndCreating;
                 CHAR    szPath[CCHMAXPATH], szPath2[CCHMAXPATH];
@@ -1946,7 +1958,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                             (ulReturn == RCF_DEFAULTCONFIGFOLDER)
                                 ? "crobj"       // script for config folder only
                                 : "instl",      // script for full installation folder
-                                                // (used after first WPS bootup)
+                                                // (used after first Desktop startup)
                             cmnQueryLanguageCode());
 
                     // "creating config" window
@@ -2229,7 +2241,9 @@ BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     return (rc);
 }
 
+#ifndef __NOBOOTLOGO__
 SHAPEFRAME sb = {0};
+#endif
 
 /*
  *@@ fnwpSpeedyObject:
@@ -2246,6 +2260,9 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
     switch (msg)
     {
+
+#ifndef __NOBOOTLOGO__
+
         /*
          * WM_CREATE:
          *      show XFolder logo at bootup
@@ -2259,14 +2276,14 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             memset(&sb, 0, sizeof(sb));
 
-            // boot logo disabled because Shift pressed at WPS startup?
+            // boot logo disabled because Shift pressed at Desktop startup?
             if ((pKernelGlobals->ulPanicFlags & SUF_SKIPBOOTLOGO) == 0)
                 // no: logo allowed?
-                if (pGlobalSettings->BootLogo)
+                if (cmnIsFeatureEnabled(BootLogo))
                 {
                     PSZ pszBootLogoFile = cmnQueryBootLogoFile();
 
-                    if (pGlobalSettings->bBootLogoStyle == 1)
+                    if (pGlobalSettings->_bBootLogoStyle == 1)
                     {
                         // blow-up mode:
                         HDC         hdcMem;
@@ -2322,7 +2339,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-            if (pGlobalSettings->bBootLogoStyle == 0)
+            if (pGlobalSettings->_bBootLogoStyle == 0)
                 // was bitmap window created successfully?
                 if (sb.hwndShapeFrame)
                 {
@@ -2332,6 +2349,9 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     WinDestroyWindow(sb.hwndShape);
                 }
         break; }
+#endif
+
+#ifndef __NOBOOTUPSTATUS__
 
         /*
          * QM_BOOTUPSTATUS:
@@ -2411,6 +2431,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 break;
             }
         break; }
+#endif
 
         /*
          *@@ QM_TREEVIEWAUTOSCROLL:

@@ -99,6 +99,7 @@
 #define INCL_WINBUTTONS
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
+#define INCL_WINSTATICS
 #define INCL_WINSTDCNR
 #define INCL_WINMLE
 #define INCL_WINCOUNTRY
@@ -122,14 +123,17 @@
 
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"                     // XFldObject
@@ -150,6 +154,7 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -319,7 +324,9 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         // for all views: add separator before menu and status bar items
         // if one of these is enabled
         if (    (G_fIsWarp4)
-             || (pGlobalSettings->fEnableStatusBars)  // added V0.9.0
+#ifndef __NOCFGSTATUSBARS__
+             || (cmnIsFeatureEnabled(StatusBars))  // added V0.9.0
+#endif
            )
             winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
@@ -337,7 +344,9 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 
         // insert "status bar" item if status bar feature
         // is enabled in XWPSetup
-        if (pGlobalSettings->fEnableStatusBars)
+#ifndef __NOCFGSTATUSBARS__
+        if (cmnIsFeatureEnabled(StatusBars))
+#endif
         {
             if (cmnIsADesktop(somSelf))
                 // always disable for Desktop
@@ -476,7 +485,7 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
                     brc = BuildConfigItemsList(pcli->pllFolderContent,
                                                pcli->pObject);  // the folder
                 }
-                else if (    (pKernelGlobals->fXWPString)        // XWPString installed?
+                else if (    (krnIsClassReady(G_pcszXWPString))   // XWPString installed?
                           && (_somIsA(pObject2Insert, _XWPString))
                         )
                 {
@@ -887,12 +896,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             }
         } */
 
+#ifndef __NOFDRDEFAULTDOCS__
         /*
          * Default document in "Open" submenu:
          *
          */
 
-        if (pGlobalSettings->fFdrDefaultDoc)
+        if (pGlobalSettings->_fFdrDefaultDoc)
         {
             WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
             if (pDefDoc)
@@ -918,6 +928,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                        MIS_TEXT, 0);
                 }
         }
+#endif
 
         /*
          * "View" submenu:
@@ -1100,17 +1111,20 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                         ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
             bSepAdded = TRUE;
 
+#ifndef __NOMOVEREFRESHNOW__
             // "Refresh now"
-            if (pGlobalSettings->MoveRefreshNow)
+            if (cmnIsFeatureEnabled(MoveRefreshNow))
                 winhInsertMenuItem(hwndMenu,
                                    MIT_END,
                                    ulVarMenuOfs + ID_XFMI_OFS_REFRESH,
                                    cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
                                    MIS_TEXT,
                                    0);
+#endif
 
             // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
-            if (    (pGlobalSettings->fEnableSnap2Grid)
+#ifndef __NOSNAPTOGRID__
+            if (    (cmnIsFeatureEnabled(Snap2Grid))
                  // "Snap to grid" enabled locally or globally?
                  && (    (_bSnapToGridInstance == 1)
                       || (   (_bSnapToGridInstance == 2)
@@ -1131,7 +1145,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                    MIS_TEXT,
                                    0);
             }
-
+#endif
         } // end if view open
 
         // now do necessary preparations for all variable menu items
@@ -1143,12 +1157,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          *
          */
 
+#ifndef __NOFOLDERCONTENTS__
         // get first favorite folder; we will only work on
         // this if either folder content for every folder is
         // enabled or at least one favorite folder exists
         pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
-        if (    (pGlobalSettings->fNoSubclassing == 0)
-             && (   (pGlobalSettings->AddFolderContentItem)
+        if (    (!cmnIsFeatureEnabled(NoSubclassing))
+             && (   (cmnIsFeatureEnabled(AddFolderContentItem))
                  || (pFavorite)
                 )
            )
@@ -1157,7 +1172,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                     MIT_END,
                                     ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-            if (pGlobalSettings->FCShowIcons)
+            if (cmnIsFeatureEnabled(FolderContentShowIcons))
             {
                 // before actually inserting the content submenus, we need a real
                 // awful cheat, because otherwise the owner draw items won't work
@@ -1174,7 +1189,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                            MPNULL);
             }
 
-            if (pGlobalSettings->AddFolderContentItem)
+            if (cmnIsFeatureEnabled(AddFolderContentItem))
             {
                 // add "Folder content" only if somSelf is not a favorite folder,
                 // because then we will insert the folder content anyway
@@ -1199,6 +1214,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                           FALSE); // no owner draw in main context menu
             }
         } // end folder contents
+#endif
 
         /*
          * config folders:
@@ -1412,7 +1428,9 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
     // insert separator V0.9.4 (2000-06-09) [umoeller]
     if (    (pGlobalSettings->FileAttribs)
          || (pGlobalSettings->AddCopyFilenameItem)
-         || (pGlobalSettings->fFdrDefaultDoc)
+#ifndef __NOFDRDEFAULTDOCS__
+         || (pGlobalSettings->_fFdrDefaultDoc)
+#endif
        )
         winhInsertMenuSeparator(hwndMenu,
                                 MIT_END,
@@ -1472,7 +1490,8 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                            0);
 
     // insert "Default document" if enabled
-    if (pGlobalSettings->fFdrDefaultDoc)
+#ifndef __NOFDRDEFAULTDOCS__
+    if (pGlobalSettings->_fFdrDefaultDoc)
     {
         ULONG flAttr = 0;
         if (_xwpQueryDefaultDocument(_wpQueryFolder(somSelf)) == somSelf)
@@ -1486,6 +1505,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                            MIS_TEXT,
                            flAttr);
     }
+#endif
 
     return (TRUE);
 }
@@ -1505,207 +1525,227 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
  *      folder's, inserting clipboard data and so on.
  */
 
-BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
+BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk object
+                              WPProgram *pProgram)
 {
-    PPROGDETAILS    pProgDetails;
+    PPROGDETAILS    pDetails;
     ULONG           ulSize;
 
-    WPFolder        *pFolder = NULL;
     CHAR            szRealName[CCHMAXPATH];    // Buffer for wpQueryFilename()
 
     BOOL            ValidRealName,
                     StartupChanged = FALSE,
                     ParamsChanged = FALSE,
                     TitleChanged = FALSE,
-                    brc = TRUE;
+                    brc = FALSE;
 
     PSZ             pszOldParams = NULL,
                     pszOldTitle = NULL;
-    CHAR            szPassRealName[CCHMAXPATH];
-    CHAR            szNewParams[1024] = "";
     CHAR            szNewTitle[1024] = "";
-
-    CHAR            szClipBuf[CCHMAXPATH];          // buffer for copying data
-    ULONG           Ofs = 0;
 
     HAB             hab;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // get program object data
-    if ((_wpQueryProgDetails(pProgram, (PPROGDETAILS)NULL, &ulSize)))
+    if ((pDetails = progQueryDetails(pProgram)))
     {
-        if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(somSelf, ulSize, NULL)) != NULL)
+        XSTRING         strNewParams;       // V0.9.16 (2001-10-06)
+        xstrInit(&strNewParams, 0);
+
+        brc = TRUE;
+
+        // dereference folder/disk shadows
+        /* if (_somIsA(pFolder, _WPFolder))
+            pFolder = somSelf; */
+
+        // dereference disk objects
+        if (_somIsA(pFolder, _WPDisk))
+            pFolder = wpshQueryRootFolder(pFolder,      // disk
+                                          FALSE,
+                                          NULL);
+
+        if (pFolder)
+            ValidRealName = (_wpQueryFilename(pFolder, szRealName, TRUE) != NULL);
+        // now we have the folder's full path
+
+        // there seems to be a bug in wpQueryFilename for
+        // root folders, so we might need to append a "\" */
+        if (strlen(szRealName) == 2)
+            strcat(szRealName, "\\");
+
+        // *** first trick:
+        // if the program object's startup dir has not been
+        // set, we will set it to szRealName
+        // temporarily; this will start the
+        // program object in the directory
+        // of the folder whose context menu was selected */
+        if (    (ValidRealName)
+             && (!pDetails->pszStartupDir))
         {
-            if ((_wpQueryProgDetails(pProgram, pProgDetails, &ulSize)))
+            StartupChanged = TRUE;
+            pDetails->pszStartupDir = szRealName;
+        }
+
+        // start playing with the object's parameter list,
+        // if the global settings allow it */
+        if (pGlobalSettings->AppdParam)
+        {
+            // CHAR            szNewParams[1024] = "";
+            CHAR            szPassRealName[CCHMAXPATH];
+
+            // if the folder's real name contains spaces,
+            // we need to enclose it in quotes
+            if (strchr(szRealName, ' '))
             {
-                pFolder = somSelf;
+                strcpy(szPassRealName, "\"");
+                strcat(szPassRealName, szRealName);
+                strcat(szPassRealName, "\"");
+            }
+            else
+                strcpy(szPassRealName, szRealName);
 
-                // dereference folder/disk shadows
-                /* if (_somIsA(pFolder, _WPFolder))
-                    pFolder = somSelf; */
+            // backup prog data for later restore
+            if (pszOldParams = pDetails->pszParameters)
+            {
+                // parameter list not empty:
 
-                // dereference disk objects
-                if (_somIsA(pFolder, _WPDisk))
-                    pFolder = wpshQueryRootFolder(somSelf, FALSE, NULL);
-
-                if (pFolder)
-                    ValidRealName = (_wpQueryFilename(pFolder, szRealName, TRUE) != NULL);
-                // now we have the folder's full path
-
-                // there seems to be a bug in wpQueryFilename for
-                // root folders, so we might need to append a "\" */
-                if (strlen(szRealName) == 2)
-                    strcat(szRealName, "\\");
-
-                // *** first trick:
-                // if the program object's startup dir has not been
-                // set, we will set it to szRealName
-                // temporarily; this will start the
-                // program object in the directory
-                // of the folder whose context menu was selected */
-                if (ValidRealName && (pProgDetails->pszStartupDir == NULL))
+                // *** second trick:
+                // we will append the current folder path to the parameters
+                // if the program object's parameter list does not
+                // end in "%" ("Netscape support")
+                if (    (ValidRealName)
+                     && (pDetails->pszParameters[strlen(pDetails->pszParameters)-1] != '%'))
                 {
-                    StartupChanged = TRUE;
-                    pProgDetails->pszStartupDir = szRealName;
+                    ParamsChanged = TRUE;
+
+                    xstrcpy(&strNewParams, pszOldParams, 0);
+                    xstrcatc(&strNewParams, ' ');
+                    xstrcat(&strNewParams, szPassRealName, 0);
                 }
 
-                // start playing with the object's parameter list,
-                // if the global settings allow it */
-                if (pGlobalSettings->AppdParam)
+                // *** third trick:
+                // replace an existing "%**C" in the parameters
+                // with the contents of the clipboard */
+                if (strstr(pszOldParams, CLIPBOARDKEY))
                 {
-                    // if the folder's real name contains spaces,
-                    // we need to enclose it in quotes */
-                    if (strchr(szRealName, ' '))
+                    hab = WinQueryAnchorBlock(HWND_DESKTOP);
+                    if (WinOpenClipbrd(hab))
                     {
-                        strcpy(szPassRealName, "\"");
-                        strcat(szPassRealName, szRealName);
-                        strcat(szPassRealName, "\"");
+                        PSZ pszClipText;
+                        if (pszClipText = (PSZ)WinQueryClipbrdData(hab, CF_TEXT))
+                        {
+                            CHAR            szClipBuf[CCHMAXPATH];
+                            ULONG           ulOfs = 0;
+
+                            PSZ pszPos = NULL;
+                            // copy clipboard text from shared memory,
+                            // but limit to 256 chars
+                            strncpy(szClipBuf, pszClipText, CCHMAXPATH);
+                            szClipBuf[CCHMAXPATH-2] = '\0'; // make sure the string is terminated
+                            WinCloseClipbrd(hab);
+
+                            if (!ParamsChanged) // did we copy already?
+                                xstrcpy(&strNewParams, pszOldParams, 0);
+
+                            while (xstrFindReplaceC(&strNewParams,
+                                                    &ulOfs,
+                                                    CLIPBOARDKEY,
+                                                    szClipBuf))
+                                ;
+
+                            /* pszPos = strstr(szNewParams, CLIPBOARDKEY);
+                            Ofs = strlen(szClipBuf);
+                            if (Ofs + strlen(szNewParams) > CCHMAXPATH)
+                                Ofs -= strlen(szNewParams);
+                            strcpy(szClipBuf+Ofs, pszPos+strlen(CLIPBOARDKEY));
+                            strcpy(pszPos, szClipBuf); */
+
+                            ParamsChanged = TRUE;
+                        }
+                        else
+                        {
+                            // no text data in clipboard:
+                            WinCloseClipbrd(hab);
+                            cmnSetDlgHelpPanel(ID_XFH_NOTEXTCLIP);
+                            if (WinDlgBox(HWND_DESKTOP,         // parent is desktop
+                                          HWND_DESKTOP,             // owner is desktop
+                                          (PFNWP)cmn_fnwpDlgWithHelp, // dialog procedure (common.c)
+                                          cmnQueryNLSModuleHandle(FALSE),  // from resource file
+                                          ID_XFD_NOTEXTCLIP,        // dialog resource id
+                                          (PVOID)NULL)             // no dialog parameters
+                                    == DID_CANCEL)
+                                brc = FALSE;
+                        }
                     }
                     else
-                        strcpy(szPassRealName, szRealName);
-
-                    // backup prog data for later restore
-                    pszOldParams = pProgDetails->pszParameters;
-
-                    if (pszOldParams) { // parameter list not empty
-                        // *** second trick:
-                        // we will append the current folder path to the parameters
-                        // if the program object's parameter list does not
-                        // end in "%" ("Netscape support") */
-                        if (ValidRealName && (pProgDetails->pszParameters[strlen(pProgDetails->pszParameters)-1] != '%')) {
-                            ParamsChanged = TRUE;
-
-                            strcpy(szNewParams, pszOldParams);
-                            strcat(szNewParams, " ");
-                            strcat(szNewParams, szPassRealName);
-                        }
-
-                        // *** third trick:
-                        // replace an existing "%**C" in the parameters
-                        // with the contents of the clipboard */
-                        if (strstr(pszOldParams, CLIPBOARDKEY))
-                        {
-                            hab = WinQueryAnchorBlock(HWND_DESKTOP);
-                            if (WinOpenClipbrd(hab))
-                            {
-                                PSZ pszClipText;
-                                if (pszClipText = (PSZ)WinQueryClipbrdData(hab, CF_TEXT))
-                                {
-                                    PSZ pszPos = NULL;
-                                    // Copy text from the shared memory object to local memory.
-                                    strncpy(szClipBuf, pszClipText, CCHMAXPATH);
-                                    szClipBuf[CCHMAXPATH-2] = '\0'; // make sure the string is terminated
-                                    WinCloseClipbrd(hab);
-
-                                    if (ParamsChanged == FALSE) // did we copy already?
-                                        strcpy(szNewParams, pszOldParams);
-                                    pszPos = strstr(szNewParams, CLIPBOARDKEY);
-                                    Ofs = strlen(szClipBuf);
-                                    if (Ofs + strlen(szNewParams) > CCHMAXPATH)
-                                        Ofs -= strlen(szNewParams);
-                                    strcpy(szClipBuf+Ofs, pszPos+strlen(CLIPBOARDKEY));
-                                    strcpy(pszPos, szClipBuf);
-
-                                    ParamsChanged = TRUE;
-                                }
-                                else
-                                {   // no text data in clipboard
-                                    WinCloseClipbrd(hab);
-                                    cmnSetDlgHelpPanel(ID_XFH_NOTEXTCLIP);
-                                    if (WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                                                  HWND_DESKTOP,             // owner is desktop
-                                                  (PFNWP)cmn_fnwpDlgWithHelp, // dialog procedure (common.c)
-                                                  cmnQueryNLSModuleHandle(FALSE),  // from resource file
-                                                  ID_XFD_NOTEXTCLIP,        // dialog resource id
-                                                  (PVOID)NULL)             // no dialog parameters
-                                            == DID_CANCEL)
-                                        brc = FALSE;
-                                }
-                            }
-                            else
-                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                       "Unable to open clipboard.");
-                        }
-                        if (ParamsChanged)
-                            pProgDetails->pszParameters = szNewParams;
-
-                    } else
-                        // parameter list is empty: simply set params
-                        if (ValidRealName)
-                        {
-                            ParamsChanged = TRUE;
-                            // set parameter list to folder name
-                            pProgDetails->pszParameters = szPassRealName;
-                            // since parameter list is empty, we need not
-                            // search for the clipboard key ("%**C") */
-                        }
-                } // end if (pGlobalSettings->AppdParam)
-
-                // now remove "~" from title, if allowed
-                pszOldTitle = pProgDetails->pszTitle;
-                if ((pszOldTitle) && (pGlobalSettings->RemoveX))
-                {
-                    PSZ pszPos = strchr(pszOldTitle, '~');
-                    if (pszPos)
                     {
-                        TitleChanged = TRUE;
-                        strncpy(szNewTitle, pszOldTitle, (pszPos-pszOldTitle));
-                        strcat(szNewTitle, pszPos+1);
-                        pProgDetails->pszTitle = szNewTitle;
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Unable to open clipboard.");
+                        brc = FALSE;
                     }
                 }
 
-                // now apply new settings, if necessary
-                if (StartupChanged || ParamsChanged || TitleChanged)
-                    if (!_wpSetProgDetails(pProgram, pProgDetails))
-                    {
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "Unable to set new startup directory.");
-                        brc = FALSE;
-                    }
-
-                if (brc)
-                    // open the object with new settings
-                    _wpViewObject(pProgram, NULLHANDLE, OPEN_DEFAULT, 0);
-
-                // now restore the old settings, if necessary
-                if (StartupChanged)
-                    pProgDetails->pszStartupDir = NULL;
                 if (ParamsChanged)
-                    pProgDetails->pszParameters = pszOldParams;
-                if (TitleChanged)
-                    pProgDetails->pszTitle = pszOldTitle;
-                if (StartupChanged || ParamsChanged || TitleChanged)
-                    _wpSetProgDetails(pProgram, pProgDetails);
+                    pDetails->pszParameters = strNewParams.psz;
+            }
+            else
+                // parameter list is empty: simply set params
+                if (ValidRealName)
+                {
+                    ParamsChanged = TRUE;
+                    // set parameter list to folder name
+                    pDetails->pszParameters = szPassRealName;
+                    // since parameter list is empty, we need not
+                    // search for the clipboard key ("%**C") */
+                }
+        } // end if (pGlobalSettings->AppdParam)
 
-            } else
+        // now remove "~" from title, if allowed
+        if (    (pszOldTitle = pDetails->pszTitle)
+             && (pGlobalSettings->RemoveX)
+           )
+        {
+            PSZ pszPos;
+            if (pszPos = strchr(pszOldTitle, '~'))
+            {
+                TitleChanged = TRUE;
+                strncpy(szNewTitle, pszOldTitle, (pszPos - pszOldTitle));
+                strcat(szNewTitle, pszPos+1);
+                pDetails->pszTitle = szNewTitle;
+            }
+        }
+
+        // now apply new settings, if necessary
+        if (StartupChanged || ParamsChanged || TitleChanged)
+            if (!_wpSetProgDetails(pProgram, pDetails))
+            {
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to set new startup directory.");
                 brc = FALSE;
+            }
 
-            _wpFreeMem(somSelf, (PBYTE)pProgDetails);
-        } else
-            brc = FALSE;
-    } else
-        brc = FALSE;
+        if (brc)
+            // open the object with new settings
+            if (!_wpViewObject(pProgram, NULLHANDLE, OPEN_DEFAULT, 0))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "wpViewObject failed.");
+
+        // now restore the old settings, if necessary
+        if (StartupChanged)
+            pDetails->pszStartupDir = NULL;
+        if (ParamsChanged)
+            pDetails->pszParameters = pszOldParams;
+        if (TitleChanged)
+            pDetails->pszTitle = pszOldTitle;
+        if (StartupChanged || ParamsChanged || TitleChanged)
+            _wpSetProgDetails(pProgram, pDetails);
+
+        free(pDetails);
+        xstrClear(&strNewParams);
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "wpQueryProgDetails failed.");
 
     return (brc);
 }
@@ -1800,7 +1840,7 @@ BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                 case OC_XWPSTRING:      // V0.9.14 (2001-08-25) [umoeller]
                 {
                     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-                    if (    (pKernelGlobals->fXWPString)
+                    if (    (krnIsClassReady(G_pcszXWPString))
                          && (_somIsA(pObject, _XWPString))
                        )
                         _xwpInvokeString(pObject,       // string object
@@ -2670,6 +2710,91 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *
  ********************************************************************/
 
+CONTROLDEF
+    FileMenusGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "File menus",
+                            ID_XSDI_FILEMENUS_GROUP),
+    AttributesCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Add \"A~ttributes\" menu",
+                            ID_XSDI_FILEATTRIBS,
+                            -1,
+                            -1),
+    CopyFilenameCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "~Add \"Copy filename\"",
+                            ID_XSDI_COPYFILENAME,
+                            -1,
+                            -1),
+
+    FolderMenusGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "Folder menus",
+                            ID_XSDI_FOLDERMENUS_GROUP),
+#ifndef __NOMOVEREFRESHNOW__
+    RefreshNowCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Add \"~Refresh now\" to main menu",
+                            ID_XSDI_MOVE4REFRESH,
+                            -1,
+                            -1),
+#endif
+    SelectSomeCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Add ""Se~lect by name""",
+                            ID_XSDI_SELECTSOME,
+                            -1,
+                            -1),
+    FolderViewsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Extend ""~View"" menu",
+                            ID_XSDI_FLDRVIEWS,
+                            -1,
+                            -1)
+#ifndef __NOFOLDERCONTENTS__
+    ,
+    FolderContentsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Add f~older content menus",
+                            ID_XSDI_FOLDERCONTENT,
+                            -1,
+                            -1),
+    FolderContentsIconsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Show ~icons",
+                            ID_XSDI_FC_SHOWICONS,
+                            -1,
+                            -1)
+#endif
+    ;
+
+DLGHITEM dlgAddMenus[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // row 1 in the root table, required
+                // create group on top
+                START_GROUP_TABLE(&FileMenusGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&AttributesCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&CopyFilenameCB),
+                END_TABLE,      // end of group
+            START_ROW(0),       // row 2 in the root table
+                START_GROUP_TABLE(&FolderMenusGroup),
+#ifndef __NOMOVEREFRESHNOW__
+                    START_ROW(0),
+                        CONTROL_DEF(&RefreshNowCB),
+#endif
+                    START_ROW(0),
+                        CONTROL_DEF(&SelectSomeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FolderViewsCB),
+#ifndef __NOFOLDERCONTENTS__
+                    START_ROW(0),
+                        CONTROL_DEF(&FolderContentsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FolderContentsIconsCB),
+#endif
+                END_TABLE,      // end of group
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
 /*
  *@@ mnuAddMenusInitPage:
  *      notebook callback function (notebook.c) for the
@@ -2679,6 +2804,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *      Global Settings.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: now using dialog formatter
  */
 
 VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2696,6 +2822,12 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-09-29) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgAddMenus,
+                          ARRAYITEMCOUNT(dlgAddMenus));
         }
     }
 
@@ -2707,14 +2839,18 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               pGlobalSettings->AddCopyFilenameItem);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS,
                               pGlobalSettings->ExtendFldrViewMenu);
+#ifndef __NOMOVEREFRESHNOW__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOVE4REFRESH,
-                              pGlobalSettings->MoveRefreshNow);
+                              cmnIsFeatureEnabled(MoveRefreshNow));
+#endif
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME,
                               pGlobalSettings->AddSelectSomeItem);
+#ifndef __NOFOLDERCONTENTS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                              pGlobalSettings->AddFolderContentItem);
+                              cmnIsFeatureEnabled(AddFolderContentItem));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                              pGlobalSettings->FCShowIcons);
+                              cmnIsFeatureEnabled(FolderContentShowIcons));
+#endif
 
         /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_EXTENDCLOSEMENU,
                               pGlobalSettings->fExtendCloseMenu);
@@ -2730,10 +2866,12 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                (    ( (G_fIsWarp4)  && (pGlobalSettings->RemoveViewMenu == 0) )
                  || ( (!G_fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                ));
+#ifndef __NOFOLDERCONTENTS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                         !(pGlobalSettings->fNoSubclassing));
+                         !cmnIsFeatureEnabled(NoSubclassing));
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                         !(pGlobalSettings->fNoSubclassing));
+                         !cmnIsFeatureEnabled(NoSubclassing));
+#endif
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
     }
@@ -2772,26 +2910,25 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->ExtendFldrViewMenu = ulExtra;
         break;
 
+#ifndef __NOMOVEREFRESHNOW__
         case ID_XSDI_MOVE4REFRESH:
-            pGlobalSettings->MoveRefreshNow = ulExtra;
+            pGlobalSettings->__fMoveRefreshNow = ulExtra;
         break;
+#endif
 
         case ID_XSDI_SELECTSOME:
             pGlobalSettings->AddSelectSomeItem = ulExtra;
         break;
 
+#ifndef __NOFOLDERCONTENTS__
         case ID_XSDI_FOLDERCONTENT:
-            pGlobalSettings->AddFolderContentItem = ulExtra;
+            pGlobalSettings->__fAddFolderContentItem = ulExtra;
         break;
 
         case ID_XSDI_FC_SHOWICONS:
-            pGlobalSettings->FCShowIcons = ulExtra;
-            /* if (ulExtra)
-                // enabled: show warning msg box (video driver bugs)
-                cmnMessageBoxMsg(pcnbp->hwndFrame,
-                                 116, 117,
-                                 MB_OK); */
+            pGlobalSettings->__fFolderContentShowIcons = ulExtra;
         break;
+#endif
 
         /* case ID_XSDI_EXTENDCLOSEMENU:
             pGlobalSettings->fExtendCloseMenu = ulExtra;
@@ -2807,10 +2944,14 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->FileAttribs = pGSBackup->FileAttribs;
             pGlobalSettings->AddCopyFilenameItem = pGSBackup->AddCopyFilenameItem;
             pGlobalSettings->ExtendFldrViewMenu = pGSBackup->ExtendFldrViewMenu;
-            pGlobalSettings->MoveRefreshNow = pGSBackup->MoveRefreshNow;
+#ifndef __NOMOVEREFRESHNOW__
+            pGlobalSettings->__fMoveRefreshNow = pGSBackup->__fMoveRefreshNow;
+#endif
             pGlobalSettings->AddSelectSomeItem = pGSBackup->AddSelectSomeItem;
-            pGlobalSettings->AddFolderContentItem = pGSBackup->AddFolderContentItem;
-            pGlobalSettings->FCShowIcons = pGSBackup->FCShowIcons;
+#ifndef __NOFOLDERCONTENTS__
+            pGlobalSettings->__fAddFolderContentItem = pGSBackup->__fAddFolderContentItem;
+            pGlobalSettings->__fFolderContentShowIcons = pGSBackup->__fFolderContentShowIcons;
+#endif
 
             // pGlobalSettings->fExtendCloseMenu = pGSBackup->fExtendCloseMenu;
 
@@ -2823,7 +2964,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2963,7 +3104,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -3227,7 +3368,7 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);

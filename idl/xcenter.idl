@@ -61,8 +61,7 @@ interface XCenter : WPAbstract
     BOOL xwpSetPriority(in ULONG ulClass,
                         in LONG lDelta);
 
-    ULONG xwpQuerySetup2(in PSZ pszSetupString,
-                         in ULONG cbSetupString);
+    BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
 #ifdef __SOMIDL__
   implementation {

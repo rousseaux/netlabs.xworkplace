@@ -7,7 +7,7 @@
  *      by the XWorkplace main DLL (XFLDR.DLL).
  *
  *      The daemon is started automatically by XFLDR.DLL upon
- *      first WPS startup (details follow). Currently, the
+ *      first Desktop startup (details follow). Currently, the
  *      daemon is responsible for the following:
  *
  *      1.  Installation and configuration of the XWorkplace
@@ -29,8 +29,8 @@
  *          also has the new notebook pages in the "Mouse" and
  *          "Keyboard" objects.
  *
- *      2.  Keeping track of WPS restarts, since the daemon
- *          keeps running even while the WPS restarts. Shared
+ *      2.  Keeping track of Desktop restarts, since the daemon
+ *          keeps running even while the Desktop restarts. Shared
  *          memory is used for communication.
  *
  *          The interaction between XWPDAEMN.EXE and XFLDR.DLL works
@@ -696,7 +696,7 @@ VOID InstallHook(VOID)
             // install hook
             G_pHookData = hookInit(G_pXwpGlobalShared->hwndDaemonObject);
 
-            _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
+            // _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
 
             if (G_pHookData)
                 if (    (G_pHookData->fInputHooked)
@@ -1495,7 +1495,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_HOOKINSTALL:
-                _Pmpf((__FUNCTION__ ": got XDM_HOOKINSTALL (%d)", mp1));
+                // _Pmpf((__FUNCTION__ ": got XDM_HOOKINSTALL (%d)", mp1));
                 if (mp1)
                     // install the hook:
                     InstallHook();
@@ -1520,7 +1520,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      -- HWND mp1: desktop frame HWND.
              *      -- mp2: unused, always 0.
              *
-             *@@changed V0.9.4 (2000-08-08) [umoeller]: fixed problems after WPS restart
+             *@@changed V0.9.4 (2000-08-08) [umoeller]: fixed problems after Desktop restart
              */
 
             case XDM_DESKTOPREADY:
@@ -1639,7 +1639,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      which is not really desirable.
              *
              *      Parameters:
-             *      -- ULONG mp1: hotkey identifier, probably WPS object handle.
+             *      -- ULONG mp1: hotkey identifier, probably Desktop object handle.
              */
 
             case XDM_HOTKEYPRESSED:
@@ -2441,7 +2441,7 @@ int main(int argc, char *argv[])
             WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
                           "Hi there. Thanks for your interest in the XWorkplace Daemon, "
                           "but this program is not intended to be started manually, "
-                          "but only automatically by XWorkplace when the WPS starts up.",
+                          "but only automatically by XWorkplace when the Desktop starts up.",
                           "XWorkplace Daemon",
                           0,
                           MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
@@ -2471,7 +2471,7 @@ int main(int argc, char *argv[])
             // access the shared memory allocated by
             // XFLDR.DLL; this should always work:
             // a) if the daemon has been started during first
-            //    WPS startup, initMain has
+            //    Desktop startup, initMain has
             //    allocated the memory before starting the
             //    daemon;
             // b) at any time later (if the daemon is restarted
@@ -2551,10 +2551,10 @@ int main(int argc, char *argv[])
                                T1M_DAEMONREADY,
                                0, 0);
 
-                    _Pmpf(("posted T1M_DAEMONREADY to 0x%lX",
-                                G_pXwpGlobalShared->hwndThread1Object));
-                    _Pmpf(("G_pXwpGlobalShared->hwndDaemonObjec is 0x%lX",
-                                G_pXwpGlobalShared->hwndDaemonObject));
+                    // _Pmpf(("posted T1M_DAEMONREADY to 0x%lX",
+                       //          G_pXwpGlobalShared->hwndThread1Object));
+                    // _Pmpf(("G_pXwpGlobalShared->hwndDaemonObjec is 0x%lX",
+                       //          G_pXwpGlobalShared->hwndDaemonObject));
 
                     // register special exception handler just for
                     // thread termination (see TerminateExcHandler)
@@ -2562,8 +2562,8 @@ int main(int argc, char *argv[])
                     TermExcptStruct.RegRec2.pfnHandler = (PFN)TerminateExcHandler;
                     arc = DosSetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)
                                                         &(TermExcptStruct.RegRec2));
-                    if (arc)
-                        _Pmpf(("DosSetExceptionHandler returned %d", arc));
+                    // if (arc)
+                       //  _Pmpf(("DosSetExceptionHandler returned %d", arc));
 
                     TermExcptStruct.ulExcpt = setjmp(TermExcptStruct.RegRec2.jmpThread);
                     if (TermExcptStruct.ulExcpt == 0)

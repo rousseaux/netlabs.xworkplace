@@ -131,7 +131,7 @@ dep:
 # linking
 
 $(DRIVERNAME).def: ..\..\include\bldlevel.h makefile
-    $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "XWorkplace Security device driver"
+    $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "$(XWPNAME) Security device driver"
 
 $(MODULESDIR)\$(DRIVERNAME).sys: \
             $(AOBJS)             \

@@ -100,9 +100,10 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
-#include "helpers\winh.h"               // PM helper routines
-#include "helpers\xstring.h"            // extended string helpers
 #include "helpers\tree.h"               // red-black binary trees
+#include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
+#include "helpers\xstring.h"            // extended string helpers
 
 #include "expat\expat.h"                // XWPHelpers expat XML parser
 #include "helpers\xml.h"                // XWPHelpers XML engine
@@ -773,9 +774,8 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
                     while (*pAssoc)
                     {
                         hobjAssoc = atoi(pAssoc);
-                        pobjAssoc = objFindObjFromHandle(hobjAssoc);
+                        if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
                                     // V0.9.9 (2001-04-02) [umoeller]
-                        if (pobjAssoc)
                         {
                             // look if the object has already been added;
                             // this might happen if the same object has
@@ -1924,7 +1924,7 @@ typedef struct _FILETYPESPAGEDATA
     // drag'n'drop within the file types container
     // BOOL fFileTypesDnDValid;
 
-    // drag'n'drop of WPS objects to assocs container;
+    // drag'n'drop of Desktop objects to assocs container;
     // NULL if d'n'd is invalid
     WPObject *pobjDrop;
     // record core after which item is to be inserted
@@ -1958,6 +1958,7 @@ typedef struct _FILETYPESPAGEDATA
  *      Returns the new ASSOCRECORD or NULL upon errors.
  *
  *@@changed V0.9.4 (2000-06-14) [umoeller]: fixed repaint problems
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: added icons to assoc records
  */
 
 PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
@@ -1975,7 +1976,8 @@ PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
                                          1);
     if (preccNew)
     {
-        ULONG   flRecordAttr = CRA_RECORDREADONLY | CRA_DROPONABLE;
+        ULONG       flRecordAttr = CRA_RECORDREADONLY | CRA_DROPONABLE;
+        WPObject    *pobj;
 
         if (!fEnableRecord)
             flRecordAttr |= RECORD_DISABLED;
@@ -1986,6 +1988,14 @@ PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
         #ifdef DEBUG_ASSOCS
             _Pmpf(("AddAssoc: flRecordAttr %lX", flRecordAttr));
         #endif
+
+        // add icon V0.9.16 (2001-09-29) [umoeller]
+        if (pobj = objFindObjFromHandle(preccNew->hobj))
+        {
+            preccNew->recc.hptrIcon
+            = preccNew->recc.hptrMiniIcon
+            = _wpQueryIcon(pobj);
+        }
 
         cnrhInsertRecordAfter(hwndAssocsCnr,
                               (PRECORDCORE)preccNew,
@@ -2619,13 +2629,16 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // set up assocs container
             BEGIN_CNRINFO()
             {
-                cnrhSetView(CV_TEXT
+                cnrhSetView(CV_NAME | CV_MINI
                              | CA_ORDEREDTARGETEMPH
                                             // allow dropping only _between_ records
                              | CA_OWNERDRAW);
                                             // for disabled records
                 // no sort here
             } END_CNRINFO(pftpd->hwndAssocsCnr);
+
+            // flags for cnr owner draw
+            pcnbp->ulCnrOwnerDraw = CODFL_DISABLEDTEXT | CODFL_MINIICON;
 
             pftpd->hmenuFileTypeSel = WinLoadMenu(HWND_OBJECT,
                                                   cmnQueryNLSModuleHandle(FALSE),
@@ -2724,6 +2737,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.7 (2000-12-13) [umoeller]: lazy drop menu items were enabled wrong; thanks Martin Lafaix
  *@@changed V0.9.7 (2000-12-13) [umoeller]: made lazy drop menu items work
  *@@changed V0.9.7 (2000-12-13) [umoeller]: added "Create subtype" menu item
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: added "properties" and "open folder" assoc items
  */
 
 MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -3492,10 +3506,10 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // filter out disabled (parent) associations
                             if ((pcdi->pRecord->flRecordAttr & RECORD_DISABLED) == 0)
                                 cnrhInitDrag(pcdi->hwndCnr,
-                                                pcdi->pRecord,
-                                                usNotifyCode,
-                                                DRAG_RMF,
-                                                DO_MOVEABLE);
+                                             pcdi->pRecord,
+                                             usNotifyCode,
+                                             DRAG_RMF,
+                                             DO_MOVEABLE);
                         }
 
                 }
@@ -3780,6 +3794,59 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             WriteAssocs2INI((PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
                             pftpd->hwndTypesCnr,
                             pftpd->hwndAssocsCnr);
+        }
+        break;
+
+        case ID_XSMI_FILEASSOC_SETTINGS:        // V0.9.16 (2001-09-29) [umoeller]
+        case ID_XSMI_FILEASSOC_OPENFDR:         // V0.9.16 (2001-09-29) [umoeller]
+        {
+            ULONG ulSelection;
+            PRECORDCORE precc = cnrhQuerySourceRecord(pftpd->hwndAssocsCnr,
+                                                      pcnbp->preccSource,
+                                                      &ulSelection);
+
+            while (precc)
+            {
+                PRECORDCORE preccNext = 0;
+
+                HOBJECT hobj = ((PASSOCRECORD)precc)->hobj;
+                WPObject *pobjAssoc;
+
+                if (ulSelection == SEL_MULTISEL)
+                    // get next record first, because we can't query
+                    // this after the record has been removed
+                    preccNext = cnrhQueryNextSelectedRecord(pftpd->hwndAssocsCnr,
+                                                            precc);
+
+                if (    (hobj)
+                     && (pobjAssoc = objFindObjFromHandle(hobj))
+                   )
+                {
+                    switch (ulItemID)
+                    {
+                        case ID_XSMI_FILEASSOC_SETTINGS:
+                            _wpViewObject(pobjAssoc,
+                                          NULLHANDLE,
+                                          OPEN_SETTINGS,
+                                          0);
+                        break;
+
+                        case ID_XSMI_FILEASSOC_OPENFDR:
+                        {
+                            WPFolder *pfdr;
+                            if (pfdr = _wpQueryFolder(pobjAssoc))
+                                _wpViewObject(pfdr,
+                                              NULLHANDLE,
+                                              OPEN_DEFAULT,
+                                              0);
+                        }
+                        break;
+                    }
+                }
+
+                precc = preccNext;
+                // NULL if none
+            }
         }
         break;
 

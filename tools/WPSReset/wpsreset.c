@@ -12,7 +12,7 @@
  *      the WPS.
  *
  *      WPSRESET only works if you pass it the "-D" parameter on the
- *      command line in order to prevent accidental WPS restarts.
+ *      command line in order to prevent accidental Desktop restarts.
  *      I don't remember what "-D" stands for. Maybe "dumb".
  *
  *      Copyright (C) 1997-2000 Ulrich M”ller.

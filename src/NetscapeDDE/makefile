@@ -71,7 +71,7 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 .c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
         $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
@@ -80,8 +80,8 @@ dep:
 !endif
 
 # build targets
-$(EXENAME).def: ..\..\include\bldlevel.h
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace Netscape DDE Interface"
+$(EXENAME).def: ..\..\include\bldlevel.h makefile
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Netscape DDE Interface"
 
 $(OUTPUTDIR)\$(EXENAME).res: $(EXENAME).rc $(EXENAME).h $(EXENAME).dlg
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

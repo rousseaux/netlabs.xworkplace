@@ -546,50 +546,40 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
 
     M_XFldStartup_parent_M_XFolder_wpclsInitData(somSelf);
 
+    if (krnClassInitialized(G_pcszXFldStartup))
     {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
+        BOOL        brc = FALSE;
+        ULONG       ulSize;
+        PSZ         pszHandles;
+
+        // first call:
+
+        // initialize linked lists
+        lstInit(&G_llStartupFolders.ll, FALSE);    // no auto-free
+        G_llStartupFolders.fLoaded = FALSE;
+        lstInit(&G_llSavedStartupFolders.ll, FALSE);    // no auto-free
+        G_llSavedStartupFolders.fLoaded = FALSE;
+
+        // copy INI setting
+        brc = PrfQueryProfileSize(HINI_USERPROFILE,
+                                  (PSZ)INIAPP_XWORKPLACE,
+                                  (PSZ)INIKEY_XSTARTUPFOLDERS,
+                                  &ulSize);
+        if (   brc
+            && ((pszHandles = malloc(ulSize)) != NULL)
+           )
         {
-            if (pKernelGlobals->fXFldStartup == FALSE)
-            {
-                BOOL        brc = FALSE;
-                ULONG       ulSize;
-                PSZ         pszHandles;
+            brc = PrfQueryProfileString(HINI_USERPROFILE,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_XSTARTUPFOLDERS,
+                                        "", pszHandles, ulSize);
+            if (brc)
+                PrfWriteProfileString(HINI_USERPROFILE,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_XSAVEDSTARTUPFOLDERS,
+                                      pszHandles);
 
-                // first call:
-                // store the class object in KERNELGLOBALS
-                pKernelGlobals->fXFldStartup = TRUE;
-
-                // initialize linked lists
-                lstInit(&G_llStartupFolders.ll, FALSE);    // no auto-free
-                G_llStartupFolders.fLoaded = FALSE;
-                lstInit(&G_llSavedStartupFolders.ll, FALSE);    // no auto-free
-                G_llSavedStartupFolders.fLoaded = FALSE;
-
-                // copy INI setting
-                brc = PrfQueryProfileSize(HINI_USERPROFILE,
-                                          (PSZ)INIAPP_XWORKPLACE,
-                                          (PSZ)INIKEY_XSTARTUPFOLDERS,
-                                          &ulSize);
-                if (   brc
-                    && ((pszHandles = malloc(ulSize)) != NULL)
-                   )
-                {
-                    brc = PrfQueryProfileString(HINI_USERPROFILE,
-                                                (PSZ)INIAPP_XWORKPLACE,
-                                                (PSZ)INIKEY_XSTARTUPFOLDERS,
-                                                "", pszHandles, ulSize);
-                    if (brc)
-                        PrfWriteProfileString(HINI_USERPROFILE,
-                                              (PSZ)INIAPP_XWORKPLACE,
-                                              (PSZ)INIKEY_XSAVEDSTARTUPFOLDERS,
-                                              pszHandles);
-
-                    free(pszHandles);
-                }
-            }
-            krnUnlockGlobals();
+            free(pszHandles);
         }
     }
 }
@@ -732,15 +722,7 @@ SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
 
     M_XFldShutdown_parent_M_XFolder_wpclsInitData(somSelf);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            pKernelGlobals->fXFldShutdown = TRUE;
-            krnUnlockGlobals();
-        }
-    }
+    krnClassInitialized(G_pcszXFldShutdown);
 }
 
 /*

@@ -57,9 +57,11 @@
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
@@ -137,15 +139,18 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
         if (pRootFolder == NULL)
         {
             // drive not ready:
-            CHAR    szTitle[400];
+            CHAR szTitle2[300];
+            XSTRING strTitle;
+            xstrInit(&strTitle, 0);
 
             cmnGetMessage(NULL, 0,
-                          szTitle, sizeof(szTitle),
+                          &strTitle,
                           104);  // "XFolder: Error"
-            sprintf(szTitle + strlen(szTitle),
+            sprintf(szTitle2,
                     // append drive name in brackets
                     " (\"%s\")",
                     _wpQueryTitle(somSelf));
+            xstrcat(&strTitle, szTitle2, 0);
 
             if (arc == ERROR_AUDIO_CD_ROM)
                 // special error code for "audio cd inserted":
@@ -155,10 +160,11 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
 
             mbrc = cmnDosErrorMsgBox(HWND_DESKTOP,
                                      _wpQueryLogicalDrive(somSelf) + 'A' - 1,
-                                     szTitle,
+                                     strTitle.psz,
                                      arc,
                                      MB_RETRYCANCEL,
                                      TRUE); // show explanation
+            xstrClear(&strTitle);
         }
 
         bForceMap = TRUE;
@@ -283,9 +289,11 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        ULONG ulLogicalDrive = _wpQueryLogicalDrive(pcnbp->somSelf);
+        ULONG ulLogicalDrive;
 
-        if (ulLogicalDrive)
+        // the following is safe because WPSharedDir doesn't have
+        // a "Details" page
+        if (ulLogicalDrive = _wpQueryLogicalDrive(pcnbp->somSelf))
         {
             FSALLOCATE      fsa;
             CHAR            szTemp[100];
@@ -334,7 +342,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 // bytes per sector
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_SECTORSIZE,
-                                  strhThousandsULong(szTemp,
+                                  nlsThousandsULong(szTemp,
                                                      ulBlockSize,
                                                             // fixed V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
@@ -342,7 +350,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 // total size
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_TOTAL_SECTORS,
-                                  strhThousandsULong(szTemp,
+                                  nlsThousandsULong(szTemp,
                                                      fsa.cUnit,
                                                             // fixed V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
@@ -351,39 +359,39 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                               * fsa.cUnit;
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_TOTAL_BYTES,
-                                  strhThousandsDouble(szTemp,
-                                                      dTotal,
-                                                      cThousands));
+                                  nlsThousandsDouble(szTemp,
+                                                     dTotal,
+                                                     cThousands));
 
                 // free space
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_AVAILABLE_SECTORS,
-                                  strhThousandsULong(szTemp,
-                                                     fsa.cUnitAvail,
+                                  nlsThousandsULong(szTemp,
+                                                    fsa.cUnitAvail,
                                                             // fixed V0.9.12 (2001-04-29) [umoeller]
-                                                     cThousands));
+                                                    cThousands));
                 dAvailable = (double)fsa.cbSector
                                   * fsa.cSectorUnit
                                   * fsa.cUnitAvail,
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_AVAILABLE_BYTES,
-                                  strhThousandsDouble(szTemp,
-                                                      dAvailable,
-                                                      cThousands));
+                                  nlsThousandsDouble(szTemp,
+                                                     dAvailable,
+                                                     cThousands));
 
                 // allocated space
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_ALLOCATED_SECTORS,
-                                  strhThousandsULong(szTemp,
+                                  nlsThousandsULong(szTemp,
                                                      (fsa.cUnit - fsa.cUnitAvail),
                                                             // V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
                 dAllocated = dTotal - dAvailable;  // allocated
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_ALLOCATED_BYTES,
-                                  strhThousandsDouble(szTemp,
-                                                      dAllocated,
-                                                      cThousands));
+                                  nlsThousandsDouble(szTemp,
+                                                     dAllocated,
+                                                     cThousands));
 
                 // reset pie chart control with those values
                 pcd.usStartAngle = 270 + 15;
@@ -396,13 +404,13 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 pcd.palColors = (LONG*)(&alColors);
 
                 // compose description strings array
-                strhThousandsDouble(szAllocated,
-                                    dDisplay[0] / 1024 / 1024,
-                                    cThousands);
+                nlsThousandsDouble(szAllocated,
+                                   dDisplay[0] / 1024 / 1024,
+                                   cThousands);
                 strcat(szAllocated, " MB");
-                strhThousandsDouble(szAvailable,
-                                    dDisplay[1] / 1024 / 1024,
-                                    cThousands);
+                nlsThousandsDouble(szAvailable,
+                                   dDisplay[1] / 1024 / 1024,
+                                   cThousands);
                 strcat(szAvailable, " MB");
                 apszDescriptions[0] = szAllocated;
                 apszDescriptions[1] = szAvailable;

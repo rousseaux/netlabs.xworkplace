@@ -5,14 +5,14 @@
  *      XWP replacement is enabled.
  *
  *      If the user has replaced folder auto-refresh in
- *      XWPSetup, on WPS startup, krnReplaceWheelWatcher
+ *      XWPSetup, on Desktop startup, krnReplaceWheelWatcher
  *      prevents the WPS "wheel watcher" thread from starting,
  *      which usually processes the Dos*ChangeNotify notifications.
  *
  *      Since these APIs can only be used ONCE on the
  *      entire system, we can't compete with that thread.
  *      This is also why enabling the replacement requires
- *      a WPS restart, because we can only stop that thread
+ *      a Desktop restart, because we can only stop that thread
  *      if it has not done any processing yet.
  *
  *      Instead, the following three (!) threads are responsible
@@ -21,7 +21,7 @@
  *      1)  The "Sentinel" thread (refr_fntSentinel). This is
  *          our replacement for the WPS wheel watcher.
  *
- *          This gets started on WPS startup from
+ *          This gets started on Desktop startup from
  *          krnReplaceWheelWatcher.
  *          It does not have a PM message queue and now
  *          handles the Dos*ChangeNotify APIs.

@@ -61,6 +61,7 @@
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
+#define INCL_WINSTDSPIN
 #define INCL_WINSHELLDATA       // Prf* functions
 #include <os2.h>
 
@@ -73,6 +74,8 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\dialog.h"             // dialog helpers
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
@@ -95,10 +98,130 @@
 // #include <wpdesk.h>
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c) for XFldWPS  "View" page       *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c) for XFldWPS  "View" page
+ *
  ********************************************************************/
+
+CONTROLDEF
+    FolderViewGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // ""Folder view settings"
+                            ID_XSD_FOLDERVIEWGROUP),
+    FullPathCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Show full path in folder ~title",
+                            ID_XSDI_FULLPATH,
+                            -1,
+                            -1),
+    KeepTitleCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Kee~p original title",
+                            ID_XSDI_KEEPTITLE,
+                            -1,
+                            -1),
+    MaxPathCharsText1 = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "~Limit path to",
+                            ID_XSDI_MAXPATHCHARS_TX1,
+                            -1,
+                            -1),
+    MaxPathCharsSpin = CONTROLDEF_SPINBUTTON(
+                            ID_XSDI_MAXPATHCHARS,
+                            60,
+                            -1),
+    MaxPathCharsText2 = CONTROLDEF_TEXT(
+                            LOAD_STRING, // "characters",
+                            ID_XSDI_MAXPATHCHARS_TX2,
+                            -1,
+                            -1),
+    TreeViewAutoScrollCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Auto-scroll Tree vie~ws"
+                            ID_XSDI_TREEVIEWAUTOSCROLL,
+                            -1,
+                            -1),
+#ifndef __NOFDRDEFAULTDOCS__
+    FdrDefaultDocCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "~Enable default documents in folders"
+                            ID_XSDI_FDRDEFAULTDOC,
+                            -1,
+                            -1),
+    FdrDefaultDocViewCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "De~fault document = default folder view",
+                            ID_XSDI_FDRDEFAULTDOCVIEW,
+                            -1,
+                            -1),
+#endif
+    FdrAutoRefreshCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING, // "Enable folder ~auto-refresh"
+                            ID_XSDI_FDRAUTOREFRESH,
+                            -1,
+                            -1),
+    FdrDefaultViewGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // "Default folder view"
+                            ID_XSDI_FDRVIEWDEFAULT_GROUP),
+    FdrViewInheritCB = CONTROLDEF_FIRST_AUTORADIO(
+                            LOAD_STRING, // "Use pare~nt folder's default view",
+                            ID_XSDI_FDRVIEW_INHERIT,
+                            -1,
+                            -1),
+    FdrViewIconCB = CONTROLDEF_NEXT_AUTORADIO(
+                            LOAD_STRING, // "~Icon",
+                            ID_XSDI_FDRVIEW_ICON,
+                            -1,
+                            -1),
+    FdrViewTreeCB = CONTROLDEF_NEXT_AUTORADIO(
+                            LOAD_STRING, // "T~ree",
+                            ID_XSDI_FDRVIEW_TREE,
+                            -1,
+                            -1),
+    FdrViewDetailsCB = CONTROLDEF_NEXT_AUTORADIO(
+                            LOAD_STRING, // "Detail~s",
+                            ID_XSDI_FDRVIEW_DETAILS,
+                            -1,
+                            -1);
+
+DLGHITEM dlgView[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // row 1 in the root table, required
+                // create group on top
+                START_GROUP_TABLE(&FolderViewGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&FullPathCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&KeepTitleCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&MaxPathCharsText1),
+                        CONTROL_DEF(&MaxPathCharsSpin),
+                        CONTROL_DEF(&MaxPathCharsText2),
+                    START_ROW(0),
+                        CONTROL_DEF(&TreeViewAutoScrollCB),
+#ifndef __NOFDRDEFAULTDOCS__
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrDefaultDocCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&FdrDefaultDocViewCB),
+#endif
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrAutoRefreshCB),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&FdrDefaultViewGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewInheritCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewIconCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewTreeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewDetailsCB),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
 
 /*
  *@@ fdrViewInitPage:
@@ -112,6 +235,7 @@
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added folder auto-refresh
  *@@changed V0.9.12 (2001-04-30) [umoeller]: added default folder views
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: now using dialog formatter
  */
 
 VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -130,6 +254,12 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-10-11) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgView,
+                          ARRAYITEMCOUNT(dlgView));
         }
     }
 
@@ -148,10 +278,12 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                               pGlobalSettings->TreeViewAutoScroll);
 
+#ifndef __NOFDRDEFAULTDOCS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOC,
-                              pGlobalSettings->fFdrDefaultDoc);
+                              pGlobalSettings->_fFdrDefaultDoc);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
-                              pGlobalSettings->fFdrDefaultDocView);
+                              pGlobalSettings->_fFdrDefaultDocView);
+#endif
 
         if (pKernelGlobals->fAutoRefreshReplaced)
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
@@ -174,10 +306,14 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                 (    (pGlobalSettings->NoWorkerThread == FALSE)
-                  && (pGlobalSettings->fNoSubclassing == FALSE)
+#ifndef __ALWAYSSUBCLASS__
+                  && (!cmnIsFeatureEnabled(NoSubclassing))
+#endif
                 ));
+#ifndef __NOFDRDEFAULTDOCS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
-                         pGlobalSettings->fFdrDefaultDoc);
+                         pGlobalSettings->_fFdrDefaultDoc);
+#endif
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
                          pKernelGlobals->fAutoRefreshReplaced);
@@ -229,15 +365,17 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fUpdate = TRUE;
         break;
 
+#ifndef __NOFDRDEFAULTDOCS__
         case ID_XSDI_FDRDEFAULTDOC:
-            pGlobalSettings->fFdrDefaultDoc = ulExtra;
+            pGlobalSettings->_fFdrDefaultDoc = ulExtra;
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSDI_FDRDEFAULTDOCVIEW:
-            pGlobalSettings->fFdrDefaultDocView = ulExtra;
+            pGlobalSettings->_fFdrDefaultDocView = ulExtra;
         break;
+#endif
 
         case ID_XSDI_FDRAUTOREFRESH:
             pGlobalSettings->fFdrAutoRefreshDisabled = (ulExtra == 0);
@@ -271,8 +409,10 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->TreeViewAutoScroll = pGSBackup->TreeViewAutoScroll;
             pGlobalSettings->MaxPathChars = pGSBackup->MaxPathChars;
 
-            pGlobalSettings->fFdrDefaultDoc = pGSBackup->fFdrDefaultDoc;
-            pGlobalSettings->fFdrDefaultDocView = pGSBackup->fFdrDefaultDocView;
+#ifndef __NOFDRDEFAULTDOCS__
+            pGlobalSettings->_fFdrDefaultDoc = pGSBackup->_fFdrDefaultDoc;
+            pGlobalSettings->_fFdrDefaultDocView = pGSBackup->_fFdrDefaultDocView;
+#endif
 
             pGlobalSettings->fFdrAutoRefreshDisabled = pGSBackup->fFdrAutoRefreshDisabled;
 
@@ -287,7 +427,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -314,10 +454,12 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c) for XFldWPS"Grid" page         *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c) for XFldWPS"Grid" page
+ *
  ********************************************************************/
+
+#ifndef __NOSNAPTOGRID__
 
 /*
  *@@ fdrGridInitPage:
@@ -426,7 +568,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
-            // WPS startup)
+            // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -444,11 +586,89 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
+#endif
+
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c) for "XFolder" instance page    *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c) for "XFolder" instance page
+ *
  ********************************************************************/
+
+CONTROLDEF
+#ifndef __NOFOLDERCONTENTS__
+    FavoriteFolderCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FAVORITEFOLDER,
+                            -1,
+                            -1),
+#endif
+#ifndef __NOQUICKOPEN__
+    QuickOpenCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_QUICKOPEN,
+                            -1,
+                            -1),
+#endif
+    /* FullPathCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FULLPATH,
+                            -1,
+                            -1),
+    KeepTitleCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_KEEPTITLE,
+                            -1,
+                            -1), */
+            // already defined in "View" page above
+#ifndef __NOSNAPTOGRID__
+    SnapToGridCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_SNAPTOGRID,
+                            -1,
+                            -1),
+#endif
+    FdrHotkeysCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ACCELERATORS,
+                            -1,
+                            -1),
+    StatusBarCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ENABLESTATUSBAR,
+                            -1,
+                            -1);
+
+
+DLGHITEM dlgXFolder[] =
+    {
+        START_TABLE,            // root table, required
+#ifndef __NOFOLDERCONTENTS__
+            START_ROW(0),       // row 1 in the root table, required
+                CONTROL_DEF(&FavoriteFolderCB),
+#endif
+#ifndef __NOQUICKOPEN__
+            START_ROW(0),
+                CONTROL_DEF(&QuickOpenCB),
+#endif
+            START_ROW(0),
+                CONTROL_DEF(&FullPathCB),
+            START_ROW(0),
+                CONTROL_DEF(&G_Spacing),
+                CONTROL_DEF(&KeepTitleCB),
+#ifndef __NOSNAPTOGRID__
+            START_ROW(0),
+                CONTROL_DEF(&SnapToGridCB),
+#endif
+            START_ROW(0),
+                CONTROL_DEF(&FdrHotkeysCB),
+            START_ROW(0),
+                CONTROL_DEF(&StatusBarCB),
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
 
 /*
  * fdrXFolderInitPage:
@@ -460,6 +680,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.1 (99-12-28) [umoeller]: "snap to grid" was enabled even if disabled globally; fixed
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: now using dialog formatter
  */
 
 VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
@@ -478,16 +699,26 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(XFolderData));
             memcpy(pcnbp->pUser, somThis, sizeof(XFolderData));
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-09-29) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgXFolder,
+                          ARRAYITEMCOUNT(dlgXFolder));
         }
     }
 
     if (flFlags & CBI_SET)
     {
+#ifndef __NOFOLDERCONTENTS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FAVORITEFOLDER,
                               _xwpIsFavoriteFolder(pcnbp->somSelf));
+#endif
 
+#ifndef __NOQUICKOPEN__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_QUICKOPEN,
                               _xwpQueryQuickOpen(pcnbp->somSelf));
+#endif
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
                               (     ((_bFullPathInstance == 2)
@@ -499,12 +730,13 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                                        ? pGlobalSettings->KeepTitle
                                        : _bKeepTitleInstance )
                                  != 0));
+#ifndef __NOSNAPTOGRID__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
                               (     ((_bSnapToGridInstance == 2)
                                        ? pGlobalSettings->fAddSnapToGridDefault
                                        : _bSnapToGridInstance )
                                  != 0));
-
+#endif
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                               (     ((_bFolderHotkeysInstance == 2)
                                        ? pGlobalSettings->fFolderHotkeysDefault
@@ -525,8 +757,16 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
         // disable items
         winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_ACCELERATORS,
-                         (    !(pGlobalSettings->fNoSubclassing)
-                           && (pGlobalSettings->fEnableFolderHotkeys)
+                         (
+                              1
+#ifndef __ALWAYSSUBCLASS__
+                           &&
+                              !cmnIsFeatureEnabled(NoSubclassing)
+                           &&
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
+                              (cmnIsFeatureEnabled(FolderHotkeys))
+#endif
                          ));
 
         winhEnableDlgItem(pcnbp->hwndDlgPage,
@@ -535,16 +775,21 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                              ? pGlobalSettings->FullPath
                              : _bFullPathInstance ));
 
+#ifndef __NOSNAPTOGRID__
         winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
-                         (pGlobalSettings->fEnableSnap2Grid));
-
+                         cmnIsFeatureEnabled(Snap2Grid));
+#endif
         winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
                          (   (pcnbp->somSelf != cmnQueryActiveDesktop())
-                          && (!(pGlobalSettings->fNoSubclassing))
-                          && (pGlobalSettings->fEnableStatusBars)
+#ifndef __ALWAYSSUBCLASS__
+                          && (!cmnIsFeatureEnabled(NoSubclassing))
+#endif
+#ifndef __NOCFGSTATUSBARS__
+                          && (cmnIsFeatureEnabled(StatusBars))
+#endif
                          ));
     }
 }
@@ -569,9 +814,11 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     switch (ulItemID)
     {
+#ifndef __NOSNAPTOGRID__
         case ID_XSDI_SNAPTOGRID:
             _bSnapToGridInstance = ulExtra;
         break;
+#endif
 
         case ID_XSDI_FULLPATH:
             _bFullPathInstance = ulExtra;
@@ -595,13 +842,17 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         TRUE);  // update open folder views
         break;
 
+#ifndef __NOFOLDERCONTENTS__
         case ID_XSDI_FAVORITEFOLDER:
             _xwpMakeFavoriteFolder(pcnbp->somSelf, ulExtra);
         break;
+#endif
 
+#ifndef __NOQUICKOPEN__
         case ID_XSDI_QUICKOPEN:
             _xwpSetQuickOpen(pcnbp->somSelf, ulExtra);
         break;
+#endif
 
         case DID_UNDO:
             if (pcnbp->pUser)
@@ -647,9 +898,9 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFldStartup notebook callbacks (notebook.c)                    *
- *                                                                  *
+ *
+ *   XFldStartup notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
