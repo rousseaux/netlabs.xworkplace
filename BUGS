@@ -1,8 +1,47 @@
 
+This file lists bugs known to the current XWorkplace release.
+I keep adding bugs which are reported through xworkplace-user@egroups.com
+to this file and remove them when they are fixed. Please don't report
+bugs which are already mentioned in this file. Thanks.
+
+folders:
+    -- WarpCenter moves icons upwards
+    -- noticed a problem with the replacement 'File exists' dialogue. If you
+       open a folder that contains objects, then rmb on an object and select
+       'Create another' from the popup menu, the 'create another' dialogue
+       opens with 'the object type (eg 'Folder' or 'Data file') as the 'New
+       name'. Change it to something else, for example 'anyfing', click
+       'Create', and the 'File conflict' dialogue pops up identifying the
+       object on which you used the rmb. I'm using WSeB, no fixpacks.
+
 trash can:
     -- close subfolders too
     -- check if delete works if not yet populated...
     -- sorting doesn't work
+
+startup folder:
+    -- 1) After pressing Shift during WPS-Startup and skipping the startup folder, a
+       RMB and "Start folder content" in the startup folder does not work.
+    -- The range check at "XFolder Startup"'s settings book ("Setup"?) (why not
+       "XWorkplace Startup"?) with "Xworkplace Startup folder" is wrong while getting
+       down from 500 to 10000, but from 10000 up to 750. Why no option for 250ms?
+    -- startup folder hangs when white hard error box pops up while processing objects
+
+file page:
+    -- 2) Opening the context menu of swapper.dat and selecting the "file" strap(?)
+       causes a WPS-hangup.
+    -- Same with chkdsk.log. Apparently EA handling is buggy somewhere.
+
+other settings pages:
+    -- 8) by chosing "undo" or "default" new entries are created in
+       the list "Global XWP features"
+    -- 14) Clicking "Refresh" in the "object" strap of an object causes a WPS-Hangup -
+       I did not try it much, but it was reproducable with the "UnterstÅtzung"
+       object (in german Warp4).
+
+NetscDDE:
+    -- 12) With the Netscape DDE feature Netscape does not get the right location of
+       what to display - the 'Ñ' (german Umlaut) gets lost.
 
 icons:
     -- trash can icons...
@@ -10,16 +49,24 @@ icons:
 
 drive objects: network drives don't work
 
-check dialog pages on Warp 3
-
 create objects:
     -- check "Shift" with creating objects
     -- select editable title
-
-startup folder hangs when "Drive not ready" pops up
 
 hook:
     -- VIO copy conflicts with WM_CHORD; check window class
     -- WM_CHORD over Netscape/PMMail no work
     -- sliding focus over MDI frames no work
+    -- sliding focus windows appear/disappear
+    -- 7) Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
+       ignore WinOS/2 windows.
+    -- 13) The displaying window in keyboard object / hotkeys should be a bit wider,
+       so you would not have to horizontally scroll all the time.
+    -- 10) I had problem with my second installation of XWp. I installed, but
+       afterwards it was not possible to check "Enable global object hotkeys"
+       unless (afaik) I temporarily turned sliding focus on. (the Hook etc was - of
+       course - installed).
+       But I reinstalled XWorkplace on a new partition (with a new Warp4, FP12, DDFix,
+       ..) and the same happened. I was not able to enable the global hotkeys - unless
+       I temporarily turned the sliding focus on. So it is definetely reproducable.
 

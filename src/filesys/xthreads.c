@@ -1177,6 +1177,11 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
             }
         }
 
+    if (!rc)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+               msg, mp1, mp2);
+
     return (rc);
 }
 
@@ -2003,6 +2008,11 @@ BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                             msg,
                             mp1,
                             mp2);
+    if (!rc)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+               msg, mp1, mp2);
+
     return (rc);
 }
 

@@ -1,8 +1,15 @@
 
-make setup strings editable
+This file lists feature suggestions from XWorkplace users.
+Please don't suggest features which are already listed in
+this file. Thank you.
+
+setup strings:
+    -- make setup strings editable
+    -- create REXX scripts
+    -- setup strings for XWP setup objects
 
 System paths page:
-    -- add other paths (TEMP,...)
+    -- add other paths (TEMP, Java...)
 
 File page:
     -- allow changing dates
@@ -11,12 +18,10 @@ status bars:
     -- make status bar droppable
     -- add "drive label" mnemonic
 
-special keys
-
 trash can:
     -- support DELDIR
-    -- max space used
-    -- true delete
+    -- add max space used limit
+    -- true delete thru Shift in menu
 
 configure color for fly-over help
 
@@ -25,6 +30,9 @@ folder hotkey for deleting THIS folder
 archives.:
     -- second page with os2.key file which files are 2be archived
 
-
-
+hook:
+    -- Z-order move one/bottommost
+    -- 3) an extended Lockup (like the one from PC/2) which can be accessed through a
+       shortcut (in the keyboard object).
+    -- global special keys support (Win, notebook keys, Fujitsu...)
 

@@ -161,27 +161,30 @@ void _CRT_term(void);
 
 /*
  *@@ _DLL_InitTerm:
- *     this function gets called when the OS/2 DLL loader loads and frees
- *     this DLL. Since this is a SOM DLL for the WPS, this gets called
- *     right when the WPS is starting and when the WPS process ends, e.g.
- *     due to a WPS restart or trap. Since the WPS is the only process
- *     calling this DLL, we need not bother with details.
+ *      this function gets called automatically by the OS/2 DLL
+ *      during DosLoadModule processing, on the thread which
+ *      invoked DosLoadModule.
  *
- *     Defining this function is my preferred way of getting the DLL's module
- *     handle, instead of querying the SOM kernel for the module name, like
- *     this is done in most WPS sample programs provided by IBM. I have found
- *     this to be much easier and less error-prone when several classes are
- *     put into one DLL (as is the case with XWorkplace).
+ *      Since this is a SOM DLL for the WPS, this gets called
+ *      right when the WPS is starting and when the WPS process ends, e.g.
+ *      due to a WPS restart or trap. Since the WPS is the only process
+ *      calling this DLL, we need not bother with details.
  *
- *     We store the module handle in a global variable which can later quickly
- *     be retrieved using cmnQueryMainModuleHandle.
+ *      Defining this function is my preferred way of getting the DLL's module
+ *      handle, instead of querying the SOM kernel for the module name, like
+ *      this is done in most WPS sample programs provided by IBM. I have found
+ *      this to be much easier and less error-prone when several classes are
+ *      put into one DLL (as is the case with XWorkplace).
  *
- *     Since OS/2 calls this function directly, it must have _System linkage.
- *     Note: You must then link using the /NOE option, because the VAC++ runtimes
- *     also contain a _DLL_Initterm, and the linker gets in trouble otherwise.
- *     The XWorkplace makefile takes care of this.
+ *      We store the module handle in a global variable which can later quickly
+ *      be retrieved using cmnQueryMainModuleHandle.
  *
- *     This function must return 0 upon errors or 1 otherwise.
+ *      Since OS/2 calls this function directly, it must have _System linkage.
+ *      Note: You must then link using the /NOE option, because the VAC++ runtimes
+ *      also contain a _DLL_Initterm, and the linker gets in trouble otherwise.
+ *      The XWorkplace makefile takes care of this.
+ *
+ *      This function must return 0 upon errors or 1 otherwise.
  *
  *@@changed V0.9.0 [umoeller]: reworked locale initialization
  *@@changed V0.9.0 [umoeller]: moved this func here from module.c
@@ -299,13 +302,13 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
     fileLog = fopen(szLogFileName, "a");  // text file, append
     if (fileLog)
     {
+        DATETIME DT;
         DosGetDateTime(&DT);
-        fprintf(file, ,
         fprintf(fileLog,
                 "%04d-%02d-%02d %02d:%02d:%02d "
                 "%s (%s, line %d):\n    ",
                 DT.year, DT.month, DT.day,
-                DT.hours, DT.minutes, DT.seconds);
+                DT.hours, DT.minutes, DT.seconds,
                 pcszFunction, pcszSourceFile, ulLine);
         va_start(args, pcszFormat);
         vfprintf(fileLog, pcszFormat, args);

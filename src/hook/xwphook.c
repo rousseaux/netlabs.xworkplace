@@ -198,20 +198,22 @@ void _CRT_term(void);
 
 /*
  *@@ _DLL_InitTerm:
- *     this function gets called when the OS/2 DLL loader loads
- *     and frees this DLL. We override this function (which is
- *     normally provided by the runtime library) to intercept
- *     this DLL's module handle.
+ *      this function gets called automatically by the OS/2 DLL
+ *      during DosLoadModule processing, on the thread which
+ *      invoked DosLoadModule.
  *
- *     Since OS/2 calls this function directly, it must have
- *     _System linkage.
+ *      We override this function (which is normally provided by
+ *      the runtime library) to intercept this DLL's module handle.
  *
- *     Note: You must then link using the /NOE option, because
- *     the VAC++ runtimes also contain a _DLL_Initterm, and the
- *     linker gets in trouble otherwise.
- *     The XWorkplace makefile takes care of this.
+ *      Since OS/2 calls this function directly, it must have
+ *      _System linkage.
  *
- *     This function must return 0 upon errors or 1 otherwise.
+ *      Note: You must then link using the /NOE option, because
+ *      the VAC++ runtimes also contain a _DLL_Initterm, and the
+ *      linker gets in trouble otherwise.
+ *      The XWorkplace makefile takes care of this.
+ *
+ *      This function must return 0 upon errors or 1 otherwise.
  *
  *@@changed V0.9.0 [umoeller]: reworked locale initialization
  */
@@ -1553,10 +1555,6 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
         }
     }
 
-    if (hwnd != G_hwndUnderMouse)
-        // mouse has moved to a different window:
-        G_hwndUnderMouse = hwnd;
-
     if (   (fMouseMoved)            // has mouse moved?
         && (G_HookData.HookConfig.fSlidingFocus)  // sliding focus enabled?
        )
@@ -1677,14 +1675,32 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
     // check for special message which was posted from
     // the daemon when the "delayed sliding menu" timer
     // elapsed:
-    if (    (mp1 == G_HookData.mpDelayedSlidingMenuMp1)
+    if (    // current mp1 the same as timer mp1?
+            (mp1 == G_HookData.mpDelayedSlidingMenuMp1)
+            // special code from daemon in mp2?
          && (SHORT1FROMMP(mp2) == HT_DELAYEDSLIDINGMENU)
-         && (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
        )
     {
         // yes, special message:
-        // check if the menu still exists
-        // if (WinIsWindow(hwndCurrentMenu))
+
+        // get current window under mouse pointer; we
+        // must ignore the timer msg if the user has
+        // moved the mouse away from the menu since
+        // the timer was started
+        HWND    hwndUnderMouse = WinWindowFromPoint(HWND_DESKTOP,
+                                                    &G_ptlMousePosDesktop,
+                                                    TRUE);  // enum desktop children
+        if (
+                // timer menu hwnd same as last menu under mouse?
+                (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
+                // last WM_MOUSEMOVE hwnd same as last menu under mouse?
+             && (G_hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
+                // timer menu hwnd same as current window under mouse
+             && (hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
+            )
+        {
+            // check if the menu still exists
+            // if (WinIsWindow(hwndCurrentMenu))
             // and if it's visible; the menu
             // might have been hidden by now because
             // the user has already proceeded to
@@ -1696,6 +1712,8 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                                G_HookData.sMenuItemUnderMouse);
                                     // stored from last run
                                     // when timer was started...
+        }
+
         // this is our message only,
         // so swallow this
         brc = TRUE;
@@ -2304,6 +2322,16 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
             {
                 // store y mouse pos in Desktop coords
                 G_ptlMousePosDesktop.y = pqmsg->ptl.y;
+                fMouseMoved = TRUE;
+            }
+            if (hwnd != G_hwndUnderMouse)
+            {
+                // mouse has moved to a different window:
+                // this can happen even if the coordinates
+                // are the same, because PM posts WM_MOUSEMOVE
+                // with changing window positions also to
+                // allow an application to change pointers
+                G_hwndUnderMouse = hwnd;
                 fMouseMoved = TRUE;
             }
 

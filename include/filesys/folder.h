@@ -245,8 +245,8 @@
 
         // Supplementary object window msgs (for each
         // subclassed folder frame, xfldr.c)
-        #define SOM_ACTIVATESTATUSBAR       (WM_USER+1200)
-        #define SOM_CREATEFROMTEMPLATE      (WM_USER+1201)
+        #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)
+        #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
 
         MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 

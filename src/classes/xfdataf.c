@@ -290,16 +290,6 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpFilterPopupMenu(XFldDataFile *somSelf,
     // the proper CTXT_xxx flags
     ulMenuFilter &= ~pGlobalSettings->DefaultMenuItems;
 
-    /* if (pGlobalSettings->fExtAssocs)
-        // if extended associations are on, we MUST remove
-        // the "Open" submenu as well, because there's no
-        // other &%$õ%&% way to get rid of the WPS associations
-        // otherwise... this is REALLY sick!
-        ulMenuFilter &= ~CTXT_OPEN;
-        // we will re-add the "Open" menu in
-        // mnuModifyDataFilePopupMenu again
-    */
-
     return (ulMenuFilter);
 }
 

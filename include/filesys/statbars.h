@@ -76,8 +76,8 @@
     #endif
 
     // msgs to status bar window (STBM_xxx)
-    #define STBM_UPDATESTATUSBAR        (WM_USER+1000)
-    #define STBM_PROHIBITBROADCASTING     (WM_USER+1002)
+    #define STBM_UPDATESTATUSBAR        (WM_USER+100)
+    #define STBM_PROHIBITBROADCASTING     (WM_USER+102)
 
     /********************************************************************
      *                                                                  *

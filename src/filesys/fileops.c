@@ -360,32 +360,36 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
 PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject)
 {
-    // create object item
-    PEXPANDEDOBJECT pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT));
-    if (pSOI)
+    PEXPANDEDOBJECT pSOI = NULL;
+    if (wpshCheckObject(pObject))
     {
-        _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
-        pSOI->pObject = pObject;
-        if (_somIsA(pObject, _WPFolder))
+        // create object item
+        pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT));
+        if (pSOI)
         {
-            // object is a folder:
-            // fill list
-            pSOI->pllContentsSFL = fopsFolder2ExpandedList(pObject,
-                                                  &pSOI->ulSizeThis);
-                                                    // out: size of files on list
-        }
-        else
-        {
-            // non-folder:
-            pSOI->pllContentsSFL = NULL;
-            if (_somIsA(pObject, _WPFileSystem))
-                // is a file system object:
-                pSOI->ulSizeThis = _wpQueryFileSize(pObject);
+            _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
+            pSOI->pObject = pObject;
+            if (_somIsA(pObject, _WPFolder))
+            {
+                // object is a folder:
+                // fill list
+                pSOI->pllContentsSFL = fopsFolder2ExpandedList(pObject,
+                                                      &pSOI->ulSizeThis);
+                                                        // out: size of files on list
+            }
             else
-                // abstract object:
-                pSOI->ulSizeThis = 0;
+            {
+                // non-folder:
+                pSOI->pllContentsSFL = NULL;
+                if (_somIsA(pObject, _WPFileSystem))
+                    // is a file system object:
+                    pSOI->ulSizeThis = _wpQueryFileSize(pObject);
+                else
+                    // abstract object:
+                    pSOI->ulSizeThis = 0;
+            }
+            _Pmpf(("End of SOI for object %s", _wpQueryTitle(pObject) ));
         }
-        _Pmpf(("End of SOI for object %s", _wpQueryTitle(pObject) ));
     }
 
     return (pSOI);
@@ -1066,7 +1070,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
     WPObject    *pReplaceThis = NULL;
     CHAR        szNewTitle[CCHMAXPATH] = "";
     BOOL        fDoMove = TRUE,
-                frc = FALSE;
+                fDidMove = FALSE;
     ULONG       ulAction;
 
     strcpy(szNewTitle, _wpQueryTitle(pObject));
@@ -1092,18 +1096,20 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
 
         case NAMECLASH_REPLACE:
             fDoMove = FALSE;
-            frc = _wpReplaceObject(pObject,
-                                   pReplaceThis,       // set by wpConfirmObjectTitle
-                                   TRUE);              // move and replace
+            fDidMove = _wpReplaceObject(pObject,
+                                        pReplaceThis,       // set by wpConfirmObjectTitle
+                                        TRUE);              // move and replace
+                    // ### after this pObject is deleted, so
+                    // this cannot be used any more
         break;
 
         // NAMECLASH_NONE: just go on
     }
 
     if (fDoMove)
-        frc = _wpMoveObject(pObject, pTargetFolder);
+        fDidMove = _wpMoveObject(pObject, pTargetFolder);
 
-    return (frc);
+    return (fDidMove);
 }
 
 /********************************************************************

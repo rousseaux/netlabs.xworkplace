@@ -262,28 +262,28 @@
      *                                                                  *
      ********************************************************************/
 
-    #define T1M_BEGINSTARTUP            (WM_USER+1100)
+    #define T1M_BEGINSTARTUP            (WM_USER+400)
 
-    #define T1M_POCCALLBACK             (WM_USER+1101)
+    #define T1M_POCCALLBACK             (WM_USER+401)
 
-    #define T1M_BEGINQUICKOPEN          (WM_USER+1102)
-    #define T1M_NEXTQUICKOPEN           (WM_USER+1103)
+    #define T1M_BEGINQUICKOPEN          (WM_USER+402)
+    #define T1M_NEXTQUICKOPEN           (WM_USER+403)
 
-    #define T1M_LIMITREACHED            (WM_USER+1104)
+    #define T1M_LIMITREACHED            (WM_USER+404)
 
-    #define T1M_EXCEPTIONCAUGHT         (WM_USER+1105)
+    #define T1M_EXCEPTIONCAUGHT         (WM_USER+405)
 
-    #define T1M_EXTERNALSHUTDOWN        (WM_USER+1107)
+    #define T1M_EXTERNALSHUTDOWN        (WM_USER+407)
 
-    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+1108)    // added V0.9.0
+    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+408)    // added V0.9.0
 
-    #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+1110)    // added V0.9.0
+    #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+410)    // added V0.9.0
 
-    #define T1M_DAEMONREADY             (WM_USER+1111)    // added V0.9.0
+    #define T1M_DAEMONREADY             (WM_USER+411)    // added V0.9.0
 
-    #define T1M_PAGEMAGECLOSED          (WM_USER+1112)    // added V0.9.2 (2000-02-23) [umoeller]
+    #define T1M_PAGEMAGECLOSED          (WM_USER+412)    // added V0.9.2 (2000-02-23) [umoeller]
 
-    #define T1M_QUERYXFOLDERVERSION     (WM_USER+1113)
+    #define T1M_QUERYXFOLDERVERSION     (WM_USER+413)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 

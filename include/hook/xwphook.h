@@ -343,25 +343,25 @@
      *                                                                  *
      ********************************************************************/
 
-    #define XDM_HOOKCONFIG          (WM_USER)
+    #define XDM_HOOKCONFIG          (WM_USER + 300)
 
-    #define XDM_PAGEMAGECONFIG      (WM_USER + 1)
+    #define XDM_PAGEMAGECONFIG      (WM_USER + 301)
 
-    #define XDM_HOOKINSTALL         (WM_USER + 2)
+    #define XDM_HOOKINSTALL         (WM_USER + 302)
 
-    #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 3)
+    #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 303)
 
-    #define XDM_DESKTOPREADY        (WM_USER + 4)
+    #define XDM_DESKTOPREADY        (WM_USER + 304)
 
-    #define XDM_HOTKEYPRESSED       (WM_USER + 5)
+    #define XDM_HOTKEYPRESSED       (WM_USER + 305)
 
-    #define XDM_HOTKEYSCHANGED      (WM_USER + 6)
+    #define XDM_HOTKEYSCHANGED      (WM_USER + 306)
 
-    #define XDM_SLIDINGFOCUS        (WM_USER + 7)
+    #define XDM_SLIDINGFOCUS        (WM_USER + 307)
 
-    #define XDM_SLIDINGMENU         (WM_USER + 8)
+    #define XDM_SLIDINGMENU         (WM_USER + 308)
 
-    #define XDM_HOTCORNER           (WM_USER + 9)
+    #define XDM_HOTCORNER           (WM_USER + 309)
 
 #endif
 

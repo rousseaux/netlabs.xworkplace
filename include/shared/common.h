@@ -302,14 +302,14 @@
     #define XFOLDER_LOGLOG          "xwplog.log"
 
     // common dlg msgs for settings notebook dlg funcs
-    #define XM_SETTINGS2DLG         (WM_USER+200)    // set controls
-    #define XM_DLG2SETTINGS         (WM_USER+201)    // read controls
-    #define XM_ENABLEITEMS          (WM_USER+202)    // enable/disable controls
+    #define XM_SETTINGS2DLG         (WM_USER+90)    // set controls
+    #define XM_DLG2SETTINGS         (WM_USER+91)    // read controls
+    #define XM_ENABLEITEMS          (WM_USER+92)    // enable/disable controls
 
     // misc
-    #define XM_UPDATE               (WM_USER+3006) // in dlgs
-    #define XM_SETLONGTEXT          (WM_USER+3007) // for cmnMessageBox
-    #define XM_CRASH                (WM_USER+3008) // test exception handlers
+    #define XM_UPDATE               (WM_USER+93) // in dlgs
+    #define XM_SETLONGTEXT          (WM_USER+94) // for cmnMessageBox
+    #define XM_CRASH                (WM_USER+95) // test exception handlers
 
     // common value for indicating that a Global Setting
     // is to be used instead of an instance's one
