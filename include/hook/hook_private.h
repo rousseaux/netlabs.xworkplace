@@ -25,15 +25,17 @@
     #define HOOK_PRIVATE_HEADER_INCLUDED
 
     #ifdef __DEBUG__
-        // #define HACKSWITCHLIST
+        #define HACKSWITCHLIST
     #endif
 
+    /*
     #ifdef HACKSWITCHLIST
         #define WM_HACKSWITCHLIST           (WM_USER + 0x1324)
         #define MP1_HACKSWITCHLIST          ((MPARAM)0xf4134442)
         #define MP2_SUBCLASS                ((MPARAM)0xf8678c22)
         #define MP2_UNSUBCLASS              ((MPARAM)0xf22781fe)
     #endif
+    */
 
     /* ******************************************************************
      *

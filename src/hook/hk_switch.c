@@ -94,12 +94,14 @@ MRESULT EXPENTRY fnwpSubclassedSwitchlist(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
 
     switch (msg)
     {
+        #if 0
         case WM_HACKSWITCHLIST:
             if (    (mp1 == MP1_HACKSWITCHLIST)
                  && (mp2 == MP2_UNSUBCLASS)
                )
                 HackSwitchList(FALSE);
         break;
+        #endif
 
         default:
             mrc = G_pfnwpSwitchListOrig(hwnd, msg, mp1, mp2);
