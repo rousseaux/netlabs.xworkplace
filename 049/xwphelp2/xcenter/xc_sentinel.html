@@ -29,14 +29,14 @@ derselben Farbe am linken Rand zu sehen sind:
  
 <P>Die Graphen zeigen folgendes:
  
-<OL><LI>Der <B>obere Wert (in grÅn)</B> ist der <B>momentane freie physikalische
+<OL><LI>Der <B>obere Wert (in grÅn)</B> ist der <B>momentane freie physische
 Hauptspeicher</B>. Dies ist derselbe Wert, den auch das
 <A HREF="xcenter/xc_mem.html">"Speicher"-Widget</A> anzeigt. Wenn Sie also 128 MB
 RAM in Ihrem System haben, wird dieser Wert niemals Åberschritten (und natÅrlich
 auch niemals erreicht) werden.
  
 <P><LI>Der <B>mittlere Wert (in blau)</B> ist der <B>momentan benutzte
-physikalische Hauptspeicher</B>. Wenn Sie diesen Wert zum oberen Wert addieren,
+physische Hauptspeicher</B>. Wenn Sie diesen Wert zum oberen Wert addieren,
 sollte die Grî·e des gesamten Hauptspeichers herauskommen.
 <!-- V0.9.15: (Ja, das sollte auf meinem System 128 MB ergeben, aber
 offensichtlich kommen hier Rundungsfehler ins Spiel.) -->
@@ -54,8 +54,8 @@ irgendeinem Grund sehr gro· geworden ist, was die Grî·e des virtuellen Speichers
 ansteigen lie·. &os2; hat dann spÑter die Auslagerungsdatei wieder schrumpfen
 lassen. -->
  
-<P><LI>Wenn Sie einen einigerma·en aktuellen <CODE>win32k.sys</CODE>-Treiber vom
-Odin-Projekt (von MÑrz 2001 oder neuer) installiert haben, wird die Grî·e Ihrer
+<P><LI>Wenn Sie einen einigerma·en aktuellen <CODE>win32k.sys</CODE>-Treiber des
+Odin-Projekts (von MÑrz 2001 oder neuer) installiert haben, wird die Grî·e Ihrer
 Auslagerungsdatei in zwei zusÑtzlichen Farben dargestellt. Der <B>dritte Wert
 (in lila)</B> zeigt dann die Grî·e, die in Ihrer Auslagerungsdatei gerade
 benutzt wird, wÑhrend der <B>untere Wert (in rot)</B> den freien Speicher in
@@ -106,7 +106,7 @@ kînnen. Momentan kînnen Sie allerdings nur die Hintergrundfarbe
 <P><B>Details der Implementation</B>
  
 <P>Die Informationsquelle von dem, was das Wachposten-Widget anzeigt, hÑngt davon
-ab, ob eine einigerma·en aktuelle Version vom Odin-Treiber <CODE>win32k.sys</CODE>
+ab, ob eine einigerma·en aktuelle Version des Odin-Treibers <CODE>win32k.sys</CODE>
 installiert ist.
  
 <UL><LI>Wenn <CODE>win32k.sys</CODE> gefunden wurde, werden alle Speicherwerte
@@ -130,16 +130,16 @@ Auslagerungsdatei, die periodisch durch einen einfachen Dateisystemaufruf bestim
 wird. Diese Werte sind direkt im oberen und unteren Graphen dargestellt.
  
 <P>Die Gesamtgrî·e des virtuellen Speichers (alle drei Graphen zusammen) wird
-einfach ausgerechnet, indem die Grî·e des physikalischen Hauptspeichers (der Wert,
+einfach ausgerechnet, indem die Grî·e des physischen Hauptspeichers (der Wert,
 der von der
 <!-- V0.9.20: added link -->
 <A HREF="cpref.inf#DosQuerySysInfo"><CODE>DosQuerySysInfo</CODE></A>-API<A HREF="_toolkitlink.html">*</A>
 geliefert wird und sich nie verÑndert)
 und die Grî·e der Auslagerungsdatei addiert werden.
  
-<P>Der mittlere Graph (der momentan benutzte physikalische Hauptspeicher) ist dann
-einfach die Differenz zwischen dem gesamten physikalischen RAM und dem momentan
-freien physikalischen RAM.
+<P>Der mittlere Graph (der momentan benutzte physische Hauptspeicher) ist dann
+einfach die Differenz zwischen dem gesamten physischen RAM und dem momentan
+freien physischen RAM.
 </IFNDEF>
 <P>Beachten Sie, da· diese Implementation Ihnen nicht den freien Platz auf dem
 Laufwerk der Auslagerungsdatei zeigen kann.

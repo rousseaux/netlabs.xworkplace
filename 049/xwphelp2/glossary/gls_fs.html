@@ -42,7 +42,7 @@ Wenn Sie jedoch Geschwindigkeit vorziehen, sollten Sie h„ufig benutzte
 Daten nicht auf ein FAT-Laufwerk legen.
  
 <P>Unter &os2; ist die FAT-Untersttzung direkt in den Kern von &os2;
-eingebaut. Ein IFS-Befehl in der Datei &cfgsys; ist folglich nicht erforderlich.
+eingebaut. Eine IFS-Anweisung in der Datei &cfgsys; ist folglich nicht erforderlich.
  
 <!-- V0.9.20: rewrote this paragraph -->
 <P>Mit Windows 95 hat Microsoft das FAT-Dateisystem erweitert, um lange
@@ -64,7 +64,7 @@ bis zu 254 Zeichen lang sein, es verwaltet
 <!-- V0.9.20: link added -->
 <A HREF="glossary/gls_eas.html">erweiterte Attribute</A> auf effiziente
 Weise, und es ist viel schneller, wie der Name besagt. Auáerdem
-vergeudet es nicht so viel Plattenplatzt und vermeidet Fragmentierung.
+vergeudet es nicht so viel Plattenplatz und vermeidet Fragmentierung.
  
 <P>Verglichen mit noch neueren Dateisystemen hat HPFS trotzdem einige
 Beschr„nkungen. Vor allem kann das Standard-HPFS nur eine
@@ -95,7 +95,7 @@ System auch Server-Komponenten installiert hat.
 <P><LI>Fr OS/2 Warp Server for e-Business (WSeB) hat IBM <B>JFS,</B>
 das "Journaling File System", von AIX nach OS/2 portiert. Inzwischen
 gibt es JFS auch fr Linux. JFS ist nunmehr ebenfalls mit
-eComStation und den IBM-Convenience Packs erh„ltlich.
+eComStation und den IBM Convenience Packs erh„ltlich.
 </IFNDEF>
 <IFDEF __EWORKPLACE__>
 <!-- V0.9.20: modified this -->
@@ -111,9 +111,9 @@ in einem sogenannten "journal". Wenn das System abstrzt, muá JFS kein
 volles <CODE>CHKDSK</CODE> ausfhren, um die Integrit„t des Dateisystems
 herzustellen, sondern kann einfach das Journal auf die Platte "zurckspielen".
 Deshalb braucht <CODE>CHKDSK</CODE> auf einem JFS-Volumen Sekunden statt
-Minuten oder sogar Stunden, wie es mit groáen HPFS-Volumen der Fall sein kann.
+Minuten oder sogar Stunden, wie es bei groáen HPFS-Volumen der Fall sein kann.
  
-<BR><LI>Es hat nicht die 2-MB-Cachegr”áen-Beschr„nkung wie HPFS.
+<BR><LI>Es hat nicht die 2-MB-Cache-Gr”áenbeschr„nkung wie HPFS.
  
 <BR><LI>Mit der Untersttzung von LVM k”nnen JFS-Volumen erweitert werden,
 ohne das System neustarten zu mssen.
@@ -141,7 +141,7 @@ in der Datei &cfgsys; aktiviert.
  
 <P><LI>Schlieálich ist <B>CDFS</B> ein spezielles Dateisystem, welches von
 Daten-CD-ROMs benutzt wird. Da Daten-CDs ein abweichendes Format benutzen,
-ist ein weiterer Dateisystem-Treiber n”tig. Dies ist der Treiber
+ist ein weiterer Dateisystemtreiber n”tig. Dies ist der Treiber
 <!-- V0.9.20: added link -->
 <A HREF="cmdref.inf#cdfs.jfs"><CODE>CDFS.IFS</CODE></A> in der Datei
 &cfgsys;, der auch lange Dateinamen im Microsoft-Joliet-Format untersttzt.

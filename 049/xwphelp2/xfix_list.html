@@ -29,21 +29,21 @@ als ungltig markiert haben wollen,
 mssen Sie den Eintrag "Ungltige Dateien finden" aus dem
 <A HREF="xfix_menus.html">"Aktionen"-Men</A> w„hlen.
  
-<P>Jeder Handle-Eintrag, der in dieser Spalte etwas stehen hat, wird 
+<P>Jeder Handle-Eintrag, der in dieser Spalte etwas stehen hat, wird dann
 mit einer grauen Farbe hinterlegt, so daá Sie den Eintrag dementsprechend schnell 
 erkennen k”nnen. Wenn Sie "Alle Ungltigen ausw„hlen"
 aus dem <A HREF="xfix_menus.html">"Ausw„hlen"-Men</A> verwenden, werden all diese
 Eintr„ge automatisch fr Sie ausgew„hlt.
  
-<P><LI>Das Feld <B>"Typ"</B> ist entweder ein <CODE>Knoten</CODE> oder <CODE>LW</CODE>.
+<P><LI>Das Feld <B>"Typ"</B> ist entweder ein <CODE>NODE</CODE> oder <CODE>DRIV</CODE>.
 Wenn Sie die Option <A HREF="xfix_menus.html">Sortieren nach Index</A> benutzen, 
 um die ursprngliche Sortierung, wie sie in der <CODE>OS2SYS.INI</CODE> steht, 
-zu erhalten, werden Sie bemerken, das dort immer ein <CODE>LW</CODE>-Eintrag vor
-allen <CODE>Knoten</CODE>-Eintr„gen steht, die zu diesem Laufwerk geh”ren.
-Zus„tzlich befindet sich nach dem <CODE>LW</CODE>-Knoten immer ein extra 
-<CODE>Knoten</CODE>-Eintrag fr 
+zu erhalten, werden Sie bemerken, das dort immer ein <CODE>DRIV</CODE>-Eintrag vor
+allen <CODE>NODE</CODE>-Eintr„gen steht, die zu diesem Laufwerk geh”ren.
+Zus„tzlich befindet sich nach dem <CODE>DRIV</CODE>-Knoten immer ein extra 
+<CODE>NODE</CODE>-Eintrag fr 
 das Wurzelverzeichnis, falls Handles fr dieses Laufwerk existieren.
-Ich weiá nicht, warum ein zus„tzlicher <CODE>LW</CODE>-Knoten existiert, nehme jedoch an,
+Ich weiá nicht, warum ein zus„tzlicher <CODE>DRIV</CODE>-Knoten existiert, nehme jedoch an,
 daá die WPS ihn als eine interne Markierung benutzt, um Handles noch schneller finden 
 zu k”nnen.
  
@@ -62,15 +62,15 @@ Siehe <A HREF="xfix_handles.html">šber WPS-Datei-Handles</A> fr Details.
 daá den neu erstellten Handles einfach eine Zufallszahl gegeben wird, die bis jetzt noch 
 nicht existiert.
  
-<P>Dieses Feld ist bei <CODE>LW</CODE>-Eintr„gen leer, weil diese niemals Handles besitzen.
-Nochmals zur Erinnerung: Offensichtlich sind diese <CODE>LW</CODE>-Knoten einfach nur eine Markierung
+<P>Dieses Feld ist bei <CODE>DRIV</CODE>-Eintr„gen leer, weil diese niemals Handles besitzen.
+Nochmals zur Erinnerung: Offensichtlich sind diese <CODE>DRIV</CODE>-Knoten einfach nur eine Markierung
 in den Handles-Daten.
  
 <!-- parent = Eltern oder Elternteil -->
 <P><LI>Das Feld <B>"Elternteil"</B> ist ebenfalls mit einem Eintrag in der <CODE>OS2SYS.INI</CODE> 
 abgelegt und spezifiziert das Handle eines Ordners, in welchem sich dieses Objekt
 (entweder eine Datei oder ein anderer Ordner) befindet.
-Dieser sollte gltig sein (mit Ausnahme der Wurzel-<CODE>Knoten</CODE>-Eintr„ge, wo
+Dieser sollte gltig sein (mit Ausnahme der Wurzel-<CODE>NODE</CODE>-Eintr„ge, wo
 dieser offensichtlich immer 0 ist). Ist er es nicht, markiert xfix diesen Eintrag als
 verwaist und ungltig, da dieser nicht l„nger brauchbar ist.
  

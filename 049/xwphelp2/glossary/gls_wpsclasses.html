@@ -11,14 +11,14 @@
 <BODY>
 Die Workplace Shell (WPS) von &os2; wird h„ufig als
 <b>objekt-orientiert</b> beschrieben. Dieser Begriff besagt,
-daá -- im Gegensatz zu anderen Betriebssystemen -- alles auf der
+daá - im Gegensatz zu anderen Betriebssystemen - alles auf der
 Arbeitsoberfl„che zun„chst als <b>"Objekt"</b> betrachtet wird.
 Dies gilt beispielsweise fr
 <!-- V0.9.19: link added -->
 &link_folders;,
 <!-- V0.9.19: link added -->
 &link_datafiles;,
-Drucker, Laufwerksobjekte, und so weiter. All diese Objekte haben bestimmte
+Drucker, Laufwerksobjekte und so weiter. All diese Objekte haben bestimmte
 Gemeinsamkeiten wie
 <!-- V0.9.19: links added -->
 <A HREF="glossary/gls_popmenu.html">&popmenu;s</A> und
@@ -41,14 +41,14 @@ auszufhren.
 <A HREF="glossary/gls_dll.html">DLLs</A> implementiert sein.
 Beispielsweise befinden sich die meisten Standard-WPS-Klassen in der groáen
 Datei <CODE>PMWP.DLL</CODE> im Verzeichnis <CODE>\OS2\DLL</CODE>.
-Alle &xwp;-Klaseen befinden sich in <CODE>XFLDR.DLL</CODE>
+Alle &xwp;-Klassen befinden sich in <CODE>XFLDR.DLL</CODE>
 im Verzeichnis von &xwp;.
  
 <P>Nun ist jedes Objekt auf Ihrer Arbeitsoberfl„che eine sogenannte
 <b>Instanz</b> einer Klasse. Die Namen der meisten WPS-Klassen beginnen
 mit "WP": alle Drucker sind z.B. Instanzen der Klasse "WPPrinter",
 alle Ordner der Klasse "WPFolder", alle Datendateien der Klasse
-"WPDataFile", usw.
+"WPDataFile" usw.
  
 <P>Der Grund fr die Leistungsf„higkeit und Flexibilit„t des Klassenkonzepts
 liegt darin, daá Klassen voneinander <b>abgeleitet</b> werden. Eine abgeleitete
@@ -87,10 +87,10 @@ aus dem ausschlieálichen Grund entworfen, daá andere Klassen von ihr
 abgeleitet werden. Objekte dieser Klasse haben keine sinnvolle Funktion.
  
 <P>WPObject hat genau drei abgeleitete Klassen. Wie WPObject sind diese
-drei abgeleiteten Klassen ebenfalls abstrakte Elternklassen, von denen
+drei abgeleiteten Klassen ebenfalls abstrakte Stammklassen, von denen
 keine Objekte direkt erzeugt werden k”nnen.
  
-<OL><LI><CODE>WPAbstract</CODE> ist die gemeinsame Elternklasse
+<OL><LI><CODE>WPAbstract</CODE> ist die gemeinsame Stammklasse
 fr sogenannte "abstrakte" Objekte, d.h. Objekte, die nicht physisch
 auf einem Speichermedium existieren, sondern ihre Daten in der Datei
 <code>OS2.INI</code> speichern. Die bekanntesten Beispiele fr abstrakte
@@ -100,7 +100,7 @@ Referenzen. Diese Objekte k”nnen alle in Ordnern erscheinen, sind jedoch
 nicht sichtbar, wenn Sie an einer Befehlszeile <code>DIR</code> eingeben.
  
 <P><LI>Im Gegensatz dazu ist <CODE>WPFileSystem</CODE> die gemeinsame
-Oberklasse fr Objekte, die tats„chlich im Dateisystem eines Speichermediums
+Stammklasse fr Objekte, die tats„chlich im Dateisystem eines Speichermediums
 existieren. Hiervon gibt es zwei Unterklassen: Ordner
 (<CODE>WPFolder</CODE>) und Datendateien (<CODE>WPDataFile</CODE>).
 Von WPDataFile gibt es wiederum eine Reihe von abgeleiteten Klassen
@@ -138,8 +138,8 @@ welches von keinem anderen Betriebssystem angeboten wird.
 <IFNDEF __NOWPSCLASSLIST__>
 <P>Wenn Sie das Objekt
 <A HREF="clst_main.html">"WPS-Klassenliste"</A> von &xwp; ”ffnen,
-werden alle Klassen, die derzeit auf Ihrem System installiert sind,
-angezeigt. šblicherweise sind dies mehr als 100 Klassen, die in einer
+werden alle Klassen angezeigt, die derzeit auf Ihrem System installiert sind.
+šblicherweise sind dies mehr als 100 Klassen, die in einer
 Strukturanzeige aufgez„hlt werden. Mit &popmenu;s k”nnen Sie Klassen
 registrieren und ersetzen sowie deregistrieren und Ersetzungen
 rckg„ngig machen. Sie k”nnen auáerdem versuchen, von einer bestimmten

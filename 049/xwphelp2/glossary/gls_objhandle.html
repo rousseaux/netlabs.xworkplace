@@ -18,7 +18,7 @@ Speicherklasse ist.
 Wort von <CODE>0x0002</CODE> und ihr niederwertiges Wort ist in der
 Sektion
 <CODE>PM_Abstract:Objects</CODE> der Datei
-<CODE>OS2.INI</CODE> mit den Daten des Objekts gelistet.
+<CODE>OS2.INI</CODE> mit den Daten des Objekts aufgefhrt.
  
 <P>Fr abstrakte Objekte wird <I>immer</I> ein Handle angelegt, da sie
 keinen Dateinamen besitzen und das Handle der einzige Weg ist, um auf
@@ -53,7 +53,6 @@ Handles existieren, desto langsamer wird die WPS im allgemeinen. Was am wichtigs
 ist: die Gesamtzahl der Handles ist begrenzt. Falls zu viele Dateisystem-Handles
 vorhanden sind, kann die WPS instabil werden.
  
-<!-- V1.0.0: rewrote this paragraph -->
 <P>Unter anderem werden Datei-Handles in den folgenden Situationen erzeugt:
  
 <OL><LI>Bei Programmobjekten und Referenzen. Das ist wnschenswert, da dadurch
@@ -63,10 +62,10 @@ sich das Zielobjekt nicht mehr an der ursprnglichen Stelle befindet.
 <P>Wenn Sie beispielsweise im Einstellungsnotizbuch eines Programmobjektes einen
 <A HREF="glossary/gls_path.html">Pfad</A> zu einer ausfhrbaren Datei eingeben, fordert
 das Programmobjekt ein Handle an, weswegen es ein neues erhalten sollte, falls noch keines
-existiert. Dasgleiche gilt, wenn man eine Referenz eines Objektes anlegt.
+existiert. Das gleiche gilt, wenn man eine Referenz eines Objektes anlegt.
  
 <P><LI>Bei anderen Teilen der WPS (und &xwp;), um Objektreferenzen abzulegen.
-&xwp; benutzt z.B. Objekt-Handles, um sich die Objekt-Schaltfl„chen des &xcenter;
+&xwp; benutzt z.B. Objekt-Handles, um sich die Objektschaltfl„chen des &xcenter;
 zu merken.
  
 <P><LI>Wenn bei einem Objekt eine Objekt-ID vergeben wird (also eine dieser
@@ -92,19 +91,19 @@ ein Ordner-Handle dazu benutzt, seine Fensterposition in der <CODE>OS2.INI</CODE
 festzuhalten, so daá die Position des Ordners nicht verloren geht, wenn dieser
 verschoben wird.
  
-<P><LI>Automatisch fr jeden Eltern-Ordner im Pfad der Datei, wenn ein neues Handle fr
+<P><LI>Automatisch fr jeden Stammordner im Pfad der Datei, wenn ein neues Handle fr
 diese Datei erstellt wurde.
 Der Grund liegt in der Implementierung der Handle-Datenbank, welche nur den Kurznamen
-von jedem Dateisystem-Objekt und eine Referenz mit den Kurznamen zu seinen Eltern ablegt.
+von jedem Dateisystemobjekt und eine Referenz mit den Kurznamen zu seinen "Eltern" ablegt.
 Das ist dadurch sehr effizient, weil ein Ordner, der mit vielen Unterobjekten verschoben
 wird, nur einen einzigen Eintrag in der Datenbank aktualisieren muá. Die Unterobjekte
-haben nur einen Eltern-Handle abgelegt, welches weiterhin funktioniert.
+haben nur ein Stamm-Handle abgelegt, welches weiterhin funktioniert.
  
 <P><LI>Bei jeder Datendatei, die durch eine Programmobjektzuordnung ge”ffnet wird.
 Das kommt daher, weil die WPS die Umgebungsvariable <CODE>WP_OBJHANDLE</CODE>
 zum Handle der Datendatei setzt, die ge”ffnet wurde. Einige Programme sind darauf
 angewiesen, es hat jedoch den ungewollten Effekt, das jedesmal ein Handle angelegt
-wird, wenn Sie auf eine Datendatei doppelklicken auch wenn die Anwendung dieses Handle
+wird, wenn Sie auf eine Datendatei doppelklicken, auch wenn die Anwendung dieses Handle
 nicht ben”tigt.
  
 <IFNDEF __NEVEREXTASSOCS__>
