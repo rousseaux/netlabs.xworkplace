@@ -92,7 +92,7 @@
 /*
  *@@ PULSESETUP:
  *      instance data to which setup strings correspond.
- *      This is also a member of PULSEWIDGETDATA.
+ *      This is also a member of PULSEPRIVATE.
  *
  *      Putting these settings into a separate structure
  *      is no requirement, but comes in handy if you
@@ -108,22 +108,26 @@ typedef struct _PULSESETUP
                     lcolGraph,
                     lcolText;
 
-    PSZ         pszFont;
+    PSZ             pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
+
+    LONG            cx;
+            // current width; we're sizeable, and we wanna
+            // store this
 } PULSESETUP, *PPULSESETUP;
 
 /*
- *@@ PULSEWIDGETDATA:
+ *@@ PULSEPRIVATE:
  *      more window data for the "pulse" widget.
  *
  *      An instance of this is created on WM_CREATE in
- *      fnwpPulseWidget and stored in XCENTERWIDGETVIEW.pUser.
+ *      fnwpPulseWidget and stored in XCENTERWIDGET.pUser.
  */
 
-typedef struct _PULSEWIDGETDATA
+typedef struct _PULSEPRIVATE
 {
-    PXCENTERWIDGETVIEW pViewData;
+    PXCENTERWIDGET pWidget;
             // reverse ptr to general widget data ptr; we need
             // that all the time and don't want to pass it on
             // the stack with each function call
@@ -149,7 +153,7 @@ typedef struct _PULSEWIDGETDATA
 
     APIRET          arc;            // if != NO_ERROR, an error occured, and
                                     // the error code is displayed instead.
-} PULSEWIDGETDATA, *PPULSEWIDGETDATA;
+} PULSEPRIVATE, *PPULSEPRIVATE;
 
 /* ******************************************************************
  *
@@ -197,17 +201,20 @@ VOID PwgtClearSetup(PPULSESETUP pSetup)
  */
 
 VOID PwgtScanSetup(const char *pcszSetupString,
-                   PLONG plCXWanted,
                    PPULSESETUP pSetup)
 {
     PSZ p;
+
+    // width
     p = ctrScanSetupString(pcszSetupString,
                            "WIDTH");
     if (p)
     {
-        *plCXWanted = atoi(p);
+        pSetup->cx = atoi(p);
         ctrFreeSetupValue(p);
     }
+    else
+        pSetup->cx = 200;
 
     // background color
     p = ctrScanSetupString(pcszSetupString,
@@ -263,33 +270,32 @@ VOID PwgtScanSetup(const char *pcszSetupString,
  */
 
 VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   ULONG cxCurrent,
                    PPULSESETUP pSetup)
 {
     CHAR    szTemp[100];
     PSZ     psz = 0;
     xstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "WIDTH=%d" SETUP_SEPARATOR,
-            cxCurrent);
+    sprintf(szTemp, "WIDTH=%d;",
+            pSetup->cx);
     xstrcat(pstrSetup, szTemp);
 
-    sprintf(szTemp, "BGNDCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     xstrcat(pstrSetup, szTemp);
 
-    sprintf(szTemp, "GRPHCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "GRPHCOL=%06lX;",
             pSetup->lcolGraph);
     xstrcat(pstrSetup, szTemp);
 
-    sprintf(szTemp, "TEXTCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolText);
     xstrcat(pstrSetup, szTemp);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s" SETUP_SEPARATOR,
+        sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         xstrcat(pstrSetup, szTemp);
     }
@@ -305,7 +311,7 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 /* ******************************************************************
  *
- *   Callbacks stored in XCENTERWIDGETVIEW
+ *   Callbacks stored in XCENTERWIDGET
  *
  ********************************************************************/
 
@@ -315,21 +321,20 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  *      the setup string for a widget has changed.
  *
  *      This procedure's address is stored in
- *      XCENTERWIDGETVIEW so that the XCenter knows that
+ *      XCENTERWIDGET so that the XCenter knows that
  *      we can do this.
  */
 
-VOID EXPENTRY PwgtSetupStringChanged(PXCENTERWIDGETVIEW pViewData,
+VOID EXPENTRY PwgtSetupStringChanged(PXCENTERWIDGET pWidget,
                                      const char *pcszNewSetupString)
 {
-    PPULSEWIDGETDATA pPulseData = (PPULSEWIDGETDATA)pViewData->pUser;
-    if (pPulseData)
+    PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
         // reinitialize the setup data
-        PwgtClearSetup(&pPulseData->Setup);
+        PwgtClearSetup(&pPrivate->Setup);
         PwgtScanSetup(pcszNewSetupString,
-                      &pPulseData->pViewData->cxWanted,
-                      &pPulseData->Setup);
+                      &pPrivate->Setup);
     }
 }
 
@@ -353,111 +358,160 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
     PSZ     p = NULL;
     APIRET  arc = NO_ERROR;
 
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)mp1;
-    PPULSEWIDGETDATA pPulseData = malloc(sizeof(PULSEWIDGETDATA));
-    memset(pPulseData, 0, sizeof(PULSEWIDGETDATA));
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
+    PPULSEPRIVATE pPrivate = malloc(sizeof(PULSEPRIVATE));
+    memset(pPrivate, 0, sizeof(PULSEPRIVATE));
     // link the two together
-    pViewData->pUser = pPulseData;
-    pPulseData->pViewData = pViewData;
+    pWidget->pUser = pPrivate;
+    pPrivate->pWidget = pWidget;
 
-    pViewData->cxWanted = 200;
-    pViewData->cyWanted = 10;
-
-    PwgtScanSetup(pViewData->pcszSetupString,
-                  &pViewData->cxWanted,
-                  &pPulseData->Setup);
+    PwgtScanSetup(pWidget->pcszSetupString,
+                  &pPrivate->Setup);
 
     // set window font (this affects all the cached presentation
     // spaces we use)
     winhSetWindowFont(hwnd,
-                      (pPulseData->Setup.pszFont)
-                       ? pPulseData->Setup.pszFont
+                      (pPrivate->Setup.pszFont)
+                       ? pPrivate->Setup.pszFont
                        // default font: use the same as in the rest of XWorkplace:
                        : cmnQueryDefaultFont());
 
     // enable context menu help
-    pViewData->pcszHelpLibrary = cmnQueryHelpLibrary();
-    pViewData->ulHelpPanelID = ID_XSH_WIDGET_PULSE_MAIN;
+    pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
+    pWidget->ulHelpPanelID = ID_XSH_WIDGET_PULSE_MAIN;
 
-    pPulseData->arc = doshPerfOpen(&pPulseData->pPerfData);
+    pPrivate->arc = doshPerfOpen(&pPrivate->pPerfData);
 
-    if (pPulseData->arc == NO_ERROR)
+    if (pPrivate->arc == NO_ERROR)
     {
-        pPulseData->ulTimerID = tmrStartTimer(hwnd,
+        pPrivate->ulTimerID = tmrStartTimer(hwnd,
                                               1,
                                               1000);
     }
 
-    pPulseData->fUpdateGraph = TRUE;
+    pPrivate->fUpdateGraph = TRUE;
 
     return (mrc);
 }
 
 /*
+ *@@ PwgtControl:
+ *      implementation for WM_CONTROL.
+ *
+ *@@added V0.9.7 (2000-12-14) [umoeller]
+ */
+
+BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    BOOL brc = FALSE;
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            USHORT  usID = SHORT1FROMMP(mp1),
+                    usNotifyCode = SHORT2FROMMP(mp1);
+
+            if (usID == ID_XCENTER_CLIENT)
+            {
+                switch (usNotifyCode)
+                {
+                    /*
+                     * XN_QUERYSIZE:
+                     *      XCenter wants to know our size.
+                     */
+
+                    case XN_QUERYSIZE:
+                    {
+                        PSIZEL pszl = (PSIZEL)mp2;
+                        pszl->cx = pPrivate->Setup.cx;
+                        pszl->cy = 10;
+
+                        brc = TRUE;
+                    break; }
+                }
+            }
+        } // end if (pPrivate)
+    } // end if (pWidget)
+
+    return (brc);
+}
+
+/*
  *@@ PwgtUpdateGraph:
+ *      updates the graph bitmap. This does not paint
+ *      on the screen.
  *
  *      Preconditions:
- *      --  pPulseData->hbmGraph must be selected into
- *          pPulseData->hpsMem.
- *
+ *      --  pPrivate->hbmGraph must be selected into
+ *          pPrivate->hpsMem.
  */
 
 VOID PwgtUpdateGraph(HWND hwnd,
-                     PPULSEWIDGETDATA pPulseData)
+                     PPULSEPRIVATE pPrivate)
 {
-    PXCENTERWIDGETVIEW pViewData = pPulseData->pViewData;
+    PXCENTERWIDGET pWidget = pPrivate->pWidget;
     ULONG   ul = 0;
     RECTL   rclBmp;
     POINTL  ptl;
-    rclBmp.xLeft = 0;
-    rclBmp.xRight = pViewData->cxCurrent - 2;
-    rclBmp.yBottom = 0;
-    rclBmp.yTop = pViewData->cyCurrent - 2;
+
+    // size for bitmap: same as widget, except
+    // for the border
+    WinQueryWindowRect(hwnd, &rclBmp);
+    rclBmp.xRight -= 2;
+    rclBmp.yTop -= 2;
 
     // start on the left
     ptl.x = 0;
 
-    if (pPulseData->hpsMem == NULLHANDLE)
+    if (pPrivate->hpsMem == NULLHANDLE)
     {
         // create memory PS for bitmap
         SIZEL szlPS;
         szlPS.cx = rclBmp.xRight;
         szlPS.cy = rclBmp.yTop;
-        gpihCreateMemPS(pViewData->habWidget,
+        gpihCreateMemPS(pWidget->habWidget,
                         &szlPS,
-                        &pPulseData->hdcMem,
-                        &pPulseData->hpsMem);
-        gpihSwitchToRGB(pPulseData->hpsMem);
+                        &pPrivate->hdcMem,
+                        &pPrivate->hpsMem);
+        gpihSwitchToRGB(pPrivate->hpsMem);
     }
-    if (pPulseData->hbmGraph == NULLHANDLE)
+    if (pPrivate->hbmGraph == NULLHANDLE)
     {
-        pPulseData->hbmGraph = gpihCreateBitmap(pPulseData->hpsMem,
+        pPrivate->hbmGraph = gpihCreateBitmap(pPrivate->hpsMem,
                                                 rclBmp.xRight,
                                                 rclBmp.yTop);
-        GpiSetBitmap(pPulseData->hpsMem,
-                     pPulseData->hbmGraph);
+        GpiSetBitmap(pPrivate->hpsMem,
+                     pPrivate->hbmGraph);
     }
 
     // fill the bitmap rectangle
-    gpihBox(pPulseData->hpsMem,
+    gpihBox(pPrivate->hpsMem,
             DRO_FILL,
             &rclBmp,
-            pPulseData->Setup.lcolBackground);
+            pPrivate->Setup.lcolBackground);
 
-    GpiSetColor(pPulseData->hpsMem,
-                pPulseData->Setup.lcolGraph);
-    // go thru all values in the "Loads" LONG array
-    for (; ul < pPulseData->cLoads; ul++)
+    if (pPrivate->palLoads)
     {
-        ptl.y = 0;
-        GpiMove(pPulseData->hpsMem, &ptl);
-        ptl.y = rclBmp.yTop * pPulseData->palLoads[ul] / 1000;
-        GpiLine(pPulseData->hpsMem, &ptl);
+        GpiSetColor(pPrivate->hpsMem,
+                    pPrivate->Setup.lcolGraph);
+        // go thru all values in the "Loads" LONG array
+        for (ul = 0;
+             ((ul < pPrivate->cLoads) && (ul < rclBmp.xRight));
+             ul++)
+        {
+            ptl.y = 0;
+            GpiMove(pPrivate->hpsMem, &ptl);
+            ptl.y = rclBmp.yTop * pPrivate->palLoads[ul] / 1000;
+            GpiLine(pPrivate->hpsMem, &ptl);
 
-        ptl.x++;
+            ptl.x++;
+        }
     }
 
-    pPulseData->fUpdateGraph = FALSE;
+    pPrivate->fUpdateGraph = FALSE;
 }
 
 /*
@@ -475,64 +529,80 @@ VOID PwgtUpdateGraph(HWND hwnd,
  */
 
 VOID PwgtPaint2(HWND hwnd,
-                PPULSEWIDGETDATA pPulseData,
+                PPULSEPRIVATE pPrivate,
                 HPS hps,
                 BOOL fDrawFrame)     // in: if TRUE, everything is painted
 {
-    PXCENTERWIDGETVIEW pViewData = pPulseData->pViewData;
-    RECTL       rclWin;
-    ULONG       ulBorder = 1;
-    CHAR        szPaint[100] = "";
-    ULONG       ulPaintLen = 0;
-
-    if (pPulseData->arc == NO_ERROR)
+    TRY_LOUD(excpt1)
     {
-        PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pViewData->pGlobals->pCountrySettings;
-        POINTL      ptlBmpDest;
-
-        if (pPulseData->fUpdateGraph)
-            // graph bitmap needs to be updated:
-            PwgtUpdateGraph(hwnd, pPulseData);
+        PXCENTERWIDGET pWidget = pPrivate->pWidget;
+        RECTL       rclWin;
+        ULONG       ulBorder = 1;
+        CHAR        szPaint[100] = "";
+        ULONG       ulPaintLen = 0;
 
         // now paint button frame
         WinQueryWindowRect(hwnd, &rclWin);
         gpihSwitchToRGB(hps);
+
         if (fDrawFrame)
             gpihDraw3DFrame(hps,
                             &rclWin,
                             ulBorder,
-                            pViewData->pGlobals->lcol3DDark,
-                            pViewData->pGlobals->lcol3DLight);
+                            pWidget->pGlobals->lcol3DDark,
+                            pWidget->pGlobals->lcol3DLight);
 
-        ptlBmpDest.x = rclWin.xLeft + ulBorder;
-        ptlBmpDest.y = rclWin.yBottom + ulBorder;
-        // now paint graph from bitmap
-        WinDrawBitmap(hps,
-                      pPulseData->hbmGraph,
-                      NULL,     // entire bitmap
-                      &ptlBmpDest,
-                      0, 0,
-                      DBM_NORMAL);
+        if (pPrivate->arc == NO_ERROR)
+        {
+            // performance counters are working:
+            PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+            POINTL      ptlBmpDest;
 
-        sprintf(szPaint, "%lu%c%lu%c",
-                pPulseData->pPerfData->palLoads[0] / 10,
-                pCountrySettings->cDecimal,
-                pPulseData->pPerfData->palLoads[0] % 10,
-                '%');
+            if (pPrivate->fUpdateGraph)
+                // graph bitmap needs to be updated:
+                PwgtUpdateGraph(hwnd, pPrivate);
 
+            ptlBmpDest.x = rclWin.xLeft + ulBorder;
+            ptlBmpDest.y = rclWin.yBottom + ulBorder;
+            // now paint graph from bitmap
+            WinDrawBitmap(hps,
+                          pPrivate->hbmGraph,
+                          NULL,     // entire bitmap
+                          &ptlBmpDest,
+                          0, 0,
+                          DBM_NORMAL);
+
+            if (pPrivate->palLoads)
+                sprintf(szPaint, "%lu%c%lu%c",
+                        pPrivate->pPerfData->palLoads[0] / 10,
+                        pCountrySettings->cDecimal,
+                        pPrivate->pPerfData->palLoads[0] % 10,
+                        '%');
+
+        }
+        else
+        {
+            // performance counters are not working:
+            // display error message
+            rclWin.xLeft++;
+            rclWin.xRight--;
+            rclWin.yBottom++;
+            rclWin.yTop--;
+            WinFillRect(hps, &rclWin, pPrivate->Setup.lcolBackground);
+            sprintf(szPaint, "E %lu", pPrivate->arc);
+        }
+
+        ulPaintLen = strlen(szPaint);
+        if (ulPaintLen)
+            WinDrawText(hps,
+                        ulPaintLen,
+                        szPaint,
+                        &rclWin,
+                        0,      // background, ignored anyway
+                        pPrivate->Setup.lcolText,
+                        DT_CENTER | DT_VCENTER);
     }
-    else
-        sprintf(szPaint, "E %lu", pPulseData->arc);
-
-    ulPaintLen = strlen(szPaint);
-    if (ulPaintLen)
-        WinDrawText(hps,
-                    ulPaintLen,
-                    szPaint,
-                    &rclWin,
-                    0,      // background, ignored anyway
-                    pPulseData->Setup.lcolText,
-                    DT_CENTER | DT_VCENTER);
+    CATCH(excpt1) {} END_CATCH();
 }
 
 /*
@@ -546,18 +616,18 @@ VOID PwgtPaint(HWND hwnd)
     if (hps)
     {
         // get widget data and its button data from QWL_USER
-        PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pViewData)
+        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+        if (pWidget)
         {
-            PPULSEWIDGETDATA pPulseData = (PPULSEWIDGETDATA)pViewData->pUser;
-            if (pPulseData)
+            PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+            if (pPrivate)
             {
                 PwgtPaint2(hwnd,
-                           pPulseData,
+                           pPrivate,
                            hps,
                            TRUE);        // draw frame
-            } // end if (pPulseData)
-        } // end if (pViewData)
+            } // end if (pPrivate)
+        } // end if (pWidget)
         WinEndPaint(hps);
     } // end if (hps)
 }
@@ -570,50 +640,57 @@ VOID PwgtPaint(HWND hwnd)
 
 VOID PwgtGetNewLoad(HWND hwnd)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        PPULSEWIDGETDATA pPulseData = (PPULSEWIDGETDATA)pViewData->pUser;
-        if (pPulseData)
+        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
-            if (pPulseData->arc == NO_ERROR)
+            if (pPrivate->arc == NO_ERROR)
             {
                 HPS hps;
-
-                ULONG ulClientCX = pViewData->cxCurrent - 2;     // minus 2*border
-                if (pPulseData->palLoads == NULL)
+                RECTL rclClient;
+                WinQueryWindowRect(hwnd, &rclClient);
+                if (rclClient.xRight)
                 {
-                    // create array of loads
-                    pPulseData->cLoads = ulClientCX;
-                    pPulseData->palLoads = (PLONG)malloc(sizeof(LONG) * pPulseData->cLoads);
-                    memset(pPulseData->palLoads, 0, sizeof(LONG) * pPulseData->cLoads);
-                }
+                    ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
+                    if (pPrivate->palLoads == NULL)
+                    {
+                        // create array of loads
+                        pPrivate->cLoads = ulGraphCX;
+                        pPrivate->palLoads = (PLONG)malloc(sizeof(LONG) * pPrivate->cLoads);
+                        memset(pPrivate->palLoads, 0, sizeof(LONG) * pPrivate->cLoads);
+                    }
 
-                pPulseData->arc = doshPerfGet(pPulseData->pPerfData);
-                if (pPulseData->arc == NO_ERROR)
-                {
-                    // in the array of loads, move each entry one to the front;
-                    // drop the oldest entry
-                    memcpy(&pPulseData->palLoads[0],
-                           &pPulseData->palLoads[1],
-                           sizeof(LONG) * (pPulseData->cLoads - 1));
-                    // and update the last entry with the current value
-                    pPulseData->palLoads[pPulseData->cLoads - 1]
-                        = pPulseData->pPerfData->palLoads[0];
+                    if (pPrivate->palLoads)
+                    {
+                        pPrivate->arc = doshPerfGet(pPrivate->pPerfData);
+                        if (pPrivate->arc == NO_ERROR)
+                        {
+                            // in the array of loads, move each entry one to the front;
+                            // drop the oldest entry
+                            memcpy(&pPrivate->palLoads[0],
+                                   &pPrivate->palLoads[1],
+                                   sizeof(LONG) * (pPrivate->cLoads - 1));
+                            // and update the last entry with the current value
+                            pPrivate->palLoads[pPrivate->cLoads - 1]
+                                = pPrivate->pPerfData->palLoads[0];
 
-                    // update display
-                    pPulseData->fUpdateGraph = TRUE;
-                }
+                            // update display
+                            pPrivate->fUpdateGraph = TRUE;
+                        }
+                    }
 
-                hps = WinGetPS(hwnd);
-                PwgtPaint2(hwnd,
-                           pPulseData,
-                           hps,
-                           FALSE);       // do not draw frame
-                WinReleasePS(hps);
+                    hps = WinGetPS(hwnd);
+                    PwgtPaint2(hwnd,
+                               pPrivate,
+                               hps,
+                               FALSE);       // do not draw frame
+                    WinReleasePS(hps);
+                } // end if (rclClient.xRight)
             }
-        } // end if (pPulseData)
-    } // end if (pViewData)
+        } // end if (pPrivate)
+    } // end if (pWidget)
 }
 
 /*
@@ -627,11 +704,11 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     TRY_LOUD(excpt1)
     {
-        PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pViewData)
+        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+        if (pWidget)
         {
-            PPULSEWIDGETDATA pPulseData = (PPULSEWIDGETDATA)pViewData->pUser;
-            if (pPulseData)
+            PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+            if (pPrivate)
             {
                 PSWP pswpNew = (PSWP)mp1,
                      pswpOld = pswpNew + 1;
@@ -641,29 +718,29 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     // destroy the buffer bitmap because we
                     // need a new one with a different size
-                    if (pPulseData->hbmGraph)
+                    if (pPrivate->hbmGraph)
                     {
-                        GpiSetBitmap(pPulseData->hpsMem, NULLHANDLE);
-                        GpiDeleteBitmap(pPulseData->hbmGraph);
-                        pPulseData->hbmGraph = NULLHANDLE;
+                        GpiSetBitmap(pPrivate->hpsMem, NULLHANDLE);
+                        GpiDeleteBitmap(pPrivate->hbmGraph);
+                        pPrivate->hbmGraph = NULLHANDLE;
                                 // recreated in PwgtUpdateGraph with the current size
                     }
 
-                    if (pPulseData->hpsMem)
+                    if (pPrivate->hpsMem)
                     {
                         // memory PS already allocated: have those recreated
                         // as well
-                        GpiDestroyPS(pPulseData->hpsMem);
-                        pPulseData->hpsMem = NULLHANDLE;
-                        DevCloseDC(pPulseData->hdcMem);
-                        pPulseData->hdcMem = NULLHANDLE;
+                        GpiDestroyPS(pPrivate->hpsMem);
+                        pPrivate->hpsMem = NULLHANDLE;
+                        DevCloseDC(pPrivate->hdcMem);
+                        pPrivate->hdcMem = NULLHANDLE;
                     }
 
                     if (pswpNew->cx != pswpOld->cx)
                     {
                         XSTRING strSetup;
                         // width changed:
-                        if (pPulseData->palLoads)
+                        if (pPrivate->palLoads)
                         {
                             // we also need a new array of past loads
                             // since the array is cx items wide...
@@ -672,40 +749,40 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                             ULONG ulNewClientCX = pswpNew->cx - 2;
                             PLONG palNewLoads = (PLONG)malloc(sizeof(LONG) * ulNewClientCX);
 
-                            if (ulNewClientCX > pPulseData->cLoads)
+                            if (ulNewClientCX > pPrivate->cLoads)
                             {
                                 // window has become wider:
                                 // fill the front with zeroes
                                 memset(palNewLoads,
                                        0,
-                                       (ulNewClientCX - pPulseData->cLoads) * sizeof(LONG));
+                                       (ulNewClientCX - pPrivate->cLoads) * sizeof(LONG));
                                 // and copy old values after that
-                                memcpy(&palNewLoads[(ulNewClientCX - pPulseData->cLoads)],
-                                       pPulseData->palLoads,
-                                       pPulseData->cLoads * sizeof(LONG));
+                                memcpy(&palNewLoads[(ulNewClientCX - pPrivate->cLoads)],
+                                       pPrivate->palLoads,
+                                       pPrivate->cLoads * sizeof(LONG));
                             }
                             else
                             {
                                 // window has become smaller:
                                 // e.g. ulnewClientCX = 100
-                                //      pPulseData->cLoads = 200
+                                //      pPrivate->cLoads = 200
                                 // drop the first items
                                 ULONG ul = 0;
                                 memcpy(palNewLoads,
-                                       &pPulseData->palLoads[pPulseData->cLoads - ulNewClientCX],
+                                       &pPrivate->palLoads[pPrivate->cLoads - ulNewClientCX],
                                        ulNewClientCX * sizeof(LONG));
                             }
 
-                            pPulseData->cLoads = ulNewClientCX;
-                            free(pPulseData->palLoads);
-                            pPulseData->palLoads = palNewLoads;
-                        }
+                            pPrivate->cLoads = ulNewClientCX;
+                            free(pPrivate->palLoads);
+                            pPrivate->palLoads = palNewLoads;
+                        } // end if (pPrivate->palLoads)
 
+                        pPrivate->Setup.cx = pswpNew->cx;
                         PwgtSaveSetup(&strSetup,
-                                      pswpNew->cx,
-                                      &pPulseData->Setup);
+                                      &pPrivate->Setup);
                         if (strSetup.ulLength)
-                            WinSendMsg(pViewData->pGlobals->hwndClient,
+                            WinSendMsg(pWidget->pGlobals->hwndClient,
                                        XCM_SAVESETUP,
                                        (MPARAM)hwnd,
                                        (MPARAM)strSetup.psz);
@@ -713,11 +790,11 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     } // end if (pswpNew->cx != pswpOld->cx)
 
                     // force recreation of bitmap
-                    pPulseData->fUpdateGraph = TRUE;
+                    pPrivate->fUpdateGraph = TRUE;
                     WinInvalidateRect(hwnd, NULL, FALSE);
                 } // end if (pswpNew->fl & SWP_SIZE)
-            } // end if (pPulseData)
-        } // end if (pViewData)
+            } // end if (pPrivate)
+        } // end if (pWidget)
     }
     CATCH(excpt1)
     { } END_CATCH();
@@ -731,11 +808,11 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 VOID PwgtPresParamChanged(HWND hwnd,
                           ULONG ulAttrChanged)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        PPULSEWIDGETDATA pPulseData = (PPULSEWIDGETDATA)pViewData->pUser;
-        if (pPulseData)
+        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
             BOOL fInvalidate = TRUE;
             switch (ulAttrChanged)
@@ -743,34 +820,34 @@ VOID PwgtPresParamChanged(HWND hwnd,
                 case 0:     // layout palette thing dropped
                 case PP_BACKGROUNDCOLOR:
                 case PP_FOREGROUNDCOLOR:
-                    pPulseData->Setup.lcolBackground
+                    pPrivate->Setup.lcolBackground
                         = winhQueryPresColor(hwnd,
                                              PP_BACKGROUNDCOLOR,
                                              FALSE,
                                              SYSCLR_DIALOGBACKGROUND);
-                    pPulseData->Setup.lcolGraph
+                    pPrivate->Setup.lcolGraph
                         = winhQueryPresColor(hwnd,
                                              PP_FOREGROUNDCOLOR,
                                              FALSE,
                                              -1);
-                    if (pPulseData->Setup.lcolGraph == -1)
-                        pPulseData->Setup.lcolGraph = RGBCOL_DARKCYAN;
+                    if (pPrivate->Setup.lcolGraph == -1)
+                        pPrivate->Setup.lcolGraph = RGBCOL_DARKCYAN;
                 break;
 
                 case PP_FONTNAMESIZE:
                 {
                     PSZ pszFont = 0;
-                    if (pPulseData->Setup.pszFont)
+                    if (pPrivate->Setup.pszFont)
                     {
-                        free(pPulseData->Setup.pszFont);
-                        pPulseData->Setup.pszFont = NULL;
+                        free(pPrivate->Setup.pszFont);
+                        pPrivate->Setup.pszFont = NULL;
                     }
 
                     pszFont = winhQueryWindowFont(hwnd);
                     if (pszFont)
                     {
                         // we must use local malloc() for the font
-                        pPulseData->Setup.pszFont = strdup(pszFont);
+                        pPrivate->Setup.pszFont = strdup(pszFont);
                         winhFree(pszFont);
                     }
                 break; }
@@ -783,21 +860,20 @@ VOID PwgtPresParamChanged(HWND hwnd,
             {
                 XSTRING strSetup;
                 // force recreation of bitmap
-                pPulseData->fUpdateGraph = TRUE;
+                pPrivate->fUpdateGraph = TRUE;
                 WinInvalidateRect(hwnd, NULL, FALSE);
 
                 PwgtSaveSetup(&strSetup,
-                              pViewData->cxCurrent,
-                              &pPulseData->Setup);
+                              &pPrivate->Setup);
                 if (strSetup.ulLength)
-                    WinSendMsg(pViewData->pGlobals->hwndClient,
+                    WinSendMsg(pWidget->pGlobals->hwndClient,
                                XCM_SAVESETUP,
                                (MPARAM)hwnd,
                                (MPARAM)strSetup.psz);
                 xstrClear(&strSetup);
             }
-        } // end if (pPulseData)
-    } // end if (pViewData)
+        } // end if (pPrivate)
+    } // end if (pWidget)
 }
 
 /*
@@ -807,33 +883,33 @@ VOID PwgtPresParamChanged(HWND hwnd,
 
 VOID PwgtDestroy(HWND hwnd)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        PPULSEWIDGETDATA pPulseData = (PPULSEWIDGETDATA)pViewData->pUser;
-        if (pPulseData)
+        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
-            if (pPulseData->ulTimerID)
+            if (pPrivate->ulTimerID)
                 tmrStopTimer(hwnd,
-                             pPulseData->ulTimerID);
+                             pPrivate->ulTimerID);
 
-            if (pPulseData->hbmGraph)
+            if (pPrivate->hbmGraph)
             {
-                GpiSetBitmap(pPulseData->hpsMem, NULLHANDLE);
-                GpiDeleteBitmap(pPulseData->hbmGraph);
+                GpiSetBitmap(pPrivate->hpsMem, NULLHANDLE);
+                GpiDeleteBitmap(pPrivate->hbmGraph);
             }
 
-            if (pPulseData->hpsMem)
-                GpiDestroyPS(pPulseData->hpsMem);
-            if (pPulseData->hdcMem)
-                DevCloseDC(pPulseData->hdcMem);
+            if (pPrivate->hpsMem)
+                GpiDestroyPS(pPrivate->hpsMem);
+            if (pPrivate->hdcMem)
+                DevCloseDC(pPrivate->hdcMem);
 
-            if (pPulseData->pPerfData)
-                doshPerfClose(&pPulseData->pPerfData);
+            if (pPrivate->pPerfData)
+                doshPerfClose(&pPrivate->pPerfData);
 
-            free(pPulseData);
-        } // end if (pPulseData)
-    } // end if (pViewData)
+            free(pPrivate);
+        } // end if (pPrivate)
+    } // end if (pWidget)
 }
 
 /*
@@ -862,24 +938,33 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         /*
          * WM_CREATE:
          *      as with all widgets, we receive a pointer to the
-         *      XCENTERWIDGETVIEW in mp1, which was created for us.
+         *      XCENTERWIDGET in mp1, which was created for us.
          *
          *      The first thing the widget MUST do on WM_CREATE
-         *      is to store the XCENTERWIDGETVIEW pointer (from mp1)
+         *      is to store the XCENTERWIDGET pointer (from mp1)
          *      in the QWL_USER window word by calling:
          *
          *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
          *
-         *      We use XCENTERWIDGETVIEW.pUser for allocating
-         *      PULSEWIDGETDATA for our own stuff.
+         *      We use XCENTERWIDGET.pUser for allocating
+         *      PULSEPRIVATE for our own stuff.
          *
          *      Each widget must write its desired width into
-         *      XCENTERWIDGETVIEW.cx and cy.
+         *      XCENTERWIDGET.cx and cy.
          */
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
             mrc = PwgtCreate(hwnd, mp1);
+        break;
+
+        /*
+         * WM_CONTROL:
+         *      process notifications/queries from the XCenter.
+         */
+
+        case WM_CONTROL:
+            mrc = (MPARAM)PwgtControl(hwnd, mp1, mp2);
         break;
 
         /*
@@ -931,8 +1016,8 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         default:
             {
-                PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-                if (!pViewData)
+                PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+                if (!pWidget)
                     _Pmpf((__FUNCTION__ ": msg 0x%lX (0x%lX, 0x%lX) came in before WM_CREATE",
                                     msg, mp1, mp2));
             }

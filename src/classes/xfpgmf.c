@@ -317,17 +317,8 @@ SOM_Scope void  SOMLINK xfpgmf_wpInitData(XFldProgramFile *somSelf)
  *      object was created.
  *      The parent method must be called first.
  *
- *      Even though WPSREF doesn't really say so, this method
- *      must be used similar to a C++ copy constructor
- *      when the instance data contains pointers. Since when
- *      objects are copied, SOM just copies the binary instance
- *      data, you get two objects with instance pointers pointing
- *      to the same object, which can only lead to problems.
- *
- *      For XFldProgramFile, we need this notification to
- *      reset the icon data in our instance data, because
- *      otherwise we get wrong icons when copying program
- *      files.
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  */
 
 SOM_Scope void  SOMLINK xfpgmf_wpObjectReady(XFldProgramFile *somSelf,
@@ -755,10 +746,13 @@ SOM_Scope void  SOMLINK xfpgmfM_wpclsInitData(M_XFldProgramFile *somSelf)
     M_XFldProgramFile_parent_M_WPProgramFile_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXFldProgramFile = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+           pKernelGlobals->fXFldProgramFile = TRUE;
+           krnUnlockGlobals();
+        }
     }
 }
 

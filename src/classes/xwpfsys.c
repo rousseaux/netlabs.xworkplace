@@ -154,6 +154,9 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
  *      ulCode and refObject signify why and where from the
  *      object was created.
  *      The parent method must be called first.
+ *
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  */
 
 SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,

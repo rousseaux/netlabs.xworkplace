@@ -348,8 +348,10 @@ LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers
 
 !ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /debug
+LINK_ALWAYSPACK = $(LINK_BASE) /exepack:2
 !else
 LINK =  $(LINK_BASE) /exepack:2
+LINK_ALWAYSPACK = $(LINK)
 #/packcode /packdata
 # /optfunc
 !endif

@@ -52,8 +52,7 @@ OUTPUTDIR = ..\..\bin
 OBJS = $(OUTPUTDIR)\ctr_engine.obj \
        $(OUTPUTDIR)\ctr_notebook.obj \
        $(OUTPUTDIR)\w_objbutton.obj \
-       $(OUTPUTDIR)\w_pulse.obj \
-       $(OUTPUTDIR)\w_xbutton.obj
+       $(OUTPUTDIR)\w_pulse.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -143,10 +142,10 @@ $(OUTPUTDIR)\ctr_notebook.obj: \
 $(OUTPUTDIR)\w_objbutton.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
-        $(HLPINC)\winh.h \
-    $(INC)\classes\xcenter.ih \
+        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xcenter.ih $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\kernel.h \
+    $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\shared\center.h \
     $(INC)\startshut\shutdown.h \
     $(@B).c
@@ -159,14 +158,4 @@ $(OUTPUTDIR)\w_pulse.obj: \
     $(INC)\shared\center.h \
     $(@B).c
 
-$(OUTPUTDIR)\w_xbutton.obj: \
-    $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
-        $(HLPINC)\winh.h \
-    $(INC)\classes\xcenter.ih \
-    $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\kernel.h \
-    $(INC)\shared\center.h \
-    $(INC)\startshut\shutdown.h \
-    $(@B).c
 

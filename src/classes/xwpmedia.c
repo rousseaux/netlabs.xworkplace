@@ -1054,10 +1054,13 @@ SOM_Scope void  SOMLINK xwmmM_wpclsInitData(M_XWPMedia *somSelf)
     M_XWPMedia_parent_M_WPAbstract_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPMedia = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXWPMedia = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 
@@ -1110,10 +1113,11 @@ SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryIconData(M_XWPMedia *somSelf,
     /* M_XWPMediaData *somThis = M_XWPMediaGetData(somSelf); */
     M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQueryIconData");
 
-    if (pIconInfo) {
+    if (pIconInfo)
+    {
         pIconInfo->fFormat = ICON_RESOURCE;
         pIconInfo->resid   = ID_ICONXWPMEDIA;
-        pIconInfo->hmod    = cmnQueryMainModuleHandle();
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

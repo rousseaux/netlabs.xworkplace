@@ -2,8 +2,12 @@
 /*
  *@@sourcefile w_objbutton.c:
  *      XCenter "object button" widget implementation.
- *      This is build into the XCenter and not in
+ *      This is built into the XCenter and not in
  *      a plugin DLL.
+ *
+ *      The PM window class actually implements two
+ *      widget classes, the "X-Button" and the "object
+ *      button", which are quite similar.
  *
  *      Function prefix for this file:
  *      --  Owgt*
@@ -72,9 +76,11 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
+#include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -88,23 +94,46 @@
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpdesk.h>
+#include <wpdisk.h>
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
  *
- *   Built-in "X-Button" widget
+ *   Private widget instance data
  *
  ********************************************************************/
 
 /*
- *@@ PRIVATEWIDGETDATA:
+ * OBJBUTTONSETUP:
+ *
+ */
+
+typedef struct _OBJBUTTONSETUP
+{
+    HOBJECT     hobj;                   // member object's handle
+
+} OBJBUTTONSETUP, *POBJBUTTONSETUP;
+
+/*
+ *@@ OBJBUTTONPRIVATE:
  *      more window data for the "X-Button" widget.
  *
  *      An instance of this is created on WM_CREATE
- *      fnwpObjButtonWidget and stored in XCENTERWIDGETVIEW.pUser.
+ *      fnwpObjButtonWidget and stored in XCENTERWIDGET.pUser.
  */
 
-typedef struct _PRIVATEWIDGETDATA
+typedef struct _OBJBUTTONPRIVATE
 {
+    PXCENTERWIDGET pWidget;
+            // reverse ptr to general widget data ptr; we need
+            // that all the time and don't want to pass it on
+            // the stack with each function call
+
+    OBJBUTTONSETUP Setup;
+            // widget settings that correspond to a setup string
+
+    ULONG       ulType;                 // either BTF_OBJBUTTON or BTF_XBUTTON
+
     BOOL        fMouseButton1Down;      // if TRUE, mouse button is currently down
     BOOL        fButtonSunk;            // if TRUE, button control is currently pressed;
                     // the control is painted "down" if either of the two are TRUE
@@ -112,44 +141,244 @@ typedef struct _PRIVATEWIDGETDATA
 
     HWND        hwndMenuMain;           // if != NULLHANDLE, this has the currently
                                         // open WPS context menu
-    HPOINTER    hptrXMini;              // "X" icon for painting on button
-} PRIVATEWIDGETDATA, *PPRIVATEWIDGETDATA;
+
+    WPObject    *pobjButton;            // object for this button
+
+    HPOINTER    hptrXMini;              // "X" icon for painting on button,
+                                        // if BTF_XBUTTON
+} OBJBUTTONPRIVATE, *POBJBUTTONPRIVATE;
+
+/* ******************************************************************
+ *
+ *   Widget setup management
+ *
+ ********************************************************************/
+
+/*
+ *      This section contains shared code to manage the
+ *      widget's settings. This can translate a widget
+ *      setup string into the fields of a binary setup
+ *      structure and vice versa. This code is used by
+ *      both an open widget window and a settings dialog.
+ */
+
+/*
+ *@@ OwgtClearSetup:
+ *      cleans up the data in the specified setup
+ *      structure, but does not free the structure
+ *      itself.
+ */
+
+VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
+{
+}
+
+/*
+ *@@ OwgtScanSetup:
+ *      scans the given setup string and translates
+ *      its data into the specified binary setup
+ *      structure.
+ *
+ *      NOTE: It is assumed that pSetup is zeroed
+ *      out. We do not clean up previous data here.
+ *
+ *@@added V0.9.7 (2000-12-07) [umoeller]
+ */
+
+VOID OwgtScanSetup(const char *pcszSetupString,
+                   POBJBUTTONSETUP pSetup)
+{
+    PSZ p;
+    p = ctrScanSetupString(pcszSetupString,
+                           "OBJECTHANDLE");
+    if (p)
+    {
+        // scan hex object handle
+        pSetup->hobj = strtol(p, NULL, 16);
+        _Pmpf((__FUNCTION__ ": got handle 0x%lX", pSetup->hobj));
+        ctrFreeSetupValue(p);
+    }
+
+}
+
+/*
+ *@@ OwgtSaveSetup:
+ *      composes a new setup string.
+ *      The caller must invoke xstrClear on the
+ *      string after use.
+ */
+
+VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+                   ULONG cxCurrent,
+                   POBJBUTTONSETUP pSetup)
+{
+    CHAR    szTemp[100];
+    xstrInit(pstrSetup, 40);
+
+    if (pSetup->hobj)
+    {
+        sprintf(szTemp, "OBJECTHANDLE=%lX;",
+                pSetup->hobj);
+        xstrcat(pstrSetup, szTemp);
+    }
+}
+
+/* ******************************************************************
+ *
+ *   Widget settings dialog
+ *
+ ********************************************************************/
+
+// None currently.
+
+/* ******************************************************************
+ *
+ *   Callbacks stored in XCENTERWIDGET
+ *
+ ********************************************************************/
+
+/*
+ *@@ OwgtSetupStringChanged:
+ *      this gets called from ctrSetSetupString if
+ *      the setup string for a widget has changed.
+ *
+ *      This procedure's address is stored in
+ *      XCENTERWIDGET so that the XCenter knows that
+ *      we can do this.
+ */
+
+VOID EXPENTRY OwgtSetupStringChanged(PXCENTERWIDGET pWidget,
+                                     const char *pcszNewSetupString)
+{
+    POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+    if (pPrivate)
+    {
+        // reinitialize the setup data
+        OwgtClearSetup(&pPrivate->Setup);
+        OwgtScanSetup(pcszNewSetupString,
+                      &pPrivate->Setup);
+    }
+}
+
+// VOID EXPENTRY OwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+
+/* ******************************************************************
+ *
+ *   PM window class implementation
+ *
+ ********************************************************************/
+
+/*
+ *@@ FindObject:
+ *
+ *@@added V0.9.7 (2000-12-13) [umoeller]
+ */
+
+WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
+{
+    WPObject *pobj = NULL;
+
+    if (pPrivate->Setup.hobj)
+    {
+        pobj = _wpclsQueryObject(_WPObject,
+                                 pPrivate->Setup.hobj);
+        // if pFolder is a disk object: get root folder
+        if (pobj)
+            if (_somIsA(pobj, _WPDisk))
+                pobj = wpshQueryRootFolder(pobj, FALSE, NULL);
+    }
+
+    return (pobj);
+}
 
 /*
  *@@ OwgtCreate:
- *      implementation for WM_CREATE in fnwpObjButtonWidget.
+ *      implementation for WM_CREATE.
  */
 
 MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)mp1;
-    PPRIVATEWIDGETDATA pPrivateData = malloc(sizeof(PRIVATEWIDGETDATA));
-    memset(pPrivateData, 0, sizeof(PRIVATEWIDGETDATA));
-    pViewData->pUser = pPrivateData;
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
+    POBJBUTTONPRIVATE pPrivate = malloc(sizeof(OBJBUTTONPRIVATE));
+    memset(pPrivate, 0, sizeof(OBJBUTTONPRIVATE));
+    pWidget->pUser = pPrivate;
 
-    pPrivateData->hptrXMini = WinLoadPointer(HWND_DESKTOP,
-                                            cmnQueryMainModuleHandle(),
-                                            ID_ICONXMINI);
+    OwgtScanSetup(pWidget->pcszSetupString,
+                  &pPrivate->Setup);
 
-    pViewData->cxWanted
-                  = pViewData->pGlobals->cxMiniIcon
-                    + 4     // 2*2 for button borders
-                    + 2;    // 2*1 spacing towards border
-    // we wanna be square
-    pViewData->cyWanted = pViewData->cxWanted;
+    // get type from class
+    pPrivate->ulType = pWidget->pWidgetClass->ulExtra;
+    if (pPrivate->ulType == BTF_XBUTTON)
+        pPrivate->hptrXMini = WinLoadPointer(HWND_DESKTOP,
+                                             cmnQueryMainResModuleHandle(),
+                                             ID_ICONXMINI);
 
     // enable context menu help
-    pViewData->pcszHelpLibrary = cmnQueryHelpLibrary();
-    pViewData->ulHelpPanelID = ID_XSH_WIDGET_OBJBUTTON_MAIN;
+    pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
+    if (pPrivate->ulType == BTF_XBUTTON)
+        pWidget->ulHelpPanelID = ID_XSH_WIDGET_XBUTTON_MAIN;
+    else
+        pWidget->ulHelpPanelID = ID_XSH_WIDGET_OBJBUTTON_MAIN;
+
 
     // return 0 for success
     return (mrc);
 }
 
 /*
+ *@@ OwgtControl:
+ *      implementation for WM_CONTROL.
+ *
+ *@@added V0.9.7 (2000-12-14) [umoeller]
+ */
+
+BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    BOOL brc = FALSE;
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            USHORT  usID = SHORT1FROMMP(mp1),
+                    usNotifyCode = SHORT2FROMMP(mp1);
+
+            if (usID == ID_XCENTER_CLIENT)
+            {
+                switch (usNotifyCode)
+                {
+                    /*
+                     * XN_QUERYSIZE:
+                     *      XCenter wants to know our size.
+                     */
+
+                    case XN_QUERYSIZE:
+                    {
+                        PSIZEL pszl = (PSIZEL)mp2;
+                        pszl->cx = pWidget->pGlobals->cxMiniIcon
+                                   + 2;    // 2*1 spacing between icon and border
+                        if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
+                            pszl->cx += 4;     // 2*2 for button borders
+
+                        // we wanna be square
+                        pszl->cy = pszl->cx;
+
+                        brc = TRUE;
+                    break; }
+                }
+            }
+        } // end if (pPrivate)
+    } // end if (pWidget)
+
+    return (brc);
+}
+
+/*
  * OwgtPaintButton:
- *      implementation for WM_PAINT in fnwpObjButtonWidget.
+ *      implementation for WM_PAINT.
  */
 
 VOID OwgtPaintButton(HWND hwnd)
@@ -160,68 +389,99 @@ VOID OwgtPaintButton(HWND hwnd)
     if (hps)
     {
         // get widget data and its button data from QWL_USER
-        PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pViewData)
+        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+        if (pWidget)
         {
-            PPRIVATEWIDGETDATA pPrivateData = (PPRIVATEWIDGETDATA)pViewData->pUser;
-            if (pPrivateData)
+            POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+            if (pPrivate)
             {
                 RECTL   rclWin;
-                ULONG   ulBorder = 2,
+                ULONG   ulBorder = 0,
                         cx,
                         cy,
-                        cxMiniIcon = pViewData->pGlobals->cxMiniIcon,
+                        cxMiniIcon = pWidget->pGlobals->cxMiniIcon,
                         ulOfs = 0;
                 LONG    lLeft,
                         lRight,
                         lMiddle = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
+                HPOINTER hptr = NULLHANDLE;
 
-                if (    (pPrivateData->fMouseButton1Down)
-                     || (pPrivateData->fButtonSunk)
+                if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
+                    ulBorder = 2;
+
+                WinQueryWindowRect(hwnd, &rclWin);
+                gpihSwitchToRGB(hps);
+
+                if (    (pPrivate->fMouseButton1Down)
+                     || (pPrivate->fButtonSunk)
                    )
                 {
                     // paint button "down":
-                    lLeft = pViewData->pGlobals->lcol3DDark;
-                    lRight = pViewData->pGlobals->lcol3DLight;
+                    lLeft = pWidget->pGlobals->lcol3DDark;
+                    lRight = pWidget->pGlobals->lcol3DLight;
                     // add offset for icon painting at the bottom
-                    ulOfs += 2;
+                    ulOfs += 1;
+                    if (ulBorder == 0)
+                        ulBorder = 1;
                 }
                 else
                 {
-                    lLeft = pViewData->pGlobals->lcol3DLight;
-                    lRight = pViewData->pGlobals->lcol3DDark;
+                    lLeft = pWidget->pGlobals->lcol3DLight;
+                    lRight = pWidget->pGlobals->lcol3DDark;
                 }
 
-                // now paint button frame
-                WinQueryWindowRect(hwnd, &rclWin);
-                gpihSwitchToRGB(hps);
-                gpihDraw3DFrame(hps,
-                                &rclWin,
-                                ulBorder,
-                                lLeft,
-                                lRight);
+                if (ulBorder)
+                {
+                    // button border:
 
-                // now paint button middle
-                rclWin.xLeft += ulBorder;
-                rclWin.yBottom += ulBorder;
-                rclWin.xRight -= ulBorder;
-                rclWin.yTop -= ulBorder;
+                    // now paint button frame
+                    gpihDraw3DFrame(hps,
+                                    &rclWin,
+                                    ulBorder,
+                                    lLeft,
+                                    lRight);
+
+                    // now paint button middle
+                    rclWin.xLeft += ulBorder;
+                    rclWin.yBottom += ulBorder;
+                    rclWin.xRight -= ulBorder;
+                    rclWin.yTop -= ulBorder;
+                }
+
                 WinFillRect(hps,
                             &rclWin,
                             lMiddle);
 
-                // now paint icon
-                cx = rclWin.xRight - rclWin.xLeft;
-                cy = rclWin.yTop - rclWin.yBottom;
-                GpiIntersectClipRectangle(hps, &rclWin);
-                WinDrawPointer(hps,
-                               // center this in remaining rectl
-                               rclWin.xLeft + ((cx - cxMiniIcon) / 2) + ulOfs,
-                               rclWin.yBottom + ((cy - cxMiniIcon) / 2) - ulOfs,
-                               pPrivateData->hptrXMini,
-                               DP_MINI);
-            } // end if (pPrivateData)
-        } // end if (pViewData)
+                // get icon
+                if (pPrivate->ulType == BTF_XBUTTON)
+                {
+                    hptr = pPrivate->hptrXMini;
+                }
+                else
+                {
+                    if (!pPrivate->pobjButton)
+                        // object not queried yet:
+                        pPrivate->pobjButton = FindObject(pPrivate);
+
+                    if (pPrivate->pobjButton)
+                        hptr = _wpQueryIcon(pPrivate->pobjButton);
+                }
+
+                if (hptr)
+                {
+                    // now paint icon
+                    cx = rclWin.xRight - rclWin.xLeft;
+                    cy = rclWin.yTop - rclWin.yBottom;
+                    GpiIntersectClipRectangle(hps, &rclWin);
+                    WinDrawPointer(hps,
+                                   // center this in remaining rectl
+                                   rclWin.xLeft + ((cx - cxMiniIcon) / 2) + ulOfs,
+                                   rclWin.yBottom + ((cy - cxMiniIcon) / 2) - ulOfs,
+                                   hptr,
+                                   DP_MINI);
+                }
+            } // end if (pPrivate)
+        } // end if (pWidget)
 
         WinEndPaint(hps);
     } // end if (hps)
@@ -229,21 +489,21 @@ VOID OwgtPaintButton(HWND hwnd)
 
 /*
  * OwgtButton1Down:
- *      implementation for WM_BUTTON1DOWN in fnwpObjButtonWidget.
+ *      implementation for WM_BUTTON1DOWN.
  */
 
 VOID OwgtButton1Down(HWND hwnd)
 {
     // get widget data and its button data from QWL_USER
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        PPRIVATEWIDGETDATA pPrivateData = (PPRIVATEWIDGETDATA)pViewData->pUser;
-        if (pPrivateData)
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
             if (WinIsWindowEnabled(hwnd))
             {
-                pPrivateData->fMouseButton1Down = TRUE;
+                pPrivate->fMouseButton1Down = TRUE;
                 WinInvalidateRect(hwnd, NULL, FALSE);
 
                 // since we're not passing the message
@@ -252,160 +512,262 @@ VOID OwgtButton1Down(HWND hwnd)
                 // dismiss the button's menu, if open
                 WinSetFocus(HWND_DESKTOP, hwnd);
 
-                if (!pPrivateData->fMouseCaptured)
+                if (!pPrivate->fMouseCaptured)
                 {
                     // capture mouse events while the
                     // mouse button is down
                     WinSetCapture(HWND_DESKTOP, hwnd);
-                    pPrivateData->fMouseCaptured = TRUE;
+                    pPrivate->fMouseCaptured = TRUE;
                 }
 
-                if (!pPrivateData->fButtonSunk)
+                if (!pPrivate->fButtonSunk)
                 {
+                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                     // toggle state is still UP (i.e. button pressed
                     // for the first time): create menu
-                    WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
-                    PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
-                    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                     ULONG   ulPosition = 1;
 
-                    // pPrivateData->hwndMenuMain = WinCreateMenu(HWND_DESKTOP, NULL);
-                    pPrivateData->hwndMenuMain = WinLoadMenu(hwnd,
-                                                            cmnQueryNLSModuleHandle(FALSE),
-                                                            ID_CRM_XCENTERBUTTON);
-                    if (!pKernelGlobals->pXWPShellShared)
-                    {
-                        // XWPShell not running:
-                        // remove "logoff"
-                        winhRemoveMenuItem(pPrivateData->hwndMenuMain,
-                                           ID_CRMI_LOGOFF);
-                    }
-
                     // prepare globals in fdrmenus.c
+                    _Pmpf((__FUNCTION__ ": calling cmnuInitItemCache"));
                     cmnuInitItemCache(pGlobalSettings);
 
-                    // prepare folder content submenu for Desktop
-                    cmnuPrepareContentSubmenu(pActiveDesktop,
-                                              pPrivateData->hwndMenuMain,
-                                              pszDesktopTitle,
-                                              ulPosition++,
-                                              FALSE); // no owner draw in main context menu
+                    if (pPrivate->ulType == BTF_XBUTTON)
+                    {
+                        WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
+                        PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
+                        PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
+                        pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
+                                                                cmnQueryNLSModuleHandle(FALSE),
+                                                                ID_CRM_XCENTERBUTTON);
+                        if (!pKernelGlobals->pXWPShellShared)
+                        {
+                            // XWPShell not running:
+                            // remove "logoff"
+                            winhRemoveMenuItem(pPrivate->hwndMenuMain,
+                                               ID_CRMI_LOGOFF);
+                        }
+
+                        // prepare folder content submenu for Desktop
+                        cmnuPrepareContentSubmenu(pActiveDesktop,
+                                                  pPrivate->hwndMenuMain,
+                                                  pszDesktopTitle,
+                                                  ulPosition++,
+                                                  FALSE); // no owner draw in main context menu
+                    }
+                    else
+                    {
+                        // regular object button:
+                        pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
+                        WinSetWindowBits(pPrivate->hwndMenuMain,
+                                         QWL_STYLE,
+                                         MIS_OWNERDRAW,
+                                         MIS_OWNERDRAW);
+
+                        // insert a dummy menu item so that cmnuPrepareOwnerDraw
+                        // can measure its size
+                        _Pmpf((__FUNCTION__ ": inserting dummy"));
+                        winhInsertMenuItem(pPrivate->hwndMenuMain,
+                                           0,
+                                           pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY,
+                                           "test",
+                                           MIS_TEXT,
+                                           0);
+                    }
+
+                    _Pmpf((__FUNCTION__ ": calling ctlDisplayButtonMenu"));
                     ctlDisplayButtonMenu(hwnd,
-                                         pPrivateData->hwndMenuMain);
+                                         pPrivate->hwndMenuMain);
+                    _Pmpf((__FUNCTION__ ": ctlDisplayButtonMenu returned"));
+
                 }
             }
-        } // end if (pPrivateData)
-    } // end if (pViewData)
+        } // end if (pPrivate)
+    } // end if (pWidget)
 }
 
 /*
  * OwgtButton1Up:
- *      implementation for WM_BUTTON1UP in fnwpObjButtonWidget.
+ *      implementation for WM_BUTTON1UP.
  */
 
 VOID OwgtButton1Up(HWND hwnd)
 {
     // get widget data and its button data from QWL_USER
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        PPRIVATEWIDGETDATA pPrivateData = (PPRIVATEWIDGETDATA)pViewData->pUser;
-        if (pPrivateData)
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
             if (WinIsWindowEnabled(hwnd))
             {
                 // un-capture the mouse first
-                if (pPrivateData->fMouseCaptured)
+                if (pPrivate->fMouseCaptured)
                 {
                     WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-                    pPrivateData->fMouseCaptured = FALSE;
+                    pPrivate->fMouseCaptured = FALSE;
                 }
 
-                pPrivateData->fMouseButton1Down = FALSE;
+                pPrivate->fMouseButton1Down = FALSE;
 
                 // toggle state with each WM_BUTTON1UP
-                pPrivateData->fButtonSunk = !pPrivateData->fButtonSunk;
+                pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
                 WinInvalidateRect(hwnd, NULL, FALSE);
             }
-        } // end if (pPrivateData)
-    } // end if (pViewData)
+        } // end if (pPrivate)
+    } // end if (pWidget)
 }
 
 /*
  * OwgtInitMenu:
- *      implementation for WM_INITMENU in fnwpObjButtonWidget.
+ *      implementation for WM_INITMENU.
  */
 
 VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    SHORT sMenuIDMsg = (SHORT)mp1;
-    HWND hwndMenuMsg = (HWND)mp2;
-
-    // find out whether the menu of which we are notified
-    // is a folder content menu; if so (and it is not filled
-    // yet), the first menu item is ID_XFMI_OFS_DUMMY
-    if ((ULONG)WinSendMsg(hwndMenuMsg,
-                          MM_ITEMIDFROMPOSITION,
-                          (MPARAM)0,        // menu item index
-                          MPNULL)
-               == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
+    // get widget data and its button data from QWL_USER
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    _Pmpf((__FUNCTION__ ": entering"));
+    if (pWidget)
     {
-        // okay, let's go
-        if (pGlobalSettings->FCShowIcons)
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
-            // show folder content icons ON:
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            SHORT sMenuIDMsg = (SHORT)mp1;
+            HWND hwndMenuMsg = (HWND)mp2;
 
-            #ifdef DEBUG_MENUS
-                _Pmpf(( "  preparing owner draw"));
-            #endif
+            if (   (pPrivate->ulType == BTF_OBJBUTTON)
+                && (hwndMenuMsg == pPrivate->hwndMenuMain)
+               )
+            {
+                // WM_INITMENU for object's button main menu:
+                // we then need to load the objects directly into
+                // the menu
 
-            cmnuPrepareOwnerDraw(hwndMenuMsg);
+                _Pmpf((__FUNCTION__ ": for main menu: calling cmnuPrepareOwnerDraw"));
+                cmnuPrepareOwnerDraw(hwndMenuMsg);
+
+                // remove dummy item
+                _Pmpf((__FUNCTION__ ":   removing dummy"));
+                winhRemoveMenuItem(pPrivate->hwndMenuMain,
+                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY);
+
+                if (!pPrivate->pobjButton)
+                    // object not queried yet:
+                    pPrivate->pobjButton = FindObject(pPrivate);
+
+                if (pPrivate->pobjButton)
+                {
+                    if (!_somIsA(pPrivate->pobjButton, _WPFolder))
+                    {
+                        // not a folder:
+                    }
+                    else
+                    {
+                        // it's a folder:
+                        // show "Wait" pointer
+                        HPOINTER    hptrOld = winhSetWaitPointer();
+
+                        // populate
+                        wpshCheckIfPopulated(pPrivate->pobjButton,
+                                             FALSE);    // full populate
+
+                        if (_wpQueryContent(pPrivate->pobjButton, NULL, QC_FIRST))
+                        {
+                            // folder does contain objects: go!
+                            // insert all objects (this takes a long time)...
+                            /* WinSendMsg(pPrivate->hwndMenuMain,
+                                       MM_REMOVEITEM,
+                                       MPFROM2SHORT(cmnuPrepareContentSubmenu(pobj,
+                                                                              pPrivate->hwndMenuMain,
+                                                                              "gimme some",
+                                                                              MIT_END,
+                                                                              FALSE), // no owner draw
+                                                    FALSE),
+                                       MPNULL); */
+                            _Pmpf((__FUNCTION__ ": calling cmnuInsertObjectsIntoMenu"));
+                            cmnuInsertObjectsIntoMenu(pPrivate->pobjButton,
+                                                      pPrivate->hwndMenuMain);
+
+                            // fix menu position...
+                        }
+
+                        WinSetPointer(HWND_DESKTOP, hptrOld);
+                    }
+                } // end if (pobj)
+            }
+            else
+            {
+                // find out whether the menu of which we are notified
+                // is a folder content menu; if so (and it is not filled
+                // yet), the first menu item is ID_XFMI_OFS_DUMMY
+                _Pmpf((__FUNCTION__ ":   for submenu"));
+                if ((ULONG)WinSendMsg(hwndMenuMsg,
+                                      MM_ITEMIDFROMPOSITION,
+                                      (MPARAM)0,        // menu item index
+                                      MPNULL)
+                           == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
+                {
+                   // okay, let's go
+                   if (pGlobalSettings->FCShowIcons)
+                   {
+                       // show folder content icons ON:
+
+                       #ifdef DEBUG_MENUS
+                           _Pmpf(( "  preparing owner draw"));
+                       #endif
+
+                       cmnuPrepareOwnerDraw(hwndMenuMsg);
+                   }
+
+                   // add menu items according to folder contents
+                   _Pmpf((__FUNCTION__ ":   calling cmnuFillContentSubmenu"));
+                   cmnuFillContentSubmenu(sMenuIDMsg,
+                                          hwndMenuMsg);
+                }
+            }
         }
-
-        // add menu items according to folder contents
-        cmnuFillContentSubmenu(sMenuIDMsg,
-                               hwndMenuMsg);
     }
+    _Pmpf((__FUNCTION__ ": leaving"));
 }
 
 /*
  * OwgtMenuEnd:
- *      implementation for WM_MENUEND in fnwpObjButtonWidget.
+ *      implementation for WM_MENUEND.
  */
 
 VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 {
     // get widget data and its button data from QWL_USER
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        PPRIVATEWIDGETDATA pPrivateData = (PPRIVATEWIDGETDATA)pViewData->pUser;
-        if (pPrivateData)
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
-            if ((HWND)mp2 == pPrivateData->hwndMenuMain)
+            if ((HWND)mp2 == pPrivate->hwndMenuMain)
             {
                 // main menu is ending:
-                if (!pPrivateData->fMouseButton1Down)
+                if (!pPrivate->fMouseButton1Down)
                 {
                     // mouse button not currently down
                     // --> menu dismissed for some other reason:
-                    pPrivateData->fButtonSunk = FALSE;
+                    pPrivate->fButtonSunk = FALSE;
                     WinInvalidateRect(hwnd, NULL, FALSE);
                 }
 
-                WinDestroyWindow(pPrivateData->hwndMenuMain);
-                pPrivateData->hwndMenuMain = NULLHANDLE;
+                WinDestroyWindow(pPrivate->hwndMenuMain);
+                pPrivate->hwndMenuMain = NULLHANDLE;
             }
-        } // end if (pPrivateData)
-    } // end if (pViewData)
+        } // end if (pPrivate)
+    } // end if (pWidget)
 }
 
 /*
  *@@ OwgtCommand:
- *      implementation for WM_COMMAND in fnwpObjButtonWidget.
+ *      implementation for WM_COMMAND.
  */
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
@@ -475,24 +837,33 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
         /*
          * WM_CREATE:
          *      as with all widgets, we receive a pointer to the
-         *      XCENTERWIDGETVIEW in mp1, which was created for us.
+         *      XCENTERWIDGET in mp1, which was created for us.
          *
          *      The first thing the widget MUST do on WM_CREATE
-         *      is to store the XCENTERWIDGETVIEW pointer (from mp1)
+         *      is to store the XCENTERWIDGET pointer (from mp1)
          *      in the QWL_USER window word by calling:
          *
          *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
          *
-         *      We use XCENTERWIDGETVIEW.pUser for allocating
-         *      PRIVATEWIDGETDATA for our own stuff.
+         *      We use XCENTERWIDGET.pUser for allocating
+         *      OBJBUTTONPRIVATE for our own stuff.
          *
          *      Each widget must write its desired width into
-         *      XCENTERWIDGETVIEW.cx and cy.
+         *      XCENTERWIDGET.cx and cy.
          */
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
             mrc = OwgtCreate(hwnd, mp1);
+        break;
+
+        /*
+         * WM_CONTROL:
+         *      process notifications/queries from the XCenter.
+         */
+
+        case WM_CONTROL:
+            mrc = (MPARAM)OwgtControl(hwnd, mp1, mp2);
         break;
 
         /*
@@ -571,6 +942,7 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             mrc = cmnuMeasureItem((POWNERITEM)mp2, pGlobalSettings);
+            _Pmpf((__FUNCTION__ ": WM_MEASUREITEM, returning %d", mrc));
         break; }
 
         /*
@@ -620,16 +992,17 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
         case WM_DESTROY:
         {
-            PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pViewData)
+            PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+            if (pWidget)
             {
-                PPRIVATEWIDGETDATA pPrivateData = (PPRIVATEWIDGETDATA)pViewData->pUser;
-                if (pPrivateData)
+                POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+                if (pPrivate)
                 {
-                    WinDestroyPointer(pPrivateData->hptrXMini);
+                    if (pPrivate->hptrXMini)
+                        WinDestroyPointer(pPrivate->hptrXMini);
                     // free button data
-                    free(pPrivateData);
-                            // pViewData is cleaned up by DestroyWidgets
+                    free(pPrivate);
+                            // pWidget is cleaned up by DestroyWidgets
                 }
             }
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);

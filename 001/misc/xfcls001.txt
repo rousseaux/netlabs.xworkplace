@@ -432,4 +432,14 @@ WPZORX 1 WPFolder subclass for the ObjectREXX WPS interface.
 WPZORXINIT 1 WPTransient subclass for the ObjectREXX WPS interface.
 ExtendedDesktop 1 "Desktop Extender", WPDesktop replacement class; a classic (version 1.4 is from 1993!) IBM Employee Written Software by Dan Campbell.
 
+WPLineStylePalette 1 (Mesa 2) Part of the Mesa2 Spreadsheet.
+WPLineWidthPalette 1 (Mesa 2) Part of the Mesa2 Spreadsheet.
+WPMarkerPalette 1 (Mesa 2) Part of the Mesa2 Spreadsheet.
+WPPatternPalette 1 (Mesa 2) Part of the Mesa2 Spreadsheet.
+
+WPMesaFile 1 (Mesa 2) Data file class for Mesa2 spreadsheet files.
+WPMesaTemplateFile 1 (Mesa 2) Mesa2 spreadsheet file template class.
+
+
+
 

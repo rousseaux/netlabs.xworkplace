@@ -1259,7 +1259,7 @@ VOID setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pcnbp->pUser = pLogoData;
 
                 pLogoData->hbmLogo = GpiLoadBitmap(hpsTemp,
-                                                   cmnQueryMainModuleHandle(),
+                                                   cmnQueryMainResModuleHandle(),
                                                    ID_XWPBIGLOGO,
                                                    0, 0);   // no stretch;
                 if (pLogoData->hbmLogo)
@@ -1631,7 +1631,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     // lock global settings to get write access;
     // WARNING: do not show any dialogs when reacting to
     // controls BEFORE these are not unlocked!!!
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
     BOOL fSave = TRUE;
 
@@ -2061,6 +2061,7 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
  *      Global Settings.
  *
  *@@changed V0.9.2 (2000-02-20) [umoeller]: changed build string handling
+ *@@changed V0.9.7 (2000-12-14) [umoeller]: removed kernel build
  */
 
 VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2117,16 +2118,11 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         ULONG           ulSoundStatus = xmmQueryStatus();
 
-        // kernel version number
-        strcpy(szSearchMask, XFOLDER_VERSION);
-        // append kernel build (automatically increased with each build
-        // by xfldr.mak; string resource in xfldr.rc)
-        if (WinLoadString(hab,
-                          cmnQueryMainModuleHandle(),       // main module (XFLDR.DLL)
-                          ID_XSSI_KERNEL_BUILD,
-                          sizeof(szTemp),
-                          szTemp))
-            sprintf(szSearchMask+strlen(szSearchMask), ", build %s (%s)", szTemp, __DATE__);
+        // kernel version number V0.9.7 (2000-12-14) [umoeller]
+        sprintf(szSearchMask,
+                "%s (%s)",
+                XFOLDER_VERSION,
+                __DATE__);
 
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XCDI_INFO_KERNEL_RELEASE,
@@ -2854,7 +2850,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                USHORT usItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     BOOL fSave = TRUE,
          fUpdateOtherPages = FALSE;
 

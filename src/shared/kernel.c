@@ -169,6 +169,10 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MP
  *
  ********************************************************************/
 
+const char  *G_pcszReqSourceFile = NULL;
+ULONG       G_ulReqLine = 0;
+const char  *G_pcszReqFunction = NULL;
+
 /*
  *@@ krnLock:
  *      function to request the global hmtxCommonLock
@@ -207,9 +211,12 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MP
  *
  *@@added V0.9.0 (99-11-14) [umoeller]
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype to trace locks
  */
 
-BOOL krnLock(ULONG ulTimeout)
+BOOL krnLock(const char *pcszSourceFile,
+             ULONG ulLine,
+             const char *pcszFunction)
 {
     if (G_hmtxCommonLock == NULLHANDLE)
         DosCreateMutexSem(NULL,         // unnamed
@@ -217,13 +224,26 @@ BOOL krnLock(ULONG ulTimeout)
                           0,            // unshared
                           FALSE);       // unowned
 
-    if (WinRequestMutexSem(G_hmtxCommonLock, ulTimeout) == NO_ERROR)
-        return TRUE;
+    if (WinRequestMutexSem(G_hmtxCommonLock, 10*1000) == NO_ERROR)
+    {
+        // store owner
+        G_pcszReqSourceFile = pcszSourceFile;
+        G_ulReqLine = ulLine;
+        G_pcszReqFunction = pcszFunction;
+        return (TRUE);
+    }
     else
     {
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock mutex request failed.");
-        return FALSE;
+               "krnLock mutex request failed!!\n"
+               "    Original requestor: %s (%s, line %d))\n"
+               "    Second requestor: %s (%s, line %d))\n",
+               (G_pcszReqSourceFile) ? G_pcszReqSourceFile : "NULL",
+               G_ulReqLine,
+               (G_pcszReqFunction) ? G_pcszReqFunction : "NULL",
+               pcszSourceFile, ulLine, pcszFunction);
+
+        return (FALSE);
     }
 }
 
@@ -299,11 +319,15 @@ PCKERNELGLOBALS krnQueryGlobals(VOID)
  *      a global structure in kernel.c.
  *
  *      This calls krnLock to lock the globals.
+ *
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype to trace locks
  */
 
-PKERNELGLOBALS krnLockGlobals(ULONG ulTimeout)
+PKERNELGLOBALS krnLockGlobals(const char *pcszSourceFile,
+                              ULONG ulLine,
+                              const char *pcszFunction)
 {
-    if (krnLock(ulTimeout))
+    if (krnLock(pcszSourceFile, ulLine, pcszFunction))
         return (&G_KernelGlobals);
     else
         return (NULL);
@@ -529,14 +553,28 @@ VOID krnMemoryError(const char *pcszMsg)
 
 VOID krnSetProcessStartupFolder(BOOL fReuse)
 {
-    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-    if (pKernelGlobals->pDaemonShared)
+    PKERNELGLOBALS pKernelGlobals = NULL;
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+    TRY_LOUD(excpt1)
     {
-        // cast PVOID
-        PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-        pDaemonShared->fProcessStartupFolder = fReuse;
+        pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            if (pKernelGlobals->pDaemonShared)
+            {
+                // cast PVOID
+                PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+                pDaemonShared->fProcessStartupFolder = fReuse;
+            }
+        }
     }
-    krnUnlockGlobals();
+    CATCH(excpt1) {} END_CATCH();
+
+    if (pKernelGlobals)
+        krnUnlockGlobals();
+
+    DosExitMustComplete(&ulNesting);
 }
 
 /*
@@ -550,29 +588,21 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
 BOOL krnNeed2ProcessStartupFolder(VOID)
 {
     BOOL brc = FALSE;
-    PKERNELGLOBALS pKernelGlobals;
+    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("krnNeed2ProcessStartupFolder, locking globals"));
-    #endif
-
-    pKernelGlobals = krnLockGlobals(5000);
-    if (pKernelGlobals->pDaemonShared)
+    if (pKernelGlobals)
     {
-        // cast PVOID
-        PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-        if (pDaemonShared->fProcessStartupFolder)
+        if (pKernelGlobals->pDaemonShared)
         {
-            brc = TRUE;
-            pDaemonShared->fProcessStartupFolder = FALSE;
+            // cast PVOID
+            PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+            if (pDaemonShared->fProcessStartupFolder)
+            {
+                brc = TRUE;
+                pDaemonShared->fProcessStartupFolder = FALSE;
+            }
         }
     }
-
-    krnUnlockGlobals();
-
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("End of krnNeed2ProcessStartupFolder: returning %d", brc));
-    #endif
 
     return (brc);
 }
@@ -1426,10 +1456,13 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
                 if (mp1)
                 {
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(4000);
-                    pGlobalSettings->fEnablePageMage = FALSE;
-                    cmnUnlockGlobalSettings();
-                    _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings)
+                    {
+                        pGlobalSettings->fEnablePageMage = FALSE;
+                        cmnUnlockGlobalSettings();
+                        _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
+                    }
                 }
 
                 // update "Features" page, if open
@@ -1568,10 +1601,13 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 case SC_CLOSE:
                 case SC_HIDE:
                 {
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-                    pGlobalSettings->ShowStartupProgress = 0;
-                    cmnUnlockGlobalSettings();
-                    cmnStoreGlobalSettings();
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings)
+                    {
+                        pGlobalSettings->ShowStartupProgress = 0;
+                        cmnUnlockGlobalSettings();
+                        cmnStoreGlobalSettings();
+                    }
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
                 break; }
 
@@ -1681,10 +1717,13 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 case SC_HIDE:
                 {
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-                    pGlobalSettings->ShowStartupProgress = 0;
-                    cmnUnlockGlobalSettings();
-                    cmnStoreGlobalSettings();
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings)
+                    {
+                        pGlobalSettings->ShowStartupProgress = 0;
+                        cmnUnlockGlobalSettings();
+                        cmnStoreGlobalSettings();
+                    }
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
                 break; }
 
@@ -1888,17 +1927,23 @@ VOID krnShowStartupDlgs(VOID)
             }
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
             {
-                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
-                pGlobalSettings2->fReplaceIcons = FALSE;
-                cmnUnlockGlobalSettings();
-                cmnStoreGlobalSettings();
+                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                if (pGlobalSettings2)
+                {
+                    pGlobalSettings2->fReplaceIcons = FALSE;
+                    cmnUnlockGlobalSettings();
+                    cmnStoreGlobalSettings();
+                }
             }
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
             {
-                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
-                pGlobalSettings2->fEnablePageMage = FALSE;  // ###
-                cmnUnlockGlobalSettings();
-                cmnStoreGlobalSettings();
+                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                if (pGlobalSettings2)
+                {
+                    pGlobalSettings2->fEnablePageMage = FALSE;  // ###
+                    cmnUnlockGlobalSettings();
+                    cmnStoreGlobalSettings();
+                }
             }
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
             {
@@ -1930,10 +1975,13 @@ VOID krnShowStartupDlgs(VOID)
     if (getenv("XWP_NO_SUBCLASSING"))
     {
         // V0.9.3 (2000-04-26) [umoeller]
-        GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
-        pGlobalSettings2->fNoSubclassing = TRUE;
-        cmnUnlockGlobalSettings();
-        _Pmpf(("krnShowStartupDlgs: disabled subclassing"));
+        GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+        if (pGlobalSettings2)
+        {
+            pGlobalSettings2->fNoSubclassing = TRUE;
+            cmnUnlockGlobalSettings();
+            _Pmpf(("krnShowStartupDlgs: disabled subclassing"));
+        }
     }
 }
 

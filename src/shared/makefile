@@ -54,7 +54,7 @@ OBJS = $(OUTPUTDIR)\center.obj \
        $(OUTPUTDIR)\cnrsort.obj \
        $(OUTPUTDIR)\common.obj \
        $(OUTPUTDIR)\contentmenus.obj \
-#       $(OUTPUTDIR)\dummyfont.obj \
+       $(OUTPUTDIR)\dummyfont.obj \
        $(OUTPUTDIR)\notebook.obj \
        $(OUTPUTDIR)\kernel.obj \
        $(OUTPUTDIR)\xsetup.obj \
@@ -70,7 +70,7 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(OUTPUTDIR)\xwp.res
+    $(OBJS) $(OUTPUTDIR)\xwpres.res
 # $(OUTPUTDIR)\xwpfonts.res
     @echo ----- Leaving $(MAKEDIR)
 !endif
@@ -166,6 +166,10 @@ $(OUTPUTDIR)\common.obj: \
 
 $(OUTPUTDIR)\contentmenus.obj: \
     $(INC)\setup.h \
+    $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\dummyfont.obj: $(@B).c
@@ -210,16 +214,7 @@ $(OUTPUTDIR)\wpsh.obj: \
      $(MYOWNINC)\common.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 
-# build resources for XFLDR.DLL
-# raise buildlevel (build.h); whenever source files have been
-# changed which require re-linking the whole damn thing,
-# RAISEBLD.CMD will raise the buildlevel in BUILD.H, which
-# will be compiled into XWP.RES.
-..\..\include\build.h: xwp.def $(OBJS) xwp.rc $(INC)\dlgids.h *.ico
-        @echo Raising buildlevel
-        cmd.exe /c ..\..\tools\raisebld.cmd ..\..\include\build.h
-
-$(OUTPUTDIR)\xwp.res: *.ico xwp.rc ..\..\include\build.h
+$(OUTPUTDIR)\xwpres.res: *.ico $(@B).rc
         $(RC) -r -i $(OUTPUTDIR) $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc

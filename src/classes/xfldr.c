@@ -1495,84 +1495,15 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
 }
 
 /*
- *@@ wpCopyObject:
- *      this WPObject method gets called to have a copy
- *      of somSelf created, which is returned.
- *
- *      This method can get called in several situations:
- *
- *      -- Synchronously in any situation by any code to have
- *         a copy created.
- *
- *      -- The WPS itself calls this method when it's doing its
- *         file operations which have been initiated by the user.
- *         This is a complex and largely undocumented issue; see
- *         PROGREF.INF for more notes.
- *
- *      According to WPSREF, copies of an object can always be deleted
- *      and moved by default, even if the original has the OBJSTYLE_NODELETE
- *      or OBJSTYLE_NOMOVE style set.
- *
- *@@added V0.9.3 (2000-04-29) [umoeller]
- */
-
-SOM_Scope WPObject*  SOMLINK xf_wpCopyObject(XFolder *somSelf,
-                                             WPFolder* Folder,
-                                             BOOL fLock)
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpCopyObject");
-
-    return (XFolder_parent_WPFolder_wpCopyObject(somSelf, Folder,
-                                                 fLock));
-}
-
-/*
- *@@ wpCreateAnother:
- *
- *@@added V0.9.3 (2000-04-29) [umoeller]
- */
-
-SOM_Scope WPObject*  SOMLINK xf_wpCreateAnother(XFolder *somSelf,
-                                                PSZ pszTitle,
-                                                PSZ pszSetupEnv,
-                                                WPFolder* Folder)
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpCreateAnother");
-
-    return (XFolder_parent_WPFolder_wpCreateAnother(somSelf,
-                                                    pszTitle,
-                                                    pszSetupEnv,
-                                                    Folder));
-}
-
-/*
- *@@ wpCreateFromTemplate:
- *
- *@@added V0.9.3 (2000-04-29) [umoeller]
- */
-
-SOM_Scope WPObject*  SOMLINK xf_wpCreateFromTemplate(XFolder *somSelf,
-                                                     WPFolder* folder,
-                                                     BOOL fLock)
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpCreateFromTemplate");
-
-    return (XFolder_parent_WPFolder_wpCreateFromTemplate(somSelf,
-                                                         folder,
-                                                         fLock));
-}
-
-/*
  *@@ wpObjectReady:
- *      this is called upon an object when its creation
- *      or awakening is complete. This is the last method
- *      which gets called during instantiation of a
- *      WPS object when it has completely initialized
- *      itself. ulCode signifies the cause of object
- *      instantiation.
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
+ *
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  *
  *      We will have this object's pointer stored
  *      in a global list (maintained by the Worker thread)
@@ -1618,13 +1549,25 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
     if (wpshLockObject(&Lock, somSelf))
     {
         XFolderData *somThis = XFolderGetData(somSelf);
+
+        // were we copied?
+        if (ulCode & OR_REFERENCE)
+        {
+            XFolderData *somThat = XFolderGetData(refObject);
+            // yes: fix the instance data which SOM has done
+            // a flat binary copy on... V0.9.7 (2000-12-13) [umoeller]
+            _pfnResolvedUpdateStatusBar = NULL;
+
+            _pDefaultDocument = NULL;
+        }
+
+
+        // in all cases, resolve deferred default document
         if (_pszDefaultDocDeferred)
         {
-            // _Pmpf(("_pszDefaultDocDeferred: %s", _pszDefaultDocDeferred));
             // this has been set by wpRestoreState
             _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
                 // can return NULL if not found
-            // _Pmpf(("  Resolved _pDefaultDocument: 0x%lX", _pDefaultDocument));
             free(_pszDefaultDocDeferred);
             _pszDefaultDocDeferred = NULL;
         }
@@ -2522,22 +2465,21 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
             if (fFolderLocked) */
             // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
             // prevents work areas from re-opening
-            {
-                // have parent do the window creation
-                hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
-                                                              hwndCnr,
-                                                              ulView,
-                                                              param);
 
-                if (   (ulView == OPEN_CONTENTS)
-                    || (ulView == OPEN_TREE)
-                    || (ulView == OPEN_DETAILS)
-                   )
-                {
-                    fdrManipulateNewView(somSelf,
-                                         hwndNewFrame,
-                                         ulView);
-                }
+            // have parent do the window creation
+            hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
+                                                          hwndCnr,
+                                                          ulView,
+                                                          param);
+
+            if (   (ulView == OPEN_CONTENTS)
+                || (ulView == OPEN_TREE)
+                || (ulView == OPEN_DETAILS)
+               )
+            {
+                fdrManipulateNewView(somSelf,
+                                     hwndNewFrame,
+                                     ulView);
             }
         }
         CATCH(excpt1) { } END_CATCH();
@@ -3582,40 +3524,43 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
     M_XFolder_parent_M_WPFolder_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
-
-        if (pKernelGlobals->fXFolder == FALSE)
+        // store the class object in KERNELGLOBALS
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
         {
-            // first call:
+            if (pKernelGlobals->fXFolder == FALSE)
+            {
+                // first call:
 
-            // store the class object in KERNELGLOBALS
-            pKernelGlobals->fXFolder = TRUE;
+                // store the class object in KERNELGLOBALS
+                pKernelGlobals->fXFolder = TRUE;
 
-            // initialize other data
-            G_pllFavoriteFolders = lstCreate(TRUE);       // items are freeable
-            G_pllQuickOpenFolders = lstCreate(TRUE);      // items are freeable
+                // initialize other data
+                G_pllFavoriteFolders = lstCreate(TRUE);       // items are freeable
+                G_pllQuickOpenFolders = lstCreate(TRUE);      // items are freeable
 
-            fdrLoadFolderHotkeys();
+                fdrLoadFolderHotkeys();
 
-            // register class for supplementary object
-            // windows, which are created for each folder view
-            // which is opened
-            WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                             WNDCLASS_SUPPLOBJECT,    // class name
-                             (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
-                             0,       // class style
-                             4);      // extra window words for SUBCLASSEDFOLDERVIEW
-                                      // pointer (see fdrSubclassFolderView)
+                // register class for supplementary object
+                // windows, which are created for each folder view
+                // which is opened
+                WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                                 WNDCLASS_SUPPLOBJECT,    // class name
+                                 (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
+                                 0,       // class style
+                                 4);      // extra window words for SUBCLASSEDFOLDERVIEW
+                                          // pointer (see fdrSubclassFolderView)
 
-            // install local hook (fdrsubclass.c)
-            WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
-                       HMQ_CURRENT,
-                       HK_SENDMSG,
-                       (PFN)fdr_SendMsgHook,
-                       NULLHANDLE);  // module handle, can be 0 for local hook
+                // install local hook (fdrsubclass.c)
+                WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
+                           HMQ_CURRENT,
+                           HK_SENDMSG,
+                           (PFN)fdr_SendMsgHook,
+                           NULLHANDLE);  // module handle, can be 0 for local hook
 
+            }
+            krnUnlockGlobals();
         }
-        krnUnlockGlobals();
     }
 }
 

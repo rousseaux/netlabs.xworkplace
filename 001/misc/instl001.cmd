@@ -49,14 +49,18 @@ dir = pdir||"bin\";
 OnlineReferenceFile = "xfldr"LanguageCode".inf";
 XFolderIntroFile    = "xfldr"LanguageCode".sgs";
 
+/* main folder */
 rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;HELPPANEL=84;OBJECTID=<XWP_MAINFLDR>;", "U");
-if (SysSearchPath("PATH", "sguide.exe") \= "") then
-    rc = SysCreateObject("WPProgram", XFolderIntro, "<XWP_MAINFLDR>", "EXENAME=sguide.exe;PARAMETERS="XFolderIntroFile";STARTUPDIR="dir";ICONFILE="idir"xfolder.ico;OBJECTID=<XWP_INTRO>;", "U");
-/* "Readme" shadow (added V0.9.2) */
-rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID="pdir||"README;OBJECTID=<XWP_READMEMAINSHADOW>;", "U");
+
+/* "SmartGuide" introduction: removed V0.9.7 (2000-12-10) [umoeller] */
+/* if (SysSearchPath("PATH", "sguide.exe") \= "") then
+    rc = SysCreateObject("WPProgram", XFolderIntro, "<XWP_MAINFLDR>", "EXENAME=sguide.exe;PARAMETERS="XFolderIntroFile";STARTUPDIR="dir";ICONFILE="idir"xfolder.ico;OBJECTID=<XWP_INTRO>;", "U"); */
 
 /* User Guide */
 rc = SysCreateObject("WPProgram", OnlineReference, "<XWP_MAINFLDR>", "EXENAME=view.exe;PARAMETERS="pdir||OnlineReferenceFile";OBJECTID=<XWP_REF>;", "U");
+
+/* "Readme" shadow (added V0.9.2) */
+rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID="pdir||"README;OBJECTID=<XWP_READMEMAINSHADOW>;", "U");
 
 /* XSHUTDWN.EXE */
 rc = SysCreateObject("WPProgram", XShutdown, "<XWP_MAINFLDR>", "EXENAME="dir"xshutdwn.exe;OBJECTID=<XWP_XSHUTDOWN>;", "U");

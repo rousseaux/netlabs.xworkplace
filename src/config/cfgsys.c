@@ -554,8 +554,13 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_INIT)
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
-        sprintf(pKernelGlobals->szConfigSys, "%c:\\config.sys", doshQueryBootDrive());
+        {
+            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+            if (pKernelGlobals)
+            {
+                sprintf(pKernelGlobals->szConfigSys, "%c:\\config.sys", doshQueryBootDrive());
+            }
+        }
 
         WinEnableControl(pcnbp->hwndDlgPage, DID_APPLY, TRUE);
 

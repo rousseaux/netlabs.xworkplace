@@ -407,7 +407,14 @@ SOM_Scope ULONG SOMLINK wcur_wpAddObjectGeneralPage(XWPWinCursor * somSelf,
 
 /*
  *@@ wpObjectReady:
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
  *
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  */
 
 SOM_Scope void SOMLINK wcur_wpObjectReady(XWPWinCursor * somSelf,

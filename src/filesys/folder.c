@@ -1639,7 +1639,7 @@ BOOL fdrAddToList(WPFolder *somSelf,
         }
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxFolderLists request failed.");
+                   "hmtxFolderLists request failed.");
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -2519,25 +2519,35 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                     case PP_FOREGROUNDCOLOR:
                     case PP_BACKGROUNDCOLOR:
                     {
-                        ULONG   ul = 0,
-                                attrFound = 0;
-                        GLOBALSETTINGS* pGlobalSettings = cmnLockGlobalSettings(5000);
+                        GLOBALSETTINGS* pGlobalSettings = NULL;
+                        ULONG ulNesting;
+                        DosEnterMustComplete(&ulNesting);
+                        TRY_LOUD(excpt1)
+                        {
+                            ULONG   ul = 0,
+                                    attrFound = 0;
+                            pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
-                        WinQueryPresParam(hwndBar,
-                                          (ULONG)mp1,
-                                          0,
-                                          &attrFound,
-                                          (ULONG)sizeof(ul),
-                                          (PVOID)&ul,
-                                          0);
-                        if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
-                            pGlobalSettings->lSBTextColor = ul;
-                        else
-                            pGlobalSettings->lSBBgndColor = ul;
+                            WinQueryPresParam(hwndBar,
+                                              (ULONG)mp1,
+                                              0,
+                                              &attrFound,
+                                              (ULONG)sizeof(ul),
+                                              (PVOID)&ul,
+                                              0);
+                            if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
+                                pGlobalSettings->lSBTextColor = ul;
+                            else
+                                pGlobalSettings->lSBBgndColor = ul;
+                        }
+                        CATCH(excpt1) {} END_CATCH();
+
+                        if (pGlobalSettings)
+                            cmnUnlockGlobalSettings();
+
+                        DosExitMustComplete(&ulNesting);
 
                         cmnStoreGlobalSettings();
-
-                        cmnUnlockGlobalSettings();
 
                         WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
                     break; }

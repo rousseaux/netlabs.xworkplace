@@ -32,7 +32,6 @@
 
     // PM window class names for built-in widgets
     #define WNDCLASS_WIDGET_OBJBUTTON   "XWPCenterObjButtonWidget"
-    #define WNDCLASS_WIDGET_DTPBUTTON   "XWPCenterXButtonWidget"
     #define WNDCLASS_WIDGET_PULSE       "XWPCenterPulseWidget"
 
     MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -55,6 +54,39 @@
     #ifdef LINKLIST_HEADER_INCLUDED
 
         /*
+         *@@ WIDGETVIEWSTATE:
+         *      private structure stored in the XCenter's
+         *      XCENTERWINDATA.llWidgets list for each
+         *      open widget.
+         *
+         *      This contains the XCENTERWIDGET structure
+         *      that the widget is allowed to see. A
+         *      direct pointer into that structure is
+         *      passed to the widget on WM_CREATE, while
+         *      we can use this to cache additional data
+         *      that the widget itself should not see.
+         *
+         *@@added V0.9.7 (2000-12-14) [umoeller]
+         */
+
+        typedef struct _WIDGETVIEWSTATE
+        {
+            XCENTERWIDGET   Widget;
+                        // widget's public data; this must be
+                        // the first member of this structure,
+                        // or WM_DESTROY in ctrDefWidgetProc
+                        // won't work
+
+            SIZEL           szlWanted;
+                        // the widget's desired size
+
+            LONG            xCurrent,
+                            cxCurrent,
+                            cyCurrent;
+
+        } WIDGETVIEWSTATE, *PWIDGETVIEWSTATE;
+
+        /*
          *@@ XCENTERWINDATA:
          *      general view-specific data for the XCenter.
          *      This is stored in QWL_USER of both the
@@ -68,7 +100,7 @@
          *      This structure is private and not seen
          *      by the widgets. However, this contains
          *      the XCENTERGLOBALS member, whose pointer
-         *      is passed to the widgets in each XCENTERWIDGETVIEW
+         *      is passed to the widgets in each XCENTERWIDGET
          *      structure.
          */
 
@@ -81,12 +113,14 @@
             VIEWITEM            ViewItem;           // view item
 
             XCENTERGLOBALS      Globals;            // public data; a ptr to this is stored in
-                                                    // each created XCENTERWIDGETVIEW
+                                                    // each created XCENTERWIDGET
 
-            LINKLIST            llWidgetsLeft;      // linked list of PXCENTERWIDGETVIEW pointers;
+            LINKLIST            llWidgets;          // linked list of PXCENTERWIDGETVIEW pointers;
                                                     // list is not auto-free (ctrpCreateXCenterView)
 
             PFNWP               pfnwpFrameOrig;     // original frame window proc (subclassed)
+
+            ULONG               ulBorderWidth;      // depends on _ulDisplayStyle
 
             LONG                yFrame;             // current frame y pos
             ULONG               cxFrame,            // always screen width
@@ -120,7 +154,7 @@
             PXCENTERWIDGETSETTING   pSetting;
                         // ptr to internal settings list item
 
-            PXCENTERWIDGETVIEW      pViewData;
+            PXCENTERWIDGET          pWidget;
                         // if != NULL, ptr to open widget view
 
             ULONG                   ulIndex;
@@ -129,18 +163,32 @@
         } WGTSETTINGSTEMP, *PWGTSETTINGSTEMP;
 
         VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
-                                 PXCENTERWIDGETVIEW pViewData);
+                                 PXCENTERWIDGET pWidget);
 
         VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                               HWND hwnd,
                               BOOL fRemove,
                               HPS hpsPre);
 
-        VOID ctrpReformatFrame(PXCENTERWINDATA pXCenterData);
+        VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
+                          ULONG ulFlags);
 
     #endif // LINKLIST_HEADER_INCLUDED
 
-    VOID ctrpReformatFrameHWND(HWND hwnd);
+    #define XFMF_GETWIDGETSIZES         0x0001
+                // reget all widget's sizes
+    #define XFMF_DISPLAYSTYLECHANGED    0x0002
+                // display style has changed;
+                // this includes all other flags except XFMF_SHOWWIDGETS
+    #define XFMF_RECALCHEIGHT           0x0004
+                // e.g. if widget has been added or removed
+    #define XFMF_REPOSITIONWIDGETS      0x0008
+                // reposition widgets
+    #define XFMF_SHOWWIDGETS            0x0010
+                // set WS_VISIBLE on widgets
+
+    VOID ctrpReformatHWND(HWND hwnd,
+                          ULONG ulFlags);
 
     #ifdef SOM_XCenter_h
         VOID ctrpLoadClasses(VOID);
@@ -155,7 +203,9 @@
 
         VOID ctrpAddWidget(XCenter *somSelf,
                            PXCENTERWIDGETSETTING pSetting,
-                           PULONG pulNewItemCount);
+                           ULONG ulBeforeIndex,
+                           PULONG pulNewItemCount,
+                           PULONG pulNewWidgetIndex);
 
         BOOL ctrpRemoveWidget(XCenter *somSelf,
                               ULONG ulIndex);

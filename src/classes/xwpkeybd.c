@@ -238,10 +238,13 @@ SOM_Scope void  SOMLINK xkbM_wpclsInitData(M_XWPKeyboard *somSelf)
     M_XWPKeyboard_parent_M_WPKeyboard_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPKeyboard = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXWPKeyboard = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 

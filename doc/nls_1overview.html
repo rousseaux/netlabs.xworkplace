@@ -48,14 +48,15 @@ XWorkplace NLS packages identify themselves to the XWorkplace core via
 <I>OS/2 Command Reference</I> (CMDREF.INF).
 
 <P>XWorkplace's language depends on exactly one setting in OS2.INI (application
-"XFolder", key "LanguageCode"). If that setting is changed, XWorkplace assumes a
+"XWorkplace", key "LanguageCode"). If that setting is changed, XWorkplace assumes a
 whole new set of language files to be present.
 
-<P>This XWorkplace source package is prepared for creating the English NLS package, as
-it comes with the English NLS package. The language code
-for English is &quot;001&quot;.
+<P>With the XWorkplace sources, you will find everything for creating the English
+NLS package, as it comes with the standard XWorkplace binary release.
+The language code for English is &quot;001&quot;. Everything that is related
+to English NLS is therefore in the <CODE>001\</CODE> directory tree.
 
-<P>So the <B>first step</B> you'll have to take is finding out your country
+<P>The <B>first step</B> you'll have to take is finding out your country
 code. For example, Italian would be 039.
 <P>
 Unfortunately, XWorkplace's National Language Support (NLS) is spread across quite
@@ -67,13 +68,15 @@ things that XWorkplace will ever display to the user, such as menus,
 dialogs, messages, and notebook pages.
 <P>Here we have:
 
-<BR><UL><LI>The <B>NLS DLL</B> to be put into the XWorkplace <CODE>BIN</CODE> subdirectory.
+<BR><UL><LI>The <B>NLS DLL</B> to be put into the XWorkplace <CODE>bin</CODE>
+subdirectory.
 This file contains all language-dependent Presentation Manager (PM) resources,
 mostly dialogs and menus. Also, a lot of strings are stored here.
 <P>The NLS DLL is called <CODE>XFLDRxxx.DLL</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
-The files neccessary to translate this DLL are in the <CODE>001</CODE>
-directory.
+The files neccessary to translate this DLL are in the <CODE>001\dll</CODE>
+directory. All this goes into <CODE>bin\xfldr001.dll</CODE> in the binary
+release.
 <P>See <A HREF="nls_4dll.html">"The main NLS DLL"</A> for details.
 
 <P><LI>The XWorkplace <B>message file</B> introduced with V0.80 residing in the
@@ -87,6 +90,8 @@ three-digit language code, and an IBM utility called <CODE>MKMSGF.EXE</CODE> was
 required to compile the actual message file. Now, this file has the <CODE>.TMF</CODE>
 ending and is compiled at run-time into that file's extended attributes, so there's
 no additional utilities needed.
+<P>This file is <CODE>001\misc\xfldr001.tmf</CODE> in the sources. This is
+<CODE>help\xfldr001.tmf</CODE> in the binary release.
 <P>See <A HREF="nls_4dll.html">"The main NLS DLL"</A> for details.
 
 <P><LI>The <B>WPS class descriptions</B> which are displayed on the
@@ -94,11 +99,12 @@ no additional utilities needed.
 settings page in the &quot;Workplace Shell&quot; object. This was introduced
 with XFolder 0.80 also.
 <P>This file is called <CODE>XFCLSxxx.TXT</CODE>, with &quot;xxx&quot; being your
-three-digit language code. It also resides in the <CODE>001</CODE> directory.
+three-digit language code. It also resides in the <CODE>001\misc</CODE> directory.
 <P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
 
 <P><LI>A number of REXX .CMD and text files for XWorkplace's installation.
-The files to be translated are in the <CODE>MISC</CODE> subdirectory.
+The files to be translated are in the <CODE>001\misc</CODE> subdirectory
+and go into <CODE>install\</CODE> in the binary release.
 <P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
 
 </UL><BR><LI><B>Documentation:</B> the XWorkplace User Guide (INF file) and online
@@ -110,7 +116,7 @@ part of the translation work, since I have written so much text over time.
 <BR><UL><LI>The <B>XWorkplace Online Reference (INF)</B> in the XWorkplace main directory.
 <P>This file is called <CODE>XFLDRxxx.INF</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
-The HTML source files neccessary to translate this file are in the <CODE>001/INF.001</CODE>
+The HTML source files neccessary to translate this file are in the <CODE>001/inf.001</CODE>
 subdirectory.
 <P>See <A HREF="nls_5infhlp.html">"The INF and HLP files"</A> for details.
 
@@ -118,7 +124,7 @@ subdirectory.
 all the help panels that are displayed when you press F1.
 <P>This file is called <CODE>XFLDRxxx.HLP</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
-The files neccessary to translate this file are in the <CODE>001/HELP.001</CODE>
+The files neccessary to translate this file are in the <CODE>001/xwphelp</CODE>
 subdirectory.
 <P>See <A HREF="nls_5infhlp.html">"The INF and HLP files"</A> for details.
 
@@ -127,10 +133,8 @@ XWorkplace is being installed. These set up XWorkplace objects and INI keys
 in a certain language. Please see the README in the <CODE>MISC</CODE>
 directory for details.
 
-<P><LI>A SmartGuide (Warp 4) script is used for the XWorkplace introduction, which is
-displayed right after XWorkplace has been installed and the WPS has been restarted.
-This (<CODE>XFLDRxxx.SGS</CODE>) is also in the <CODE>MISC</CODE> directory.
-<P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
+<P><LI>The Warp 4 SmartGuide script which was present with XFolder and XWorkplace
+before V0.9.7 is gone now.
 
 </OL>The <CODE>TOOLS</CODE> directory contains a valuable tool for converting
 HTML files to the IBM (IPF) format. This will be described on a

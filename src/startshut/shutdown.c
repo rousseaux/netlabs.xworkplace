@@ -232,17 +232,20 @@ BOOL xsdInitiateShutdown(VOID)
     memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
 
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
-        if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
-           )
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            if (    (pKernelGlobals->fShutdownRunning)
+                 || (thrQueryID(&pKernelGlobals->tiShutdownThread))
+               )
+                // shutdown thread already running: return!
+                fStartShutdown = FALSE;
 
-        // lock shutdown menu items
-        pKernelGlobals->fShutdownRunning = TRUE;
+            // lock shutdown menu items
+            pKernelGlobals->fShutdownRunning = TRUE;
 
-        krnUnlockGlobals();
+            krnUnlockGlobals();
+        }
     }
 
     if (fStartShutdown)
@@ -302,23 +305,26 @@ BOOL xsdInitiateShutdown(VOID)
     }
 
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
-        if (fStartShutdown)
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
         {
-            // everything OK: create shutdown thread,
-            // which will handle the rest
-            thrCreate(&(pKernelGlobals->tiShutdownThread),
-                        fntShutdownThread,
-                        NULL, // running flag
-                        0,    // no msgq
-                        (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
-            cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
-        }
-        else
-            free(psdp);     // fixed V0.9.1 (99-12-12)
+            if (fStartShutdown)
+            {
+                // everything OK: create shutdown thread,
+                // which will handle the rest
+                thrCreate(&(pKernelGlobals->tiShutdownThread),
+                            fntShutdownThread,
+                            NULL, // running flag
+                            0,    // no msgq
+                            (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
+                cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
+            }
+            else
+                free(psdp);     // fixed V0.9.1 (99-12-12)
 
-        pKernelGlobals->fShutdownRunning = fStartShutdown;
-        krnUnlockGlobals();
+            pKernelGlobals->fShutdownRunning = fStartShutdown;
+            krnUnlockGlobals();
+        }
     }
 
     return (fStartShutdown);
@@ -347,17 +353,20 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
     memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
 
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
-        if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
-           )
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            if (    (pKernelGlobals->fShutdownRunning)
+                 || (thrQueryID(&pKernelGlobals->tiShutdownThread))
+               )
+                // shutdown thread already running: return!
+                fStartShutdown = FALSE;
 
-        // lock shutdown menu items
-        pKernelGlobals->fShutdownRunning = TRUE;
+            // lock shutdown menu items
+            pKernelGlobals->fShutdownRunning = TRUE;
 
-        krnUnlockGlobals();
+            krnUnlockGlobals();
+        }
     }
 
     if (fStartShutdown)
@@ -385,23 +394,26 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
     }
 
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
-        if (fStartShutdown)
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
         {
-            // everything OK: create shutdown thread,
-            // which will handle the rest
-            thrCreate(&(pKernelGlobals->tiShutdownThread),
-                        fntShutdownThread,
-                        NULL, // running flag
-                        0,    // no msgq
-                        (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
-            cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
-        }
-        else
-            free(psdp);     // fixed V0.9.1 (99-12-12)
+            if (fStartShutdown)
+            {
+                // everything OK: create shutdown thread,
+                // which will handle the rest
+                thrCreate(&(pKernelGlobals->tiShutdownThread),
+                            fntShutdownThread,
+                            NULL, // running flag
+                            0,    // no msgq
+                            (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
+                cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
+            }
+            else
+                free(psdp);     // fixed V0.9.1 (99-12-12)
 
-        pKernelGlobals->fShutdownRunning = fStartShutdown;
-        krnUnlockGlobals();
+            pKernelGlobals->fShutdownRunning = fStartShutdown;
+            krnUnlockGlobals();
+        }
     }
 
     return (fStartShutdown);
@@ -430,17 +442,20 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
     memset(psdpNew, 0, sizeof(SHUTDOWNPARAMS));
 
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
-        if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
-           )
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            if (    (pKernelGlobals->fShutdownRunning)
+                 || (thrQueryID(&pKernelGlobals->tiShutdownThread))
+               )
+                // shutdown thread already running: return!
+                fStartShutdown = FALSE;
 
-        // lock shutdown menu items
-        pKernelGlobals->fShutdownRunning = TRUE;
+            // lock shutdown menu items
+            pKernelGlobals->fShutdownRunning = TRUE;
 
-        krnUnlockGlobals();
+            krnUnlockGlobals();
+        }
     }
 
     if (psdpShared == NULL)
@@ -476,23 +491,26 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
     }
 
     {
-        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
-        if (fStartShutdown)
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
         {
-            // everything OK: create shutdown thread,
-            // which will handle the rest
-            thrCreate(&(pKernelGlobals->tiShutdownThread),
-                        fntShutdownThread,
-                        NULL, // running flag
-                        0,    // no msgq
-                        (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
-            cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
-        }
-        else
-            free(psdpNew);     // fixed V0.9.1 (99-12-12)
+            if (fStartShutdown)
+            {
+                // everything OK: create shutdown thread,
+                // which will handle the rest
+                thrCreate(&(pKernelGlobals->tiShutdownThread),
+                            fntShutdownThread,
+                            NULL, // running flag
+                            0,    // no msgq
+                            (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
+                cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
+            }
+            else
+                free(psdpNew);     // fixed V0.9.1 (99-12-12)
 
-        pKernelGlobals->fShutdownRunning = fStartShutdown;
-        krnUnlockGlobals();
+            pKernelGlobals->fShutdownRunning = fStartShutdown;
+            krnUnlockGlobals();
+        }
     }
 
     return (TRUE);
@@ -877,14 +895,17 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_SDDI_SAVEINIS_LIST:
         {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-            ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
-                                                LM_QUERYSELECTION,
-                                                MPFROMSHORT(LIT_FIRST),
-                                                0);
-            if (ul >= 0 && ul <= 2)
-                pGlobalSettings->bSaveINIS = ul;
-            cmnUnlockGlobalSettings();
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            if (pGlobalSettings)
+            {
+                ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
+                                                    LM_QUERYSELECTION,
+                                                    MPFROMSHORT(LIT_FIRST),
+                                                    0);
+                if (ul >= 0 && ul <= 2)
+                    pGlobalSettings->bSaveINIS = ul;
+                cmnUnlockGlobalSettings();
+            }
         break; }
 
         // Reboot Actions (Desktop page 1)
@@ -936,12 +957,15 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     if (ulFlag != -1)
     {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-        if (ulExtra)
-            pGlobalSettings->ulXShutdownFlags |= ulFlag;
-        else
-            pGlobalSettings->ulXShutdownFlags &= ~ulFlag;
-        cmnUnlockGlobalSettings();
+        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+        if (pGlobalSettings)
+        {
+            if (ulExtra)
+                pGlobalSettings->ulXShutdownFlags |= ulFlag;
+            else
+                pGlobalSettings->ulXShutdownFlags &= ~ulFlag;
+            cmnUnlockGlobalSettings();
+        }
     }
 
     if (ulChange)
@@ -997,7 +1021,7 @@ void xsdLog(const char* pcszFormatString,
 
 VOID xsdLoadAnimation(PSHUTDOWNANIM psda)
 {
-    HMODULE hmod = cmnQueryMainModuleHandle();
+    HMODULE hmod = cmnQueryMainResModuleHandle();
     (psda->ahptr)[0] = WinLoadPointer(HWND_DESKTOP, hmod, ID_ICONSDANIM1);
     (psda->ahptr)[1] = WinLoadPointer(HWND_DESKTOP, hmod, ID_ICONSDANIM2);
     (psda->ahptr)[2] = WinLoadPointer(HWND_DESKTOP, hmod, ID_ICONSDANIM3);
@@ -1208,6 +1232,7 @@ MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  *@@changed V0.9.1 (2000-01-30) [umoeller]: added exception handling.
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: global settings weren't unlocked, fixed
  */
 
 ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
@@ -1215,6 +1240,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     ULONG       ulReturn = MBID_NO;
     BOOL        fStore = FALSE;
     HWND        hwndConfirm = NULLHANDLE;
+    BOOL        fSettingsLocked = FALSE; // V0.9.7 (2000-12-13) [umoeller]
 
     TRY_LOUD(excpt1)
     {
@@ -1336,55 +1362,58 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
         if (ulReturn == DID_OK)
         {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-
-            // check "show this msg again"
-            if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
-                pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
-
-            // check empty trash
-            psdParms->optEmptyTrashCan
-                = (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN) != 0);
-
-            // check reboot options
-            psdParms->optReboot = FALSE;
-            if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            if (pGlobalSettings)
             {
-                USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                                              LM_QUERYSELECTION,
-                                                              (MPARAM)LIT_CURSOR,
-                                                              MPNULL);
-                USHORT us;
-                psdParms->optReboot = TRUE;
+                fSettingsLocked = TRUE;
+                // check "show this msg again"
+                if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
+                    pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
 
-                p = pINI;
-                for (us = 0; us < usSelected; us++)
+                // check empty trash
+                psdParms->optEmptyTrashCan
+                    = (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN) != 0);
+
+                // check reboot options
+                psdParms->optReboot = FALSE;
+                if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
                 {
-                    // skip description string
+                    USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                                                  LM_QUERYSELECTION,
+                                                                  (MPARAM)LIT_CURSOR,
+                                                                  MPNULL);
+                    USHORT us;
+                    psdParms->optReboot = TRUE;
+
+                    p = pINI;
+                    for (us = 0; us < usSelected; us++)
+                    {
+                        // skip description string
+                        p += (strlen(p)+1);
+                        // skip reboot command
+                        p += (strlen(p)+1);
+                    }
+                    // skip description string to get to reboot command
                     p += (strlen(p)+1);
-                    // skip reboot command
-                    p += (strlen(p)+1);
+                    strcpy(psdParms->szRebootCommand, p);
+
+                    pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
+                    pGlobalSettings->usLastRebootExt = usSelected;
                 }
-                // skip description string to get to reboot command
-                p += (strlen(p)+1);
-                strcpy(psdParms->szRebootCommand, p);
+                else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
+                {
+                    psdParms->optReboot = TRUE;
+                    // szRebootCommand is a zero-byte only, which will lead to
+                    // the standard reboot in the Shutdown thread
+                    pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
+                    pGlobalSettings->usLastRebootExt = 0xFFFF;
+                }
+                else
+                    // standard shutdown:
+                    pGlobalSettings->ulXShutdownFlags &= ~XSD_REBOOT;
 
-                pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
-                pGlobalSettings->usLastRebootExt = usSelected;
-            }
-            else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
-            {
-                psdParms->optReboot = TRUE;
-                // szRebootCommand is a zero-byte only, which will lead to
-                // the standard reboot in the Shutdown thread
-                pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
-                pGlobalSettings->usLastRebootExt = 0xFFFF;
-            }
-            else
-                // standard shutdown:
-                pGlobalSettings->ulXShutdownFlags &= ~XSD_REBOOT;
-
-            fStore = TRUE;
+                fStore = TRUE;
+            } // if (pGlobalSettings)
         }
 
         if (pINI)
@@ -1394,7 +1423,9 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     {
     } END_CATCH();
 
-    cmnUnlockGlobalSettings();
+    if (fSettingsLocked)
+        cmnUnlockGlobalSettings(); // V0.9.7 (2000-12-13) [umoeller]
+
     if (fStore)
         cmnStoreGlobalSettings();
 
@@ -1470,7 +1501,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
     if (ulReturn == DID_OK)
     {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
         psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                             ID_SDDI_WPS_CLOSEWINDOWS);
         if (psdParms->ulRestartWPS != 2)
@@ -3500,7 +3531,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
             xsdLog("fntShutdownThread: Entering cleanup...\n");
 
             {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
                 // check for whether we're owning semaphores;
                 // if we do (e.g. after an exception), release them now
                 if (G_fAwakeObjectsSemOwned)
@@ -3639,7 +3670,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
             }
 
             {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
                 // set the global flag for whether shutdown is
                 // running to FALSE; this will re-enable the
                 // items in the Desktop's context menu
@@ -4016,7 +4047,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
             hPOC = 0;
 
             {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
                 if (thrQueryID(&pKernelGlobals->tiUpdateThread) == NULLHANDLE)
                 {
                     // first call; this one's called twice!
@@ -4666,7 +4697,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                 case ID_SDMI_FLUSHBUFFERS:
                 {
-                    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
                     xsdLog("  ID_SDMI_FLUSHBUFFERS, hwnd: 0x%lX\n", hwndFrame);
 
                     // close the Update thread to prevent it from interfering
@@ -4936,6 +4967,20 @@ VOID xsdFinishShutdown(HAB hab)
 }
 
 /*
+ *@@ PowerOffAnim:
+ *      calls anmPowerOff with the proper timings
+ *      to display the cute power-off animation.
+ *
+ *@@added V0.9.7 (2000-12-13) [umoeller]
+ */
+
+VOID PowerOffAnim(HPS hps)
+{
+    anmPowerOff(hps,
+                500, 800, 200, 300);
+}
+
+/*
  *@@ xsdFinishStandardMessage:
  *      this finishes the shutdown procedure,
  *      displaying the "Shutdown is complete..."
@@ -4966,7 +5011,7 @@ VOID xsdFinishStandardMessage(HAB hab,
 
     if (G_psdParams->optAnimate)
         // cute power-off animation
-        anmPowerOff(hpsScreen, 50);
+        PowerOffAnim(hpsScreen);
     else
         // only hide the status window if
         // animation is off, because otherwise
@@ -5037,7 +5082,7 @@ VOID xsdFinishStandardReboot(HPS hpsScreen)
 
     if (G_psdParams->optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
         // cute power-off animation
-        anmPowerOff(hpsScreen, 50);
+        PowerOffAnim(hpsScreen);
 
     DosShutdown(0);
 
@@ -5083,7 +5128,7 @@ VOID xsdFinishUserReboot(HAB hab,
 
     if (G_psdParams->optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
         // cute power-off animation
-        anmPowerOff(hpsScreen, 50);
+        PowerOffAnim(hpsScreen);
     else
     {
         sprintf(szTemp,
@@ -5203,7 +5248,7 @@ VOID xsdFinishAPMPowerOff(HAB hab,
 
     if (G_psdParams->optAnimate)
         // cute power-off animation
-        anmPowerOff(hpsScreen, 50);
+        PowerOffAnim(hpsScreen);
     else
         // only hide the status window if
         // animation is off, because otherwise

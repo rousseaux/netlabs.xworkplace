@@ -34,9 +34,17 @@
     // PM window class name for XCenter client (needed by XWPDaemon)
     #define WNDCLASS_XCENTER_CLIENT     "XWPCenterClient"
 
+    // button types (src\xcenter\w_objbutton.c)
+    #define BTF_OBJBUTTON       1
+    #define BTF_XBUTTON         2
+
     // position flags
     #define XCENTER_BOTTOM          0
     #define XCENTER_TOP             1
+
+    // display style
+    #define XCS_BUTTON              0
+    #define XCS_FLAT                1
 
     // widget class flags
     #define WGTF_SIZEABLE               0x0001
@@ -47,10 +55,9 @@
     /*
      *@@ XCENTERGLOBALS:
      *      global data for a running XCenter instance.
-     *      A pointer to this structure exists in
-     *      each XCENTERWIDGETVIEW instance so that
-     *      the widgets can access some of the global
-     *      data.
+     *      A pointer to this structure exists in each
+     *      XCENTERWIDGET instance so that the widgets
+     *      can access some of the global data.
      *
      *      In this structure, an XCenter instance
      *      passes a number of variables to its member
@@ -72,22 +79,30 @@
         HWND                hwndFrame,          // XCenter frame window
                             hwndClient;         // client (child of XCenter frame)
 
-        ULONG               cyClient;           // height of client (same as height
-                                                // of all widgets!)
-        ULONG               ulSpacing;          // spacing between widgets; this is
-                                                // WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
+        ULONG               ulDisplayStyle;
+                    // XCenter display style (XCS_BUTTON or XCS_FLAT);
+                    // the widget should be prepared that this style may
+                    // change.
 
-        PVOID               pCountrySettings;   // country settings; this points to
-                                                // a COUNTRYSETTINGS structure (prfh.h)
+        ULONG               cyTallestWidget;
+                    // height of client (same as height of all widgets!)
+        ULONG               ulSpacing;
+                    // spacing between widgets; depends on display style
 
-        ULONG               cxMiniIcon;         // system mini-icon size
+        PVOID               pCountrySettings;
+                    // country settings; this points to a COUNTRYSETTINGS
+                    // structure (prfh.h)
+
+        ULONG               cxMiniIcon;
+                    // system mini-icon size (for convenience); either 16 or 20
 
         LONG                lcol3DDark,
-                            lcol3DLight;        // system colors for 3D frames (RGB!)
+                            lcol3DLight;
+                    // system colors for 3D frames (for convenience; RGB!)
     } XCENTERGLOBALS, *PXCENTERGLOBALS;
 
     // forward declaration
-    typedef struct _XCENTERWIDGETVIEW *PXCENTERWIDGETVIEW;
+    typedef struct _XCENTERWIDGET *PXCENTERWIDGET;
 
     /*
      *@@ WIDGETSETTINGSDLGDATA:
@@ -97,6 +112,8 @@
      *
      *      XCenter widget settings dialogs basically
      *      work as follows:
+     *
+     *          ###
      *
      *      If a widget class supports settings dialogs,
      *      it must specify this in its XCENTERWIDGETCLASS.
@@ -119,11 +136,14 @@
 
         PXCENTERGLOBALS         pGlobals;
                     // if != NULL, currently open XCenter
-                    // for which widget data is being changed
+                    // for which widget data is being changed.
+                    // If NULL, the XCenter isn't currently
+                    // open.
 
-        PXCENTERWIDGETVIEW      pView;
+        PXCENTERWIDGET          pView;
                     // if != NULL, currently open view
-                    // of the widget
+                    // of the widget. If NULL, the widget
+                    // isn't currently open.
 
         PVOID                   pUser;
                     // some room for additional data the
@@ -134,9 +154,6 @@
     typedef VOID EXPENTRY WGTSHOWSETTINGSDLG(PWIDGETSETTINGSDLGDATA);
     typedef WGTSHOWSETTINGSDLG *PWGTSHOWSETTINGSDLG;
 
-    typedef VOID EXPENTRY WGTSETUPSTRINGCHANGED(PXCENTERWIDGETVIEW, const char*);
-    typedef WGTSETUPSTRINGCHANGED *PWGTSETUPSTRINGCHANGED;
-
     /*
      *@@ XCENTERWIDGETCLASS:
      *      describes one widget class which can be
@@ -146,16 +163,26 @@
 
     typedef struct _XCENTERWIDGETCLASS
     {
-        const char      *pcszPMClass;       // PM window class of this widget
-                                            // (can be shared among several widgets)
+        const char      *pcszPMClass;
+                // PM window class name of this widget (can be shared among
+                // several widgets). A plugin DLL is responsible for
+                // registering this class when it's loaded.
 
         ULONG           ulExtra;
                 // additional identifiers the class might need if the
-                // same PM window class is used for several widget classes
+                // same PM window class is used for several widget classes.
+                // This is not used by the XCenter, but you can access it
+                // during WM_CREATE so you can differentiate between several
+                // widget classes in the same window proc. You must copy this
+                // to your private widget data then.
 
-        const char      *pcszWidgetClass;   // internal widget class name
+        const char      *pcszWidgetClass;
+                // internal widget class name; this is used to identify
+                // the class. This must be unique on the system.
 
-        const char      *pcszClassTitle;    // widget class title (shown to user)
+        const char      *pcszClassTitle;
+                // widget class title (shown to user in "Add widget" popup
+                // menu).
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:
@@ -204,10 +231,10 @@
     } XCENTERWIDGETSETTING, *PXCENTERWIDGETSETTING;
 
     /*
-     *@@ XCENTERWIDGETVIEW:
-     *      structure for describing a single XCenter
-     *      widget, i.e. a rectangular area shown in
-     *      the XCenter client area.
+     *@@ XCENTERWIDGET:
+     *      public structure to hold data for an XCenter
+     *      widget, i.e. a PM window in the XCenter client
+     *      area.
      *
      *      Each XCenter widget is a separate window,
      *      being a child window of the XCenter client,
@@ -215,9 +242,10 @@
      *
      *      This structure is created once for each widget
      *      and passed to each widget in mp1 of WM_CREATE.
-     *      After WM_CREATE, the XCenter stores a pointer
-     *      to this structure in the QWL_USER window word
-     *      of the widget.
+     *      The first thing a widget must do on WM_CREATE
+     *      is to store a pointer to this structure in its
+     *      QWL_USER window word.
+     *
      *      The widget can allocate another widget-specific
      *      buffer and store its pointer into the pUser
      *      field.
@@ -230,7 +258,7 @@
      *      allocated itself.
      */
 
-    typedef struct _XCENTERWIDGETVIEW
+    typedef struct _XCENTERWIDGET
     {
         /*
          *  Informational fields:
@@ -240,10 +268,10 @@
 
         HWND        hwndWidget;
                 // window handle of this widget; this is valid
-                // only after WM_CREATE
+                // only _after_ WM_CREATE.
 
         HAB         habWidget;
-                // widget's anchor block (copied for convenience)
+                // widget's anchor block (copied for convenience).
 
         PFNWP       pfnwpDefWidgetProc;
                 // address of default widget window procedure. The
@@ -274,15 +302,6 @@
                 // setup string exists. After WM_CREATE, the
                 // pointer is set to NULL always.
 
-        LONG        xCurrent,
-                // current X coordinate (do not change);
-                // this is relative to the XCenter client
-                // and only valid _after_ WM_CREATE.
-                    cxCurrent,
-                // current width; same rules.
-                    cyCurrent;
-                // current height; same rules.
-
         /*
          *  Setup fields:
          *      all these should be set up by the widget
@@ -294,27 +313,6 @@
          *      defaults, which are probably not suitable
          *      for most widgets though.
          */
-
-        LONG        cxWanted,
-                // desired width in pixels. On WM_CREATE, the widget should
-                // write its desired width here. If it sets this
-                // to -1, it will get all remaining space on the
-                // XCenter; if several widgets request this, the
-                // available remaining space will be distributed
-                // among the requesting widgets.
-                // This defaults to 20.
-                    cyWanted,
-                // desired height in pixels. On WM_CREATE, the widget should
-                // write its desired height here. The XCenter will
-                // go thru all widgets after their creation and
-                // set its client height to the largest height of all
-                // widgets, and all widgets will be resized to that
-                // largest height.
-                // This defaults to 0.
-                    cxMinimum;
-                // absolute minimum width this widget will accept;
-                // this is only important if it's resizeable.
-                // This defaults to 20.
 
         BOOL        fSizeable;
                 // if TRUE, the widget is sizeable with the mouse.
@@ -335,19 +333,6 @@
                 // when the widget window is destroyed.
                 // This is only valid after WM_CREATE.
 
-        PWGTSETUPSTRINGCHANGED pSetupStringChanged;
-                // if the widget supports parsing setup strings
-                // even after the widget has been created, it
-                // must set this func pointer to a procedure
-                // that will scan the setup string and update
-                // the widget's display. This procedure gets
-                // called when a widget's setup string is _changed_
-                // for any reason, most importantly during a
-                // call to ctrSetSetupString. To implement
-                // working settings dialogs, you'll have to
-                // implement this.
-                // This defaults to NULL.
-
         const char  *pcszHelpLibrary;
         ULONG       ulHelpPanelID;
                 // if these two are specified, the XCenter will
@@ -362,8 +347,9 @@
         PVOID       pUser;
                 // user data allocated by window class; this is
                 // initially NULL, but you can use this for your
-                // own data (which you must clean up yourself).
-    } XCENTERWIDGETVIEW;
+                // own data (which you must clean up yourself on
+                // WM_DESTROY).
+    } XCENTERWIDGET;
 
     /* ******************************************************************
      *
@@ -371,7 +357,7 @@
      *
      ********************************************************************/
 
-    #define SETUP_SEPARATOR     "ררר"
+    // #define SETUP_SEPARATOR     "ררר"
 
     PSZ APIENTRY ctrScanSetupString(const char *pcszSetupString,
                                     const char *pcszKeyword);
@@ -402,17 +388,130 @@
     #endif
 
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-                // a pointer to this is in XCENTERWIDGETVIEW
+                // a pointer to this is in XCENTERWIDGET
 
     /* ******************************************************************
      *
-     *   Messages for XCenter client
+     *   WM_CONTROL notification codes _from_ XCenter client
      *
      ********************************************************************/
 
+    #define ID_XCENTER_CLIENT           7000
+
+    /*
+     *@@ XN_QUERYSIZE:
+     *      notification code for WM_CONTROL sent from
+     *      the XCenter to a widget when it needs to
+     *      know its desired size. This comes in once
+     *      after WM_CREATE and may come in again later
+     *      if the user changes XCenter view settings.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYSIZE).
+     *
+     *      -- PSIZEL mp2: pointer to a SIZEL structure in which
+     *                     the widget must fill in its desired
+     *                     size.
+     *
+     *      The widget must return TRUE if it has put its
+     *      desired size into the SIZEL structure. Otherwise
+     *      the XCenter will assume some dumb default for
+     *      the widget size.
+     *
+     *@@added V0.9.7 (2000-12-14) [umoeller]
+     */
+
+    #define XN_QUERYSIZE                1
+
+    /*
+     *@@ XN_SETUPCHANGED:
+     *      notification code for WM_CONTROL sent from
+     *      the XCenter to a widget when its setup string
+     *      has changed.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_SETUPCHANGED).
+     *
+     *      -- const char* mp2: pointer to a new zero-termianted
+     *                          setup string.
+     *
+     *      The widget must return TRUE if it has processed
+     *      the setup string successfully.
+     *
+     *      This gets sent to an open widget when
+     *      ctrSetSetupString has been invoked on it to allow
+     *      it to update its display. This normally happens
+     *      when its settings dialog saves a new setup string.
+     *
+     *@@added V0.9.7 (2000-12-13) [umoeller]
+     */
+
+    #define XN_SETUPCHANGED             2
+
+    /* ******************************************************************
+     *
+     *   Messages _to_ XCenter client
+     *
+     ********************************************************************/
+
+    /*
+     *@@ XCM_SETWIDGETSIZE:
+     *      this msg can be posted to the client
+     *      from a widget if it wants to change
+     *      its size, e.g. because its display
+     *      has changed and needs more room.
+     *
+     *      Parameters:
+     *
+     *      -- HWND mp1: widget's window.
+     *
+     *      -- ULONG mp2: the new width that the
+     *         widget wants to have.
+     *
+     *      Note: _Post_, do not send this message
+     *      to the client. This causes excessive
+     *      redraw of possibly all widgets.
+     */
+
     #define XCM_SETWIDGETSIZE           WM_USER
 
+    /*
+     *@@ XCM_REFORMATALL:
+     *      reformats all widgets. This gets posted
+     *      by ctrDefWidgetProc when a widget gets
+     *      destroyed.
+     *
+     *      No parameters.
+     */
+
     #define XCM_REFORMATALL             (WM_USER + 1)
+
+    /*
+     *@@ XCM_SAVESETUP:
+     *      this msg can be sent (!) to the client
+     *      by a widget if its settings have been
+     *      changed and it wants these settings to
+     *      be saved with the XCenter instance data.
+     *
+     *      This is useful when fonts or colors have
+     *      been dropped on the widget and no settings
+     *      dialog is currently open (and ctrSetSetupString
+     *      therefore won't work).
+     *
+     *      Parameters:
+     *
+     *      -- HWND mp1: widget's window.
+     *
+     *      -- const char* mp2: zero-terminated setup string.
+     *
+     *@@added V0.9.7 (2000-12-04) [umoeller]
+     */
 
     #define XCM_SAVESETUP               (WM_USER + 2)
 

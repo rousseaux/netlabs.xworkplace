@@ -524,10 +524,13 @@ SOM_Scope void  SOMLINK xwlistM_wpclsInitData(M_XWPClassList *somSelf)
     M_XWPClassList_parent_M_WPAbstract_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPClassList = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXWPClassList = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 
@@ -582,10 +585,11 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryIconData(M_XWPClassList *somSelf,
     /* M_XWPClassListData *somThis = M_XWPClassListGetData(somSelf); */
     M_XWPClassListMethodDebug("M_XWPClassList","xwlistM_wpclsQueryIconData");
 
-    if (pIconInfo) {
+    if (pIconInfo)
+    {
        pIconInfo->fFormat = ICON_RESOURCE;
        pIconInfo->resid   = ID_ICONXWPLIST;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+       pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

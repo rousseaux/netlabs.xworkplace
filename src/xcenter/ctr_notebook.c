@@ -1,12 +1,10 @@
 
 /*
- *@@sourcefile w_pulse.c:
- *      XCenter "Pulse" widget implementation.
- *      This is build into the XCenter and not in
- *      a plugin DLL.
+ *@@sourcefile ctr_notebook.c:
+ *      XCenter notebook pages.
  *
  *      Function prefix for this file:
- *      --  Bwgt*
+ *      --  ctrp* also.
  *
  *      This is all new with V0.9.7.
  *
@@ -80,7 +78,7 @@
 /*
  *@@ ctrpViewInitPage:
  *      notebook callback function (notebook.c) for the
- *      XCenter instance settings page.
+ *      XCenter "View" instance settings page.
  *      Sets the controls on the page according to the
  *      instance settings.
  *
@@ -111,17 +109,23 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        if (_ulPosition == XCENTER_TOP)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_TOPOFSCREEN, TRUE);
-        else
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
-
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ALWAYSONTOP,
                               ((_ulWindowStyle & WS_TOPMOST) != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ANIMATE,
                               ((_ulWindowStyle & WS_ANIMATE) != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                               (_ulAutoHide > 0));
+
+        if (_ulPosition == XCENTER_TOP)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_TOPOFSCREEN, TRUE);
+        else
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
+
+        if (_ulDisplayStyle == XCS_FLAT)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_FLATSTYLE, TRUE);
+        else
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BUTTONSTYLE, TRUE);
+
     }
 
     if (flFlags & CBI_ENABLE)
@@ -136,7 +140,7 @@ VOID ctrpViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 /*
  *@@ ctrpViewItemChanged:
  *      notebook callback function (notebook.c) for the
- *      XCenter instance settings page.
+ *      XCenter "View"  instance settings page.
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
@@ -148,7 +152,9 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     MRESULT     mrc = 0;
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
-    BOOL        fSave = TRUE;
+    BOOL        fSave = TRUE,
+                fDisplayStyleChanged = FALSE;
+    ULONG       ulUpdateFlags = 0;
 
     switch (usItemID)
     {
@@ -158,6 +164,16 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRDI_VIEW_BOTTOMOFSCREEN:
             _ulPosition = XCENTER_BOTTOM;
+        break;
+
+        case ID_CRDI_VIEW_FLATSTYLE:
+            _ulDisplayStyle = XCS_FLAT;
+            ulUpdateFlags |= XFMF_DISPLAYSTYLECHANGED;
+        break;
+
+        case ID_CRDI_VIEW_BUTTONSTYLE:
+            _ulDisplayStyle = XCS_BUTTON;
+            ulUpdateFlags |= XFMF_DISPLAYSTYLECHANGED;
         break;
 
         case ID_CRDI_VIEW_ALWAYSONTOP:
@@ -211,7 +227,8 @@ MRESULT ctrpViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // view is currently open:
             PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-            ctrpReformatFrame(pXCenterData);
+            ctrpReformat(pXCenterData,
+                         ulUpdateFlags);
         }
     }
 
@@ -249,7 +266,7 @@ typedef struct _WIDGETRECORD
 /*
  *@@ ctrpWidgetsInitPage:
  *      notebook callback function (notebook.c) for the
- *      XCenter instance settings page.
+ *      XCenter "Widgets" instance settings page.
  *      Sets the controls on the page according to the
  *      instance settings.
  *
@@ -372,7 +389,7 @@ PWIDGETRECORD G_precDragged = NULL,
 /*
  *@@ ctrpWidgetsItemChanged:
  *      notebook callback function (notebook.c) for the
- *      XCenter instance settings page.
+ *      XCenter "Widgets" instance settings page.
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
@@ -423,6 +440,18 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                  *      Note that since we have set CA_ORDEREDTARGETEMPH
                  *      for the "Assocs" cnr, we do not get CN_DRAGOVER,
                  *      but CN_DRAGAFTER only.
+                 *
+                 *      PMREF doesn't say which record is really in
+                 *      in the CNRDRAGINFO. From my testing, that field
+                 *      is set to CMA_FIRST if the source record is
+                 *      dragged before the first record; it is set to
+                 *      the record pointer _before_ the record being
+                 *      dragged for any other record.
+                 *
+                 *      In other words, if the draggee is after the
+                 *      first record, we get the first record in
+                 *      CNRDRAGINFO; if it's after the second, we
+                 *      get the second, and so on.
                  */
 
                 case CN_DRAGAFTER:
@@ -527,12 +556,23 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             ULONG ulIndex = -2;
 
                             if (G_precAfter == (PWIDGETRECORD)CMA_FIRST)
+                            {
+                                // move before index 0
                                 ulIndex = 0;
+                            }
                             else if (G_precAfter == (PWIDGETRECORD)CMA_LAST)
-                                DosBeep(1000, 10);
+                            {
+                                // shouldn't happen
+                                DosBeep(100, 100);
+                            }
                             else
-                                ulIndex = G_precAfter->ulIndex;
-
+                            {
+                                // we get the record _before_ the draggee
+                                // (CN_DRAGAFTER), but xwpMoveWidget wants
+                                // the index of the widget _before_ which the
+                                // widget should be inserted:
+                                ulIndex = G_precAfter->ulIndex + 1;
+                            }
                             if (ulIndex != -2)
                                 // OK... move the widgets around:
                                 _xwpMoveWidget(pcnbp->somSelf,

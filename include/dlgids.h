@@ -788,6 +788,7 @@
 #define ID_XSDI_DTP_LOCKUP              2104
 #define ID_XSDI_DTP_SHUTDOWN            2105
 #define ID_XSDI_DTP_SHUTDOWNMENU        2106
+#define ID_XSDI_DTP_LOGOFFNETWORKNOW    2107 // V0.9.7 (2000-12-13) [umoeller]
 
 // XFldDesktop "Startup" page  (V0.9.0)
 #define ID_XSD_DTP_STARTUP              2110
@@ -972,6 +973,8 @@
 #define ID_CRDI_VIEW_ALWAYSONTOP        3603
 #define ID_CRDI_VIEW_ANIMATE            3604
 #define ID_CRDI_VIEW_AUTOHIDE           3605
+#define ID_CRDI_VIEW_BUTTONSTYLE        3606
+#define ID_CRDI_VIEW_FLATSTYLE          3607
 
 #define ID_CRD_WINLISTWGT_SETTINGS      3700
 #define ID_CRDI_FILTERS_CURRENTLB       3701
@@ -1252,7 +1255,8 @@
 #define ID_XSSI_SBTEXTWPOBJECT    5020
 
 #define ID_XSSI_NLS_AUTHOR        5021      // new with V0.9.0
-#define ID_XSSI_KERNEL_BUILD      5022      // new with V0.9.0; for /main/xfldr.rc
+// #define ID_XSSI_KERNEL_BUILD      5022      // new with V0.9.0; for /main/xfldr.rc
+        // removed V0.9.7 (2000-12-14) [umoeller]
 
 // folder hotkeys: key descriptions
 #define ID_XSSI_KEY_CTRL             5201

@@ -75,7 +75,7 @@
 
 <--XFL0116-->: XWorkplace: Warning
 
-<--XFL0117-->: Several users have reported that the function "Show icons" has caused severe crashes on their systems. This seems to be related to bugs in video drivers, especially with the Matrox Millenium. If you experience problems, switch this feature off again.
+; 117 is gone with V0.9.7 (2000-12-13) [umoeller]:
 
 <--XFL0118-->: You have chosen to remove the class "%1" from the WPS class list. You should only alter the WPS class list if you know exactly what you're doing. Deregistering certain classes can lead to severe malfunction of the Workplace Shell and might even require a complete re-installation of OS/2. Are you still sure you wish to deregister this class?
 
@@ -317,6 +317,8 @@ Are you sure you want to do this?
 <--XFL0194-->: XCenter: Error
 
 <--XFL0195-->: The XCenter failed to create the widget of the class "%1".
+
+<--XFL0196-->: Error creating file type "%1". Maybe the file type already exists.
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -737,5 +739,11 @@ This was added with XWorkplace 0.9.4.
 <--XWPCLS_0001-->: Pressing "OK" will register, deregister, replace, and unreplace classes according to the changes you have made to the XWorkplace class setup.
 
 <--XWPCLS_0002-->: Pressing "Cancel" will close this dialog without making any changes to the XWorkplace class setup.
+
+;
+; the following was added with V0.9.7
+;
+
+<--XWPCLS_1270-->: "XCenter" implements a new system bar at the top or the bottom of your desktop. This can be used as a WarpCenter replacement, or even together with the WarpCenter.
 
 

@@ -231,7 +231,7 @@ RESOLVEFUNCTION G_aImports[] =
 /*
  *@@ MONITORSETUP:
  *      instance data to which setup strings correspond.
- *      This is also a member of MONITORWIDGETDATA.
+ *      This is also a member of MONITORPRIVATE.
  *
  *      Putting these settings into a separate structure
  *      is no requirement, but comes in handy if you
@@ -250,16 +250,16 @@ typedef struct _MONITORSETUP
 } MONITORSETUP, *PMONITORSETUP;
 
 /*
- *@@ MONITORWIDGETDATA:
+ *@@ MONITORPRIVATE:
  *      more window data for the various monitor widgets.
  *
  *      An instance of this is created on WM_CREATE in
- *      fnwpMonitorWidgets and stored in XCENTERWIDGETVIEW.pUser.
+ *      fnwpMonitorWidgets and stored in XCENTERWIDGET.pUser.
  */
 
-typedef struct _MONITORWIDGETDATA
+typedef struct _MONITORPRIVATE
 {
-    PXCENTERWIDGETVIEW pViewData;
+    PXCENTERWIDGET pWidget;
             // reverse ptr to general widget data ptr; we need
             // that all the time and don't want to pass it on
             // the stack with each function call
@@ -271,12 +271,15 @@ typedef struct _MONITORWIDGETDATA
                 // -- MWGT_MEMORY: memory monitor widget;
                 // this is copied from the widget class on WM_CREATE
 
+    ULONG           cxCurrent,
+                    cyCurrent;
+
     MONITORSETUP    Setup;
             // widget settings that correspond to a setup string
 
     ULONG           ulTimerID;              // if != NULLHANDLE, update timer is running
 
-} MONITORWIDGETDATA, *PMONITORWIDGETDATA;
+} MONITORPRIVATE, *PMONITORPRIVATE;
 
 /* ******************************************************************
  *
@@ -377,18 +380,18 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "BGNDCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp);
 
-    sprintf(szTemp, "TEXTCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s" SETUP_SEPARATOR,
+        sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp);
     }
@@ -415,61 +418,61 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 /*
  *@@ MwgtCreate:
- *      implementation for WM_CREATE in fnwpMonitorWidgets.
+ *      implementation for WM_CREATE.
  */
 
 MRESULT MwgtCreate(HWND hwnd,
-                   PXCENTERWIDGETVIEW pViewData)
+                   PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;        // continue window creation
 
     PSZ p;
 
-    PMONITORWIDGETDATA pMonData = malloc(sizeof(MONITORWIDGETDATA));
-    memset(pMonData, 0, sizeof(MONITORWIDGETDATA));
+    PMONITORPRIVATE pPrivate = malloc(sizeof(MONITORPRIVATE));
+    memset(pPrivate, 0, sizeof(MONITORPRIVATE));
     // link the two together
-    pViewData->pUser = pMonData;
-    pMonData->pViewData = pViewData;
+    pWidget->pUser = pPrivate;
+    pPrivate->pWidget = pWidget;
 
     // get widget type (clock, memory, ...) from class setting;
     // this is lost after WM_CREATE
-    if (pViewData->pWidgetClass)
-        pMonData->ulType = pViewData->pWidgetClass->ulExtra;
+    if (pWidget->pWidgetClass)
+        pPrivate->ulType = pWidget->pWidgetClass->ulExtra;
 
-    pViewData->cxWanted = 10;          // we'll resize ourselves later
-    pViewData->cyWanted = 10;
+    pPrivate->cxCurrent = 10;          // we'll resize ourselves later
+    pPrivate->cyCurrent = 10;
 
     // initialize binary setup structure from setup string
-    MwgtScanSetup(pViewData->pcszSetupString,
-                  &pMonData->Setup);
+    MwgtScanSetup(pWidget->pcszSetupString,
+                  &pPrivate->Setup);
 
     // set window font (this affects all the cached presentation
     // spaces we use)
     pwinhSetWindowFont(hwnd,
-                       (pMonData->Setup.pszFont)
-                        ? pMonData->Setup.pszFont
+                       (pPrivate->Setup.pszFont)
+                        ? pPrivate->Setup.pszFont
                         // default font: use the same as in the rest of XWorkplace:
                         : pcmnQueryDefaultFont());
 
     // enable context menu help
-    pViewData->pcszHelpLibrary = pcmnQueryHelpLibrary();
-    switch (pMonData->ulType)
+    pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
+    switch (pPrivate->ulType)
     {
         case MWGT_CLOCK:
-            pViewData->ulHelpPanelID = ID_XSH_WIDGET_CLOCK_MAIN;
+            pWidget->ulHelpPanelID = ID_XSH_WIDGET_CLOCK_MAIN;
         break;
 
         case MWGT_SWAPPER:
-            pViewData->ulHelpPanelID = ID_XSH_WIDGET_SWAP_MAIN;
+            pWidget->ulHelpPanelID = ID_XSH_WIDGET_SWAP_MAIN;
         break;
 
         case MWGT_MEMORY:
-            pViewData->ulHelpPanelID = ID_XSH_WIDGET_MEMORY_MAIN;
+            pWidget->ulHelpPanelID = ID_XSH_WIDGET_MEMORY_MAIN;
         break;
     }
 
     // start update timer
-    pMonData->ulTimerID = ptmrStartTimer(hwnd,
+    pPrivate->ulTimerID = ptmrStartTimer(hwnd,
                                          1,
                                          1000);
 
@@ -477,15 +480,59 @@ MRESULT MwgtCreate(HWND hwnd,
 }
 
 /*
+ *@@ MwgtControl:
+ *      implementation for WM_CONTROL.
+ *
+ *@@added V0.9.7 (2000-12-14) [umoeller]
+ */
+
+BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    BOOL brc = FALSE;
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            USHORT  usID = SHORT1FROMMP(mp1),
+                    usNotifyCode = SHORT2FROMMP(mp1);
+
+            if (usID == ID_XCENTER_CLIENT)
+            {
+                switch (usNotifyCode)
+                {
+                    /*
+                     * XN_QUERYSIZE:
+                     *      XCenter wants to know our size.
+                     */
+
+                    case XN_QUERYSIZE:
+                    {
+                        PSIZEL pszl = (PSIZEL)mp2;
+                        pszl->cx = pPrivate->cxCurrent;
+                        pszl->cy = pPrivate->cyCurrent;
+                        brc = TRUE;
+                    break; }
+                }
+            }
+        } // end if (pPrivate)
+    } // end if (pWidget)
+
+    return (brc);
+}
+
+/*
  * MwgtPaint:
- *      implementation for WM_PAINT in fnwpMonitorWidgets.
+ *      implementation for WM_PAINT.
  *
  *      The specified HPS is switched to RGB mode before
  *      painting.
  */
 
 VOID MwgtPaint(HWND hwnd,
-               PMONITORWIDGETDATA pMonData,
+               PMONITORPRIVATE pPrivate,
                HPS hps,
                BOOL fDrawFrame)
 {
@@ -498,7 +545,7 @@ VOID MwgtPaint(HWND hwnd,
     // country settings from XCenter globals
     // (what a pointer)
     PCOUNTRYSETTINGS pCountrySettings
-        = (PCOUNTRYSETTINGS)pMonData->pViewData->pGlobals->pCountrySettings;
+        = (PCOUNTRYSETTINGS)pPrivate->pWidget->pGlobals->pCountrySettings;
 
     // now paint button frame
     WinQueryWindowRect(hwnd, &rclWin);
@@ -508,8 +555,8 @@ VOID MwgtPaint(HWND hwnd,
         pgpihDraw3DFrame(hps,
                          &rclWin,
                          ulBorder,
-                         pMonData->pViewData->pGlobals->lcol3DDark,
-                         pMonData->pViewData->pGlobals->lcol3DLight);
+                         pPrivate->pWidget->pGlobals->lcol3DDark,
+                         pPrivate->pWidget->pGlobals->lcol3DLight);
 
     // now paint middle
     rclWin.xLeft += ulBorder;
@@ -520,9 +567,9 @@ VOID MwgtPaint(HWND hwnd,
     if (fDrawFrame)
         WinFillRect(hps,
                     &rclWin,
-                    pMonData->Setup.lcolBackground);
+                    pPrivate->Setup.lcolBackground);
 
-    switch (pMonData->ulType)
+    switch (pPrivate->ulType)
     {
         case MWGT_CLOCK:
         {
@@ -571,10 +618,12 @@ VOID MwgtPaint(HWND hwnd,
             > 4
        )
     {
+        // we need more space: tell XCenter client
+        pPrivate->cxCurrent = (aptlText[TXTBOX_TOPRIGHT].x + 2*ulBorder + 4);
         WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
                    XCM_SETWIDGETSIZE,
                    (MPARAM)hwnd,
-                   (MPARAM)(aptlText[TXTBOX_TOPRIGHT].x + 2*ulBorder + 4)
+                   (MPARAM)pPrivate->cxCurrent
                   );
     }
     else
@@ -585,23 +634,23 @@ VOID MwgtPaint(HWND hwnd,
                     ulPaintLen,
                     szPaint,
                     &rclWin,
-                    pMonData->Setup.lcolForeground,
-                    pMonData->Setup.lcolBackground,
+                    pPrivate->Setup.lcolForeground,
+                    pPrivate->Setup.lcolBackground,
                     DT_CENTER | DT_VCENTER);
     }
 }
 
 /*
  *@@ MwgtPresParamChanged:
- *      implementation for WM_PRESPARAMCHANGED in fnwpMonitorWidgets.
+ *      implementation for WM_PRESPARAMCHANGED.
  */
 
 VOID MwgtPresParamChanged(HWND hwnd,
                           ULONG ulAttrChanged,
-                          PXCENTERWIDGETVIEW pViewData)
+                          PXCENTERWIDGET pWidget)
 {
-    PMONITORWIDGETDATA pMonData = (PMONITORWIDGETDATA)pViewData->pUser;
-    if (pMonData)
+    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
         BOOL fInvalidate = TRUE;
         switch (ulAttrChanged)
@@ -609,12 +658,12 @@ VOID MwgtPresParamChanged(HWND hwnd,
             case 0:     // layout palette thing dropped
             case PP_BACKGROUNDCOLOR:
             case PP_FOREGROUNDCOLOR:
-                pMonData->Setup.lcolBackground
+                pPrivate->Setup.lcolBackground
                     = pwinhQueryPresColor(hwnd,
                                           PP_BACKGROUNDCOLOR,
                                           FALSE,
                                           SYSCLR_DIALOGBACKGROUND);
-                pMonData->Setup.lcolForeground
+                pPrivate->Setup.lcolForeground
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
@@ -624,17 +673,17 @@ VOID MwgtPresParamChanged(HWND hwnd,
             case PP_FONTNAMESIZE:
             {
                 PSZ pszFont = 0;
-                if (pMonData->Setup.pszFont)
+                if (pPrivate->Setup.pszFont)
                 {
-                    free(pMonData->Setup.pszFont);
-                    pMonData->Setup.pszFont = NULL;
+                    free(pPrivate->Setup.pszFont);
+                    pPrivate->Setup.pszFont = NULL;
                 }
 
                 pszFont = pwinhQueryWindowFont(hwnd);
                 if (pszFont)
                 {
                     // we must use local malloc() for the font
-                    pMonData->Setup.pszFont = strdup(pszFont);
+                    pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
             break; }
@@ -649,32 +698,32 @@ VOID MwgtPresParamChanged(HWND hwnd,
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             MwgtSaveSetup(&strSetup,
-                          &pMonData->Setup);
+                          &pPrivate->Setup);
             if (strSetup.ulLength)
-                WinSendMsg(pMonData->pViewData->pGlobals->hwndClient,
+                WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);
             pxstrClear(&strSetup);
         }
-    } // end if (pMonData)
+    } // end if (pPrivate)
 }
 
 /*
  *@@ MwgtButton1DblClick:
- *      implementation for WM_BUTTON1DBLCLK in fnwpMonitorWidgets.
+ *      implementation for WM_BUTTON1DBLCLK.
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
-                         PXCENTERWIDGETVIEW pViewData)
+                         PXCENTERWIDGET pWidget)
 {
-    PMONITORWIDGETDATA pMonData = (PMONITORWIDGETDATA)pViewData->pUser;
-    if (pMonData)
+    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
         const char *pcszID = NULL;
         HOBJECT hobj = NULLHANDLE;
 
-        switch (pMonData->ulType)
+        switch (pPrivate->ulType)
         {
             case MWGT_CLOCK:
                 pcszID = "<WP_CLOCK>";
@@ -695,7 +744,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
                           2, // OPEN_SETTINGS,
                           TRUE);
         }
-    } // end if (pMonData)
+    } // end if (pPrivate)
 }
 
 /*
@@ -722,7 +771,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
                     // this ptr is valid after WM_CREATE
 
     switch (msg)
@@ -730,29 +779,35 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
         /*
          * WM_CREATE:
          *      as with all widgets, we receive a pointer to the
-         *      XCENTERWIDGETVIEW in mp1, which was created for us.
+         *      XCENTERWIDGET in mp1, which was created for us.
          *
          *      The first thing the widget MUST do on WM_CREATE
-         *      is to store the XCENTERWIDGETVIEW pointer (from mp1)
+         *      is to store the XCENTERWIDGET pointer (from mp1)
          *      in the QWL_USER window word by calling:
          *
          *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
          *
-         *      We use XCENTERWIDGETVIEW.pUser for allocating
-         *      MONITORWIDGETDATA for our own stuff.
-         *
-         *      Each widget must write its desired width into
-         *      XCENTERWIDGETVIEW.cx and cy.
+         *      We use XCENTERWIDGET.pUser for allocating
+         *      MONITORPRIVATE for our own stuff.
          */
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            pViewData = (PXCENTERWIDGETVIEW)mp1;
-            if ((pViewData) && (pViewData->pfnwpDefWidgetProc))
-                mrc = MwgtCreate(hwnd, pViewData);
+            pWidget = (PXCENTERWIDGET)mp1;
+            if ((pWidget) && (pWidget->pfnwpDefWidgetProc))
+                mrc = MwgtCreate(hwnd, pWidget);
             else
                 // stop window creation!!
                 mrc = (MPARAM)TRUE;
+        break;
+
+        /*
+         * WM_CONTROL:
+         *      process notifications/queries from the XCenter.
+         */
+
+        case WM_CONTROL:
+            mrc = (MPARAM)MwgtControl(hwnd, mp1, mp2);
         break;
 
         /*
@@ -767,14 +822,14 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             if (hps)
             {
                 // get widget data and its button data from QWL_USER
-                PMONITORWIDGETDATA pMonData = (PMONITORWIDGETDATA)pViewData->pUser;
-                if (pMonData)
+                PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+                if (pPrivate)
                 {
                     MwgtPaint(hwnd,
-                              pMonData,
+                              pPrivate,
                               hps,
                               TRUE);        // draw everything
-                } // end if (pMonData)
+                } // end if (pPrivate)
 
                 WinEndPaint(hps);
             }
@@ -791,14 +846,14 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             if (hps)
             {
                 // get widget data and its button data from QWL_USER
-                PMONITORWIDGETDATA pMonData = (PMONITORWIDGETDATA)pViewData->pUser;
-                if (pMonData)
+                PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+                if (pPrivate)
                 {
                     MwgtPaint(hwnd,
-                              pMonData,
+                              pPrivate,
                               hps,
                               FALSE);   // text only
-                } // end if (pMonData)
+                } // end if (pPrivate)
 
                 WinReleasePS(hps);
             }
@@ -811,7 +866,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_BUTTON1DBLCLK:
-            MwgtButton1DblClick(hwnd, pViewData);
+            MwgtButton1DblClick(hwnd, pWidget);
             mrc = (MPARAM)TRUE;     // message processed
         break;
 
@@ -821,9 +876,9 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_PRESPARAMCHANGED:
-            if (pViewData)
+            if (pWidget)
                 // this gets sent before this is set!
-                MwgtPresParamChanged(hwnd, (ULONG)mp1, pViewData);
+                MwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
         break;
 
         /*
@@ -834,20 +889,20 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_DESTROY:
         {
-            PMONITORWIDGETDATA pMonData = (PMONITORWIDGETDATA)pViewData->pUser;
-            if (pMonData)
+            PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+            if (pPrivate)
             {
-                if (pMonData->ulTimerID)
+                if (pPrivate->ulTimerID)
                     ptmrStopTimer(hwnd,
-                                  pMonData->ulTimerID);
-                free(pMonData);
-            } // end if (pMonData)
-            mrc = pViewData->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+                                  pPrivate->ulTimerID);
+                free(pPrivate);
+            } // end if (pPrivate)
+            mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
         break; }
 
         default:
-            if (pViewData)
-                mrc = pViewData->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+            if (pWidget)
+                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
             else
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
@@ -880,9 +935,9 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *      class style (4th param to WinRegisterClass),
  *      you should specify
  *
- +          CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT
+ +          CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT
  *
- *      You're widget window _will_ be resized, even if you're
+ *      Your widget window _will_ be resized, even if you're
  *      not planning it to be.
  *
  *      This function only gets called _once_ when the widget
@@ -894,8 +949,13 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *      by any XCenter, this might get called again when the
  *      DLL is re-loaded.
  *
+ *      There will ever be only one load occurence of the DLL.
+ *      The XCenter manages sharing the DLL between several
+ *      XCenters. As a result, it doesn't matter if the DLL
+ *      has INITINSTANCE etc. set or not.
+ *
  *      If this returns 0, this is considered an error, and the
- *      DLL will be unloaded again.
+ *      DLL will be unloaded again immediately.
  *
  *      If this returns any value > 0, *ppaClasses must be
  *      set to a static array (best placed in the DLL's
@@ -939,13 +999,15 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,         // XCenter's anchor block
         if (!WinRegisterClass(hab,
                               WNDCLASS_WIDGET_MONITORS,
                               fnwpMonitorWidgets,
-                              CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
-                              sizeof(PMONITORWIDGETDATA))
+                              CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT,
+                              sizeof(PMONITORPRIVATE))
                                     // extra memory to reserve for QWL_USER
                             )
             strcpy(pszErrorMsg, "WinRegisterClass failed.");
         else
         {
+            // no error:
+            // return classes
             *ppaClasses = G_WidgetClasses;
             // no. of classes in this DLL:
             ulrc = sizeof(G_WidgetClasses) / sizeof(G_WidgetClasses[0]);

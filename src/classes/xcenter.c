@@ -269,8 +269,9 @@ SOM_Scope BOOL  SOMLINK xctr_xwpRemoveWidget(XCenter *somSelf,
  *      ulBeforeIndex specifies the position to which
  *      the widget should be moved. 0 means leftmost,
  *      1 means before first widget, etc.
- *      If (ulBeforeIndex == -1), we insert the new
- *      widget as the last widget.
+ *      If ulBeforeIndex is -1 or larger than the
+ *      no. of widgets in the XCenter, we insert the
+ *      new widget as the last widget.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
@@ -326,6 +327,10 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 
     _ulPosition = XCENTER_BOTTOM;
 
+    _ulDisplayStyle = XCS_BUTTON;
+
+    _fHelpDisplayed = FALSE;
+
     _hwndOpenView = NULLHANDLE;
 
     _fShowingOpenViewMenu = FALSE;
@@ -369,22 +374,23 @@ SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
  *      object was created.
  *      The parent method must be called first.
  *
- *      Even though WPSREF doesn't really say so, this method
- *      must be used similar to a C++ copy constructor
- *      when the instance data contains pointers. Since when
- *      objects are copied, SOM just copies the binary instance
- *      data, you get two objects with instance pointers pointing
- *      to the same object, which can only lead to problems.
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  */
 
 SOM_Scope void  SOMLINK xctr_wpObjectReady(XCenter *somSelf,
                                            ULONG ulCode, WPObject* refObject)
 {
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
+    XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpObjectReady");
 
     XCenter_parent_WPAbstract_wpObjectReady(somSelf, ulCode,
                                             refObject);
+
+    if (ulCode & OR_REFERENCE)
+    {
+        _Pmpf(("XCenter copied, hwndOpenView: 0x%lX", _hwndOpenView));
+    }
 }
 
 /*
@@ -458,6 +464,16 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
                         (PSZ)G_pcszXCenter,
                         3,
                         _ulAutoHide);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        4,
+                        _ulDisplayStyle);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        5,
+                        _fHelpDisplayed);
         }
     }
     CATCH(excpt1)
@@ -555,6 +571,18 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                3,
                                &ul))
                 _ulAutoHide = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               4,
+                               &ul))
+                _ulDisplayStyle = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               5,
+                               &ul))
+                _fHelpDisplayed = ul;
         }
     }
     CATCH(excpt1)
@@ -735,6 +763,22 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                                                 ulView);
             // store in instance data
             _hwndOpenView = hwndNewView;
+
+            if (!_fHelpDisplayed)
+            {
+                ULONG ulPanel = 0;
+                CHAR szHelp[CCHMAXPATH];
+                _wpQueryDefaultHelp(somSelf,
+                                    &ulPanel,
+                                    szHelp);
+                // help not displayed yet:
+                _wpDisplayHelp(somSelf,
+                               ulPanel,
+                               szHelp);
+
+                _fHelpDisplayed = TRUE;
+                _wpSaveDeferred(somSelf);
+            }
         }
     }
     else
@@ -786,7 +830,8 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
                 // the WPS normally does), show the frame and
                 // restart the update timer
                 // DO NOT GIVE FOCUS, DO NOT ACTIVATE
-                ctrpReformatFrameHWND(pViewItem->handle);
+                ctrpReformatHWND(pViewItem->handle,
+                                 FALSE);
                 brc = TRUE;
                 break;
             }
@@ -908,10 +953,11 @@ SOM_Scope ULONG  SOMLINK xctrM_wpclsQueryIconData(M_XCenter *somSelf,
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryIconData");
 
-    if (pIconInfo) {
+    if (pIconInfo)
+    {
        pIconInfo->fFormat = ICON_RESOURCE;
        pIconInfo->resid   = ID_ICONXCENTER;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+       pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

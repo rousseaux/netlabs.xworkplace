@@ -1,10 +1,12 @@
 
 ;
-; winlist.def:
-;       module definition file for MONITORS.DLL, an XCenter
-;       plug-in widget DLL.
+; xwpres.def:
+;       module definition file for XWPRES.DLL, which contains
+;       resources only which are independent of NLS (icons,
+;       bitmaps). This has been put into a separate DLL to
+;       speed up link time with V0.9.7 (2000-12-14) [umoeller].
 ;
-;       Copyright (C) 2000 Ulrich M”ller.
+;       Copyright (C) 1997-2000 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -15,17 +17,13 @@
 ;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;       GNU General Public License for more details.
 ;
+;  Generated using:
+;      SOM Precompiler somipc: 2.29.1.2
+;      SOM Emitter emitdef: 2.41
 
-LIBRARY MONITORS INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.7#@ XCenter monitors plugin DLL'
+LIBRARY xwpres INITGLOBAL TERMGLOBAL
+Description '@#Ulrich M”ller:0.9.7#@ XWorkplace resources module'
 PROTMODE
-
-DATA              SINGLE READWRITE LOADONCALL SHARED
-
-CODE              LOADONCALL
-
-EXPORTS
-    MwgtInitModule          @1
-    MwgtUnInitModule        @2
+DATA MULTIPLE NONSHARED LOADONCALL
 
 

@@ -41,6 +41,7 @@
 
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -197,6 +198,8 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-26) [umoeller]: changed shutdown menu IDs for launchpad
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: changed shutdown menu items
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: added "logoff network now"
  */
 
 VOID dtpModifyPopupMenu(WPDesktop *somSelf,
@@ -204,7 +207,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 {
     HWND            hwndMenuInsert = hwndMenu;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PKERNELGLOBALS  pKernelGlobals = krnLockGlobals(5000);
+    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     // position of original "Shutdown" menu item in context menu
@@ -213,8 +216,23 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                                  MPFROM2SHORT(WPMENUID_SHUTDOWN, FALSE),
                                                  MPNULL);
 
+
+    BOOL fShutdownRunning = FALSE;
+    ULONG ulShutdownAttr = 0;
+
+    if (pKernelGlobals)
+    {
+        fShutdownRunning = (   (thrQueryID(&pKernelGlobals->tiShutdownThread))
+                            || (pKernelGlobals->fShutdownRunning)
+                           );
+    }
+
+    if (fShutdownRunning)
+        // disable all those menu items if XShutdown is currently running
+        ulShutdownAttr = MIA_DISABLED;
+
     if (    (pGlobalSettings->fXShutdown)    // XShutdown enabled?
-         && (pGlobalSettings->fDTMShutdown)  // menu item enabled?
+         // && (pGlobalSettings->fDTMShutdown)  // menu item enabled?
          && (!pGlobalSettings->NoWorkerThread)  // Worker thread enabled?
        )
     {
@@ -227,63 +245,48 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
              *
              */
 
-            if (pGlobalSettings->fDTMShutdown)
-            {
-                // "Shutdown" menu item enabled:
+            // remove original shutdown item
+            winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
-                // remove original shutdown item
-                winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
-
-                // create "Shutdown" submenu and use this for
-                // subsequent menu items
-                hwndMenuInsert
-                    = winhInsertSubmenu(hwndMenu,
-                                        // position: after existing "Shutdown" item
-                                        sOrigShutdownPos + 1,
-                                        pGlobalSettings->VarMenuOffset + ID_XFM_OFS_SHUTDOWNMENU,
-                                        pNLSStrings->pszShutdown,
-                                        MIS_TEXT,
-                                        // first item ID in "Shutdown" menu:
-                                        // default OS/2 shutdown
-                                        pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OS2_SHUTDOWN,
-                                                    // WPMENUID_SHUTDOWN,
-                                                    // changed V0.9.3 (2000-04-26) [umoeller]
-                                        "Default OS/2 shutdown...",
-                                        MIS_TEXT, 0);
-
-                sOrigShutdownPos = MIT_END;
-
-                strcpy(szShutdown, "~XShutdown");
-                if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
-                    strcat(szShutdown, "...");
-
-                winhInsertMenuItem(hwndMenuInsert,
-                                   sOrigShutdownPos,
-                                   WPMENUID_SHUTDOWN,
-                                   // pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XSHUTDOWN,
-                                   szShutdown,
-                                   MIS_TEXT,
-                                   // disable if Shutdown is currently running
-                                   (   (thrQueryID(&pKernelGlobals->tiShutdownThread)
-                                    || (pKernelGlobals->fShutdownRunning)
-                                   )
-                                       ? MIA_DISABLED
-                                       : 0));
-            }
-        } // end if (pGlobalSettings->DTMShutdownMenu)
-        else
-        {
-            /*
-             * replace shutdown menu item (old style):
-             *
-             */
-
-            /* strcpy(szShutdown, pNLSStrings->pszShutdown);
+            strcpy(szShutdown, "~XShutdown");
             if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
                 strcat(szShutdown, "...");
 
-            fRemoveDefaultShutdownItem = TRUE; */
-        }
+            // create "Shutdown" submenu and use this for
+            // subsequent menu items
+            hwndMenuInsert
+                = winhInsertSubmenu(hwndMenu,
+                                    // submenu position: after existing "Shutdown" item
+                                    sOrigShutdownPos + 1,
+                                    pGlobalSettings->VarMenuOffset + ID_XFM_OFS_SHUTDOWNMENU,
+                                    pNLSStrings->pszShutdown,
+                                    MIS_TEXT,
+                                    // add "shutdown" menu item with original WPMENUID_SHUTDOWN;
+                                    // this is intercepted in dtpMenuItemSelected to initiate
+                                    // XShutdown:
+                                    WPMENUID_SHUTDOWN,
+                                    szShutdown,
+                                    MIS_TEXT,
+                                    // disable if Shutdown is currently running
+                                    ulShutdownAttr);
+
+            if (pGlobalSettings->fDTMShutdown)  // default shutdown menu item enabled?
+                // yes: insert "default shutdown" before that
+                winhInsertMenuItem(hwndMenuInsert,
+                                   0,       // index
+                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OS2_SHUTDOWN,
+                                               // WPMENUID_SHUTDOWN,
+                                               // changed V0.9.3 (2000-04-26) [umoeller]
+                                   "Default OS/2 shutdown...", // ###
+                                   MIS_TEXT,
+                                   // disable if Shutdown is currently running
+                                   ulShutdownAttr);
+
+            // append "restart WPS" to the end
+            sOrigShutdownPos = MIT_END;
+        } // end if (pGlobalSettings->DTMShutdownMenu)
+        // else no submenu:
+        // do nothing right now...
 
     } // end if (pGlobalSettings->XShutdown) ...
 
@@ -296,11 +299,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            pNLSStrings->pszRestartWPS,
                            MIS_TEXT,
                            // disable if Shutdown is currently running
-                           (   (thrQueryID(&pKernelGlobals->tiShutdownThread)
-                            || (pKernelGlobals->fShutdownRunning)
-                           )
-                               ? MIA_DISABLED
-                               : 0));
+                           ulShutdownAttr);
 
         if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
             // if XShutdown confirmations have been disabled,
@@ -320,11 +319,8 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            pNLSStrings->pszXSDLogoff,
                            MIS_TEXT,
                            // disable if Shutdown is currently running
-                           (   (thrQueryID(&pKernelGlobals->tiShutdownThread)
-                            || (pKernelGlobals->fShutdownRunning)
-                           )
-                               ? MIA_DISABLED
-                               : 0));
+                           ulShutdownAttr);
+
         if ((pGlobalSettings->ulXShutdownFlags & ID_XFMI_OFS_LOGOFF) == 0)
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Logoff" entry
@@ -333,12 +329,17 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                         + ID_XFMI_OFS_RESTARTWPS);
     }
 
-    // remove default menu items?
+    // remove other default menu items?
+    #ifndef WPMENUID_LOGOFF
+        #define WPMENUID_LOGOFF 738  // 0x2E2
+    #endif
+
     if (!pGlobalSettings->fDTMLockup)
         winhRemoveMenuItem(hwndMenu, WPMENUID_LOCKUP);
     if (!pGlobalSettings->fDTMSystemSetup)
         winhRemoveMenuItem(hwndMenu, WPMENUID_SYSTEMSETUP);
-
+    if (!pGlobalSettings->fDTMLogoffNetwork)
+        winhRemoveMenuItem(hwndMenu, WPMENUID_LOGOFF);
 
     #ifdef __XWPMEMDEBUG__ // setup.h, helpers\memdebug.c
         // if XWorkplace is compiled with
@@ -399,7 +400,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            MIS_TEXT, 0);
     #endif
 
-    krnUnlockGlobals();
+    // krnUnlockGlobals();
 }
 
 /*
@@ -514,6 +515,8 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
  *      Global Settings.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: changed shutdown menu items
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: added "logoff network now"
  */
 
 VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -544,6 +547,9 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               pGlobalSettings->fDTMSystemSetup);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOCKUP  ,
                               pGlobalSettings->fDTMLockup);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOFFNETWORKNOW,
+                              pGlobalSettings->fDTMLogoffNetwork); // V0.9.7 (2000-12-13) [umoeller]
+
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWN,
                               pGlobalSettings->fDTMShutdown);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
@@ -554,7 +560,7 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
                          (     (pGlobalSettings->fXShutdown)
-                           &&  (pGlobalSettings->fDTMShutdown)
+                           // &&  (pGlobalSettings->fDTMShutdown)
                            &&  (!pGlobalSettings->NoWorkerThread)
                          ));
     }
@@ -568,6 +574,8 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: changed shutdown menu items
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: added "logoff network now"
  */
 
 MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -575,7 +583,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 USHORT usNotifyCode,
                                 ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     ULONG ulChange = 1;
 
     // LONG lTemp;
@@ -598,9 +606,13 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fDTMLockup = ulExtra;
         break;
 
+        case ID_XSDI_DTP_LOGOFFNETWORKNOW: // V0.9.7 (2000-12-13) [umoeller]
+            pGlobalSettings->fDTMLogoffNetwork = ulExtra;
+        break;
+
         case ID_XSDI_DTP_SHUTDOWN:
             pGlobalSettings->fDTMShutdown = ulExtra;
-            dtpMenuItemsInitPage(pcnbp, CBI_ENABLE);
+            // dtpMenuItemsInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_DTP_SHUTDOWNMENU:
@@ -619,7 +631,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fDTMShutdownMenu = pGSBackup->fDTMShutdownMenu;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -629,7 +641,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -795,74 +807,73 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     BOOL fProcessed = TRUE;
 
+    ULONG ulChange = 1;
+
     {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-        ULONG ulChange = 1;
+       GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
-        // LONG lTemp;
+       switch (usItemID)
+       {
+           case ID_XSDI_DTP_BOOTLOGO:
+               pGlobalSettings->BootLogo = ulExtra;
+               ulChange = 2;       // re-enable items
+           break;
 
-        switch (usItemID)
-        {
-            case ID_XSDI_DTP_BOOTLOGO:
-                pGlobalSettings->BootLogo = ulExtra;
-                ulChange = 2;       // re-enable items
-            break;
+           case ID_XSDI_DTP_LOGO_TRANSPARENT:
+               pGlobalSettings->bBootLogoStyle = 0;
+           break;
 
-            case ID_XSDI_DTP_LOGO_TRANSPARENT:
-                pGlobalSettings->bBootLogoStyle = 0;
-            break;
+           case ID_XSDI_DTP_LOGO_BLOWUP:
+               pGlobalSettings->bBootLogoStyle = 1;
+           break;
 
-            case ID_XSDI_DTP_LOGO_BLOWUP:
-                pGlobalSettings->bBootLogoStyle = 1;
-            break;
+           case ID_XSDI_DTP_BOOTUPSTATUS:
+               pGlobalSettings->ShowBootupStatus = ulExtra;
+           break;
 
-            case ID_XSDI_DTP_BOOTUPSTATUS:
-                pGlobalSettings->ShowBootupStatus = ulExtra;
-            break;
+           case ID_XSDI_DTP_NUMLOCKON:
+               pGlobalSettings->fNumLockStartup = ulExtra;
+               winhSetNumLock(ulExtra);
+           break;
 
-            case ID_XSDI_DTP_NUMLOCKON:
-                pGlobalSettings->fNumLockStartup = ulExtra;
-                winhSetNumLock(ulExtra);
-            break;
+           case DID_UNDO:
+           {
+               // "Undo" button: get pointer to backed-up Global Settings
+               GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
-            case DID_UNDO:
-            {
-                // "Undo" button: get pointer to backed-up Global Settings
-                GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+               // and restore the settings for this page
+               pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
+               pGlobalSettings->BootLogo = pGSBackup->BootLogo;
+               pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;
 
-                // and restore the settings for this page
-                pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
-                pGlobalSettings->BootLogo = pGSBackup->BootLogo;
-                pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;
+               // update the display by calling the INIT callback
+               pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+           break; }
 
-                // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-            break; }
+           case DID_DEFAULT:
+           {
+               // set the default settings for this settings page
+               // (this is in common.c because it's also used at
+               // WPS startup)
+               cmnSetDefaultSettings(pcnbp->ulPageID);
+               // update the display by calling the INIT callback
+               pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+           break; }
 
-            case DID_DEFAULT:
-            {
-                // set the default settings for this settings page
-                // (this is in common.c because it's also used at
-                // WPS startup)
-                cmnSetDefaultSettings(pcnbp->ulPageID);
-                // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-            break; }
+           default:
+               ulChange = 0;
+               fProcessed = FALSE;
+       }
 
-            default:
-                ulChange = 0;
-                fProcessed = FALSE;
-        }
+       cmnUnlockGlobalSettings();
+    }
 
-        cmnUnlockGlobalSettings();
-
-        if (ulChange)
-        {
-            cmnStoreGlobalSettings();
-            if (ulChange == 2)
-                // enable/disable items
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
-        }
+    if (ulChange)
+    {
+        cmnStoreGlobalSettings();
+        if (ulChange == 2)
+            // enable/disable items
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
     }
 
     if (!fProcessed)
@@ -893,7 +904,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           INIKEY_BOOTLOGOFILE,
                                           pszNewBootLogoFile);
                     // update the display by calling the INIT callback
-                    (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                    pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 }
                 if (pszNewBootLogoFile)
                     free(pszNewBootLogoFile);
@@ -945,7 +956,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           INIKEY_BOOTLOGOFILE,
                                           fd.szFullFile);
                     // update the display by calling the INIT callback
-                    (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                    pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 }
             break; }
 
@@ -1056,7 +1067,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break; }
 
         }
-    }
+    } // end if (!fProcessed)
+
     return ((MPARAM)0);
 }
 

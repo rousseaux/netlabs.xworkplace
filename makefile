@@ -105,7 +105,7 @@ OBJS = \
 # code from startshut\
     bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj \
 # code from xcenter\
-    bin\ctr_engine.obj bin\ctr_notebook.obj bin\w_objbutton.obj bin\w_pulse.obj bin\w_xbutton.obj
+    bin\ctr_engine.obj bin\ctr_notebook.obj bin\w_objbutton.obj bin\w_pulse.obj
 
 OBJS_ANICLASSES = bin\anand.obj bin\anos2ptr.obj bin\anwani.obj bin\anwcur.obj
 OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj
@@ -346,6 +346,7 @@ nls:
 # --------------------
 
 link: $(XWPRUNNING)\bin\xfldr.dll \
+      $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
@@ -387,17 +388,38 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 src\shared\xwp.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace main WPS classes module"
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def bin\xwp.res makefile
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\shared\xwp.def @<<link.tmp
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
         @cd $(MODULESDIR)
-        $(RC) ..\xwp.res $(@B).dll
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif
+        @cd $(CURRENT_DIR)
+        cmd.exe /c tools\raisebld.cmd include\build.h
+
+#
+# Linking XWPRES.DLL
+#
+
+$(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+
+# update DEF file if buildlevel has changed
+src\shared\xwpres.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace resources module"
+
+$(MODULESDIR)\xwpres.dll: bin\dummyfont.obj src\shared\xwpres.def bin\xwpres.res
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK_ALWAYSPACK) /OUT:$@ src\shared\xwpres.def bin\dummyfont.obj
+        @cd $(MODULESDIR)
+        $(RC) ..\xwpres.res $(@B).dll
         @cd $(CURRENT_DIR)
 
 #
@@ -650,7 +672,7 @@ release: really_all
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
-    $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
+#    $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
 #    b) mapfiles
     $(COPY) $(MODULESDIR)\*.map $(XWPRELEASE_MAP)
 #

@@ -279,15 +279,15 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
 SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
 {
     ULONG   ulrc = 0;
-    BOOL    fSemOwned = FALSE;
+    WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryListNotify");
-    fSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-    if (fSemOwned)
+
+    if (wpshLockObject(&Lock, somSelf))
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
         ulrc = _ulListNotify;
-        _wpReleaseObjectMutexSem(somSelf);
     }
+    wpshUnlockObject(&Lock);
 
     return (ulrc);
 }
@@ -325,17 +325,16 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
                                                ULONG flNotifyFlags)
 {
     BOOL    brc = FALSE;
-    BOOL    fSemOwned = FALSE;
+    WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetListNotify");
 
-    fSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-    if (fSemOwned)
+    if (wpshLockObject(&Lock, somSelf))
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
         _ulListNotify = flNotifyFlags;
         brc = TRUE;
-        _wpReleaseObjectMutexSem(somSelf);
     }
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -370,11 +369,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
                                                   ULONG flNotifyMask)
 {
     BOOL    brc = FALSE;
-    BOOL    fSemOwned = FALSE;
+    WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpModifyListNotify");
 
-    fSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-    if (fSemOwned)
+    if (wpshLockObject(&Lock, somSelf))
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
@@ -385,8 +383,8 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
                             | (flNotifyFlags & flNotifyMask)
                         );
         brc = TRUE;
-        _wpReleaseObjectMutexSem(somSelf);
     }
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -671,12 +669,11 @@ SOM_Scope WPObject*  SOMLINK xfobj_wpCopyObject(XFldObject *somSelf,
 
 /*
  *@@ wpObjectReady:
- *      this is called upon an object when its creation
- *      or awakening is complete. This is the last method
- *      which gets called during instantiation of a
- *      WPS object when it has completely initialized
- *      itself. ulCode signifies the cause of object
- *      instantiation.
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
  *
  *      We will have this object's pointer stored
  *      in a global list (maintained by the Worker thread)
@@ -686,6 +683,24 @@ SOM_Scope WPObject*  SOMLINK xfobj_wpCopyObject(XFldObject *somSelf,
  *      Note: On my Warp 4 (FP 10), this method does _not_
  *      get called for WPFolder instances, so we override
  *      XFolder::wpObjectReady also.
+ *
+ *      <B>Copying considerations</B>
+ *
+ *      Even though WPSREF doesn't really say so, this method
+ *      must be used similar to a C++ copy constructor
+ *      when the instance data contains pointers and the
+ *      OR_REFERENCE bit is set in ulCode. When objects are
+ *      copied, SOM just copies the binary instance data, so
+ *      you get two objects with instance pointers pointing
+ *      to the same object, which can only lead to problems.
+ *
+ *      When an object is copied in any way (thru wpCopyObject
+ *      or wpCreateFromTemplate), the WPS first creates a
+ *      new "empty" object (on which wpInitData is invoked),
+ *      does a "flat" copy then,  and then invokes wpRestoreState
+ *      on it. As the very last step, wpObjectReady gets called.
+ *      As a result, you must only handle the instance data here
+ *      which is not safely set thru wpRestoreState.
  *
  *@@changed V0.9.0: adjust for XFolder: [umoeller]:wpObjectReady override
  */
@@ -1499,10 +1514,14 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
             krnInitializeXWorkplace();
 
         {
-            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
-            // store the XFldObject class object in KERNELGLOBALS
-            pKernelGlobals->fXFldObject = TRUE;
-            krnUnlockGlobals();
+            // store the class object in KERNELGLOBALS
+            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+            if (pKernelGlobals)
+            {
+                // store the XFldObject class object in KERNELGLOBALS
+                pKernelGlobals->fXFldObject = TRUE;
+                krnUnlockGlobals();
+            }
         }
     }
 

@@ -349,9 +349,6 @@ interface XFolder : WPFolder
 
     wpInitData: override;
     wpSetup: override;
-    wpCopyObject: override;
-    wpCreateAnother: override;
-    wpCreateFromTemplate: override;
     wpObjectReady: override;
 
     wpUnInitData: override;

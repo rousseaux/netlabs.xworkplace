@@ -127,7 +127,6 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-// #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -136,6 +135,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
+#include "xfdisk.ih"                    // XFldDisk
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -147,7 +147,6 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include "xfdisk.h"                     // XFldDisk
 
 #include <wppgm.h>                      // WPProgram
 #include <wpshadow.h>                   // WPShadow
@@ -521,7 +520,7 @@ ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to ad
  *      user opens it.
  *
  *      To support this, you need to intercept the WM_INITMENU
- *      message and then call mnuFillContentSubmenu.
+ *      message and then call cmnuFillContentSubmenu.
  *
  *      This way, we can fill the folder content submenus only when
  *      this is needed, because we can impossibly populate all
@@ -634,9 +633,9 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                                                     // are to be inserted
                                HWND hwndMenu)       // in: submenu to append items to
 {
-    HAB         habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    BOOL        fFolderLocked = FALSE;
-    PLISTNODE   pNode = NULL;
+    HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
+    BOOL            fFolderLocked = FALSE;
+    PLISTNODE       pNode = NULL;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // We will first create two lists in memory
@@ -1218,7 +1217,7 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
                 if (G_hMenuArrowIcon == NULLHANDLE)
                 {
                     G_hMenuArrowIcon = WinLoadPointer(HWND_DESKTOP,
-                                                      cmnQueryMainModuleHandle(),
+                                                      cmnQueryMainResModuleHandle(),
                                                       doshIsWarp4()
                                                           // on Warp 4, load the triangle
                                                         ? ID_ICONMENUARROW4

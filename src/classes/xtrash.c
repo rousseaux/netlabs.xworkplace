@@ -586,13 +586,13 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 
     if (_hptrFull == NULLHANDLE)
         // no user icons or user icon not found:
-        // then load the icon from XFLDR.DLL
+        // then load the icon from the DLL
         _hptrFull = WinLoadPointer(HWND_DESKTOP,
-                                   cmnQueryMainModuleHandle(),
+                                   cmnQueryMainResModuleHandle(),
                                    ID_ICONXWPTRASHFILLED);
     if (_hptrEmpty == NULLHANDLE)
         _hptrEmpty = WinLoadPointer(HWND_DESKTOP,
-                                    cmnQueryMainModuleHandle(),
+                                    cmnQueryMainResModuleHandle(),
                                     ID_ICONXWPTRASHEMPTY);
 
     if (G_pDefaultTrashCan == NULL)
@@ -602,12 +602,14 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 
 /*
  *@@ wpObjectReady:
- *      this is called upon an object when its creation
- *      or awakening is complete. This is the last method
- *      which gets called during instantiation of a
- *      WPS object when it has completely initialized
- *      itself. ulCode signifies the cause of object
- *      instantiation.
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
+ *
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  *
  *      For trash cans, we need to call
  *      XWPTrashCan::xwpSetCorrectTrashIcon.
@@ -1466,10 +1468,13 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
         _wpclsIncUsage(pTrashObjectClassObject);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPTrashCan = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXWPTrashCan = TRUE;
+            krnUnlockGlobals();
+        }
     }
 
     // initialize supported drives
@@ -1546,10 +1551,11 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryIconData(M_XWPTrashCan *somSelf,
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryIconData");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_ICONXWPTRASHEMPTY;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_ICONXWPTRASHEMPTY;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));
@@ -1572,10 +1578,11 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryIconDataN(M_XWPTrashCan *somSelf,
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryIconDataN");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_ICONXWPTRASHEMPTY;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_ICONXWPTRASHEMPTY;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

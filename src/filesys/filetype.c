@@ -812,7 +812,7 @@ typedef struct _FILETYPERECORD
 typedef struct _FILETYPELISTITEM
 {
     PFILETYPERECORD     precc;
-    PSZ                 pszFileType;        // copy of file type in INI
+    PSZ                 pszFileType;        // copy of file type in INI (malloc)
     BOOL                fProcessed;
     BOOL                fCircular;          // security; prevent circular references
 } FILETYPELISTITEM, *PFILETYPELISTITEM;
@@ -878,7 +878,7 @@ typedef struct _FILETYPESPAGEDATA
     PFILETYPERECORD pftreccSelected;
 
     // drag'n'drop within the file types container
-    BOOL fFileTypesDnDValid;
+    // BOOL fFileTypesDnDValid;
 
     // drag'n'drop of WPS objects to assocs container;
     // NULL if d'n'd is invalid
@@ -910,10 +910,10 @@ PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert int
                                 PFILETYPERECORD preccParent,  // in: parent recc for tree view
                                 PFILETYPELISTITEM pliAssoc)   // in: file type to add
 {
-    PFILETYPERECORD      preccNew = (PFILETYPERECORD)
-            cnrhAllocRecords(hwndCnr, sizeof(FILETYPERECORD), 1);
+    PFILETYPERECORD preccNew
+        = (PFILETYPERECORD)cnrhAllocRecords(hwndCnr, sizeof(FILETYPERECORD), 1);
     // recc attributes
-    ULONG            usAttrs = CRA_COLLAPSED
+    ULONG           usAttrs = CRA_COLLAPSED
                                | CRA_RECORDREADONLY
                                | CRA_DROPONABLE;      // records can be dropped
 
@@ -1057,10 +1057,10 @@ PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
 
     PSZ pszObjectTitle = _wpQueryTitle(pObject);
 
-    PASSOCRECORD preccNew = (PASSOCRECORD)cnrhAllocRecords(
-                                                hwndAssocsCnr,
-                                                sizeof(ASSOCRECORD),
-                                                1);
+    PASSOCRECORD preccNew
+        = (PASSOCRECORD)cnrhAllocRecords(hwndAssocsCnr,
+                                         sizeof(ASSOCRECORD),
+                                         1);
     if (preccNew)
     {
         ULONG   flRecordAttr = CRA_RECORDREADONLY | CRA_DROPONABLE;
@@ -1110,11 +1110,11 @@ BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMW
     {
         // get selected file type; since the cnr is in
         // Tree view, there can be only one
-        PFILETYPERECORD preccSelected =
-                        (PFILETYPERECORD)WinSendMsg(hwndTypesCnr,
-                                            CM_QUERYRECORDEMPHASIS,
-                                            (MPARAM)CMA_FIRST,
-                                            (MPARAM)CRA_SELECTED);
+        PFILETYPERECORD preccSelected
+            = (PFILETYPERECORD)WinSendMsg(hwndTypesCnr,
+                                          CM_QUERYRECORDEMPHASIS,
+                                          (MPARAM)CMA_FIRST,
+                                          (MPARAM)CRA_SELECTED);
         if (    (preccSelected)
              && ((LONG)preccSelected != -1)
            )
@@ -1410,6 +1410,157 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
 
         free(pszFiltersData);
     }
+}
+
+/*
+ *@@ CreateFileType:
+ *
+ *      Returns FALSE if an error occured, e.g. if
+ *      the file type already existed.
+ *
+ *@@added V0.9.7 (2000-12-13) [umoeller]
+ */
+
+BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
+                    PSZ pszNewType,             // in: new type (malloc!)
+                    PFILETYPERECORD pParent)    // in: parent record or NULL if root type
+{
+    BOOL brc = FALSE;
+
+    ULONG cbData = 0;
+    // check if WPS type exists already
+    if (    (!PrfQueryProfileSize(HINI_USER,
+                                  WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                  pszNewType,
+                                  &cbData))
+         && (cbData == 0)
+       )
+    {
+        // no:
+        // write to WPS's file types list
+        BYTE bData = 0;
+        if (PrfWriteProfileData(HINI_USER,
+                                WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                pszNewType,
+                                &bData,
+                                1))     // one byte
+        {
+            // add parent type to XWP's types:
+            if (PrfWriteProfileString(HINI_USER,
+                                      // application: "XWorkplace:FileTypes"
+                                      INIAPP_XWPFILETYPES,
+                                      // key --> the new file type:
+                                      pszNewType,
+                                      // string --> the parent:
+                                      (pParent)
+                                          // the parent
+                                          ? pParent->recc.pszIcon
+                                          // NULL == root:
+                                          : NULL))
+            {
+                // create new list item
+                PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)malloc(sizeof(FILETYPELISTITEM));
+                // mark as "processed"
+                pliAssoc->fProcessed = TRUE;
+                // store file type
+                pliAssoc->pszFileType = pszNewType;     // malloc!
+                // add record core, which will be stored in
+                // pliAssoc->pftrecc
+                AddFileType2Cnr(pftpd->hwndTypesCnr,
+                                pParent,
+                                pliAssoc);
+                brc = (lstAppendItem(pftpd->pllFileTypes, pliAssoc) != NULL);
+            }
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ CheckFileTypeDrag:
+ *      checks a drag operation for whether the container
+ *      can accept it.
+ *
+ *      This has been exported from ftypFileTypesInitPage
+ *      because both CN_DRAGOVER and CN_DROP need to
+ *      check this. CN_DRAGOVER is never received in a
+ *      lazy drag operation.
+ *
+ *      This does not change pftpd->fFileTypesDnDValid,
+ *      but returns TRUE or FALSE instead.
+ *
+ *@@added V0.9.7 (2000-12-13) [umoeller]
+ */
+
+BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
+                       PDRAGINFO pDragInfo,     // in: drag info
+                       PFILETYPERECORD pTargetRec, // in: target record from CNRDRAGINFO
+                       PUSHORT pusIndicator,    // out: DOR_* flag for indicator (ptr can be NULL)
+                       PUSHORT pusOperation)    // out: DOR_* flag for operation (ptr can be NULL)
+{
+    BOOL brc = FALSE;
+
+    // OK so far:
+    if (
+            // accept no more than one single item at a time;
+            // we cannot move more than one file type
+            (pDragInfo->cditem != 1)
+            // make sure that we only accept drops from ourselves,
+            // not from other windows
+         || (pDragInfo->hwndSource
+                    != pftpd->hwndTypesCnr)
+        )
+    {
+        if (pusIndicator)
+            *pusIndicator = DOR_NEVERDROP;
+        _Pmpf(("   invalid items or invalid target"));
+    }
+    else
+    {
+
+        // accept only default drop operation or move
+        if (    (pDragInfo->usOperation == DO_DEFAULT)
+             || (pDragInfo->usOperation == DO_MOVE)
+           )
+        {
+            // get the item being dragged (PDRAGITEM)
+            PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pDragInfo, 0);
+            if (pdrgItem)
+            {
+                if (    (pTargetRec // pcdi->pRecord  // target recc
+                          != (PFILETYPERECORD)pdrgItem->ulItemID) // source recc
+                     && (DrgVerifyRMF(pdrgItem, "DRM_XWPFILETYPES", "DRF_UNKNOWN"))
+                   )
+                {
+                    // do not allow dragging the record on
+                    // a child record of itself
+                    // V0.9.7 (2000-12-13) [umoeller] thanks Martin Lafaix
+                    if (!cnrhIsChildOf(pftpd->hwndTypesCnr,
+                                       (PRECORDCORE)pTargetRec, // pcdi->pRecord,   // target
+                                       (PRECORDCORE)pdrgItem->ulItemID)) // source
+                    {
+                        // allow drop
+                        if (pusIndicator)
+                            *pusIndicator = DOR_DROP;
+                        if (pusOperation)
+                            *pusOperation = DO_MOVE;
+                        brc = TRUE;
+                    }
+                    else
+                        _Pmpf(("   target is child of source"));
+                }
+                else
+                    _Pmpf(("   invalid RMF"));
+            }
+            else
+                _Pmpf(("   cannot get drag item"));
+        }
+        else
+            _Pmpf(("   invalid operation 0x%lX", pDragInfo->usOperation));
+    }
+
+    return (brc);
 }
 
 /*
@@ -1750,6 +1901,11 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.7 (2000-12-10) [umoeller]: DrgFreeDraginfo was missing
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: fixed dragging file type onto its child; thanks Martin Lafaix
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: fixed cleanup problem with lazy drag; thanks Martin Lafaix
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: lazy drop menu items were enabled wrong; thanks Martin Lafaix
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: made lazy drop menu items work
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: added "Create subtype" menu item
  */
 
 MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1865,7 +2021,6 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 case CN_DRAGOVER:
                 {
                     PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
-                    PDRAGITEM   pdrgItem;
                     USHORT      usIndicator = DOR_NODROP,
                                     // cannot be dropped, but send
                                     // DM_DRAGOVER again
@@ -1874,51 +2029,20 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     // user operation (we don't want
                                     // the WPS to copy anything)
 
-                    // reset global variable
-                    pftpd->fFileTypesDnDValid = FALSE;
+                    _Pmpf(("CN_DRAGOVER: entering"));
 
-                    // OK so far:
                     // get access to the drag'n'drop structures
                     if (DrgAccessDraginfo(pcdi->pDragInfo))
                     {
-                        if (
-                                // accept no more than one single item at a time;
-                                // we cannot move more than one file type
-                                (pcdi->pDragInfo->cditem != 1)
-                                // make sure that we only accept drops from ourselves,
-                                // not from other windows
-                             || (pcdi->pDragInfo->hwndSource
-                                        != pftpd->hwndTypesCnr)
-                            )
-                        {
-                            usIndicator = DOR_NEVERDROP;
-                        }
-                        else
-                        {
-
-                            // accept only default drop operation or move
-                            if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
-                                 || (pcdi->pDragInfo->usOperation == DO_MOVE)
-                               )
-                            {
-                                // get the item being dragged (PDRAGITEM)
-                                if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
-                                {
-                                    if (    (pcdi->pRecord  // target recc
-                                              != (PRECORDCORE)pdrgItem->ulItemID) // source recc
-                                         && (DrgVerifyRMF(pdrgItem, "DRM_XWPFILETYPES", "DRF_UNKNOWN"))
-                                       )
-                                    {
-                                        // allow drop
-                                        usIndicator = DOR_DROP;
-                                        pftpd->fFileTypesDnDValid = TRUE;
-                                    }
-                                }
-                            }
-                        }
-
+                        CheckFileTypeDrag(pftpd,
+                                          pcdi->pDragInfo,
+                                          (PFILETYPERECORD)pcdi->pRecord,   // target
+                                          &usIndicator,
+                                          &usOp);
                         DrgFreeDraginfo(pcdi->pDragInfo);
                     }
+
+                    _Pmpf(("CN_DRAGOVER: returning ind 0x%lX, op 0x%lX", usIndicator, usOp));
 
                     // and return the drop flags
                     mrc = (MRFROM2SHORT(usIndicator, usOp));
@@ -1927,19 +2051,27 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 /*
                  * CN_DROP:
                  *      file type being dropped
-                 *      (both for modal d'n'd and non-modal lazy drag)
+                 *      (both for modal d'n'd and non-modal lazy drag).
+                 *
+                 *      Must always return 0.
                  */
 
                 case CN_DROP:
                 {
                     PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
 
+                    _Pmpf(("CN_DROP: entering"));
+
                     // check global valid recc, which was set above
-                    if (pftpd->fFileTypesDnDValid)
+                    // get access to the drag'n'drop structures
+                    if (DrgAccessDraginfo(pcdi->pDragInfo))
                     {
-                        // get access to the drag'n'drop structures
-                        if (DrgAccessDraginfo(pcdi->pDragInfo))
+                        if (CheckFileTypeDrag(pftpd,
+                                              pcdi->pDragInfo,
+                                              (PFILETYPERECORD)pcdi->pRecord,   // target
+                                              NULL, NULL))
                         {
+                            // valid operation:
                             // OK, move the record core tree to the
                             // new location.
 
@@ -1949,43 +2081,56 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // who cares, source and target are the
                             // same window here anyway, so let's go.
                             PDRAGITEM   pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0);
-
-                            // update container
-                            if (cnrhMoveTree(pcdi->pDragInfo->hwndSource, // hwndCnr
-                                            // record to move
-                                            (PRECORDCORE)(pdrgItem->ulItemID),
-                                            // new parent; might be NULL for root level
-                                            pcdi->pRecord,
-                                            // sort function (cnrsort.c)
-                                            (PFNCNRSORT)fnCompareName))
-                                // update OS2.INI
-                                PrfWriteProfileString(HINI_USER,
-                                                // application: "XWorkplace:FileTypes"
-                                                INIAPP_XWPFILETYPES,
-                                                // key
-                                                ((PRECORDCORE)(pdrgItem->ulItemID))->pszIcon,
-                                                // string:
-                                                (pcdi->pRecord)
-                                                    // the parent
-                                                    ? pcdi->pRecord->pszIcon
-                                                    // NULL == root: delete key
-                                                    : NULL);
-                                        // aaarrgh
-
-                            DrgFreeDraginfo(pcdi->pDragInfo);
-                                        // V0.9.7 (2000-12-10) [umoeller]
+                            if (pdrgItem)
+                            {
+                                PFILETYPERECORD precDropped = (PFILETYPERECORD)pdrgItem->ulItemID;
+                                PFILETYPERECORD precTarget = (PFILETYPERECORD)pcdi->pRecord;
+                                // update container
+                                if (cnrhMoveTree(pcdi->pDragInfo->hwndSource,
+                                                 // record to move:
+                                                 (PRECORDCORE)precDropped,
+                                                 // new parent (might be NULL for root level):
+                                                 (PRECORDCORE)precTarget,
+                                                 // sort function (cnrsort.c)
+                                                 (PFNCNRSORT)fnCompareName))
+                                {
+                                    // update XWP type parents in OS2.INI
+                                    PrfWriteProfileString(HINI_USER,
+                                                          // application: "XWorkplace:FileTypes"
+                                                          INIAPP_XWPFILETYPES,
+                                                          // key --> the dragged record:
+                                                          precDropped->recc.pszIcon,
+                                                          // string --> the parent:
+                                                          (precTarget)
+                                                              // the parent
+                                                              ? precTarget->recc.pszIcon
+                                                              // NULL == root: delete key
+                                                              : NULL);
+                                            // aaarrgh
+                                }
+                            }
+                            else
+                                _Pmpf(("  Cannot get drag item"));
                         }
 
-                        // If CN_DROP was the result of a "real" (modal) d'n'd,
-                        // the DrgDrag function in CN_INITDRAG (above)
-                        // returns now.
-
-                        // If CN_DROP was the result of a lazy drag (pickup and drop),
-                        // the container will now send CN_DROPNOTIFY (below).
-
-                        // In both cases, we clean up the resources: either in
-                        // CN_INITDRAG or in CN_DROPNOTIFY.
+                        DrgFreeDraginfo(pcdi->pDragInfo);
+                                    // V0.9.7 (2000-12-10) [umoeller]
                     }
+                    else
+                        _Pmpf(("  Cannot get draginfo"));
+
+                    // If CN_DROP was the result of a "real" (modal) d'n'd,
+                    // the DrgDrag function in CN_INITDRAG (above)
+                    // returns now.
+
+                    // If CN_DROP was the result of a lazy drag (pickup and drop),
+                    // the container will now send CN_DROPNOTIFY (below).
+
+                    // In both cases, we clean up the resources: either in
+                    // CN_INITDRAG or in CN_DROPNOTIFY.
+
+                    _Pmpf(("CN_DROP: returning"));
+
                 break; } // case CN_DROP
 
                 /*
@@ -1996,6 +2141,19 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                  *      (DrgLazyDrag in CN_PICKUP returned immediately),
                  *      this is where we must clean up the resources
                  *      (the same as we have done in CN_INITDRAG modally).
+                 *
+                 *      According to PMREF, if a lazy drop was successful,
+                 *      the target window is first sent DM_DROP and
+                 *      the source window is is then posted DM_DROPNOTIFY.
+                 *
+                 *      The standard DM_DROPNOTIFY has the DRAGINFO in mp1
+                 *      and the target window in mp2. With the container,
+                 *      the target window goes into the CNRLAZYDRAGINFO
+                 *      structure.
+                 *
+                 *      If a lazy drop is cancelled (e.g. for DrgCancelLazyDrag),
+                 *      only the source window is posted DM_DROPNOTIFY, with
+                 *      mp2 == NULLHANDLE.
                  */
 
                 case CN_DROPNOTIFY:
@@ -2014,21 +2172,18 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    // record to move
                                    (MPARAM)(pdrgItem->ulItemID),
                                    MPFROM2SHORT(FALSE,
-                                           CRA_PICKED));
+                                                CRA_PICKED));
 
+                        // fixed V0.9.7 (2000-12-13) [umoeller]
+                        DrgDeleteDraginfoStrHandles(pcldi->pDragInfo);
                         DrgFreeDraginfo(pcldi->pDragInfo);
-                                    // V0.9.7 (2000-12-10) [umoeller]
                     }
-
-                    // clean up resources
-                    DrgDeleteDraginfoStrHandles(pcldi->pDragInfo);
-                    DrgFreeDraginfo(pcldi->pDragInfo);
-
                 break; }
 
                 /*
                  * CN_CONTEXTMENU:
-                 *      ulExtra has the record core
+                 *      ulExtra has the record core or NULL
+                 *      if whitespace.
                  */
 
                 case CN_CONTEXTMENU:
@@ -2066,17 +2221,17 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           (pftpd->hwndWPSImportDlg == NULLHANDLE));
                     }
 
-                    // for both menu types
-                    if (!fDragging)
-                    {
-                        // no lazy drag in progress:
-                        // disable drop
-                        WinEnableMenuItem(hPopupMenu,
-                            ID_XSMI_FILETYPES_DROP, FALSE);
-                        // disable cancel-drag
-                        WinEnableMenuItem(hPopupMenu,
-                            ID_XSMI_FILETYPES_CANCELDRAG, FALSE);
-                    }
+                    // both menu types:
+                    // disable drop and cancel-drag if
+                    // no lazy drag in progress:
+                    // V0.9.7 (2000-12-13) [umoeller]
+                    WinEnableMenuItem(hPopupMenu,
+                                      ID_XSMI_FILETYPES_DROP,
+                                      fDragging);
+                    // disable cancel-drag
+                    WinEnableMenuItem(hPopupMenu,
+                                      ID_XSMI_FILETYPES_CANCELDRAG,
+                                      fDragging);
                     cnrhShowContextMenu(pcnbp->hwndControl,     // cnr
                                         (PRECORDCORE)pcnbp->preccSource,
                                         hPopupMenu,
@@ -2117,7 +2272,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         /*
          * ID_XSMI_FILETYPES_NEW:
          *      "Create file type" context menu item
-         *      (file types container tree)
+         *      (file types container tree); this can
+         *      be both on whitespace and on a type record
          */
 
         case ID_XSMI_FILETYPES_NEW:
@@ -2130,41 +2286,31 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       NULL);            // pCreateParams
             if (hwndDlg)
             {
-                WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
-                                    EM_SETTEXTLIMIT,
-                                    (MPARAM)50,
-                                    MPNULL);
+                winhSetEntryFieldLimit(WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD),
+                                       50);
                 if (WinProcessDlg(hwndDlg) == DID_OK)
                 {
                     // initial data for file type: 1 null-byte,
-                    // meaning that no associations have been defined
-                    BYTE bData = 0;
-                    CHAR szNewType[50];
-                    PFILETYPELISTITEM pliAssoc;
-
+                    // meaning that no associations have been defined...
                     // get new file type name from dlg
-                    WinQueryDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
-                                    sizeof(szNewType)-1, szNewType);
-
-                    // write to WPS's file types list
-                    PrfWriteProfileData(HINI_USER,
-                                        WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                        szNewType,
-                                        &bData,
-                                        1);     // one byte
-
-                    // create new list item
-                    pliAssoc = malloc(sizeof(FILETYPELISTITEM));
-                    // mark as "processed"
-                    pliAssoc->fProcessed = TRUE;
-                    // store file type
-                    pliAssoc->pszFileType = strdup(szNewType);
-                    // add record core, which will be stored in
-                    // pliAssoc->pftrecc
-                    AddFileType2Cnr(pftpd->hwndTypesCnr,
-                                    NULL,   // parent recc
-                                    pliAssoc);
-                    lstAppendItem(pftpd->pllFileTypes, pliAssoc);
+                    PSZ pszNewType = winhQueryDlgItemText(hwndDlg,
+                                                          ID_XSDI_FT_ENTRYFIELD);
+                    if (pszNewType)
+                    {
+                        if (!CreateFileType(pftpd,
+                                            pszNewType,
+                                            (PFILETYPERECORD)pcnbp->preccSource))
+                                                 // can be NULL
+                        {
+                            PSZ pTable = pszNewType;
+                            cmnMessageBoxMsgExt(pcnbp->hwndFrame,  // owner
+                                                104,        // xwp error
+                                                &pTable,
+                                                1,
+                                                196,
+                                                MB_OK);
+                        }
+                    }
                 }
                 WinDestroyWindow(hwndDlg);
             }
@@ -2181,15 +2327,17 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             if (    (pcnbp->preccSource)
                  && (pcnbp->preccSource != (PRECORDCORE)-1)
+                 // lazy drag not currently in progress: V0.9.7 (2000-12-13) [umoeller]
+                 && (!DrgQueryDragStatus())
                )
             {
                 // initialize lazy drag just as if the
                 // user had pressed Alt+MB2
                 cnrhInitDrag(pftpd->hwndTypesCnr,
-                                pcnbp->preccSource,
-                                CN_PICKUP,
-                                DRAG_RMF,
-                                DO_MOVEABLE);
+                             pcnbp->preccSource,
+                             CN_PICKUP,
+                             DRAG_RMF,
+                             DO_MOVEABLE);
             }
         break; }
 
@@ -2202,13 +2350,13 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSMI_FILETYPES_DROP:
         {
             DrgLazyDrop(pftpd->hwndTypesCnr,
-                        DO_DEFAULT,
+                        DO_MOVE,        // fixed V0.9.7 (2000-12-13) [umoeller]
                         &(pcnbp->ptlMenuMousePos));
                             // this is the pointer position at
                             // the time the context menu was
-                            // requested, which should be
-                            // over the target record core
-                            // or container whitespace
+                            // requested (in Desktop coordinates),
+                            // which should be over the target record
+                            // core or container whitespace
         break; }
 
         /*

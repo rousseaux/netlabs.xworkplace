@@ -873,7 +873,8 @@
     /* XWorkplace 0.9.7 */
         BYTE        fFixLockInPlace;
                         // "Workplace Shell" menus p3: submenu, checkmark
-
+        BYTE        fDTMLogoffNetwork;
+                        // "Logoff network now" desktop menu item (XFldDesktop)
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -1007,8 +1008,8 @@
 
                 pszWarp3FldrView,
                 pszSmallIcons,
-                pszFlowed,
-                pszNonFlowed,
+                pszFlowed,          // "multiple columns"
+                pszNonFlowed,       // "single column"
                 pszNoGrid,
                 pszWarp4MenuBar,    // added V0.9.0
                 pszShowStatusBar,
@@ -1251,9 +1252,13 @@
      *
      ********************************************************************/
 
-    HMODULE cmnQueryMainModuleHandle(VOID);
+    HMODULE cmnQueryMainCodeModuleHandle(VOID);
+
+    #define cmnQueryMainModuleHandle #error Func prototype has changed.
 
     const char* cmnQueryMainModuleFilename(VOID);
+
+    HMODULE cmnQueryMainResModuleHandle(VOID);
 
     /* ******************************************************************
      *
@@ -1328,7 +1333,9 @@
 
     const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID);
 
-    GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout);
+    GLOBALSETTINGS* cmnLockGlobalSettings(const char *pcszSourceFile,
+                                          ULONG ulLine,
+                                          const char *pcszFunction);
 
     VOID cmnUnlockGlobalSettings(VOID);
 

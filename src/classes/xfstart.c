@@ -339,10 +339,13 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
     M_XFldStartup_parent_M_XFolder_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXFldStartup = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXFldStartup = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 
@@ -400,10 +403,11 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconData(M_XFldStartup *somSelf,
     /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsQueryIconData");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_STARTICON1;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_STARTICON1;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));
@@ -421,10 +425,11 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
     /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsQueryIconDataN");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_STARTICON2;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_STARTICON2;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));
@@ -479,10 +484,13 @@ SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
     M_XFldShutdown_parent_M_XFolder_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXFldShutdown = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXFldShutdown = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 
@@ -531,10 +539,11 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconData(M_XFldShutdown *somSelf,
     /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
     M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryIconData");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_SHUTICON1;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_SHUTICON1;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));
@@ -555,10 +564,11 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconDataN(M_XFldShutdown *somSelf,
     /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
     M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryIconDataN");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_SHUTICON2;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_SHUTICON2;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

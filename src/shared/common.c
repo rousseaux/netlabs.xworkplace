@@ -124,6 +124,14 @@
 CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
 CHAR            G_szMessageFile[CCHMAXPATH] = "";
 
+// main module (XFLDR.DLL)
+char            G_szDLLFile[CCHMAXPATH];
+HMODULE         G_hmodDLL = NULLHANDLE;
+
+// res module (XWPRES.DLL)
+HMODULE         G_hmodRes = NULLHANDLE;
+
+// NLS
 HMODULE         G_hmodNLS = NULLHANDLE;
 NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
 GLOBALSETTINGS  *G_pGlobalSettings = NULL;
@@ -140,10 +148,6 @@ CHAR            G_szStatusBarFont[100];
 CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
                 G_szSBTextMultiSel[CCHMAXMNEMONICS];
 ULONG           G_ulStatusBarHeight;
-
-// module handling:
-char            G_szDLLFile[CCHMAXPATH];
-HMODULE         G_hmodDLL;
 
 // Declare runtime prototypes, because there are no headers
 // for these:
@@ -245,19 +249,25 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
 }
 
 /*
- *@@ cmnQueryMainModuleHandle:
+ *@@ cmnQueryMainCodeModuleHandle:
  *      this may be used to retrieve the module handle
  *      of XFLDR.DLL, which was stored by _DLL_InitTerm.
  *
- *      Note that this returns the _main_ module handle.
- *      Use this if you need NLS-independent resources,
- *      e.g. the icons stored in XFLDR.DLL. To get the
- *      NLS module handle, use cmnQueryNLSModuleHandle.
+ *      Note that this returns the _main_ module handle
+ *      (XFLDR.DLL). There are two more query-module
+ *      functions:
+ *
+ *      -- To get the NLS module handle (for dialogs etc.),
+ *         use cmnQueryNLSModuleHandle.
+ *
+ *      -- To get the main resource module handle (for icons
+ *         etc.), use cmnQueryMainResModuleHandle.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from module.c
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: renamed from cmnQueryMainModuleHandle
  */
 
-HMODULE cmnQueryMainModuleHandle(VOID)
+HMODULE cmnQueryMainCodeModuleHandle(VOID)
 {
     return (G_hmodDLL);
 }
@@ -274,6 +284,60 @@ HMODULE cmnQueryMainModuleHandle(VOID)
 const char* cmnQueryMainModuleFilename(VOID)
 {
     return (G_szDLLFile);
+}
+
+/*
+ *@@ cmnQueryMainResModuleHandle:
+ *      this may be used to retrieve the module handle
+ *      of XWPRES.DLL, which contains resources that
+ *      are independent of language (icons, bitmaps etc.).
+ *
+ *      This loads the DLL on the first call.
+ *
+ *      This has been added with V0.9.7 to separate the
+ *      resources out of the main module handle to speed
+ *      up link time, which became annoyingly slow with
+ *      all the resources.
+ *
+ *@@added V0.9.7 (2000-12-13) [umoeller]
+ */
+
+HMODULE cmnQueryMainResModuleHandle(VOID)
+{
+    BOOL fLocked = FALSE;
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
+        {
+            if (G_hmodRes == NULLHANDLE)
+            {
+                // not loaded yet:
+                CHAR    szError[100],
+                        szResModule[CCHMAXPATH];
+
+                if (cmnQueryXWPBasePath(szResModule))
+                {
+                    strcat(szResModule, "\\bin\\xwpres.dll");
+                    DosLoadModule(szError,
+                                  sizeof(szError),
+                                  szResModule,
+                                  &G_hmodRes);
+                }
+            }
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    DosExitMustComplete(&ulNesting);
+
+    return (G_hmodRes);
 }
 
 /* ******************************************************************
@@ -343,7 +407,9 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
  *      this routine returns the path of where XFolder was installed,
  *      i.e. the parent directory of where the xfldr.dll file
  *      resides, without a trailing backslash (e.g. "C:\XFolder").
+ *
  *      The buffer to copy this to is assumed to be CCHMAXPATH in size.
+ *
  *      As opposed to versions before V0.81, OS2.INI is no longer
  *      needed for this to work. The path is retrieved from the
  *      DLL directly by evaluating what was passed to _DLL_InitTerm.
@@ -383,12 +449,14 @@ BOOL cmnQueryXWPBasePath(PSZ pszPath)
 
 const char* cmnQueryLanguageCode(VOID)
 {
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             if (G_szLanguageCode[0] == '\0')
                 PrfQueryProfileString(HINI_USERPROFILE,
@@ -402,13 +470,11 @@ const char* cmnQueryLanguageCode(VOID)
                 _Pmpf(( "cmnQueryLanguageCode: %s", szLanguageCode ));
             #endif
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -428,12 +494,14 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
 {
     BOOL brc = FALSE;
 
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             strcpy(G_szLanguageCode, pszLanguage);
             G_szLanguageCode[3] = 0;
@@ -442,13 +510,11 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
                                         INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
                                         G_szLanguageCode);
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -471,12 +537,14 @@ const char* cmnQueryHelpLibrary(VOID)
 {
     const char *rc = 0;
 
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             if (cmnQueryXWPBasePath(G_szHelpLibrary))
             {
@@ -490,13 +558,11 @@ const char* cmnQueryHelpLibrary(VOID)
                 rc = G_szHelpLibrary;
             }
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -544,12 +610,14 @@ const char* cmnQueryMessageFile(VOID)
 {
     const char *rc = 0;
 
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             if (cmnQueryXWPBasePath(G_szMessageFile))
             {
@@ -563,13 +631,11 @@ const char* cmnQueryMessageFile(VOID)
                 rc = G_szMessageFile;
             }
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -595,12 +661,14 @@ const char* cmnQueryMessageFile(VOID)
 
 HMODULE cmnQueryIconsDLL(VOID)
 {
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             // first query?
             if (G_hmodIconsDLL == NULLHANDLE)
@@ -649,13 +717,11 @@ HMODULE cmnQueryIconsDLL(VOID)
             #endif
 
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -680,12 +746,14 @@ PSZ cmnQueryBootLogoFile(VOID)
 {
     PSZ pszReturn = 0;
 
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             pszReturn = prfhQueryProfileData(HINI_USER,
                                              INIAPP_XWORKPLACE,
@@ -701,13 +769,11 @@ PSZ cmnQueryBootLogoFile(VOID)
                 pszReturn = strdup(szBootLogoFile);
             }
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -1439,12 +1505,14 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             // and reload all NLS strings...
             // do this safely.
             HMODULE hmodOld = G_hmodNLS;
+            BOOL fLocked = FALSE;
             ULONG ulNesting;
             DosEnterMustComplete(&ulNesting);
+
             TRY_LOUD(excpt1)
             {
-                // success:
-                if (krnLock(5000))
+                fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+                if (fLocked)
                 {
                     NLSSTRINGS *pNLSStrings = (NLSSTRINGS*)cmnQueryNLSStrings();
                                             // this allocates and initializes the array
@@ -1457,7 +1525,11 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                     krnUnlock();
                 }
             }
-            CATCH(excpt1) {} END_CATCH();
+            CATCH(excpt1) { } END_CATCH();
+
+            if (fLocked)
+                krnUnlock();
+
             DosExitMustComplete(&ulNesting);
 
             if (hmodOld)
@@ -1486,12 +1558,14 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
 PNLSSTRINGS cmnQueryNLSStrings(VOID)
 {
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             if (G_pNLSStringsGlobal == NULL)
             {
@@ -1499,13 +1573,11 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
                 memset(G_pNLSStringsGlobal, 0, sizeof(NLSSTRINGS));
             }
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -1677,12 +1749,14 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
 {
     const char *rc = 0;
 
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             switch (usSetting)
             {
@@ -1696,13 +1770,11 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
                         rc = G_szSBTextMultiSel;
             }
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -1722,12 +1794,14 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 {
     BOOL    brc = FALSE;
 
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             HAB     habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
             HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
@@ -1787,13 +1861,11 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
             } // end switch(usSetting)
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -1835,12 +1907,14 @@ ULONG cmnQueryStatusBarHeight(VOID)
 
 PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 {
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             ULONG       ulCopied1;
 
@@ -1916,13 +1990,11 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
             }
 
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -1949,24 +2021,24 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 
 const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 {
+    BOOL fLocked = FALSE;
     ULONG ulNesting;
     DosEnterMustComplete(&ulNesting);
 
-    if (krnLock(5000))
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
+        if (fLocked)
         {
             if (G_pGlobalSettings == NULL)
                 cmnLoadGlobalSettings(FALSE);       // load from INI
                         // this locks again
         }
-        CATCH(excpt1) { } END_CATCH();
-
-        krnUnlock();
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 
     DosExitMustComplete(&ulNesting);
 
@@ -1988,9 +2060,11 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
  *@@added V0.9.0 (99-11-14) [umoeller]
  */
 
-GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
+GLOBALSETTINGS* cmnLockGlobalSettings(const char *pcszSourceFile,
+                                      ULONG ulLine,
+                                      const char *pcszFunction)
 {
-    if (krnLock(ulTimeout))
+    if (krnLock(pcszSourceFile, ulLine, pcszFunction))
         return (G_pGlobalSettings);
     else
     {
@@ -2119,6 +2193,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->fDTMArrange = 1;
             G_pGlobalSettings->fDTMSystemSetup = 1;
             G_pGlobalSettings->fDTMLockup = 1;
+            G_pGlobalSettings->fDTMLogoffNetwork = 1; // V0.9.7 (2000-12-13) [umoeller]
             G_pGlobalSettings->fDTMShutdown = 1;
             G_pGlobalSettings->fDTMShutdownMenu = 1;
         break;
@@ -2313,17 +2388,23 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
             if (brc)
             {
-                GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(3000);
-                pGlobalSettings->fTrashDelete = TRUE;
-                cmnUnlockGlobalSettings();
+                GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                if (pGlobalSettings)
+                {
+                    pGlobalSettings->fTrashDelete = TRUE;
+                    cmnUnlockGlobalSettings();
+                }
             }
         }
     } // end if (fEnable)
     else
     {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(3000);
-        pGlobalSettings->fTrashDelete = FALSE;
-        cmnUnlockGlobalSettings();
+        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+        if (pGlobalSettings)
+        {
+            pGlobalSettings->fTrashDelete = FALSE;
+            cmnUnlockGlobalSettings();
+        }
 
         if (krnQueryLock())
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -2388,15 +2469,17 @@ BOOL cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
                          PULONG pulDeleted, // out: if TRUE is returned, no. of deleted objects; can be 0
                          HWND hwndConfirmOwner) // in: if != NULLHANDLE, confirm empty
 {
+    BOOL brc = FALSE;
     XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
     if (pDefaultTrashCan)
     {
-        return (_xwpEmptyTrashCan(pDefaultTrashCan,
-                                  hab,
-                                  pulDeleted,
-                                  hwndConfirmOwner));
+        brc = _xwpEmptyTrashCan(pDefaultTrashCan,
+                                hab,
+                                pulDeleted,
+                                hwndConfirmOwner);
     }
-    return (FALSE);
+
+    return (brc);
 }
 
 /* ******************************************************************
@@ -2672,21 +2755,17 @@ const char* cmnQueryDefaultFont(VOID)
  *      This calls cmnQueryDefaultFont in turn.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: removed krnLock(), which wasn't needed here
  */
 
 VOID cmnSetControlsFont(HWND hwnd,
                         SHORT usIDMin,
                         SHORT usIDMax)
 {
-    if (krnLock(5000))
-    {
-        winhSetControlsFont(hwnd, usIDMin, usIDMax,
-                            (PSZ)cmnQueryDefaultFont());
-        krnUnlock();
-    }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+    winhSetControlsFont(hwnd,
+                        usIDMin,
+                        usIDMax,
+                        (PSZ)cmnQueryDefaultFont());
 }
 
 PFNWP pfnwpOrigStatic = NULL;
@@ -2873,6 +2952,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
         default:
             mrc = (*pfnwpOrigStatic)(hwndStatic, msg, mp1, mp2);
     }
+
     return (mrc);
 }
 

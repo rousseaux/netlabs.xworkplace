@@ -34,26 +34,30 @@
  *         view when it's open, but there can be several XCenter
  *         instances on the system (i.e. one for each screen border).
  *
- *      -- A "widget" is a subwindow of an open XCenter which
+ *      -- A "widget" is a PM subwindow of an open XCenter which
  *         displays something. An open XCenter can contain zero,
  *         one, or many widgets. Every XCenter keeps a list of
  *         widgets together with their settings in its SOM instance
  *         data. This is totally transparent to the widgets.
  *
- *      -- A "widget class" defines a widget. Depending on the
- *         widget class's attributes, there can be one or several
- *         instances of a widget class (the widgets themselves).
- *         If you want a different widget in the XCenter, you need
- *         to write a widget class.
+ *      -- A "widget class" defines a widget. Basically, it's a
+ *         plain C structure (XCENTERWIDGETCLASS) with a PM window
+ *         procedure which is used to create the PM widget windows
+ *         -- the "widget instances". Depending on the widget
+ *         class's attributes, there can be one or several
+ *         instances of a widget class. If you want a different
+ *         widget in the XCenter, you need to write a widget class.
  *
  *         A widget class basically boils down to writing a PM
- *         window class, with additional rules to follow. To
+ *         window class, with some additional rules to follow. To
  *         make things easier, several widget classes can share
  *         the same PM class though.
  *
  *         Some widget classes are built into the XCenter itself
  *         (i.e. reside in XFLDR.DLL), but the XCenter can load
- *         external DLLs too.
+ *         external DLLs too. Several of the widget classes that
+ *         come with XWorkplace have been created as plugins to
+ *         show you how it's done (see the src\widgets directory).
  *
  *      -- A "widget plugin DLL" is a separate DLL which resides
  *         in the "plugins\xcenter" directory of the XWorkplace
@@ -72,7 +76,7 @@
  *         made public to the widgets as well.
  *
  *      -- Each known widget class (either one of the built-ins in
- *         this file or those loaded from a plugin DLL) is described
+ *         XFLDR.DLL or those loaded from a plugin DLL) is described
  *         in an XCENTERWIDGETCLASS structure. An array of those
  *         structures must be returned by widget plugin DLLs so
  *         that the XCenter can know what plugin classes are in
@@ -83,12 +87,13 @@
  *         a widget which has been configured for display. The
  *         widgets use their own class-specific setup strings
  *         to save and restore their data. This saves the widgets
- *         from having to maintain their own data in OS2.INI;
- *         the XCenter will simply dump all the widget strings
- *         with XCenter::wpSaveState.
+ *         from having to maintain their own data in OS2.INI.
+ *         The XCenter will simply dump all the widget strings
+ *         with its other data (for WPS programmers: this happens
+ *         in XCenter::wpSaveState).
  *
- *      -- While the XCenter is open, each widget receives an
- *         XCENTERWIDGETVIEW structure on WM_CREATE for itself.
+ *      -- When a XCenter is opened, each widget receives an
+ *         XCENTERWIDGET structure on WM_CREATE for itself.
  *         This contains all kinds of data specific to the widget.
  *         Other than setting a few of these fields on WM_CREATE,
  *         the XCenter does not care much about what the widget
@@ -97,10 +102,10 @@
  *         pass all unprocessed messages to ctrDefWidgetProc
  *         instead of WinDefWindowProc to avoid resource leaks.
  *
- *         After WM_CREATE, the XCenter stores a pointer to the
- *         XCENTERWIDGETVIEW in the QWL_USER window word of the
- *         widget (see PMREF). There is a "pUser" pointer in
- *         that structure that the widget can use for allocating
+ *         On WM_CREATE, the widget must store the pointer to
+ *         its XCENTERWIDGET in its QWL_USER window word
+ *         (see PMREF). There is a "pUser" pointer in that
+ *         structure that the widget can use for allocating
  *         its own data.
  *
  *         For details, see ctrDefWidgetProc.
@@ -110,9 +115,10 @@
  *      Again, each widget can store its own data in its window
  *      words. This is no problem while the widget is running.
  *      Saving the settings is a bit more tricky because there
- *      can be many widgets in many XCenters, so a fixed location
- *      in OS2.INI, for example, for saving widget settings isn't
- *      such a good idea.
+ *      can be many widgets in many XCenters. Even though a
+ *      widget programmer may choose to use a fixed location
+ *      in OS2.INI, for example, for saving widget settings,
+ *      this isn't such a good idea.
  *
  *      The XCenter offers widgets to store their data together
  *      with the XCenter instance settings as a "setup string".
@@ -124,28 +130,26 @@
  *      chooses to do so, its instance data ends up somewhere in
  *      OS2.INI (thru the regular wpSaveState/wpRestoreState
  *      mechanism). The XCenter takes care of unpacking the setup
- *      strings for the widgets, so all the widgets has to do
- *      is convert its binary data into a string and set itself
- *      up according to a setup string. XFLDR.DLL exports a few
- *      helper functions that plugins can import to aid in that
- *      (see ctrScanSetupString, ctrParseColorString, ctrFreeSetupValue,
- *      and ctrSetSetupString).
+ *      strings for the widgets, so the widget should only be
+ *      able to do two things:
  *
- *      Setup strings can _not_ however
+ *      --  to parse a setup string and set up its binary data;
  *
- *      --  use a semicolon for separating the parts; instead,
- *          use some other character. If you use the built-in
- *          helpers, you must use the SETUP_SEPARATOR separator
- *          defined in shared\center.h.
+ *      --  to create a setup string from its binary data.
  *
- *      --  use "=" in their data, because this is used to
- *          separate keywords and data.
+ *      XFLDR.DLL exports a few helper functions that plugins can
+ *      import to aid in that (see ctrScanSetupString,
+ *      ctrParseColorString, ctrFreeSetupValue, and ctrSetSetupString).
  *
- *      Only by following these rules, the setup strings can be
- *      imported and exported together with the other WPS
- *      setup strings of an XCenter. That is, the complete
- *      XCenter setup with all widgets and their settings can
- *      be described in a setup string.
+ *      Using setup strings has the following advantages:
+ *
+ *      --  The data is stored together with the XCenter instance.
+ *          When the XCenter gets deleted, your data is cleaned
+ *          up automatically.
+ *
+ *      --  The XCenter can produce a single WPS setup string
+ *          for itself so that the same XCenter with all its
+ *          widgets can be recreated somewhere else.
  *
  *      XCenter also offers support for widget settings dialogs
  *      which work on both open widget settings and from the
@@ -163,8 +167,9 @@
  *      default widget window proc (ctrDefWidgetProc).
  *
  *      The "engine" of the XCenter which does all the hard stuff
- *      is in xcenter\ctr_engine.c. You better not touch that if
- *      you only want to write a plugin.
+ *      (settings management, window creation, window reformatting,
+ *      DLL management, etc.) is in xcenter\ctr_engine.c. You
+ *      better not touch that  if you only want to write a plugin.
  *
  *      Function prefix for this file:
  *      --  ctr*
@@ -290,7 +295,6 @@ PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
     if ((pcszSetupString) && (pcszKeyword))
     {
         ULONG       ulKeywordLen = strlen(pcszKeyword);
-        ULONG       ulSepLen = strlen(SETUP_SEPARATOR);
         const char  *pKeywordThis = pcszSetupString,
                     *pEquals = strchr(pcszSetupString, '=');
 
@@ -300,7 +304,7 @@ PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
             {
                 // keyword found:
                 // get value
-                const char *pEOValue = strstr(pEquals, SETUP_SEPARATOR);
+                const char *pEOValue = strchr(pEquals, ';');
                 if (pEOValue)
                     // value is before another separator:
                     pszValue = strhSubstr(pEquals + 1, pEOValue);
@@ -314,14 +318,14 @@ PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
 
             // else not our keyword:
             // go on
-            pKeywordThis = strstr(pEquals, SETUP_SEPARATOR);
+            pKeywordThis = strchr(pEquals, ';');
             if (!pKeywordThis)
                 // was last keyword:
                 break; // while
             else
             {
                 // not last keyword: search on after separator
-                pKeywordThis += ulSepLen;
+                pKeywordThis++;
                 pEquals = strchr(pKeywordThis, '=');
             }
 
@@ -388,7 +392,7 @@ VOID ctrFreeSetupValue(PSZ p)
  *
  *      If the affected widget is currently open and
  *      supports updating itself according to a setup
- *      string (i.e. if XCENTERWIDGETVIEW.pScanSetupString
+ *      string (i.e. if XCENTERWIDGET.pScanSetupString
  *      is != NULL), that function gets called from here.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
@@ -405,7 +409,7 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
     {
         PXCENTERWINDATA pXCenterData = pSettingsTemp->pXCenterData;
         PXCENTERWIDGETSETTING pSetting = pSettingsTemp->pSetting;
-        PXCENTERWIDGETVIEW pViewData = pSettingsTemp->pViewData;
+        PXCENTERWIDGET pWidget = pSettingsTemp->pWidget;
         if (pSetting)
         {
             // change setup string in the settings structure
@@ -422,13 +426,19 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
             brc = TRUE;
 
             // do we have an open view?
-            if (pViewData)
+            if (pWidget)
             {
                 // yes:
-                if (pViewData->pSetupStringChanged)
+                // send notification
+                WinSendMsg(pWidget->hwndWidget,
+                           WM_CONTROL,
+                           MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                        XN_SETUPCHANGED),
+                           (MPARAM)pSetting->pszSetupString);
+                /* if (pWidget->pSetupStringChanged)
                     // updating supported:
-                    pViewData->pSetupStringChanged(pViewData,
-                                                   pSetting->pszSetupString);
+                    pWidget->pSetupStringChanged(pWidget,
+                                                 pSetting->pszSetupString); */
             }
 
             _wpSaveDeferred(pXCenterData->somSelf);
@@ -482,30 +492,30 @@ BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
 
 VOID DwgtContextMenu(HWND hwnd)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        HWND hwndClient = pViewData->pGlobals->hwndClient;
+        HWND hwndClient = pWidget->pGlobals->hwndClient;
         PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
         if (pXCenterData)
         {
             PXCENTERWIDGETCLASS pClass = ctrpFindClass(pXCenterData->somSelf,
-                                                       pViewData->pcszWidgetClass);
+                                                       pWidget->pcszWidgetClass);
             if (pClass)
             {
                 POINTL  ptl;
                 WinQueryPointerPos(HWND_DESKTOP, &ptl);
 
                 // enable "properties" if class has show-settings proc
-                WinEnableMenuItem(pViewData->hwndContextMenu,
+                WinEnableMenuItem(pWidget->hwndContextMenu,
                                   ID_CRMI_PROPERTIES,
                                   (pClass->pShowSettingsDlg != 0));
 
                 // enable "help" if widget has specified help
-                WinEnableMenuItem(pViewData->hwndContextMenu,
+                WinEnableMenuItem(pWidget->hwndContextMenu,
                                   ID_CRMI_HELP,
-                                  (    (pViewData->pcszHelpLibrary != NULL)
-                                    && (pViewData->ulHelpPanelID != 0)
+                                  (    (pWidget->pcszHelpLibrary != NULL)
+                                    && (pWidget->ulHelpPanelID != 0)
                                   ));
 
                 // draw source emphasis around widget
@@ -517,7 +527,7 @@ VOID DwgtContextMenu(HWND hwnd)
                 // show menu!!
                 WinPopupMenu(HWND_DESKTOP,
                              hwnd,
-                             pViewData->hwndContextMenu,
+                             pWidget->hwndContextMenu,
                              ptl.x,
                              ptl.y,
                              0,
@@ -536,13 +546,13 @@ VOID DwgtContextMenu(HWND hwnd)
 VOID DwgtMenuEnd(HWND hwnd,
                  HWND hwndMenu)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        if (hwndMenu == pViewData->hwndContextMenu)
+        if (hwndMenu == pWidget->hwndContextMenu)
         {
-            WinInvalidateRect(pViewData->pGlobals->hwndClient, NULL, FALSE);
-            WinInvalidateRect(pViewData->pGlobals->hwndFrame, NULL, FALSE);
+            WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
+            WinInvalidateRect(pWidget->pGlobals->hwndFrame, NULL, FALSE);
         }
     }
 }
@@ -555,13 +565,13 @@ VOID DwgtMenuEnd(HWND hwnd,
 VOID DwgtCommand(HWND hwnd,
                  USHORT usCmd)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        HWND hwndClient = pViewData->pGlobals->hwndClient;
+        HWND hwndClient = pWidget->pGlobals->hwndClient;
         PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
         ULONG ulMyIndex = -1;
-        if (pViewData)
+        if (pWidget)
         {
             switch (usCmd)
             {
@@ -570,18 +580,18 @@ VOID DwgtCommand(HWND hwnd,
                     // have the widget show it with the XCenter frame
                     // as its owner
                     ctrpShowSettingsDlg(pXCenterData,
-                                        pViewData);
+                                        pWidget);
                 break;
 
                 case ID_CRMI_HELP:
-                    if (    (pViewData->pcszHelpLibrary)
-                         && (pViewData->ulHelpPanelID)
+                    if (    (pWidget->pcszHelpLibrary)
+                         && (pWidget->ulHelpPanelID)
                        )
                     {
                         // widget has specified help itself:
                         _wpDisplayHelp(pXCenterData->somSelf,
-                                       pViewData->ulHelpPanelID,
-                                       (PSZ)pViewData->pcszHelpLibrary);
+                                       pWidget->ulHelpPanelID,
+                                       (PSZ)pWidget->pcszHelpLibrary);
                     }
                     else
                     {
@@ -615,10 +625,10 @@ VOID DwgtCommand(HWND hwnd,
 
 VOID DwgtDestroy(HWND hwnd)
 {
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pViewData)
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        HWND hwndClient = pViewData->pGlobals->hwndClient;
+        HWND hwndClient = pWidget->pGlobals->hwndClient;
         PXCENTERWINDATA pXCenterData
             = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
                                                  QWL_USER);
@@ -628,25 +638,32 @@ VOID DwgtDestroy(HWND hwnd)
 
         if (pXCenterData)
         {
-            if (!lstRemoveItem(&pXCenterData->llWidgetsLeft,
-                               pViewData))
+            // remove the widget from the list of open
+            // views in the XCenter... the problem here
+            // is that we only see the XCENTERWIDGET
+            // struct, which is really part of the
+            // WIDGETVIEWSTATE structure in the llWidgets
+            // list... so XCENTERWIDGET must be the first
+            // member of the WIDGETVIEWSTATE structure!
+            if (!lstRemoveItem(&pXCenterData->llWidgets,
+                               pWidget))
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "lstRemoveItem failed.");
         }
 
-        if (pViewData->pcszWidgetClass)
+        if (pWidget->pcszWidgetClass)
         {
-            free((PSZ)pViewData->pcszWidgetClass);
-            pViewData->pcszWidgetClass = NULL;
+            free((PSZ)pWidget->pcszWidgetClass);
+            pWidget->pcszWidgetClass = NULL;
         }
 
-        if (pViewData->hwndContextMenu)
+        if (pWidget->hwndContextMenu)
         {
-            WinDestroyWindow(pViewData->hwndContextMenu);
-            pViewData->hwndContextMenu = NULLHANDLE;
+            WinDestroyWindow(pWidget->hwndContextMenu);
+            pWidget->hwndContextMenu = NULLHANDLE;
         }
 
-        free(pViewData);
+        free(pWidget);
         WinSetWindowPtr(hwnd, QWL_USER, 0);
 
         WinPostMsg(hwndClient,
@@ -670,13 +687,13 @@ VOID DwgtDestroy(HWND hwnd)
  *         dropped on the widget.
  *
  *      -- On WM_CREATE, the widget receives a pointer to
- *         its XCENTERWIDGETVIEW structure in mp1. After
+ *         its XCENTERWIDGET structure in mp1. After
  *         the window has been successfully created, XCenter
  *         stores that pointer in QWL_USER of the widget's
  *         window words.
  *
  *      -- On WM_CREATE, the widget should write its desired
- *         width into XCENTERWIDGETVIEW.cx. It can also
+ *         width into XCENTERWIDGET.cx. It can also
  *         write the minimum height it requires into the
  *         cy field (for example, if you want your control
  *         to have at least the system icon size or
@@ -702,7 +719,7 @@ VOID DwgtDestroy(HWND hwnd)
  *
  *      -- WM_COMMAND command values below 1000 are reserved.
  *         If you extend the context menu given to you in
- *         XCENTERWIDGETVIEW.hwndContextMenu, you must use
+ *         XCENTERWIDGET.hwndContextMenu, you must use
  *         menu item IDs >= 1000.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]

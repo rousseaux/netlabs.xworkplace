@@ -568,7 +568,7 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
     _Pmpf(("Entering hookInit"));
 
     if (G_hmtxGlobalHotkeys == NULLHANDLE)
-        arc = DosCreateMutexSem(NULL,        // unnameed
+        arc = DosCreateMutexSem(NULL,        // unnamed
                                 &G_hmtxGlobalHotkeys,
                                 DC_SEM_SHARED,
                                 FALSE);      // initially unowned

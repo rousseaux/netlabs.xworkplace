@@ -756,12 +756,8 @@ SOM_Scope void  SOMLINK xwstr_wpUnInitData(XWPString *somSelf)
  *      object was created.
  *      The parent method must be called first.
  *
- *      Even though WPSREF doesn't really say so, this method
- *      must be used similar to a C++ copy constructor
- *      when the instance data contains pointers. Since when
- *      objects are copied, SOM just copies the binary instance
- *      data, you get two objects with instance pointers pointing
- *      to the same object, which can only lead to problems.
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
@@ -1316,10 +1312,13 @@ SOM_Scope void  SOMLINK xwstrM_wpclsInitData(M_XWPString *somSelf)
     M_XWPString_parent_M_WPAbstract_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPString = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXWPString = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 
@@ -1370,10 +1369,11 @@ SOM_Scope ULONG  SOMLINK xwstrM_wpclsQueryIconData(M_XWPString *somSelf,
     /* M_XWPStringData *somThis = M_XWPStringGetData(somSelf); */
     M_XWPStringMethodDebug("M_XWPString","xwstrM_wpclsQueryIconData");
 
-    if (pIconInfo) {
+    if (pIconInfo)
+    {
         pIconInfo->fFormat = ICON_RESOURCE;
         pIconInfo->resid   = ID_ICONXWPSTRING;
-        pIconInfo->hmod    = cmnQueryMainModuleHandle();
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

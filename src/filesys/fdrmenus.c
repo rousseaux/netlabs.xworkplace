@@ -2744,7 +2744,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
@@ -2776,11 +2776,11 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_FC_SHOWICONS:
             pGlobalSettings->FCShowIcons = ulExtra;
-            if (ulExtra)
+            /* if (ulExtra)
                 // enabled: show warning msg box (video driver bugs)
                 cmnMessageBoxMsg(pcnbp->hwndFrame,
                                  116, 117,
-                                 MB_OK);
+                                 MB_OK); */
         break;
 
         case DID_UNDO:
@@ -2888,7 +2888,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
@@ -3067,7 +3067,7 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   USHORT usNotifyCode,
                                   ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 

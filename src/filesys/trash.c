@@ -1385,62 +1385,78 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
 BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
 {
     BOOL brc = FALSE;
+    BOOL fLocked = FALSE;
 
-    if (krnLock(5000))
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
-        if (pabSupportedDrives)
-        {
-            // drives specified:
-            memcpy(G_abSupportedDrives, pabSupportedDrives, CB_SUPPORTED_DRIVES);
-            // write to INI
-            PrfWriteProfileData(HINI_USER,
-                                INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
-                                G_abSupportedDrives,
-                                sizeof(G_abSupportedDrives));
-        }
-        else
-        {
-            // pointer is NULL:
-            // CHAR    szFSType[30];
-            ULONG   ulLogicalDrive = 3;     // start with drive C:
-            BYTE    bIndex = 0;             // index into G_abSupportedDrives
+        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
 
-            memset(G_abSupportedDrives, 0, sizeof(G_abSupportedDrives));
-
-            for (ulLogicalDrive = 3;
-                 ulLogicalDrive < CB_SUPPORTED_DRIVES + 3;
-                 ulLogicalDrive++)
+        if (fLocked)
+        {
+            if (pabSupportedDrives)
             {
-                APIRET  arc = doshAssertDrive(ulLogicalDrive);
+                // drives specified:
+                memcpy(G_abSupportedDrives, pabSupportedDrives, CB_SUPPORTED_DRIVES);
+                // write to INI
+                PrfWriteProfileData(HINI_USER,
+                                    INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
+                                    G_abSupportedDrives,
+                                    sizeof(G_abSupportedDrives));
+            }
+            else
+            {
+                // pointer is NULL:
+                // CHAR    szFSType[30];
+                ULONG   ulLogicalDrive = 3;     // start with drive C:
+                BYTE    bIndex = 0;             // index into G_abSupportedDrives
 
-                switch (arc)
+                memset(G_abSupportedDrives, 0, sizeof(G_abSupportedDrives));
+
+                for (ulLogicalDrive = 3;
+                     ulLogicalDrive < CB_SUPPORTED_DRIVES + 3;
+                     ulLogicalDrive++)
                 {
-                    case NO_ERROR:
-                        G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
-                    break;
+                    APIRET  arc = doshAssertDrive(ulLogicalDrive);
 
-                    case ERROR_INVALID_DRIVE:
-                        G_abSupportedDrives[bIndex] = XTRC_INVALID;
-                    break;
+                    switch (arc)
+                    {
+                        case NO_ERROR:
+                            G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
+                        break;
 
-                    default:
-                        // this includes ERROR_NOT_READY, ERROR_NOT_SUPPORTED
-                        G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
+                        case ERROR_INVALID_DRIVE:
+                            G_abSupportedDrives[bIndex] = XTRC_INVALID;
+                        break;
+
+                        default:
+                            // this includes ERROR_NOT_READY, ERROR_NOT_SUPPORTED
+                            G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
+                    }
+
+                    bIndex++;
                 }
 
-                bIndex++;
+                // delete INI key
+                PrfWriteProfileString(HINI_USER,
+                                      INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
+                                      NULL);        // delete
             }
 
-            // delete INI key
-            PrfWriteProfileString(HINI_USER,
-                                  INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
-                                  NULL);        // delete
+            brc = TRUE;
         }
-
-        brc = TRUE;
-
-        krnUnlock();
     }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -1546,6 +1562,9 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
     PSUBCLASSEDTRASHFRAME   pstfNew = NULL;
     BOOL                    fSemOwned = FALSE;
 
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     TRY_LOUD(excpt1)
     {
         // now check if frame wnd has already been subclassed;
@@ -1598,6 +1617,8 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
         DosReleaseMutexSem(hmtxSubclassedTrashCans);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -1916,7 +1937,7 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         USHORT usItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 

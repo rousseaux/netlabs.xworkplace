@@ -136,12 +136,8 @@ SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
  *      object was created.
  *      The parent method must be called first.
  *
- *      Even though WPSREF doesn't really say so, this method
- *      must be used similar to a C++ copy constructor
- *      when the instance data contains pointers. Since when
- *      objects are copied, SOM just copies the binary instance
- *      data, you get two objects with instance pointers pointing
- *      to the same object, which can only lead to problems.
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
@@ -685,10 +681,13 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
     // M_XFldDisk_parent_M_XFldObject_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXFldDisk = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXFldDisk = TRUE;
+            krnUnlockGlobals();
+        }
     }
 
     // memset(&apDrives, 0, sizeof(apDrives));

@@ -48,7 +48,9 @@
      *                                                                  *
      ********************************************************************/
 
-    BOOL krnLock(ULONG ulTimeout);
+    BOOL krnLock(const char *pcszSourceFile,
+                 ULONG ulLine,
+                 const char *pcszFunction);
 
     VOID krnUnlock(VOID);
 
@@ -253,7 +255,9 @@
 
         PCKERNELGLOBALS krnQueryGlobals(VOID);
 
-        PKERNELGLOBALS krnLockGlobals(ULONG ulTimeout);
+        PKERNELGLOBALS krnLockGlobals(const char *pcszSourceFile,
+                                      ULONG ulLine,
+                                      const char *pcszFunction);
 
         VOID krnUnlockGlobals(VOID);
 

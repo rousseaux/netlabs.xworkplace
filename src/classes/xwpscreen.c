@@ -296,10 +296,13 @@ SOM_Scope void  SOMLINK xwpscrM_wpclsInitData(M_XWPScreen *somSelf)
     M_XWPScreen_parent_M_WPSystem_wpclsInitData(somSelf);
 
     {
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPScreen = TRUE;
-        krnUnlockGlobals();
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXWPScreen = TRUE;
+            krnUnlockGlobals();
+        }
     }
 }
 
@@ -376,7 +379,7 @@ SOM_Scope ULONG  SOMLINK xwpscrM_wpclsQueryIconData(M_XWPScreen *somSelf,
     {
         pIconInfo->fFormat = ICON_RESOURCE;
         pIconInfo->resid   = ID_ICONXWPSCREEN;
-        pIconInfo->hmod    = cmnQueryMainModuleHandle();
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
     return (sizeof(ICONINFO));

@@ -100,6 +100,12 @@ interface XCenter : WPAbstract
     ULONG ulPosition;               // 0 = bottom (XCENTER_BOTTOM)
                                     // 1 = top (XCENTER_TOP)
 
+    ULONG ulDisplayStyle;           // 0 = button (XCS_BUTTON)
+                                    // 1 = flat (XCS_FLAT)
+
+    BOOL fHelpDisplayed;            // TRUE after the first open of the XCenter,
+                                    // when introductory help has been displayed.
+
     HWND hwndOpenView;              // if != NULLHANDLE, currently open XCenter view
 
     BOOL fShowingOpenViewMenu;      // TRUE if context menu on XCenter client

@@ -104,9 +104,9 @@ ew */
  ********************************************************************/
 
 // width of outer widget border:
-#define WIDGET_BORDER       1
+#define WIDGET_BORDER           1
 // width of window button borders:
-#define BUTTON_BORDER       2
+#define THICK_BUTTON_BORDER     2
 
 // string used for separating filters in setup strings;
 // this better not appear in window titles
@@ -128,7 +128,7 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #define WNDCLASS_WIDGET_WINLIST "XWPCenterWinlistWidget"
 
-XCENTERWIDGETCLASS G_WidgetClasses
+XCENTERWIDGETCLASS G_WidgetClasses[]
     = {
         WNDCLASS_WIDGET_WINLIST,
         0,
@@ -239,7 +239,7 @@ RESOLVEFUNCTION G_aImports[] =
 /*
  *@@ WINLISTSETUP:
  *      instance data to which setup strings correspond.
- *      This is also a member of WINLISTWIDGETDATA.
+ *      This is also a member of WINLISTPRIVATE.
  *
  *      Putting these settings into a separate structure
  *      is no requirement, but comes in handy if you
@@ -263,16 +263,16 @@ typedef struct _WINLISTSETUP
 } WINLISTSETUP, *PWINLISTSETUP;
 
 /*
- *@@ WINLISTWIDGETDATA:
+ *@@ WINLISTPRIVATE:
  *      more window data for the "Winlist" widget.
  *
  *      An instance of this is created on WM_CREATE
- *      fnwpWinlistWidget and stored in XCENTERWIDGETVIEW.pUser.
+ *      fnwpWinlistWidget and stored in XCENTERWIDGET.pUser.
  */
 
-typedef struct _WINLISTWIDGETDATA
+typedef struct _WINLISTPRIVATE
 {
-    PXCENTERWIDGETVIEW pViewData;
+    PXCENTERWIDGET pWidget;
             // reverse ptr to general widget data ptr; we need
             // that all the time and don't want to pass it on
             // the stack with each function call
@@ -318,9 +318,9 @@ typedef struct _WINLISTWIDGETDATA
     PSWCNTRL    pCtrlActive;
             // ptr into pswBlock for last active window or NULL if none
 
-} WINLISTWIDGETDATA, *PWINLISTWIDGETDATA;
+} WINLISTPRIVATE, *PWINLISTPRIVATE;
 
-VOID ScanSwitchList(PWINLISTWIDGETDATA pWinlistData);
+VOID ScanSwitchList(PWINLISTPRIVATE pPrivate);
 
 /* ******************************************************************
  *
@@ -445,18 +445,18 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "BGNDCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp);
 
-    sprintf(szTemp, "TEXTCOL=%06lX" SETUP_SEPARATOR,
+    sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s" SETUP_SEPARATOR,
+        sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp);
     }
@@ -484,7 +484,7 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
         }
 
         // add terminator
-        pxstrcat(pstrSetup, SETUP_SEPARATOR);
+        pxstrcat(pstrSetup, ";");
     }
 }
 
@@ -877,35 +877,9 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /* ******************************************************************
  *
- *   Callbacks stored in XCENTERWIDGETVIEW
+ *   Callbacks stored in XCENTERWIDGETCLASS
  *
  ********************************************************************/
-
-/*
- *@@ WwgtSetupStringChanged:
- *      this gets called from ctrSetSetupString if
- *      the setup string for an open widget has changed.
- *
- *      This procedure's address is stored in
- *      XCENTERWIDGETVIEW so that the XCenter knows that
- *      we can do this.
- */
-
-VOID EXPENTRY WwgtSetupStringChanged(PXCENTERWIDGETVIEW pViewData,
-                                     const char *pcszNewSetupString)
-{
-    PWINLISTWIDGETDATA pWinlistData = (PWINLISTWIDGETDATA)pViewData->pUser;
-    if (pWinlistData)
-    {
-        // reinitialize the setup data
-        WwgtClearSetup(&pWinlistData->Setup);
-        WwgtScanSetup(pcszNewSetupString, &pWinlistData->Setup);
-
-        // rescan switch list, because filters might have changed
-        ScanSwitchList(pWinlistData);
-        WinInvalidateRect(pViewData->hwndWidget, NULL, FALSE);
-    }
-}
 
 /*
  *@@ WwgtShowSettingsDlg:
@@ -913,7 +887,7 @@ VOID EXPENTRY WwgtSetupStringChanged(PXCENTERWIDGETVIEW pViewData,
  *      dialog.
  *
  *      This procedure's address is stored in
- *      XCENTERWIDGETVIEW so that the XCenter knows that
+ *      XCENTERWIDGET so that the XCenter knows that
  *      we can do this.
  *
  *      When calling this function, the XCenter expects
@@ -980,7 +954,7 @@ VOID GetPaintableRect(HWND hwnd,
     // does this API need an anchor block for to
     // do a couple of additions?!?
     /*
-    WinInflateRect(pViewData->hab,
+    WinInflateRect(pWidget->hab,
                    prcl,
                    -WIDGET_BORDER,
                    -WIDGET_BORDER); */
@@ -997,7 +971,7 @@ VOID GetPaintableRect(HWND hwnd,
  *      specified switch control is filtered.
  */
 
-BOOL IsCtrlFiltered(PWINLISTWIDGETDATA pWinlistData,
+BOOL IsCtrlFiltered(PWINLISTPRIVATE pPrivate,
                     PSWCNTRL pCtrl)
 {
     BOOL brc = FALSE;
@@ -1006,12 +980,12 @@ BOOL IsCtrlFiltered(PWINLISTWIDGETDATA pWinlistData,
     if ((pCtrl->uchVisibility & SWL_VISIBLE) == 0)
         brc = TRUE;
     // rule out the XCenter frame
-    else if (pCtrl->hwnd == pWinlistData->pViewData->pGlobals->hwndFrame)
+    else if (pCtrl->hwnd == pPrivate->pWidget->pGlobals->hwndFrame)
         brc = TRUE;
     else
     {
         // go thru user-defined filters
-        PLISTNODE pNode = plstQueryFirstNode(&pWinlistData->Setup.llFilters);
+        PLISTNODE pNode = plstQueryFirstNode(&pPrivate->Setup.llFilters);
         while (pNode)
         {
             PSZ pszFilterThis = (PSZ)pNode->pItemData;
@@ -1030,39 +1004,39 @@ BOOL IsCtrlFiltered(PWINLISTWIDGETDATA pWinlistData,
 /*
  *@@ ScanSwitchList:
  *      scans or rescans the PM task list (switch list)
- *      and initializes all data in WINLISTWIDGETDATA
+ *      and initializes all data in WINLISTPRIVATE
  *      accordingly.
  *
  *      This does not repaint the widget.
  */
 
-VOID ScanSwitchList(PWINLISTWIDGETDATA pWinlistData)
+VOID ScanSwitchList(PWINLISTPRIVATE pPrivate)
 {
     ULONG       ul;
     // we must mark the last valid item to paint
     // so that the paint routines can make it a bit wider
     PSWCNTRL    pCtrlLast2Paint = NULL;
 
-    if (pWinlistData->pswBlock)
+    if (pPrivate->pswBlock)
     {
         // not first call: free previous
-        pwinhFree(pWinlistData->pswBlock);
-        pWinlistData->pCtrlActive = NULL;
+        pwinhFree(pPrivate->pswBlock);
+        pPrivate->pCtrlActive = NULL;
     }
 
-    pWinlistData->pswBlock = pwinhQuerySwitchList(pWinlistData->pViewData->habWidget);
+    pPrivate->pswBlock = pwinhQuerySwitchList(pPrivate->pWidget->habWidget);
                         // calls WinQuerySwitchList
 
-    pWinlistData->cShow = 0;
+    pPrivate->cShow = 0;
 
-    if (pWinlistData->pswBlock)
+    if (pPrivate->pswBlock)
     {
         // now go filter and get icons
         for (ul = 0;
-             ul < pWinlistData->pswBlock->cswentry;
+             ul < pPrivate->pswBlock->cswentry;
              ul++)
         {
-            PSWCNTRL pCtrlThis = &pWinlistData->pswBlock->aswentry[ul].swctl;
+            PSWCNTRL pCtrlThis = &pPrivate->pswBlock->aswentry[ul].swctl;
 
             // now set up the fbJump field, which we use
             // for our own display flags... ugly, but this
@@ -1074,7 +1048,7 @@ VOID ScanSwitchList(PWINLISTWIDGETDATA pWinlistData)
                 pCtrlThis->fbJump = 0;
 
             // apply filter
-            if (!IsCtrlFiltered(pWinlistData, pCtrlThis))
+            if (!IsCtrlFiltered(pPrivate, pCtrlThis))
             {
                 // item will be painted:
                 // mark it so (hack field)
@@ -1083,7 +1057,7 @@ VOID ScanSwitchList(PWINLISTWIDGETDATA pWinlistData)
                 // store button index (hack field)
                 // and raise it for next one (will
                 // also be count in the end)
-                pCtrlThis->uchVisibility = (pWinlistData->cShow)++;
+                pCtrlThis->uchVisibility = (pPrivate->cShow)++;
                         // this is a ULONG, so we're safe... who came
                         // up with this naming, IBM?
 
@@ -1117,11 +1091,11 @@ VOID ScanSwitchList(PWINLISTWIDGETDATA pWinlistData)
  *      Preconditions: The switch list should have
  *      been scanned (ScanSwitchList).
  *
- *      This changes pWinlistData->pCtrlActive if
+ *      This changes pPrivate->pCtrlActive if
  *      pCtrlThis points to hwndActive.
  */
 
-VOID DrawOneCtrl(PWINLISTWIDGETDATA pWinlistData,
+VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
                  HPS hps,
                  PRECTL prclSubclient,     // in: paint area (exclusive)
                  PSWCNTRL pCtrlThis,       // in: switch list entry to paint
@@ -1133,21 +1107,26 @@ VOID DrawOneCtrl(PWINLISTWIDGETDATA pWinlistData,
     LONG    xText = 0;
     RECTL   rclSub;
 
-    const XCENTERGLOBALS *pGlobals = pWinlistData->pViewData->pGlobals;
+    const XCENTERGLOBALS *pGlobals = pPrivate->pWidget->pGlobals;
 
     // avoid division by zero
-    if (pWinlistData->cShow)
+    if (pPrivate->cShow)
     {
         // max paint space:
         ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
         // calc width for this button...
         // use standard with, except for last button
-        ULONG   cxRegular = ulCX / pWinlistData->cShow;
+        ULONG   cxRegular = ulCX / pPrivate->cShow;
         ULONG   cxThis = cxRegular;
+
+        LONG    lButtonBorder
+            = (pGlobals->ulDisplayStyle == XCS_BUTTON)
+                            ? THICK_BUTTON_BORDER
+                            : 1;
 
         if (pCtrlThis->fbJump & WLF_LASTBUTTON)
             // last button: add leftover space
-            cxThis += (ulCX % pWinlistData->cShow);
+            cxThis += (ulCX % pPrivate->cShow);
 
         if ((hwndActive) && (pCtrlThis->hwnd == hwndActive))
         {
@@ -1156,7 +1135,7 @@ VOID DrawOneCtrl(PWINLISTWIDGETDATA pWinlistData,
             lRight = pGlobals->lcol3DLight;
             // mark this so we can quickly undo
             // the change without repainting everything
-            pWinlistData->pCtrlActive = pCtrlThis;
+            pPrivate->pCtrlActive = pCtrlThis;
         }
         else
         {
@@ -1176,18 +1155,18 @@ VOID DrawOneCtrl(PWINLISTWIDGETDATA pWinlistData,
         // draw button frame
         pgpihDraw3DFrame(hps,
                          &rclSub,
-                         BUTTON_BORDER,
+                         lButtonBorder,
                          lLeft,
                          lRight);
 
         // draw button middle
-        WinInflateRect(pWinlistData->pViewData->habWidget,
+        WinInflateRect(pPrivate->pWidget->habWidget,
                        &rclSub,
-                       -BUTTON_BORDER,
-                       -BUTTON_BORDER);
+                       -lButtonBorder,
+                       -lButtonBorder);
         WinFillRect(hps,
                     &rclSub,
-                    pWinlistData->Setup.lcolBackground);
+                    pPrivate->Setup.lcolBackground);
 
         if (pCtrlThis->hwndIcon)
         {
@@ -1208,7 +1187,7 @@ VOID DrawOneCtrl(PWINLISTWIDGETDATA pWinlistData,
                     strlen(pCtrlThis->szSwtitle),
                     pCtrlThis->szSwtitle,
                     &rclSub,
-                    pWinlistData->Setup.lcolForeground,
+                    pPrivate->Setup.lcolForeground,
                     0,
                     DT_LEFT | DT_VCENTER);
     }
@@ -1220,23 +1199,23 @@ VOID DrawOneCtrl(PWINLISTWIDGETDATA pWinlistData,
  *      DrawOneCtrl on them. Gets called from WwgtPaint.
  */
 
-VOID DrawAllCtrls(PWINLISTWIDGETDATA pWinlistData,
+VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                   HPS hps,
                   PRECTL prcl)       // in: max available space (exclusive)
 {
     ULONG   ul = 0;
 
-    if (!pWinlistData->cShow)      // avoid division by zero
+    if (!pPrivate->cShow)      // avoid division by zero
     {
         // draw no buttons
         WinFillRect(hps,
                     prcl,
-                    pWinlistData->Setup.lcolBackground);
+                    pPrivate->Setup.lcolBackground);
     }
     else
     {
         // count of entries in switch list:
-        ULONG   cEntries = pWinlistData->pswBlock->cswentry;
+        ULONG   cEntries = pPrivate->pswBlock->cswentry;
 
         HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
@@ -1244,12 +1223,12 @@ VOID DrawAllCtrls(PWINLISTWIDGETDATA pWinlistData,
              ul < cEntries;
              ul++)
         {
-            PSWCNTRL pCtrlThis = &pWinlistData->pswBlock->aswentry[ul].swctl;
+            PSWCNTRL pCtrlThis = &pPrivate->pswBlock->aswentry[ul].swctl;
             // was this item marked as paintable?
             if (pCtrlThis->fbJump & WLF_SHOWBUTTON)
             {
                 // yes:
-                DrawOneCtrl(pWinlistData,
+                DrawOneCtrl(pPrivate,
                             hps,
                             prcl,
                             pCtrlThis,
@@ -1266,10 +1245,10 @@ VOID DrawAllCtrls(PWINLISTWIDGETDATA pWinlistData,
  *      don't want to redraw the entire bar all the time.
  */
 
-VOID RedrawActiveChanged(PWINLISTWIDGETDATA pWinlistData,
+VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
                          HWND hwndActive)
 {
-    HWND hwndWidget = pWinlistData->pViewData->hwndWidget;
+    HWND hwndWidget = pPrivate->pWidget->hwndWidget;
     HPS hps = WinGetPS(hwndWidget);
     if (hps)
     {
@@ -1277,31 +1256,31 @@ VOID RedrawActiveChanged(PWINLISTWIDGETDATA pWinlistData,
         gpihSwitchToRGB(hps);
         GetPaintableRect(hwndWidget, &rclSubclient);
 
-        if (pWinlistData->pCtrlActive)
+        if (pPrivate->pCtrlActive)
         {
             // unpaint old active
-            DrawOneCtrl(pWinlistData,
+            DrawOneCtrl(pPrivate,
                         hps,
                         &rclSubclient,
-                        pWinlistData->pCtrlActive,
+                        pPrivate->pCtrlActive,
                         hwndActive);
         }
 
         if (hwndActive)
         {
-            ULONG   cEntries = pWinlistData->pswBlock->cswentry;
+            ULONG   cEntries = pPrivate->pswBlock->cswentry;
             ULONG   ul = 0;
             for (;
                  ul < cEntries;
                  ul++)
             {
-                PSWCNTRL pCtrlThis = &pWinlistData->pswBlock->aswentry[ul].swctl;
+                PSWCNTRL pCtrlThis = &pPrivate->pswBlock->aswentry[ul].swctl;
                 // was this item marked as paintable?
                 if (    (pCtrlThis->hwnd == hwndActive)
                      && (pCtrlThis->fbJump & WLF_SHOWBUTTON)
                    )
                 {
-                    DrawOneCtrl(pWinlistData,
+                    DrawOneCtrl(pPrivate,
                                 hps,
                                 &rclSubclient,
                                 pCtrlThis,
@@ -1324,34 +1303,34 @@ VOID RedrawActiveChanged(PWINLISTWIDGETDATA pWinlistData,
  *      Returns NULL if not found.
  */
 
-PSWCNTRL FindCtrlFromPoint(PWINLISTWIDGETDATA pWinlistData,
+PSWCNTRL FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
                            PPOINTL pptl,
                            PRECTL prclSubclient)
 {
     PSWCNTRL pCtrl = NULL;
     // avoid division by zero
-    if (pWinlistData->cShow)
+    if (pPrivate->cShow)
     {
-        if (WinPtInRect(pWinlistData->pViewData->habWidget,
+        if (WinPtInRect(pPrivate->pWidget->habWidget,
                         prclSubclient,
                         pptl))
         {
             ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
             // calc width for this button...
             // use standard with, except for last button
-            ULONG   cxRegular = ulCX / pWinlistData->cShow;
+            ULONG   cxRegular = ulCX / pPrivate->cShow;
             // avoid division by zero
             if (cxRegular)
             {
                 ULONG   ulButtonIndex = pptl->x / cxRegular;
                 // go find button with that index
-                ULONG   cEntries = pWinlistData->pswBlock->cswentry;
+                ULONG   cEntries = pPrivate->pswBlock->cswentry;
                 ULONG   ul = 0;
                 for (;
                      ul < cEntries;
                      ul++)
                 {
-                    PSWCNTRL pCtrlThis = &pWinlistData->pswBlock->aswentry[ul].swctl;
+                    PSWCNTRL pCtrlThis = &pPrivate->pswBlock->aswentry[ul].swctl;
                     if (    (pCtrlThis->uchVisibility /* index */ == ulButtonIndex)
                          && (pCtrlThis->fbJump & WLF_SHOWBUTTON)
                        )
@@ -1373,53 +1352,110 @@ PSWCNTRL FindCtrlFromPoint(PWINLISTWIDGETDATA pWinlistData,
  */
 
 MRESULT WwgtCreate(HWND hwnd,
-                   PXCENTERWIDGETVIEW pViewData)
+                   PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;
     PSZ p;
-    PWINLISTWIDGETDATA pWinlistData = malloc(sizeof(WINLISTWIDGETDATA));
-    memset(pWinlistData, 0, sizeof(WINLISTWIDGETDATA));
+    PWINLISTPRIVATE pPrivate = malloc(sizeof(WINLISTPRIVATE));
+    memset(pPrivate, 0, sizeof(WINLISTPRIVATE));
     // link the two together
-    pViewData->pUser = pWinlistData;
-    pWinlistData->pViewData = pViewData;
-
-    // tell the XCenter about our desired width:
-    // use all remaining
-    pViewData->cxWanted = -1;
-    // the height: system mini icon size
-    pViewData->cyWanted =       2 * WIDGET_BORDER
-                              + 2 * BUTTON_BORDER
-                              + 2
-                              + pViewData->pGlobals->cxMiniIcon;
+    pWidget->pUser = pPrivate;
+    pPrivate->pWidget = pWidget;
 
     // initialize binary setup structure from setup string
-    WwgtScanSetup(pViewData->pcszSetupString,
-                  &pWinlistData->Setup);
+    WwgtScanSetup(pWidget->pcszSetupString,
+                  &pPrivate->Setup);
 
     // set window font (this affects all the cached presentation
     // spaces we use)
     pwinhSetWindowFont(hwnd,
-                       (pWinlistData->Setup.pszFont)
-                        ? pWinlistData->Setup.pszFont
+                       (pPrivate->Setup.pszFont)
+                        ? pPrivate->Setup.pszFont
                         // default font: use the same as in the rest of XWorkplace:
                         : pcmnQueryDefaultFont());
 
-    // enable setup string notifications
-    pViewData->pSetupStringChanged = WwgtSetupStringChanged;
-
     // enable context menu help
-    pViewData->pcszHelpLibrary = pcmnQueryHelpLibrary();
-    pViewData->ulHelpPanelID = ID_XSH_WIDGET_WINLIST_MAIN;
+    pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
+    pWidget->ulHelpPanelID = ID_XSH_WIDGET_WINLIST_MAIN;
 
     // initialize switch list data
-    ScanSwitchList(pWinlistData);
+    ScanSwitchList(pPrivate);
 
     // start update timer
-    pWinlistData->ulTimerID = ptmrStartTimer(hwnd,
+    pPrivate->ulTimerID = ptmrStartTimer(hwnd,
                                              1,
                                              300);
 
     return (mrc);
+}
+
+/*
+ *@@ MwgtControl:
+ *      implementation for WM_CONTROL.
+ *
+ *@@added V0.9.7 (2000-12-14) [umoeller]
+ */
+
+BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    BOOL brc = FALSE;
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            USHORT  usID = SHORT1FROMMP(mp1),
+                    usNotifyCode = SHORT2FROMMP(mp1);
+
+            if (usID == ID_XCENTER_CLIENT)
+            {
+                switch (usNotifyCode)
+                {
+                    /*
+                     * XN_QUERYSIZE:
+                     *      XCenter wants to know our size.
+                     */
+
+                    case XN_QUERYSIZE:
+                    {
+                        PSIZEL pszl = (PSIZEL)mp2;
+                        pszl->cx = -1;
+                        pszl->cy = 2 * WIDGET_BORDER        // thin border
+                                   + 2                      // space around icon
+                                   + pWidget->pGlobals->cxMiniIcon;
+                        if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
+                            pszl->cy += 2 * THICK_BUTTON_BORDER;
+                        else
+                            pszl->cy += 2;      // 2*1 pixel for thin border
+                        brc = TRUE;
+                    break; }
+
+                    /*
+                     * XN_SETUPCHANGED:
+                     *      XCenter has a new setup string for
+                     *      us in mp2.
+                     */
+
+                    case XN_SETUPCHANGED:
+                    {
+                        const char *pcszNewSetupString = (const char*)mp2;
+
+                        // reinitialize the setup data
+                        WwgtClearSetup(&pPrivate->Setup);
+                        WwgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
+
+                        // rescan switch list, because filters might have changed
+                        ScanSwitchList(pPrivate);
+                        WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                    break; }
+                }
+            }
+        } // end if (pPrivate)
+    } // end if (pWidget)
+
+    return (brc);
 }
 
 /*
@@ -1428,13 +1464,13 @@ MRESULT WwgtCreate(HWND hwnd,
  */
 
 VOID WwgtPaint(HWND hwnd,
-               PXCENTERWIDGETVIEW pViewData)
+               PXCENTERWIDGET pWidget)
 {
     HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
     if (hps)
     {
-        PWINLISTWIDGETDATA pWinlistData = (PWINLISTWIDGETDATA)pViewData->pUser;
-        if (pWinlistData)
+        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
             RECTL       rclWin;
 
@@ -1445,15 +1481,15 @@ VOID WwgtPaint(HWND hwnd,
             pgpihDraw3DFrame(hps,
                              &rclWin,
                              WIDGET_BORDER,
-                             pViewData->pGlobals->lcol3DDark,
-                             pViewData->pGlobals->lcol3DLight);
+                             pWidget->pGlobals->lcol3DDark,
+                             pWidget->pGlobals->lcol3DLight);
 
             // now paint buttons in the middle
-            WinInflateRect(pViewData->habWidget,
+            WinInflateRect(pWidget->habWidget,
                            &rclWin,
                            -WIDGET_BORDER,
                            -WIDGET_BORDER);
-            DrawAllCtrls(pWinlistData,
+            DrawAllCtrls(pPrivate,
                          hps,
                          &rclWin);
         }
@@ -1471,21 +1507,21 @@ VOID WwgtPaint(HWND hwnd,
  */
 
 VOID WwgtTimer(HWND hwnd,
-               PXCENTERWIDGETVIEW pViewData)
+               PXCENTERWIDGET pWidget)
 {
-    PWINLISTWIDGETDATA pWinlistData = (PWINLISTWIDGETDATA)pViewData->pUser;
-    if (pWinlistData)
+    PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
         // check current switch list count
-        ULONG cItems = WinQuerySwitchList(pViewData->habWidget,
+        ULONG cItems = WinQuerySwitchList(pWidget->habWidget,
                                           NULL,
                                           0);
-        if (cItems != pWinlistData->pswBlock->cswentry)
+        if (cItems != pPrivate->pswBlock->cswentry)
         {
             HPS hps;
             // switch list item count has changed:
             // yo, rescan the entire thing!
-            ScanSwitchList(pWinlistData);
+            ScanSwitchList(pPrivate);
             // redraw!
             hps = WinGetPS(hwnd);
             if (hps)
@@ -1493,7 +1529,7 @@ VOID WwgtTimer(HWND hwnd,
                 RECTL rclSubclient;
                 GetPaintableRect(hwnd, &rclSubclient);
                 gpihSwitchToRGB(hps);
-                DrawAllCtrls(pWinlistData,
+                DrawAllCtrls(pPrivate,
                              hps,
                              &rclSubclient);
                 WinReleasePS(hps);
@@ -1505,10 +1541,10 @@ VOID WwgtTimer(HWND hwnd,
             // check if maybe active window has changed
             HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
             BOOL    fUpdateActive = FALSE;
-            if (pWinlistData->pCtrlActive)
+            if (pPrivate->pCtrlActive)
             {
-                if (pWinlistData->pCtrlActive->fbJump & WLF_SHOWBUTTON)
-                    if (pWinlistData->pCtrlActive->hwnd != hwndActive)
+                if (pPrivate->pCtrlActive->fbJump & WLF_SHOWBUTTON)
+                    if (pPrivate->pCtrlActive->hwnd != hwndActive)
                         // active window changed:
                         fUpdateActive = TRUE;
             }
@@ -1519,10 +1555,10 @@ VOID WwgtTimer(HWND hwnd,
                     fUpdateActive = TRUE;
 
             if (fUpdateActive)
-                RedrawActiveChanged(pWinlistData,
+                RedrawActiveChanged(pPrivate,
                                     hwndActive);
-        } // end else if (cItems != pWinlistData->pswBlock->cswentry)
-    } // end if (pWinlistData)
+        } // end else if (cItems != pPrivate->pswBlock->cswentry)
+    } // end if (pPrivate)
 }
 
 /*
@@ -1532,10 +1568,10 @@ VOID WwgtTimer(HWND hwnd,
 
 VOID WwgtButton1Click(HWND hwnd,
                       MPARAM mp1,
-                      PXCENTERWIDGETVIEW pViewData)
+                      PXCENTERWIDGET pWidget)
 {
-    PWINLISTWIDGETDATA pWinlistData = (PWINLISTWIDGETDATA)pViewData->pUser;
-    if (pWinlistData)
+    PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
         POINTL      ptlClick;
         PSWCNTRL    pCtrlClicked = 0;
@@ -1544,7 +1580,7 @@ VOID WwgtButton1Click(HWND hwnd,
         ptlClick.x = SHORT1FROMMP(mp1);
         ptlClick.y = SHORT2FROMMP(mp1);
         GetPaintableRect(hwnd, &rclSubclient);
-        pCtrlClicked = FindCtrlFromPoint(pWinlistData,
+        pCtrlClicked = FindCtrlFromPoint(pPrivate,
                                          &ptlClick,
                                          &rclSubclient);
         if (pCtrlClicked)
@@ -1597,7 +1633,7 @@ VOID WwgtButton1Click(HWND hwnd,
             }
 
             if (fRedrawActive)
-                RedrawActiveChanged(pWinlistData,
+                RedrawActiveChanged(pPrivate,
                                     pCtrlClicked->hwnd);
         }
     }
@@ -1611,10 +1647,10 @@ VOID WwgtButton1Click(HWND hwnd,
 
 VOID WwgtPresParamChanged(HWND hwnd,
                           ULONG ulAttrChanged,
-                          PXCENTERWIDGETVIEW pViewData)
+                          PXCENTERWIDGET pWidget)
 {
-    PWINLISTWIDGETDATA pWinlistData = (PWINLISTWIDGETDATA)pViewData->pUser;
-    if (pWinlistData)
+    PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
         BOOL fInvalidate = TRUE;
         switch (ulAttrChanged)
@@ -1622,12 +1658,12 @@ VOID WwgtPresParamChanged(HWND hwnd,
             case 0:     // layout palette thing dropped
             case PP_BACKGROUNDCOLOR:
             case PP_FOREGROUNDCOLOR:
-                pWinlistData->Setup.lcolBackground
+                pPrivate->Setup.lcolBackground
                     = pwinhQueryPresColor(hwnd,
                                           PP_BACKGROUNDCOLOR,
                                           FALSE,
                                           SYSCLR_DIALOGBACKGROUND);
-                pWinlistData->Setup.lcolForeground
+                pPrivate->Setup.lcolForeground
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
@@ -1637,17 +1673,17 @@ VOID WwgtPresParamChanged(HWND hwnd,
             case PP_FONTNAMESIZE:
             {
                 PSZ pszFont = 0;
-                if (pWinlistData->Setup.pszFont)
+                if (pPrivate->Setup.pszFont)
                 {
-                    free(pWinlistData->Setup.pszFont);
-                    pWinlistData->Setup.pszFont = NULL;
+                    free(pPrivate->Setup.pszFont);
+                    pPrivate->Setup.pszFont = NULL;
                 }
 
                 pszFont = pwinhQueryWindowFont(hwnd);
                 if (pszFont)
                 {
                     // we must use local malloc() for the font
-                    pWinlistData->Setup.pszFont = strdup(pszFont);
+                    pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
             break; }
@@ -1662,15 +1698,15 @@ VOID WwgtPresParamChanged(HWND hwnd,
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             WwgtSaveSetup(&strSetup,
-                          &pWinlistData->Setup);
+                          &pPrivate->Setup);
             if (strSetup.ulLength)
-                WinSendMsg(pWinlistData->pViewData->pGlobals->hwndClient,
+                WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);
             pxstrClear(&strSetup);
         }
-    } // end if (pWinlistData)
+    } // end if (pPrivate)
 }
 
 /*
@@ -1679,20 +1715,20 @@ VOID WwgtPresParamChanged(HWND hwnd,
  */
 
 VOID WwgtDestroy(HWND hwnd,
-                 PXCENTERWIDGETVIEW pViewData)
+                 PXCENTERWIDGET pWidget)
 {
-    PWINLISTWIDGETDATA pWinlistData = (PWINLISTWIDGETDATA)pViewData->pUser;
-    if (pWinlistData)
+    PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+    if (pPrivate)
     {
-        WwgtClearSetup(&pWinlistData->Setup);
+        WwgtClearSetup(&pPrivate->Setup);
 
-        if (pWinlistData->ulTimerID)
+        if (pPrivate->ulTimerID)
             ptmrStopTimer(hwnd,
-                          pWinlistData->ulTimerID);
-        if (pWinlistData->pswBlock)
-            pwinhFree(pWinlistData->pswBlock);
-        free(pWinlistData);
-                // pViewData is cleaned up by DestroyWidgets
+                          pPrivate->ulTimerID);
+        if (pPrivate->pswBlock)
+            pwinhFree(pPrivate->pswBlock);
+        free(pPrivate);
+                // pWidget is cleaned up by DestroyWidgets
     }
 }
 
@@ -1711,7 +1747,7 @@ VOID WwgtDestroy(HWND hwnd,
 MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
                     // this ptr is valid after WM_CREATE
 
     switch (msg)
@@ -1719,29 +1755,35 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         /*
          * WM_CREATE:
          *      as with all widgets, we receive a pointer to the
-         *      XCENTERWIDGETVIEW in mp1, which was created for us.
+         *      XCENTERWIDGET in mp1, which was created for us.
          *
          *      The first thing the widget MUST do on WM_CREATE
-         *      is to store the XCENTERWIDGETVIEW pointer (from mp1)
+         *      is to store the XCENTERWIDGET pointer (from mp1)
          *      in the QWL_USER window word by calling:
          *
          *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
          *
-         *      We use XCENTERWIDGETVIEW.pUser for allocating
-         *      WINLISTWIDGETDATA for our own stuff.
-         *
-         *      Each widget must write its desired width into
-         *      XCENTERWIDGETVIEW.cx and cy.
+         *      We use XCENTERWIDGET.pUser for allocating
+         *      WINLISTPRIVATE for our own stuff.
          */
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            pViewData = (PXCENTERWIDGETVIEW)mp1;
-            if ((pViewData) && (pViewData->pfnwpDefWidgetProc))
-                mrc = WwgtCreate(hwnd, pViewData);
+            pWidget = (PXCENTERWIDGET)mp1;
+            if ((pWidget) && (pWidget->pfnwpDefWidgetProc))
+                mrc = WwgtCreate(hwnd, pWidget);
             else
                 // stop window creation!!
                 mrc = (MPARAM)TRUE;
+        break;
+
+        /*
+         * WM_CONTROL:
+         *      process notifications/queries from the XCenter.
+         */
+
+        case WM_CONTROL:
+            mrc = (MPARAM)WwgtControl(hwnd, mp1, mp2);
         break;
 
         /*
@@ -1750,7 +1792,7 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_PAINT:
-            WwgtPaint(hwnd, pViewData);
+            WwgtPaint(hwnd, pWidget);
         break;
 
         /*
@@ -1760,9 +1802,9 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_TIMER:
             if ((USHORT)mp1 == 1)
-                WwgtTimer(hwnd, pViewData);
+                WwgtTimer(hwnd, pWidget);
             else
-                mrc = pViewData->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
 
         /*
@@ -1771,7 +1813,7 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_BUTTON1CLICK:
-            WwgtButton1Click(hwnd, mp1, pViewData);
+            WwgtButton1Click(hwnd, mp1, pWidget);
             mrc = (MPARAM)TRUE;
         break;
 
@@ -1781,9 +1823,9 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_PRESPARAMCHANGED:
-            if (pViewData)
+            if (pWidget)
                 // this gets sent before this is set!
-                WwgtPresParamChanged(hwnd, (ULONG)mp1, pViewData);
+                WwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
         break;
 
         /*
@@ -1793,12 +1835,12 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_DESTROY:
-            WwgtDestroy(hwnd, pViewData);
-            mrc = pViewData->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+            WwgtDestroy(hwnd, pWidget);
+            mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
 
         default:
-            mrc = pViewData->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+            mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 
     return (mrc);
@@ -1829,9 +1871,9 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      class style (4th param to WinRegisterClass),
  *      you should specify
  *
- +          CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT
+ +          CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT
  *
- *      You're widget window _will_ be resized, even if you're
+ *      Your widget window _will_ be resized, even if you're
  *      not planning it to be.
  *
  *      This function only gets called _once_ when the widget
@@ -1843,8 +1885,15 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      by any XCenter, this might get called again when the
  *      DLL is re-loaded.
  *
- *      If this returns 0, this is considered an error. If
- *      this returns any value > 0, *ppaClasses must be
+ *      There will ever be only one load occurence of the DLL.
+ *      The XCenter manages sharing the DLL between several
+ *      XCenters. As a result, it doesn't matter if the DLL
+ *      has INITINSTANCE etc. set or not.
+ *
+ *      If this returns 0, this is considered an error, and the
+ *      DLL will be unloaded again immediately.
+ *
+ *      If this returns any value > 0, *ppaClasses must be
  *      set to a static array (best placed in the DLL's
  *      global data) of XCENTERWIDGETCLASS structures,
  *      which must have as many entries as the return value.
@@ -1885,18 +1934,20 @@ ULONG EXPENTRY WwgtInitModule(HAB hab,         // XCenter's anchor block
         if (!WinRegisterClass(hab,
                               WNDCLASS_WIDGET_WINLIST,
                               fnwpWinlistWidget,
-                              CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
-                              sizeof(PWINLISTWIDGETDATA))
+                              CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT,
+                              sizeof(PWINLISTPRIVATE))
                                     // extra memory to reserve for QWL_USER
                              )
             strcpy(pszErrorMsg, "WinRegisterClass failed.");
         else
         {
-            *ppaClasses = &G_WidgetClasses;
-
             // no error:
+            // return classes
+            *ppaClasses = G_WidgetClasses;
+
             // one class in this DLL:
-            ulrc = 1;
+            // no. of classes in this DLL:
+            ulrc = sizeof(G_WidgetClasses) / sizeof(G_WidgetClasses[0]);
         }
     }
 

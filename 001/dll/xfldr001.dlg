@@ -948,27 +948,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_DTP_MENUITEMS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_MENUITEMS, 0, 0, 295, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Visible standard menu items", -1, 5, 24, 190, 75
-        AUTOCHECKBOX    "S~ort", ID_XSDI_DTP_SORT, 10, 78, 165, 10
-        AUTOCHECKBOX    "~Arrange", ID_XSDI_DTP_ARRANGE, 10, 69, 165, 10
-        AUTOCHECKBOX    "System ~setup", ID_XSDI_DTP_SYSTEMSETUP, 10, 57,
-                        175, 10
-        AUTOCHECKBOX    "~Lockup", ID_XSDI_DTP_LOCKUP, 10, 48, 180, 10
-        AUTOCHECKBOX    "Shu~tdown", ID_XSDI_DTP_SHUTDOWN, 10, 39, 180, 10
-        AUTOCHECKBOX    "Add su~bmenu", ID_XSDI_DTP_SHUTDOWNMENU, 20, 30,
-                        170, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 70, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 135, 6, 60, 12, BS_HELP |
-                        WS_GROUP
-    END
-END
-
 DLGTEMPLATE ID_OSD_SETTINGS_ERRORS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_OSD_SETTINGS_ERRORS, 0, 0, 275, 180, NOT FS_DLGBORDER |
@@ -1530,61 +1509,6 @@ BEGIN
         RTEXT           "unknown", ID_XCDI_INFO_NLS_AUTHOR, 104, 24, 70, 6,
                         DT_VCENTER
         PUSHBUTTON      "~Help", DID_HELP, 140, 6, 60, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_FILESPAGE1 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FILESPAGE1, 0, 0, 265, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        LTEXT           "Real name:", -1, 6, 128, 60, 8, NOT WS_GROUP
-        LTEXT           "to be replaced", ID_XSDI_FILES_REALNAME, 74, 128,
-                        190, 8, NOT WS_GROUP
-        LTEXT           "Size in bytes:", -1, 6, 120, 60, 8, NOT WS_GROUP
-        LTEXT           "0", ID_XSDI_FILES_FILESIZE, 74, 120, 74, 8, NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "~Work area", ID_XSDI_FILES_WORKAREA, 6, 112, 110, 8
-        GROUPBOX        "Date/time:", ID_XCD_FEATURES, 5, 80, 150, 30, NOT
-                        WS_GROUP
-        LTEXT           "Creation:", -1, 10, 94, 52, 8, NOT WS_GROUP
-        LTEXT           "00.00.0000", ID_XSDI_FILES_CREATIONDATE, 66, 94, 40,
-                        8, NOT WS_GROUP
-        LTEXT           "00:00:00", ID_XSDI_FILES_CREATIONTIME, 110, 94, 42,
-                        8, NOT WS_GROUP
-        LTEXT           "Last write:", -1, 10, 88, 50, 8, NOT WS_GROUP
-        LTEXT           "00.00.0000", ID_XSDI_FILES_LASTWRITEDATE, 66, 88,
-                        40, 8, NOT WS_GROUP
-        LTEXT           "00:00:00", ID_XSDI_FILES_LASTWRITETIME, 110, 88, 42,
-                        8, NOT WS_GROUP
-        LTEXT           "Last access:", -1, 10, 82, 52, 8, NOT WS_GROUP
-        LTEXT           "00.00.0000", ID_XSDI_FILES_LASTACCESSDATE, 66, 82,
-                        40, 8, NOT WS_GROUP
-        LTEXT           "00:00:00", ID_XSDI_FILES_LASTACCESSTIME, 110, 82,
-                        42, 8, NOT WS_GROUP
-        GROUPBOX        "Attributes", -1, 160, 80, 75, 42, DT_MNEMONIC | NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "~Archive", ID_XSDI_FILES_ATTR_ARCHIVED, 164, 106,
-                        49, 8
-        AUTOCHECKBOX    "~Read only", ID_XSDI_FILES_ATTR_READONLY, 164, 98,
-                        56, 8
-        AUTOCHECKBOX    "S~ystem", ID_XSDI_FILES_ATTR_SYSTEM, 164, 90, 40, 8
-        AUTOCHECKBOX    "~Hidden", ID_XSDI_FILES_ATTR_HIDDEN, 164, 82, 40, 8
-        GROUPBOX        "Information", -1, 5, 20, 230, 58
-        LTEXT           "Sub~ject:", -1, 10, 60, 75, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_FILES_SUBJECT, 86, 62, 141, 8, ES_MARGIN
-        LTEXT           "~Comments:", -1, 10, 51, 60, 8, DT_MNEMONIC
-        MLE             "", ID_XSDI_FILES_COMMENTS, 10, 24, 115, 27,
-                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
-                        WS_GROUP
-        LTEXT           "Keyw~ords:", -1, 130, 51, 95, 8, DT_MNEMONIC
-        MLE             "", ID_XSDI_FILES_KEYPHRASES, 130, 24, 100, 27,
-                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
-                        WS_GROUP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
     END
 END
 
@@ -2660,27 +2584,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XCenter view settings", -1, 6, 54, 172, 40
-        AUTOCHECKBOX    "~Always on top", ID_CRDI_VIEW_ALWAYSONTOP, 12, 78,
-                        135, 8, WS_GROUP
-        AUTOCHECKBOX    "A~nimate", ID_CRDI_VIEW_ANIMATE, 12, 68, 135, 8
-        AUTOCHECKBOX    "Auto-h~ide", ID_CRDI_VIEW_AUTOHIDE, 12, 58, 135, 8
-        GROUPBOX        "XCenter position", -1, 6, 22, 172, 28
-        AUTORADIOBUTTON "~Top of screen", ID_CRDI_VIEW_TOPOFSCREEN, 12, 34,
-                        114, 8, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~Bottom of screen", ID_CRDI_VIEW_BOTTOMOFSCREEN, 12,
-                        26, 114, 8, WS_TABSTOP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_SET2REMOVEMENUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SET2REMOVEMENUS, 0, 0, 244, 132, NOT FS_DLGBORDER |
@@ -2768,10 +2671,115 @@ BEGIN
                         ID_XCDI_XWPCLS_XWPTRASHCAN, 10, 40, 235, 8
         AUTOCHECKBOX    "XWPStr~ing (Setup-strings-as-object class)",
                         ID_XCDI_XWPCLS_XWPSTRING, 10, 32, 230, 8
-        AUTOCHECKBOX    "XCenter (system control b~ar)", ID_XCDI_XWPCLS_XCENTER, 10, 24, 230,
-                        8
+        AUTOCHECKBOX    "XCenter (system control b~ar)",
+                        ID_XCDI_XWPCLS_XCENTER, 10, 24, 230, 8
         DEFPUSHBUTTON   "~OK...", DID_OK, 5, 4, 75, 12
         PUSHBUTTON      "~Cancel", DID_CANCEL, 90, 4, 75, 12
         PUSHBUTTON      "~Help", DID_HELP, 175, 4, 75, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_FILESPAGE1 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FILESPAGE1, 0, 0, 265, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        LTEXT           "Real name:", -1, 6, 128, 60, 8, NOT WS_GROUP
+        LTEXT           "to be replaced", ID_XSDI_FILES_REALNAME, 74, 128,
+                        190, 8, NOT WS_GROUP
+        LTEXT           "Size in bytes:", -1, 6, 120, 60, 8, NOT WS_GROUP
+        LTEXT           "0", ID_XSDI_FILES_FILESIZE, 74, 120, 74, 8, NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "~Work area", ID_XSDI_FILES_WORKAREA, 6, 112, 110, 8
+        GROUPBOX        "Date/time:", ID_XCD_FEATURES, 5, 80, 150, 30, NOT
+                        WS_GROUP
+        LTEXT           "Creation:", -1, 10, 94, 52, 8, NOT WS_GROUP
+        RTEXT           "00.00.0000", ID_XSDI_FILES_CREATIONDATE, 62, 94, 46,
+                        8, NOT WS_GROUP
+        LTEXT           "00:00:00", ID_XSDI_FILES_CREATIONTIME, 110, 94, 42,
+                        8, NOT WS_GROUP
+        LTEXT           "Last write:", -1, 10, 88, 50, 8, NOT WS_GROUP
+        RTEXT           "00.00.0000", ID_XSDI_FILES_LASTWRITEDATE, 62, 88,
+                        46, 8, NOT WS_GROUP
+        LTEXT           "00:00:00", ID_XSDI_FILES_LASTWRITETIME, 110, 88, 42,
+                        8, NOT WS_GROUP
+        LTEXT           "Last access:", -1, 10, 82, 52, 8, NOT WS_GROUP
+        RTEXT           "00.00.0000", ID_XSDI_FILES_LASTACCESSDATE, 62, 82,
+                        46, 8, NOT WS_GROUP
+        LTEXT           "00:00:00", ID_XSDI_FILES_LASTACCESSTIME, 110, 82,
+                        42, 8, NOT WS_GROUP
+        GROUPBOX        "Attributes", -1, 160, 80, 75, 42, DT_MNEMONIC | NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "~Archive", ID_XSDI_FILES_ATTR_ARCHIVED, 164, 106,
+                        49, 8
+        AUTOCHECKBOX    "~Read only", ID_XSDI_FILES_ATTR_READONLY, 164, 98,
+                        56, 8
+        AUTOCHECKBOX    "S~ystem", ID_XSDI_FILES_ATTR_SYSTEM, 164, 90, 40, 8
+        AUTOCHECKBOX    "~Hidden", ID_XSDI_FILES_ATTR_HIDDEN, 164, 82, 40, 8
+        GROUPBOX        "Information", -1, 5, 20, 230, 58
+        LTEXT           "Sub~ject:", -1, 10, 60, 75, 12, DT_VCENTER |
+                        DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_FILES_SUBJECT, 86, 62, 141, 8, ES_MARGIN
+        LTEXT           "~Comments:", -1, 10, 51, 60, 8, DT_MNEMONIC
+        MLE             "", ID_XSDI_FILES_COMMENTS, 10, 24, 115, 27,
+                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
+                        WS_GROUP
+        LTEXT           "Keyw~ords:", -1, 130, 51, 95, 8, DT_MNEMONIC
+        MLE             "", ID_XSDI_FILES_KEYPHRASES, 130, 24, 100, 27,
+                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
+                        WS_GROUP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_DTP_MENUITEMS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_DTP_MENUITEMS, 0, 0, 295, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Visible standard menu items", -1, 6, 54, 188, 52
+        AUTOCHECKBOX    "S~ort", ID_XSDI_DTP_SORT, 10, 90, 38, 8
+        AUTOCHECKBOX    "~Arrange", ID_XSDI_DTP_ARRANGE, 10, 82, 50, 8
+        AUTOCHECKBOX    "System ~setup", ID_XSDI_DTP_SYSTEMSETUP, 10, 74, 72,
+                        8
+        AUTOCHECKBOX    "~Lockup", ID_XSDI_DTP_LOCKUP, 10, 66, 46, 8
+        AUTOCHECKBOX    "Lo~goff network now", ID_XSDI_DTP_LOGOFFNETWORKNOW,
+                        10, 58, 176, 8
+        GROUPBOX        "Shutdown menu items", -1, 6, 22, 188, 28
+        AUTOCHECKBOX    "Add su~bmenu", ID_XSDI_DTP_SHUTDOWNMENU, 10, 34, 76,
+                        8
+        AUTOCHECKBOX    "Show ""Shu~tdown"" menu item", ID_XSDI_DTP_SHUTDOWN,
+                        10, 26, 136, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 6, 6, 60, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 70, 6, 60, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 134, 6, 60, 12, BS_HELP |
+                        WS_GROUP
+    END
+END
+
+DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "XCenter frame", -1, 6, 88, 172, 40
+        AUTOCHECKBOX    "~Always on top", ID_CRDI_VIEW_ALWAYSONTOP, 12, 112,
+                        135, 8, WS_GROUP
+        AUTOCHECKBOX    "A~nimate", ID_CRDI_VIEW_ANIMATE, 12, 102, 135, 8
+        AUTOCHECKBOX    "Auto-h~ide", ID_CRDI_VIEW_AUTOHIDE, 12, 92, 135, 8
+        GROUPBOX        "XCenter position", -1, 6, 56, 172, 28
+        AUTORADIOBUTTON "~Top of screen", ID_CRDI_VIEW_TOPOFSCREEN, 12, 68,
+                        114, 8, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "~Bottom of screen", ID_CRDI_VIEW_BOTTOMOFSCREEN, 12,
+                        60, 114, 8, WS_TABSTOP
+        GROUPBOX        "Display style", -1, 6, 24, 172, 28
+        AUTORADIOBUTTON "Butt~on style", ID_CRDI_VIEW_BUTTONSTYLE, 12, 36, 114, 8, WS_GROUP |
+                        WS_TABSTOP
+        AUTORADIOBUTTON "~Flat style", ID_CRDI_VIEW_FLATSTYLE, 12, 28, 114, 8, WS_TABSTOP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END

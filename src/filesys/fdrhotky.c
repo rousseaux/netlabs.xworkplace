@@ -895,7 +895,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 /*
  *@@ fdrHotkeysItemChanged:
  *      notebook callback function (notebook.c) for the
- *      "Snap to grid" page in the "Workplace Shell" object.
+ *      "Folder hotkeys" page in the "Workplace Shell" object.
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
@@ -906,7 +906,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
 
     switch (usItemID)

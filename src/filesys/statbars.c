@@ -1724,7 +1724,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE,
          fShowStatusBars = FALSE,
@@ -2014,7 +2014,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_DEREFSHADOWS_SINGLE:    // added V0.9.0
         {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
             if (ulExtra)
                 pGlobalSettings->bDereferenceShadows |= STBF_DEREFSHADOWS_SINGLE;
             else
@@ -2033,7 +2033,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_DEREFSHADOWS_MULTIPLE:    // added V0.9.5 (2000-10-07) [umoeller]
         {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
             if (ulExtra)
                 pGlobalSettings->bDereferenceShadows |= STBF_DEREFSHADOWS_MULTIPLE;
             else

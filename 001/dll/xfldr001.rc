@@ -89,6 +89,7 @@ END
    new with V0.9.0 */
 MENU ID_XSM_FILETYPES_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
+    MENUITEM "C~reate subtype...", ID_XSMI_FILETYPES_NEW
     MENUITEM "~Delete type", ID_XSMI_FILETYPES_DELETE
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Pickup", ID_XSMI_FILETYPES_PICKUP
@@ -100,7 +101,7 @@ END
 
 MENU ID_XSM_FILETYPES_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~New type...", ID_XSMI_FILETYPES_NEW
+    MENUITEM "C~reate root type...", ID_XSMI_FILETYPES_NEW
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Drop", ID_XSMI_FILETYPES_DROP
     MENUITEM "~Cancel drag", ID_XSMI_FILETYPES_CANCELDRAG
@@ -470,8 +471,8 @@ BEGIN
 
     ID_XFSI_FLDRSETTINGS                "~View"
     ID_XFSI_SMALLICONS                  "~Small icons"
-    ID_XFSI_FLOWED                      "~Flowed"
-    ID_XFSI_NONFLOWED                   "~Non-flowed"
+    ID_XFSI_FLOWED                      "~Multiple columns"
+    ID_XFSI_NONFLOWED                   "~Single column"
     ID_XFSI_NOGRID                      "~As placed"
 
     /* the following added with V0.9.0 */

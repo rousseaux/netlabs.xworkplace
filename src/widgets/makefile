@@ -54,8 +54,9 @@ OUTPUTDIR = ..\..\bin\widgets
 # created from the files in this directory.
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = $(OUTPUTDIR)\w_winlist.obj \
-    $(OUTPUTDIR)\w_monitors.obj
+OBJS = \
+    $(OUTPUTDIR)\w_monitors.obj \
+    $(OUTPUTDIR)\w_winlist.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -121,15 +122,15 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 # XWorkplace "library" .OBJ files used by several classes.
 # Source code is here in SRC\MAIN.
 
-$(OUTPUTDIR)\w_winlist.obj: \
-    $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
-    $(INC)\shared\center.h \
-    $(@B).c
-
 $(OUTPUTDIR)\w_monitors.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\timer.h \
+    $(INC)\shared\center.h \
+    $(@B).c
+
+$(OUTPUTDIR)\w_winlist.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
     $(INC)\shared\center.h \
     $(@B).c
 
