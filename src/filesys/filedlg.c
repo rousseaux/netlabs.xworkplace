@@ -3336,376 +3336,365 @@ HWND fdlgFileDlg(HWND hwndOwner,
     HWND    hwndReturn = NULLHANDLE;
     static  s_fRegistered = FALSE;
 
-    // first, some compatibility checks...
-    if (    (!pfd)
-         || (pfd->cbSize != sizeof(FILEDLG))
-         || (pfd->fl & (FDS_CUSTOM | FDS_MODELESS))
-         || (pfd->pfnDlgProc)
-       )
-        hwndReturn = WinFileDlg(HWND_DESKTOP, hwndOwner, pfd);
-    else
+    TRY_LOUD(excpt1)
     {
-        // OK, it seems that we can handle this
-        TRY_LOUD(excpt1)
+        // create left frame
+        FILEDLGDATA WinData = {0};
+
+        CHAR        szCurDir[CCHMAXPATH] = "";
+        ULONG       cbCurDir;
+        APIRET      arc;
+        PSZ         pszDlgTitle;
+
+        WinData.pfd = pfd;
+        pfd->lReturn = DID_CANCEL;           // for now
+
+        lstInit(&WinData.llDialogControls, FALSE);
+
+        lstInit(&WinData.llDriveObjectsInserted, FALSE);
+        lstInit(&WinData.llFileObjectsInserted, FALSE);
+        lstInit(&WinData.llDisks, FALSE);
+
+        // set wait pointer, since this may take a second
+        winhSetWaitPointer();
+
+        /*
+         *  PATH/FILE MASK SETUP
+         *
+         */
+
+        // OK, here's the trick. We first call ParseFile
+        // string with the current directory plus the "*"
+        // file mask; we then call it a second time with
+        // full path string given to us in FILEDLG.
+        doshQueryCurrentDir(szCurDir);
+        if (strlen(szCurDir) > 3)
+            strcat(szCurDir, "\\*");
+        else
+            strcat(szCurDir, "*");
+        ParseFileString(&WinData,
+                        szCurDir);
+
+        _Pmpf((__FUNCTION__ ": pfd->szFullFile is %s", pfd->szFullFile));
+        ParseFileString(&WinData,
+                        pfd->szFullFile);
+
+        /*
+         *  WINDOW CREATION
+         *
+         */
+
+        if (!s_fRegistered)
         {
-            // create left frame
-            FILEDLGDATA WinData = {0};
+            HWND hwnd = winhCreateObjectWindow(WC_BUTTON, NULL);
+            HAB hab = WinQueryAnchorBlock(hwnd);
+            WinRegisterClass(hab,
+                             (PSZ)WC_FILEDLGCLIENT,
+                             fnwpMainClient,
+                             CS_CLIPCHILDREN | CS_SIZEREDRAW,
+                             sizeof(PFILEDLGDATA));
+            WinDestroyWindow(hwnd);
+            s_fRegistered = TRUE;
+        }
 
-            CHAR        szCurDir[CCHMAXPATH] = "";
-            ULONG       cbCurDir;
-            APIRET      arc;
-            PSZ         pszDlgTitle;
-
-            WinData.pfd = pfd;
-            pfd->lReturn = DID_CANCEL;           // for now
-
-            lstInit(&WinData.llDialogControls, FALSE);
-
-            lstInit(&WinData.llDriveObjectsInserted, FALSE);
-            lstInit(&WinData.llFileObjectsInserted, FALSE);
-            lstInit(&WinData.llDisks, FALSE);
-
-            // set wait pointer, since this may take a second
-            winhSetWaitPointer();
-
-            /*
-             *  PATH/FILE MASK SETUP
-             *
-             */
-
-            // OK, here's the trick. We first call ParseFile
-            // string with the current directory plus the "*"
-            // file mask; we then call it a second time with
-            // full path string given to us in FILEDLG.
-            doshQueryCurrentDir(szCurDir);
-            if (strlen(szCurDir) > 3)
-                strcat(szCurDir, "\\*");
+        pszDlgTitle = pfd->pszTitle;
+        if (!pszDlgTitle)
+            // no user title specified:
+            if (pfd->fl & FDS_SAVEAS_DIALOG)
+                pszDlgTitle = "Save File As...";
             else
-                strcat(szCurDir, "*");
-            ParseFileString(&WinData,
-                            szCurDir);
+                pszDlgTitle = "Open File...";
 
-            _Pmpf((__FUNCTION__ ": pfd->szFullFile is %s", pfd->szFullFile));
-            ParseFileString(&WinData,
-                            pfd->szFullFile);
+        // create main frame and client
+        WinData.hwndMainFrame = winhCreateStdWindow(HWND_DESKTOP,   // parent
+                                                    NULL,
+                                                    FCF_NOBYTEALIGN
+                                                      | FCF_TITLEBAR
+                                                      | FCF_SYSMENU
+                                                      | FCF_MAXBUTTON
+                                                      | FCF_SIZEBORDER
+                                                      | FCF_AUTOICON,
+                                                    0,  // frame style, not visible yet
+                                                    pszDlgTitle,    // frame title
+                                                    0,  // resids
+                                                    WC_FILEDLGCLIENT,
+                                                    WS_VISIBLE, // client style
+                                                    0,  // frame ID
+                                                    &WinData,
+                                                    &WinData.hwndMainClient);
+        if (!WinData.hwndMainFrame || !WinData.hwndMainClient)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot create main window.");
+        else
+        {
+            SPLITBARCDATA sbcd;
+            HAB hab = WinQueryAnchorBlock(WinData.hwndMainFrame);
+            QMSG qmsg;
 
-            /*
-             *  WINDOW CREATION
-             *
-             */
+            // create two subframes to be linked in split window
 
-            if (!s_fRegistered)
+            // 1) left: drives tree
+            WinData.hwndDrivesFrame = CreateFrameWithCnr(ID_TREEFRAME,
+                                                         &WinData,
+                                                         FALSE,     // single sel
+                                                         &WinData.hwndDrivesCnr);
+            BEGIN_CNRINFO()
             {
-                HWND hwnd = winhCreateObjectWindow(WC_BUTTON, NULL);
-                HAB hab = WinQueryAnchorBlock(hwnd);
-                WinRegisterClass(hab,
-                                 (PSZ)WC_FILEDLGCLIENT,
-                                 fnwpMainClient,
-                                 CS_CLIPCHILDREN | CS_SIZEREDRAW,
-                                 sizeof(PFILEDLGDATA));
-                WinDestroyWindow(hwnd);
-                s_fRegistered = TRUE;
-            }
+                cnrhSetView(   CV_TREE | CA_TREELINE | CV_ICON
+                             | CV_MINI);
+                cnrhSetTreeIndent(20);
+            } END_CNRINFO(WinData.hwndDrivesCnr);
 
-            pszDlgTitle = pfd->pszTitle;
-            if (!pszDlgTitle)
-                // no user title specified:
-                if (pfd->fl & FDS_SAVEAS_DIALOG)
-                    pszDlgTitle = "Save File As...";
-                else
-                    pszDlgTitle = "Open File...";
+            lstAppendItem(&WinData.llDialogControls, (PVOID)WinData.hwndDrivesCnr);
 
-            // create main frame and client
-            WinData.hwndMainFrame = winhCreateStdWindow(HWND_DESKTOP,   // parent
-                                                        NULL,
-                                                        FCF_NOBYTEALIGN
-                                                          | FCF_TITLEBAR
-                                                          | FCF_SYSMENU
-                                                          | FCF_MAXBUTTON
-                                                          | FCF_SIZEBORDER
-                                                          | FCF_AUTOICON,
-                                                        0,  // frame style, not visible yet
-                                                        pszDlgTitle,    // frame title
-                                                        0,  // resids
-                                                        WC_FILEDLGCLIENT,
-                                                        WS_VISIBLE, // client style
-                                                        0,  // frame ID
+            // 2) right: files
+            WinData.hwndFilesFrame = CreateFrameWithCnr(ID_FILESFRAME,
                                                         &WinData,
-                                                        &WinData.hwndMainClient);
-            if (!WinData.hwndMainFrame || !WinData.hwndMainClient)
+                                                        ((pfd->fl & FDS_MULTIPLESEL) != 0),
+                                                                // multiple sel?
+                                                        &WinData.hwndFilesCnr);
+            BEGIN_CNRINFO()
+            {
+                cnrhSetView(   CV_NAME | CV_FLOW
+                             | CV_MINI);
+                cnrhSetTreeIndent(30);
+            } END_CNRINFO(WinData.hwndFilesCnr);
+
+            lstAppendItem(&WinData.llDialogControls, (PVOID)WinData.hwndFilesCnr);
+
+            // 3) fonts
+            winhSetWindowFont(WinData.hwndDrivesCnr,
+                              cmnQueryDefaultFont());
+            winhSetWindowFont(WinData.hwndFilesCnr,
+                              cmnQueryDefaultFont());
+
+            // create split window
+            sbcd.ulSplitWindowID = 1;
+                // split window becomes client of main frame
+            sbcd.ulCreateFlags =   SBCF_VERTICAL
+                                 | SBCF_PERCENTAGE
+                                 | SBCF_3DSUNK
+                                 | SBCF_MOVEABLE;
+            sbcd.lPos = 30;     // percent
+            sbcd.ulLeftOrBottomLimit = 100;
+            sbcd.ulRightOrTopLimit = 100;
+            sbcd.hwndParentAndOwner = WinData.hwndMainClient;
+
+            WinData.hwndSplitWindow = ctlCreateSplitWindow(hab,
+                                                           &sbcd);
+            if (!WinData.hwndSplitWindow)
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                        "Cannot create main window.");
+                        "Cannot create split window.");
             else
             {
-                SPLITBARCDATA sbcd;
-                HAB hab = WinQueryAnchorBlock(WinData.hwndMainFrame);
-                QMSG qmsg;
+                // link left and right container
+                WinSendMsg(WinData.hwndSplitWindow,
+                           SPLM_SETLINKS,
+                           (MPARAM)WinData.hwndDrivesFrame,
+                           (MPARAM)WinData.hwndFilesFrame);
 
-                // create two subframes to be linked in split window
+                // show main dlg now
+                WinSetWindowPos(WinData.hwndMainFrame,
+                                HWND_TOP,
+                                100, 100, 600, 600,
+                                SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
 
-                // 1) left: drives tree
-                WinData.hwndDrivesFrame = CreateFrameWithCnr(ID_TREEFRAME,
-                                                             &WinData,
-                                                             FALSE,     // single sel
-                                                             &WinData.hwndDrivesCnr);
-                BEGIN_CNRINFO()
-                {
-                    cnrhSetView(   CV_TREE | CA_TREELINE | CV_ICON
-                                 | CV_MINI);
-                    cnrhSetTreeIndent(20);
-                } END_CNRINFO(WinData.hwndDrivesCnr);
+                /*
+                 *  FILL DRIVES TREE
+                 *
+                 */
 
-                lstAppendItem(&WinData.llDialogControls, (PVOID)WinData.hwndDrivesCnr);
-
-                // 2) right: files
-                WinData.hwndFilesFrame = CreateFrameWithCnr(ID_FILESFRAME,
-                                                            &WinData,
-                                                            ((pfd->fl & FDS_MULTIPLESEL) != 0),
-                                                                    // multiple sel?
-                                                            &WinData.hwndFilesCnr);
-                BEGIN_CNRINFO()
-                {
-                    cnrhSetView(   CV_NAME | CV_FLOW
-                                 | CV_MINI);
-                    cnrhSetTreeIndent(30);
-                } END_CNRINFO(WinData.hwndFilesCnr);
-
-                lstAppendItem(&WinData.llDialogControls, (PVOID)WinData.hwndFilesCnr);
-
-                // 3) fonts
-                winhSetWindowFont(WinData.hwndDrivesCnr,
-                                  cmnQueryDefaultFont());
-                winhSetWindowFont(WinData.hwndFilesCnr,
-                                  cmnQueryDefaultFont());
-
-                // create split window
-                sbcd.ulSplitWindowID = 1;
-                    // split window becomes client of main frame
-                sbcd.ulCreateFlags =   SBCF_VERTICAL
-                                     | SBCF_PERCENTAGE
-                                     | SBCF_3DSUNK
-                                     | SBCF_MOVEABLE;
-                sbcd.lPos = 30;     // percent
-                sbcd.ulLeftOrBottomLimit = 100;
-                sbcd.ulRightOrTopLimit = 100;
-                sbcd.hwndParentAndOwner = WinData.hwndMainClient;
-
-                WinData.hwndSplitWindow = ctlCreateSplitWindow(hab,
-                                                               &sbcd);
-                if (!WinData.hwndSplitWindow)
+                // find the folder whose contents to
+                // display in the left tree
+                WinData.pDrivesFolder = _wpclsQueryFolder(_WPFolder,
+                                                          "<WP_DRIVES>",
+                                                          TRUE);
+                if (    (!WinData.pDrivesFolder)
+                     || (!_somIsA(WinData.pDrivesFolder, _WPFolder))
+                   )
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                            "Cannot create split window.");
+                           "Cannot get drives folder.");
                 else
                 {
-                    // link left and right container
-                    WinSendMsg(WinData.hwndSplitWindow,
-                               SPLM_SETLINKS,
-                               (MPARAM)WinData.hwndDrivesFrame,
-                               (MPARAM)WinData.hwndFilesFrame);
+                    PLISTNODE pNode;
+                    BOOL fExit = FALSE;
+                    PMINIRECORDCORE pDrivesRec;
+                    POINTL ptlIcon = {0, 0};
 
-                    // show main dlg now
-                    WinSetWindowPos(WinData.hwndMainFrame,
-                                    HWND_TOP,
-                                    100, 100, 600, 600,
-                                    SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
+                    BuildDisksList(WinData.pDrivesFolder,
+                                   &WinData.llDisks);
 
-                    /*
-                     *  FILL DRIVES TREE
-                     *
-                     */
+                    // insert the drives folder
+                    pDrivesRec = _wpCnrInsertObject(WinData.pDrivesFolder,
+                                                    WinData.hwndDrivesCnr,
+                                                    &ptlIcon,
+                                                    NULL,       // parent record
+                                                    NULL);      // RECORDINSERT
 
-                    // find the folder whose contents to
-                    // display in the left tree
-                    WinData.pDrivesFolder = _wpclsQueryFolder(_WPFolder,
-                                                              "<WP_DRIVES>",
-                                                              TRUE);
-                    if (    (!WinData.pDrivesFolder)
-                         || (!_somIsA(WinData.pDrivesFolder, _WPFolder))
-                       )
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "Cannot get drives folder.");
-                    else
+                    // insert the folder contents into the
+                    // drives tree on the left... this is
+                    // relatively fast, so we do this
+                    // synchronously
+                    InsertFolderContents(WinData.hwndMainClient,
+                                         WinData.hwndDrivesCnr,
+                                         WinData.pDrivesFolder,
+                                         pDrivesRec,   // parent record
+                                         2,         // folders plus disks
+                                         NULL,      // no file mask
+                                         &WinData.llDriveObjectsInserted,
+                                         NULL,
+                                         &fExit);
+                                    // note that we do not add children
+                                    // to the disk objects yet... this
+                                    // would attempt to get the root folder
+                                    // for each of them
+
+                    // expand "drives"
+                    WinSendMsg(WinData.hwndDrivesCnr,
+                               CM_EXPANDTREE,
+                               (MPARAM)pDrivesRec,
+                               MPNULL);
+
+                    // this has called wpCnrinsertObjects which
+                    // subclasses the container owner, so
+                    // subclass this with the XFolder subclass
+                    // proc again; otherwise the new menu items
+                    // won't work
+                    WinData.psfvDrives
+                        = fdrCreateSFV(WinData.hwndDrivesFrame,
+                                       WinData.hwndDrivesCnr,
+                                       QWL_USER,
+                                       WinData.pDrivesFolder,
+                                       WinData.pDrivesFolder);
+                    WinData.psfvDrives->pfnwpOriginal
+                        = WinSubclassWindow(WinData.hwndDrivesFrame,
+                                            fnwpSubclassedDrivesFrame);
+
+                    if (WinData.psfvDrives->pfnwpOriginal)
                     {
-                        PLISTNODE pNode;
-                        BOOL fExit = FALSE;
-                        PMINIRECORDCORE pDrivesRec;
-                        POINTL ptlIcon = {0, 0};
+                        // OK, drives frame subclassed:
 
-                        BuildDisksList(WinData.pDrivesFolder,
-                                       &WinData.llDisks);
+                        // create the "add children" thread
+                        thrCreate(&WinData.tiAddChildren,
+                                  fntAddChildren,
+                                  &WinData.fAddChildrenRunning,
+                                  "AddChildren",
+                                  THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
+                                            // "add child" posts event sem
+                                            // when it has created the obj wnd
+                                  (ULONG)&WinData);
+                        // this will wait until the object window has been created
 
-                        // insert the drives folder
-                        pDrivesRec = _wpCnrInsertObject(WinData.pDrivesFolder,
-                                                        WinData.hwndDrivesCnr,
-                                                        &ptlIcon,
-                                                        NULL,       // parent record
-                                                        NULL);      // RECORDINSERT
+                        // expand the tree so that the current
+                        // directory/file mask etc. is properly
+                        // expanded
+                        UpdateDlgWithFullFile(&WinData);
+                                // this will expand the tree and
+                                // select the current directory;
+                                // pllToExpand receives records to
+                                // add first children to
 
-                        // insert the folder contents into the
-                        // drives tree on the left... this is
-                        // relatively fast, so we do this
-                        // synchronously
-                        InsertFolderContents(WinData.hwndMainClient,
-                                             WinData.hwndDrivesCnr,
-                                             WinData.pDrivesFolder,
-                                             pDrivesRec,   // parent record
-                                             2,         // folders plus disks
-                                             NULL,      // no file mask
-                                             &WinData.llDriveObjectsInserted,
-                                             NULL,
-                                             &fExit);
-                                        // note that we do not add children
-                                        // to the disk objects yet... this
-                                        // would attempt to get the root folder
-                                        // for each of them
+                        // start "add first child" thread which will
+                        // insert sub-records for each item in the drives
+                        // tree
+                        /* if (!StartAddFirstChild(&WinData,
+                                                pllToExpand))
+                            lstFree(pllToExpand); */
 
-                        // expand "drives"
-                        WinSendMsg(WinData.hwndDrivesCnr,
-                                   CM_EXPANDTREE,
-                                   (MPARAM)pDrivesRec,
-                                   MPNULL);
+                        WinData.fFileDlgReady = TRUE;
 
-                        // this has called wpCnrinsertObjects which
-                        // subclasses the container owner, so
-                        // subclass this with the XFolder subclass
-                        // proc again; otherwise the new menu items
-                        // won't work
-                        WinData.psfvDrives
-                            = fdrCreateSFV(WinData.hwndDrivesFrame,
-                                           WinData.hwndDrivesCnr,
-                                           QWL_USER,
-                                           WinData.pDrivesFolder,
-                                           WinData.pDrivesFolder);
-                        WinData.psfvDrives->pfnwpOriginal
-                            = WinSubclassWindow(WinData.hwndDrivesFrame,
-                                                fnwpSubclassedDrivesFrame);
-
-                        if (WinData.psfvDrives->pfnwpOriginal)
-                        {
-                            // OK, drives frame subclassed:
-
-                            // create the "add children" thread
-                            thrCreate(&WinData.tiAddChildren,
-                                      fntAddChildren,
-                                      &WinData.fAddChildrenRunning,
-                                      "AddChildren",
-                                      THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
-                                                // "add child" posts event sem
-                                                // when it has created the obj wnd
-                                      (ULONG)&WinData);
-                            // this will wait until the object window has been created
-
-                            // expand the tree so that the current
-                            // directory/file mask etc. is properly
-                            // expanded
-                            UpdateDlgWithFullFile(&WinData);
-                                    // this will expand the tree and
-                                    // select the current directory;
-                                    // pllToExpand receives records to
-                                    // add first children to
-
-                            // start "add first child" thread which will
-                            // insert sub-records for each item in the drives
-                            // tree
-                            /* if (!StartAddFirstChild(&WinData,
-                                                    pllToExpand))
-                                lstFree(pllToExpand); */
-
-                            WinData.fFileDlgReady = TRUE;
-
-                            WinSetFocus(HWND_DESKTOP, WinData.hwndFileEntry);
-
-                            /*
-                             *  PM MSG LOOP
-                             *
-                             */
-
-                            // standard PM message loop... we stay in here
-                            // (simulating a modal dialog) until WM_CLOSE
-                            // comes in for the main client
-                            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-                            {
-                                fExit = FALSE;
-                                if (    (qmsg.hwnd == WinData.hwndMainClient)
-                                     && (qmsg.msg == WM_CLOSE)
-                                   )
-                                {
-                                    _Pmpf((__FUNCTION__ ": got WM_CLOSE"));
-                                    fExit = TRUE;
-                                }
-
-                                WinDispatchMsg(hab, &qmsg);
-
-                                if (fExit)
-                                {
-                                    if (pfd->lReturn == DID_OK)
-                                    {
-                                        sprintf(pfd->szFullFile,
-                                                "%c:%s\\%s",
-                                                'A' + WinData.ulLogicalDrive - 1,        // drive letter
-                                                WinData.szDir,
-                                                WinData.szFileName);
-                                    }
-
-                                    hwndReturn = (HWND)TRUE;
-                                    break;
-                                }
-                            }
-                        } // if (WinData.psfvDrives->pfnwpOriginal)
-
-                        // stop threads
-                        WinPostMsg(WinData.hwndAddChildren,
-                                   WM_QUIT,
-                                   0, 0);
-                        WinData.tiAddChildren.fExit = TRUE;
-                        WinData.tiInsertContents.fExit = TRUE;
-                        DosSleep(0);
-                        while (    (WinData.fAddChildrenRunning)
-                                || (WinData.fInsertContentsRunning)
-                              )
-                        {
-                            winhSleep(50);
-                        }
+                        WinSetFocus(HWND_DESKTOP, WinData.hwndFileEntry);
 
                         /*
-                         *  CLEANUP
+                         *  PM MSG LOOP
                          *
                          */
 
-                        // prevent dialog updates
-                        WinData.fFileDlgReady = FALSE;
-                        ClearContainer(WinData.hwndDrivesCnr,
-                                       &WinData.llDriveObjectsInserted);
-                        ClearContainer(WinData.hwndFilesCnr,
-                                       &WinData.llFileObjectsInserted);
+                        // standard PM message loop... we stay in here
+                        // (simulating a modal dialog) until WM_CLOSE
+                        // comes in for the main client
+                        while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+                        {
+                            fExit = FALSE;
+                            if (    (qmsg.hwnd == WinData.hwndMainClient)
+                                 && (qmsg.msg == WM_CLOSE)
+                               )
+                            {
+                                _Pmpf((__FUNCTION__ ": got WM_CLOSE"));
+                                fExit = TRUE;
+                            }
 
-                    } // end else if (    (!WinData.pDrivesFolder)
+                            WinDispatchMsg(hab, &qmsg);
 
-                    if (WinData.pDrivesFolder)
-                        _wpUnlockObject(WinData.pDrivesFolder);
+                            if (fExit)
+                            {
+                                if (pfd->lReturn == DID_OK)
+                                {
+                                    sprintf(pfd->szFullFile,
+                                            "%c:%s\\%s",
+                                            'A' + WinData.ulLogicalDrive - 1,        // drive letter
+                                            WinData.szDir,
+                                            WinData.szFileName);
+                                }
 
-                    // clean up
-                    WinDestroyWindow(WinData.hwndSplitWindow);
-                } // end else if (!WinData.hwndSplitWindow)
+                                hwndReturn = (HWND)TRUE;
+                                break;
+                            }
+                        }
+                    } // if (WinData.psfvDrives->pfnwpOriginal)
 
-                WinDestroyWindow(WinData.hwndDrivesFrame);
-                WinDestroyWindow(WinData.hwndFilesFrame);
-                WinDestroyWindow(WinData.hwndMainFrame);
-            }
+                    // stop threads
+                    WinPostMsg(WinData.hwndAddChildren,
+                               WM_QUIT,
+                               0, 0);
+                    WinData.tiAddChildren.fExit = TRUE;
+                    WinData.tiInsertContents.fExit = TRUE;
+                    DosSleep(0);
+                    while (    (WinData.fAddChildrenRunning)
+                            || (WinData.fInsertContentsRunning)
+                          )
+                    {
+                        winhSleep(50);
+                    }
 
-            lstClear(&WinData.llDisks);
+                    /*
+                     *  CLEANUP
+                     *
+                     */
 
-            lstClear(&WinData.llDialogControls);
+                    // prevent dialog updates
+                    WinData.fFileDlgReady = FALSE;
+                    ClearContainer(WinData.hwndDrivesCnr,
+                                   &WinData.llDriveObjectsInserted);
+                    ClearContainer(WinData.hwndFilesCnr,
+                                   &WinData.llFileObjectsInserted);
+
+                } // end else if (    (!WinData.pDrivesFolder)
+
+                if (WinData.pDrivesFolder)
+                    _wpUnlockObject(WinData.pDrivesFolder);
+
+                // clean up
+                WinDestroyWindow(WinData.hwndSplitWindow);
+            } // end else if (!WinData.hwndSplitWindow)
+
+            WinDestroyWindow(WinData.hwndDrivesFrame);
+            WinDestroyWindow(WinData.hwndFilesFrame);
+            WinDestroyWindow(WinData.hwndMainFrame);
         }
-        CATCH(excpt1)
-        {
-        }
-        END_CATCH();
 
-        _Pmpf((__FUNCTION__ ": exiting, pfd->lReturn is %d", pfd->lReturn));
-        _Pmpf(("  pfd->szFullFile is %s", pfd->szFullFile));
-        _Pmpf(("  returning 0x%lX", hwndReturn));
+        lstClear(&WinData.llDisks);
+
+        lstClear(&WinData.llDialogControls);
     }
+    CATCH(excpt1)
+    {
+    }
+    END_CATCH();
+
+    _Pmpf((__FUNCTION__ ": exiting, pfd->lReturn is %d", pfd->lReturn));
+    _Pmpf(("  pfd->szFullFile is %s", pfd->szFullFile));
+    _Pmpf(("  returning 0x%lX", hwndReturn));
 
     return (hwndReturn);
 }

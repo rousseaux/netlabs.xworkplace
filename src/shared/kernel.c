@@ -2050,12 +2050,13 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
                 // not return until the dialog is dismissed
                 pfd->hwndReturn = fdlgFileDlg(pfd->hwndOwner,
                                               &pfd->fd);
-                // now post WM_USER back to the notify window
-                // given to us
-                WinPostMsg(pfd->hwndNotify,
-                           WM_USER,
-                           0, 0);
             }
+
+            // now post WM_USER back to the notify window
+            // given to us
+            WinPostMsg(pfd->hwndNotify,
+                       WM_USER,
+                       0, 0);
         break; }
 
         default:

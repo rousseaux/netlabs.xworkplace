@@ -419,7 +419,8 @@ typedef struct _XWPCLASSES
             fXWPClassList,
             fXWPTrashCan,
             fXWPString,
-            fXCenter;
+            fXCenter,
+            fXWPFonts;
 
     HWND    hwndTooltip;
     PSZ     pszTooltipString;
@@ -456,6 +457,9 @@ static USHORT G_usClassesToolIDs[] =
         // new items with V0.9.7
         ID_XCDI_XWPCLS_XCENTER,
 
+        // new items with V0.9.10
+        ID_XCDI_XWPCLS_XWPFONTS,
+
         DID_OK,
         DID_CANCEL
     };
@@ -467,6 +471,7 @@ static USHORT G_usClassesToolIDs[] =
  *@@changed V0.9.3 (2000-04-26) [umoeller]: added generic fonts support
  *@@changed V0.9.3 (2000-04-26) [umoeller]: added new classes
  *@@changed V0.9.5 (2000-08-23) [umoeller]: XWPMedia wasn't working, fixed
+ *@@changed V0.9.10 (2001-04-11) [pr]: added XWPFont* classes
  */
 
 MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -521,6 +526,10 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                   );
             pxwpc->fXWPString = (winhQueryWPSClass(pObjClass, "XWPString") != 0);
             pxwpc->fXCenter = (winhQueryWPSClass(pObjClass, "XCenter") != 0);
+            pxwpc->fXWPFonts = (   (winhQueryWPSClass(pObjClass, "XWPFontFolder") != 0)
+                                && (winhQueryWPSClass(pObjClass, "XWPFontFile") != 0)
+                                && (winhQueryWPSClass(pObjClass, "XWPFontObject") != 0)
+                               );
 
             // copy first structure to second one
             memcpy(pxwpc + 1, pxwpc, sizeof(XWPCLASSES));
@@ -549,6 +558,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN, pxwpc->fXWPTrashCan);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING, pxwpc->fXWPString);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XCENTER, pxwpc->fXCenter);
+            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPFONTS, pxwpc->fXWPFonts);
 
             cmnSetControlsFont(hwndDlg, 0, 5000);
                     // added V0.9.3 (2000-04-26) [umoeller]
@@ -678,6 +688,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 pxwpcNew->fXWPTrashCan = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN);
                 pxwpcNew->fXWPString = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING);
                 pxwpcNew->fXCenter = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XCENTER);
+                pxwpcNew->fXWPFonts = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPFONTS);
 
                 // compare old and new selections:
                 // if we have a difference, add the class name
@@ -905,6 +916,22 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 else if ((pxwpcNew->fXCenter) && (!pxwpcOld->fXCenter))
                     // register
                     xstrcat(&strReg, "XCenter\n", 0);
+
+                if ((pxwpcOld->fXWPFonts) && (!pxwpcNew->fXWPFonts))
+                {
+                    // deregister XWPFontFolder
+                    xstrcat(&strDereg, "XWPFontFolder\n", 0);
+                    // deregister XWPFontFile
+                    xstrcat(&strDereg, "XWPFontFile\n", 0);
+                    // deregister XWPFontObject
+                    xstrcat(&strDereg, "XWPFontObject\n", 0);
+                }
+                else if ((pxwpcNew->fXWPFonts) && (!pxwpcOld->fXWPFonts))
+                {
+                    xstrcat(&strReg, "XWPFontFolder\n", 0);
+                    xstrcat(&strReg, "XWPFontFile\n", 0);
+                    xstrcat(&strReg, "XWPFontObject\n", 0);
+                }
 
                 // check if we have anything to do
                 fReg = (strReg.ulLength != 0);
@@ -2747,12 +2774,13 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
  *@@ setCreateStandardObject:
  *      this creates a default WPS/XWP object from the
  *      given menu item ID, after displaying a confirmation
- *      box (XWPSetup "Obejcts" page).
+ *      box (XWPSetup "Objects" page).
  *      Returns TRUE if the menu ID was found in the given array.
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: renamed prototype; added hwndOwner
  *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
  *@@changed V0.9.9 (2001-04-07) [pr]: added location field for creating objects
+ *@@changed V0.9.10 (2001-04-09) [pr]: modified location handling, fixed message box location
  */
 
 BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
@@ -2786,10 +2814,14 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
     {
         if (pso2->usMenuID == usMenuID)
         {
-            CHAR    szSetupString[2000];
-            PSZ     apsz[2] = {  NULL,              // will be title
+            CHAR    szSetupString[2000],
+                    szLocationPath[CCHMAXPATH];
+            PSZ     apsz[3] = {  NULL,              // will be title
+                                 szLocationPath,
                                  szSetupString
                               };
+            PCSZ    pcszLocation;
+            WPObject *pObjLocation;
 
             // get class's class object
             somId       somidThis = somIdFromString((PSZ)pso2->pcszObjectClass);
@@ -2805,12 +2837,26 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
             if (apsz[0] == NULL)
                 // title not found: use class name then
-                apsz[0] = (PSZ)(*(pso2->pcszObjectClass));
+                apsz[0] = (PSZ)pso2->pcszObjectClass;
+
+            pcszLocation = pso2->pcszLocation;
+            strcpy(szLocationPath, pcszLocation);
+            pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL);
+            if (!pObjLocation)
+            {
+                pcszLocation = WPOBJID_DESKTOP;
+                pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL);
+            }
+
+            if (pObjLocation && _somIsA(pObjLocation, _WPFileSystem))
+                _wpQueryFilename(pObjLocation,
+                                 szLocationPath,
+                                 TRUE);
 
             if (cmnMessageBoxMsgExt(hwndOwner,
                                     148, // "XWorkplace Setup",
                                     apsz,
-                                    2,
+                                    3,
                                     163,        // "create object?"
                                     MB_YESNO)
                          == MBID_YES)
@@ -2818,16 +2864,9 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                 HOBJECT hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,  // class
                                                apsz[0],                     // title
                                                szSetupString,               // setup
-                                               (PSZ)pso2->pcszLocation,     // location
+                                               (PSZ)pcszLocation,           // location
                                                CO_FAILIFEXISTS);
 
-                if (!hobj)
-                    // didn't work in given location: try desktop instead
-                    hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,      // class
-                                           apsz[0],                         // title
-                                           szSetupString,                   // setup
-                                           (PSZ)WPOBJID_DESKTOP,            // location
-                                           CO_FAILIFEXISTS);
                 if (hobj)
                 {
                     // alright, got it:
@@ -2880,7 +2919,7 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
          ul < ulMax;
          ul++)
     {
-        /* WPObject* pObject = wpshQueryObjectFromID(pso2->pszDefaultID,
+        /* WPObject* pObject = wpshQueryObjectFromID(*pso2->ppcszDefaultID,
                                                   NULL);        // pulErrorCode
                 */
         XSTRING strMenuItemText;

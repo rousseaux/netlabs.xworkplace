@@ -781,6 +781,8 @@ MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
  *@@ sndSoundsInitPage:
  *      "Sounds" page notebook callback function (notebook.c).
  *      Sets the controls on the page.
+ *
+ *@@changed V0.9.10 (2001-04-08) [umoeller]: fixed fixed MMPM.INI path location
  */
 
 VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info struct
@@ -823,7 +825,9 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
                 pspd->pfnwpSoundFileOriginal = WinSubclassWindow(pspd->hwndSoundFile,
                                                                  fnwpSubclassedSoundFile);
 
-                sprintf(pspd->szMMPM, "%c:\\MMOS2\\MMPM.INI", doshQueryBootDrive());
+                // sprintf(pspd->szMMPM, "%c:\\MMOS2\\MMPM.INI", doshQueryBootDrive());
+                sndQueryMmpmIniPath(pspd->szMMPM);
+                        // V0.9.10 (2001-04-16) [umoeller]
 
                 // create circular slider
                 winhReplaceWithCircularSlider(pcnbp->hwndDlgPage, pcnbp->hwndDlgPage,

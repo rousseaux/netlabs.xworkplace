@@ -463,3 +463,10 @@ VPForm 1 (Vispro Rexx 3.01) Forms class.
 
 XWPProgram 1 This is the XWorkplace replacement class for WPProgram for additional functionality for program objects.
 
+// Items added with V0.9.10
+CBFolder 1 (ZipStream) ZipStream WPS interface. Adds a ZipStream menu entry on every file system object.
+BDView 1 (OS/2 V4.5) Language viewer class.
+
+
+
+

@@ -172,7 +172,7 @@ BEGIN
     MENUITEM "~Configuration folder", 210
     MENUITEM "~Startup folder", 211
     MENUITEM "S~hutdown folder", 212
-    MENUITEM "~Font folder", 213
+    MENUITEM """~Fonts"" folder", 213
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Trash can", 220
     MENUITEM "Set~up string", 221

@@ -1026,7 +1026,7 @@ HWND winhCreateStatusBar(HWND hwndFrame,
     winhStorePresParam(&ppp, PP_FOREGROUNDCOLOR, sizeof(lColor), &lColor);
     hwndReturn = WinCreateWindow(G_hwndMain,
                                   WC_STATIC,
-                                  "Welcome.",
+                                  "Welcome to xmlview, built " __DATE__,
                                   SS_TEXT | DT_VCENTER | WS_VISIBLE,
                                   0, 0, 0, 0,
                                   hwndOwner,
@@ -1318,7 +1318,7 @@ int main(int argc, char* argv[])
 
     DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
 
-    HWND hwndDlg = NULLHANDLE;
+    /* HWND hwndDlg = NULLHANDLE;
     APIRET arc = dlghCreateDlg(&hwndDlg,
                                NULLHANDLE,      // owner
                                FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
@@ -1338,9 +1338,8 @@ int main(int argc, char* argv[])
         CHAR szErr[100];
         sprintf(szErr, "Error %d", arc);
         winhDebugBox(NULLHANDLE, "Error", szErr);
-    }
+    } */
 
-    /*
     // create frame and container
     G_hwndMain = winhCreateStdWindow(HWND_DESKTOP,
                                      0,
@@ -1396,7 +1395,7 @@ int main(int argc, char* argv[])
         {
             WinDispatchMsg(hab, &qmsg);
         }
-    } */
+    }
 
     // clean up on the way out
     WinDestroyMsgQueue(hmq);

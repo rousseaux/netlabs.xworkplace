@@ -462,11 +462,12 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
  *      is valid.
  *
  *@@changed V0.9.0 [umoeller]: now using TRY_xxx macros
+ *@@changed V0.9.10 (2001-04-10) [pr]: null pObject now returns FALSE
  */
 
 BOOL wpshCheckObject(WPObject *pObject)
 {
-    BOOL                  brc = TRUE;
+    BOOL                  brc = FALSE;
 
     if (pObject)
     {

@@ -2082,6 +2082,7 @@ BOOL FrameTimer(HWND hwnd,
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  *@@changed V0.9.9 (2001-02-06) [umoeller]: fixed WM_CLOSE problems on wpClose
  *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy... WM_DESTROY cleanup is now handled here
+ *@@changed V0.9.10 (2001-04-11) [umoeller]: added WM_HITTEST, as requested by Alessandro Cantatore
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2194,6 +2195,26 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
 
             case WM_ADJUSTFRAMEPOS:
                 // do NOTHING!
+            break;
+
+            /*
+             * WM_HITTEST:
+             *      according to PMREF, the frame usually
+             *      returns TF_MOVE here, even though this
+             *      is not listed in the list of valid
+             *      WM_HITTEST return codes. Whatever this
+             *      means.
+             *
+             *      Alessandro Cantatore asked for this to
+             *      return HT_NORMAL here in order not to
+             *      break Styler/2 sliding focus (and tooltips),
+             *      so this was now added (V0.9.10 (2001-04-11) [umoeller]).
+             */
+
+            case WM_HITTEST:
+                // return the default NULL
+                // #define HT_NORMAL                   0
+                // return (MRESULT)0;
             break;
 
             /*

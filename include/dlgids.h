@@ -590,6 +590,9 @@
 // new classes with V0.9.7
 #define ID_XCDI_XWPCLS_XCENTER          1270
 
+// new classes with V0.9.10
+#define ID_XCDI_XWPCLS_XWPFONTS         1271
+
 /******************************************
  * XWPScreen ("Screen", PageMage) >= 1400 *
  ******************************************/

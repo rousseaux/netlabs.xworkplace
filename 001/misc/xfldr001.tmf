@@ -204,11 +204,13 @@ Do you wish to continue?
 
 <--XFL0162-->: Are you sure you wish to remove the hotkey "%1" for the object "%2"?
 
-<--XFL0163-->: This will create an object called "%1" on the Desktop with the setup string "%2".
+; the following one has changed with V0.9.10
+<--XFL0163-->: This will create an object called "%1" in the folder "%2" with the setup string "%3".
 
 Do you wish to continue?
 
-<--XFL0164-->: The object was successfully created on your Desktop.
+; the following one has changed with V0.9.10
+<--XFL0164-->: The object was successfully created.
 
 <--XFL0165-->: Error: The object could not be created. Make sure you have the corresponding WPS class installed.
 
@@ -829,5 +831,14 @@ This was added with XWorkplace 0.9.4.
 ;
 
 <--XWPCLS_1270-->: "XCenter" implements a new system bar at the top or the bottom of your desktop. This can be used as a WarpCenter replacement, or even together with the WarpCenter.
+
+
+;
+; the following was added with V0.9.10
+;
+
+<--XWPCLS_1271-->: "XWPFontFolder" implements a new folder containing all your fonts.
+"XWPFontObject" implements the "font objects" found in that folder and will automatically be installed with XWPFontFolder.
+"XWPFontFile" is a new subclass of WPDataFile and will also be automatically installed with XWPFontFolder. All files which are really font files will automatically turn into instances of this class.
 
 
