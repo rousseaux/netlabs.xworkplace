@@ -209,7 +209,7 @@ BOOL mnuQueryDefaultMenuBarVisibility(VOID)
  *@@ mnuSetDefaultMenuBarVisibility:
  *      reversely to mnuQueryDefaultMenuBarVisibility,
  *      sets the default setting for folder menu bars.
- *      Returns FALSE if an error occured.
+ *      Returns FALSE if an error occurred.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
@@ -248,7 +248,7 @@ BOOL mnuQueryShortMenuStyle(VOID)
  *@@ mnuSetShortMenuStyle:
  *      reversely to mnuQueryShortMenuStyle,
  *      sets the default setting for short menus.
- *      Returns FALSE if an error occured.
+ *      Returns FALSE if an error occurred.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
@@ -1120,7 +1120,7 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
                                                      hNewMenu,
                                                      hwndCnr);
                                                      // ulOfs); V1.0.1 (2002-12-08) [umoeller]
-                // now we're back: check if error occured; if so, exit
+                // now we're back: check if error occurred; if so, exit
                 // immediately to stop recursing
                 if (lDefaultItem == -1)
                     return -1;
@@ -1886,7 +1886,7 @@ STATIC BOOL ModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root fold
     {
         // exception caught:
         PSZ pszErrMsg;      // @@todo get rid of this shit
-        if (pszErrMsg = strdup("An error occured while XFolder was trying to build "
+        if (pszErrMsg = strdup("An error occurred while XFolder was trying to build "
                                "a folder's context menu. This might be due to the fact "
                                "that you have deleted objects from the Configuration folders, "
                                "but you did "

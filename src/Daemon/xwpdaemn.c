@@ -367,7 +367,7 @@ FILE* _System dmnExceptOpenLogFile(VOID)
                       "so that this error may be fixed for future XWorkplace versions.\n"
                       "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
                       "and describe as exactly as possible the conditions under which\n"
-                      "the error occured.\n"
+                      "the error occurred.\n"
                       "\nRunning XWorkplace version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }
@@ -3668,7 +3668,7 @@ int main(int argc, char *argv[])
                         while (WinGetMsg(G_habDaemon, &qmsg, 0, 0, 0))
                             WinDispatchMsg(G_habDaemon, &qmsg);
                     }
-                    // else: exception occured...
+                    // else: exception occurred...
 
                     DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&TermExcptStruct.RegRec2);
 

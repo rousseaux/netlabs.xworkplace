@@ -410,7 +410,7 @@ int main(int argc, char* argv[])
     if (arc = xprfOpenProfile(argv[1],
                               &pIni))
     {
-        printf("Error %d occured opening \"%s\"\n", arc, argv[1]);
+        printf("Error %d occurred opening \"%s\"\n", arc, argv[1]);
     }
     else
     {

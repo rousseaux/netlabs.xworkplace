@@ -420,7 +420,7 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
                                             szResModule,
                                             &G_hmodRes))
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "Error %d occured loading \"%s\".",
+                               "Error %d occurred loading \"%s\".",
                                arc, szResModule);
                 }
             }
@@ -903,7 +903,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
             if (szError[0])
             {
-                // error occured:
+                // error occurred:
                 // if current language is not English, revert to 001
                 // and retry V0.9.19 (2002-04-24) [umoeller]
                 if (strcmp(DEFAULT_LANGUAGECODE, cmnQueryLanguageCode()))
@@ -999,7 +999,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
     if (hmodReturn == NULLHANDLE)
         // error:
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Returning NULLHANDLE. Some error occured.");
+               "Returning NULLHANDLE. Some error occurred.");
 
     // return (new?) module handle
     return hmodReturn;
@@ -3902,7 +3902,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
             }
 
             if (!brc)
-                // error occured:
+                // error occurred:
                 break;
         } // end if (pSettingThis->pcszSetupString)
     }
@@ -4915,7 +4915,7 @@ STATIC MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                         cmnGetMessage(&apcsz,
                                       1,
                                       &str2,
-                                      245); // An error occured while &xwp; was trying to start your system's default browser (%1):
+                                      245); // An error occurred while &xwp; was trying to start your system's default browser (%1):
                         cmnGetMessage(NULL,
                                       0,
                                       &str3,
@@ -5993,7 +5993,7 @@ static const DLGHITEM G_dlgRun[] =
  *      line using winhStartApp.
  *
  *      Returns the HAPP that was started or NULLHANDLE,
- *      e.g. if an error occured or the user cancelled
+ *      e.g. if an error occurred or the user cancelled
  *      the dialog.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
@@ -7061,7 +7061,7 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
                     cmnGetMessage(&apsz,
                                   1,
                                   pstr,
-                                  219);          // "error %d occured"
+                                  219);          // "error %d occurred"
                 }
             break;
 

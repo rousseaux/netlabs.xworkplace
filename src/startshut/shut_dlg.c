@@ -1019,7 +1019,7 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
  *      reverse to xsdLoadAutoCloseItems, this writes the
  *      auto-close items back to OS2.INI.
  *
- *      This returns 0 only if no error occured. If something
+ *      This returns 0 only if no error occurred. If something
  *      != 0 is returned, that's the index of the list item
  *      which was found to be invalid.
  *

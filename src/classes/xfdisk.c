@@ -640,7 +640,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
                                             ULONG ulView,
                                             ULONG param)
 {
-    HWND            hwndFrame = NULLHANDLE; // default: error occured
+    HWND            hwndFrame = NULLHANDLE; // default: error occurred
 
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpViewObject");
@@ -710,7 +710,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                       ULONG ulView,
                                       ULONG param)
 {
-    HWND            hwndNewFrame = NULLHANDLE; // default: error occured
+    HWND            hwndNewFrame = NULLHANDLE; // default: error occurred
     XFolder         *pRootFolder = NULL;
 
     PMPF_DISK(("entering"));

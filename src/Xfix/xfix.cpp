@@ -3291,7 +3291,7 @@ VOID FrameCommand(HWND hwndFrame,
                         ULONG ulrc;
                         if (ulrc = RemoveHandles(hwndCnr, pll))
                         {
-                            sprintf(szText, "Error %d occured.", ulrc);
+                            sprintf(szText, "Error %d occurred.", ulrc);
                             MessageBox(hwndFrame,
                                        MB_OK | MB_MOVEABLE,
                                        szText);
@@ -3474,7 +3474,7 @@ VOID FrameCommand(HWND hwndFrame,
                     winhDebugBox(G_hwndMain, "xfix", sz);
                 }
                 else
-                    winhDebugBox(G_hwndMain, "xfix", "An error occured moving the abstracts.");
+                    winhDebugBox(G_hwndMain, "xfix", "An error occurred moving the abstracts.");
             }
             break;
 
@@ -3680,7 +3680,7 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                 else
                     // done, error:
                     SetStatusBarText(G_hwndMain,
-                                     "An error occured parsing the handles section.");
+                                     "An error occurred parsing the handles section.");
 
                 thrWait(&G_tiInsertHandles);
 
@@ -4016,7 +4016,7 @@ int main(int argc, char* argv[])
 
                 MessageBox(NULLHANDLE,
                            MB_CANCEL,
-                           "Fatal error %d occured loading the handles from the INI files. Description: %s",
+                           "Fatal error %d occurred loading the handles from the INI files. Description: %s",
                            arc,
                            pcszError);
             }

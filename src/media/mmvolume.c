@@ -245,7 +245,7 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
 
                     if (ul == -1)
                     {
-                        // error occured:
+                        // error occurred:
                         cmnMessageBoxExt(hwndFrame,
                                          104,       // xwp: error
                                          NULL, 0,

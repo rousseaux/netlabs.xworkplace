@@ -1487,7 +1487,7 @@ VOID MwgtPaint2(HWND hwnd,
                 // insufficient APM version:
                 strcpy(szPaint, "APM 1.2 required.");
             else if (pPrivate->arcAPM)
-                // other error occured:
+                // other error occurred:
                 pdrv_sprintf(szPaint, "E %d", pPrivate->arcAPM);
             else
             {

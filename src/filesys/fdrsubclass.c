@@ -71,7 +71,7 @@
  *      semaphores...
  *
  *      This hopefully fixes most folder serialization problems
- *      which have occured with previous XFolder/XWorkplace versions.
+ *      which have occurred with previous XFolder/XWorkplace versions.
  *
  *      Since I was unable to find out where WinRegisterClass
  *      gets called from in the WPS, I have implemented a local
@@ -2167,7 +2167,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     // menu item, because for others no WM_DRAWITEM is sent
                     if (cmnuDrawItem(mp1, mp2))
                         mrc = (MRESULT)TRUE;
-                    else // error occured:
+                    else // error occurred:
                         fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
                 }
                 else
@@ -2396,7 +2396,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
     } // end TRY_LOUD
     CATCH(excpt1)
     {
-        // exception occured:
+        // exception occurred:
         // return 0;        // not good V0.9.19 (2002-05-23) [umoeller]
         fCallDefault = FALSE;
         mrc = NULL;

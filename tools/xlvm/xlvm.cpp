@@ -2083,7 +2083,7 @@ MRESULT EXPENTRY fnwpClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
             else
             {
                 WinSetWindowText(G_hwndStatusBar,
-                                 "An error occured loading the LVM data.");
+                                 "An error occurred loading the LVM data.");
             }
         }
         break;

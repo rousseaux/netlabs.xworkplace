@@ -243,7 +243,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
  *      This method updates all open folder views with the new
  *      sort settings.
  *
- *      This method returns TRUE if any visible change occured as
+ *      This method returns TRUE if any visible change occurred as
  *      a result to the new settings.
  *
  *@@changed V0.9.2 (2000-03-08) [umoeller]: added folder locking

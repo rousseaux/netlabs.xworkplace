@@ -251,7 +251,7 @@ BOOL _Optlink fncbBuildAssocsList(PCSZ pcszType,
  *      The list (which is of type PLINKLIST, containing
  *      plain WPObject* pointers) is returned.
  *
- *      This returns NULL if an error occured or no
+ *      This returns NULL if an error occurred or no
  *      associations were added.
  *
  *      NOTE: This locks each object instantiated as a
@@ -465,7 +465,7 @@ SOM_Scope HBITMAP  SOMLINK xdf_xwpQueryThumbnail(XFldDataFile *somSelf)
  *      thumbnail is deleted.
  *
  *      As a special error code, you may set a -1 handle to signal
- *      that an error occured creating the thumbnail (for example,
+ *      that an error occurred creating the thumbnail (for example,
  *      because reading the object's data failed) and the system
  *      should not attempt to create a thumbnail again.
  *
@@ -1433,7 +1433,7 @@ SOM_Scope void  SOMLINK xdf_xwpLazyLoadIcon(XFldDataFile *somSelf,
        )
     {
         // check that thumbnail is not loaded yet and no
-        // error occured (hbmThumbnail is -1 then)
+        // error occurred (hbmThumbnail is -1 then)
         if (!(hbmThumbnail = _xwpQueryThumbnail(somSelf)))
         {
             BOOL    fLocked = FALSE;

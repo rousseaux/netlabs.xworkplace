@@ -523,7 +523,7 @@ FILE* _System krnExceptOpenLogFile(VOID)
                 "so that this error may be fixed for future " XWORKPLACE_STRING " versions.\n"
                 "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
                 "and describe as exactly as possible the conditions under which\n"
-                "the error occured.\n"
+                "the error occurred.\n"
                 "\nRunning XFLDR.DLL version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }

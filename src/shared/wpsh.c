@@ -546,7 +546,7 @@ BOOL wpshCheckObject(WPObject *pObject)
         CATCH(excpt1)
         {
             // the thread exception handler puts us here if an exception
-            // occured, i.e. the object was not valid:
+            // occurred, i.e. the object was not valid:
             brc = FALSE;
 
             PMPF_ORDEREDLIST(("Invalid object found."));

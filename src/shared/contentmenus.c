@@ -411,7 +411,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
     }
     CATCH(excpt1)
     {
-        // exception occured:
+        // exception occurred:
         mrc = 0;
     } END_CATCH();
 

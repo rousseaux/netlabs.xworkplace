@@ -506,7 +506,7 @@ VOID plgLoadClasses(PPLUGINCATEGORY pplgCategory)
 
                         if (arc2)
                         {
-                            // error occured (or crash):
+                            // error occurred (or crash):
                             // unload the module again
                             FreeModule(hmod,
                                        FALSE);      // do not call uninit

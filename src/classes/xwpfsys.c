@@ -563,7 +563,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
  *
  *      Before V0.9.19, we used to override wpSetTitleAndRenameFile
  *      which worked for 95% of the cases, but not when a file
- *      conflict occured because in that case, this method got
+ *      conflict occurred because in that case, this method got
  *      called behind our back, rendering our tree all wrong and
  *      leading to duplicate entries sometimes.
  *      WPFileSystem::wpSetTitleAndRenameFile calls this in turn,

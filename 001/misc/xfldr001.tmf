@@ -60,7 +60,7 @@
 ;
 ; 111 changed with V1.0.0
 ;
-<--XFL0111-->: Error %1 occured saving the INI files. Error description:
+<--XFL0111-->: Error %1 occurred saving the INI files. Error description:
 
 %2
 
@@ -140,7 +140,7 @@ There is a possibility that the Workplace Shell might be damaged at the next reb
 
 <--XFL0148-->: &xwp; Setup
 
-<--XFL0149-->: Errors occured with the following &xwp; classes:
+<--XFL0149-->: Errors occurred with the following &xwp; classes:
 %1
 Some of the class changes might have been successful however. Restart the WPS for the changes to take effect.
 
@@ -229,7 +229,7 @@ Are you sure you wish to empty the trash can?
 
 Should we do this now?
 
-<--XFL0171-->: An error occured registering the trash can WPS classes.
+<--XFL0171-->: An error occurred registering the trash can WPS classes.
 
 <--XFL0172-->: Do you wish to destroy the trash object and deregister the &xwp; trash can classes (XWPTrashCan, XWPTrashObject)?
 
@@ -321,7 +321,7 @@ Have fun with &xwp;!
 
 ; text change V1.0.1
 
-<--XFL0200-->: Error %1 occured processing the font file "%2".
+<--XFL0200-->: Error %1 occurred processing the font file "%2".
 
 Do you wish to ignore this error and continue installing fonts?
 
@@ -378,11 +378,11 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 
 <--XFL0213-->: The file types were successfully exported to the file "%1".
 
-<--XFL0214-->: Error %2 occured exporting the file types to the file "%1".
+<--XFL0214-->: Error %2 occurred exporting the file types to the file "%1".
 
 <--XFL0215-->: File types were successfully imported from the file "%1".
 
-<--XFL0216-->: An error occured importing file types from the file "%1":
+<--XFL0216-->: An error occurred importing file types from the file "%1":
 %2
 
 <--XFL0217-->: The file "%1" exists already. Do you wish to overwrite it with the new data?
@@ -433,7 +433,7 @@ You can always disable turbo folders again to get the old WPS mechanism back.
 <--XFL0226-->: "%1" is a folder. Are you sure you want to permanently delete it, including all of its contents?
 
 <--XFL0227-->: Cannot start program
-<--XFL0228-->: An error occured starting the program "%1". The operating system returned the following error message:
+<--XFL0228-->: An error occurred starting the program "%1". The operating system returned the following error message:
 <--XFL0229-->: Do you wish to open the properties notebook of the program object?
 
 ;
@@ -442,7 +442,7 @@ You can always disable turbo folders again to get the old WPS mechanism back.
 
 <--XFL0230-->: Desktop error
 <--XFL0231-->: &xwp; was trying to check your desktop for integrity.
-While attempting to parse the Workplace Shell file-system handles table from your system profile, error %1 occured.
+While attempting to parse the Workplace Shell file-system handles table from your system profile, error %1 occurred.
 This does not necessarily mean that your desktop is broken, but it appears that your file-system handles table has some problems.
 
 &xwp; can now display the "Panic" dialog for you, where you do can any of the following:
@@ -460,7 +460,7 @@ Do you wish to restart the daemon now?
 
 <--XFL0233-->: &xwp; was unable to find the WPS class "%1". Probably the class is not installed.
 
-<--XFL0234-->: The regular expression you have specified is invalid. The following error occured:
+<--XFL0234-->: The regular expression you have specified is invalid. The following error occurred:
 
 %1
 
@@ -470,14 +470,14 @@ Do you wish to start the program anyway?
 
 <--XFL0236-->: "%1" is a folder. Are you sure you want to move it into the trash can, including all of its contents?
 
-<--XFL0237-->: A protection violation occured. The operation cannot continue.
+<--XFL0237-->: A protection violation occurred. The operation cannot continue.
 
 <--XFL0238-->: Rename
     "%1"
 to
     "%2"?
 
-<--XFL0239-->: The "replace" expression you have specified is invalid. The following error occured:
+<--XFL0239-->: The "replace" expression you have specified is invalid. The following error occurred:
 
 %1
 
@@ -501,7 +501,7 @@ If you are using backreferences (e.g. "\1") in the "replace" string, make sure y
 ; the following items are new with V1.0.0
 ;
 
-<--XFL0245-->: An error occured while &xwp; was trying to start your system's default browser (%1):
+<--XFL0245-->: An error occurred while &xwp; was trying to start your system's default browser (%1):
 
 <--XFL0246-->: Check your default browser settings in any URL object.
 
@@ -539,7 +539,7 @@ When you report a bug through the bugtracker, attach this file with the bug repo
 
 Thank you.
 
-<--XFL0252-->: "%1" cannot be deleted. The following error occured:
+<--XFL0252-->: "%1" cannot be deleted. The following error occurred:
 
 %2
 

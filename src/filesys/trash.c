@@ -915,7 +915,7 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
  *      class object (somSelf of this function).
  *
  *      This returns the new trash object. If NULL is returned,
- *      either an error occured creating the trash object or
+ *      either an error occurred creating the trash object or
  *      a trash object with the same pRelatedObject already
  *      existed in the trash can.
  *
@@ -1354,7 +1354,7 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
     }
     CATCH(excpt1)
     {
-        // exception occured:
+        // exception occurred:
         brc = FALSE;        // report error
     } END_CATCH();
 
@@ -1943,7 +1943,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
  *      -- RC_DROP_DROPCOMPLETE 2: all objects processed; prohibit
  *         further wpDrop calls
  *
- *      -- RC_DROP_ERROR -1: error occured, terminate drop
+ *      -- RC_DROP_ERROR -1: error occurred, terminate drop
  *
  *      -- RC_DROP_ITEMCOMPLETE 1: one item processed, call wpDrop
  *         again for subsequent items

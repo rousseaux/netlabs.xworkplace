@@ -240,7 +240,7 @@ BOOL hifXWPHookReady(VOID)
  *      Returns TRUE if the pager was updated.
  *      Will return FALSE only if the daemon is
  *      not running or some other strange error
- *      occured.
+ *      occurred.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  *@@changed V0.9.19 (2002-05-28) [umoeller]: now setting global setting too

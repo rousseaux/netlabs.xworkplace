@@ -467,7 +467,7 @@ VOID drvUnloadPlugins(VOID)
  *      dialogs (either built-in or from the plugins dir)
  *      and calls the "check driver name" func for each.
  *
- *      Returns FALSE if a fatal error occured.
+ *      Returns FALSE if a fatal error occurred.
  *
  *@@added V0.9.1 (99-11-29) [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added IBM1S506.ADD support

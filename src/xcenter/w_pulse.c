@@ -196,7 +196,7 @@ typedef struct _WIDGETPRIVATE
                                         // previous CPU interrupt loads
                                         // added V0.9.9 (2001-03-14) [umoeller]
 
-    APIRET          arc;                // if != NO_ERROR, an error occured, and
+    APIRET          arc;                // if != NO_ERROR, an error occurred, and
                                         // the error code is displayed instead,
                                         // effectively disabling the widget
 

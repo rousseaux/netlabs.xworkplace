@@ -2015,7 +2015,7 @@ BOOL initRepairDesktopIfBroken(VOID)
 
         default:
             sprintf(szMsg,
-                    "Unknown error %d occured.",
+                    "Unknown error %d occurred.",
                     G_ulDesktopValid);
         break;
     }

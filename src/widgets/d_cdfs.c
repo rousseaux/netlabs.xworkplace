@@ -1004,7 +1004,7 @@ BOOL EXPENTRY ShowCDFSDlg(HWND hwndOwner,
  *
  *      --  1: driver _is_ supported here. See above.
  *
- *      --  -1: a fatal error occured, and the plugin
+ *      --  -1: a fatal error occurred, and the plugin
  *             should be unloaded again.
  *
  *      <B>Importing from XFLDR.DLL</B>

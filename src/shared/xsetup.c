@@ -3037,7 +3037,7 @@ MRESULT setStatusItemChanged(PNOTEBOOKPAGE pnbp,
                     if (cmnQueryNLSModuleHandle(TRUE)    // reload flag
                              == NULLHANDLE)
                     {
-                        // error occured loading the module: restore
+                        // error occurred loading the module: restore
                         //   old language
                         cmnSetLanguageCode(szOldLanguageCode);
                         // update display

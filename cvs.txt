@@ -292,7 +292,7 @@ Last updated March 6, 2002 by Ulrich M”ller
            update. You get this no matter if the file was updated
            (i.e. changes were merged successfully) or not.
 
-        C: This happens if merge failed and a "C"onflict occured.
+        C: This happens if merge failed and a "C"onflict occurred.
            You need to manually edit all files which have been
            marked with "C"; if they are C source files, they will
            no longer compile.

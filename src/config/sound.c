@@ -423,7 +423,7 @@ STATIC VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
  *
  *      Returns TRUE only if we actually copied, that
  *      is, the user didn't press Cancel and no errors
- *      occured.
+ *      occurred.
  *
  *@@changed V0.9.20 (2002-07-03) [umoeller]: check for scheme exists is case-insensitive now
  */

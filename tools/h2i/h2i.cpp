@@ -2252,7 +2252,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
             {
                 Error(2,
                       __FILE__, __LINE__, __FUNCTION__,
-                      "Error %d occured reading file \"%s\".",
+                      "Error %d occurred reading file \"%s\".",
                       arc,
                       (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
                 arc = 1;

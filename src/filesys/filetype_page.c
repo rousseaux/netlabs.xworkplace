@@ -939,7 +939,7 @@ STATIC VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
  *@@ CreateFileType:
  *      creates a new file type.
  *
- *      Returns FALSE if an error occured, e.g. if
+ *      Returns FALSE if an error occurred, e.g. if
  *      the file type already existed.
  *
  *@@added V0.9.7 (2000-12-13) [umoeller]

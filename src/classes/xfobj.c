@@ -1499,7 +1499,7 @@ SOM_Scope void  SOMLINK xo_xwpRemovedFromList(XFldObject *somSelf,
  *      the MINIRECORDCORE of an object just before the object
  *      actually gets inserted into a container.
  *
- *      If no error occured, this returns a new USEITEM with
+ *      If no error occurred, this returns a new USEITEM with
  *      the RECORDITEM following, which is allocated from
  *      the WPS heap.
  *

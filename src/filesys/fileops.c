@@ -27,7 +27,7 @@
  *          --  the top layer (see fops_top.c).
  *
  *          The framework uses the special APIRET error return type,
- *          which is NO_ERROR (0) if no error occured.
+ *          which is NO_ERROR (0) if no error occurred.
  *
  *      This file is ALL new with V0.9.0.
  *

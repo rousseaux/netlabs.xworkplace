@@ -704,8 +704,8 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                     }
                     CATCH(excpt1)
                     {
-                        // the exception handler puts us here if an exception occured:
-                        // set flag that exception occured
+                        // the exception handler puts us here if an exception occurred:
+                        // set flag that exception occurred
                         fTrapped = TRUE;
                     } END_CATCH();
 
@@ -722,7 +722,7 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                     // @@todo get rid of this shit
                     if (!pszErrMsg)
                     {
-                        if (pszErrMsg = strdup("An error occured in the XWorkplace Worker thread. "
+                        if (pszErrMsg = strdup("An error occurred in the XWorkplace Worker thread. "
                                    "Since the error is probably not serious, "
                                    "the Worker thread will continue to run. "
                                    "However, if errors like these persist, "
@@ -1196,14 +1196,14 @@ void _Optlink fntFileThread(PTHREADINFO pti)
     }
     CATCH(excpt1)
     {
-        // the thread exception handler puts us here if an exception occured:
+        // the thread exception handler puts us here if an exception occurred:
         // clean up
 
         // only report the first error, or otherwise we will
         // jam the system with msg boxes @@todo get rid of this shit
         if (!pszErrMsg)
         {
-            if (pszErrMsg = strdup("An error occured in the XFolder File thread.\n"
+            if (pszErrMsg = strdup("An error occurred in the XFolder File thread.\n"
                                   "The File thread has been terminated. This severely limits "
                                   "XWorkplace's functionality. Please restart the WPS now "
                                   "to have the File thread restarted also. "))
@@ -1583,13 +1583,13 @@ void _Optlink fntBushThread(PTHREADINFO pti)
     }
     CATCH(excpt1)
     {
-        // the thread exception handler puts us here if an exception occured:
+        // the thread exception handler puts us here if an exception occurred:
         // clean up @@todo get rid of this shit
         if (!pszErrMsg)
         {
             // only report the first error, or otherwise we will
             // jam the system with msg boxes
-            if (pszErrMsg = strdup("An error occured in the XFolder Bush thread. "
+            if (pszErrMsg = strdup("An error occurred in the XFolder Bush thread. "
                         "\n\nThe additional XFolder system sounds will be disabled for the "
                         "rest of this Workplace Shell session. You will need to restart "
                         "the WPS in order to re-enable them. "

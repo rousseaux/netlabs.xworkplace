@@ -2384,16 +2384,16 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     } // end TRY_LOUD(excpt1
     CATCH(excpt1)
     {
-        // exception occured:
+        // exception occurred:
         krnUnlockGlobals();     // just to make sure
-        // fExceptionOccured = TRUE;
+        // fExceptionOccurred = TRUE;
 
         // only report the first error, or otherwise we will
         // jam the system with msg boxes @@todo get rid of this shit
 
         if (!pszErrMsg)
         {
-            if (pszErrMsg = strdup("An error occured in the XFolder Shutdown thread. "
+            if (pszErrMsg = strdup("An error occurred in the XFolder Shutdown thread. "
                         "In the root directory of your boot drive, you will find a "
                         "file named XFLDTRAP.LOG, which contains debugging information. "
                         "If you had shutdown logging enabled, you will also find the "
@@ -2402,7 +2402,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                         "\n\nThe XShutdown procedure will be terminated now. We can "
                         "now also restart the Workplace Shell. This is recommended if "
                         "your Desktop has already been closed or if "
-                        "the error occured during the saving of the INI files. In these "
+                        "the error occurred during the saving of the INI files. In these "
                         "cases, please disable XShutdown and perform a regular OS/2 "
                         "shutdown to prevent loss of your WPS data."
                         "\n\nRestart the Workplace Shell now?"))
@@ -2425,7 +2425,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     //      a) fnwpShutdownThread successfully closed all windows;
     //         only in that case, fAllWindowsClosed is TRUE;
     //      b) shutdown was cancelled by the user;
-    //      c) an exception occured.
+    //      c) an exception occurred.
     // In any of these cases, we need to clean up big time now.
 
     // close "main" window, but keep the status window for now
@@ -3477,7 +3477,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
         PCSZ    apcsz[2];
         doshWriteLogEntry(pShutdownData->ShutdownLogFile, "--- Error %d was reported!", arc);
 
-        // error occured: ask whether to restart the WPS
+        // error occurred: ask whether to restart the WPS
         sprintf(szErrorNo, "%d", arc);
         apcsz[0] = szErrorNo;
         xstrInit(&strErrDescr, 0);
@@ -4070,7 +4070,7 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
     } // end TRY_LOUD(excpt1)
     CATCH(excpt1)
     {
-        // exception occured:
+        // exception occurred:
         // complain to the user
         if (pszErrMsg == NULL)
         {
@@ -4082,7 +4082,7 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 
             // only report the first error, or otherwise we will
             // jam the system with msg boxes @@todo get rid of this
-            if (pszErrMsg = strdup("An error occured in the XFolder Update thread. "
+            if (pszErrMsg = strdup("An error occurred in the XFolder Update thread. "
                         "In the root directory of your boot drive, you will find a "
                         "file named XFLDTRAP.LOG, which contains debugging information. "
                         "If you had shutdown logging enabled, you will also find the "

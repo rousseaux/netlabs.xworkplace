@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
             free(pszError);
         }
         else
-            printf("Unknown error %d occured.\n", arc);
+            printf("Unknown error %d occurred.\n", arc);
     }
 
     return arc;

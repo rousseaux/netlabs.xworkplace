@@ -317,7 +317,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
                 break;
 
                 default:
-                    sprintf(szError2, "Error %d occured.", arc);
+                    sprintf(szError2, "Error %d occurred.", arc);
                     pszError = szError2;
             }
 

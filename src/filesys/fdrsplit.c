@@ -841,7 +841,7 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
  *      window, that is, the split window with the two
  *      subframes and containers.
  *
- *      Returns NULL if no error occured. As a result,
+ *      Returns NULL if no error occurred. As a result,
  *      the return value can be returned from WM_CREATE,
  *      which stops window creation if != 0 is returned.
  *

@@ -760,7 +760,7 @@ STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added confirmation messages
- *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed memory leak when errors occured
+ *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed memory leak when errors occurred
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.3 (2000-04-28) [umoeller]: added fRelatedObject
  *@@changed V0.9.4 (2000-08-03) [umoeller]: now checking for "no objects"
