@@ -211,8 +211,7 @@ BOOL krnLock(ULONG ulTimeout)
         return TRUE;
     else
     {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock mutex request failed.");
+        CMN_LOG(("krnLock mutex request failed."));
         return FALSE;
     }
 }
@@ -488,11 +487,8 @@ VOID APIENTRY krnExceptError(const char *pcszFile,
 
 VOID krnMemoryError(const char *pcszMsg)
 {
-    cmnLog(__FILE__,
-           __LINE__,
-           __FUNCTION__,
-           "Memory error:\n    %s",
-           pcszMsg);
+    CMN_LOG(("Memory error:\n    %s",
+           pcszMsg));
 }
 
 /* ******************************************************************
@@ -586,13 +582,11 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
         // cast PVOID
         PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
         if (!pDaemonShared)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pDaemonShared is NULL.");
+            CMN_LOG(("pDaemonShared is NULL."));
         else
             // get the handle of the daemon's object window
             if (!pDaemonShared->hwndDaemonObject)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE."));
             else
                 brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
     }

@@ -280,9 +280,8 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
         memset(psliNew, 0, sizeof(SUBCLASSEDFOLDERVIEW)); // V0.9.0
 
         if (hwndCnr == NULLHANDLE)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hwndCnr is NULLHANDLE for folder %s.",
-                   _wpQueryTitle(somSelf));
+            CMN_LOG(("hwndCnr is NULLHANDLE for folder %s.",
+                   _wpQueryTitle(somSelf)));
 
         // store various other data here
         psliNew->hwndFrame = hwndFrame;
@@ -303,8 +302,7 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                                      psliNew);
 
         if (!psliNew->hwndSupplObject)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Unable to create suppl. folder object window..");
+            CMN_LOG(("Unable to create suppl. folder object window."));
 
         // store SFV in frame's window words
         WinSetWindowPtr(hwndFrame,
@@ -315,8 +313,7 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                                                    fdr_fnwpSubclassedFolderFrame);
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "psliNew is NULL (malloc failed).");
+        CMN_LOG(("psliNew is NULL (malloc failed)."));
 
     return (psliNew);
 }
@@ -1597,6 +1594,11 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                 }
             break; }
 
+            case WM_SYSVALUECHANGED:
+                DosBeep(3000, 10);
+                fCallDefault = TRUE;
+            break;
+
             /*
              * WM_DESTROY:
              *      clean up resources we allocated for
@@ -1651,8 +1653,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
             mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
         else
         {
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Folder's pfnwpOrig not found.");
+            CMN_LOG(("Folder's pfnwpOrig not found."));
             mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
         }
     }
@@ -1734,8 +1735,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
         // SFV not found: use the default
         // folder window procedure, but issue
         // a warning to the log
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Folder SUBCLASSEDFOLDERVIEW not found.");
+        CMN_LOG(("Folder SUBCLASSEDFOLDERVIEW not found."));
 
         mrc = G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2);
     }
@@ -1903,8 +1903,7 @@ MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM
         pfnwpOrig = G_pfnwpFolderContentMenuOriginal;
     else
     {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "G_pfnwpFolderContentMenuOriginal is NULL");
+        CMN_LOG(("G_pfnwpFolderContentMenuOriginal is NULL"));
         pfnwpOrig = WinDefWindowProc;
     }
 

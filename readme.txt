@@ -11,6 +11,7 @@ Last updated October 7, 2000, Ulrich M”ller
     3. COMPILATION/INSTALLATION
     4. GETTING STARTED
     5. KNOWN LIMITATIONS
+    6. CONTRIBUTORS
 
 
 1. LICENSE, COPYRIGHT, DISCLAIMER
@@ -70,31 +71,10 @@ Last updated October 7, 2000, Ulrich M”ller
     For all details, please see PROGREF.INF in the main directory.
 
 
-    Getting Sources from Netlabs CVS
-    --------------------------------
+    Working With Netlabs CVS
+    ------------------------
 
-    First, do a "cvs login" with "readonly" as your password.
-
-    Then, to check out the most current XWorkplace sources, create a
-    subdirectory in your CVS root dir called "xworkplace".
-    Then use:
-        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xworkplace
-        USER=guest
-    and do a "cvs checkout" from the "xworkplace" subdirectory.
-
-    To check out the most current WarpIN sources, create a
-    subdirectory in your CVS root dir called "warpin".
-    Then use:
-        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/warpin
-        USER=guest
-    and do a "cvs checkout" from the "warpin" subdirectory.
-
-    Alternatively, use the Netlabs Open Source Archive Client (NOSAC).
-    See http://www.netlabs.org/nosa for details.
-
-    In any case, I strongly recommend to create a file in $(HOME)
-    called ".cvsrc" and add "cvs -z9" in there to enable maximum
-    compression during transfers. This greatly speeds up things.
+    Please see "cvs.txt" in this directory.
 
 
 4. GETTING STARTED
@@ -107,5 +87,16 @@ Last updated October 7, 2000, Ulrich M”ller
 ====================
 
     See "001\readme" for this.
+
+
+6. CONTRIBUTORS
+===============
+
+    Newer contributions are marked in xdoc style. The following
+    author acronyms are used in the code:
+
+        umoeller            Ulrich M”ller (ulrich.moeller@rz.hu-berlin.de)
+        pr                  Paul Ratcliffe (paul@orac.clara.co.uk)
+        jsmall              John Small (jsmall@lynxus.com)
 
 

@@ -1590,7 +1590,7 @@ BOOL fFillingCnr = FALSE;
  *      and has in turn one child, the container window.
  *      See fnwpClassListClient for a window hierarchy.
  *
- *      This calls in clsWpsClasses2Cnr in classlst.c to
+ *      This calls in clsWpsClasses2Cnr in classes.c to
  *      have the WPS class tree inserted, which in turn
  *      calls the fncbReturnWPSClassAttr and fncbReplaceClassSelected
  *      callbacks above for configuration.
@@ -2992,6 +2992,11 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                                ID_XLMI_REGISTER, // is above WPMENUID_USER
                                pNLSStrings->pszRegisterClass,
                                MIS_TEXT, 0);
+            // "Refresh" V0.9.6 (2000-11-12) [umoeller]
+            winhInsertMenuItem(hwndMenu, MIT_END,
+                               ID_XLMI_REFRESH_VIEW,
+                               pNLSStrings->pszRefreshNow,
+                               MIS_TEXT, 0);
             _fMenuCnrWhitespace = FALSE;
         }
 
@@ -3008,6 +3013,7 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
  *
  *@@added V0.9.1 (99-12-28) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: fixed hangs with register class
+ *@@changed V0.9.6 (2000-11-12) [jsmall]: added "Refresh"
  */
 
 BOOL cllMenuItemSelected(XWPClassList *somSelf,
@@ -3036,8 +3042,8 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
         HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
         HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
         HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
-        PCLASSLISTTREECNRDATA pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(
-                                                        hwndDlg, QWL_USER);
+        PCLASSLISTTREECNRDATA pClassTreeCnrData
+            = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
         if (pClassTreeCnrData)
         {
             rcd.pszHelpLibrary = cmnQueryHelpLibrary();
@@ -3074,6 +3080,8 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                                         rcd.szModName,
                                         szModuleError,
                                         sizeof(szModuleError));
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+
                 if (arc == NO_ERROR)
                     // success
                     cmnMessageBoxMsgExt(hwndDlg,
@@ -3094,6 +3102,34 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                 // WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
             }
             brc = TRUE;
+        }
+    } // end else if (ulMenuId == ID_XLMI_REGISTER)
+    else if (ulMenuId == ID_XLMI_REFRESH_VIEW)
+    {
+        // "Refresh View" menu command:
+
+        // get class tree cnr dlg
+        HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
+        HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
+        HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
+        PCLASSLISTTREECNRDATA pClassTreeCnrData
+            = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+        if (pClassTreeCnrData)
+        {
+            HPOINTER hptrOld = winhSetWaitPointer();
+
+            WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
+                       CM_REMOVERECORD,
+                       (MPARAM)NULL,
+                       MPFROM2SHORT(0, // remove all records
+                                    CMA_FREE | CMA_INVALIDATE));
+            clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+            free(pszClassInfo);
+            pszClassInfo = NULL;
+
+            // fill cnr again
+            WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
         }
     }
 
@@ -3204,8 +3240,7 @@ HWND cllCreateClassListView(WPObject *somSelf,
             pClientData->clvi.ViewItem.view   = ulView;
             pClientData->clvi.ViewItem.handle = hwndFrame;
             if (!_wpAddToObjUseList(somSelf, &(pClientData->clvi.UseItem)))
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "_wpAddToObjUseList failed.");
+                CMN_LOG(("_wpAddToObjUseList failed."));
 
             // create view title: remove ~ char
             p = strchr(pszViewTitle, '~');

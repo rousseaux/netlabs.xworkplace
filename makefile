@@ -84,7 +84,7 @@ MODULESDIR=bin\modules
 OBJS = \
 # code from classes\
     bin\xcenter.obj bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
-    bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
+    bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj bin\xmmvolume.obj \
     bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpfsys.obj \
     bin\xwpkeybd.obj bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
     bin\xwpstring.obj \
@@ -97,13 +97,11 @@ OBJS = \
 # code from filesys\
     bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fhandles.obj \
     bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
-!ifdef EXTASSOCS
     bin\filetype.obj \
-!endif
     bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
     bin\program.obj bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from media\
-    bin\mmhelp.obj bin\mmthread.obj \
+    bin\mmhelp.obj bin\mmthread.obj bin\mmvolume.obj \
 # code from startshut\
     bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj
 
@@ -133,10 +131,12 @@ PGMGDMNOBJS =
 !endif
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
-DMNOBJS = bin\exe_mt\xwpdaemn.obj \
-          $(PGMGDMNOBJS) \
-          bin\exe_mt\debug.obj bin\exe_mt\except.obj bin\exe_mt\dosh.obj bin\exe_mt\threads.obj \
-          bin\xwphook.lib
+DMNOBJS = \
+bin\exe_mt\xwpdaemn.obj \
+$(PGMGDMNOBJS) \
+bin\exe_mt\debug.obj bin\exe_mt\except.obj bin\exe_mt\dosh.obj bin\exe_mt\memdebug.obj \
+bin\exe_mt\stringh.obj bin\exe_mt\threads.obj bin\exe_mt\xstring.obj \
+bin\xwphook.lib
 
 # objects for XDEBUG.DLL (debugging only)
 DEBUG_OBJS = bin\xdebug.obj bin\xdebug_folder.obj
@@ -512,14 +512,16 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_NLS) 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_NLSDOC) 2> NUL]
+!endif
 !if [@md $(XWPRELEASE_MAP) 2> NUL]
 !endif
     @echo $(MAKEDIR)\makefile: Now copying files to $(XWPRELEASE).
     $(COPY) release\* $(XWPRELEASE_MAIN)
-    $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLS)
-    $(COPY) $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLS)
-    $(COPY) BUGS $(XWPRELEASE_MAIN)
-    $(COPY) FEATURES $(XWPRELEASE_MAIN)
+    $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
+    $(COPY) $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
+    $(COPY) BUGS $(XWPRELEASE_NLSDOC)
+    $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
 #
 # 2) bin
 #    a) kernel
@@ -542,7 +544,7 @@ release: really_all
     $(COPY) $(MODULESDIR)\repclass.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS
-    $(COPY) bin\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
     $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
 #    b) mapfiles
     $(COPY) $(MODULESDIR)\*.map $(XWPRELEASE_MAP)

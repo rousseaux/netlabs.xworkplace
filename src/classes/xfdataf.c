@@ -178,7 +178,6 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
                                                             ulMenuType,
                                                             ulReserved);
 
-#ifdef __EXTASSOCS__
     if (!doshIsWarp4())
     {
         // on Warp 3, manipulate the "Open" submenu...
@@ -198,7 +197,6 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
             }
         }
     }
-#endif
 
     return (hwndMenu);
 }
@@ -280,7 +278,6 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyMenu");
 
-#ifdef __EXTASSOCS__
     fExtAssocs = pGlobalSettings->fExtAssocs;
 
     // resolve parent method.... this is especially sick:
@@ -297,7 +294,6 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                                                       "wpModifyMenu");
 
     else
-#endif
         // WPDataFile
         _parent_wpModifyMenu
             = (xfTD_wpModifyMenu)wpshParentNumResolve(_XFldDataFile,
@@ -305,8 +301,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                                                       "wpModifyMenu");
 
     if (!_parent_wpModifyMenu)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "wpshParentNumResolve failed.");
+        CMN_LOG(("wpshParentNumResolve failed."));
     else
     {
         // call parent method
@@ -314,7 +309,6 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                                    iPosition, ulMenuType,
                                    ulView, ulReserved);
 
-#ifdef __EXTASSOCS__
         if ((brc) && (fExtAssocs))
         {
             // extended assocs have been enabled:
@@ -366,7 +360,6 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                 break; }
             }
         }
-#endif // EXTASSOCS
     }
 
     return (brc);
@@ -495,8 +488,8 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
 
     _Pmpf(("xfdf_wpOpen, ulView: 0x%lX", ulView));
 
-#ifdef __EXTASSOCS__
     if (pGlobalSettings->fExtAssocs)
+    {
         // "extended associations" allowed:
         if (    ((ulView >= 0x1000) && (ulView < 0x1100))
              || (ulView == OPEN_RUNNING)    // double-click on data file... what's this, IBM?
@@ -504,19 +497,22 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
            )
             // use our replacement mechanism
             fCallParent = FALSE;
+    }
 
     if (!fCallParent)
     {
         // replacement desired:
+        ULONG       ulView2 = ulView;
         WPObject    *pAssocObject = ftypQueryAssociatedProgram(somSelf,
-                                                               ulView);
+                                                               &ulView2);
                                         // object is locked
         _Pmpf(("ftypQueryAssociatedProgram got 0x%lX", pAssocObject));
 
         if (pAssocObject)
         {
             hwnd = (HWND)progOpenProgram(pAssocObject,
-                                         somSelf);
+                                         somSelf,
+                                         ulView2);
 
             // _wpUnlockObject(pAssocObject);
                     // do not unlock the assoc object...
@@ -524,8 +520,6 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
         }
     }
     else
-#endif
-
         hwnd = XFldDataFile_parent_WPDataFile_wpOpen(somSelf,
                                                      hwndCnr,
                                                      ulView,
@@ -625,7 +619,8 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
 /*
  *@@ wpQueryAssociatedProgram:
  *      this method returns the associated WPProgram or
- *      WPProgramFile object for a data file.
+ *      WPProgramFile object for the specified view ID of
+ *      a data file.
  *
  *      The WPS docs say that this should be overridden
  *      to introduce new association mechanisms.
@@ -695,15 +690,16 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
                ));
     #endif
 
-#ifdef __EXTASSOCS__
     if (pGlobalSettings->fExtAssocs)
+    {
         // "extended associations" allowed:
         // use our replacement mechanism
+        ULONG   ulView2 = ulView;
         pobj = ftypQueryAssociatedProgram(somSelf,
-                                          ulView);
+                                          &ulView2);
                         // locks the object
+    }
     else
-#endif
         pobj = XFldDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,
                                                                        ulView,
                                                                        pulHowMatched,
@@ -790,8 +786,7 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
             // on Warp 4, override wpModifyMenu (Warp 4-specific method)
             somidMethod = somIdFromString("wpModifyMenu");
             if (!somidMethod)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "xfobjM_somClassReady: Cannot get id for wpModifyMenu");
+                CMN_LOG(("xfobjM_somClassReady: Cannot get id for wpModifyMenu"));
             else
             {
                 _somOverrideSMethod(somSelf,

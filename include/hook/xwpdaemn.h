@@ -5,6 +5,9 @@
  *      These are not visible to the hook nor
  *      to XFLDR.DLL.
  *      Requires xwphook.h to be included first.
+ *
+ *@@include #define INCL_DOSSEMAPHORES
+ *@@include #include <os2.h>
  */
 
 /*

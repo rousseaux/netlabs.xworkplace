@@ -33,8 +33,12 @@
      *
      ********************************************************************/
 
-    BOOL progStoreRunningApp(HAPP happ,
-                             WPObject *pObjEmphasis);
+    #ifdef SOM_WPDataFile_h
+    BOOL progStoreRunningApp(WPObject *pProgram,
+                             WPFileSystem *pArgDataFile,
+                             HAPP happ,
+                             ULONG ulMenuID);
+    #endif
 
     BOOL progAppTerminateNotify(HAPP happ);
 
@@ -46,14 +50,9 @@
      *
      ********************************************************************/
 
-    #ifdef INCL_WINPROGRAMLIST
-    HAPP progStartApp(const PROGDETAILS *pcProgDetails,
-                      const char *pcszParameters,
-                      const char *pcszStartupDir);
-    #endif
-
     #ifdef SOM_WPDataFile_h
     HAPP progOpenProgram(WPObject *pProgObject,
-                         WPFileSystem *pArgDataFile);
+                         WPFileSystem *pArgDataFile,
+                         ULONG ulMenuID);
     #endif
 #endif

@@ -1,12 +1,12 @@
 
 /*
- * xwpstring.idl:
+ * xmmvolume.idl:
  *      SOM interface description file for the following
  *      XWorkplace classes (in this order):
- *          XWPString
+ *          XMMVolume
  *      and the respective metaclasses.
  *
- *      See src\classes\xwpstring.c for details.
+ *      See src\classes\xmmvolume.c for details.
  *
  *      Copyright (C) 2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
@@ -23,80 +23,53 @@
 #include <wpabs.idl>         // this is SOM for WPAbstract
 
 /*
-   CLASS: XWPString
+   CLASS: XMMVolume
 
    CLASS HIERARCHY:
 
        SOMObject
          ÀÄÄ WPObject
                ÀÄÄ WPAbstract
-                     ÀÄÄ XWPString
+                     ÀÄÄ XMMVolume
 */
 
-interface M_XWPString;            // forward reference to metaclass
+interface M_XMMVolume;            // forward reference to metaclass
 
-interface XWPString : WPAbstract
+interface XMMVolume : WPAbstract
 {
     /*
-     * New instance methods for XWPString:
+     * New instance methods for XMMVolume:
      *
      */
 
-    BOOL xwpQueryString(in PSZ pszBuf,
-                        in PULONG pcbBuf);
-    BOOL xwpSetString(in PSZ pszSetupString);
-
-    WPObject xwpQueryStaticObject();
-    BOOL xwpSetStaticObject(in WPObject pObject);
-
-    ULONG xwpAddXWPStringPages(in HWND hwndNotebook);
-
-    BOOL xwpInvokeString(in ULONG cObjects,
-                         in WPObject apObjects[1]);
+    ULONG xwpAddXMMVolumePages(in HWND hwndNotebook);
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpQueryString,
-                  xwpSetString,
-                  xwpQueryStaticObject,
-                  xwpSetStaticObject,
-                  xwpAddXWPStringPages,
-                  xwpInvokeString;
+    releaseorder: xwpAddXMMVolumePages;
 
     /*
      * Class Modifiers:
      *
      */
 
-    externalprefix = xwstr_;
-    externalstem = xwstr;
+    externalprefix = vol_;
+    externalstem = vol;
     majorversion = 1;
     minorversion = 1;
-    filestem = xwpstring;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPString;
+    filestem = xmmvolume;           //# specifies the filestem for sc-generated files
+    metaclass = M_XMMVolume;
     dllname = "xfldr.dll";
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
-     * Internal instance variables for XWPString:
+     * Internal instance variables for XMMVolume:
      *
      */
 
-    PSZ         pszSetupString;     // setup string to be invoked on member
-                                    // object or other object dropped on
-                                    // instance
-
-    HOBJECT     hobjStatic;         // static object to invoke pszSetupString
-                                    // upon on double-click or hotkey press
-
-    BOOL        fConfirm;           // display confirmation box before
-                                    // invoking setup string?
-
-    PVOID       pvtiSetupThread;    // PTHREADINFO of setup thread
-
     /*
-     * WPAbstract methods overridden by XWPString:
+     * WPAbstract methods overridden by XMMVolume:
      *
      */
 
@@ -113,17 +86,13 @@ interface XWPString : WPAbstract
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
-    wpOpen: override;
-
     wpQueryDefaultHelp: override;
     wpQueryDefaultView: override;
 
+    wpOpen: override;
+
     wpAddObjectWindowPage: override;
-
     wpAddSettingsPages: override;
-
-    wpDragOver: override;
-    wpDrop: override;
 
   }; // implementation
 #endif /* __SOMIDL__ */
@@ -135,7 +104,7 @@ interface XWPString : WPAbstract
 //# ---------------------
 //#
 
-interface M_XWPString : M_WPAbstract
+interface M_XMMVolume : M_WPAbstract
 {
 
 #ifdef __SOMIDL__
@@ -146,12 +115,12 @@ interface M_XWPString : M_WPAbstract
      *
      */
 
-    externalprefix = xwstrM_;
-    externalstem = xwstrM;
-    functionprefix = xwstrM_;
+    externalprefix = volM_;
+    externalstem = volM;
+    functionprefix = volM_;
     majorversion = 1;
     minorversion = 1;
-    filestem = xwpstring;           //# specifies the filestem for sc-generated files
+    filestem = xmmvolume;           //# specifies the filestem for sc-generated files
     dllname = "xfldr.dll";
     callstyle = oidl;
 
@@ -161,7 +130,7 @@ interface M_XWPString : M_WPAbstract
      */
 
     /*
-     * M_WPAbstract methods overridden by M_XWPString:
+     * M_WPAbstract methods overridden by M_XMMVolume:
      *
      */
 

@@ -98,6 +98,7 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xwpstring.ih"
@@ -121,6 +122,21 @@
 
 const char *G_pcszXWPString = "XWPString";
 
+/*
+ *@@ INVOKESETUPSTRING:
+ *      structure passed to xwstrfntSetupThread to
+ *      invoke a setup string.
+ *
+ *@@added V0.9.6 (2000-11-23) [umoeller]
+ */
+
+typedef struct _INVOKESETUPSTRING
+{
+    XWPString       *somSelf;               // setup string object
+    ULONG           cTargetObjects;         // no. of objects which follow
+    WPObject        *apTargetObjects[1];    // objects to invoke setup string on
+} INVOKESETUPSTRING, *PINVOKESETUPSTRING;
+
 /* ******************************************************************
  *                                                                  *
  *   Setup string thread                                            *
@@ -135,9 +151,13 @@ const char *G_pcszXWPString = "XWPString";
  *      a while for certain strings, this should
  *      better not block the msg queue.
  *
+ *      This receives a PINVOKESETUPSTRING pointer
+ *      as the thread parameter.
+ *
  *      This thread is created with a msg queue.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V0.9.6 (2000-11-23) [umoeller]: now using PINVOKESETUPSTRING
  */
 
 void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
@@ -145,22 +165,34 @@ void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
     BOOL brc = FALSE;
     TRY_LOUD(excpt1, NULL)
     {
-        XWPString *somSelf = (XWPString*)(pti->ulData);
-        XWPStringData *somThis = XWPStringGetData(somSelf);
-        // get SOM pointer from handle
-        WPObject *pobjStatic = _wpclsQueryObject(_WPObject, _hobjStatic);
-
-        _Pmpf(("xwstrfntSetupThread for obj %s", _wpQueryTitle(somSelf)));
-        _Pmpf(("    invoking on obj %s", _wpQueryTitle(pobjStatic)));
-
-        if (pobjStatic)
+        PINVOKESETUPSTRING pInvoke = (PINVOKESETUPSTRING)(pti->ulData);
+        if (pInvoke)
         {
-            _wpCnrSetEmphasis(somSelf, CRA_INUSE, TRUE);
-            // invoke setup string
-            brc = _wpSetup(pobjStatic, _pszSetupString);
-            _wpCnrSetEmphasis(somSelf, CRA_INUSE, FALSE);
-        }
+            XWPStringData *somThis = XWPStringGetData(pInvoke->somSelf);
 
+            _Pmpf(("xwstrfntSetupThread for obj %s", _wpQueryTitle(somSelf)));
+            _Pmpf(("    invoking on obj %s", _wpQueryTitle(pobjStatic)));
+
+            if (pInvoke->cTargetObjects)
+            {
+                ULONG ul = 0;
+                _wpCnrSetEmphasis(pInvoke->somSelf, CRA_INUSE, TRUE);
+                // invoke setup string on target objects
+                for (ul = 0;
+                     ul < pInvoke->cTargetObjects;
+                     ul++)
+                {
+                    brc = _wpSetup(pInvoke->apTargetObjects[ul],
+                                   _pszSetupString);
+                    if (!brc)
+                        break;
+                }
+
+                _wpCnrSetEmphasis(pInvoke->somSelf, CRA_INUSE, FALSE);
+            }
+
+            free(pInvoke);
+        }
     }
     CATCH(excpt1)
     {
@@ -223,7 +255,7 @@ VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                    (MPARAM)(MLFFMTRECT_MATCHWINDOW
                              /* | MLFFMTRECT_LIMITHORZ */));
 
-        // setup container
+        // set up container
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_NAME | CV_MINI | CA_DRAWICON);
@@ -509,6 +541,157 @@ SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
     ntbInsertPage(pcnbp);
 
     return (1);
+}
+
+/*
+ *@@ xwpInvokeString:
+ *      this invokes the member setup string on an object or
+ *      an array of objects.
+ *
+ *      If (cObjects > 1), apObjects is assumed to point to
+ *      an array of "cObjects" WPObject* pointers, on which
+ *      the setup string is to be invoked.
+ *
+ *      If cObjects is 0, the array pointer is ignored, and
+ *      the setup string is invoked on the static member object.
+ *      If that is not present either, FALSE is returned.
+ *
+ *      If confirmations are enabled for this XWPString instance,
+ *      a message box is displayed. If the user responds "No",
+ *      FALSE is returned.
+ *
+ *      FALSE is also returned if invoking the setup string
+ *      failed.
+ *
+ *@@added V0.9.6 (2000-11-23) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
+                                              ULONG cObjects,
+                                              WPObject* apObjects[1])
+{
+    BOOL brc = FALSE;
+    XWPStringData *somThis = XWPStringGetData(somSelf);
+    XWPStringMethodDebug("XWPString","xwstr_xwpInvokeString");
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        if (_pszSetupString)
+        {
+            PTHREADINFO     pti = (PTHREADINFO)_pvtiSetupThread;
+
+            if (pti == 0)
+            {
+                // first call: allocate memory
+                pti = malloc(sizeof(THREADINFO));
+                _pvtiSetupThread = pti;
+            }
+
+            if (pti)
+                if (!thrQueryID(pti))
+                {
+                    // create struct to pass to "invoke" thread
+                    PINVOKESETUPSTRING pInvoke
+                        = (PINVOKESETUPSTRING)malloc(sizeof(INVOKESETUPSTRING)
+                                                     + (cObjects * sizeof(WPObject*)));
+                    if (pInvoke)
+                    {
+                        BOOL fThreadStarted = FALSE;
+                        memset(pInvoke, 0, sizeof(*pInvoke));
+                        pInvoke->somSelf = somSelf;
+
+                        if (cObjects)
+                        {
+                            // objects given: use those
+                            pInvoke->cTargetObjects = cObjects;
+                            // copy object array
+                            memcpy(pInvoke->apTargetObjects,
+                                   apObjects,
+                                   cObjects * sizeof(WPObject*));
+                        }
+                        else
+                            // no object given: use member object
+                            if (_hobjStatic)
+                            {
+                                pInvoke->cTargetObjects = 1;
+                                pInvoke->apTargetObjects[0]
+                                    = _wpclsQueryObject(_WPObject, _hobjStatic);
+                            }
+
+                        if (pInvoke->cTargetObjects)
+                        {
+                            BOOL fInvoke = TRUE;
+                            if (_fConfirm)
+                            {
+                                // confirmation enabled:
+                                XSTRING strObjects;
+                                ULONG   ulMsg;
+
+                                PSZ apsz[2];
+                                apsz[0] = _pszSetupString;
+
+                                xstrInit(&strObjects, 300);
+
+                                if (pInvoke->cTargetObjects == 1)
+                                {
+                                    apsz[1] = _wpQueryTitle(pInvoke->apTargetObjects[0]);
+                                    ulMsg = 192;        // single object msg
+                                }
+                                else
+                                {
+                                    // several objects:
+                                    // compose array
+                                    ULONG ul = 0;
+                                    for (ul = 0;
+                                         ul < pInvoke->cTargetObjects;
+                                         ul++)
+                                    {
+                                        xstrcat(&strObjects,
+                                                _wpQueryTitle(pInvoke->apTargetObjects[ul]));
+                                        xstrcat(&strObjects, "\n");
+                                    }
+
+                                    apsz[1] = strObjects.psz;
+                                    ulMsg = 193;        // multiple objects msg
+                                }
+
+                                fInvoke = (cmnMessageBoxMsgExt(NULLHANDLE,
+                                                               191,     // XWPString
+                                                               apsz,
+                                                               2,
+                                                               ulMsg,     // invoke %1 on %2?
+                                                               MB_YESNO)
+                                            == MBID_YES);
+
+                                xstrClear(&strObjects);
+                            }
+
+                            if (fInvoke)
+                            {
+                                fThreadStarted = thrCreate(pti,
+                                                           xwstrfntSetupThread,
+                                                           NULL, // running flag
+                                                           THRF_PMMSGQUEUE,
+                                                           (ULONG)pInvoke);
+                                    // the thread frees the structure
+                            }
+
+                            brc = TRUE;
+                        } // end if (pInvoke->cTargetObjects)
+
+                        if (!fThreadStarted)
+                            // error: clean up
+                            free(pInvoke);
+                    } // end if (pInvoke)
+                } // end if (!thrQueryID(pti))
+        } // end if (_pszSetupString)
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
 }
 
 /*
@@ -804,11 +987,17 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemSelected(XWPString *somSelf,
 SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
                                                      ULONG MenuId)
 {
-    XWPStringData *somThis = XWPStringGetData(somSelf);
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemHelpSelected");
 
-    return (XWPString_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
-                                                               MenuId));
+    if (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+        brc = cmnDisplayHelp(somSelf, ID_XSH_SETTINGS_XWPSTRING_MAIN);
+    else
+        brc = XWPString_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
+                                                                 MenuId);
+    return (brc);
 }
 
 /*
@@ -833,8 +1022,10 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf, HWND hwndCnr,
-                                     ULONG ulView, ULONG param)
+SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
+                                     HWND hwndCnr,
+                                     ULONG ulView,
+                                     ULONG param)
 {
     HWND hwnd = NULLHANDLE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -843,31 +1034,11 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf, HWND hwndCnr,
 
     if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
     {
-        BOOL brc = FALSE;
-        if ((_hobjStatic) && (_pszSetupString))
-        {
-            PTHREADINFO     pti = (PTHREADINFO)_pvtiSetupThread;
-
-            if (pti == 0)
-            {
-                // first call: allocate memory
-                pti = malloc(sizeof(THREADINFO));
-                _pvtiSetupThread = pti;
-            }
-
-            if (pti)
-                if (!thrQueryID(pti))
-                {
-                    thrCreate(pti,
-                              xwstrfntSetupThread,
-                              NULL, // running flag
-                              THRF_PMMSGQUEUE,
-                              (ULONG)somSelf);
-                    brc = TRUE;
-                }
-        }
-
-        if (!brc)
+        // invoke setup string
+        if (!_xwpInvokeString(somSelf,
+                              0,
+                              NULL))         // default member object
+            // error:
             WinAlarm(HWND_DESKTOP, WA_ERROR);
     }
     else
@@ -976,6 +1147,159 @@ SOM_Scope BOOL  SOMLINK xwstr_wpAddSettingsPages(XWPString *somSelf,
 
     return (brc);
 }
+
+/*
+ *@@ wpDragOver:
+ *      this instance method is called to inform the object
+ *      that other objects are being dragged over it.
+ *      This corresponds to the DM_DRAGOVER message received by
+ *      the object.
+ *
+ *@@added V0.9.6 (2000-11-23) [umoeller]
+ */
+
+SOM_Scope MRESULT  SOMLINK xwstr_wpDragOver(XWPString *somSelf,
+                                            HWND hwndCnr,
+                                            PDRAGINFO pdrgInfo)
+{
+    USHORT      usDrop = DOR_NEVERDROP,
+                usDefaultOp = DO_LINK;
+    // XWPStringData *somThis = XWPStringGetData(somSelf);
+    XWPStringMethodDebug("XWPString","xwstr_wpDragOver");
+
+    if (DrgAccessDraginfo(pdrgInfo))
+    {
+        if (pdrgInfo->usOperation != DO_DEFAULT)
+            usDrop = DOR_NODROP;
+            // but try again
+        else
+        {
+            ULONG ulItemNow = 0;
+            BOOL fError = FALSE;
+
+            for (;
+                 ulItemNow < pdrgInfo->cditem;
+                 ulItemNow++)
+            {
+                DRAGITEM    drgItem;
+                if (!DrgQueryDragitem(pdrgInfo,
+                                      sizeof(drgItem),
+                                      &drgItem,
+                                      ulItemNow))
+                {
+                    // error:
+                    fError = TRUE;
+                    break;
+                }
+                else
+                {
+                    // store SOM pointer in array
+                    WPObject *pobjTemp = 0;
+                    if (wpshQueryDraggedObject(&drgItem,
+                                               &pobjTemp)
+                            == 0)
+                    {
+                        // error:
+                        fError = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            if (!fError)
+                // no error:
+                // allow drop
+                usDrop = DOR_DROP;
+        }
+    }
+
+    return (MRFROM2SHORT(usDrop, usDefaultOp));
+}
+
+/*
+ *@@ wpDrop:
+ *      this instance method is called to inform an object that
+ *      another object has been dropped on it.
+ *      This corresponds to the DM_DROP message received by
+ *      the object.
+ *
+ *      We collect the object(s) being dropped and call
+ *      XWPString::xwpInvokeString with a proper object array.
+ *      Note that we process all objects at once and return
+ *      RC_DROP_DROPCOMPLETE to tell the WPS not to call this
+ *      method again for the next object.
+ *
+ *@@added V0.9.6 (2000-11-23) [umoeller]
+ */
+
+SOM_Scope MRESULT  SOMLINK xwstr_wpDrop(XWPString *somSelf,
+                                        HWND hwndCnr,
+                                        PDRAGINFO pdrgInfo,
+                                        PDRAGITEM pdrgItem)
+{
+    MRESULT mrc = MRFROMLONG(RC_DROP_ERROR);
+    // XWPStringData *somThis = XWPStringGetData(somSelf);
+    XWPStringMethodDebug("XWPString","xwstr_wpDrop");
+
+    if (DrgAccessDraginfo(pdrgInfo))
+    {
+        // allocate memory for xwpInvokeString object array
+        WPObject **paObjects = (WPObject**)malloc(pdrgInfo->cditem * sizeof(WPObject*));
+        if (paObjects)
+        {
+            ULONG ulItemNow = 0;
+            BOOL fError = FALSE;
+
+            for (;
+                 ulItemNow < pdrgInfo->cditem;
+                 ulItemNow++)
+            {
+                DRAGITEM    drgItem;
+                if (!DrgQueryDragitem(pdrgInfo,
+                                      sizeof(drgItem),
+                                      &drgItem,
+                                      ulItemNow))
+                {
+                    // error:
+                    fError = TRUE;
+                    break;
+                }
+                else
+                {
+                    // store SOM pointer in array
+                    if (wpshQueryDraggedObject(&drgItem,
+                                               &paObjects[ulItemNow])
+                            == 0)
+                    {
+                        // error:
+                        fError = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            if (!fError)
+            {
+                // success so far:
+                // invoke setup string
+                _xwpInvokeString(somSelf,
+                                 pdrgInfo->cditem,
+                                 paObjects);
+
+                mrc = MRFROMLONG(RC_DROP_DROPCOMPLETE);
+            }
+
+            free(paObjects);
+
+        } // end if (paObjects)
+
+        // clean up
+        DrgFreeDraginfo(pdrgInfo);
+    }
+
+    return (mrc);
+}
+
 
 /* ******************************************************************
  *                                                                  *

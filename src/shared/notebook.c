@@ -274,15 +274,13 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
             {
                 if (!lstRemoveItem(G_pllOpenPages,
                                    pcnbp->pnbli))
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "lstRemoveItem returned FALSE.");
+                    CMN_LOG(("lstRemoveItem returned FALSE."));
                         // this free's the pnbli
                 DosReleaseMutexSem(G_hmtxNotebookLists);
                 *pfSemOwned = FALSE;
             }
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxNotebookLists request failed.");
+                CMN_LOG(("hmtxNotebookLists request failed."));
         }
 
         // free allocated user memory
@@ -1150,8 +1148,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                 mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
         }
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hmtxNotebookLists mutex request failed");
+            CMN_LOG(("hmtxNotebookLists mutex request failed"));
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1468,8 +1465,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                 }
             } // end if (fSemOwned)
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxNotebookLists mutex request failed");
+                CMN_LOG(("hmtxNotebookLists mutex request failed"));
         }
         else
             winhDebugBox(HWND_DESKTOP,
@@ -1554,8 +1550,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
                     }
             } // end if (fSemOwned)
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxNotebookLists mutex request failed");
+                CMN_LOG(("hmtxNotebookLists mutex request failed"));
         } // end if (pllOpenPages)
     }
     CATCH(excpt1) { } END_CATCH();

@@ -1642,8 +1642,7 @@ BOOL fdrAddToList(WPFolder *somSelf,
             }
         }
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hmtxFolderLists request failed.");
+            CMN_LOG(("hmtxFolderLists request failed."));
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -1704,8 +1703,7 @@ BOOL fdrIsOnList(WPFolder *somSelf,
             }
         }
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hmtxFolderLists request failed.");
+            CMN_LOG(("hmtxFolderLists request failed."));
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1815,8 +1813,7 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
                 pItemFound = pNode->pItemData;
         }
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hmtxFolderLists request failed.");
+            CMN_LOG(("hmtxFolderLists request failed."));
     }
     CATCH(excpt1) { } END_CATCH();
 

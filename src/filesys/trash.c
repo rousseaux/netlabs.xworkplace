@@ -560,12 +560,10 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
                 }
             } // end if (fTrashDirSemOwned)
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Couldn't request mutex semaphore for \\trash subdir.");
+                CMN_LOG(("Couldn't request mutex semaphore for \\trash subdir."));
         } // end if (wpshCheckIfPopulated(pTrashDir))
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "wpPopulate failed for \\trash subdir.");
+            CMN_LOG(("wpPopulate failed for \\trash subdir."));
     }
     CATCH(excpt1)
     {
@@ -1592,8 +1590,7 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
                         pstfNew->hwndCnr = hwndCnr;
                     }
                     else
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "hmtxSubclassedTrashCans request failed.");
+                        CMN_LOG(("hmtxSubclassedTrashCans request failed."));
                 }
             }
         }
@@ -1651,8 +1648,7 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
                 }
             }
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxSubclassedTrashCans request failed.");
+                CMN_LOG(("hmtxSubclassedTrashCans request failed."));
         }
     }
     CATCH(excpt1) {  } END_CATCH();
@@ -1685,8 +1681,7 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
             lstRemoveItem(&llSubclassedTrashCans,
                           pstf);
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hmtxSubclassedTrashCans request failed.");
+            CMN_LOG(("hmtxSubclassedTrashCans request failed."));
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1818,8 +1813,7 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
         {
             // original window procedure not found:
             // that's an error
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Trash can's pfnwpOriginal not found.");
+            CMN_LOG(("Trash can's pfnwpOriginal not found."));
             mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
         }
     } // end TRY_LOUD

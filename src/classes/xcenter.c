@@ -92,15 +92,15 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 /* ******************************************************************
- *                                                                  *
- *   XCenter instance methods                                       *
- *                                                                  *
+ *
+ *   XCenter instance methods
+ *
  ********************************************************************/
 
 SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
@@ -426,7 +426,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpAddSettingsPages(XCenter *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XWPString class data.
+ *      initialize XCenter class data.
  */
 
 SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)

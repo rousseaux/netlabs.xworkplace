@@ -76,8 +76,8 @@
     #endif
 
     // msgs to status bar window (STBM_xxx)
-    #define STBM_UPDATESTATUSBAR        (WM_USER+100)
-    #define STBM_PROHIBITBROADCASTING     (WM_USER+102)
+    #define STBM_UPDATESTATUSBAR        (WM_USER+110)
+    #define STBM_PROHIBITBROADCASTING     (WM_USER+111)
 
     /********************************************************************
      *                                                                  *
@@ -95,8 +95,7 @@
         PSZ stbQueryClassMnemonics(SOMClass *pClassObject);
 
         ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,
-                                           PSZ* ppszText,
-                                           CHAR cThousands);
+                                           PSZ* ppszText);
 
         PSZ stbComposeText(WPFolder* somSelf,
                            HWND hwndCnr);

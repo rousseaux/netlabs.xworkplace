@@ -1159,11 +1159,11 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     else
                     {
                         CHAR    szBackup[CCHMAXPATH];
+                        ULONG   ulOfs = 0;
                         strhrpl(&pszConfigSys,
-                                0, // offset
+                                &ulOfs,
                                 precc->szConfigSysLine,
-                                szNewLine,
-                                0);
+                                szNewLine);
                         // update record core
                         strcpy(precc->szConfigSysLine, szNewLine);
                         strcpy(precc->szParams, szNewParams);

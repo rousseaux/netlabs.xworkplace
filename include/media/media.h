@@ -3,6 +3,7 @@
  *@@sourcefile media.h:
  *      shared header file for XWorkplace multimedia support.
  *
+ *@@include #include <wpobject.h>           // for SOM support functions
  *@@include #include "media\media.h"
  */
 
@@ -22,9 +23,9 @@
     #define MTHREAD_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   MMPM/2 imports                                                 *
-     *                                                                  *
+     *
+     *   MMPM/2 imports
+     *
      ********************************************************************/
 
     // prototypes:
@@ -89,9 +90,9 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   Media thread messages                                          *
-     *                                                                  *
+     *
+     *   Media thread messages
+     *
      ********************************************************************/
 
     // flags for XMM_CDPLAYER mp1
@@ -103,11 +104,11 @@
     #define XMMCD_PREVTRACK             6
     #define XMMCD_EJECT                 7
 
-    #define XMM_PLAYSOUND                (WM_USER+141)
+    #define XMM_PLAYSOUND                (WM_USER+251)
 
-    #define XMM_PLAYSYSTEMSOUND          (WM_USER+142)
+    #define XMM_PLAYSYSTEMSOUND          (WM_USER+252)
 
-    #define XMM_CDPLAYER                 (WM_USER+143)
+    #define XMM_CDPLAYER                 (WM_USER+253)
 
     // MMPM/2 status flags in KERNELGLOBALS.ulMMPM2Working;
     // these reflect the status of SOUND.DLL.
@@ -122,9 +123,9 @@
     #define MMSTAT_DISABLED            6        // explicitly disabled in startup panic dlg
 
     /* ******************************************************************
-     *                                                                  *
-     *   Device manager                                                 *
-     *                                                                  *
+     *
+     *   Device manager
+     *
      ********************************************************************/
 
     BOOL xmmLockDevicesList(VOID);
@@ -140,9 +141,9 @@
     VOID xmmCleanup(VOID);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Sound helpers                                                  *
-     *                                                                  *
+     *
+     *   Sound helpers
+     *
      ********************************************************************/
 
     VOID xmmOpenSound(HWND hwndObject,
@@ -156,9 +157,9 @@
     VOID xmmStopSound(PUSHORT pusDeviceID);
 
     /* ******************************************************************
-     *                                                                  *
-     *   CD player helpers                                              *
-     *                                                                  *
+     *
+     *   CD player helpers
+     *
      ********************************************************************/
 
     BOOL xmmCDOpenDevice(PUSHORT pusMMDeviceID);
@@ -177,9 +178,9 @@
     BOOL xmmCDPause(USHORT usDeviceID);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Media thread interface                                         *
-     *                                                                  *
+     *
+     *   Media thread interface
+     *
      ********************************************************************/
 
     BOOL xmmInit(VOID);
@@ -193,9 +194,9 @@
     BOOL xmmIsBusy(VOID);
 
     /* ******************************************************************
-     *                                                                  *
-     *   MMPM/2 configuration queries                                   *
-     *                                                                  *
+     *
+     *   MMPM/2 configuration queries
+     *
      ********************************************************************/
 
     #ifndef MCI_DEVTYPE_FILTER
@@ -224,5 +225,17 @@
     PXMMDEVICE xmmQueryDevices(PULONG pcDevices);
 
     BOOL xmmFreeDevices(PXMMDEVICE paDevices);
+
+    /* ******************************************************************
+     *
+     *   Volume Control (mmvolume.c)
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPObject_h
+        HWND xmmCreateVolumeView(WPObject *somSelf,
+                                 HWND hwndCnr,
+                                 ULONG ulView);
+    #endif
 
 #endif

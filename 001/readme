@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.6 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated October 29, 2000
+Last updated November 9, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -24,21 +24,7 @@ Last updated October 29, 2000
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
-    ways. It now also contains a PM hook (a la NPSWPS) to enhance
-    mouse and keyboard operations. As opposed to other PM hooks,
-    all configuration is done via true WPS settings notebooks.
-
-    Consider this the WPS upgrade IBM should have released with
-    OS/2 Warp 4. XWorkplace is the successor to XFolder V0.85 and
-    contains all of it, except the bugs.
-
-    XWorkplace can add features to pretty much all parts of the
-    system, such as generic object features, folder enhancements,
-    replacement icons, CONFIG.SYS settings, keyboard and mouse
-    operation, and much, much more.
-
-    All parts of XWorkplace are fully configurable and can be
-    selectively enabled in case something is going wrong.
+    ways.
 
     This README has additional information which is not included
     in the XWorkplace User Guide. Please read through all of this
@@ -53,11 +39,12 @@ Last updated October 29, 2000
 
     This version is mainly another bugfix release compared
     to previous versions. Most importantly, extended file
-    associations should work now.
+    associations should work now, and the shutdown problems
+    have been fixed.
 
-    For details, refer to the "XWorkplace User Guide" after
-    unpacking the files. To extract the documentation only,
-    see "2. INSTALLATION" below.
+    For details, refer to the "XWorkplace User Guide". To
+    extract the documentation only, see "2. INSTALLATION"
+    below.
 
 
 2. INSTALLATION
@@ -67,7 +54,7 @@ Last updated October 29, 2000
 
     ---> In any case, before installing, MAKE A WPS BACKUP.
 
-    Note: Use WarpIN V0.9.3 or higher to install this archive.
+    Note: Use WarpIN V0.9.6 or higher to install this archive.
     Older versions will not be able to create the XWorkplace
     WPS objects and will probably fail when upgrading XWorkplace
     from a previous version. Using the latest WarpIN is strongly
@@ -75,16 +62,11 @@ Last updated October 29, 2000
 
     If you are still unsure whether you should use XWorkplace at
     this point, and if you have WarpIN V0.9.6 installed, you can
-    use WIC.EXE (from the WarpIN package) to unpack the files only
-    and read the documentation first.
-
-    Type "wic -x xwp-0-9-6.wpi" to extract all of the WarpIN
-    archive into the current directory.
-
+    select the "Documentation" package in this archive only.
     This way can then read through XWorkplace's documentation
-    first and decide then whether to actually register
-    XWorkplace's classes. To do this later, simply double-click
-    on XWorkplace's WarpIN (.WPI) archive again.
+    first and decide then whether to actually install all of it.
+    To do this later, simply double-click on XWorkplace's .WPI
+    archive again.
 
 
 3. UPGRADING
@@ -93,7 +75,7 @@ Last updated October 29, 2000
     Upgrading from XWorkplace
     -------------------------
 
-    With the latest WarpIN, you will get a notification message
+    With a more recent WarpIN, you will get a notification message
     that XWPDAEMN.EXE is running. Have WarpIN kill that program
     (which is the XWorkplace Daemon), and you can overwrite your
     existing installation.
@@ -171,26 +153,16 @@ Last updated October 29, 2000
         If you have Christian's old package installed, you can keep
         it running, it causes no problems.
 
-        The AMPTR sources are now on the Netlabs CVS server in the
-        XWorkplace archives and compile with the rest of XWorkplace,
-        but there's still some work left. If anybody finds the time
-        to do the remaining integration work, any help is welcome.
-
-    2)  Extended file associations are working now, but they will
-        noticeably slow down folder populating.
-
-    3)  Even though I've fixed many PageMage bugs with V0.9.4,
-        there are still a number of problems left. PageMage doesn't
+    2)  There are still a number of problems left with PageMage. It
         shouldn't hang system any more, but it has problems tracking
-        windows at times. PageMage 0.9.6 is essentially unchanged
-        from 0.9.4.
+        windows at times. Only some minor bugs have been fixed.
 
-    4)  There are problems with WPS restarts and FP13/14. This is
+    3)  There are problems with WPS restarts and FP13/14. This is
         an OS/2 kernel bug which IBM says has been fixed with kernel
         build level 14.050, so this will probably be fixed with FP15
         as well.
 
-    5)  From time to time, creating folders from templates (using the
+    4)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
         screen. Some people never get this, but I do from time to time.
         This problem has been reported for all XFolder and XWorkplace
@@ -204,10 +176,6 @@ Last updated October 29, 2000
         IMMEDIATELY to avoid the black screen. This is a symptom of
         the swap file growing constantly until the swap disk is full,
         which will then cause a trap somewhere.
-
-    6)  XWPString is still experimental. Drag'n'drop and confirmations
-        don't work. XWPString will be replaced with a different
-        implementation in the future, so don't count on it.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

@@ -263,9 +263,6 @@ Copyright (C) 2000 Christian Langanke.
 English National Language Support:
 Copyright (C) 1998-2000 Ulrich M”ller.
 
-Contains code from WarpEnhancer (C) 1996-1997 Innotek Systemberatung. Used with permission.
-Contains code from WPTools (C) 1991-1998 Henk Kelder. Used with permission.
-Contains code from WPSArcO (C) 1997-1999 Stefan Milcke. Used with permission.
 Contains code from APM/2 (C) 1997-1998 Roman Stangl (OpenSource); ported to XFolder (C) 1998 ARAKAWA Atsushi.
 Contains code from ProgramCommander/2 (C) 1993-1999 Roman Stangl (OpenSource).
 Contains code from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
@@ -298,6 +295,20 @@ XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices
 <--XFL0190-->: Before using XShutdown the first time, please fine-tune XShutdown on the new "XShutdown" page in the Desktop's settings notebook.
 
 Warning: Even though XShutdown has been tested, it MIGHT NOT WORK on your system. Before shutting down the first time using XShutdown, make sure you have a working WPS backup. Don't say you haven't been warned!
+
+;
+; the following items are new with V0.9.6
+;
+
+<--XFL0191-->: XWorkplace Setup String
+
+<--XFL0192-->: This will invoke the setup string "%1" on the object "%2". Are you sure you want to do this?
+
+<--XFL0193-->: This will invoke the setup string "%1" on the following objects:
+
+%2
+
+Are you sure you want to do this?
 
 ; ---------------------------------------------------------------------------------
 ;

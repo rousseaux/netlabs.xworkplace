@@ -413,16 +413,16 @@
      *                                                                  *
      ********************************************************************/
 
-    #define XDM_HOOKINSTALL         (WM_USER + 300)
+    #define XDM_HOOKINSTALL         (WM_USER + 400)
 
-    #define XDM_DESKTOPREADY        (WM_USER + 301)
+    #define XDM_DESKTOPREADY        (WM_USER + 401)
 
-    #define XDM_HOOKCONFIG          (WM_USER + 302)
+    #define XDM_HOOKCONFIG          (WM_USER + 402)
 
 #ifdef __PAGEMAGE__
-    #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 303)
+    #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 403)
 
-    #define XDM_PAGEMAGECONFIG      (WM_USER + 304)
+    #define XDM_PAGEMAGECONFIG      (WM_USER + 404)
         // flags for XDM_PAGEMAGECONFIG:
         #define PGMGCFG_REPAINT     0x0001  // causes PGMG_INVALIDATECLIENT
         #define PGMGCFG_REFORMAT    0x0002  // causes pgmcSetPgmgFramePos
@@ -430,21 +430,21 @@
         #define PGMGCFG_STICKIES    0x0008  // sticky windows have changed, rescan winlist
 #endif
 
-    #define XDM_HOTKEYPRESSED       (WM_USER + 305)
+    #define XDM_HOTKEYPRESSED       (WM_USER + 405)
 
-    #define XDM_HOTKEYSCHANGED      (WM_USER + 306)
+    #define XDM_HOTKEYSCHANGED      (WM_USER + 406)
 
-    #define XDM_FUNCTIONKEYSCHANGED (WM_USER + 307)
+    #define XDM_FUNCTIONKEYSCHANGED (WM_USER + 407)
 
-    #define XDM_SLIDINGFOCUS        (WM_USER + 308)
+    #define XDM_SLIDINGFOCUS        (WM_USER + 408)
 
-    #define XDM_SLIDINGMENU         (WM_USER + 309)
+    #define XDM_SLIDINGMENU         (WM_USER + 409)
 
-    #define XDM_HOTCORNER           (WM_USER + 310)
+    #define XDM_HOTCORNER           (WM_USER + 410)
 
-    #define XDM_WMCHORDWINLIST      (WM_USER + 311)
+    #define XDM_WMCHORDWINLIST      (WM_USER + 411)
 
-    #define XDM_PGMGWINLISTFULL     (WM_USER + 312)
+    #define XDM_PGMGWINLISTFULL     (WM_USER + 412)
 
 #endif
 

@@ -691,7 +691,7 @@ FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
  *      So there should be only dormant files left, which we
  *      can safely delete using Dos* functions.
  *
- *@@added V0.9.6 (2000-25-25) [umoeller]
+ *@@added V0.9.6 (2000-10-25) [umoeller]
  */
 
 FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,

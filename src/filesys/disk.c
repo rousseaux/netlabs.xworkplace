@@ -117,20 +117,21 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
         pRootFolder = wpshQueryRootFolder(somSelf,
                                           &arc);    // out: DOS error code
 
+        // reset mouse pointer
+        WinSetPointer(HWND_DESKTOP, hptrOld);
+
         if (pRootFolder == NULL)
         {
             // drive not ready:
             CHAR    szTitle[400];
 
-            // reset mouse pointer
-            WinSetPointer(HWND_DESKTOP, hptrOld);
-
             cmnGetMessage(NULL, 0,
                           szTitle, sizeof(szTitle),
                           104);  // "XFolder: Error"
             sprintf(szTitle + strlen(szTitle),
-                    " (\"%s\")", _wpQueryTitle(somSelf));
-                            // append drive name in brackets
+                    // append drive name in brackets
+                    " (\"%s\")",
+                    _wpQueryTitle(somSelf));
 
             mbrc = cmnDosErrorMsgBox(HWND_DESKTOP,
                                      _wpQueryLogicalDrive(somSelf) + 'A' - 1,
@@ -140,7 +141,6 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
                                      TRUE); // show explanation
         }
 
-        WinSetPointer(HWND_DESKTOP, hptrOld);
     } while (mbrc == MBID_RETRY);
 
     return (pRootFolder);

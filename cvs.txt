@@ -1,0 +1,192 @@
+Netlabs CVS README
+(W) Ulrich M”ller, November 12, 1999
+Last updated November 12, 2000, Ulrich M”ller
+
+
+0. CONTENTS OF THIS FILE
+========================
+
+    1. INTRODUCTION TO CVS
+    2. WHICH CVS VERSION TO USE
+    3. SETUP
+    4. CVS CONCEPTS
+    5. CHECKING OUT THE CODE
+
+
+1. INTRODUCTION TO CVS
+======================
+
+    CVS stands for "Concurrent Versioning System". It is a tool
+    which allows several developers to work on the same source code
+    at the same time.
+
+    Netlabs has set up a CVS server on which all the Netlabs projects
+    reside. The concept of a client/server CVS setup is that the
+    server maintains a "repository" with the entire source code,
+    including all changes that were ever made. Each developer then
+    creates a local copy of the sources on his hard disk. So each
+    developer can safely work on the local sources until he thinks
+    that everyone else should get the changes (once they're halfway
+    stable), and can then put the changes on the server, and all
+    other developers can then update their local copy.
+
+    While your local copy will always be at a certain code/revision
+    level, the server maintains all changes that were ever made.
+    You can, for example, even retrieve the sources as they were in
+    the middle of 1999, if you want.
+
+    Maybe the nicest thing about CVS is that it will merge code changes.
+    CVS has GNU "diff" built in so even if two people work on the
+    same source file, CVS in most cases can automatically keep the
+    changes in sync. See "Terminology" below.
+
+
+2. WHICH CVS VERSION TO USE
+===========================
+
+    CVS is a Unix program that was ported to OS/2. There are several
+    CVS versions on Hobbes. I strongly recommend to use 1.10.6,
+    which is the most bug-free of them all. While 1.10 might still
+    work OK, 1.10.7 causes tons of problems. Do not use it.
+
+
+3. SETUP
+========
+
+    You can use the Netlabs Open Source Archive Client (NOSAC)
+    instead of running CVS from the command line. However, I have
+    found the command line much more practical, so I am going to
+    explain the basics here. Please refer to the CVS documentation
+    for details.
+
+    As with most Unix programs, CVS expects you to have home
+    directory. If you don't have one, create an empty directory
+    somewhere and set the HOME environment variable to that directory.
+
+    In any case, I strongly recommend to create a file in $(HOME)
+    called ".cvsrc" and add "cvs -z9" in there to enable maximum
+    compression during transfers. This greatly speeds up things.
+
+    Secondly, the most practical way to use CVS is to have a common
+    parent directory for all code repositories. So create one
+    (for example, "F:\cvs"), which will become the parent directory
+    for all CVS projects (e.g. "F:\cvs\xworkplace", "F:\cvs\warpin").
+
+    Finally, CVS needs you to have a user name and a password. If you
+    don't have one yet, use "guest" and "readonly", which will give
+    you read-only access to all Netlabs projects.
+
+    Set the current project environment. This is done via another
+    environment variable, so for XWorkplace, set:
+        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xworkplace
+
+    Replace the trailing "xworkplace" with the code repository name
+    if you want to work on another project.
+
+    Change to the local project root directory (e.g. "F:\cvs\xworkplace").
+
+    Set USER=guest in your environment. To log onto a project, use
+    the "cvs logon" command. Enter "readonly" when you are prompted
+    for the password. (Note that you need to log on separately for
+    each repository. CVS will then store the data in $(HOME) so you
+    only need to do this once.)
+
+
+4. CVS TERMINOLOGY
+==================
+
+    The following terms should be known when working with CVS (or
+    even reading the documentation):
+
+    -- "Repository" is the unit CVS uses for managing projects.
+       For example, "xworkplace" and "warpin" are two repositories
+       on the Netlabs CVS server.
+
+    -- "Checkout": You create a local copy of a repository when you
+       check out the code.
+
+    -- "Commit": If you have write access to the CVS server (which
+       requires that you have been given a user name and password),
+       you can change the repository by "committing" your local
+       copy back onto the server. Once the code has been committed,
+       all other developers can check it out again and will have
+       the updates.
+
+    -- "Merge": If a file has been changed on the server and CVS
+       finds that a local copy needs to be updated, it "merges"
+       all changes into the local copy. That is, it does not
+       simply overwrite the local copy with the new version on the
+       server, but will compare the two files and patch the local
+       copy! CVS has GNU "diff" built in, so this is pretty powerful.
+
+    -- "Conflicts": This happens if CVS cannot successfully merge
+       changes into your local copy. Most frequently, this occurs
+       when two developers have modified the same lines in the
+       same source file. Of course, CVS cannot resolve these
+       conflicts by itself, so it will put two versions into the
+       file marked with special characters. (With C files, this
+       will cause compilation to fail, so you'll have to manually
+       resolve the conflict).
+
+
+5. CHECKING OUT THE CODE
+========================
+
+    Change to the XWorkplace root directory (e.g. "F:\cvs\xworkplace")
+    set the XWorkplace environment as described above (HOME, USER,
+    CVSROOT), and log on if you haven't logged on yet.
+
+    The command for getting source from the server is "cvs checkout".
+    With checkout, you need to specify the module to check out. For
+    now, we will consider a module a directory name. Note that CVS
+    normally operates on directories recursively! So if you use
+
+        cvs checkout .
+
+    (mind the dot) from the XWorkplace root directory, this will
+    retrieve the entire code tree and create new local files if
+    they don't exist yet.
+
+    By contrast, "cvs update" only updates local files which have
+    been changed on the server. It does not create new files.
+    Since I frequently create new files on the server, using
+    "checkout" will probably be the better general choice.
+
+    Note that to compile XWorkplace, you will also need the
+    "XWorkplace Helpers" code, which is in a separate repository
+    called "xwphelpers". So create a new empty project directory
+    (e.g. "F:\cvs\xwphelpers"), change CVSROOT to point to the
+    "xwphelpers" repository, change to the new directory, and
+    do a "cvs checkout ." again.
+
+    You will see that CVS puts out lots of information about the
+    files that were worked on. A typical CVS output from "update"
+    or "checkout" looks like this:
+
+        ? doc/progref.ipf
+        M makefile
+        M include/build.h
+        M include/filesys/program.h
+        M src/classes/xcenter.c
+
+    I strongly recommend redirecting standard output when using
+    "cvs update" or "checkout" so you know what CVS has done.
+
+    The first letter tells you what CVS has done to the file:
+
+        ?: CVS does not know the file. It is in your local tree,
+           but not in the repository.
+           This happens if you add files to your local copy.
+        U: This is the most frequent one. It means that CVS has
+           "U"pdated a local file with a new copy from the server.
+        P: Similar to "U", except that the server has only sent
+           a "P"atch instead of the entire file.
+        M: This means that your local file was "M"odified before the
+           update. You get this no matter if the file was updated
+           (i.e. changes were merged successfully) or not.
+        C: This happens if merge failed and a "C"onflict occured.
+           You need to manually edit all files which have been
+           marked with "C".
+        R: A file has been removed.
+
+

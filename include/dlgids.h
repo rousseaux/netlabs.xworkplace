@@ -75,11 +75,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.5"
+#define XFOLDER_VERSION        "0.9.6"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.5"
+#define MINIMUM_NLS_VERSION    "0.9.6"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -114,6 +114,7 @@
 
 #define ID_ICONXWPMEDIA        123
 #define ID_ICONXWPSTRING       124
+#define ID_ICONXMMVOLUME       125
 
 #define ID_XFLDRBITMAP         130
 
@@ -1033,6 +1034,7 @@
 #define ID_XLMI_METHOD_SORT_NAME        (WPMENUID_USER+1014)
 #define ID_XLMI_METHOD_SORT_INTRO       (WPMENUID_USER+1015)
 #define ID_XLMI_METHOD_SORT_OVERRIDE    (WPMENUID_USER+1016)
+#define ID_XLMI_REFRESH_VIEW            (WPMENUID_USER+1017) // V0.9.6 (2000-11-12) [umoeller]
 
 // "File types" container
 #define ID_XSM_FILETYPES_SEL            (WPMENUID_USER+1020)
@@ -1415,150 +1417,155 @@
 #define ID_XFSI_OPENCLASSLIST           5845
 #define ID_XFSI_XWPCLASSLIST            5846
 #define ID_XFSI_REGISTERCLASS           5847
+
 // XWPSound (new with V0.9.0)
-#define ID_XSSI_SOUNDSCHEMENONE         5848
+#define ID_XSSI_SOUNDSCHEMENONE         5849
 // "System paths" page
-#define ID_XSSI_ITEMSSELECTED           5849    // new with V0.9.0
+#define ID_XSSI_ITEMSSELECTED           5850    // new with V0.9.0
 
 // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-#define ID_XTSI_TRASHEMPTY              5850
-#define ID_XTSI_TRASHRESTORE            5851
-#define ID_XTSI_TRASHDESTROY            5852
+#define ID_XTSI_TRASHEMPTY              5851
+#define ID_XTSI_TRASHRESTORE            5852
+#define ID_XTSI_TRASHDESTROY            5853
 
-#define ID_XTSI_TRASHCAN                5853
-#define ID_XTSI_TRASHOBJECT             5854
+#define ID_XTSI_TRASHCAN                5854
+#define ID_XTSI_TRASHOBJECT             5855
 
-#define ID_XTSI_TRASHSETTINGSPAGE       5855
-#define ID_XTSI_TRASHDRIVESPAGE         5856
+#define ID_XTSI_TRASHSETTINGSPAGE       5856
+#define ID_XTSI_TRASHDRIVESPAGE         5857
 
-#define ID_XTSI_ORIGFOLDER              5857
-#define ID_XTSI_DELDATE                 5858
-#define ID_XTSI_DELTIME                 5859
-#define ID_XTSI_SIZE                    5860
-#define ID_XTSI_ORIGCLASS               5861
+#define ID_XTSI_ORIGFOLDER              5858
+#define ID_XTSI_DELDATE                 5859
+#define ID_XTSI_DELTIME                 5860
+#define ID_XTSI_SIZE                    5861
+#define ID_XTSI_ORIGCLASS               5862
 
-#define ID_XTSI_STB_POPULATING          5862
-#define ID_XTSI_STB_OBJCOUNT            5863
+#define ID_XTSI_STB_POPULATING          5863
+#define ID_XTSI_STB_OBJCOUNT            5864
 
 // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-#define ID_XSSI_HOTKEY_TITLE            5864
-#define ID_XSSI_HOTKEY_FOLDER           5865
-#define ID_XSSI_HOTKEY_HANDLE           5866
-#define ID_XSSI_HOTKEY_HOTKEY           5867
+#define ID_XSSI_HOTKEY_TITLE            5865
+#define ID_XSSI_HOTKEY_FOLDER           5866
+#define ID_XSSI_HOTKEY_HANDLE           5867
+#define ID_XSSI_HOTKEY_HOTKEY           5868
 
 // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-#define ID_XSSI_CLSLIST_INDEX           5868
-#define ID_XSSI_CLSLIST_METHOD          5869
-#define ID_XSSI_CLSLIST_ADDRESS         5870
-#define ID_XSSI_CLSLIST_CLASS           5871
-#define ID_XSSI_CLSLIST_OVERRIDDENBY    5872
+#define ID_XSSI_CLSLIST_INDEX           5869
+#define ID_XSSI_CLSLIST_METHOD          5870
+#define ID_XSSI_CLSLIST_ADDRESS         5871
+#define ID_XSSI_CLSLIST_CLASS           5872
+#define ID_XSSI_CLSLIST_OVERRIDDENBY    5873
 
 // "Special functions" on XWPMouse "Movement" page
-#define ID_XSSI_SPECIAL_WINDOWLIST      5873
-#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5874
+#define ID_XSSI_SPECIAL_WINDOWLIST      5903
+#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5904
 
 // default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
-#define ID_XSSI_XWPSCREENTITLE          5875
+#define ID_XSSI_XWPSCREENTITLE          5905
 
 // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
-#define ID_XSSI_OPENPARTITIONS          5876
+#define ID_XSSI_OPENPARTITIONS          5906
 
 // "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
-#define ID_XSSI_SYSLEVELPAGE            5877
+#define ID_XSSI_SYSLEVELPAGE            5907
 
-#define ID_XTSI_CALCULATING             5878
+#define ID_XTSI_CALCULATING             5908
 
-#define ID_MMSI_DEVICETYPE              5879
-#define ID_MMSI_DEVICEINDEX             5880
-#define ID_MMSI_DEVICEINFO              5881
+#define ID_MMSI_DEVICETYPE              5909
+#define ID_MMSI_DEVICEINDEX             5910
+#define ID_MMSI_DEVICEINFO              5911
 
-#define ID_MMSI_TYPE_IMAGE              5882
-#define ID_MMSI_TYPE_AUDIO              5883
-#define ID_MMSI_TYPE_MIDI               5884
-#define ID_MMSI_TYPE_COMPOUND           5885
-#define ID_MMSI_TYPE_OTHER              5886
-#define ID_MMSI_TYPE_UNKNOWN            5887
-#define ID_MMSI_TYPE_VIDEO              5888
-#define ID_MMSI_TYPE_ANIMATION          5889
-#define ID_MMSI_TYPE_MOVIE              5890
+#define ID_MMSI_TYPE_IMAGE              5912
+#define ID_MMSI_TYPE_AUDIO              5913
+#define ID_MMSI_TYPE_MIDI               5914
+#define ID_MMSI_TYPE_COMPOUND           5915
+#define ID_MMSI_TYPE_OTHER              5916
+#define ID_MMSI_TYPE_UNKNOWN            5917
+#define ID_MMSI_TYPE_VIDEO              5918
+#define ID_MMSI_TYPE_ANIMATION          5919
+#define ID_MMSI_TYPE_MOVIE              5920
 
-#define ID_MMSI_TYPE_STORAGE            5891
-#define ID_MMSI_TYPE_FILE               5892
-#define ID_MMSI_TYPE_DATA               5893
+#define ID_MMSI_TYPE_STORAGE            5921
+#define ID_MMSI_TYPE_FILE               5922
+#define ID_MMSI_TYPE_DATA               5923
 
-#define ID_MMSI_DEVTYPE_VIDEOTAPE       5894
-#define ID_MMSI_DEVTYPE_VIDEODISC       5895
-#define ID_MMSI_DEVTYPE_CD_AUDIO        5896
-#define ID_MMSI_DEVTYPE_DAT             5897
-#define ID_MMSI_DEVTYPE_AUDIO_TAPE      5898
-#define ID_MMSI_DEVTYPE_OTHER           5899
-#define ID_MMSI_DEVTYPE_WAVEFORM_AUDIO  5900
-#define ID_MMSI_DEVTYPE_SEQUENCER       5901
-#define ID_MMSI_DEVTYPE_AUDIO_AMPMIX    5902
-#define ID_MMSI_DEVTYPE_OVERLAY         5903
-#define ID_MMSI_DEVTYPE_ANIMATION       5904
-#define ID_MMSI_DEVTYPE_DIGITAL_VIDEO   5905
-#define ID_MMSI_DEVTYPE_SPEAKER         5906
-#define ID_MMSI_DEVTYPE_HEADPHONE       5907
-#define ID_MMSI_DEVTYPE_MICROPHONE      5908
-#define ID_MMSI_DEVTYPE_MONITOR         5909
-#define ID_MMSI_DEVTYPE_CDXA            5910
-#define ID_MMSI_DEVTYPE_FILTER          5911
-#define ID_MMSI_DEVTYPE_TTS             5912
+#define ID_MMSI_DEVTYPE_VIDEOTAPE       5924
+#define ID_MMSI_DEVTYPE_VIDEODISC       5925
+#define ID_MMSI_DEVTYPE_CD_AUDIO        5926
+#define ID_MMSI_DEVTYPE_DAT             5927
+#define ID_MMSI_DEVTYPE_AUDIO_TAPE      5928
+#define ID_MMSI_DEVTYPE_OTHER           5929
+#define ID_MMSI_DEVTYPE_WAVEFORM_AUDIO  5930
+#define ID_MMSI_DEVTYPE_SEQUENCER       5931
+#define ID_MMSI_DEVTYPE_AUDIO_AMPMIX    5932
+#define ID_MMSI_DEVTYPE_OVERLAY         5933
+#define ID_MMSI_DEVTYPE_ANIMATION       5934
+#define ID_MMSI_DEVTYPE_DIGITAL_VIDEO   5935
+#define ID_MMSI_DEVTYPE_SPEAKER         5936
+#define ID_MMSI_DEVTYPE_HEADPHONE       5937
+#define ID_MMSI_DEVTYPE_MICROPHONE      5938
+#define ID_MMSI_DEVTYPE_MONITOR         5939
+#define ID_MMSI_DEVTYPE_CDXA            5940
+#define ID_MMSI_DEVTYPE_FILTER          5941
+#define ID_MMSI_DEVTYPE_TTS             5942
 
-#define ID_MMSI_COLMN_FOURCC            5913
-#define ID_MMSI_COLMN_NAME              5914
-#define ID_MMSI_COLMN_IOPROC_TYPE       5915
-#define ID_MMSI_COLMN_MEDIA_TYPE        5916
-#define ID_MMSI_COLMN_EXTENSION         5917
-#define ID_MMSI_COLMN_DLL               5918
-#define ID_MMSI_COLMN_PROCEDURE         5919
+#define ID_MMSI_COLMN_FOURCC            5943
+#define ID_MMSI_COLMN_NAME              5944
+#define ID_MMSI_COLMN_IOPROC_TYPE       5945
+#define ID_MMSI_COLMN_MEDIA_TYPE        5946
+#define ID_MMSI_COLMN_EXTENSION         5947
+#define ID_MMSI_COLMN_DLL               5948
+#define ID_MMSI_COLMN_PROCEDURE         5949
 
-#define ID_MMSI_PAGETITLE_DEVICES       5920
-#define ID_MMSI_PAGETITLE_IOPROCS       5921
-#define ID_MMSI_PAGETITLE_CODECS        5922
+#define ID_MMSI_PAGETITLE_DEVICES       5950
+#define ID_MMSI_PAGETITLE_IOPROCS       5951
+#define ID_MMSI_PAGETITLE_CODECS        5952
 
-#define ID_XSSI_PAGETITLE_PAGEMAGE      5923
+#define ID_XSSI_PAGETITLE_PAGEMAGE      5953
 
-#define ID_XSSI_XWPSTRING_PAGE          5924
-#define ID_XSSI_XWPSTRING_OPENMENU      5925
+#define ID_XSSI_XWPSTRING_PAGE          5954
+#define ID_XSSI_XWPSTRING_OPENMENU      5955
 
-#define ID_XSSI_COLMN_SYSL_COMPONENT    5926
-#define ID_XSSI_COLMN_SYSL_FILE         5927
-#define ID_XSSI_COLMN_SYSL_VERSION      5928
-#define ID_XSSI_COLMN_SYSL_LEVEL        5929
-#define ID_XSSI_COLMN_SYSL_PREVIOUS     5930
+#define ID_XSSI_COLMN_SYSL_COMPONENT    5956
+#define ID_XSSI_COLMN_SYSL_FILE         5957
+#define ID_XSSI_COLMN_SYSL_VERSION      5958
+#define ID_XSSI_COLMN_SYSL_LEVEL        5959
+#define ID_XSSI_COLMN_SYSL_PREVIOUS     5960
 
-#define ID_XSSI_DRIVERS_VERSION         5931
-#define ID_XSSI_DRIVERS_VENDOR          5932
+#define ID_XSSI_DRIVERS_VERSION         5961
+#define ID_XSSI_DRIVERS_VENDOR          5962
 
-#define ID_XSSI_FUNCKEY_DESCRIPTION     5933
-#define ID_XSSI_FUNCKEY_SCANCODE        5934
-#define ID_XSSI_FUNCKEY_MODIFIER        5935
+#define ID_XSSI_FUNCKEY_DESCRIPTION     5963
+#define ID_XSSI_FUNCKEY_SCANCODE        5964
+#define ID_XSSI_FUNCKEY_MODIFIER        5965
 
 // default documents V0.9.4 (2000-06-09) [umoeller]
-#define ID_XSSI_DATAFILEDEFAULTDOC      5936
-#define ID_XSSI_FDRDEFAULTDOC           5937
+#define ID_XSSI_DATAFILEDEFAULTDOC      5966
+#define ID_XSSI_FDRDEFAULTDOC           5967
 
 // XCenter V0.9.4 (2000-06-10) [umoeller]
-#define ID_XSSI_XCENTERPAGE1            5938
+#define ID_XSSI_XCENTERPAGE1            5968
 
 // file operations V0.9.4 (2000-07-27) [umoeller]
-#define ID_XSSI_FOPS_MOVE2TRASHCAN      5939
-#define ID_XSSI_FOPS_RESTOREFROMTRASHCAN 5940
-#define ID_XSSI_FOPS_TRUEDELETE         5941
-#define ID_XSSI_FOPS_EMPTYINGTRASHCAN   5942
+#define ID_XSSI_FOPS_MOVE2TRASHCAN      5969
+#define ID_XSSI_FOPS_RESTOREFROMTRASHCAN 5970
+#define ID_XSSI_FOPS_TRUEDELETE         5971
+#define ID_XSSI_FOPS_EMPTYINGTRASHCAN   5972
 
-#define ID_XSSI_ICONPAGE                5943
+#define ID_XSSI_ICONPAGE                5973
 
 // XShutdown INI save strings V0.9.5 (2000-08-16) [umoeller]
-#define ID_XSSI_XSD_SAVEINIS_NEW        5944
-#define ID_XSSI_XSD_SAVEINIS_OLD        5945
-#define ID_XSSI_XSD_SAVEINIS_NONE       5946
+#define ID_XSSI_XSD_SAVEINIS_NEW        5974
+#define ID_XSSI_XSD_SAVEINIS_OLD        5975
+#define ID_XSSI_XSD_SAVEINIS_NONE       5976
 
 // logoff V0.9.5 (2000-09-28) [umoeller]
-#define ID_XSSI_XSD_LOGOFF              5947
-#define ID_XSSI_XSD_CONFIRMLOGOFFMSG    5948
+#define ID_XSSI_XSD_LOGOFF              5977
+#define ID_XSSI_XSD_CONFIRMLOGOFFMSG    5978
+
+// "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
+#define ID_XSSI_BYTE                    5979
+#define ID_XSSI_BYTES                   5980
 
 /******************************************
  *  Features on XWPSetup "Features" page  *

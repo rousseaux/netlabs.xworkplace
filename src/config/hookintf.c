@@ -139,6 +139,8 @@ BOOL hifLoadHookConfig(PHOOKCONFIG phc)
  *      If this is the same as fEnable, the
  *      operation was successfull.
  *
+ *      This does NOT change the GLOBALSETTINGS.
+ *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  */
 
@@ -152,13 +154,11 @@ BOOL hifEnableHook(BOOL fEnable)
 
     // (de)install the hook by notifying the daemon
     if (!pDaemonShared)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "pDaemonShared is NULL.");
+        CMN_LOG(("pDaemonShared is NULL."));
     else
     {
         if (!pDaemonShared->hwndDaemonObject)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+            CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE."));
         else
         {
             _Pmpf(("  Sending XDM_HOOKINSTALL"));
@@ -218,8 +218,8 @@ BOOL hifXWPHookReady(VOID)
  *@@ hifEnablePageMage:
  *      enables or disables PageMage by sending
  *      XDM_STARTSTOPPAGEMAGE to the daemon.
- *      This does not modify the GLOBALSETTINGS;
- *      use cmnEnablePageMage for that.
+ *
+ *      This does not change the GLOBALSETTINGS.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  */
@@ -236,13 +236,11 @@ BOOL hifEnablePageMage(BOOL fEnable)
 
     // (de)install the hook by notifying the daemon
     if (!pDaemonShared)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "pDaemonShared is NULL.");
+        CMN_LOG(("pDaemonShared is NULL."));
     else
     {
         if (!pDaemonShared->hwndDaemonObject)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+            CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE. XWPDAEMN.EXE is probably not running."));
         else
         {
             _Pmpf(("hifEnablePageMage: Sending XDM_STARTSTOPPAGEMAGE"));
@@ -301,17 +299,14 @@ BOOL hifHookConfigChanged(PVOID pvdc)
                                   sizeof(HOOKCONFIG));
 
         if (!brc)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "PrfWriteProfileData failed.");
+            CMN_LOG(("PrfWriteProfileData failed."));
         else
         {
             if (!pDaemonShared)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared is NULL.");
+                CMN_LOG(("pDaemonShared is NULL."));
             else
                 if (!pDaemonShared->hwndDaemonObject)
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                    CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE."));
                 else
                     // cross-process send msg: this
                     // does not return until the daemon
@@ -1241,6 +1236,7 @@ typedef struct _FUNCKEYSPAGEDATA
  *@@added V0.9.3 (2000-04-17) [umoeller]
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed memory leak
  */
 
 VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1325,6 +1321,8 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
                              &paFuncKeys[ul],
                              ul);
         }
+
+        hifFreeFunctionKeys(paFuncKeys); // V0.9.6 (2000-11-12) [umoeller]
     }
 
     if (flFlags & CBI_DESTROY)
@@ -2254,7 +2252,7 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
             WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
         }
 
-        // setup container
+        // set up container
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_NAME | CV_MINI | CA_DRAWICON);

@@ -131,6 +131,9 @@ GLOBALSETTINGS  *G_pGlobalSettings = NULL;
 HMODULE         G_hmodIconsDLL = NULLHANDLE;
 CHAR            G_szLanguageCode[20] = "";
 
+COUNTRYSETTINGS G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
+BOOL            G_fCountrySettingsLoaded = FALSE;
+
 ULONG           G_ulCurHelpPanel = 0;      // holds help panel for dialog
 
 CHAR            G_szStatusBarFont[100];
@@ -397,8 +400,7 @@ const char* cmnQueryLanguageCode(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (G_szLanguageCode);
 }
@@ -432,8 +434,7 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (brc);
 }
@@ -475,8 +476,7 @@ const char* cmnQueryHelpLibrary(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (rc);
 }
@@ -542,8 +542,7 @@ const char* cmnQueryMessageFile(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (rc);
 }
@@ -623,8 +622,7 @@ HMODULE cmnQueryIconsDLL(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (G_hmodIconsDLL);
 }
@@ -670,8 +668,7 @@ PSZ cmnQueryBootLogoFile(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (pszReturn);
 }
@@ -1225,6 +1222,12 @@ VOID LoadNLSData(HAB habDesktop,
             &(pNLSStrings->pszXSDLogoff));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_CONFIRMLOGOFFMSG,
             &(pNLSStrings->pszXSDConfirmLogoffMsg));
+
+    // "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_BYTE,
+            &(pNLSStrings->pszByte));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_BYTES,
+            &(pNLSStrings->pszBytes));
 }
 
 /*
@@ -1372,8 +1375,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     // return (new?) module handle
     return (G_hmodNLS);
@@ -1405,28 +1407,45 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (G_pNLSStringsGlobal);
 }
 
 /*
  *@@ cmnQueryThousandsSeparator:
- *      returns the character which has been set as
- *      the thousands separator in the "Country" object.
+ *      returns the global COUNTRYSETTINGS (see helpers\prfh.c)
+ *      as set in the "Country" object, which are cached for speed.
  *
- *@@added V0.9.5 (2000-08-24) [umoeller]
+ *      If (fReload == TRUE), the settings are re-read.
+ *
+ *@@added V0.9.6 (2000-11-12) [umoeller]
+ */
+
+PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
+{
+    if ((!G_fCountrySettingsLoaded) || (fReload))
+    {
+        prfhQueryCountrySettings(&G_CountrySettings);
+        G_fCountrySettingsLoaded = TRUE;
+    }
+
+    return (&G_CountrySettings);
+}
+
+/*
+ *@@ cmnQueryThousandsSeparator:
+ *      returns the thousands separator from the "Country"
+ *      object.
+ *
+ *@@added V0.9.6 (2000-11-12) [umoeller]
  */
 
 CHAR cmnQueryThousandsSeparator(VOID)
 {
-    return (prfhQueryProfileChar(HINI_USER,
-                                 "PM_National",
-                                 "sThousand",
-                                 '.'));
+    PCOUNTRYSETTINGS p = cmnQueryCountrySettings(FALSE);
+    return (p->cThousands);
 }
-
 
 /*
  *@@ cmnDescribeKey:
@@ -1579,8 +1598,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (rc);
 }
@@ -1665,8 +1683,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (brc);
 }
@@ -1789,8 +1806,7 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 
     return (G_pGlobalSettings);
 }
@@ -1827,8 +1843,7 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
     return (G_pGlobalSettings);
 }
 
@@ -1853,8 +1868,7 @@ GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
         return (G_pGlobalSettings);
     else
     {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
         return (NULL);
     }
 }
@@ -2021,9 +2035,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             // G_pGlobalSettings->fMonitorCDRoms = 0;
 
-#ifdef __EXTASSOCS__
             G_pGlobalSettings->fExtAssocs = 0;
-#endif
             G_pGlobalSettings->CleanupINIs = 0;
 #ifdef __REPLHANDLES__
             G_pGlobalSettings->fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
@@ -2186,8 +2198,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
         cmnUnlockGlobalSettings();
 
         if (krnQueryLock())
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Global lock already requested.");
+            CMN_LOG(("Global lock already requested."));
         else
         {
             // disable:
@@ -2545,8 +2556,7 @@ VOID cmnSetControlsFont(HWND hwnd,
         krnUnlock();
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock failed.");
+        CMN_LOG(("krnLock failed."));
 }
 
 PFNWP pfnwpOrigStatic = NULL;

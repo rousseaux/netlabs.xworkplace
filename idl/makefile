@@ -57,6 +57,7 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xfwps.h \
      $(OUTPUTDIR)\xtrash.h \
      $(OUTPUTDIR)\xtrashobj.h \
+     $(OUTPUTDIR)\xmmvolume.h \
      $(OUTPUTDIR)\xwpfsys.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmedia.h \
@@ -129,6 +130,8 @@ $(OUTPUTDIR)\xfwps.h:            $(@B).idl
 $(OUTPUTDIR)\xtrash.h:           $(@B).idl
 
 $(OUTPUTDIR)\xtrashobj.h:        $(@B).idl
+
+$(OUTPUTDIR)\xmmvolume.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpfsys.h:          $(@B).idl
 

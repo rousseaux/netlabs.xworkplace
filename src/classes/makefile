@@ -71,6 +71,7 @@ OBJS = \
        $(OUTPUTDIR)\xfwps.obj \
        $(OUTPUTDIR)\xtrash.obj \
        $(OUTPUTDIR)\xtrashobj.obj \
+       $(OUTPUTDIR)\xmmvolume.obj \
        $(OUTPUTDIR)\xwpfsys.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
        $(OUTPUTDIR)\xwpmedia.obj \
@@ -292,8 +293,16 @@ $(OUTPUTDIR)\xtrashobj.obj: \
             $(@B).c \
             $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
 
+$(OUTPUTDIR)\xmmvolume.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\media\media.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\xwpfsys.obj: \
             $(INC)\setup.h \
+            $(HLPINC)\winh.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\notebook.h \
             $(INC)\filesys\fhandles.h \
@@ -347,7 +356,7 @@ $(OUTPUTDIR)\xwpsound.obj: \
 
 $(OUTPUTDIR)\xwpstring.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h

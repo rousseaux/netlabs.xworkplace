@@ -31,6 +31,11 @@
      *      Alternatively, set DONTDEBUGATALL explicitly here to
      *      disable the debugging flags completely. Of course, that
      *      does not affect compiler options.
+     *
+     *  2)  If DONTDEBUGATALL is not set (i.e. if we're in debug mode),
+     *      the various flags below are taken into account. Note that
+     *      many of these are from very old XFolder versions, and
+     *      I cannot guarantee that these will compile any more.
      */
 
     // disable debugging if debug code is off
@@ -69,12 +74,7 @@
 
         // the following writes xfldtrap.log even for "quiet"
         // exceptions, i.e. those handled by excHandlerQuiet
-        // (xfdesk.c)
             // #define DEBUG_WRITEQUIETEXCPT
-
-        // the following will write an extended stack dump into
-        // the traplog of the exception handlers (xfdesk.c)
-            // #define DEBUG_EXCPT_STACKDUMP
 
         // The following printfs about folder context menus.
             // #define DEBUG_CONTEXT
@@ -206,7 +206,7 @@
     #ifdef __DEBUG__
         // enable memory debugging; comment out this line
         // if you don't want it
-        // #define __XWPMEMDEBUG__
+        #define __XWPMEMDEBUG__
 
         #include "helpers\memdebug.h"
     #endif

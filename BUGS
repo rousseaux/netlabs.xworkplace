@@ -38,6 +38,9 @@ This is my private bug list for FP13/14:
    These still return garbage with FP14 sometimes.
 
 -- Apparently, DosPerfSysCall doesn't work any more either.
+   This causes a number of CPU meters to display garbage.
+   Daniela Engert told me that the timers are no longer
+   automatically initialized when the kernel starts up.
 
 -- Please don't complain about misaligned text in Details
    views, which is no longer vertically centered. It's not
@@ -70,14 +73,6 @@ NOT-SO-SERIOUS PROBLEMS
 >and voila pop-up appears telling user that there is a name conflict, but the
 >new name is not in that folder!
 
-INF:
-    -- add "Sliding menus"
-    -- make stable things
-
-XWPString:
-    -- d'n'd no work!
-    -- confirm no work!
-
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
@@ -99,26 +94,33 @@ trash can:
        if a program tries to UPDATE the object that has been deleted, it
        effectively updates the object in the TrashCan, while it should
        create a new one.
+    -- In the trash can, the Size of the object deleted is not displayed
+       using the user's country specific settings.
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
        what to display - the '„' (german Umlaut) gets lost.
 
 PageMage:
-    -- mb2 can move desktop
     -- window creation/destroy/activation not recognized sometimes
-    >I'm using xworkplace 0.95 and find that the os/2 enhanced
-    >editor, EPM, acts as a sticky app in PageMage
-    -- current desktop is sometimes out of bounds at startup -- limit checks
+    -- I'm using xworkplace 0.95 and find that the os/2 enhanced
+       editor, EPM, acts as a sticky app in PageMage
+    -- Odin windows
+    1)  Full Screen Apps are not recognized properly.
+        Open a full screen app (or make one full screen) and try to
+        drag it across (won't work!) or switch screen and go back (won't show
+        the FS app!)
+    3)  The title of an application windows is not updated properly (if at
+        all) in the pagemage window
 
 hook:
-    >there is a little bug with the settings notebook of the mouse - movement 2.
-    >I can drag and drop objects to the open object, but it doesn't work with
-    >the pickup and drop feature of Warp. Than there is no object given.
+    --  there is a little bug with the settings notebook of the mouse - movement 2.
+        I can drag and drop objects to the open object, but it doesn't work with
+        the pickup and drop feature of Warp. Than there is no object given.
 
-    When Sliding focus is On, in seamless WinOS2 programs like MS Excel
-    when you right-click and then move your mouse over the context menu
-    it immediately disappears, so you actually cannot use it.
+    --  When Sliding focus is On, in seamless WinOS2 programs like MS Excel
+        when you right-click and then move your mouse over the context menu
+        it immediately disappears, so you actually cannot use it.
 
     -- Mouse pointer doesn't reappear when clicking buttons if hide mouse
        pointer is enabled.
@@ -130,4 +132,17 @@ hook:
        -- VIEW.EXE TOC not fully shown
 
     -- VIO copy conflicts with WM_CHORD; check window class
+
+    --  I did some more experimenting, and I have discovered what is wrong
+        with the "Ignore desktop" option in "Sliding focus".
+        The problem is that somehow WXP forgets its setting between reboots.
+        The option stays selected in the mouse properties notebook, but no longer works.
+        The only solution I have been able to find is to disable the XWP Hook and
+        then re-enable it. This will cure the problem, although the procedure still
+        has to be repeated after every reboot.
+        I hardly ever reboot (my system is kept running on a 24x7 basis), so it
+        took me a while to discover the error, let alone find out what made it happen.
+        BTW, The behaviour is the same with both the Internal Revision 14.044-W4
+        (original FP14) kernel and the Internal Revision 14.057-W4 (the one I wrote
+        about earlier).
 

@@ -121,26 +121,40 @@ LINKLIST    G_llRunning;
 typedef struct _RUNNINGPROGRAM
 {
     WPObject    *pObjEmphasis;       // object with use item
-    PUSEITEM    pUseItem;           // use item; has HAPP
+    PUSEITEM    pUseItemView;        // use item followed by VIEWITEM
+    PUSEITEM    pUseItemFile;        // use item followed by VIEWFILE; can be NULL
 } RUNNINGPROGRAM, *PRUNNINGPROGRAM;
 
 /*
  *@@ progStoreRunningApp:
- *      registers a "running" view useitem for the specified
- *      object.
+ *      registers a useitem for the specified object to give
+ *      it "in-use" emphasis and stores the program in
+ *      our internal list so that progAppTerminateNotify
+ *      can remove it again when WM_APPTERMINATENOTIFY comes
+ *      in.
  *
- *      The object can be a WPProgram, WPProgramFile, or
- *      WPDataFile, depending on whether a program was
- *      started directly or via a data file association.
+ *      This operates in two modes:
  *
- *      In any case, this adds an OPEN_RUNNING useitem to
- *      the specified object to give it "in use" emphasis.
+ *      -- If pDataFile is NULL, this adds a USAGE_OPENVIEW (VIEWITEM)
+ *         to pProgram, which is assumed to be a WPProgram
+ *         or WPProgramFile. In that case, ulMenuID is ignored.
+ *
+ *      -- If pDataFile is specified, this first adds a
+ *         USAGE_OPENVIEW (VIEWITEM) to the data file (!). In
+ *         addition, this adds a USAGE_OPENFILE use
+ *         item (VIEWFILE) to the data file which is needed
+ *         by the WPS to track multiple open associations.
+ *         In that case, you must also specify ulMenuID.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: VIEWFILE items were missing, fixed.
  */
 
-BOOL progStoreRunningApp(HAPP happ,
-                         WPObject *pObjEmphasis)
+BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
+                         WPFileSystem *pDataFile,   // in: data file with assoc or NULL
+                         HAPP happ,                 // in: app handle from winhStartApp
+                         ULONG ulMenuID)            // in: if (pDataFile != NULL), selected menu ID
+                                                    // (for VIEWFILE item)
 {
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
@@ -167,37 +181,78 @@ BOOL progStoreRunningApp(HAPP happ,
 
         if (fSemOwned)
         {
-            if ((happ) && (pObjEmphasis))
+            if (    (happ)
+                 && ((pProgram != NULL) || (pDataFile != NULL))
+               )
             {
                 PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)malloc(sizeof(RUNNINGPROGRAM));
                 if (pRunning)
                 {
                     // allocate view item
-                    PUSEITEM pUseItem = (PUSEITEM)_wpAllocMem(pObjEmphasis,
-                                                              sizeof(USEITEM) + sizeof(VIEWITEM),
-                                                              NULL);
-                    if (pUseItem)
+                    PUSEITEM pUseItemView = 0,
+                             pUseItemFile = 0;
+                    WPObject *pObjEmph = 0;
+
+                    if (pDataFile == NULL)
+                        // object to work on is program object
+                        pObjEmph = pProgram;
+                    else
+                        // object to work on is datafile object
+                        pObjEmph = pDataFile;
+
+                    if (pObjEmph)
                     {
-                        // view item is right behind use item
-                        PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem + 1);
+                        // in any case, add "in-use" emphasis to the object
+                        pUseItemView = (PUSEITEM)_wpAllocMem(pObjEmph,
+                                                             sizeof(USEITEM) + sizeof(VIEWITEM),
+                                                             NULL);
+                        if (pUseItemView)
+                        {
+                            // VIEWITEM is right behind use item
+                            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItemView + 1);
+                            // set up data
+                            memset(pUseItemView, 0, sizeof(USEITEM) + sizeof(VIEWITEM));
+                            pUseItemView->type = USAGE_OPENVIEW;
+                            pViewItem->view = OPEN_RUNNING;
+                            pViewItem->handle = happ;
 
-                        // setup up data
-                        memset(pUseItem, 0, sizeof(USEITEM) + sizeof(VIEWITEM));
-                        pUseItem->type = USAGE_OPENVIEW;
-                        pViewItem->view = OPEN_RUNNING;     // even for data files
-                        pViewItem->handle = happ;
+                            brc = _wpAddToObjUseList(pObjEmph,
+                                                     pUseItemView);
 
-                        // register this view; this adds emphasis to the object
-                        brc = _wpAddToObjUseList(pObjEmphasis,
-                                                 pUseItem);
+                            if (brc)
+                            {
+                                // success:
+                                // for data file associations, add VIEWFILE
+                                // structure as well
+                                pUseItemFile =  (PUSEITEM)_wpAllocMem(pObjEmph,
+                                                                      sizeof(USEITEM) + sizeof(VIEWFILE),
+                                                                      NULL);
+                                if (pUseItemFile)
+                                {
+                                    // VIEWFILE item is right behind use item
+                                    PVIEWFILE pViewFile = (PVIEWFILE)(pUseItemFile + 1);
+                                    // set up data
+                                    memset(pUseItemFile, 0, sizeof(USEITEM) + sizeof(VIEWFILE));
+                                    pUseItemFile->type = USAGE_OPENFILE;
+                                    pViewFile->ulMenuId = ulMenuID;
+                                    pViewFile->handle  = happ;
+
+                                    brc = _wpAddToObjUseList(pObjEmph,
+                                                             pUseItemFile);
+                                }
+                                else
+                                    brc = FALSE;
+                            }
+                        }
 
                         if (brc)
                         {
                             // store this in our internal list
                             // so we can find the object
                             // in progAppTerminateNotify
-                            pRunning->pObjEmphasis = pObjEmphasis;
-                            pRunning->pUseItem = pUseItem;
+                            pRunning->pObjEmphasis = pObjEmph;
+                            pRunning->pUseItemView = pUseItemView;
+                            pRunning->pUseItemFile = pUseItemFile; // can be 0
                             lstAppendItem(&G_llRunning,
                                           pRunning);
 
@@ -205,14 +260,16 @@ BOOL progStoreRunningApp(HAPP happ,
                             // so that XFldObject will call
                             // progAppTerminateNotifyObj when
                             // the object is destroyed
-                            _xwpModifyListNotify(pObjEmphasis,
+                            _xwpModifyListNotify(pObjEmph,
                                                  OBJLIST_RUNNINGSTORED,
                                                  OBJLIST_RUNNINGSTORED);
                         }
-                    }
-                    else
+                    } // end if (pObjEmph)
+
+                    if (!brc)
                         free(pRunning);
-                }
+
+                } // end if (pRunning)
             }
         }
     }
@@ -262,19 +319,32 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
             while (pNode)
             {
                 PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)pNode->pItemData;
-                if (pRunning->pUseItem)
+                if (pRunning->pUseItemView)
                 {
-                    PVIEWITEM pViewItem = (PVIEWITEM)((pRunning->pUseItem) + 1);
+                    // VIEWITEM is right behind use item;
+                    // this exists for both program and data file objects
+                    PVIEWITEM pViewItem = (PVIEWITEM)(pRunning->pUseItemView + 1);
+
                     if (pViewItem->handle == happ)
                     {
                         // yes, this is ours:
 
-                        // remove this from the object's use list
-                        _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
-                                                pRunning->pUseItem);
+                        // check if we also have a VIEWFILE item
+                        if (pRunning->pUseItemFile)
+                        {
+                            // yes:
+                            _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
+                                                    pRunning->pUseItemFile);
+                            _wpFreeMem(pRunning->pObjEmphasis,
+                                       (PBYTE)pRunning->pUseItemFile);
+                        }
 
+                        // now remove "view" useitem from the object's use list
+                        // (this always exists)
+                        _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
+                                                pRunning->pUseItemView);
                         _wpFreeMem(pRunning->pObjEmphasis,
-                                   (PBYTE)pRunning->pUseItem);
+                                   (PBYTE)pRunning->pUseItemView);
 
                         // remove this thing (auto-free!)
                         lstRemoveNode(&G_llRunning, pNode);
@@ -314,10 +384,15 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
  *      otherwise we get a trap when progAppTerminateNotify
  *      attempts to remove in-use emphasis on the object.
  *
+ *      Note that this does not remove the use items, nor
+ *      does it free the memory allocated for the use items.
+ *      Since this is done by the WPS wpUnInitData method,
+ *      this is not necessary anyway.
+ *
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
 
-BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)
+BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
 {
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
@@ -338,14 +413,15 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)
                     // found:
                     // remove this thing (auto-free!)
                     lstRemoveNode(&G_llRunning, pNode);
-                            // since the memory for the use-item has been
+                            // since the memory for the useitems has been
                             // allocated using wpAllocMem, this will be
                             // freed automatically...
 
                     brc = TRUE;
 
                     // stop searching
-                    break;
+                            // break;
+                    // no, continue, because we can have more than one item
                 }
 
                 pNode = pNode->pNext;
@@ -418,20 +494,20 @@ BOOL DisplayParamsPrompt(PXSTRING pstrParamsNew,
                 if (WinProcessDlg(hwndDlg) == DID_OK)
                 {
                     CHAR    szNew[300];
-                    XSTRING strFind,
-                            strReplace;
-                    xstrInit(&strFind, 0);
-                    xstrset(&strFind, pszBrackets);     // must not be freed here!
-                    xstrInit(&strReplace, 0);
+                    /* XSTRING strFind,
+                            strReplace; */
+                    ULONG   ulOfs = 0;
+                    // xstrInit(&strFind, 0);
+                    // xstrset(&strFind, pszBrackets);     // must not be freed here!
+                    // xstrInit(&strReplace, 0);
 
                     WinQueryDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
                                         sizeof(szNew), szNew);
-                    xstrset(&strReplace, szNew);        // must not be freed here!
-                    xstrrpl(pstrParamsNew,
-                            0,
-                            &strFind,
-                            &strReplace,
-                            0);
+                    // xstrset(&strReplace, szNew);        // must not be freed here!
+                    xstrcrpl(pstrParamsNew,
+                             &ulOfs,
+                             pszBrackets, // &strFind,
+                             szNew); // &strReplace);
                 }
                 else
                     // user pressed "Cancel":
@@ -544,6 +620,7 @@ BOOL progSetupArgs(const char *pcszParams,
         fFirstLoop = TRUE;
         while (p = strstr(strParamsNew.psz, "%**P"))
         {
+            ULONG ulOfs = 0;
             if (fFirstLoop)
             {
                 // first time: copy drive and path
@@ -553,7 +630,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     strhncpy0(szTemp, szDataFilename, p2 - szDataFilename);
                 fFirstLoop = FALSE;
             }
-            xstrcrpl(&strParamsNew, 0, "%**P", szTemp, NULL);
+            xstrcrpl(&strParamsNew, &ulOfs, "%**P", szTemp);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -563,6 +640,7 @@ BOOL progSetupArgs(const char *pcszParams,
         fFirstLoop = TRUE;
         while (p = strstr(strParamsNew.psz, "%**D"))
         {
+            ULONG ulOfs = 0;
             if (fFirstLoop)
             {
                 PSZ p2 = strchr(szDataFilename + 2, '\\');
@@ -572,7 +650,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     strhncpy0(szTemp, szDataFilename, p2 - szDataFilename);
                 fFirstLoop = FALSE;
             }
-            xstrcrpl(&strParamsNew, 0, "%**D", szTemp, NULL);
+            xstrcrpl(&strParamsNew, &ulOfs, "%**D", szTemp);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -582,6 +660,7 @@ BOOL progSetupArgs(const char *pcszParams,
         fFirstLoop = TRUE;
         while (p = strstr(strParamsNew.psz, "%**N"))
         {
+            ULONG ulOfs = 0;
             if (fFirstLoop)
             {
                 // first find filename
@@ -604,7 +683,7 @@ BOOL progSetupArgs(const char *pcszParams,
                 }
                 fFirstLoop = FALSE;
             }
-            xstrcrpl(&strParamsNew, 0, "%**N", szTemp, NULL);
+            xstrcrpl(&strParamsNew, &ulOfs, "%**N", szTemp);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -614,6 +693,7 @@ BOOL progSetupArgs(const char *pcszParams,
         fFirstLoop = TRUE;
         while (p = strstr(strParamsNew.psz, "%**F"))
         {
+            ULONG ulOfs = 0;
             if (fFirstLoop)
             {
                 // find filename
@@ -624,7 +704,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     strcpy(szTemp, p2 + 1);
                 fFirstLoop = FALSE;
             }
-            xstrcrpl(&strParamsNew, 0, "%**F", szTemp, NULL);
+            xstrcrpl(&strParamsNew, &ulOfs, "%**F", szTemp);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -634,6 +714,7 @@ BOOL progSetupArgs(const char *pcszParams,
         // In HPFS, the extension always comes after the last dot.
         fFirstLoop = TRUE;
         {
+            ULONG ulOfs = 0;
             PSZ pszExt = "";
             while (p = strstr(strParamsNew.psz, "%**E"))
             {
@@ -644,7 +725,7 @@ BOOL progSetupArgs(const char *pcszParams,
                         pszExt = "";
                     fFirstLoop = FALSE;
                 }
-                xstrcrpl(&strParamsNew, 0, "%**E", pszExt, NULL);
+                xstrcrpl(&strParamsNew, &ulOfs, "%**E", pszExt);
 
                 // disable appending the full path to the end
                 fAppendDataFilename = FALSE;
@@ -654,7 +735,8 @@ BOOL progSetupArgs(const char *pcszParams,
         // "%*": full path of data file, if pArgDataFile
         while (p = strstr(strParamsNew.psz, "%*"))
         {
-            xstrcrpl(&strParamsNew, 0, "%*", szDataFilename, NULL);
+            ULONG ulOfs = 0;
+            xstrcrpl(&strParamsNew, &ulOfs, "%*", szDataFilename);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -663,7 +745,8 @@ BOOL progSetupArgs(const char *pcszParams,
         // "%": disable passing full path
         while (p = strstr(strParamsNew.psz, "%"))
         {
-            xstrcrpl(&strParamsNew, 0, "%", "", NULL);
+            ULONG ulOfs = 0;
+            xstrcrpl(&strParamsNew, &ulOfs, "%", "");
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -722,7 +805,8 @@ BOOL progSetupArgs(const char *pcszParams,
  *      This implements workarounds to WinStartApp to
  *      mimic the typical WPS behavior on program objects.
  *      Even better, this can handle data files as arguments
- *      to program objects.
+ *      to program objects, with full support for the various
+ *      parameter placeholders.
  *
  *      This is a complete implementation of running
  *      programs in the WPS. Since IBM was not kind
@@ -774,7 +858,8 @@ BOOL progSetupArgs(const char *pcszParams,
  */
 
 HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
-                     WPFileSystem *pArgDataFile)  // in: data file as arg or NULL
+                     WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
+                     ULONG ulMenuID)            // in: with data files, menu ID that was used
 {
     HAPP happ = 0;
 
@@ -854,11 +939,11 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                             {
                                 // set in-use emphasis on either
                                 // the data file or the program object
-                                WPObject *pObj2Store = pProgObject;
-                                if (pArgDataFile)
-                                    pObj2Store = pArgDataFile;
-                                progStoreRunningApp(happ,
-                                                    pObj2Store);
+                                progStoreRunningApp(pProgObject,
+                                                    pArgDataFile,
+                                                    happ,
+                                                    ulMenuID);
+
                             }
                         }
 

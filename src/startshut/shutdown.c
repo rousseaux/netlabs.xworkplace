@@ -4608,8 +4608,6 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                         // reuse startup folder?
                         krnSetProcessStartupFolder(G_psdParams->optWPSReuseStartupFolder);
-                        /* if (G_psdParams->optWPSReuseStartupFolder);
-                            krnPostDaemonMsg(WM_QUIT, 0, 0);  ### */
                     }
 
                     // for both "Restart WPS" and "Shutdown" mode:

@@ -188,8 +188,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         FILESTATUS3 fs3;
         PEABINDING  peab;       // \helpers\eas.c
 
-        COUNTRYSETTINGS cs;
-        prfhQueryCountrySettings(&cs);
+        PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
 
         // get file-system object information
         // (we don't use the WPS method because the data
@@ -204,9 +203,8 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                         szFilename);
 
         // file size
-        strhThousandsULong(szTemp, fs3.cbFile, cs.cThousands);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE,
-                        szTemp);
+        strhThousandsULong(szTemp, fs3.cbFile, pcs->cThousands);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE, szTemp);
 
         // for folders: set work-area flag
         if (_somIsA(pcnbp->somSelf, _WPFolder))
@@ -217,28 +215,22 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                   ((_wpQueryFldrFlags(pcnbp->somSelf) & FOI_WORKAREA) != 0));
 
         // creation date/time
-        strhFileDate(szTemp, &(fs3.fdateCreation), cs.ulDateFormat, cs.cDateSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
-                        szTemp);
-        strhFileTime(szTemp, &(fs3.ftimeCreation), cs.ulTimeFormat, cs.cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONTIME,
-                        szTemp);
+        strhFileDate(szTemp, &(fs3.fdateCreation), pcs->ulDateFormat, pcs->cDateSep);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE, szTemp);
+        strhFileTime(szTemp, &(fs3.ftimeCreation), pcs->ulTimeFormat, pcs->cTimeSep);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONTIME, szTemp);
 
         // last write date/time
-        strhFileDate(szTemp, &(fs3.fdateLastWrite), cs.ulDateFormat, cs.cDateSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITEDATE,
-                        szTemp);
-        strhFileTime(szTemp, &(fs3.ftimeLastWrite), cs.ulTimeFormat, cs.cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITETIME,
-                        szTemp);
+        strhFileDate(szTemp, &(fs3.fdateLastWrite), pcs->ulDateFormat, pcs->cDateSep);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITEDATE, szTemp);
+        strhFileTime(szTemp, &(fs3.ftimeLastWrite), pcs->ulTimeFormat, pcs->cTimeSep);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITETIME, szTemp);
 
         // last access date/time
-        strhFileDate(szTemp, &(fs3.fdateLastAccess), cs.ulDateFormat, cs.cDateSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
-                        szTemp);
-        strhFileTime(szTemp, &(fs3.ftimeLastAccess), cs.ulTimeFormat, cs.cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSTIME,
-                        szTemp);
+        strhFileDate(szTemp, &(fs3.fdateLastAccess), pcs->ulDateFormat, pcs->cDateSep);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE, szTemp);
+        strhFileTime(szTemp, &(fs3.ftimeLastAccess), pcs->ulTimeFormat, pcs->cTimeSep);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSTIME, szTemp);
 
         // attributes
         ulAttr = _wpQueryAttr(pcnbp->somSelf);

@@ -87,6 +87,7 @@
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
+// XWorkplace implementation headers
 #include "media\media.h"                // XWorkplace multimedia support
 
 /* ******************************************************************

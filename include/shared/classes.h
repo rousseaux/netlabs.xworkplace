@@ -61,8 +61,6 @@
      *                                                                  *
      ********************************************************************/
 
-    #define WM_FILLCNR   (WM_USER+100)
-
     /*
      *@@ WPSLISTITEM:
      *      WPS class data linked list item;

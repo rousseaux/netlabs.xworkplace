@@ -20,9 +20,14 @@ characters ("ahrs") for the archived, hidden, read-only and system filesystem at
 with the ones capitalized which are set for a file (e.g. "Ahrs")
 <DT><CITE>  $D  1)  </CITE><DD>object last write date
 <DT><CITE>  $T  1)  </CITE><DD>object last write time
-<DT><CITE>  $Eb 1,2)</CITE><DD>Extended Attribute size in bytes
-<DT><CITE>  $Ek 1,2)</CITE><DD>Extended Attribute size in kBytes, i.e. bytes / 1000
-<DT><CITE>  $EK 1,2)</CITE><DD>Extended Attribute size in KBytes, i.e. bytes / 1024
+<DT><CITE>  $Eb 1,2)</CITE><DD>Extended Attributes size in bytes
+<DT><CITE>  $Ek 1,2)</CITE><DD>Extended Attributes size in kBytes, i.e. bytes / 1000
+<DT><CITE>  $EK 1,2)</CITE><DD>Extended Attributes size in KBytes, i.e. bytes / 1024
+<!-- V0.9.6: added the following two -->
+<DT><CITE>  $Ea 1,2)</CITE><DD>Extended Attributes size in bytes/kBytes
+(new with V0.9.6); this automatically chooses an optimal scale depending on the number
+<DT><CITE>  $EA 1,2)</CITE><DD>Extended Attributes size in bytes/KBytes
+(new with V0.9.6); this automatically chooses an optimal scale depending on the number
 </DL>
 <BR><STRONG>Notes:</STRONG>
 <P>1) These codes will only display the data which is held in the internal WPS buffers.
@@ -31,8 +36,7 @@ program, the status bar information will only change when the WPS buffer data is
 refreshed, for example if you select "Refresh now".
 <P>2) The WPS has always had a bug due to which an extended attribute size larger than 32767 will
 always return 32767, although a size of 64 KB is technically possible.
-As a result, XFolder will
-also display this wrong value.
+As a result, XFolder will also display this wrong value.
 <BR>
 </BODY>
 </HTML>

@@ -89,12 +89,13 @@
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
+// XWorkplace implementation headers
 #include "media\media.h"                // XWorkplace multimedia support
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // list of all open MMPM/2 devices: this list

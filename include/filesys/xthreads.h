@@ -24,13 +24,17 @@
 #ifndef XTHREADS_HEADER_INCLUDED
     #define XTHREADS_HEADER_INCLUDED
 
+    // messages WM_USER+50 to WM_USER+99 are used by common.h
+
+    // messages WM_USER+100 to WM_USER+149 are used by folder.h and statbar.h
+
     /********************************************************************
      *                                                                  *
      *   Worker thread messages (WOM_xxx)                               *
      *                                                                  *
      ********************************************************************/
 
-    #define WOM_WELCOME                 (WM_USER+100)
+    #define WOM_WELCOME                 (WM_USER+150)
 
     /*
      *@@ WOM_ADDAWAKEOBJECT:
@@ -43,7 +47,7 @@
      *          WPObject* mp1: somSelf as in XFldObject::wpObjectReady
      */
 
-    #define WOM_ADDAWAKEOBJECT          (WM_USER+101)
+    #define WOM_ADDAWAKEOBJECT          (WM_USER+151)
 
     /*
      *@@ WOM_REMOVEAWAKEOBJECT:
@@ -62,21 +66,21 @@
      *          WPObject* mp1: somSelf as in XFldObject::wpUnInitData
      */
 
-    #define WOM_REMOVEAWAKEOBJECT       (WM_USER+102)
-    #define WOM_SHOWFOLDERDATA          (WM_USER+103)
-    #define WOM_REFRESHFOLDERVIEWS      (WM_USER+104)
+    #define WOM_REMOVEAWAKEOBJECT       (WM_USER+152)
+    #define WOM_SHOWFOLDERDATA          (WM_USER+153)
+    #define WOM_REFRESHFOLDERVIEWS      (WM_USER+154)
 
-    #define WOM_PROCESSORDEREDCONTENT   (WM_USER+110)
-    #define WOM_WAITFORPROCESSNEXT      (WM_USER+111)
+    #define WOM_PROCESSORDEREDCONTENT   (WM_USER+155)
+    #define WOM_WAITFORPROCESSNEXT      (WM_USER+156)
 
     // #define WOM_INVALIDATEORDEREDCONTENT WM_USER+120 removed V0.9.0
-    #define WOM_DELETEICONPOSEA         (WM_USER+121)
-    #define WOM_DELETEFOLDERPOS         (WM_USER+122)
+    #define WOM_DELETEICONPOSEA         (WM_USER+161)
+    #define WOM_DELETEFOLDERPOS         (WM_USER+162)
 
-    #define WOM_UPDATEALLSTATUSBARS     (WM_USER+133)
-    #define WOM_QUICKOPEN               (WM_USER+135)
+    #define WOM_UPDATEALLSTATUSBARS     (WM_USER+163)
+    #define WOM_QUICKOPEN               (WM_USER+164)
 
-    #define WOM_STOREGLOBALSETTINGS     (WM_USER+136)
+    #define WOM_STOREGLOBALSETTINGS     (WM_USER+165)
 
     /********************************************************************
      *                                                                  *
@@ -84,13 +88,13 @@
      *                                                                  *
      ********************************************************************/
 
-    #define QM_BOOTUPSTATUS             (WM_USER+140)
-    // #define QM_PLAYSOUND                (WM_USER+141)
-    // #define QM_PLAYSYSTEMSOUND          (WM_USER+142)
+    #define QM_BOOTUPSTATUS             (WM_USER+180)
+    // #define QM_PLAYSOUND                (WM_USER+181)
+    // #define QM_PLAYSYSTEMSOUND          (WM_USER+182)
 
-    #define QM_DESTROYLOGO              (WM_USER+143)
+    #define QM_DESTROYLOGO              (WM_USER+183)
 
-    #define QM_TREEVIEWAUTOSCROLL       (WM_USER+144)
+    #define QM_TREEVIEWAUTOSCROLL       (WM_USER+184)
 
     /********************************************************************
      *                                                                  *
@@ -110,16 +114,16 @@
 
     // #define FIM_DESKTOPPOPULATED        (WM_USER+130)
 
-    #define FIM_DESKTOPPOPULATED        (WM_USER+130)
+    #define FIM_DESKTOPPOPULATED        (WM_USER+200)
         // changed V0.9.5 (2000-08-26) [umoeller]
 
-    #define FIM_RECREATECONFIGFOLDER    (WM_USER+131)
+    #define FIM_RECREATECONFIGFOLDER    (WM_USER+201)
 
-    #define FIM_STARTUP                 (WM_USER+132)
+    #define FIM_STARTUP                 (WM_USER+202)
 
-    #define FIM_STARTUPFOLDERDONE       (WM_USER+133)
+    #define FIM_STARTUPFOLDERDONE       (WM_USER+203)
 
-    #define FIM_PROCESSTASKLIST         (WM_USER+201)
+    #define FIM_PROCESSTASKLIST         (WM_USER+204)
 
     // #define FIM_REFRESH                 (WM_USER+204)
         // removed V0.9.6 (2000-10-16) [umoeller]
@@ -154,11 +158,15 @@
         } DOUBLEFILES, *PDOUBLEFILES;
     #endif
 
-    #define FIM_DOUBLEFILES             (WM_USER+205)
+    #define FIM_DOUBLEFILES             (WM_USER+215)
 
-    #define FIM_INSERTHOTKEYS           (WM_USER+206)
+    #define FIM_INSERTHOTKEYS           (WM_USER+216)
 
-    #define FIM_CALCTRASHOBJECTSIZE     (WM_USER+207)
+    #define FIM_CALCTRASHOBJECTSIZE     (WM_USER+217)
+
+    // messages WM_USER+250 to WM_USER+269 are used by Media thread
+
+    // messages WM_USER+270 to WM_USER+299 are used by thread-1 object window
 
     /********************************************************************
      *                                                                  *

@@ -147,7 +147,8 @@
                                 fXWPTrashCan,
                                 fXWPTrashObject,
                                 fXWPString,
-                                fXWPMedia;
+                                fXWPMedia,
+                                fXMMVolume;     // V0.9.6 (2000-11-09) [umoeller]
 
             /*
              * XWorkplace daemon
@@ -273,35 +274,35 @@
      *                                                                  *
      ********************************************************************/
 
-    #define T1M_BEGINSTARTUP            (WM_USER+400)
+    #define T1M_BEGINSTARTUP            (WM_USER+270)
 
-    #define T1M_POCCALLBACK             (WM_USER+401)
+    #define T1M_POCCALLBACK             (WM_USER+271)
 
-    #define T1M_BEGINQUICKOPEN          (WM_USER+402)
-    #define T1M_NEXTQUICKOPEN           (WM_USER+403)
+    #define T1M_BEGINQUICKOPEN          (WM_USER+272)
+    #define T1M_NEXTQUICKOPEN           (WM_USER+273)
 
-    #define T1M_LIMITREACHED            (WM_USER+404)
+    #define T1M_LIMITREACHED            (WM_USER+274)
 
-    #define T1M_EXCEPTIONCAUGHT         (WM_USER+405)
+    #define T1M_EXCEPTIONCAUGHT         (WM_USER+275)
 
-    #define T1M_EXTERNALSHUTDOWN        (WM_USER+407)
+    #define T1M_EXTERNALSHUTDOWN        (WM_USER+276)
 
-    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+408)    // added V0.9.0
+    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+277)    // added V0.9.0
 
-    #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+410)    // added V0.9.0
+    #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+280)    // added V0.9.0
 
-    #define T1M_DAEMONREADY             (WM_USER+411)    // added V0.9.0
+    #define T1M_DAEMONREADY             (WM_USER+281)    // added V0.9.0
 
 #ifdef __PAGEMAGE__
-    #define T1M_PAGEMAGECLOSED          (WM_USER+412)    // added V0.9.2 (2000-02-23) [umoeller]
+    #define T1M_PAGEMAGECLOSED          (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
 #endif
 
-    #define T1M_QUERYXFOLDERVERSION     (WM_USER+413)
+    #define T1M_QUERYXFOLDERVERSION     (WM_USER+283)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
 #ifdef __PAGEMAGE__
-    #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+414)
+    #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+284)
 #endif
 
     /*
@@ -318,7 +319,7 @@
      *@@added V0.9.4 (2000-08-03) [umoeller]
      */
 
-    #define T1M_FOPS_TASK_DONE          (WM_USER+415)
+    #define T1M_FOPS_TASK_DONE          (WM_USER+285)
 
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 

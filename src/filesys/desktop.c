@@ -354,7 +354,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            DEBUG_MENUID_RELEASEFREED,
-                           "Release freed memory",
+                           "Discard logs for freed memory",
                            MIS_TEXT, 0);
     #endif
 
@@ -459,12 +459,12 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
         // if XWorkplace is compiled with
         // VAC++ debug memory funcs,
         // check the menu item for listing all memory objects
-        if (ulMenuId == DEBUG_MENUID_LISTHEAP)
+        if (*pulMenuId == DEBUG_MENUID_LISTHEAP)
         {
             memdCreateMemDebugWindow();
             return (TRUE);
         }
-        else if (ulMenuId == DEBUG_MENUID_RELEASEFREED)
+        else if (*pulMenuId == DEBUG_MENUID_RELEASEFREED)
         {
             HPOINTER hptrOld = winhSetWaitPointer();
             memdReleaseFreed();
@@ -1019,8 +1019,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
                         // delete the bitmap again
                         if (!GpiDeleteBitmap(hbmBootLogo))
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "Unable to free bootlogo bitmap.");
+                            CMN_LOG(("Unable to free bootlogo bitmap."));
                     }
                     GpiDestroyPS(hpsMem);
                     DevCloseDC(hdcMem);

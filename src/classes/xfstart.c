@@ -350,6 +350,8 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
  *@@ wpclsQueryTitle:
  *      tell the WPS the new class default title:
  *      "XFolder Startup".
+ *
+ *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
  */
 
 SOM_Scope PSZ  SOMLINK xfstupM_wpclsQueryTitle(M_XFldStartup *somSelf)
@@ -357,8 +359,7 @@ SOM_Scope PSZ  SOMLINK xfstupM_wpclsQueryTitle(M_XFldStartup *somSelf)
     /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsQueryTitle");
 
-    return ("XFolder Startup");
-    // return (M_XFldStartup_parent_M_XFolder_wpclsQueryTitle(somSelf));
+    return ("XWorkplace Startup");
 }
 
 /*
@@ -489,6 +490,8 @@ SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
  *@@ wpclsQueryTitle:
  *      tell the WPS the new class default title:
  *      "XFolderShutdown".
+ *
+ *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
  */
 
 SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
@@ -496,8 +499,7 @@ SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
     /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
     M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryTitle");
 
-    return ("XFolder Shutdown");
-    // return (M_XFldShutdown_parent_M_XFolder_wpclsQueryTitle(somSelf));
+    return ("XWorkplace Shutdown");
 }
 
 /*

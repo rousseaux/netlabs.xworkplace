@@ -4,7 +4,7 @@ XWorkplace Installable Security Subsystem (ISS).
 
 This is an SES base device driver. Aside from some 16-bit
 thunking code written in assembler, it is a 32-bit device
-driver, and can be compiled using VAC 3.0.
+driver, and can be compiled using VAC 3.08.
 
 IBM ALP is needed for the assembler files.
 From my testing, only ALP 4.00.001 was able to swallow

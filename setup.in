@@ -113,6 +113,7 @@ XWPRELEASE = K:\projects\distrib\XWorkplace\current
 
 XWPRELEASE_MAIN = $(XWPRELEASE)\kernel
 XWPRELEASE_NLS = $(XWPRELEASE)\$(XWP_LANG_CODE)
+XWPRELEASE_NLSDOC = $(XWPRELEASE)\inf$(XWP_LANG_CODE)
 XWPRELEASE_MAP = $(XWPRELEASE)\map
 
 
@@ -222,7 +223,6 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classe
 # The following features are presently defined (we list the #define's here):
 #   __PAGEMAGE__: include PageMage code
 #   __ANIMATED_MOUSE_POINTERS__: include AMPTR code
-#   __EXTASSOCS__: include extended file associations
 #   __REPLHANDLES__: include replacement file handles management
 
 PAGEMAGE_STRING =
@@ -233,11 +233,6 @@ PAGEMAGE_STRING = /D__PAGEMAGE__=1
 ANIMATED_MOUSE_POINTERS_STRING =
 !ifdef ANIMATED_MOUSE_POINTERS
 ANIMATED_MOUSE_POINTERS_STRING = /D__ANIMATED_MOUSE_POINTERS__=1
-!endif
-
-EXTASSOCS_STRING =
-!ifdef EXTASSOCS
-EXTASSOCS_STRING = /D__EXTASSOCS__=1
 !endif
 
 REPLHANDLES_STRING =
@@ -264,7 +259,6 @@ CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /W
 # compiler options which are the same with debug and release code
 CC_SHARED    = icc $(PAGEMAGE_STRING) \
 $(ANIMATED_MOUSE_POINTERS_STRING) \
-$(EXTASSOCS_STRING) \
 $(REPLHANDLES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
 
 !ifdef XWP_DEBUG

@@ -165,8 +165,6 @@ typedef struct _XFOBJWINDATA
     USHORT usKeyCode;
 } XFOBJWINDATA, *PXFOBJWINDATA;
 
-#define WM_FILLCNR      (WM_USER+1)
-
 /*
  *@@ AddObjectUsage2Cnr:
  *      shortcut for the "object usage" functions below
@@ -697,7 +695,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             }
             else
             {
-                sprintf(szText, "%s (HWND: 0x%lX)",
+                sprintf(szText, "%s (HAPP: 0x%lX)",
                         szTemp1, pViewItem->handle);
             }
             /* if (fdrQueryPSLI(pViewItem->handle, &ulSLIIndex))
@@ -778,21 +776,28 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
 
-        // 5) applications
+        // 5) applications (associations)
         preccLevel3 = NULL;
         for (pUseItem = _wpFindUseItem(pObject, USAGE_OPENFILE, NULL);
             pUseItem;
             pUseItem = _wpFindUseItem(pObject, USAGE_OPENFILE, pUseItem))
         {
             PVIEWFILE pViewFile = (PVIEWFILE)(pUseItem+1);
-            sprintf(szText,
-                    "Open handle: 0x%lX",
-                    pViewFile->handle); // this might be a HAPP;
-                                        // test undocumented WinHSWitchFromHApp on this!
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                                                  "Applications which opened this object",
                                                  CRA_RECORDREADONLY | CRA_EXPANDED);
+
+            sprintf(szText,
+                    "Open handle (probably HAPP): 0x%lX",
+                    pViewFile->handle);
+            AddObjectUsage2Cnr(hwndCnr, preccLevel3,
+                               szText,  // open handle
+                               CRA_RECORDREADONLY);
+
+            sprintf(szText,
+                    "Menu ID: 0x%lX",
+                    pViewFile->ulMenuId);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3,
                                szText,  // open handle
                                CRA_RECORDREADONLY);

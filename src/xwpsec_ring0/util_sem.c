@@ -45,8 +45,6 @@
  *      the pointer to that ULONG as the parameter,
  *      which is also used as the block ID for ProcBlock.
  *
- *      This is for task time only.
- *
  *      Preconditions:
  *
  *      1. The ULONG must be in the system arena to
@@ -106,7 +104,6 @@ int utilSemRequest(PULONG pulMutex,
         // mutex busy: block this thread...
         // it will be unlocked by the other call to
         // this function (below)
-        DevHlp32_Beep(1000, 10);
         rc = DevHlp32_ProcBlock((ULONG)pulMutex,
                                 ulTimeout,
                                 0);     // interruptible
@@ -132,7 +129,5 @@ VOID utilSemRelease(PULONG pulMutex)
 
     // DevHlp32_SemClearRam1();
 }
-
-
 
 

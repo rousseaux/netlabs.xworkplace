@@ -225,19 +225,19 @@
      *                                                                  *
      ********************************************************************/
 
-    #define PGMG_INVALIDATECLIENT   (WM_USER + 100)
-    #define PGMG_ZAPPO              (WM_USER + 101)
-    #define PGMG_LOCKUP             (WM_USER + 102)
-    #define PGMG_WNDCHANGE          (WM_USER + 103)
-    #define PGMG_WNDRESCAN          (WM_USER + 104)
-    #define PGMG_CHANGEACTIVE       (WM_USER + 105)
-    #define PGMG_LOWERWINDOW        (WM_USER + 106)
-    #define PGMG_WINLISTFULL        (WM_USER + 107)
+    #define PGMG_INVALIDATECLIENT   (WM_USER + 300)
+    #define PGMG_ZAPPO              (WM_USER + 301)
+    #define PGMG_LOCKUP             (WM_USER + 302)
+    #define PGMG_WNDCHANGE          (WM_USER + 303)
+    #define PGMG_WNDRESCAN          (WM_USER + 304)
+    #define PGMG_CHANGEACTIVE       (WM_USER + 305)
+    #define PGMG_LOWERWINDOW        (WM_USER + 306)
+    #define PGMG_WINLISTFULL        (WM_USER + 307)
 
-    #define PGOM_CLICK2ACTIVATE     (WM_USER + 121)
-    #define PGOM_CLICK2LOWER        (WM_USER + 122)
-    #define PGOM_HOOKKEY            (WM_USER + 123)
-    #define PGOM_FOCUSCHANGE        (WM_USER + 124)
+    #define PGOM_CLICK2ACTIVATE     (WM_USER + 321)
+    #define PGOM_CLICK2LOWER        (WM_USER + 322)
+    #define PGOM_HOOKKEY            (WM_USER + 323)
+    #define PGOM_FOCUSCHANGE        (WM_USER + 324)
 
     /* #define PGMGQENCODE(msg, parm1, parm2) ((msg << 28) | (parm1 << 14) | (parm2))
     #define MSGFROMPGMGQ(qmsg) (qmsg >> 28)

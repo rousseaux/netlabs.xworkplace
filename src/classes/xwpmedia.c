@@ -402,6 +402,8 @@ typedef struct _IOPROCRECORD
  *      to insert devices into the "Devices" container.
  *
  *      This thread is created with a msg queue.
+ *
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed memory leak
  */
 
 void _Optlink fntInsertIOProcs(PTHREADINFO pti)
@@ -428,104 +430,109 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
             PMMFORMATINFO   pammfi = (PMMFORMATINFO)malloc(lFormatCount
                                                             * sizeof(MMFORMATINFO)
                                                           );
-            LONG    lFormatsRead = 0;
-            if (G_mmioGetFormats(&mmfi,
-                                 lFormatCount,
-                                 pammfi,
-                                 &lFormatsRead,
-                                 0,     // reserved
-                                 0)     // reserved
-                    == 0)
+            if (pammfi)
             {
-                ULONG ul;
-                PMMFORMATINFO pmmfiThis = pammfi;
-
-                for (ul = 0;
-                     ul < lFormatsRead;
-                     ul++)
+                LONG    lFormatsRead = 0;
+                if (G_mmioGetFormats(&mmfi,
+                                     lFormatCount,
+                                     pammfi,
+                                     &lFormatsRead,
+                                     0,     // reserved
+                                     0)     // reserved
+                        == 0)
                 {
-                    PIOPROCRECORD precc
-                        = (PIOPROCRECORD)cnrhAllocRecords(hwndCnr,
-                                                         sizeof(IOPROCRECORD),
-                                                         1);
-                    if (precc)
+                    ULONG ul;
+                    PMMFORMATINFO pmmfiThis = pammfi;
+
+                    for (ul = 0;
+                         ul < lFormatsRead;
+                         ul++)
                     {
-                        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-                        PSZ     pszFormatName;
-                        // index
-                        precc->ulIndex = ul;
-
-                        // FourCC
-                        memcpy(&precc->szFourCC, &pmmfiThis->fccIOProc, sizeof(ULONG));
-                        precc->szFourCC[4] = 0;
-                        precc->pszFourCC = precc->szFourCC;
-
-                        // format name
-                        if (pmmfiThis->lNameLength)
+                        PIOPROCRECORD precc
+                            = (PIOPROCRECORD)cnrhAllocRecords(hwndCnr,
+                                                             sizeof(IOPROCRECORD),
+                                                             1);
+                        if (precc)
                         {
-                            pszFormatName = malloc(pmmfiThis->lNameLength + 1); // null term.
-                            if (pszFormatName)
+                            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+                            PSZ     pszFormatName;
+                            // index
+                            precc->ulIndex = ul;
+
+                            // FourCC
+                            memcpy(&precc->szFourCC, &pmmfiThis->fccIOProc, sizeof(ULONG));
+                            precc->szFourCC[4] = 0;
+                            precc->pszFourCC = precc->szFourCC;
+
+                            // format name
+                            if (pmmfiThis->lNameLength)
                             {
-                                LONG lWritten;
-                                G_mmioGetFormatName(pmmfiThis,
-                                                    pszFormatName,
-                                                    &lWritten,
-                                                    0,
-                                                    0);
-                                if (lWritten)
-                                    strhncpy0(precc->szFormatName,
-                                              pszFormatName,
-                                              sizeof(precc->szFormatName) - 1);
-                                free(pszFormatName);
+                                pszFormatName = malloc(pmmfiThis->lNameLength + 1); // null term.
+                                if (pszFormatName)
+                                {
+                                    LONG lWritten;
+                                    G_mmioGetFormatName(pmmfiThis,
+                                                        pszFormatName,
+                                                        &lWritten,
+                                                        0,
+                                                        0);
+                                    if (lWritten)
+                                        strhncpy0(precc->szFormatName,
+                                                  pszFormatName,
+                                                  sizeof(precc->szFormatName) - 1);
+                                    free(pszFormatName);
+                                }
                             }
+                            precc->pszFormatName = precc->szFormatName;
+
+                            // IOProc type
+                            switch(pmmfiThis->ulIOProcType)
+                            {
+                                case MMIO_IOPROC_STORAGESYSTEM:
+                                    strcpy(precc->szIOProcType, pNLSStrings->pszTypeStorage);
+                                break;
+
+                                case MMIO_IOPROC_FILEFORMAT:
+                                    strcpy(precc->szIOProcType, pNLSStrings->pszTypeFile);
+                                break;
+
+                                case MMIO_IOPROC_DATAFORMAT:
+                                    strcpy(precc->szIOProcType, pNLSStrings->pszTypeData);
+                                break;
+
+                                default:
+                                    sprintf(precc->szIOProcType, "unknown (%d)",
+                                            pmmfiThis->ulIOProcType);
+                            }
+                            precc->pszIOProcType = precc->szIOProcType;
+
+                            // media type
+                            DescribeMediaType(precc->szMediaType,
+                                              pmmfiThis->ulMediaType);
+                            precc->pszMediaType = precc->szMediaType;
+
+                            // extension
+                            memcpy(&precc->szExtension, &pmmfiThis->szDefaultFormatExt,
+                                        5);
+                            precc->pszExtension = precc->szExtension;
+
+                            cnrhInsertRecords(hwndCnr,
+                                              NULL,
+                                              (PRECORDCORE)precc,
+                                              TRUE, // invalidate
+                                              NULL,
+                                              CRA_RECORDREADONLY,
+                                              1);
                         }
-                        precc->pszFormatName = precc->szFormatName;
 
-                        // IOProc type
-                        switch(pmmfiThis->ulIOProcType)
-                        {
-                            case MMIO_IOPROC_STORAGESYSTEM:
-                                strcpy(precc->szIOProcType, pNLSStrings->pszTypeStorage);
-                            break;
+                        pmmfiThis++;
+                    } // end for (ul = 0;
+                } // end if (G_mmioGetFormats(&mmfi,
 
-                            case MMIO_IOPROC_FILEFORMAT:
-                                strcpy(precc->szIOProcType, pNLSStrings->pszTypeFile);
-                            break;
+                free(pammfi); // V0.9.6 (2000-11-12) [umoeller]
 
-                            case MMIO_IOPROC_DATAFORMAT:
-                                strcpy(precc->szIOProcType, pNLSStrings->pszTypeData);
-                            break;
-
-                            default:
-                                sprintf(precc->szIOProcType, "unknown (%d)",
-                                        pmmfiThis->ulIOProcType);
-                        }
-                        precc->pszIOProcType = precc->szIOProcType;
-
-                        // media type
-                        DescribeMediaType(precc->szMediaType,
-                                          pmmfiThis->ulMediaType);
-                        precc->pszMediaType = precc->szMediaType;
-
-                        // extension
-                        memcpy(&precc->szExtension, &pmmfiThis->szDefaultFormatExt,
-                                    5);
-                        precc->pszExtension = precc->szExtension;
-
-                        cnrhInsertRecords(hwndCnr,
-                                          NULL,
-                                          (PRECORDCORE)precc,
-                                          TRUE, // invalidate
-                                          NULL,
-                                          CRA_RECORDREADONLY,
-                                          1);
-                    }
-
-                    pmmfiThis++;
-                }
-
-            }
-        }
+            } // end if (pammfi)
+        } // end if (G_mmioQueryFormatCount(&mmfi,
     }
     CATCH(excpt1) {}  END_CATCH();
 

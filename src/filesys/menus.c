@@ -1857,11 +1857,10 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 
     /* if (pGlobalSettings->fExtAssocs)
     {
+        // THIS HAS BEEN REMOVED FROM HERE;
+        // XFldDataFile now handles extended file associations
 
-        // if extended associations are on, we need to remove
-        // all items from the "Open" submenu
-
-        /// ### this doesn't work. VERY FUNNY, IBM. Look what
+        /// this doesn't work. VERY FUNNY, IBM. Look what
         // I got when I enumerated the submenu items in the "Open"
         // submenu IN THIS FUNCTION (WPDataFile).
 
@@ -1910,17 +1909,6 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 
             } while (TRUE);
         }
-
-        // OK, here's the new approach.
-        winhInsertSubmenu(hwndMenu,
-                          0,            // iPosition
-                          WPMENUID_OPEN,
-                          "O~pen as",
-                          MIS_TEXT,
-                          WPMENUID_PROPERTIES,
-                          "Prrrrroperties",
-                          MIS_TEXT,
-                          0);
     } */
 
     // insert separator V0.9.4 (2000-06-09) [umoeller]
@@ -3249,8 +3237,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                 if (pwpSetMenuBarVisibility)
                     pwpSetMenuBarVisibility(somSelf, !fMenuVisible);
                 else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "Unable to resolve wpSetMenuBarVisibility.");
+                    CMN_LOG(("Unable to resolve wpSetMenuBarVisibility."));
 
                 /* _wpSetup(somSelf,
                          (fMenuVisible) // reverse the current setting

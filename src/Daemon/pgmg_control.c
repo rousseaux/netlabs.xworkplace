@@ -549,6 +549,7 @@ VOID UpdateClientBitmap(HPS hpsMem)       // in: memory PS with bitmap
  *@@ TrackWithinPager:
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
+ *@@changed V0.9.6 (2000-11-06) [umoeller]: disabled dragging of WPS desktop
  */
 
 VOID TrackWithinPager(HWND hwnd,
@@ -562,7 +563,9 @@ VOID TrackWithinPager(HWND hwnd,
 
     hwndTracked = pgmwGetWindowFromClientPoint(lMouseX, lMouseY);
 
-    if (hwndTracked != NULLHANDLE)
+    if (    (hwndTracked != NULLHANDLE)
+         && (hwndTracked != G_pHookData->hwndWPSDesktop) // V0.9.6 (2000-11-06) [umoeller]
+       )
     {
         TRACKINFO       ti;
         float           fScale_X,

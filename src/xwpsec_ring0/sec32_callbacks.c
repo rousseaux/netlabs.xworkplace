@@ -98,7 +98,7 @@ struct SecImp_s SecurityImports =
    DELETE_PRE,          // ULONG (* CallType DELETE_PRE) (PSZ pszPath);
                         //      lets ISS authorize DosDelete
 
-   // DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
+   0, // DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
                         //                                ULONG RC);
                         //      notifies ISS of DosDelete completion
 
@@ -108,7 +108,7 @@ struct SecImp_s SecurityImports =
                         //      will only get called when source and dest
                         //      are on same volume
 
-   // MOVE_POST,           // VOID  (* CallType MOVE_POST) (PSZ pszNewPath,
+   0, // MOVE_POST,           // VOID  (* CallType MOVE_POST) (PSZ pszNewPath,
                         //                               PSZ pszOldPath,
                         //                               ULONG RC);
                         //      notifies ISS of DosMove completion

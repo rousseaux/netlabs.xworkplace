@@ -123,6 +123,9 @@
     // window pos of "Partitions" view V0.9.2 (2000-02-29) [umoeller]
     #define INIKEY_WNDPOSPARTITIONS "WndPosPartitions"
 
+    // window position of XMMVolume control V0.9.6 (2000-11-09) [umoeller]
+    #define INIKEY_WNDPOSXMMVOLUME  "WndPosXMMVolume"
+
     /*
      * file type hierarchies:
      *
@@ -315,6 +318,25 @@
     // miscellaneae
     #define LANGUAGECODELENGTH      30
 
+    /*
+     *  XWorkplace WM_USER message spaces:
+     *      Even though the various object windows could use the
+     *      same WM_USER messages since they only have to be
+     *      unique for each object window, just to be sure, we
+     *      make sure each message has a unique value throughout
+     *      the system. This avoids problems in case someone sends
+     *      a message to the wrong object window.
+     *
+     *                up to WM_USER+100:    common.h
+     *      WM_USER+100 ... WM_USER+149:    folder.h, statbars.h
+     *      WM_USER+150 ... WM_USER+179:    Worker thread, xthreads.h
+     *      WM_USER+180 ... WM_USER+199:    Quick thread, xthreads.h
+     *      WM_USER+200 ... WM_USER+249:    File thread, xthreads.h
+     *      WM_USER+250 ... WM_USER+269:    media thread, media.h
+     *      WM_USER+270 ... WM_USER+299:    thread-1 obj wnd, kernel.h
+     *      WM_USER+300 ... WM_USER+499:    hook, Daemon and PageMage
+     */
+
     // common dlg msgs for settings notebook dlg funcs
     #define XM_SETTINGS2DLG         (WM_USER+90)    // set controls
     #define XM_DLG2SETTINGS         (WM_USER+91)    // read controls
@@ -324,6 +346,15 @@
     #define XM_UPDATE               (WM_USER+93) // in dlgs
     #define XM_SETLONGTEXT          (WM_USER+94) // for cmnMessageBox
     #define XM_CRASH                (WM_USER+95) // test exception handlers
+
+    // fill container; used with class list dialogs
+    #define WM_FILLCNR              (WM_USER+96)
+                // value changed; moved this here from classes.h
+                // (thanks Martin Lafaix)
+                // V0.9.6 (2000-11-07) [umoeller]
+
+    // notebook.c messages: moved here V0.9.6 (2000-11-07) [umoeller]
+    #define XNTBM_UPDATE            (WM_USER+97)  // update
 
     // common value for indicating that a Global Setting
     // is to be used instead of an instance's one
@@ -695,12 +726,9 @@
                     fReplaceFilePage,
                         // XFolder/XFldDataFile: replace three "File" pages
                         // into one
-#ifdef __EXTASSOCS__
                     fExtAssocs,
                         // XFldDataFile/XFldWPS: extended associations
-#else
-                    _ulDisabled1,
-#endif
+
                     // Desktop menu items
                     fDTMSort,
                     fDTMArrange,
@@ -1133,7 +1161,11 @@
 
                 // logoff V0.9.5 (2000-09-28) [umoeller]
                 pszXSDLogoff,
-                pszXSDConfirmLogoffMsg;
+                pszXSDConfirmLogoffMsg,
+
+                // "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
+                pszByte,
+                pszBytes;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1260,6 +1292,10 @@
 
     PNLSSTRINGS cmnQueryNLSStrings(VOID);
 
+    #ifdef PRFH_HEADER_INCLUDED
+    PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload);
+    #endif
+
     CHAR cmnQueryThousandsSeparator(VOID);
 
     BOOL cmnDescribeKey(PSZ pszBuf,
@@ -1331,7 +1367,7 @@
                             SHORT usIDMin,
                             SHORT usIDMax);
 
-    /*
+    /* the following are in os2.h somewhere:
     #define MB_OK                      0x0000
     #define MB_OKCANCEL                0x0001
     #define MB_RETRYCANCEL             0x0002
@@ -1341,9 +1377,10 @@
     #define MB_CANCEL                  0x0006
     #define MB_ENTER                   0x0007
     #define MB_ENTERCANCEL             0x0008 */
+    // we add:
     #define MB_YES_YES2ALL_NO          0x0009
 
-    /*
+    /* the following are in os2.h somewhere:
     #define MBID_OK                    1
     #define MBID_CANCEL                2
     #define MBID_ABORT                 3
@@ -1353,6 +1390,7 @@
     #define MBID_NO                    7
     #define MBID_HELP                  8
     #define MBID_ENTER                 9 */
+    // we add:
     #define MBID_YES2ALL               10
 
     ULONG cmnMessageBox(HWND hwndOwner,

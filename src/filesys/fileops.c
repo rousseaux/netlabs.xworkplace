@@ -637,6 +637,7 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
 MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     #define WM_DELAYEDFOCUS         (WM_USER+1)
+
     MRESULT mrc = (MRESULT)0;
 
     switch (msg)
@@ -963,9 +964,8 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
     // prepare file date/time etc. for
     // display in window
     FILESTATUS3         fs3;
-    COUNTRYSETTINGS     cs;
-    prfhQueryCountrySettings(&cs);
-
+    PCOUNTRYSETTINGS    pcs = cmnQueryCountrySettings(FALSE);
+    ULONG               ulOfs = 0;
     // *** load confirmation dialog
     hwndConfirm = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
                              fnwpTitleClashDlg,
@@ -979,8 +979,9 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
     // replace placeholders in introductory strings
     pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
                                                   ID_XFDI_CLASH_TXT1));
-    strhrpl(&pszTemp, 0, "%1", pszRealNameFound, 0);
-    strhrpl(&pszTemp, 0, "%2", pszFolder, 0);
+    strhrpl(&pszTemp, &ulOfs, "%1", pszRealNameFound);
+    ulOfs = 0;
+    strhrpl(&pszTemp, &ulOfs, "%2", pszFolder);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
                       pszTemp);
     free(pszTemp);
@@ -991,14 +992,14 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
                      FIL_STANDARD,
                      &fs3, sizeof(fs3));
     strhFileDate(szTemp, &(fs3.fdateLastWrite),
-                 cs.ulDateFormat, cs.cDateSep);
+                 pcs->ulDateFormat, pcs->cDateSep);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
     strhFileTime(szTemp, &(fs3.ftimeLastWrite),
-                 cs.ulTimeFormat, cs.cTimeSep);
+                 pcs->ulTimeFormat, pcs->cTimeSep);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
 
     strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
-                       cs.cThousands);
+                       pcs->cThousands);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
 
     if (pFSExisting != somSelf)
@@ -1012,13 +1013,13 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
                          FIL_STANDARD,
                          &fs3, sizeof(fs3));
         strhFileDate(szTemp, &(fs3.fdateLastWrite),
-                     cs.ulDateFormat, cs.cDateSep);
+                     pcs->ulDateFormat, pcs->cDateSep);
         WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
         strhFileTime(szTemp, &(fs3.ftimeLastWrite),
-                     cs.ulTimeFormat, cs.cTimeSep);
+                     pcs->ulTimeFormat, pcs->cTimeSep);
         WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
         strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
-                           cs.cThousands);
+                           pcs->cThousands);
         WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
     }
     else

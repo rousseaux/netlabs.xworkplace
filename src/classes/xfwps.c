@@ -314,7 +314,6 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
      * "File types" page (new with V0.9.0)
      */
 
-#ifdef __EXTASSOCS__
     if (pGlobalSettings->fExtAssocs)
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -333,7 +332,6 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->pfncbItemChanged = ftypFileTypesItemChanged;
         ntbInsertPage(pcnbp);
     }
-#endif
 
     return (TRUE);
 }

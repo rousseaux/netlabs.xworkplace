@@ -293,6 +293,7 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.6 (2000-10-25) [umoeller]: no longer storing data statically, func renamed
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: now using thousands separator from "Country"
  */
 
 SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
@@ -307,8 +308,12 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
     _ulTotalSize = ulNewSize;
 
     // update string for details view, which has been
-    // "calculating..." so far
-    strhThousandsULong(_szTotalSize, _ulTotalSize, '.');
+    // "calculating..." so far; we cannot just use the
+    // ULONG in the details field, because we had a
+    // string previously
+    strhThousandsULong(_szTotalSize,
+                       _ulTotalSize,
+                       cmnQueryThousandsSeparator());
 
     // refresh all details views this object is
     // inserted into (most probably only the trash can)
@@ -851,6 +856,9 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDragOver(XWPTrashObject *somSelf,
  *@@ wpDrop:
  *      this instance method is called to inform an object that
  *      another object has been dropped on it.
+ *      This corresponds to the DM_DROP message received by
+ *      the object.
+ *
  *      We'll make sure that nothing can be dropped upon
  *      a trash object.
  */

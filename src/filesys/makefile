@@ -57,9 +57,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\fhandles.obj \
        $(OUTPUTDIR)\fileops.obj \
        $(OUTPUTDIR)\filesys.obj \
-!ifdef EXTASSOCS
        $(OUTPUTDIR)\filetype.obj \
-!endif
        $(OUTPUTDIR)\folder.obj \
        $(OUTPUTDIR)\fops_bottom.obj \
        $(OUTPUTDIR)\fops_top.obj \
@@ -275,7 +273,7 @@ $(OUTPUTDIR)\program.obj: \
 
 $(OUTPUTDIR)\statbars.obj: \
      $(INC)\setup.h \
-     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\stringh.h \
+     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
         $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfobj.ih \
      $(INC)\dlgids.h \

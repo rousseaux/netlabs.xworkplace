@@ -28,8 +28,6 @@
 #ifndef FILETYPE_HEADER_INCLUDED
     #define FILETYPE_HEADER_INCLUDED
 
-#ifdef __EXTASSOCS__
-
     /* ******************************************************************
      *                                                                  *
      *   XFldDataFile extended associations                             *
@@ -46,7 +44,7 @@
         ULONG ftypFreeAssocsList(PLINKLIST pllAssocs);
 
         WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,
-                                             ULONG ulView);
+                                             PULONG pulView);
 
         BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf,
                                            HWND hwndOpenSubmenu,
@@ -73,8 +71,6 @@
 
         MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
     #endif
-
-#endif // __EXTASSOCS__
 
 #endif
 

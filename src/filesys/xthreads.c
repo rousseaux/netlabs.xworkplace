@@ -343,6 +343,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
         /*
          * WM_TIMER:
+         *      timer 2 is started in WM_CREATE to run every
+         *      five minutes. This returns unused memory
+         *      back to the system and reloads the country
+         *      settings which we have cached (V0.9.6 (2000-11-12) [umoeller]).
          */
 
         case WM_TIMER:
@@ -365,6 +369,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     #ifdef DEBUG_MEMORYBEEP
                         DosBeep(3500, 20);
                     #endif
+
+                    // reload country settings
+                    cmnQueryCountrySettings(TRUE);
                 break;
             }
         break; }
@@ -927,8 +934,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                     pGlobalSettings, sizeof(GLOBALSETTINGS));
             }
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Unable to lock GLOBALSETTINGS.");
+                CMN_LOG(("Unable to lock GLOBALSETTINGS."));
             cmnUnlockGlobalSettings();
         break; }
 
@@ -1153,9 +1159,8 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
         }
 
     if (!rc)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
-               msg, mp1, mp2);
+        CMN_LOG(("Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+               msg, mp1, mp2));
 
     return (rc);
 }
@@ -1654,25 +1659,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *      removed this   V0.9.6 (2000-10-16) [umoeller]
          */
 
-        /* case FIM_REFRESH:
-        {
-            WPFolder *pFolder = (WPFolder*)mp1;
-            HWND hwndFrame = (HWND)mp2,
-                 hwndCnr = 0;
-            // get OPEN_* flag for view
-            ULONG ulView = wpshQueryView(pFolder, hwndFrame);
-
-            _wpRefresh(pFolder,
-                       ulView,
-                       NULL);       // reserved, must be NULL
-            // now repaint container
-            hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-            if (hwndCnr)
-                cnrhInvalidateAll(hwndCnr);
-                        // ### buggy, this moves icons ....
-                        // do reget of reccs first
-        break; } */
-
         /*
          *@@ FIM_DOUBLEFILES:
          *      collects all files in a given list of directories
@@ -1902,9 +1888,8 @@ BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                             mp1,
                             mp2);
     if (!rc)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
-               msg, mp1, mp2);
+        CMN_LOG(("Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+               msg, mp1, mp2));
 
     return (rc);
 }

@@ -263,11 +263,11 @@ BEGIN
     /* status bar strings */
     ID_XSSI_POPULATING              "Collecting objects..."
 
-    /* default status bar mnemonics */
-    ID_XSSI_SBTEXTNONESEL           "$C objects$x(50%)$SK KB total, $fK KB free"
-    ID_XSSI_SBTEXTMULTISEL          "$c of $C objects selected$x(50%)$sK KB selected"
-    ID_XSSI_SBTEXTWPDATAFILE        """$r"" ($w)$x(55%)$sK KB $x(70%)$D $T"
-    ID_XSSI_SBTEXTWPDISK            "$t ($fM MB free)"
+    /* default status bar mnemonics; changed with V0.9.6 (2000-11-23) [umoeller] */
+    ID_XSSI_SBTEXTNONESEL           "$C objects$x(50%)$SA total, $fA free"
+    ID_XSSI_SBTEXTMULTISEL          "$c of $C objects selected$x(50%)$sA selected"
+    ID_XSSI_SBTEXTWPDATAFILE        """$r"" ($w)$x(55%)$sA $x(70%)$D $T"
+    ID_XSSI_SBTEXTWPDISK            "$t ($fA free)"
     ID_XSSI_SBTEXTWPPROGRAM         "$t $x(30%)""$p $P"""
     ID_XSSI_SBTEXTWPOBJECT          "$t (Class: $W)"
 
@@ -362,7 +362,7 @@ BEGIN
 
     /* titles for XWorkplace notebook pages */
     ID_XSSI_1GENERIC                "~XFolder"
-    ID_XSSI_25ADDITEMS              "Context ~menus"
+    ID_XSSI_25ADDITEMS              "Co~ntext menus"
     ID_XSSI_26CONFIGITEMS           "Config folder items"
     ID_XSSI_2REMOVEITEMS            "Standard menu items"
     ID_XSSI_27STATUSBAR             "Status bars"
@@ -464,7 +464,7 @@ BEGIN
     /* default title for object */
     ID_XFSI_XWPCLASSLIST                "WPS class list"
     /* the following is new with V0.9.1 (99-12-28) [umoeller] */
-    ID_XFSI_REGISTERCLASS               "Register new class..."
+    ID_XFSI_REGISTERCLASS               "R~egister new class..."
 
     /* strings for XWPSound */
     ID_XSSI_SOUNDSCHEMENONE             "<none>"
@@ -616,6 +616,10 @@ BEGIN
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
     ID_XSSI_XSD_LOGOFF                  "Logoff..."
     ID_XSSI_XSD_CONFIRMLOGOFFMSG        "Are you sure you want to log off?"
+
+    /* "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller] */
+    ID_XSSI_BYTE                        " byte"
+    ID_XSSI_BYTES                       " bytes"
 END
 
 /* Strings for XWPSetup "Features" page

@@ -136,6 +136,8 @@ $(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico $(@B).rc
-    $(RC) -r -i $(BASE_OUTPUTDIR) $(@B).rc $(EXE_OUTPUTDIR)\$(@B).res
+    $(RC) -r $(@B).rc $(EXE_OUTPUTDIR)\$(@B).res
+# -i $(BASE_OUTPUTDIR)
+
 
 

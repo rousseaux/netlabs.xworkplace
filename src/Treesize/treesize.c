@@ -42,7 +42,8 @@
 #include <stdio.h>
 #include <string.h>
 
-// #define _PMPRINTF_       // uncomment to have debugging
+#include "setup.h"
+
 #include "helpers\pmprintf.h"
 #include "helpers\cnrh.h"
 #include "helpers\eah.h"

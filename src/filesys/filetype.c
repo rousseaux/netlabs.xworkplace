@@ -8,7 +8,20 @@
  *
  *      This file is ALL new with V0.9.0.
  *
- *      The main entry point into all this is ftypBuildAssocsList.
+ *      There are several entry points into this mess:
+ *
+ *      --  ftypQueryAssociatedProgram gets called from
+ *          XFldDataFile::wpQueryAssociatedProgram and also
+ *          from XFldDataFile::wpOpen. This must return a
+ *          single association according to a given view ID.
+ *
+ *      --  ftypModifyDataFileOpenSubmenu gets called from
+ *          the XFldDataFile menu methods to hack the
+ *          "Open" submenu.
+ *
+ *      --  ftypBuildAssocsList could be called separately
+ *          to build a complete associations list for an
+ *          object.
  *
  *      Function prefix for this file:
  *      --  ftyp*
@@ -45,6 +58,7 @@
 #define INCL_DOSSEMAPHORES
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
 #define INCL_WINDIALOGS
 #define INCL_WININPUT           // WM_CHAR
 #define INCL_WINPOINTERS
@@ -101,10 +115,16 @@
  *      appends the given type to the given list, if
  *      it's not on the list yet. Returns TRUE if the
  *      item either existed or was appended.
+ *
+ *      This assumes that pszNewType is free()'able. If
+ *      pszNewType is already on the list, the string
+ *      is freed!
+ *
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed memory leak
  */
 
 BOOL AppendSingleTypeUnique(PLINKLIST pll,      // in: list to append to
-                            PSZ pszNewType)     // in: new type to append (must be free()'able)
+                            PSZ pszNewType)     // in: new type to append (must be free()'able!)
 {
     BOOL brc = FALSE;
     PLISTNODE pNode = lstQueryFirstNode(pll);
@@ -117,6 +137,8 @@ BOOL AppendSingleTypeUnique(PLINKLIST pll,      // in: list to append to
                 // matches: it's already on the list,
                 // so stop
                 brc = TRUE;
+                // and free the string (the caller has always created a copy)
+                free(pszNewType);
                 break;
             }
 
@@ -124,6 +146,7 @@ BOOL AppendSingleTypeUnique(PLINKLIST pll,      // in: list to append to
     }
 
     if (!brc)
+        // not found:
         brc = (lstAppendItem(pll, pszNewType) != NULL);
 
     return (brc);
@@ -179,9 +202,12 @@ ULONG AppendTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nPla
         {
             // no next line feed found:
             // store last item
-            AppendSingleTypeUnique(pllTypes,
-                                   strdup(pTypeThis));
-            ulrc++;
+            if (strlen(pTypeThis))
+            {
+                AppendSingleTypeUnique(pllTypes,
+                                       strdup(pTypeThis));
+                ulrc++;
+            }
             break;
         }
     }
@@ -409,15 +435,19 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *@@ ftypBuildAssocsList:
  *      this helper function builds a list of all
  *      associated WPProgram and WPProgramFile objects
- *      in the data file's instance data. This list
- *      is used for caching the associations, both
- *      for getting the correct data file icon and
- *      for building the items in the "Open" context
- *      menu.
+ *      in the data file's instance data.
+ *
+ *      This is the heart of the extended associations
+ *      engine. This function gets called whenever
+ *      extended associations are needed, that is:
+ *
+ *      --  from ftypQueryAssociatedProgram;
+ *
+ *      --  from ftypModifyDataFileOpenSubmenu.
  *
  *      The list (which is of type PLINKLIST, containing
- *      WPObject* pointers) is returned and should be
- *      freed later using lstFree.
+ *      plain WPObject* pointers) is returned and should
+ *      be freed later using lstFree.
  *
  *      This returns an empty list if no file associations
  *      exist, but not NULL.
@@ -468,6 +498,16 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf)
         #ifdef DEBUG_ASSOCS
             _Pmpf(("    ftypQueryAssociatedProgram: got %d matching types", cTypes));
         #endif
+
+        if (cTypes == 0)
+        {
+            // we still have no types: this happens if
+            // 1) no explicit type was assigned
+            // 2) none of the type filters matched
+            // --> in that case, use "Plain Text"
+            if (lstAppendItem(pllTypes, strdup("Plain Text")))
+                cTypes++;
+        }
 
         if (cTypes)
         {
@@ -534,6 +574,9 @@ ULONG ftypFreeAssocsList(PLINKLIST pllAssocs)    // in: list created by ftypBuil
  *      This gets called _instead_ of the WPDataFile version if
  *      extended associations have been enabled.
  *
+ *      This also gets called from XFldDataFile::wpOpen to find
+ *      out which of the new associations needs to be opened.
+ *
  *      It is the responsibility of this method to return the
  *      associated WPProgram or WPProgramFile object for the
  *      given data file according to ulView.
@@ -548,13 +591,16 @@ ULONG ftypFreeAssocsList(PLINKLIST pllAssocs)    // in: list created by ftypBuil
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.6 (2000-10-16) [umoeller]: lists are temporary only now
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: added pulView output
  */
 
 WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
-                                     ULONG ulView)              // in: default view (normally 0x1000,
+                                     PULONG pulView)            // in: default view (normally 0x1000,
                                                                 // can be > 1000 if the default view
                                                                 // has been manually changed on the
-                                                                // "Menu" page
+                                                                // "Menu" page);
+                                                                // out: "real" default view if this
+                                                                // was OPEN_RUNNING or something
 {
     WPObject *pObjReturn = 0;
 
@@ -568,15 +614,17 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
             ULONG               ulIndex = 0;
             PLISTNODE           pAssocObjectNode = 0;
 
-            if (ulView == OPEN_RUNNING)
-                ulView = 0x1000;
-            else if (ulView == OPEN_DEFAULT)
-                ulView = _wpQueryDefaultView(somSelf);
+            if (*pulView == OPEN_RUNNING)
+                *pulView = 0x1000;
+            else if (*pulView == OPEN_DEFAULT)
+                *pulView = _wpQueryDefaultView(somSelf);
+                        // returns 0x1000, unless the user has changed
+                        // the default association on the "Menu" page
 
             // calc index to search...
-            if (ulView >= 0x1000)
+            if (*pulView >= 0x1000)
             {
-                ulIndex = ulView - 0x1000;
+                ulIndex = *pulView - 0x1000;
                 if (ulIndex > cAssocObjects)
                     ulIndex = 0;
             }
@@ -589,7 +637,8 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
             {
                 pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
                 // raise lock count on this object again (i.e. lock
-                // twice) because ftypFreeAssocsList unlocks it
+                // twice) because ftypFreeAssocsList unlocks each
+                // object on the list once
                 _wpLockObject(pObjReturn);
             }
         }
@@ -746,7 +795,7 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
 /*
  * FILETYPERECORD:
  *      extended record core structure for
- *      "File types" container (Tree view)
+ *      "File types" container (Tree view).
  */
 
 typedef struct _FILETYPERECORD
@@ -1224,12 +1273,12 @@ PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
 
         // insert the record (helpers/winh.c)
         cnrhInsertRecords(pftpd->hwndFiltersCnr,
-                        (PRECORDCORE)NULL,      // parent
-                        (PRECORDCORE)preccNew,
-                        TRUE, // invalidate
-                        pszNewFilter,
-                        CRA_RECORDREADONLY,
-                        1); // one record
+                          (PRECORDCORE)NULL,      // parent
+                          (PRECORDCORE)preccNew,
+                          TRUE, // invalidate
+                          pszNewFilter,
+                          CRA_RECORDREADONLY,
+                          1); // one record
 
         // store the new title in the linked
         // list of items to be cleaned up
@@ -1683,6 +1732,9 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinDestroyWindow(pftpd->hmenuFileFilterNoSel);
         WinDestroyWindow(pftpd->hmenuFileAssocSel);
         WinDestroyWindow(pftpd->hmenuFileAssocNoSel);
+
+        if (pftpd->hwndWPSImportDlg)
+            WinDestroyWindow(pftpd->hwndWPSImportDlg);
     }
 }
 
@@ -2039,7 +2091,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             PFILETYPERECORD pftrecc = (PFILETYPERECORD)pcnbp->preccSource;
                         // this has been set in CN_CONTEXTMENU above
-            if (pftrecc) {
+            if (pftrecc)
+            {
                 // delete file type from INI
                 PrfWriteProfileString(HINI_USER,
                                       WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
@@ -2293,13 +2346,17 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSMI_FILEFILTER_IMPORTWPS:
         {
-            pftpd->hwndWPSImportDlg = WinLoadDlg(
-                           HWND_DESKTOP,     // parent
-                           pcnbp->hwndFrame,  // owner
-                           fnwpImportWPSFilters,
-                           cmnQueryNLSModuleHandle(FALSE),
-                           ID_XSD_IMPORTWPS, // "Import WPS Filters" dlg
-                           pftpd);           // FILETYPESPAGEDATA for the dlg
+            if (pftpd->hwndWPSImportDlg == NULLHANDLE)
+            {
+                // dialog not presently open:
+                pftpd->hwndWPSImportDlg = WinLoadDlg(
+                               HWND_DESKTOP,     // parent
+                               pcnbp->hwndFrame,  // owner
+                               fnwpImportWPSFilters,
+                               cmnQueryNLSModuleHandle(FALSE),
+                               ID_XSD_IMPORTWPS, // "Import WPS Filters" dlg
+                               pftpd);           // FILETYPESPAGEDATA for the dlg
+            }
             WinShowWindow(pftpd->hwndWPSImportDlg, TRUE);
         break; }
 
@@ -2629,6 +2686,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      WM_INITDLG here).
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.6 (2000-11-08) [umoeller]: fixed "Close" behavior
  */
 
 MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2946,16 +3004,25 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 case ID_XSDI_FT_SELALL:
                 case ID_XSDI_FT_DESELALL:
                     cnrhSelectAll(WinWindowFromID(hwndDlg,
-                                                     ID_XSDI_FT_ASSOCSCNR),
+                                                  ID_XSDI_FT_ASSOCSCNR),
                                      (usCmd == ID_XSDI_FT_SELALL)); // TRUE = select
                 break;
 
-                default:
+                case DID_CANCEL:
+                    // "close" button:
+                    WinPostMsg(hwndDlg,
+                               WM_SYSCOMMAND,
+                               (MPARAM)SC_CLOSE,
+                               MPFROM2SHORT(CMDSRC_PUSHBUTTON,
+                                            TRUE));  // pointer (who cares)
+                break;
+
+                /* default:
                     // this includes "Close"
-                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2); */
             } // end switch (usCmd)
 
-        break; } // case case WM_CONTROL
+        break; } // case WM_CONTROL
 
         case WM_HELP:
             // display help using the "Workplace Shell" SOM object
@@ -2963,6 +3030,19 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             cmnDisplayHelp(pftpd->pcnbp->somSelf,
                            pftpd->pcnbp->ulDefaultHelpPanel + 1);
                             // help panel which follows the one on the main page
+        break;
+
+        case WM_SYSCOMMAND:
+            switch ((ULONG)mp1)
+            {
+                case SC_CLOSE:
+                    WinDestroyWindow(hwndDlg);
+                    mrc = 0;
+                break;
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
         break;
 
         case WM_DESTROY:

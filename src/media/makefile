@@ -50,7 +50,8 @@ OUTPUTDIR = ..\..\bin
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(OUTPUTDIR)\mmhelp.obj \
-       $(OUTPUTDIR)\mmthread.obj
+       $(OUTPUTDIR)\mmthread.obj \
+       $(OUTPUTDIR)\mmvolume.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -128,6 +129,11 @@ $(OUTPUTDIR)\mmthread.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
         $(HLPINC)\stringh.h $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+    $(@B).c $(MYOWNINC)\media.h
+
+$(OUTPUTDIR)\mmvolume.obj: \
+    $(INC)\setup.h \
+    $(INC)\classes\xmmvolume.ih \
     $(@B).c $(MYOWNINC)\media.h
 
 

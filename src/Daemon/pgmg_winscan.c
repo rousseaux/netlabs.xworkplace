@@ -19,13 +19,14 @@
  *      GNU General Public License for more details.
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
-#define INCL_GPI
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINSWITCHLIST
+
+#define INCL_GPIBITMAPS
 #include <os2.h>
-#include <stdio.h>
-#include <process.h>
 
 #include "setup.h"                      // code generation and debugging options
 

@@ -1900,6 +1900,7 @@ VOID S506EnableItems(HWND hwndDlg,
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: crashed on OK if no params were set; fixed
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added IBM1S506.ADD support
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed free(0) call
  */
 
 MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2095,7 +2096,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             PSZ pszNewParams = RecomposeParamsString(hwndDlg,
                                                      (PS506ALL)pddd->pvUser);
             WinSetDlgItemText(hwndDlg, ID_OSDI_S506_NEWPARAMS, pszNewParams);
-            free(pszNewParams);
+            if (pszNewParams)       // V0.9.6 (2000-11-12) [umoeller]
+                free(pszNewParams);
         break; }
 
         /*

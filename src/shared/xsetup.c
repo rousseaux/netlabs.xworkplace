@@ -182,9 +182,7 @@ FEATURESITEM G_FeatureItemsList[] =
 
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
-#ifdef __EXTASSOCS__
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#endif
             ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #ifdef __REPLHANDLES__
             ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1383,8 +1381,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         if (!ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
                                      ID_XCDI_CONTAINER))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "ctlMakeCheckboxContainer failed.");
+            CMN_LOG(("ctlMakeCheckboxContainer failed."));
         else
         {
             cRecords = sizeof(G_FeatureItemsList) / sizeof(FEATURESITEM);
@@ -1447,8 +1444,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // register tooltip class
         if (!ctlRegisterTooltip(WinQueryAnchorBlock(pcnbp->hwndDlgPage)))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "ctlRegisterTooltip failed.");
+            CMN_LOG(("ctlRegisterTooltip failed."));
         else
         {
             // create tooltip
@@ -1465,8 +1461,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                  NULL);         // presparams
 
             if (!pcnbp->hwndTooltip)
-               cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                      "WinCreateWindow failed creating tooltip.");
+               CMN_LOG(("WinCreateWindow failed creating tooltip."));
             else
             {
                 // tooltip successfully created:
@@ -1534,10 +1529,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
                 pGlobalSettings->fXShutdown);
 
-#ifdef __EXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 pGlobalSettings->fExtAssocs);
-#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 pGlobalSettings->CleanupINIs);
 #ifdef __REPLHANDLES__
@@ -1607,6 +1600,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.1 (2000-02-01) [umoeller]: added global hotkeys flag
  *@@changed V0.9.1 (2000-02-09) [umoeller]: fixed mutex hangs while dialogs were displayed
  *@@changed V0.9.2 (2000-03-19) [umoeller]: "Undo" and "Default" created duplicate records; fixed
+ *@@changed V0.9.6 (2000-11-11) [umoeller]: removed extassocs warning
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1624,7 +1618,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL fShowHookInstalled = FALSE,
          fShowHookDeinstalled = FALSE,
          fShowClassesSetup = FALSE,
-         fShowWarnExtAssocs = FALSE,
+         // fShowWarnExtAssocs = FALSE,
          fShowWarnPageMage = FALSE,
          fShowWarnXShutdown = FALSE,
          fUpdateMouseMovementPage = FALSE;
@@ -1755,17 +1749,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 fShowWarnXShutdown = TRUE;
         break;
 
-#ifdef __EXTASSOCS__
         case ID_XCSI_EXTASSOCS:
             pGlobalSettings->fExtAssocs = ulExtra;
             // re-enable controls on this page
             ulUpdateFlags = CBI_ENABLE;
-            if (ulExtra)
-                // show warning at the bottom (outside the
-                // mutex section)
-                fShowWarnExtAssocs = TRUE;
         break;
-#endif
 
         /* case ID_XCDI_IGNOREFILTERS:
             pGlobalSettings->fIgnoreFilters = ulExtra;
@@ -1835,9 +1823,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
             pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
 
-#ifdef __EXTASSOCS__
             pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
-#endif
             pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
 #ifdef __REPLHANDLES__
             pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
@@ -1894,11 +1880,6 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         // "hook deinstalled" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
                          148, 158, MB_OK);
-    else if (fShowWarnExtAssocs)
-        cmnMessageBox(pcnbp->hwndFrame,
-                      "XWorkplace",
-                      "Warning: Extended file associations don't work properly yet. Daily use is NOT recommended.",
-                      MB_OK);
     else if (fShowWarnPageMage)
         cmnMessageBox(pcnbp->hwndFrame,
                       "XWorkplace",
