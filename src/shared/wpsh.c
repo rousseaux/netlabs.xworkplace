@@ -423,7 +423,7 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
 {
     BOOL brc = FALSE;
     somId somidMethod;
-    if (!(somidMethod = somIdFromString(pcszMethodName))) // V1.0.3 (2005-01-13) [pr]
+    if (!(somidMethod = somIdFromString((PSZ)pcszMethodName))) // V1.0.3 (2005-01-13) [pr]
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Cannot get id for \"%s\".", pcszMethodName);
     else
