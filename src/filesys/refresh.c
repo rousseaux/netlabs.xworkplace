@@ -174,30 +174,13 @@ static BOOL            G_fExitAllRefreshThreads = FALSE;
  *         mutex.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
  */
 
 VOID refrAddNotification(PXWPNOTIFY pNotify)
 {
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pNotify->pFolder))
-    {
-        XFolderData *somThat = XFolderGetData(pNotify->pFolder);
-        PLINKLIST pllFolder = (PLINKLIST)somThat->pvllNotifications;
-
-        if (!pllFolder)
-        {
-            // folder doesn't have a list yet:
-            pllFolder = lstCreate(FALSE);       // no auto-free;
-                                                // auto-free is for the
-                                                // global list instead
-            somThat->pvllNotifications = pllFolder;
-        }
-
-        if (pllFolder)
-            // append to the folder's list (no auto-free)
-            lstAppendItem(pllFolder, pNotify);
-    }
-    wpshUnlockObject(&Lock);
+    XFolderData *somThis = XFolderGetData(pNotify->pFolder);
+    (_cNotificationsPending)++;
 
     // append to the global list (auto-free)
     lstAppendItem(&G_llAllNotifications, pNotify);
@@ -205,6 +188,16 @@ VOID refrAddNotification(PXWPNOTIFY pNotify)
 
 /*
  *@@ refrRemoveNotification:
+ *      removes the specified notification.
+ *
+ *      If you know the list node of the notification,
+ *      you can specify it in pGlobalNode to save
+ *      this function from having to search the
+ *      entire list for it.
+ *
+ *      WARNING: pNotify->pFolder might be in the
+ *      process of being destroyed, so DO NOT MAKE
+ *      ANY METHOD CALLS on the folder.
  *
  *      Preconditions:
  *
@@ -212,20 +205,14 @@ VOID refrAddNotification(PXWPNOTIFY pNotify)
  *         mutex.
  *
  *@@added V0.9.9 (2001-02-01) [umoeller]
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
  */
 
-VOID refrRemoveNotification(PLINKLIST pllFolder,
-                            PXWPNOTIFY pNotify,
-                            PLISTNODE pGlobalNode)
+VOID refrRemoveNotification(PXWPNOTIFY pNotify,
+                            PLISTNODE pGlobalNode)      // or NULL if unknown (slower)
 {
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pNotify->pFolder))
-    {
-        // remove from folder list
-        lstRemoveItem(pllFolder,
-                      pNotify);   // no auto-free, search node
-    }
-    wpshUnlockObject(&Lock);
+    XFolderData *somThis = XFolderGetData(pNotify->pFolder);
+    (_cNotificationsPending)--;
 
     if (!pGlobalNode)
         // not specified: search it then
@@ -243,10 +230,20 @@ VOID refrRemoveNotification(PLINKLIST pllFolder,
  *      removes all pending notifications for the
  *      specified folder without processing them.
  *
- *      This does NOT free the list in the instance
- *      data itself.
+ *      Gets called
  *
- *      Gets called from XFolder::wpUnInitData.
+ *      --  from XFolder::wpUnInitData on whatever
+ *          thread that method gets called on;
+ *
+ *      --  from PumpAgedNotification on
+ *          RCNF_XWP_FULLREFRESH before we run a
+ *          full refresh on the folder because then
+ *          all the notifications don't make much
+ *          sense any more.
+ *
+ *      WARNING: pNotify->pFolder might be in the
+ *      process of being destroyed, so DO NOT MAKE
+ *      ANY METHOD CALLS on the folder.
  *
  *      Preconditions:
  *
@@ -254,34 +251,26 @@ VOID refrRemoveNotification(PLINKLIST pllFolder,
  *         mutex.
  *
  *@@added V0.9.9 (2001-02-01) [umoeller]
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
  */
 
 VOID refrClearFolderNotifications(WPFolder *pFolder)
 {
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, pFolder))
+    // go thru the entire global list
+    // and remove all notify nodes which
+    // point to this folder
+
+    PLISTNODE pNode = lstQueryFirstNode(&G_llAllNotifications);
+    while (pNode)
     {
-        XFolderData *somThis = XFolderGetData(pFolder);
-        if (_pvllNotifications)
-        {
-            PLINKLIST pllFolder = (PLINKLIST)_pvllNotifications;
-            PLISTNODE pNode = lstQueryFirstNode(pllFolder);
-            while (pNode)
-            {
-                PXWPNOTIFY pNotify = (PXWPNOTIFY)pNode->pItemData;
-                // get next node NOW because we're deleting
-                PLISTNODE pNext = pNode->pNext;
-
-                // remove in folder (no auto-free)
-                lstRemoveNode(pllFolder, pNode);
-                // remove in global list (auto-free XWPNOTIFY)
-                lstRemoveItem(&G_llAllNotifications, pNotify);
-
-                pNode = pNext;
-            }
-        }
+        PLISTNODE pNext = pNode->pNext;
+        PXWPNOTIFY pNotify = (PXWPNOTIFY)pNode->pItemData;
+        if (pNotify->pFolder == pFolder)
+            // kick this out
+            refrRemoveNotification(pNotify,
+                                   pNode);
+        pNode = pNext;
     }
-    wpshUnlockObject(&Lock);
 }
 
 /* ******************************************************************
@@ -333,135 +322,132 @@ VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
  */
 
 VOID PumpAgedNotification(PXWPNOTIFY pNotify,
                           PLISTNODE pGlobalNode)
 {
-    BOOL    fRemoveThis = TRUE;
-
-    // Note that we hack the folder's instance
-    // data directly. Yes, this isn't exactly what
-    // you would call encapsulation, but we need
-    // speed here.
-    XFolderData *somThat = XFolderGetData(pNotify->pFolder);
-    PLINKLIST pllFolder = (PLINKLIST)somThat->pvllNotifications;
-    if (pllFolder)
+    switch (pNotify->CNInfo.bAction)
     {
-        // _Pmpf((__FUNCTION__ ": processing notification %s", pNotify->pShortName));
-
-        switch (pNotify->CNInfo.bAction)
+        case RCNF_FILE_ADDED:
+        case RCNF_DIR_ADDED:
         {
-            case RCNF_FILE_ADDED:
-            case RCNF_DIR_ADDED:
-            {
-                _wpclsQueryObjectFromPath(_WPFileSystem,
-                                          pNotify->CNInfo.szName);
-                        // this will wake the object up
-                        // if it hasn't been awakened yet
-            break; }
+            _wpclsQueryObjectFromPath(_WPFileSystem,
+                                      pNotify->CNInfo.szName);
+                    // this will wake the object up
+                    // if it hasn't been awakened yet
 
-            case RCNF_FILE_DELETED:
-            case RCNF_DIR_DELETED:
+            refrRemoveNotification(pNotify,
+                                   pGlobalNode);
+        break; }
+
+        case RCNF_FILE_DELETED:
+        case RCNF_DIR_DELETED:
+        {
+            // loop thru the folder contents (without refreshing)
+            // to check if we have a WPFileSystem with this name
+            // already
+            WPFileSystem *pobj = fdrFindFSFromName(pNotify->pFolder,
+                                                   pNotify->pShortName);
+            if (pobj)
             {
-                // loop thru the folder contents (without refreshing)
-                // to check if we have a WPFileSystem with this name
-                // already
-                WPFileSystem *pobj = fdrFindFSFromName(pNotify->pFolder,
-                                                       pNotify->pShortName);
-                if (pobj)
+                // yes, we have an FS object of that name:
+                // check if the file still physically exists...
+                // we better not kill it if it does
+                FILESTATUS3 fs3;
+                APIRET arc = DosQueryPathInfo(pNotify->CNInfo.szName,
+                                              FIL_STANDARD,
+                                              &fs3,
+                                              sizeof(fs3));
+
+                // _Pmpf((__FUNCTION__ ": DosQueryPathInfo ret'd %d", arc));
+
+                switch (arc)
                 {
-                    // yes, we have an FS object of that name:
-                    // check if the file still physically exists...
-                    // we better not kill it if it does
-                    FILESTATUS3 fs3;
-                    APIRET arc = DosQueryPathInfo(pNotify->CNInfo.szName,
-                                                  FIL_STANDARD,
-                                                  &fs3,
-                                                  sizeof(fs3));
-
-                    // _Pmpf((__FUNCTION__ ": DosQueryPathInfo ret'd %d", arc));
-
-                    switch (arc)
+                    case ERROR_FILE_NOT_FOUND:
+                            // as opposed to what CPREF says,
+                            // DosQueryPathInfo does return
+                            // ERROR_FILE_NOT_FOUND... sigh
+                    case ERROR_PATH_NOT_FOUND:
                     {
-                        case ERROR_FILE_NOT_FOUND:
-                                // as opposed to what CPREF says,
-                                // DosQueryPathInfo does return
-                                // ERROR_FILE_NOT_FOUND... sigh
-                        case ERROR_PATH_NOT_FOUND:
-                        {
-                            // ok, free the object... this needs some hacks
-                            // too because otherwise the WPS modifies the
-                            // folder flags internally during this processing.
-                            // I believe this happens during wpMakeDormant,
-                            // because the FOI_POPULATED* flags are turned off
-                            // even though we have replaced wpFree.
+                        // ok, free the object... this needs some hacks
+                        // too because otherwise the WPS modifies the
+                        // folder flags internally during this processing.
+                        // I believe this happens during wpMakeDormant,
+                        // because the FOI_POPULATED* flags are turned off
+                        // even though we have replaced wpFree.
 
-                            ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
-                            _wpModifyFldrFlags(pNotify->pFolder,
-                                               FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS,
-                                               0);
-                            _wpFree(pobj);
-                            _wpSetFldrFlags(pNotify->pFolder, flFolder);
-                        break; }
+                        ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
+                        _wpModifyFldrFlags(pNotify->pFolder,
+                                           FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS,
+                                           0);
+                        _wpFree(pobj);
+                        _wpSetFldrFlags(pNotify->pFolder, flFolder);
+                    break; }
 
-                        // case NO_ERROR: the file has reappeared.
-                        // DO NOT FREE IT, or we would delete a
-                        // valid file.
-                        // @@todo refresh the FSobject instead
-                    }
+                    // case NO_ERROR: the file has reappeared.
+                    // DO NOT FREE IT, or we would delete a
+                    // valid file.
+                    // @@todo refresh the FSobject instead
                 }
-                // else object not in folder: no problem there
-            break; }
+            }
+            // else object not in folder: no problem there
 
-            /*
-             * RCNF_XWP_FULLREFRESH:
-             *      special XWP notify code if we
-             *      encountered an overflow and
-             *      should do a full refresh on the
-             *      folder.
-             */
+            refrRemoveNotification(pNotify,
+                                   pGlobalNode);
+        break; }
 
-            case RCNF_XWP_FULLREFRESH:
+        /*
+         * RCNF_XWP_FULLREFRESH:
+         *      special XWP notify code if we
+         *      encountered an overflow and
+         *      should do a full refresh on the
+         *      folder.
+         */
+
+        case RCNF_XWP_FULLREFRESH:
+        {
+            // get the folder pointer first because
+            // we're deleting the node
+            WPFolder *pFolder = pNotify->pFolder;
+
+            // kick out all pending notifications
+            // for this folder
+            refrClearFolderNotifications(pFolder);
+
+            // we need a full refresh on the folder...
+            // set the folder flag which causes the folder
+            // contents to be refreshed on open
+            _wpModifyFldrFlags(pFolder,
+                               FOI_ASYNCREFRESHONOPEN,
+                               FOI_ASYNCREFRESHONOPEN);
+
+            // if the folder is currently open, do a
+            // full refresh NOW
+            if (_wpFindViewItem(pFolder,
+                                VIEW_ANY,
+                                NULL))
             {
-                WPFolder *pFolder = pNotify->pFolder;
+                // alright, refresh NOW.... However, we can't
+                // do this on this thread while we're holding
+                // the WPS notify mutex... so start a transient
+                // thread just for refreshing.
+                thrCreate(NULL,
+                          fntOverflowRefresh,
+                          NULL,
+                          "OverflowRefresh",
+                          THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                          (ULONG)pFolder);
+            }
+        break; }
 
-                refrClearFolderNotifications(pFolder);
-
-                // we need a full refresh on the folder...
-                // set the folder flag which causes the folder
-                // contents to be refreshed on open
-                _wpModifyFldrFlags(pFolder,
-                                   FOI_ASYNCREFRESHONOPEN,
-                                   FOI_ASYNCREFRESHONOPEN);
-
-                // if the folder is currently open, do a
-                // full refresh NOW
-                if (_wpFindViewItem(pFolder,
-                                    VIEW_ANY,
-                                    NULL))
-                {
-                    // alright, refresh NOW.... However, we can't
-                    // do this on this thread while we're holding
-                    // the WPS notify mutex... so start a transient
-                    // thread just for refreshing.
-                    thrCreate(NULL,
-                              fntOverflowRefresh,
-                              NULL,
-                              "OverflowRefresh",
-                              THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                              (ULONG)pFolder);
-                }
-
-                fRemoveThis = FALSE;
-            break; }
-        }
+        default:
+            // we don't know this code (just to avoid
+            // memory leaks here)
+            refrRemoveNotification(pNotify,
+                                   pGlobalNode);
     }
-
-    if (fRemoveThis)
-        refrRemoveNotification(pllFolder,
-                               pNotify,
-                               pGlobalNode);
 }
 
 /*
@@ -660,66 +646,57 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
         XFolderData *somThat = XFolderGetData(pNotify->pFolder);
 
         BYTE        bActionThis = pNotify->CNInfo.bAction;
+        BYTE        bOpposite = 0;
 
         // let's say: add this one now
         fAddThis = TRUE;
 
         // does the folder have a notification list at
         // all yet?
-        if (somThat->pvllNotifications)
+
+        /*
+         *  (1) drop redundant processing:
+         *
+         */
+
+        // for FILE_DELETED, drop if we have a FILE_ADDED (temp file)
+        // for DIR_DELETED, drop if we have a DIR_ADDED
+        if (bActionThis == RCNF_FILE_DELETED)
+            bOpposite = RCNF_FILE_ADDED;
+        else if (bActionThis == RCNF_DIR_DELETED)
+            bOpposite = RCNF_DIR_ADDED;
+
+        if (bOpposite)
         {
-            /*
-             *  (1) drop redundant processing:
-             *
-             */
-
-            BYTE    bOpposite = 0;
-
-            // for FILE_DELETED, drop if we have a FILE_ADDED (temp file)
-            // for DIR_DELETED, drop if we have a DIR_ADDED
-            if (bActionThis == RCNF_FILE_DELETED)
-                bOpposite = RCNF_FILE_ADDED;
-            else if (bActionThis == RCNF_DIR_DELETED)
-                bOpposite = RCNF_DIR_ADDED;
-
-            if (bOpposite)
+            // yes, check redundancy:
+            PLISTNODE pNode = lstQueryFirstNode(&G_llAllNotifications);
+            while (pNode)
             {
-                // yes, check redundancy:
-                PLINKLIST pllFolder = (PLINKLIST)somThat->pvllNotifications;
-                // search the folder's list for whether we already
-                // have an opposite notification... in that
-                // case we can safely drop this
-
-                PLISTNODE pFolderNode = lstQueryFirstNode(pllFolder);
-                while (pFolderNode)
+                PLISTNODE pNext = pNode->pNext;
+                PXWPNOTIFY  pNotifyThat = (PXWPNOTIFY)pNode->pItemData;
+                BYTE        bActionThat = pNotifyThat->CNInfo.bAction;
+                if (bActionThat == bOpposite)
                 {
-                    PXWPNOTIFY  pNotifyThat = (PXWPNOTIFY)pFolderNode->pItemData;
-                    BYTE        bActionThat = pNotifyThat->CNInfo.bAction;
-                    if (bActionThat == bOpposite)
+                    // we have an opposite action for that folder:
+                    // compare the short names
+                    if (!stricmp(pNotify->pShortName,
+                                 pNotifyThat->pShortName))
                     {
-                        // we have an opposite action for that folder:
-                        // compare the short names
-                        if (!stricmp(pNotify->pShortName,
-                                     pNotifyThat->pShortName))
-                        {
-                            // same file name:
-                            // drop it, it's redundant
-                            fAddThis = FALSE;
+                        // same file name:
+                        // drop it, it's redundant
+                        fAddThis = FALSE;
 
-                            // and remove the old notification as well
-                            refrRemoveNotification(pllFolder,
-                                                   pNotifyThat,
-                                                   NULL);       // find node
+                        // and remove the old notification as well
+                        refrRemoveNotification(pNotifyThat,
+                                               pNode);
 
-                            // _Pmpf((__FUNCTION__ ": dropping %s", pNotify->pShortName));
-                           break;
-                        }
+                        break;
                     }
+                }
 
-                    pFolderNode = pFolderNode->pNext;
-                } // while (pFolderNode)
-            } // end if (somThat->pvllNotifications)
-        } // end if (bOpposite)
+                pNode = pNext;
+            } // while (pFolderNode)
+        } // end if (somThat->pvllNotifications)
 
         /*
          *  (2) append the notification:
@@ -1326,7 +1303,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                     {
                         // in case of an exception, set an error code
                         // to get out of the while() loop
-                        arc = 1;
+                        arc = ERROR_PROTECTION_VIOLATION;
                     } END_CATCH();
 
                 } // while (arc == NO_ERROR)

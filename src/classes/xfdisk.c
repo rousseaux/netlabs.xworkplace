@@ -502,6 +502,29 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
     }
 }
 
+/*
+ *@@ wpclsQueryTitle:
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
+ *
+ *      We override the standard folder class name only if
+ *      the user has enabled "fix class titles" in XWPSetup.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
 
+SOM_Scope PSZ  SOMLINK xfdiskM_wpclsQueryTitle(M_XFldDisk *somSelf)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    /* M_XFldDiskData *somThis = M_XFldDiskGetData(somSelf); */
+    M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_wpclsQueryTitle");
+
+    if (pGlobalSettings->fFixClassTitles)
+        return (cmnGetString(ID_XSSI_CLASSTITLE_DISK));
+
+    return (M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf));
+}
 
 

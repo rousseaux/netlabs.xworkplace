@@ -107,6 +107,16 @@
                                             ULONG ulExtra);
     #endif
 
+    /* ******************************************************************
+     *
+     *   Import/Export facility
+     *
+     ********************************************************************/
+
+    APIRET ftypImportTypes(const char *pcszFilename);
+
+    APIRET ftypExportTypes(const char *pcszFileName);
+
 #endif
 
 

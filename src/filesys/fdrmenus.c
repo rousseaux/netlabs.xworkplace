@@ -1994,6 +1994,7 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
 
         case ID_XFMI_OFS_SORTBYEXT:
         case ID_XFMI_OFS_SORTBYCLASS:
+        case ID_XFMI_OFS_ALWAYSSORT:
         case ID_XFMI_OFS_SORTFOLDERSFIRST:
             ulPanel = ID_XSH_SETTINGS_FLDRSORT;
         break;
@@ -2005,20 +2006,19 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
                )
                 ulPanel = ID_XMH_XSHUTDOWN;
             else if (   (pGlobalSettings->ExtFolderSort)
-                 && (   (MenuId == ID_WPMI_SORTBYNAME)
-                     || (MenuId == ID_WPMI_SORTBYREALNAME)
-                     || (MenuId == ID_WPMI_SORTBYTYPE)
-                     || (MenuId == ID_WPMI_SORTBYSIZE)
-                     || (MenuId == ID_WPMI_SORTBYWRITEDATE)
-                     || (MenuId == ID_WPMI_SORTBYACCESSDATE)
-                     || (MenuId == ID_WPMI_SORTBYCREATIONDATE)
+                     && (   (MenuId == ID_WPMI_SORTBYNAME)
+                         || (MenuId == ID_WPMI_SORTBYREALNAME)
+                         // or one of the details columns:
+                         || (    (MenuId >= 6002)
+                              && (MenuId <= 6200)
+                            )
+                        )
                     )
-                )
-                ulPanel = ID_XSH_SETTINGS_FLDRSORT;
+                    ulPanel = ID_XSH_SETTINGS_FLDRSORT;
             else
             {
                 // if F1 was pressed over one of the variable menu items,
-                // open a help panel with generic help on XFolder */
+                // open a help panel with generic help on XFolder
                 ulFirstVarMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
                 if ( (MenuId >= ulFirstVarMenuId)
                         && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)

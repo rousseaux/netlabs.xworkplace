@@ -144,6 +144,9 @@ interface M_XFldDataFile : M_WPDataFile
 
     wpclsInitData: override;
     wpclsCreateDefaultTemplates: override;
+
+    wpclsQueryTitle: override;
+
     wpclsQueryIconData: override;
 
   };

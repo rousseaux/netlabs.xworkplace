@@ -435,7 +435,10 @@ VOID WorkerRemoveObject(WPObject *pObj)
                 {
                     treeDelete(&G_AwakeObjectsTree,
                                pNode);
-                    free(pNode);        // works with user heap
+                    (free)(pNode);        // works with user heap
+                            // free must be in brackets so it won't
+                            // get replaced with debug malloc, if enabled
+                            // V0.9.12 (2001-05-21) [umoeller]
 
                     // decrement global count
                     G_lAwakeObjectsCount--;
@@ -660,7 +663,10 @@ BOOL xthrPostWorkerMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                 }
             }
         }
-        CATCH(excpt1) { } END_CATCH();
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
 
         if (fWorkerThreadDataLocked)
             UnlockWorkerThreadData();

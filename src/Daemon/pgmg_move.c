@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\except.h"

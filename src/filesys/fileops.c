@@ -604,7 +604,10 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                     frc = FOPSERR_LOCK_FAILED;
             }
         }
-        CATCH(excpt1) {} END_CATCH();
+        CATCH(excpt1)
+        {
+            frc = ERROR_PROTECTION_VIOLATION;
+        } END_CATCH();
 
         if (fFolderLocked)
         {
@@ -827,7 +830,10 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
             }
         }
     }
-    CATCH(excpt1) { } END_CATCH();
+    CATCH(excpt1)
+    {
+        pFSReturn = NULL;
+    } END_CATCH();
 
     if (fFolderLocked)
         wpshReleaseFolderMutexSem(pFolder);

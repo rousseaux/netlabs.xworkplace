@@ -76,12 +76,15 @@ callmainmake:
     @nmake
     @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
 
-$(OUTPUTDIR)\xshutdwn.obj: $(@B).c $(HLPINC)\winh.h $(INC)\shared\common.h $(INC)\startshut\shutdown.h
-          $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
 
 # build targets
 xshutdwn.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace external shutdown utility"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace external shutdown utility"
 
 $(OUTPUTDIR)\xshutdwn.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
@@ -93,5 +96,12 @@ $(MODULESDIR)\xshutdwn.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
 # main target
 $(XWPRUNNING)\bin\xshutdwn.exe: $(MODULESDIR)\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+
+
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
+
+!include .depend
 
 

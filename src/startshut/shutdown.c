@@ -983,7 +983,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->bSaveINIS = pGSBackup->bSaveINIS;
 
                 // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 cmnUnlockGlobalSettings();
             }
         break; }
@@ -998,7 +998,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // WPS startup)
                 cmnSetDefaultSettings(pcnbp->ulPageID);
                 // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 cmnUnlockGlobalSettings();
             }
         break; }

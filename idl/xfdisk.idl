@@ -133,6 +133,9 @@ interface M_XFldDisk : M_WPDisk
      */
 
     wpclsInitData: override;
+
+    wpclsQueryTitle: override;
+
   };
 #endif /* __SOMIDL__ */
 };

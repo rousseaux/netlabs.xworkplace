@@ -138,7 +138,7 @@
 // the focus, or your system will hang solidly...
 
 #define DONTDEBUGATALL
-
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"
 
 /******************************************************************

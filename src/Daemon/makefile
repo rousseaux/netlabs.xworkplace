@@ -49,23 +49,23 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 !if [@echo       BASE_OUTPUTDIR is $(BASE_OUTPUTDIR)]
 !endif
-EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
+OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 
 # create output directory
 !if [@md $(BASE_OUTPUTDIR) 2> NUL]
 !endif
-!if [@md $(EXE_OUTPUTDIR) 2> NUL]
+!if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = $(EXE_OUTPUTDIR)\xwpdaemn.obj \
-       $(EXE_OUTPUTDIR)\pgmg_control.obj \
-       $(EXE_OUTPUTDIR)\pgmg_move.obj \
-       $(EXE_OUTPUTDIR)\pgmg_settings.obj \
-       $(EXE_OUTPUTDIR)\pgmg_winscan.obj
+OBJS = $(OUTPUTDIR)\xwpdaemn.obj \
+       $(OUTPUTDIR)\pgmg_control.obj \
+       $(OUTPUTDIR)\pgmg_move.obj \
+       $(OUTPUTDIR)\pgmg_settings.obj \
+       $(OUTPUTDIR)\pgmg_winscan.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -77,7 +77,7 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(EXE_OUTPUTDIR)\xwpdaemn.res
+    $(OBJS) $(OUTPUTDIR)\xwpdaemn.res
     @echo ----- Leaving $(MAKEDIR)
 !endif
 
@@ -87,66 +87,30 @@ callmainmake:
     @nmake
     @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
 
-# main include path
-INC = ..\..\include
-# helpers include path
-HLPINC = $(HELPERS_BASE)\include\helpers
-# our own corresponding include path
-MYOWNINC = $(INC)\hook
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
 
-.c.{$(EXE_OUTPUTDIR)}.obj:
+.c.{$(OUTPUTDIR)}.obj:
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-    $(CC_EXE_MT) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-    $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
-# Now define dependencies for all our .OBJ files by telling NMAKE
-# which .OBJ file depends on what. For each .OBJ we define what files
-# will enforce a recompilation when they've been changed.
-# This uses the inference rules defined above.
+$(OUTPUTDIR)\xwpdaemn.res: *.ico *.bmp $(@B).rc
+    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-# Note that include\setup.h is specified with _all_ files, so
-# you can enforce a complete recompile of XWorkplace if you update
-# that file (just save it once).
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
 
-# Here follow the .OBJs for the SOM/WPS classes. Each class needs to be
-# recompiled when its SOM header files change (due to SOM recompilation)
-# or when other headers (in MAIN or HELPERS) have changed.
+!include .depend
 
-SHAREDINC = $(INC)\xwpapi.h $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
-
-$(EXE_OUTPUTDIR)\xwpdaemn.obj: \
-        $(INC)\setup.h \
-        $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
-        $(INC)\shared\kernel.h \
-        $(@B).c $(SHAREDINC)
-
-$(EXE_OUTPUTDIR)\pgmg_control.obj: \
-        $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(@B).c $(SHAREDINC)
-
-$(EXE_OUTPUTDIR)\pgmg_move.obj: \
-        $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
-        $(INC)\shared\kernel.h \
-        $(@B).c $(SHAREDINC)
-
-$(EXE_OUTPUTDIR)\pgmg_settings.obj: \
-        $(INC)\setup.h \
-        $(@B).c $(SHAREDINC)
-
-$(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
-        $(INC)\setup.h \
-        $(HLPINC)\linklist.h $(HLPINC)\shapewin.h \
-        $(@B).c $(SHAREDINC)
-
-$(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico *.bmp $(@B).rc
-    $(RC) -r $(@B).rc $(EXE_OUTPUTDIR)\$(@B).res
-# -i $(BASE_OUTPUTDIR)
 
 
 

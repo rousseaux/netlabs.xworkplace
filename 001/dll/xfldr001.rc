@@ -673,6 +673,8 @@ BEGIN
     ID_XCSI_ADDOBJECTPAGE               "Add ""Object"" page to all settings notebooks"
     ID_XCSI_REPLACEFILEPAGE             "Replace ""File"" and ""Details"" pages"
     ID_XCSI_XSYSTEMSOUNDS               "Extended system sounds"
+    /* this item added with V0.9.12 (2001-05-22) [umoeller] */
+    ID_XCSI_FIXCLASSTITLES              "Fix class titles"
 
     ID_XCSI_FOLDERFEATURES              "Folder features"
     ID_XCSI_ENABLESTATUSBARS            "Enable folder status bars"
@@ -798,6 +800,11 @@ BEGIN
 
     /* XWPAdmin "Users" page V0.9.11 (2001-04-22) [umoeller]*/
     ID_XSSI_ADMIN_USER                  "~Users"
+
+    /* fixed class titles for folder, disk, datafile V0.9.12 (2001-05-22) [umoeller] */
+    ID_XSSI_CLASSTITLE_FOLDER           "Folder"
+    ID_XSSI_CLASSTITLE_DISK             "Disk"
+    ID_XSSI_CLASSTITLE_DATAFILE         "Data file"
 END
 
 /* Treesize definitions; added V0.9.0 */

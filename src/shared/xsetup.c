@@ -151,6 +151,7 @@ static FEATURESITEM G_FeatureItemsList[] =
             // general features
             ID_XCSI_GENERALFEATURES, 0, 0, NULL,
             ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_FIXCLASSTITLES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1597,6 +1598,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->fReplaceFilePage);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 pGlobalSettings->fXSystemSounds);
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FIXCLASSTITLES,
+                pGlobalSettings->fFixClassTitles);   // added V0.9.12 (2001-05-22) [umoeller]
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
                 pGlobalSettings->fEnableStatusBars);
@@ -1787,6 +1790,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // at the bottom when the global semaphores
                     // are unlocked
                     cAskSoundsInstallMsg = precc->usCheckState;
+            break;
+
+            case ID_XCSI_FIXCLASSTITLES: // added V0.9.12 (2001-05-22) [umoeller]
+                pGlobalSettings->fFixClassTitles = precc->usCheckState;
             break;
 
             case ID_XCSI_ANIMOUSE:

@@ -1,3 +1,4 @@
+
 #
 # setup.in:
 #       this is included from all makefiles in the subdirectories
@@ -5,20 +6,11 @@
 #       common to all makefiles, such as compiler options and
 #       directory specifications.
 #
-#       Notes:
+#       Starting with V0.9.12, this includes config.in in turn,
+#       which only contains system-specific variables.
 #
-#       --  This include file is for _makefile_ options only.
-#           There is another generic include file (include\setup.h),
-#           which is for generic _code_ includes (thru C #include).
-#
-#       --  All environment variables are modified in here ONLY
-#           if they haven't been set externally. So, instead of
-#           modifying this file, put these values into, e.g.,
-#           CONFIG.SYS.
-#
-#           As a result, there is NORMALLY NO NEED to modify this
-#           file. Set external variables instead. See readme.txt
-#           and PROGREF.INF for a detailed listing.
+#       As a result, there is NORMALLY NO NEED to modify this
+#       file. Modify config.in instead.
 #
 #       After including this file, the makefiles can use the following
 #       macros, which will all be properly set for debug or non-debug mode
@@ -40,6 +32,8 @@
 !ifndef CVS_WORK_ROOT
 !error in setup.in: You must set CVS_WORK_ROOT to the root of your CVS tree. See PROGREF.INF for details.
 !endif
+
+!include config.in
 
 # RUNNING XWORKPLACE
 # ------------------
@@ -190,7 +184,7 @@ PRECH = $(TEMP)
 # INCLUDES
 # --------
 
-# Extend the include path for the compiler.
+# Set the include path for the compiler.
 # This is only used from the subdirectories of SRC and TOOLS,
 # so the relative paths are relative to the respective
 # subdirectories (e.g. src\main, tools\strrpl).
@@ -202,7 +196,10 @@ PRECH = $(TEMP)
 #
 # No need to change this. Change the variables above instead.
 #
-!ifndef MAINMAKERUNNING
+
+!ifndef TKBASE
+!error TKBASE is not defined.
+!endif
 
 INCLUDE_TEMP=
 
@@ -215,9 +212,19 @@ INCLUDE_TEMP1=$(DDKPATH)\h;
 INCLUDE_TEMP2=$(SES_MAIN_DIR)\h;
 !endif
 
-PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP2)
+PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(VACBASE)\include;$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP2)
 
-!endif
+
+# TOOLS SETUP
+# -----------
+
+RUN_FASTDEP = $(CVS_WORK_ROOT)\xwphelpers\fastdep.exe -i $(PROJECT_INCLUDE) -o $(OUTPUTDIR)
+
+RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\xworkplace\tools\BuildLevel.cmd
+
+RUN_UNLOCK = $(CVS_WORK_ROOT)\xworkplace\tools\unlock.exe
+
+RUN_STRRPL = $(CVS_WORK_ROOT)\xworkplace\tools\strrpl.exe
 
 # INCLUDED FEATURES
 # -----------------
@@ -355,7 +362,9 @@ CC_HELPERS_DLL    = $(CC_DLL_MT)
 #
 # No need to change this. Change the variables above instead.
 
-LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers
+LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\SOM\LIB\ "$(VACBASE)\lib\"
+
+LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers $(LIBDIRS)
 
 !ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /debug
@@ -388,7 +397,7 @@ LINK_ALWAYSPACK = $(LINK)
 # RESOURCE COMPILER
 # -----------------
 
-RC      = rc -p -x2 -n -i $(PROJECT_BASE_DIR)\include
+RC      = rc -p -x2 -n -i $(TKBASE)\h;$(PROJECT_BASE_DIR)\include
 
 # RC options:
 # -p       pack (64K boundaries)

@@ -97,6 +97,12 @@ AINCLUDES  = -Fdi:$(DDKPATH)/inc -Fdi:../../include/xwpsec32.sys
 
 all: $(MODULESDIR)\$(DRIVERNAME).sys
 
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
+
 AOBJS = \
     $(OUTPUTDIR)\sec32_pre_init_base.obj $(OUTPUTDIR)\sec32_devhlp32.obj
 
@@ -210,7 +216,7 @@ $(OUTPUTDIR)\util_sem.obj: $(@B).c $(SHRHDR) \
 # linking
 
 $(DRIVERNAME).def: ..\..\include\bldlevel.h makefile
-    cmd.exe /c BuildLevel.cmd $(DRIVERNAME).def ..\..\include\bldlevel.h "XWorkplace Security device driver"
+    $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "XWorkplace Security device driver"
 
 $(MODULESDIR)\$(DRIVERNAME).sys: \
             $(AOBJS)             \

@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <process.h>
 
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\gpih.h"               // GPI helper routines

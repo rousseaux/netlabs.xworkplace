@@ -17,6 +17,8 @@
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
+!include ..\setup.in
+
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
 # defining file extensions that NMAKE will recognize in inference
@@ -92,8 +94,8 @@ all: $(OUTPUTDIR)\anand.h \
 # emit DEF (this dir):
         sc -p -v -r -maddstar -mnoint -S128000 -C128000 -s def $(@B).idl
 # cleanup IH: this removes the ugly #pragma's for VAC++ 3.0
-        strrpl $(OUTPUTDIR)\$(@B).ih "#pragma checkout(suspend)" " "
-        strrpl $(OUTPUTDIR)\$(@B).ih "#pragma checkout(resume)" " "
+        $(RUN_STRRPL) $(OUTPUTDIR)\$(@B).ih "#pragma checkout(suspend)" " "
+        $(RUN_STRRPL) $(OUTPUTDIR)\$(@B).ih "#pragma checkout(resume)" " "
 
 # Now define dependencies to recreate the .H, .IH etc. files
 # using the SOM inference rule above.

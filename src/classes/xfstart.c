@@ -587,8 +587,10 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "XFolder Startup".
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  *
  *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
  */
@@ -734,8 +736,10 @@ SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "XFolderShutdown".
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  *
  *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
  */

@@ -115,14 +115,13 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    // PSZ pszHelpLibrary = cmnQueryHelpLibrary();
-    /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddXFldWPSPages");
 
     // insert "Sort" page
     if (pGlobalSettings->ExtFolderSort)
     {
+        // extended sorting enabled:
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
         pcnbp->somSelf = somSelf;
@@ -131,7 +130,9 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
+                        // changed V0.9.12 (2001-05-20) [umoeller]
+
         // mark this page as "global", because both
         // the instance settings notebook and the
         // "Workplace Shell" object use the same
@@ -530,8 +531,10 @@ SOM_Scope BOOL  SOMLINK xfwpsM_wpclsQuerySettingsPageSize(M_XFldWPS *somSelf,
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "Workplace Shell"
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  */
 
 SOM_Scope PSZ  SOMLINK xfwpsM_wpclsQueryTitle(M_XFldWPS *somSelf)

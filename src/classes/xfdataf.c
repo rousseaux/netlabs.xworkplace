@@ -931,6 +931,31 @@ SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSel
 }
 
 /*
+ *@@ wpclsQueryTitle:
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
+ *
+ *      We override the standard folder class name only if
+ *      the user has enabled "fix class titles" in XWPSetup.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope PSZ  SOMLINK xfdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    /* M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf); */
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryTitle");
+
+    if (pGlobalSettings->fFixClassTitles)
+        return (cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE));
+
+    return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf));
+}
+
+/*
  *@@ wpclsQueryIconData:
  *      this WPObject class method builds the default
  *      icon for objects of a class (i.e. the icon which

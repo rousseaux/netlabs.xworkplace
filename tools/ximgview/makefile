@@ -64,7 +64,7 @@ $(OUTPUTDIR)\ximgview.obj: $(@B).c $(HEADERS) ..\..\include\bldlevel.h
 
 # build targets
 ximgview.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace image viewer"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace image viewer"
 
 $(OUTPUTDIR)\ximgview.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

@@ -1078,7 +1078,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 PrfCloseProfile(hiniMMPM);
             }
             // re-enable controls
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break; }
 
         /*
@@ -1154,7 +1154,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                             LoadSoundSchemeFrom(pcnbp);
 
                             // now update the whole damn page
-                            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET);
+                            pcnbp->pfncbInitPage(pcnbp, CBI_SET);
                         }
                         else
                         {
@@ -1177,7 +1177,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 // pspd->ulSchemeSelectedHandle = ulSchemeHandle;
 
                 // re-enable items
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
 
                 // save current scheme in OS2.INI
                 if (pspd->sSchemeSelected != LIT_NONE) // pspd->sCustomSchemeIndex)
@@ -1239,7 +1239,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 // select "none" pseudo-scheme
                 SelectSoundScheme(pspd, LIT_NONE);
                 // now re-enable controls
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
             }
         break; }
 
@@ -1332,7 +1332,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                        pspd->szFile);
                     pspd->fSoundFileChanged = TRUE;
                     // and re-enable controls
-                    (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+                    pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
                 break; }
             }
         break;
@@ -1443,7 +1443,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                               (MPARAM)NULL);
 
             // re-enable controls
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break; }
 
         /*

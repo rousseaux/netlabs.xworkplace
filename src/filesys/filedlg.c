@@ -2214,7 +2214,7 @@ MPARAM MainClientCreate(HWND hwnd,
         cnrhSetView(   CV_NAME | CV_FLOW
                      | CV_MINI);
         cnrhSetTreeIndent(30);
-        cnrhSetSortFunc(fnCompareFoldersFirst);     // shared/cnrsort.c
+        cnrhSetSortFunc(fnCompareNameFoldersFirst);     // shared/cnrsort.c
     } END_CNRINFO(pWinData->hwndFilesCnr);
 
     // create static on top of that

@@ -398,6 +398,20 @@ Otherwise, press "OK" to continue.
 
 WARNING: This feature is still slightly unstable. It will probably not hang your system, but you might get crashes in the auto-refresh background threads. Use at your own risk.
 
+;
+; the following items are new with V0.9.12
+;
+
+<--XFL0213-->: The file types were successfully exported to the file "%1".
+
+<--XFL0214-->: Error %2 occured exporting the file types to the file "%1".
+
+<--XFL0215-->: File types were successfully imported from the file "%1".
+
+<--XFL0216-->: Error %2 occured importing file types from the file "%1".
+
+<--XFL0217-->: The file "%1" exists already. Do you wish to overwrite it with the new data?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
@@ -634,6 +648,12 @@ This was new with XFolder 0.70.
 <--FEATURES_6001-->: If "Adjust settings pages..." is checked, XWorkplace can adjust the size of certain settings pages if the entire notebook is resized. This can come in handy for some of the more complex XWorkplace pages to be able to view more data at once.
 Note that this will only affect some of the new XWorkplace pages, but not the default WPS pages.
 This was added with XWorkplace 0.9.4.
+
+; FEATURES_6005 added with V0.9.12
+
+<--FEATURES_6005-->: If "Fix class titles" is checked, XWorkplace will override the class titles of the folder, file, and disk classes.
+The class titles are shown in the third column in Details view (and also on status bars, if you have told them to do so).
+Unfortunately, if the WPS networking classes are installed, these titles are no longer very meaningful, so XWorkplace can reset them to "folder", "data file", and "disk" again.
 
 <--FEATURES_6011-->: If "Enable status bars" is checked, you may configure folders to show status bars with detailed information for the selected objects in a folder.
 If this is enabled, you'll get two additional settings pages in XWorkplace's "Workplace Shell" object, which allow you to configure status bars in detail.

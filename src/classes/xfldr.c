@@ -364,7 +364,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
  *      This is used by the context menu entries in the "Sort"
  *      menu and the respective folder hotkeys.
  *
- *      ulSort must be one of the sort criteria as specified
+ *      lSort must be one of the sort criteria as specified
  *      with XFolder::xwpSetFldrSort.
  *
  *@@changed V0.9.2 (2000-03-08) [umoeller]: added folder locking
@@ -373,7 +373,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 
 SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            HWND hwndFrame,
-                                           BOOL fFoldersFirst,
                                            long lSort)
 {
     BOOL        rc = FALSE;
@@ -1382,7 +1381,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _ppFirstObj = NULL;
     _ppLastObj = NULL;
 
-    _pvllNotifications = NULL;
+    _cNotificationsPending = 0;
 }
 
 /*
@@ -1405,9 +1404,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpSetup");
 
-    rc = XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString);
-
-    if (rc)
+    if (rc = XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString))
         rc = fdrSetup(somSelf, pszSetupString);
 
     return (rc);
@@ -1501,9 +1498,11 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
  *      is destroyed as a SOM object, either because it's being
  *      made dormant or being deleted. All allocated resources
  *      should be freed here.
+ *
  *      The parent method must always be called last.
  *
  *@@changed V0.9.9 (2001-02-01) [umoeller]: added notify cleanup, semaphores
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed refresh synchronization
  */
 
 SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
@@ -1527,11 +1526,10 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
     {
         // now check if we have any pending file-system
         // notifications from folder auto-refresh
-        if (_pvllNotifications)
+        if (_cNotificationsPending)     // V0.9.12 (2001-05-22) [umoeller]
         {
             refrClearFolderNotifications(somSelf);
-            lstFree((PLINKLIST)_pvllNotifications);
-            _pvllNotifications = NULL; // V0.9.9 (2001-03-07) [umoeller]
+            _cNotificationsPending = 0;
         }
 
         wpshReleaseNotifySem();
@@ -2797,7 +2795,6 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
                                                    HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFolderSortPage");
 
@@ -2806,21 +2803,20 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
         // extended sorting enabled:
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndNotebook;
         pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
         pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
+                        // changed V0.9.12 (2001-05-20) [umoeller]
 
         // mark this page as "instance", because both
         // the instance settings notebook and the
         // "Workplace Shell" object use the same
         // callbacks
         pcnbp->ulPageID = SP_FLDRSORT_FLDR;
-
         pcnbp->pfncbInitPage    = fdrSortInitPage;
         pcnbp->pfncbItemChanged = fdrSortItemChanged;
 
@@ -3737,6 +3733,31 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
 
     // return the stupid 103 code
     return (M_XFolder_parent_M_WPFolder_wpclsQueryDefaultView(somSelf));
+}
+
+/*
+ *@@ wpclsQueryTitle:
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
+ *
+ *      We override the standard folder class name only if
+ *      the user has enabled "fix class titles" in XWPSetup.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryTitle");
+
+    if (pGlobalSettings->fFixClassTitles)
+        return (cmnGetString(ID_XSSI_CLASSTITLE_FOLDER));
+
+    return (M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
 }
 
 /*

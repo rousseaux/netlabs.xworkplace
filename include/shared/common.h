@@ -362,6 +362,8 @@
 
     #define ID_XSH_PAGEMAGE_INTRO           128     // V0.9.11: XWPAdmin "Users" page
 
+    #define ID_XSH_SORTPAGE                 129     // V0.9.12: sort page (instance or global)
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations
@@ -963,6 +965,10 @@
                         // setting above, which has been disabled);
                         // this is a LONG because it can have negative values
                         // (see XFolder::xwpSetFldrSort)
+
+        BYTE        fFixClassTitles;
+                        // XWPSetup: override wpclsQueryTitle?
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;

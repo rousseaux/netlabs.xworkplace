@@ -1,16 +1,5 @@
 Tools readme:
 
-In order for the makefiles to work, copy these utilities
-somewhere on your PATH.
-
----> Note: strrpl and html2ipf have bugs fixed with V0.84
-     and V0.9.0.
-     Please use the newer versions.
-     html2ipf has been moved to 001/tools because it's
-     really language-dependent.
-
-Tools description:
-
 --  BuildLevel.cmd (C) Roman Stangl has been added with V0.9.0
     and is used to write build  level information into module
     definition files.

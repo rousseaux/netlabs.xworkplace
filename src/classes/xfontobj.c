@@ -952,8 +952,10 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryDetailsInfo(M_XWPFontObject *somSelf,
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "Installed font".
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  */
 
 SOM_Scope PSZ  SOMLINK fonoM_wpclsQueryTitle(M_XWPFontObject *somSelf)

@@ -129,11 +129,13 @@
  *      implementation for XFolder::wpSetup.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
  */
 
 BOOL fdrSetup(WPFolder *somSelf,
               const char *pszSetupString)
 {
+    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(somSelf);
 
     BOOL        rc = TRUE,
@@ -245,67 +247,93 @@ BOOL fdrSetup(WPFolder *somSelf,
         fChanged = TRUE;
     }
 
-    cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "ALWAYSSORT", szValue, &cbValue))
+    if (pGlobalSettings->ExtFolderSort)     // V0.9.12 (2001-05-20) [umoeller]
     {
-        rc = TRUE;
-        _xwpQueryFldrSort(somSelf,
-                          &lDefaultSort,
-                          &lFoldersFirst,
-                          &lAlwaysSort);
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                               "ALWAYSSORT", szValue, &cbValue))
+        {
+            rc = TRUE;
+            _xwpQueryFldrSort(somSelf,
+                              &lDefaultSort,
+                              &lFoldersFirst,
+                              &lAlwaysSort);
 
-        if (strnicmp(szValue, "NO", 2) == 0)
-            lAlwaysSort = 0;
-        else if (strnicmp(szValue, "YES", 3) == 0)
-            lAlwaysSort = 1;
-        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-            lAlwaysSort = SET_DEFAULT;
-        _xwpSetFldrSort(somSelf,
-                        lDefaultSort,
-                        lFoldersFirst,
-                        lAlwaysSort);
-    }
+            if (strnicmp(szValue, "NO", 2) == 0)
+                lAlwaysSort = 0;
+            else if (strnicmp(szValue, "YES", 3) == 0)
+                lAlwaysSort = 1;
+            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+                lAlwaysSort = SET_DEFAULT;
+            _xwpSetFldrSort(somSelf,
+                            lDefaultSort,
+                            lFoldersFirst,
+                            lAlwaysSort);
+        }
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                               "SORTFOLDERSFIRST", szValue, &cbValue))
+        {
+            rc = TRUE;
+            _xwpQueryFldrSort(somSelf,
+                              &lDefaultSort,
+                              &lFoldersFirst,
+                              &lAlwaysSort);
 
-    cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "DEFAULTSORT", szValue, &cbValue))
-    {
-        LONG lValue;
+            if (strnicmp(szValue, "NO", 2) == 0)
+                lFoldersFirst = 0;
+            else if (strnicmp(szValue, "YES", 3) == 0)
+                lFoldersFirst = 1;
+            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+                lFoldersFirst = SET_DEFAULT;
+            _xwpSetFldrSort(somSelf,
+                            lDefaultSort,
+                            lFoldersFirst,
+                            lAlwaysSort);
+        }
 
-        rc = TRUE;
-        _xwpQueryFldrSort(somSelf,
-                          &lDefaultSort,
-                          &lFoldersFirst,
-                          &lAlwaysSort);
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                               "DEFAULTSORT", szValue, &cbValue))
+        {
+            LONG lValue;
 
-        sscanf(szValue, "%d", &lValue);
-        if ( (lValue >= -4) && (lValue <= 100) )
-            lDefaultSort = lValue;
-        else
-            lDefaultSort = SET_DEFAULT;
-        _xwpSetFldrSort(somSelf,
-                        lDefaultSort,
-                        lFoldersFirst,
-                        lAlwaysSort);
-    }
+            rc = TRUE;
+            _xwpQueryFldrSort(somSelf,
+                              &lDefaultSort,
+                              &lFoldersFirst,
+                              &lAlwaysSort);
 
-    cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "SORTNOW", szValue, &cbValue))
-    {
-        USHORT usSort;
-        LONG lValue;
+            sscanf(szValue, "%d", &lValue);
+            if ( (lValue >= -4) && (lValue <= 100) )
+                lDefaultSort = lValue;
+            else
+                lDefaultSort = SET_DEFAULT;
+            _xwpSetFldrSort(somSelf,
+                            lDefaultSort,
+                            lFoldersFirst,
+                            lAlwaysSort);
+        }
 
-        sscanf(szValue, "%d", &lValue);
-        if ( (lValue >= -4) && (lValue <= 100) )
-            usSort = lValue;
-        else
-            usSort = SET_DEFAULT;
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                               "SORTNOW", szValue, &cbValue))
+        {
+            USHORT usSort;
+            LONG lValue;
 
-        fdrForEachOpenInstanceView(somSelf,
-                                   usSort,
-                                   fdrSortAllViews);
+            rc = TRUE;
+
+            sscanf(szValue, "%d", &lValue);
+            if ( (lValue >= -4) && (lValue <= 100) )
+                usSort = lValue;
+            else
+                usSort = SET_DEFAULT;
+
+            fdrForEachOpenInstanceView(somSelf,
+                                       usSort,
+                                       fdrSortAllViews);
+        }
     }
 
     if (fChanged)
@@ -325,6 +353,7 @@ BOOL fdrSetup(WPFolder *somSelf,
  *@@added V0.9.1 (2000-01-17) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: bitmaps on boot drive are returned with "?:\" now
  *@@changed V0.9.3 (2000-05-30) [umoeller]: ICONSHADOWCOLOR was reported as TREESHADOWCOLOR. Fixed.
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
  */
 
 ULONG fdrQuerySetup(WPObject *somSelf,
@@ -339,6 +368,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         #define WP_GLOBAL_COLOR         0x40000000
 
         XFolderData *somThis = XFolderGetData(somSelf);
+        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
         // temporary buffer for building the setup string
         XSTRING strTemp,
@@ -353,6 +383,10 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         CHAR    szTemp[1000] = "";
 
         BOOL    fIsWarp4 = doshIsWarp4();
+
+        // some settings better have this extra check,
+        // not sure if it's really needed
+        BOOL    fInitialized = _wpIsObjectInitialized(somSelf);
 
         xstrInit(&strTemp, 400);
         xstrInit(&strView, 200);
@@ -375,10 +409,32 @@ ULONG fdrQuerySetup(WPObject *somSelf,
          *
          */
 
-        // SORTBYATTR
+        // SORTBYATTR... don't think we need this
 
-        // ALWAYSSORT
-        // DEFAULTSORT
+        if (pGlobalSettings->ExtFolderSort)     // V0.9.12 (2001-05-20) [umoeller]
+        {
+            if (_lAlwaysSort != SET_DEFAULT)
+            {
+                if (_lAlwaysSort)
+                    xstrcat(&strTemp, "ALWAYSSORT=YES;", 0);
+                else
+                    xstrcat(&strTemp, "ALWAYSSORT=NO;", 0);
+            }
+
+            if (_lFoldersFirst != SET_DEFAULT)
+            {
+                if (_lFoldersFirst)
+                    xstrcat(&strTemp, "SORTFOLDERSFIRST=YES;", 0);
+                else
+                    xstrcat(&strTemp, "SORTFOLDERSFIRST=NO;", 0);
+            }
+
+            if (_lDefaultSort != SET_DEFAULT)
+            {
+                sprintf(szTemp, "DEFAULTSORT=%d;", _lDefaultSort);
+                xstrcat(&strTemp, szTemp, 0);
+            }
+        } // end V0.9.12 (2001-05-20) [umoeller]
 
         // SORTCLASS
         pClassObject = _wpQueryFldrSortClass(somSelf);
@@ -394,7 +450,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
          */
 
         // BACKGROUND
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if ((_pszFolderBkgndImageFile) && (_pFolderBackground))
             {
                 CHAR cType = 'S';
@@ -481,11 +537,13 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         }
 
         if (ulValue & CV_MINI)
+        {
             // ICONVIEW=MINI
             if (strView.ulLength)
-                xstrcat(&strView, ",MINI", 0);
-            else
-                xstrcat(&strView, "MINI", 0);
+                xstrcatc(&strView, ',');
+
+            xstrcat(&strView, "MINI", 0);
+        }
 
         if (strView.ulLength)
         {
@@ -498,7 +556,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         // ICONTEXTBACKGROUNDCOLOR
 
         // ICONTEXTCOLOR
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if (_pFolderLongArray)
             {
                 BYTE bUseDefault = FALSE;
@@ -520,7 +578,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             }
 
         // ICONSHADOWCOLOR
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if (_pFolderLongArray)
                 // only Warp 4 has these fields, so check size of array
                 if (_cbFolderLongArray >= 84)
@@ -583,27 +641,33 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         {
             // on Warp 4, mini icons in Tree view are the default
             if ((ulValue & CV_MINI) == 0)
+            {
                 // TREEVIEW=MINI
                 if (strView.ulLength)
-                    xstrcat(&strView, ",NORMAL", 0);
-                else
-                    xstrcat(&strView, "NORMAL", 0);
+                    xstrcatc(&strView, ',');
+
+                xstrcat(&strView, "NORMAL", 0);
+            }
         }
         else
             // Warp 3:
             if ((ulValue & CV_MINI) != 0)
+            {
                 // TREEVIEW=MINI
                 if (strView.ulLength)
-                    xstrcat(&strView, ",MINI", 0);
-                else
-                    xstrcat(&strView, "MINI", 0);
+                    xstrcatc(&strView, ',');
+
+                xstrcat(&strView, "MINI", 0);
+            }
 
         if ((ulValue & CA_TREELINE) == 0)
+        {
             // TREEVIEW=NOLINES
             if (strView.ulLength)
-                xstrcat(&strView, ",NOLINES", 0);
-            else
-                xstrcat(&strView, "NOLINES", 0);
+                xstrcatc(&strView, ',');
+
+            xstrcat(&strView, "NOLINES", 0);
+        }
 
         if (strView.ulLength)
         {
@@ -613,7 +677,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         xstrClear(&strView);
 
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if (_pFolderLongArray)
             {
                 // TREETEXTCOLOR
@@ -654,7 +718,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             }
 
         // SHOWALLINTREEVIEW
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
                 if (*_pulFolderShowAllInTreeView)
                     xstrcat(&strTemp, "SHOWALLINTREEVIEW=YES;", 0);
@@ -692,7 +756,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         // DETAILSVIEW
 
         // DETAILSTEXTCOLOR
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if (_pFolderLongArray)
             {
                 BYTE bUseDefault = FALSE;
@@ -2787,7 +2851,10 @@ WPObject* fdrFindFSFromName(WPFolder *pFolder,
             }
         }
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt1)
+    {
+        pobjReturn = NULL;
+    } END_CATCH();
 
     if (fFolderLocked)
         wpshReleaseFolderMutexSem(pFolder);
@@ -2875,7 +2942,10 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                 }
             }
         }
-        CATCH(excpt1) {} END_CATCH();
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
 
         // release the mutexes in reverse order V0.9.9 (2001-04-01) [umoeller]
         if (fSubObjectLocked)
@@ -3218,7 +3288,10 @@ BOOL fdrNukeContents(WPFolder *pFolder)
             }
         }
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
 
     if (fFolderLocked)
         wpshReleaseFolderMutexSem(pFolder);

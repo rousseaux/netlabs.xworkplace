@@ -248,7 +248,10 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
             }
         }
     }
-    CATCH(excpt1) { } END_CATCH();
+    CATCH(excpt1)
+    {
+        hwndFrame = NULLHANDLE;
+    } END_CATCH();
 
     return (hwndFrame);
 }

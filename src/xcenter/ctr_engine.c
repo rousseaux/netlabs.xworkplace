@@ -2373,6 +2373,8 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
 
                 // kill XTimers
                 tmrDestroySet((PXTIMERSET)pXCenterData->Globals.pvXTimerSet);
+                pXCenterData->Globals.pvXTimerSet = NULL;
+                        // added V0.9.12 (2001-05-21) [umoeller]
 
                 ctrpFreeClasses();
 

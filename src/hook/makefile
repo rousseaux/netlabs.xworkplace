@@ -49,12 +49,12 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 !if [@echo       BASE_OUTPUTDIR is $(BASE_OUTPUTDIR)]
 !endif
-EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
+OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 
 # create output directory
 !if [@md $(BASE_OUTPUTDIR) 2> NUL]
 !endif
-!if [@md $(EXE_OUTPUTDIR) 2> NUL]
+!if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
 # The OBJS macro contains all the .OBJ files which need to be
@@ -73,7 +73,7 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(EXE_OUTPUTDIR)\xwpdaemn.res
+    $(OBJS) $(OUTPUTDIR)\xwpdaemn.res
     @echo ----- Leaving $(MAKEDIR)
 !endif
 
@@ -83,38 +83,25 @@ callmainmake:
     @nmake
     @echo $(MAKEDIR)\makefile: Returned from main makefile. Done.
 
-# main include path
-INC = ..\..\include
-# helpers include path
-HLPINC = $(HELPERS_BASE)\include\helpers
-# our own corresponding include path
-MYOWNINC = $(INC)\hook
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
 
 .c.{$(BASE_OUTPUTDIR)}.obj:
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-    $(CC_DLL_MT) -I$(INCLUDE) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
 !else
     $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
-# Now define dependencies for all our .OBJ files by telling NMAKE
-# which .OBJ file depends on what. For each .OBJ we define what files
-# will enforce a recompilation when they've been changed.
-# This uses the inference rules defined above.
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
 
-# Note that include\setup.h is specified with _all_ files, so
-# you can enforce a complete recompile of XWorkplace if you update
-# that file (just save it once).
+!include .depend
 
-# Here follow the .OBJs for the SOM/WPS classes. Each class needs to be
-# recompiled when its SOM header files change (due to SOM recompilation)
-# or when other headers (in MAIN or HELPERS) have changed.
-
-$(BASE_OUTPUTDIR)\xwphook.obj: \
-        $(INC)\setup.h \
-        $(HLPINC)\undoc.h \
-        $(INC)\hook\xwphook.h \
-        $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h
 

@@ -66,6 +66,12 @@ all: \
     $(XWPRUNNING)\bin\$(APPNAME).exe
     @echo ----- Leaving $(MAKEDIR)
 
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
+
 # Now define inference rules for what to do with certain file
 # types, based on their file extension.
 # The syntax we need here is ".fromext.toext".
@@ -89,33 +95,9 @@ all: \
         $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).cpp
 !endif
 
-# main include path
-INC = ..\..\include
-# base include path
-BSINC = $(INC)\base
-# helpers include path
-HLPINC = $(HELPERS_BASE)\include\helpers
-
-# Now define dependencies for all our .OBJ files by telling NMAKE
-# which .OBJ file depends on what. For each .OBJ we define what files
-# will enforce a recompilation when they've been changed.
-# This uses the inference rules defined above.
-
-# Note that include\setup.h is specified with _all_ files, so
-# you can enforce a complete recompile of XWorkplace if you update
-# that file (just save it once).
-
-$(OUTPUTDIR)\$(APPNAME).obj: \
-    $(INC)\setup.h $(INC)\bldlevel.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\datetime.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\prfh.h $(HLPINC)\standards.h $(HLPINC)\stringh.h $(HLPINC)\threads.h \
-        $(HLPINC)\tree.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
-    $(INC)\shared\common.h \
-    $(APPNAME).h
-
 # build targets
 $(APPNAME).def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "WPS handles fixer"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "WPS handles fixer"
 
 $(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
@@ -134,7 +116,10 @@ $(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
 !endif
           cd $(MAKEDIR)
 
-# main target
-$(XWPRUNNING)\bin\$(APPNAME).exe: $(MODULESDIR)\$(@B).exe
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
+
+!include .depend
+
 

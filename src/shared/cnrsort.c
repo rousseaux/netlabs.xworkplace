@@ -72,6 +72,8 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSSEMAPHORES
+
 #define INCL_WINCOUNTRY
 #define INCL_WINSTDCNR
 #include <os2.h>
@@ -81,6 +83,9 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+#include "shared\cnrsort.h"
+#include "shared\kernel.h"              // XWorkplace Kernel
+
 #pragma hdrstop
 #include <wpfolder.h>      // WPFolder
 #include <wpshadow.h>      // WPShadow
@@ -89,126 +94,105 @@
  *@@ fnCompareExt:
  *      container sort comparison function for
  *      sorting records by file name extension.
+ *
+ *      This one should work with any MINIRECORDCORE,
+ *      not just WPS objects.
  */
 
 SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    SHORT src = 0;
-
-    pStorage = pStorage; // to keep the compiler happy
-
-    if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
-        {
-            // find last dot char in icon titles;
-            // strrchr finds LAST occurence (as opposed to strchr)
-            PSZ pDot1 = strrchr(pmrc1->pszIcon, '.');
-            PSZ pDot2 = strrchr(pmrc2->pszIcon, '.');
-            if (pDot1 == NULL)
-                if (pDot2 == NULL)
-                    // both titles have no extension: return names comparison
-                    switch (WinCompareStrings(habDesktop, 0, 0,
-                            pmrc1->pszIcon, pmrc2->pszIcon, 0))
-                    {
-                        case WCS_LT: src = -1; break;
-                        case WCS_GT: src = 1; break;
-                        default: src = 0; break;
-                    }
-                else
-                    // pmrc1 has no ext, but pmrc2 does:
-                    src = -1;
-            else
-                if (pDot2 == NULL)
-                    // pmrc1 has extension, but pmrc2 doesn't:
-                    src = 1;
-                else
+    if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
+    {
+        // find last dot char in icon titles;
+        // strrchr finds LAST occurence (as opposed to strchr)
+        PSZ pDot1 = strrchr(pmrc1->pszIcon, '.');
+        PSZ pDot2 = strrchr(pmrc2->pszIcon, '.');
+        if (pDot1 == NULL)
+            if (pDot2 == NULL)
+                // both titles have no extension: return names comparison
+                switch (WinCompareStrings(G_habThread1,
+                                          0,
+                                          0,
+                                          pmrc1->pszIcon,
+                                          pmrc2->pszIcon,
+                                          0))
                 {
-                    // both records have extensions:
-                    // compare extensions
-                    switch (WinCompareStrings(habDesktop, 0, 0,
-                            pDot1, pDot2, 0))
-                    {
-                        case WCS_LT: src = -1; break;
-                        case WCS_GT: src = 1; break;
-                        default:
-                            // same ext: compare names
-                            switch (WinCompareStrings(habDesktop, 0, 0,
-                                    pmrc1->pszIcon, pmrc2->pszIcon, 0))
-                            {
-                                case WCS_LT: src = -1; break;
-                                case WCS_GT: src = 1; break;
-                                default: src = 0; break;
-                            }
-                    }
+                    case WCS_LT: return (-1);
+                    case WCS_GT: return (1);
+                    default: return (0);
                 }
-        // printf("psz1: %s, psz2: %s --> %d\n", pmrc1->pszIcon, pmrc2->pszIcon, src);
-        }
+            else
+                // pmrc1 has no ext, but pmrc2 does:
+                return (-1);
+        else
+            if (pDot2 == NULL)
+                // pmrc1 has extension, but pmrc2 doesn't:
+                return (1);
 
-    return (src);
+        // both records have extensions:
+        // compare extensions
+        switch (WinCompareStrings(G_habThread1,
+                                  0,
+                                  0,
+                                  pDot1, pDot2,
+                                  0))
+        {
+            case WCS_LT: return (-1);
+            case WCS_GT: return (1);
+            default:
+                // same ext: compare names
+                switch (WinCompareStrings(G_habThread1,
+                                          0,
+                                          0,
+                                          pmrc1->pszIcon,
+                                          pmrc2->pszIcon,
+                                          0))
+                {
+                    case WCS_LT: return (-1);
+                    case WCS_GT: return (1);
+                }
+        }
+    }
+
+    return (0);
 }
 
 /*
- *@@ fnCompareFoldersFirst:
- *      container sort comparison function for
- *      sorting folders first.
+ *@@ fnCompareExtFoldersFirst:
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
  */
 
-SHORT EXPENTRY fnCompareFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
+SHORT EXPENTRY fnCompareExtFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    pStorage = pStorage; // to keep the compiler happy
-    if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
-        {
-            // get SOM objects from cnr record cores
-            WPObject *pObj1 = OBJECT_FROM_PREC(pmrc1);
-            WPObject *pObj2 = OBJECT_FROM_PREC(pmrc2);
-            if ((pObj1) && (pObj2))
-            {
-                // determine if the objects are either folders
-                // or shadows of folders
-                BOOL IsFldr1 = _somIsA(pObj1, _WPFolder)
-                            ? TRUE
-                            : (_somIsA(pObj1, _WPShadow)
-                                ? (_somIsA(_wpQueryShadowedObject(pObj1, TRUE), _WPFolder))
-                                : FALSE
-                            );
-                BOOL IsFldr2 = _somIsA(pObj2, _WPFolder)
-                            ? TRUE
-                            : (_somIsA(pObj2, _WPShadow)
-                                ? (_somIsA(_wpQueryShadowedObject(pObj2, TRUE), _WPFolder))
-                                : FALSE
-                            );
-                if (IsFldr1)
-                    if (IsFldr2)
-                        // both are folders: compare titles
-                        switch (WinCompareStrings(habDesktop, 0, 0,
-                                pmrc1->pszIcon, pmrc2->pszIcon, 0))
-                        {
-                            case WCS_LT: return (-1);
-                            case WCS_GT: return (1);
-                            default: return (0);
-                        }
-                    else
-                        // pmrc1 is folder, pmrc2 is not
-                        return (-1);
-                else
-                    if (IsFldr2)
-                        // pmrc1 is NOT a folder, but pmrc2 is
-                        return (1);
-                    else
-                        // both are NOT folders: compare titles
-                        switch (WinCompareStrings(habDesktop, 0, 0,
-                                pmrc1->pszIcon, pmrc2->pszIcon, 0))
-                        {
-                            case WCS_LT: return (-1);
-                            case WCS_GT: return (1);
-                            default: return (0);
-                        }
-            }
-        }
-    return (0);
+    WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+    WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
+
+    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj1, TRUE)
+                                : pobj1;
+    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj2, TRUE)
+                                : pobj2;
+    BOOL IsFldr1 = (pobjDeref1)
+                      ? _somIsA(pobjDeref1, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+    BOOL IsFldr2 = (pobjDeref2)
+                      ? _somIsA(pobjDeref2, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+
+    if (IsFldr1 && IsFldr2)
+        // both are folders:
+        // compare by name then
+        return (fnCompareName(pmrc1, pmrc2, pStorage));
+    else if (IsFldr1)
+        return (-1);
+    else if (IsFldr2)
+        return (1);
+
+    // none of the two are folders:
+    // only then compare extensions
+    return (fnCompareExt(pmrc1, pmrc2, pStorage));
 }
 
 /*
@@ -221,18 +205,55 @@ SHORT EXPENTRY fnCompareFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc
 
 SHORT EXPENTRY fnCompareName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     pStorage = pStorage; // to keep the compiler happy
-    if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
-            switch (WinCompareStrings(habDesktop, 0, 0,
-                pmrc1->pszIcon, pmrc2->pszIcon, 0))
-            {
-                case WCS_LT: return (-1);
-                case WCS_GT: return (1);
-            }
+    if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
+        switch (WinCompareStrings(G_habThread1,
+                                  0,
+                                  0,
+                                  pmrc1->pszIcon,
+                                  pmrc2->pszIcon,
+                                  0))
+        {
+            case WCS_LT: return (-1);
+            case WCS_GT: return (1);
+        }
 
     return (0);
+}
+
+/*
+ *@@ fnCompareNameFoldersFirst:
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+SHORT EXPENTRY fnCompareNameFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
+{
+    WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+    WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
+
+    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj1, TRUE)
+                                : pobj1;
+    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj2, TRUE)
+                                : pobj2;
+    BOOL IsFldr1 = (pobjDeref1)
+                      ? _somIsA(pobjDeref1, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+    BOOL IsFldr2 = (pobjDeref2)
+                      ? _somIsA(pobjDeref2, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+
+    if (IsFldr1 == IsFldr2)
+        // both are folders, or both are NOT folders:
+        // compare by name then
+        return (fnCompareName(pmrc1, pmrc2, pStorage));
+    else if (IsFldr1)
+        return (-1);
+
+    // else if IsFldr2)
+    return (1);
 }
 
 /*
@@ -242,43 +263,82 @@ SHORT EXPENTRY fnCompareName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
 
 SHORT EXPENTRY fnCompareType(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    pStorage = pStorage; // to keep the compiler happy
-    if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
+    // get SOM objects from cnr record cores
+    WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+    WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
+    PSZ pType1 = NULL, pType2 = NULL;
+    if ((pobj1) && (pobj2))
+    {
+        if (_somIsA(pobj1, _WPFileSystem))
+            pType1 = _wpQueryType(pobj1);
+        if (_somIsA(pobj2, _WPFileSystem))
+            pType2 = _wpQueryType(pobj2);
+
+        if (pType1)
         {
-            // get SOM objects from cnr record cores
-            WPObject *pObj1 = OBJECT_FROM_PREC(pmrc1);
-            WPObject *pObj2 = OBJECT_FROM_PREC(pmrc2);
-            PSZ pType1 = NULL, pType2 = NULL;
-            if ((pObj1) && (pObj2))
+            if (pType2)
             {
-                if (_somIsA(pObj1, _WPFileSystem))
-                    pType1 = _wpQueryType(pObj1);
-                if (_somIsA(pObj2, _WPFileSystem))
-                    pType2 = _wpQueryType(pObj2);
-
-                if (pType1)
+                switch (WinCompareStrings(G_habThread1,
+                                          0,
+                                          0,
+                                          pType1,
+                                          pType2,
+                                          0))
                 {
-                    if (pType2)
-                        switch (WinCompareStrings(habDesktop, 0, 0,
-                            pType1, pType2, 0))
-                        {
-                            case WCS_LT: return (-1);
-                            case WCS_GT: return (1);
-                        }
-                    else
-                        // obj1 has type, obj2 has not
-                        return (-1);
+                    case WCS_LT: return (-1);
+                    case WCS_GT: return (1);
                 }
-                else
-                    if (pType2)
-                        // obj1 has NO type, but obj2 does
-                        return (1);
-
-             }
+            }
+            else
+                // obj1 has type, obj2 has not
+                return (-1);
         }
+        else
+            if (pType2)
+                // obj1 has NO type, but obj2 does
+                return (1);
+
+    }
+
     return (0);
+}
+
+/*
+ *@@ fnCompareTypeFoldersFirst:
+ *      comparison func for sort by type (.TYPE EA),
+ *      but folders first.
+ */
+
+SHORT EXPENTRY fnCompareTypeFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
+{
+    WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+    WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
+
+    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj1, TRUE)
+                                : pobj1;
+    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj2, TRUE)
+                                : pobj2;
+    BOOL IsFldr1 = (pobjDeref1)
+                      ? _somIsA(pobjDeref1, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+    BOOL IsFldr2 = (pobjDeref2)
+                      ? _somIsA(pobjDeref2, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+
+    if (IsFldr1 && IsFldr2)
+        // both are folders:
+        // compare by name then
+        return (fnCompareName(pmrc1, pmrc2, pStorage));
+    else if (IsFldr1)
+        return (-1);
+    else if (IsFldr2)
+        return (1);
+
+    // none of the two are folders:
+    // only then compare extensions
+    return (fnCompareType(pmrc1, pmrc2, pStorage));
 }
 
 /*
@@ -288,65 +348,99 @@ SHORT EXPENTRY fnCompareType(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
 
 SHORT EXPENTRY fnCompareClass(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    pStorage = pStorage; // to keep the compiler happy
-    if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
-        {
-            // get SOM objects from cnr record cores
-            WPObject *pObj1 = OBJECT_FROM_PREC(pmrc1);
-            WPObject *pObj2 = OBJECT_FROM_PREC(pmrc2);
-            PSZ psz1, psz2;
-            if ((pObj1) && (pObj2))
-            {
-                SOMClass *Metaclass = _somGetClass(pObj1);
-                if (Metaclass)
-                    psz1 = _wpclsQueryTitle(Metaclass);
-                Metaclass = _somGetClass(pObj2);
-                if (Metaclass)
-                    psz2 = _wpclsQueryTitle(Metaclass);
+    // get SOM objects from cnr record cores
+    WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+    WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-                if ((psz1) && (psz2))
-                    switch (WinCompareStrings(habDesktop, 0, 0,
-                        psz1, psz2, 0))
-                    {
-                        case WCS_LT: return (-1);
-                        case WCS_GT: return (1);
-                    }
-             }
+    PSZ pszClass1 = _wpclsQueryTitle(_somGetClass(pobj1));
+    PSZ pszClass2 = _wpclsQueryTitle(_somGetClass(pobj2));
+
+    if ((pszClass1) && (pszClass2))
+        switch (WinCompareStrings(G_habThread1,
+                                  0,
+                                  0,
+                                  pszClass1,
+                                  pszClass2,
+                                  0))
+        {
+            case WCS_LT: return (-1);
+            case WCS_GT: return (1);
         }
+
     return (0);
 }
 
 /*
+ *@@ fnCompareClassFoldersFirst:
+ *      comparison func for sort by type (.TYPE EA),
+ *      but folders first.
+ */
+
+SHORT EXPENTRY fnCompareClassFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
+{
+    WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+    WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
+
+    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj1, TRUE)
+                                : pobj1;
+    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
+                                ? _wpQueryShadowedObject(pobj2, TRUE)
+                                : pobj2;
+    BOOL IsFldr1 = (pobjDeref1)
+                      ? _somIsA(pobjDeref1, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+    BOOL IsFldr2 = (pobjDeref2)
+                      ? _somIsA(pobjDeref2, _WPFolder)
+                      : FALSE;      // treat broken shadows as non-folders
+
+    if (IsFldr1 && IsFldr2)
+        // both are folders:
+        // compare by name then
+        return (fnCompareName(pmrc1, pmrc2, pStorage));
+    else if (IsFldr1)
+        return (-1);
+    else if (IsFldr2)
+        return (1);
+
+    // none of the two are folders:
+    // only then compare extensions
+    return (fnCompareClass(pmrc1, pmrc2, pStorage));
+}
+
+/*
  *@@ fnCompareRealName:
- *      comparison func for sort by real name
+ *      comparison func for sort by real name.
+ *
+ *      No longer used with the new sorting (V0.9.12),
+ *      but we'll leave this here for now.
  */
 
 SHORT EXPENTRY fnCompareRealName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
         if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
         {
             // get SOM objects from cnr record cores
-            WPObject *pObj1 = OBJECT_FROM_PREC(pmrc1);
-            WPObject *pObj2 = OBJECT_FROM_PREC(pmrc2);
+            WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+            WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
             // the following defaults sort objects last that
             // have no real name (non-file-system objects)
             CHAR sz1[CCHMAXPATH] = {'\255', '\0'},
                  sz2[CCHMAXPATH] = {'\255', '\0'};
 
-            if ((pObj1) && (pObj2))
+            if ((pobj1) && (pobj2))
             {
-                if (_somIsA(pObj1, _WPFileSystem))
-                    _wpQueryFilename(pObj1, sz1, FALSE);
-                if (_somIsA(pObj2, _WPFileSystem))
-                    _wpQueryFilename(pObj2, sz2, FALSE);
+                if (_somIsA(pobj1, _WPFileSystem))
+                    _wpQueryFilename(pobj1, sz1, FALSE);
+                if (_somIsA(pobj2, _WPFileSystem))
+                    _wpQueryFilename(pobj2, sz2, FALSE);
 
-                switch (WinCompareStrings(habDesktop, 0, 0,
+                switch (WinCompareStrings(G_habThread1,
+                                          0,
+                                          0,
                     sz1, sz2, 0))
                 {
                     case WCS_LT: return (-1);
@@ -359,7 +453,10 @@ SHORT EXPENTRY fnCompareRealName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, P
 
 /*
  *@@ fnCompareSize:
- *      comparison func for sort by size
+ *      comparison func for sort by size.
+ *
+ *      No longer used with the new sorting (V0.9.12),
+ *      but we'll leave this here for now.
  */
 
 SHORT EXPENTRY fnCompareSize(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -368,15 +465,15 @@ SHORT EXPENTRY fnCompareSize(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
     if ((pmrc1) && (pmrc2))
     {
         // get SOM objects from cnr record cores
-        WPObject *pObj1 = OBJECT_FROM_PREC(pmrc1);
-        WPObject *pObj2 = OBJECT_FROM_PREC(pmrc2);
+        WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+        WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
         ULONG ul1 = 0, ul2 = 0;
-        if ((pObj1) && (pObj2))
+        if ((pobj1) && (pobj2))
         {
-            if (_somIsA(pObj1, _WPFileSystem))
-                ul1 = _wpQueryFileSize(pObj1);
-            if (_somIsA(pObj2, _WPFileSystem))
-                ul2 = _wpQueryFileSize(pObj2);
+            if (_somIsA(pobj1, _WPFileSystem))
+                ul1 = _wpQueryFileSize(pobj1);
+            if (_somIsA(pobj2, _WPFileSystem))
+                ul2 = _wpQueryFileSize(pobj2);
 
             if (ul1 < ul2)
                 return (1);
@@ -398,17 +495,19 @@ SHORT EXPENTRY fnCompareSize(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
  *      This gets called by fnCompareLastWriteDate,
  *      fnCompareLastAccessDate, and fnCompareCreationDate
  *      and should not be specified as a sort function.
+ *
+ *      No longer used with the new sorting (V0.9.12),
+ *      but we'll leave this here for now.
  */
 
 SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
                                    ULONG ulWhat)
 {
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     if ((pmrc1) && (pmrc2))
     {
         // get SOM objects from cnr record cores
-        WPObject *pObj1 = OBJECT_FROM_PREC(pmrc1);
-        WPObject *pObj2 = OBJECT_FROM_PREC(pmrc2);
+        WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
+        WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
         // comparison is done using string comparison;
         // these are the defaults for non-WPFileSystem
@@ -418,15 +517,15 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
                      // year mm dd hh mm ss
         FDATE fdate;
         FTIME ftime;
-        if ((pObj1) && (pObj2))
+        if ((pobj1) && (pobj2))
         {
-            if (_somIsA(pObj1, _WPFileSystem))
+            if (_somIsA(pobj1, _WPFileSystem))
             {
                 switch (ulWhat)
                 {
-                    case 1: _wpQueryLastWrite(pObj1, &fdate, &ftime); break;
-                    case 2: _wpQueryLastAccess(pObj1, &fdate, &ftime); break;
-                    case 3: _wpQueryCreation(pObj1, &fdate, &ftime); break;
+                    case 1: _wpQueryLastWrite(pobj1, &fdate, &ftime); break;
+                    case 2: _wpQueryLastAccess(pobj1, &fdate, &ftime); break;
+                    case 3: _wpQueryCreation(pobj1, &fdate, &ftime); break;
                 }
 
                 sprintf(sz1, "%04d.%02d.%02d %02d:%02d:%02d",
@@ -438,13 +537,13 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
                         (ftime.twosecs * 2));
             }
 
-            if (_somIsA(pObj2, _WPFileSystem))
+            if (_somIsA(pobj2, _WPFileSystem))
             {
                 switch (ulWhat)
                 {
-                    case 1: _wpQueryLastWrite(pObj2, &fdate, &ftime); break;
-                    case 2: _wpQueryLastAccess(pObj2, &fdate, &ftime); break;
-                    case 3: _wpQueryCreation(pObj2, &fdate, &ftime); break;
+                    case 1: _wpQueryLastWrite(pobj2, &fdate, &ftime); break;
+                    case 2: _wpQueryLastAccess(pobj2, &fdate, &ftime); break;
+                    case 3: _wpQueryCreation(pobj2, &fdate, &ftime); break;
                 }
 
                 sprintf(sz2, "%04d.%02d.%02d %02d:%02d:%02d",
@@ -457,7 +556,7 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
             }
 
             // printf("%s -- %s\n", sz1, sz2);
-            switch (WinCompareStrings(habDesktop, 0, 0,
+            switch (WinCompareStrings(G_habThread1, 0, 0,
                 sz1, sz2, 0))
             {
                 case WCS_LT: return (-1);
@@ -472,6 +571,9 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
  *@@ fnCompareLastWriteDate:
  *      comparison func for sort by write date.
  *      This calls fnCompareCommonDate.
+ *
+ *      No longer used with the new sorting (V0.9.12),
+ *      but we'll leave this here for now.
  */
 
 SHORT EXPENTRY fnCompareLastWriteDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -484,6 +586,9 @@ SHORT EXPENTRY fnCompareLastWriteDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmr
  *@@ fnCompareLastAccessDate:
  *      comparison func for sort by last access date.
  *      This calls fnCompareCommonDate.
+ *
+ *      No longer used with the new sorting (V0.9.12),
+ *      but we'll leave this here for now.
  */
 
 SHORT EXPENTRY fnCompareLastAccessDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -496,6 +601,9 @@ SHORT EXPENTRY fnCompareLastAccessDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pm
  *@@ fnCompareCreationDate:
  *      comparison func for sort by creation date.
  *      This calls fnCompareCommonDate.
+ *
+ *      No longer used with the new sorting (V0.9.12),
+ *      but we'll leave this here for now.
  */
 
 SHORT EXPENTRY fnCompareCreationDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)

@@ -544,8 +544,10 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryStyle(M_XWPClassList *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "WPS Class List".
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  */
 
 SOM_Scope PSZ  SOMLINK xwlistM_wpclsQueryTitle(M_XWPClassList *somSelf)

@@ -2241,7 +2241,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         case SP_FLDRSORT_GLOBAL:
             // G_pGlobalSettings->ReplaceSort = 0;        removed V0.9.0
             G_pGlobalSettings->lDefaultSort = -2;        // sort by name
-            G_pGlobalSettings->AlwaysSort = 0;
+            G_pGlobalSettings->AlwaysSort = FALSE;
             G_pGlobalSettings->fFoldersFirst = FALSE;   // V0.9.12 (2001-05-18) [umoeller]
         break;
 
@@ -2278,6 +2278,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->AddObjectPage = 0;
             G_pGlobalSettings->fReplaceFilePage = 0;
             G_pGlobalSettings->fXSystemSounds = 0;
+            G_pGlobalSettings->fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
 
             G_pGlobalSettings->fEnableStatusBars = 0;
             G_pGlobalSettings->fEnableSnap2Grid = 0;
@@ -2518,6 +2519,8 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
  *      -- For STG_BOOL and STG_BITFLAG, this expects
  *         "KEYWORD={YES|NO};" strings.
  *
+ *      -- for STG_PSZ, this expects "KEYWORD=STRING;" strings.
+ *
  *      Returns FALSE if values were not set properly.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
@@ -2653,7 +2656,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
  *      setup set helper to be used in a wpSaveState override.
  *      See XWPSETUPENTRY for an introduction.
  *
- *      This invokes wpSaveLong on each setup set entry.
+ *      This invokes wpSave* on each setup set entry.
  *
  *      Returns FALSE if values were not saved properly.
  *

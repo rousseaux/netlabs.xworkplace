@@ -7,35 +7,18 @@ Required Tools
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
 
-<UL><LI><B>Compiler.</B> With V0.80, I have switched to
-<B>IBM VisualAge C++ 3.0</B>
+<OL><LI><B>Compiler.</B> With V0.80, I have switched to <B>IBM VisualAge C++ 3.0</B>
 to develop XWorkplace. For VAC++ 3.0, <B>fixpak 8</B> is strongly recommended,
 because the original crashes frequently with the complex SOM header files.
-<P>I have not adjusted the code to work with EMX/GCC or Watcom. We did this for the
-WarpIN sources and EMX, and this is turns out to be a constant hassle. If you care
-to make the code work other compilers, go ahead...
-<P>I'm not perfectly sure whether I'm using IBM-specific language extensions.
-I had to switch the language level to &quot;extended&quot; to use some none-POSIX
-C stuff, and I'm not sure whether this is working with GCC. I have looked up some
-functions in the EMX docs, such as <CODE>_beginthread</CODE>, and these appear to
-be the same, even though they're not POSIX C.
-<P>If you get these sources compiled with a different compiler, please let me
-know or supply patches.
 
-<P><LI>Whatever compiler you use, you need some <B>OS/2 Developer's Toolkit</B> for
+<P>Other compilers are presently not supported.
+
+<P><LI>You need some <B>OS/2 Developer's Toolkit</B> for
 all the SOM header files and the SOM compiler.
-(Those are <I>not</I> included with EMX, so even with
-EMX, you'll need the toolkit headers).
 <P>The <B>Warp 3 toolkit</B> is sufficient. XWorkplace does some tricks for Warp 4 too,
 but does it even though I don't have the Warp 4 toolkit. <CODE>;-)</CODE>
 
-<P><LI><B>IBM NMAKE</B> is our make utily.
-NMAKE comes with the IBM compilers (and therefore with VAC also) and is now also publicly
-available with the IBM Device Driver Development Kit (DDK),
-available from <A HREF="http://service.boulder.ibm.com/ddk/">http://service.boulder.ibm.com/ddk/</A>.
-It's behind the "Build tools ZIP file" button (tools.zip).
-You will need to register first, but other than that, the
-thing is free.
+<P><LI><B>IBM NMAKE</B> is our make utily. This comes with VAC, so no problem there.
 
 <P><LI>You need to check out the <B>"xwphelpers" CVS archive</B> from Netlabs also.
 XWorkplace uses a lot
@@ -45,23 +28,12 @@ into a new CVS archive.
 There's no way to compile without that
 code.
 
-<P><LI>Only if you enable debugging code by setting the <CODE>XWP_DEBUG</CODE>
-<A HREF="src1_32env.html">environment variable</A>,
-you need the full <B>PMPRINTF package by Dennis Bareis.</B>
-<P>
-Check the <A HREF="src1_880debug.html">"Debugging"</A> section for details.
+<P><LI>Only if you enable debugging code through <CODE>XWP_DEBUG</CODE>
+in <A HREF="src1_32env.html">config.in</A>,
+you will need the full <B>PMPRINTF package by Dennis Bareis.</B>
 
-<P><LI>Only if you want to build the ring-0 security driver (<CODE>XWPSEC32.SYS</CODE>) for
-<A HREF="src2_860xwpsec.html">XWorkplace Security</A>, you will need
-<B>ALP, the IBM assembler.</B>
-XWPSecurity is only built if the respective
-<A HREF="src1_32env.html">environment variable</A> is set.
-<P>ALP is in the Warp 4 toolkit and in the DDK (I think).
-From my testing, only ALP 4.00.001 was able to swallow
-the assembler files. I tested with 4.00.006, and it refused to accept
-some of the constructs in there. I am no assembler freak, so
-maybe someone else can help.
+<P>Check the <A HREF="src1_880debug.html">"Debugging"</A> section for details.
 
-</UL>
+</OL>
 </BODY>
 </HTML>

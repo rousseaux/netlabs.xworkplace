@@ -30,6 +30,7 @@
 #define INCL_GPIBITMAPS
 #include <os2.h>
 
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\linklist.h"           // linked list helper routines

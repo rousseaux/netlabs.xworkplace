@@ -1,26 +1,20 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
 <TITLE>
-Makefile Environment Variables
+The "config.in" File
 </TITLE>
 </HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
-This section describes the environment variables which should be set
-externally before executing the makefiles. These environment variables
-have been introduced to allow code sharing between several projects
-(mostly WarpIN) and to be able to update XWorkplace even while the
-WPS is running.
+This section describes the build environment which is used by the
+makefiles.
 
-<P>You can modify <CODE>MAKE.CMD</CODE> to set up these things, because
-<CODE>MAKE.CMD</CODE> calls the main <CODE>makefile</CODE>.
+<P>Before V0.9.12, these variables had to be set externally before
+building. This has been changed; the environment is now set exclusively
+through the <CODE>config.in</CODE> file in the main XWorkplace directory.
 
-<P>Alternatively, create your own "XWorkplace make" command file, which
-sets up these variables, or define these variables in CONFIG.SYS.
-
-<P>If these are not set, you'll either get errors from the makefiles
-(certain checks are built into those), or <CODE>setup.in</CODE> will
-use some dumb default, which is most probably not matching your system.
+<P>If these values not set correctly, you'll get errors from the makefiles
+(certain checks are built into those), or compilation or linking will fail.
 
 <OL><LI><CODE>CVS_WORK_ROOT</CODE> must point to the root of your CVS
 working directories. The XWorkplace makefiles now (V0.9.6) assume that all
@@ -29,15 +23,17 @@ are located in subdirectories of a single directory.
 (This is useful for working with CVS in the first place, so this shouldn't
 be much of a requirement in the first place.)
 
-<P>This variable must point to the parent directory of <CODE>xworkplace</CODE>,
-<CODE>xwphelpers</CODE>, <CODE>warpin</CODE>, etc. The makefiles will set
+<P>This variable must point to the parent directory of <CODE>xworkplace</CODE>
+and <CODE>xwphelpers</CODE>. The makefiles will set
 a number of other environment variables based on that variable to locate
 the XWorkplace and XWPhelpers source tree bases.
 
 <P>Example: <CODE>SET CVS_WORK_ROOT=K:\cvs</CODE>
 
-<P>(This environment variable is required for compiling WarpIN as well, so it's
-a lifetime investment.)
+<P><LI><CODE>TKBASE</CODE> and <CODE>VACBASE</CODE> are new with V0.9.12
+and must point to the base directories of your Toolkit and VisualAge C++
+installations, respectively. Specify the parent directories of <CODE>h</CODE>
+and <CODE>include</CODE>.
 
 <P><LI><CODE>XWPRUNNING</CODE> must point to an existing XFolder/XWorkplace
 installation. Since the makefiles first create all the files in <CODE>bin\</CODE>,
@@ -50,30 +46,18 @@ you can simply restart the WPS, and your new code will be running in the WPS.
 <P>Do one of the following:
 
 <UL><LI>Install the latest XWorkplace binary WarpIN archive.
-Set XWPRUNNING to the same directory which you
+Set <CODE>XWPRUNNING</CODE> to the same directory which you
 specified as the target path to WarpIN.
 
 <LI>Alternatively, copy the entire "release" subtree to
 some new location and specify that location with
-XWPRUNNING to start.
+<CODE>XWPRUNNING</CODE> to start.
 
 <P>This must point to the parent directory of <CODE>bin\</CODE>, <CODE>help\</CODE> etc.
 in the XFolder/XWorkplace installation tree.
 
 <P>Example: <CODE>SET XWPRUNNING=J:\Tools\XWorkplace</CODE>
 </UL>
-
-<P><LI><CODE>XWPRELEASE</CODE> is only used with <CODE>nmake release</CODE>.
-This specifies the base directory where to build a complete XWorkplace release
-which holds all files for a release version. That tree can then easily be "zipped"
-into a WarpIN archive (.WPI).
-If this directory does not exist, it is created.
-
-<P>Even if you don't plan to use "nmake release", you
-must set XWPRELEASE to something, or the makefiles
-will fail.
-
-<P>Example: <CODE>SET XWPRELEASE=dummy</CODE>
 
 <P><LI>If <CODE>XWP_DEBUG</CODE> is defined (to anything), XWorkplace will
 be compiled and linked with debug code enabled. Also, this will pass the
@@ -94,41 +78,30 @@ expect to get an error message other than FALSE. <CODE>:-(</CODE>
 
 <P>See <A HREF="src1_880debug.html">"Debugging XWorkplace"</A> for details.
 
-<P><LI><B>Optional features.</B> Per default, a "stable" version of XWP will be built.
-This excludes a number of features. If you want them to be compiled as well,
-define the following environment variables:
-<UL><LI><CODE>SET ANIMATED_MOUSE_POINTERS=YES</CODE>: include Animated Mouse Pointers.
-<LI><CODE>SET REPLHANDLES=YES</CODE>: include replacement file handles management.
-<LI><CODE>SET XWPSECURITY=YES</CODE>: build XWorkplace Security as well
-(XWPShell and the ring-0 device driver). See
-<A HREF="src2_860xwpsec.html">"XWorkplace Security"</A> for details.
-
-</UL>These features are unstable and might not even compile because I might not
-have enabled them myself in a long while. If they do compile though,
-they will only cause problems if they are enabled in the "XWorkplace Setup"
-object or (in the case of XWorkplace Security) if the additional executables
-are installed thru CONFIG.SYS.
-
 <P><LI><B>Replacing in-use files.</B> You can rebuild XWorkplace even while the WPS is up
 and XWorkplace is installed. The makefiles will automatically unlock DLLs which
 are currently in use (DosReplaceModule).
 After the rebuild, restart the WPS to make it use the newly
-built DLLs. To do this, simply set <CODE>XWP_UNLOCK_MODULES=YES</CODE> before running
-the main makefile.
+built DLLs. To do this, simply set <CODE>XWP_UNLOCK_MODULES=YES</CODE>.
 
-<P><B>Note:</B> This environment variable has been added with V0.9.3 because with
-Warp 4 FP13, unlocking WPS modules hangs the WPS after the next WPS restart. If the
-environment variable is not set, modules are <I>not</I> unlocked now. So only set
-the variable if you're not running Warp 4 FP13. I guess this behaviour will be the
-same with Warp Server for e-business (Aurora).
+<P><B>Note:</B> This environment variable has was with V0.9.3 because with
+Warp 4 FP13, unlocking WPS modules hung the WPS after the next WPS restart.
+This problem has been fixed with FP15, so there is really no reason to not
+have this variable set to <CODE>YES</CODE> any more.
 
 <P>The exception to this are <CODE>XWPDAEMN.EXE</CODE> and <CODE>XWPHOOK.DLL</CODE>,
-which are never unlocked. This is intentional.
+which are <I>never</I> unlocked. This is intentional.
 Unlocking an executable which has registered a system hook
 (which becomes part of every PM process on the system)
-will _never_ release the DLL containing the hook again, so you'd have to
+will never release the hook DLL again, so you'd have to
 reboot to use the new DLL.
-So if you get an error during the build process which says "XWPDAEMN.EXE is in use",
+
+<P>Warning: If you don't restart the daemon before restarting the WPS, the XWorkplace
+startup folder will get processed again after the WPS restart.
+To start <CODE>XWPDAEMON.EXE</CODE> explicitly, give it the "-D" option, or it
+will tell you to leave it alone.
+
+<P>So if you get an error during the build process which says "XWPDAEMN.EXE is in use",
 kill <CODE>XWPDAEMON.EXE</CODE> using some process killer, which will properly
 unload the hooks, and try building again.
 

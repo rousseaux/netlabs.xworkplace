@@ -126,7 +126,7 @@ $(OUTPUTDIR)\$(APPNAME).obj: \
 
 # build targets
 $(APPNAME).def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XML tester"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XML tester"
 
 $(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

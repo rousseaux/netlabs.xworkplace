@@ -1769,6 +1769,7 @@
 #define ID_XCSI_ADDOBJECTPAGE           6002
 #define ID_XCSI_REPLACEFILEPAGE         6003
 #define ID_XCSI_XSYSTEMSOUNDS           6004
+#define ID_XCSI_FIXCLASSTITLES          6005 // V0.9.12 (2001-05-22) [umoeller]
 
 #define ID_XCSI_FOLDERFEATURES          6010
 #define ID_XCSI_ENABLESTATUSBARS        6011
@@ -1880,6 +1881,10 @@
 #define ID_XSSI_SCREENBORDERSPAGE       6165           // "Screen borders"
 
 #define ID_XSSI_ADMIN_USER              6166           // "Current user"
+
+#define ID_XSSI_CLASSTITLE_FOLDER       6167
+#define ID_XSSI_CLASSTITLE_DISK         6168
+#define ID_XSSI_CLASSTITLE_DATAFILE     6169
 
 /******************************************
  *          Treesize                      *

@@ -74,6 +74,12 @@ ALL_OBJ1 = \
 all: $(XWPRUNNING)\bin\xwpshell.exe
     @echo ----- Leaving $(MAKEDIR)
 
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
+
 $(OUTPUTDIR)\acldb.obj: \
     $(HLPINC)\tree.h \
     $(INC)\security\xwpsecty.h \
@@ -116,7 +122,7 @@ $(OUTPUTDIR)\xwpshell.obj: \
 
 # build targets
 xwpshell.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace Security shell starter"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace Security shell starter"
 
 $(OUTPUTDIR)\xwpshell.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
@@ -136,7 +142,7 @@ $(MODULESDIR)\xwpshell.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefil
 
 # main target
 $(XWPRUNNING)\bin\xwpshell.exe: $(MODULESDIR)\$(@B).exe
-          unlock $(XWPRUNNING)\bin\$(@B).exe
+          $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
           cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2

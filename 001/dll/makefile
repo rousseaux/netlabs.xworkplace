@@ -9,10 +9,6 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# This makefile assumes that certain toolkit tools are on the PATH.
-# In addition, you must put the "unlock" utility from the "tools"
-# directory on your PATH, or this will fail.
-#
 # Copyright (C) 1997-2000 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -108,7 +104,7 @@ $(MODULESDIR)\xfldr$(LANGUAGE).dll: $(@B).def $(OBJS) $(OUTPUTDIR)\$(@B).res ..\
 # main target
 $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll: $(MODULESDIR)\xfldr$(LANGUAGE).dll
 !ifdef XWP_UNLOCK_MODULES
-         unlock $(XWPRUNNING)\bin\$(@B).dll
+         $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).dll
 !endif
          cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 

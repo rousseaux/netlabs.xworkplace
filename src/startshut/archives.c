@@ -361,7 +361,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               TRUE);        // set
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -371,7 +371,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -385,7 +385,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         else            // checkbox unchecked
             pArcSettings->ulArcFlags &= ~ulSetFlags;
         // re-enable dlg items by calling the INIT callback
-        (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+        pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
     }
 
     if (fSave)

@@ -57,7 +57,9 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -77,7 +79,11 @@
 #include <os2.h>
 
 // C library headers
+// C library headers
 #include <stdio.h>              // needed for except.h
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
+#include <io.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -86,6 +92,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
@@ -93,6 +100,9 @@
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 #include "helpers\tree.h"               // red-black binary trees
+
+#include "expat\expat.h"                // XWPHelpers expat XML parser
+#include "helpers\xml.h"                // XWPHelpers XML engine
 
 // SOM headers which don't crash with prec. header files
 #include "xfwps.ih"
@@ -1437,7 +1447,9 @@ PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert int
 
 /*
  *@@ AddFileTypeAndAllParents:
- *
+ *      adds the specified file type to the cnr;
+ *      also adds all the parent file types
+ *      if they haven't been added yet.
  */
 
 PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to insert into
@@ -1660,7 +1672,7 @@ VOID FillCnrWithAvailableTypes(HWND hwndCnr,
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-VOID ClearAvailableTypes(HWND hwndCnr,
+VOID ClearAvailableTypes(HWND hwndCnr,              // in: cnr, can be NULLHANDLE
                          PLINKLIST pllFileTypes)
 {
     PLISTNODE pAssocNode = lstQueryFirstNode(pllFileTypes);
@@ -1668,7 +1680,8 @@ VOID ClearAvailableTypes(HWND hwndCnr,
 
     // first clear the container because the records
     // point into the file-type list items
-    cnrhRemoveAll(hwndCnr);
+    if (hwndCnr)
+        cnrhRemoveAll(hwndCnr);
 
     while (pAssocNode)
     {
@@ -2128,8 +2141,8 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
 
     if (pszFiltersData)
     {
-        // pszFiltersData now has the handles of the associated
-        // objects (as decimal strings, which we'll decode now)
+        // pszFiltersData now has a string array of
+        // defined filters, each null-terminated
         PSZ     pFilter = pszFiltersData;
 
         if (pFilter)
@@ -3590,6 +3603,108 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             pftpd->hwndAssocsCnr);
         break; }
 
+        /*
+         * ID_XSMI_FILETYPES_IMPORT:
+         *      "export file types" menu item.
+         */
+
+        case ID_XSMI_FILETYPES_IMPORT:
+        {
+            CHAR szFilename[CCHMAXPATH];
+            sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
+            if (winhFileDlg(pcnbp->hwndDlgPage,
+                            szFilename,
+                            WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                            HINI_USER,
+                            INIAPP_XWORKPLACE,
+                            "XWPFileTypesDlg"))
+            {
+                // create XML document then
+                CHAR szError[30];
+                PSZ apsz[2] = { szFilename, szError };
+
+                HPOINTER hptrOld = winhSetWaitPointer();
+                APIRET arc = ftypImportTypes(szFilename);
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                if (!arc)
+                    cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                        121,            // xwp
+                                        apsz,
+                                        1,
+                                        215,            // successfully imported from %1
+                                        MB_OK);
+                else
+                {
+                    sprintf(szError, "%u", arc);
+                    cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                        104,            // xwp: error
+                                        apsz,
+                                        2,
+                                        216,            // error %2 imported from %1
+                                        MB_OK);
+                }
+            }
+        }
+        break;
+
+        /*
+         * ID_XSMI_FILETYPES_EXPORT:
+         *      "export file types" menu item.
+         */
+
+        case ID_XSMI_FILETYPES_EXPORT:
+        {
+            CHAR szFilename[CCHMAXPATH];
+            sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
+            if (winhFileDlg(pcnbp->hwndDlgPage,
+                            szFilename,
+                            WINH_FOD_SAVEDLG | WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                            HINI_USER,
+                            INIAPP_XWORKPLACE,
+                            "XWPFileTypesDlg"))
+            {
+                // check if file exists
+                CHAR szError[30];
+                PSZ apsz[2] = { szFilename, szError };
+
+                if (    (access(szFilename, 0) != 0)
+                        // confirm if file exists
+                     || (cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                             121,            // xwp
+                                             apsz,
+                                             1,
+                                             217,            // %1 exists
+                                             MB_YESNO | MB_DEFBUTTON2)
+                            == MBID_YES)
+                   )
+                {
+                    // create XML document then
+                    HPOINTER hptrOld = winhSetWaitPointer();
+                    APIRET arc = ftypExportTypes(szFilename);
+                    WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                    if (!arc)
+                        cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                            121,            // xwp
+                                            apsz,
+                                            1,
+                                            213,            // successfully exported to %1
+                                            MB_OK);
+                    else
+                    {
+                        sprintf(szError, "%u", arc);
+                        cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                            104,            // xwp: error
+                                            apsz,
+                                            2,
+                                            214,            // error %2 exporting to %1
+                                            MB_OK);
+                    }
+                }
+            }
+        }
+        break;
     }
 
     return (mrc);
@@ -4559,4 +4674,706 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     return (mrc);
 }
+
+/* ******************************************************************
+ *
+ *   Import facility
+ *
+ ********************************************************************/
+
+/*
+ *@@ ImportFilters:
+ *      imports the filters for the given TYPE
+ *      element and merges them with the existing
+ *      filters.
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ImportFilters(PDOMNODE pTypeElementThis,
+                     const char *pcszTypeNameThis)
+{
+    APIRET arc = NO_ERROR;
+
+    PLINKLIST pllElementFilters = xmlGetElementsByTagName(pTypeElementThis,
+                                                          "FILTER");
+
+    if (pllElementFilters)
+    {
+        // alright, this is tricky...
+        // we don't just want to overwrite the existing
+        // filters, we need to merge them with the new
+        // filters, if any exist.
+
+        CHAR    szFilters[2000] = "";   // should suffice
+        ULONG   cbFilters = 0;
+
+        // 1) get the XWorkplace-defined filters for this file type
+        ULONG cbFiltersData = 0;
+        PSZ pszFiltersData = prfhQueryProfileData(HINI_USER,
+                                                  INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                                  (PSZ)pcszTypeNameThis,
+                                                  &cbFiltersData);
+        LINKLIST llAllFilters;
+        PLISTNODE pNode;
+        lstInit(&llAllFilters, FALSE);      // will hold all PSZ's, no auto-free
+
+        _Pmpf(("     got %d new filters for %s, merging",
+                    lstCountItems(pllElementFilters),
+                    pcszTypeNameThis));
+
+        if (pszFiltersData)
+        {
+            // pszFiltersData now has a string array of
+            // defined filters, each null-terminated
+            PSZ     pFilter = pszFiltersData;
+
+            _Pmpf(("       got %d bytes of existing filters", cbFiltersData));
+
+            if (pFilter)
+            {
+                // now parse the filters string
+                while ((*pFilter) && (!arc))
+                {
+                    _Pmpf(("           appending existing %s", pFilter));
+
+                    lstAppendItem(&llAllFilters,
+                                  pFilter);
+
+                    // go for next object filter (after the 0 byte)
+                    pFilter += strlen(pFilter) + 1;
+                    if (pFilter >= pszFiltersData + cbFiltersData)
+                        break; // while (*pFilter))
+                } // end while (*pFilter)
+            }
+        }
+        else
+            _Pmpf(("       no existing filters"));
+
+        // 2) add the new filters from the elements, if they are not on the list yet
+        for (pNode = lstQueryFirstNode(pllElementFilters);
+             pNode;
+             pNode = pNode->pNext)
+        {
+            PDOMNODE pFilterNode = (PDOMNODE)pNode->pItemData;
+
+            // filter is in attribute VALUE="*.psd"
+            const XSTRING *pstrFilter = xmlGetAttribute(pFilterNode,
+                                                        "VALUE");
+
+            _Pmpf(("           adding new %s",
+                        (pstrFilter) ? pstrFilter->psz : "NULL"));
+
+            if (pstrFilter)
+            {
+                // check if filter is on list already
+                PLISTNODE pNode2;
+                BOOL fExists = FALSE;
+                for (pNode2 = lstQueryFirstNode(&llAllFilters);
+                     pNode2;
+                     pNode2 = pNode2->pNext)
+                {
+                    if (!strcmp((PSZ)pNode2->pItemData,
+                                pstrFilter->psz))
+                    {
+                        fExists = TRUE;
+                        break;
+                    }
+                }
+
+                if (!fExists)
+                    lstAppendItem(&llAllFilters,
+                                  pstrFilter->psz);
+            }
+        }
+
+        // 3) compose new filters string from the list with
+        //    the old and new filters, each filter null-terminated
+        cbFilters = 0;
+        for (pNode = lstQueryFirstNode(&llAllFilters);
+             pNode;
+             pNode = pNode->pNext)
+        {
+            PSZ pszFilterThis = (PSZ)pNode->pItemData;
+            _Pmpf(("       appending filter %s",
+                             pszFilterThis));
+
+            cbFilters += sprintf(&(szFilters[cbFilters]),
+                                 "%s",
+                                 pszFilterThis    // filter string
+                                ) + 1;
+        }
+
+        if (pszFiltersData)
+            free(pszFiltersData);
+
+        // 4) write out the merged filters list now
+        PrfWriteProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                            (PSZ)pcszTypeNameThis,
+                            (cbFilters)
+                                ? szFilters
+                                : NULL,     // no items found: delete key
+                            cbFilters);
+
+        lstClear(&llAllFilters);
+        lstFree(pllElementFilters);
+    }
+    // else no filters: no problem,
+    // we leave the existing intact, if any
+
+    return (arc);
+}
+
+/*
+ *@@ ImportTypes:
+ *      adds the child nodes of pParentElement
+ *      to the types table.
+ *
+ *      This recurses, if necessary.
+ *
+ *      Initially called with the XWPFILETYPES
+ *      (root) element.
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ImportTypes(PDOMNODE pParentElement,
+                   const char *pcszParentType)  // in: parent type name or NULL
+{
+    APIRET arc = NO_ERROR;
+    PLINKLIST pllTypes = xmlGetElementsByTagName(pParentElement,
+                                                 "TYPE");
+    if (pllTypes)
+    {
+        PLISTNODE pTypeNode;
+        for (pTypeNode = lstQueryFirstNode(pllTypes);
+             (pTypeNode) && (!arc);
+             pTypeNode = pTypeNode->pNext)
+        {
+            PDOMNODE pTypeElementThis = (PDOMNODE)pTypeNode->pItemData;
+
+            // get the type name
+            const XSTRING *pstrTypeName = xmlGetAttribute(pTypeElementThis,
+                                                          "NAME");
+
+            if (!pstrTypeName)
+                arc = ERROR_DOM_VALIDITY;
+            else
+            {
+                // alright, we got a type...
+                // check if it's in OS2.INI already
+                ULONG cb = 0;
+
+                _Pmpf((__FUNCTION__ ": importing %s, parent is %s",
+                        pstrTypeName->psz,
+                        (pcszParentType) ? pcszParentType : "NULL"));
+
+                if (    (!PrfQueryProfileSize(HINI_USER,
+                                              (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                              pstrTypeName->psz,
+                                              &cb))
+                     || (cb == 0)
+                   )
+                {
+                    // alright, add a new type, with a single null byte
+                    // (no associations yet)
+                    CHAR NullByte = '\0';
+
+                    _Pmpf(("   type %s doesn't exist, adding to PMWP_ASSOC_TYPE",
+                            pstrTypeName->psz));
+
+                    PrfWriteProfileData(HINI_USER,
+                                        (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                        pstrTypeName->psz,
+                                        &NullByte,
+                                        1);
+                }
+                else
+                    _Pmpf(("   type %s exists",  pstrTypeName->psz));
+
+                // now update parent type
+                // in any case, write the parent type
+                // to the XWP types list (overwrite existing
+                // parent type, if it exists);
+                // -- if pcszParentType is NULL, the existing
+                //    parent type is reset to root (delete the entry)
+                // -- if pcszParentType != NULL, the existing
+                //    parent type is replaced
+                PrfWriteProfileString(HINI_USER,
+                                      (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                      // key name == type name
+                                      pstrTypeName->psz,
+                                      // data == parent type
+                                      (PSZ)pcszParentType);
+
+                // get the filters, if any
+                ImportFilters(pTypeElementThis,
+                              pstrTypeName->psz);
+            }
+
+            // recurse for this file type, it may have subtypes
+            if (!arc)
+                arc = ImportTypes(pTypeElementThis,
+                                  pstrTypeName->psz);
+        } // end for (pTypeNode = lstQueryFirstNode(pllTypes);
+
+        lstFree(pllTypes);
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ ftypImportTypes:
+ *      loads new types and filters from the specified
+ *      XML file, which should have been created with
+ *      ftypExportTypes and have an extension of ".XTP".
+ *
+ *      Returns either a DOS or XML error code (see xml.h).
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ftypImportTypes(const char *pcszFilename)        // in: XML file name
+{
+    APIRET arc;
+    BOOL fLocked = FALSE;
+
+    PSZ pszContent = NULL;
+
+    if (!(arc = doshLoadTextFile(pcszFilename,
+                                 &pszContent)))
+    {
+        // now go parse
+        // create the DOM
+        PXMLDOM pDom = NULL;
+        if (!(arc = xmlCreateDOM(0,             // no validation
+                                 &pDom)))
+        {
+            if (!(arc = xmlParse(pDom,
+                                 pszContent,
+                                 strlen(pszContent),
+                                 TRUE)))    // last chunk (we only have one)
+            {
+                TRY_LOUD(excpt1)
+                {
+                    if (fLocked = ftypLockCaches())
+                    {
+                        PDOMNODE pRootElement;
+                        if (pRootElement = xmlGetRootElement(pDom))
+                        {
+                            arc = ImportTypes(pRootElement,
+                                              NULL);        // parent type == none
+                                    // this recurses into subtypes
+
+                        }
+                        else
+                            arc = ERROR_DOM_NO_ELEMENT;
+                    }
+                }
+                CATCH(excpt1)
+                {
+                    arc = ERROR_PROTECTION_VIOLATION;
+                } END_CATCH();
+
+                // invalidate the caches
+                ftypInvalidateCaches();
+
+                if (fLocked)
+                    ftypUnlockCaches();
+            }
+
+            xmlFreeDOM(pDom);
+        }
+
+        free(pszContent);
+    }
+
+    return (arc);
+}
+
+
+/* ******************************************************************
+ *
+ *   Export facility
+ *
+ ********************************************************************/
+
+/*
+ *@@ ExportAddType:
+ *      stores one type and all its filters
+ *      as a TYPE element with FILTER subelements
+ *      and the respective attributes.
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (document root node if none)
+                     PFILETYPELISTITEM pliAssoc,    // in: type description
+                     PDOMNODE *ppNewNode)           // out: new element
+{
+    PDOMNODE pNodeReturn;
+    APIRET arc = xmlCreateElementNode(pParentNode,
+                                      // parent record; this might be pRootElement
+                                      "TYPE",
+                                      &pNodeReturn);
+    if (!arc)
+    {
+        PDOMNODE pAttribute;
+        pliAssoc->precc = (PFILETYPERECORD)pNodeReturn;
+        pliAssoc->fProcessed = TRUE;
+
+        // create NAME attribute
+        arc = xmlCreateAttributeNode(pNodeReturn,
+                                     "NAME",
+                                     pliAssoc->pszFileType,
+                                     &pAttribute);
+
+        if (!arc)
+        {
+            // create child ELEMENTs for each filter
+
+            // get the XWorkplace-defined filters for this file type
+            ULONG cbFiltersData;
+            PSZ pszFiltersData = prfhQueryProfileData(HINI_USER,
+                                                      INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                                      pliAssoc->pszFileType,
+                                                      &cbFiltersData);
+            if (pszFiltersData)
+            {
+                // pszFiltersData now has a string array of
+                // defined filters, each null-terminated
+                PSZ     pFilter = pszFiltersData;
+
+                if (pFilter)
+                {
+                    // now parse the filters string
+                    while ((*pFilter) && (!arc))
+                    {
+                        // add the filter to the "Filters" container
+                        PDOMNODE pFilterNode;
+                        arc = xmlCreateElementNode(pNodeReturn,
+                                                   // parent record; this might be pRootElement
+                                                   "FILTER",
+                                                   &pFilterNode);
+
+                        if (!arc)
+                            arc = xmlCreateAttributeNode(pFilterNode,
+                                                         "VALUE",
+                                                         pFilter,
+                                                         &pAttribute);
+
+                        // go for next object filter (after the 0 byte)
+                        pFilter += strlen(pFilter) + 1;
+                        if (pFilter >= pszFiltersData + cbFiltersData)
+                            break; // while (*pFilter))
+                    } // end while (*pFilter)
+                }
+
+                free(pszFiltersData);
+            }
+        }
+
+        *ppNewNode = pNodeReturn;
+    }
+    else
+        _Pmpf((__FUNCTION__ ": xmlCreateElementNode returned %d for %s",
+                    arc,
+                    pliAssoc->pszFileType));
+
+    return (arc);
+}
+
+/*
+ *@@ ExportAddFileTypeAndAllParents:
+ *      adds the specified file type to the DOM
+ *      tree; also adds all the parent file types
+ *      if they haven't been added yet.
+ *
+ *      This code is very similar to that in
+ *      AddFileTypeAndAllParents (for the cnr page)
+ *      but works on the DOM tree instead.
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
+                                      PLINKLIST pllFileTypes,  // in: list of all file types
+                                      PSZ pszKey,
+                                      PDOMNODE *ppNewElement)   // out: element node for this key
+{
+    APIRET              arc = NO_ERROR;
+    PDOMNODE            pParentNode = pRootElement,
+                        pNodeReturn = NULL;
+    PLISTNODE           pAssocNode;
+
+    // query the parent for pszKey
+    PSZ pszParentForKey = prfhQueryProfileData(HINI_USER,
+                                               INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                               pszKey,
+                                               NULL);
+
+    if (pszParentForKey)
+    {
+        // key has a parent: recurse first! we need the
+        // parent records before we insert the actual file
+        // type as a child of this
+        arc = ExportAddFileTypeAndAllParents(pRootElement,
+                                          pllFileTypes,
+                                          // recurse with parent
+                                          pszParentForKey,
+                                          &pParentNode);
+        free(pszParentForKey);
+    }
+
+    if (!arc)
+    {
+        // we arrive here after the all the parents
+        // of pszKey have been added;
+        // if we have no parent, pParentNode is NULL
+
+        // now find the file type list item
+        // which corresponds to pKey
+        pAssocNode = lstQueryFirstNode(pllFileTypes);
+        while ((pAssocNode) && (!arc))
+        {
+            PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)pAssocNode->pItemData;
+
+            if (strcmp(pliAssoc->pszFileType,
+                       pszKey) == 0)
+            {
+                if (!pliAssoc->fProcessed)
+                {
+                    if (!pliAssoc->fCircular)
+                    {
+                        // add record core, which will be stored in
+                        // pliAssoc->pftrecc
+                        arc = ExportAddType(pParentNode,
+                                            pliAssoc,
+                                            &pNodeReturn);
+                    }
+
+                    pliAssoc->fCircular = TRUE;
+                }
+                else
+                    // record core already created:
+                    // return that one
+                    pNodeReturn = (PDOMNODE)pliAssoc->precc;
+
+                // in any case, stop
+                break;
+            }
+
+            pAssocNode = pAssocNode->pNext;
+        }
+
+        // return the DOMNODE which we created;
+        // if this is a recursive call, this will
+        // be used as a parent by the parent call
+        *ppNewElement = pNodeReturn;
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ ExportAddTypesTree:
+ *      writes all current types into the root
+ *      element in the DOM tree.
+ *
+ *      Called from ftypExportTypes.
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ExportAddTypesTree(PDOMNODE pRootElement)
+{
+    APIRET arc = NO_ERROR;
+    PSZ pszAssocTypeList;
+    LINKLIST llFileTypes;
+    lstInit(&llFileTypes, TRUE);
+
+    // step 1: load WPS file types list
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                    &pszAssocTypeList)))
+    {
+        PSZ         pKey = pszAssocTypeList;
+        PSZ         pszFileTypeHierarchyList;
+        PLISTNODE   pAssocNode;
+
+        while (*pKey != 0)
+        {
+            // for each WPS file type,
+            // create a list item
+            PFILETYPELISTITEM pliAssoc = malloc(sizeof(FILETYPELISTITEM));
+            memset(pliAssoc, 0, sizeof(*pliAssoc));
+            // mark as "not processed"
+            // pliAssoc->fProcessed = FALSE;
+            // set anti-recursion flag
+            // pliAssoc->fCircular = FALSE;
+            // store file type
+            pliAssoc->pszFileType = strdup(pKey);
+            // add item to list
+            lstAppendItem(&llFileTypes, pliAssoc);
+
+            // go for next key
+            pKey += strlen(pKey)+1;
+        }
+
+        // step 2: load XWorkplace file types hierarchy
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                        &pszFileTypeHierarchyList)))
+        {
+            // step 3: go thru the file type hierarchy
+            // and add parents;
+            // AddFileTypeAndAllParents will mark the
+            // inserted items as processed (for step 4)
+
+            pKey = pszFileTypeHierarchyList;
+            while ((*pKey != 0) && (!arc))
+            {
+                PDOMNODE pNewElement;
+                _Pmpf((__FUNCTION__ ": processing %s", pKey));
+                arc = ExportAddFileTypeAndAllParents(pRootElement,
+                                                     &llFileTypes,
+                                                     pKey,
+                                                     &pNewElement);
+                                                // this will recurse
+                if (arc)
+                    _Pmpf((__FUNCTION__ ": ExportAddFileTypeAndAllParents returned %d for %s",
+                                arc, pKey));
+                else
+                    _Pmpf((__FUNCTION__ ": %s processed OK", pKey));
+
+                // go for next key
+                pKey += strlen(pKey)+1;
+            }
+
+            free(pszFileTypeHierarchyList); // was missing V0.9.12 (2001-05-12) [umoeller]
+        }
+
+        // step 4: add all remaining file types
+        // to root level
+        if (!arc)
+        {
+            pAssocNode = lstQueryFirstNode(&llFileTypes);
+            while ((pAssocNode) && (!arc))
+            {
+                PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)(pAssocNode->pItemData);
+                if (!pliAssoc->fProcessed)
+                {
+                    // add to root element node
+                    PDOMNODE pNewElement;
+                    arc = ExportAddType(pRootElement,
+                                        pliAssoc,
+                                        &pNewElement);
+                    if (arc)
+                        _Pmpf((__FUNCTION__ ": xmlCreateElementNode returned %d", arc));
+                }
+                pAssocNode = pAssocNode->pNext;
+            }
+        }
+
+        free(pszAssocTypeList);
+    }
+
+    // clean up the list
+    ClearAvailableTypes(NULLHANDLE,     // no cnr here
+                        &llFileTypes);
+
+    return (arc);
+}
+
+/*
+ *@@ G_pcszDoctype:
+ *      the DTD for the export file.
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+const char *G_pcszDoctype =
+"<!DOCTYPE XWPFILETYPES [\n"
+"\n"
+"<!ELEMENT XWPFILETYPES (TYPE*)>\n"
+"\n"
+"<!ELEMENT TYPE (TYPE* | FILTER*)>\n"
+"    <!ATTLIST TYPE\n"
+"            NAME CDATA #REQUIRED >\n"
+"<!ELEMENT FILTER EMPTY>\n"
+"    <!ATTLIST FILTER\n"
+"            VALUE CDATA #IMPLIED>\n"
+"]>";
+
+
+/*
+ *@@ ftypExportTypes:
+ *      writes the current types and filters setup into
+ *      the specified XML file, which should have an
+ *      extension of ".XTP".
+ *
+ *      Returns either a DOS or XML error code (see xml.h).
+ *
+ *@@added V0.9.12 (2001-05-21) [umoeller]
+ */
+
+APIRET ftypExportTypes(const char *pcszFilename)        // in: XML file name
+{
+    APIRET arc = NO_ERROR;
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = ftypLockCaches())
+        {
+            PDOMDOCUMENTNODE pDocument = NULL;
+            PDOMNODE pRootElement = NULL;
+
+            // create a DOM
+            if (!(arc = xmlCreateDocument("XWPFILETYPES",
+                                          &pDocument,
+                                          &pRootElement)))
+            {
+                // add the types tree
+                if (!(arc = ExportAddTypesTree(pRootElement)))
+                {
+                    // create a text XML document from all this
+                    XSTRING strDocument;
+                    xstrInit(&strDocument, 1000);
+                    if (!(arc = xmlWriteDocument(pDocument,
+                                                 "ISO-8859-1",
+                                                 G_pcszDoctype,
+                                                 &strDocument)))
+                    {
+                        xstrConvertLineFormat(&strDocument,
+                                              LF2CRLF);
+                        arc = doshWriteTextFile(pcszFilename,
+                                                strDocument.psz,
+                                                NULL,
+                                                NULL);
+                    }
+
+                    xstrClear(&strDocument);
+                }
+
+                // kill the DOM document
+                xmlDeleteNode((PNODEBASE)pDocument);
+            }
+            else
+                _Pmpf((__FUNCTION__ ": xmlCreateDocument returned %d", arc));
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (fLocked)
+        ftypUnlockCaches();
+
+    return (arc);
+}
+
 

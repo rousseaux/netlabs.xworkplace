@@ -59,28 +59,48 @@ HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLP
 
 ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
 
+EXENAME = treesize
+
 # TARGETS
 # -------
 
-all: $(XWPRUNNING)\bin\treesize.exe
+all: $(XWPRUNNING)\bin\$(EXENAME).exe
     @echo ----- Leaving $(MAKEDIR)
 
-$(OUTPUTDIR)\treesize.obj: $(@B).c $(HEADERS) ..\..\include\bldlevel.h
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
+
+.c.{$(OUTPUTDIR)}.obj:
+        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+!ifndef PRECH
+# precompiled headers disabled:
+        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+!else
+        $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+!endif
 
 # build targets
-treesize.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace Treesize Utility"
+$(EXENAME).def: ..\..\include\bldlevel.h
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace Treesize Utility"
 
-$(OUTPUTDIR)\treesize.res: $(@B).rc *.ico
+$(OUTPUTDIR)\$(EXENAME).res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(MODULESDIR)\treesize.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
+$(MODULESDIR)\$(EXENAME).exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
           $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(@B).def
           $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target
-$(XWPRUNNING)\bin\treesize.exe: $(MODULESDIR)\$(@B).exe
+$(XWPRUNNING)\bin\$(EXENAME).exe: $(MODULESDIR)\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
+
+!include .depend
 
 

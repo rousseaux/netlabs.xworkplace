@@ -12,8 +12,13 @@
 #
 #       Input:          specify the target(s) to be made, which can be:
 #
+#                       --  "dep": create dependencies for all makefiles.
+#                           Run this first before the regular "all"
+#                           target.
+#
 #                       --  "all" (default): build XFLDR.DLL,
 #                           XWPHOOK.DLL, XWPDAEMN.EXE.
+#
 #                       --  "really_all": "all" plus external EXEs
 #                           (Treesize, Netscape DDE, et al) plus NLS
 #                           specified by the XWP_LANG_CODE variable,
@@ -214,10 +219,16 @@ SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_sentinel.obj $(PMPRINTF_LIB) libs\wi
 HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
-PGMGDMNOBJS = $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_control.obj $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_move.obj $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_settings.obj \
-    $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_winscan.obj
+# The PGMGDMNOBJS macro contains all the PageMage .OBJ files,
+# which go into XWPDAEMN.EXE.
+PGMGDMNOBJS = \
+$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_control.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_move.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_settings.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_winscan.obj
 
-# The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
+# The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;
+# this includes PGMGDMNOBJS.
 DMNOBJS = \
 $(XWP_OUTPUT_ROOT)\exe_mt\xwpdaemn.obj \
 $(PGMGDMNOBJS) \
@@ -256,89 +267,50 @@ SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(
 # store current directory so we can change back later
 CURRENT_DIR = $(MAKEDIR)
 
+# REGULAR MAIN TARGETS
+# --------------------
 
-# PSEUDOTARGETS
-# -------------
-
-all: idl cpl_main link
+# "all": default, does a regular compile, but leaves
+# out the not-so-important stuff such as netscdee and treesize.
+# Basically, this is for updating XFLDR.DLL and the hook/daemon
+# for speed.
+all:            idl helpers helpers_exe_mt compile_all link
     @echo ----- Leaving $(MAKEDIR)
+    @echo Yo, done!
 
-# "really_all" references "all".
-really_all: all treesize netscdde xfix tools nls
+# "really_all" references "all" and compiles really everything.
+# This must be used for the release version.
+really_all:     idl helpers helpers_exe_mt compile_really_all link nls
     @echo ----- Leaving $(MAKEDIR)
+    @echo Yo, done!
 
-# If you add a subdirectory to SRC\, add a target to
-# "cpl_main" also to have automatic recompiles.
-cpl_main: helpers helpers_exe_mt classes config filesys media widgets xcenter \
-!ifdef ANIMATED_MOUSE_POINTERS
-pointers \
-!endif
-!ifdef XWPSECURITY
-xwpsecurity \
-!endif
-shared startshut hook
-#animouse
+# "dep": create dependencies.
+dep:
+    @echo $(MAKEDIR)\makefile: Going for subdir src (dep)
+    @cd src
+    $(MAKE) -nologo dep "SUBTARGET=dep" "REALLYALL=1"
+    @cd $(CURRENT_DIR)
 
-# COMPILER PSEUDOTARGETS
-# ----------------------
+# "COMPILE" PSEUDOTARGETS
+# -----------------------
 
-tools:
-    @echo $(MAKEDIR)\makefile: Going for subdir tools
-    @cd tools
-    @nmake -nologo all "MAINMAKERUNNING=YES"
-    @cd ..
+# The following are invoked via "all" or "really_all"
+# to call src\makefile with SUBTARGET=all, which will
+# in turn invoke nmake all to the src\ subdirectories.
 
+# idl always gets invoked first to check whether
+# src\classes\*.c needs to be refreshed from idl\*.idl.
 idl:
     @echo $(MAKEDIR)\makefile: Going for subdir idl
     @cd idl
     @nmake -nologo all "MAINMAKERUNNING=YES"
     @cd ..
 
-classes:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\classes
-    @cd src\classes
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-config:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\config
-    @cd src\config
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-filesys:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\filesys
-    @cd src\filesys
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-media:
-# V0.9.3 (2000-04-25) [umoeller]
-    @echo $(MAKEDIR)\makefile: Going for subdir src\media
-    @cd src\media
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-widgets:
-# V0.9.7 (2000-12-02) [umoeller]
-    @echo $(MAKEDIR)\makefile: Going for subdir src\widgets
-    @cd src\widgets
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-xcenter:
-# V0.9.7 (2000-12-02) [umoeller]
-    @echo $(MAKEDIR)\makefile: Going for subdir src\xcenter
-    @cd src\xcenter
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
 helpers:
 # helpers:
-# this branches over to the WarpIN source tree,
+# this branches over to the xwphelpers source tree,
 # which is prepared for this. The helpers.lib file
-# is created in the .\bin directory and can be used
-# with both EXE's and DLL's (VAC++ user guide says).
+# is created in $(XWP_OUTPUT_ROOT) then.
     @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
@@ -349,57 +321,33 @@ helpers:
 
 helpers_exe_mt:
 # helpers_exe_mt:
-# same as the above, but this builds a multithread lib for EXEs.
+# same as the above, but this builds a multithread lib for EXEs
+# in $(XWP_OUTPUT_ROOT)\exe_mt\ instead.
     @echo $(MAKEDIR)\makefile: Going for src\helpers (EXE MT version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(CURRENT_DIR)
 
-shared:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\shared
-    @cd src\shared
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
+# compile_all: compile main (without treesize etc.)
+compile_all:
+    @echo $(MAKEDIR)\makefile: Going for subdir src
+    @cd src
+    $(MAKE) -nologo "SUBTARGET=all"
+    @cd $(CURRENT_DIR)
 
-startshut:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\startshut
-    @cd src\startshut
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
+# compile_really_all: compile really_all
+compile_really_all:
+    @echo $(MAKEDIR)\makefile: Going for subdir src (REALLY_ALL)
+    @cd src
+    $(MAKE) -nologo "SUBTARGET=all" "REALLYALL=1"
+    @cd $(CURRENT_DIR)
 
-hook:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\Daemon
-    @cd src\Daemon
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @echo $(MAKEDIR)\makefile: Going for subdir src\hook
-    @cd ..\hook
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-treesize:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\treesize
-    @cd src\treesize
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-netscdde:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\NetscapeDDE
-    @cd src\NetscapeDDE
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-pointers:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\pointers
-    @cd src\pointers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
-xfix:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\xfix
-    @cd src\xfix
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
+tools:
+    @echo $(MAKEDIR)\makefile: Going for subdir tools
+    @cd tools
+    $(MAKE) -nologo "SUBTARGET=all" "MAINMAKERUNNING=YES"
+    @cd ..
 
 xwpsecurity:
     @echo $(MAKEDIR)\makefile: Going for subdir src\xwpsec_ring0
@@ -458,7 +406,7 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
 #
 $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
@@ -475,7 +423,7 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\shared\xwp.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace main WPS classes module"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace main WPS classes module"
 
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -499,13 +447,13 @@ $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 
 $(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
 src\shared\xwpres.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace resources module"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace resources module"
 
 $(MODULESDIR)\xwpres.dll: $(XWP_OUTPUT_ROOT)\dummyfont.obj src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\xwpres.res
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -525,14 +473,14 @@ $(MODULESDIR)\xwpres.dll: $(XWP_OUTPUT_ROOT)\dummyfont.obj src\shared\xwpres.def
 #
 $(XWPRUNNING)\plugins\xcenter\winlist.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\winlist.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter window-list plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter window-list plugin DLL"
 
 $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -552,14 +500,14 @@ $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
 #
 $(XWPRUNNING)\plugins\xcenter\diskfree.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\w_diskfree.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter diskfree plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter diskfree plugin DLL"
 
 $(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -581,14 +529,14 @@ $(DISKFREEOBJS)
 #
 $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\monitors.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter monitors plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter monitors plugin DLL"
 
 $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -610,14 +558,14 @@ $(MONITOROBJS)
 #
 $(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\sentinel.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter Theseus 4 plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter Theseus 4 plugin DLL"
 
 $(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -637,14 +585,14 @@ $(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
 #
 $(XWPRUNNING)\plugins\xcenter\xwHealth.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\xwHealth.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter xwHealth plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter xwHealth plugin DLL"
 
 $(MODULESDIR)\xwHealth.dll: $(HEALTHOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -666,14 +614,14 @@ $(HEALTHOBJS)
 #
 $(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\sample.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter sample plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter sample plugin DLL"
 
 $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -699,7 +647,7 @@ $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
 
 # update DEF file if buildlevel has changed
 src\Daemon\xwpdaemn.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace PM daemon"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace PM daemon"
 
 # create import library from XWPHOOK.DLL
 $(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
@@ -739,7 +687,7 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\hook\xwphook.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace PM hook module"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace PM hook module"
 
 $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def $(XWP_OUTPUT_ROOT)\$(@B).obj
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -759,13 +707,13 @@ $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def $(XWP_OUTPUT_ROOT)\$(@B).obj
 #
 $(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).fon $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
 src\shared\xwpfonts.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace bitmap fonts"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace bitmap fonts"
 
 $(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\dummyfont.obj $(XWP_OUTPUT_ROOT)\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).fon
@@ -782,7 +730,7 @@ $(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\dummyfont.obj $(XWP_OUTPUT_ROOT)\
 #
 $(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $@
+        $(RUN_UNLOCK) $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 

@@ -235,8 +235,10 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 
+#define INCL_WINCOUNTRY
 #define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
+#define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINPOINTERS
 #include <os2.h>
@@ -262,11 +264,14 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\cnrsort.h"             // container sort comparison functions
+#include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
+#include <wpshadow.h>      // WPShadow
 
 /* ******************************************************************
  *
@@ -533,14 +538,17 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
             // "Always sort"
             case ID_XFMI_OFS_ALWAYSSORT:
             {
-                BOOL                fAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
-                                                        ? pGlobalSettings->AlwaysSort
-                                                        : _lAlwaysSort;
+                BOOL                fAlwaysSort;
 
                 _xwpQueryFldrSort(somSelf,
                                   &lDefaultSort,
                                   &lFoldersFirst,
                                   &lAlwaysSort);
+                fAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
+                                  ? pGlobalSettings->AlwaysSort
+                                  : _lAlwaysSort;
+                _Pmpf((__FUNCTION__ ": ID_XFMI_OFS_ALWAYSSORT, old fAlwaysSort: %d",
+                            fAlwaysSort));
                 _xwpSetFldrSort(somSelf,
                                 lDefaultSort,
                                 lFoldersFirst,
@@ -550,6 +558,10 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                        ulMenuId,
                                        !fAlwaysSort);
 
+                if (pbDismiss)
+                    // do not dismiss menu
+                    *pbDismiss = FALSE;
+
                 brc = TRUE;
             }
             break;
@@ -557,14 +569,14 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
             // "folders first"
             case ID_XFMI_OFS_SORTFOLDERSFIRST:
             {
-                BOOL                fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
-                                                        ? pGlobalSettings->fFoldersFirst
-                                                        : _lFoldersFirst;
-
+                BOOL fFoldersFirst;
                 _xwpQueryFldrSort(somSelf,
                                   &lDefaultSort,
                                   &lFoldersFirst,
                                   &lAlwaysSort);
+                fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
+                                    ? pGlobalSettings->fFoldersFirst
+                                    : _lFoldersFirst;
                 _xwpSetFldrSort(somSelf,
                                 lDefaultSort,
                                 !fFoldersFirst,
@@ -573,6 +585,10 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                 winhSetMenuItemChecked(hwndMenu,
                                        ulMenuId,
                                        !fFoldersFirst);
+
+                if (pbDismiss)
+                    // do not dismiss menu
+                    *pbDismiss = FALSE;
 
                 brc = TRUE;
             }
@@ -621,19 +637,15 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                 // just sort once
                 _xwpSortViewOnce(somSelf,
                                  hwndFrame,
-                                 lFoldersFirst,
                                  lSort);
 
             // say "processed"
             brc = TRUE;
-        }
 
-        _Pmpf((__FUNCTION__ ": returning %d", brc));
-
-        if (brc)
             if (pbDismiss)
-                // do not dismiss menu if shift was pressed
-                *pbDismiss = (!fShiftPressed);
+                // do not dismiss menu
+                *pbDismiss = FALSE;
+        }
     }
 
     return (brc);
@@ -658,16 +670,58 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
 LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
                              PSZ *ppsz2)     // ptr to PSZ 2
 {
-    int i = stricmp(*ppsz1, *ppsz2);
-    if (i > 0)
+    PSZ p1 = *ppsz1,
+        p2 = *ppsz2;
+
+    // please do not crash on NULL strings, so check this
+    if (p1 && p2)
+    {
+      /*    WinCompareStrings returns:
+
+            #define WCS_EQ               1
+            #define WCS_LT               2
+            #define WCS_GT               3
+
+            WPS comparison needs:
+
+            #define CMP_EQUAL            0
+            #define CMP_GREATER          1
+            #define CMP_LESS             2
+
+            Now, these don't match AT ALL...
+            Can't believe we have to translate
+            WinCompareStrings to WPS value, which
+            is then translated to cnr comparison
+            value AGAIN, which must be -1, 0, or
+            +1. Who came up with this bullshit?
+      */
+
+        ULONG ul = WinCompareStrings(G_habThread1,
+                                     0,
+                                     0,
+                                     p1,
+                                     p2,
+                                     0);
+        switch (ul)
+        {
+            case WCS_LT: return (CMP_LESS);
+            case WCS_GT: return (CMP_GREATER);
+        }
+    }
+    else if (p1)
+        // but p2 is NULL: p1 greater than p2 then
         return (CMP_GREATER);
-    if (i < 0)
+    else if (p2)
+        // but p1 is NULL: p1 less than p2 then
         return (CMP_LESS);
-    return (CMP_EQUAL);
+
+    // return 0 if strcmp returned 0 above or both strings are NULL
+    return (0);
 }
 
 /*
  *@@ CompareULongs:
+ *      sorts ULONG values in ascending order.
  *
  *      NOTE: This is a WPS comparison func, NOT a cnr
  *      comparison func. This gets called from
@@ -687,6 +741,78 @@ LONG EXPENTRY CompareULongs(PULONG pul1,     // ptr to ul1
 }
 
 /*
+ *@@ CompareDate:
+ *      sorts by date.
+ *
+ *      NOTE: This assumes that the field offsets point
+ *      to CDATE values AND the next field offset is
+ *      a CTIME value. This is the same behavior as
+ *      with the WPS, which never documented this behavior
+ *      though.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+LONG EXPENTRY CompareDate(PCDATE pd1,     // ptr to ul1
+                          PCDATE pd2)     // ptr to ul2
+{
+    /*  typedef struct _CDATE {
+           UCHAR      day;
+           UCHAR      month;
+           USHORT     year;
+         } CDATE;
+
+        typedef struct _CTIME {
+           UCHAR     hours;
+           UCHAR     minutes;
+           UCHAR     seconds;
+           UCHAR     ucReserved;
+        } CTIME; */
+
+    // compare years
+    if (pd1->year > pd2->year)
+        return CMP_GREATER;
+    else if (pd1->year < pd2->year)
+        return CMP_LESS;
+    else
+        // compare months
+        if (pd1->month > pd2->month)
+            return CMP_GREATER;
+        else if (pd1->month < pd2->month)
+            return CMP_LESS;
+        else
+            // compare days
+            if (pd1->day > pd2->day)
+                return CMP_GREATER;
+            else if (pd1->day < pd2->day)
+                return CMP_LESS;
+            else
+            {
+                PCTIME pt1 = (PCTIME)(pd1 + 1);
+                PCTIME pt2 = (PCTIME)(pd2 + 1);
+                // compare hours
+                if (pt1->hours > pt2->hours)
+                    return CMP_GREATER;
+                else if (pt1->hours < pt2->hours)
+                    return CMP_LESS;
+                else
+                    // compare minutes
+                    if (pt1->minutes > pt2->minutes)
+                        return CMP_GREATER;
+                    else if (pt1->minutes < pt2->minutes)
+                        return CMP_LESS;
+                    else
+                        // compare seconds
+                        if (pt1->seconds > pt2->seconds)
+                            return CMP_GREATER;
+                        else if (pt1->seconds < pt2->seconds)
+                            return CMP_LESS;
+            }
+
+    return CMP_EQUAL;
+}
+
+/*
  *@@ fnCompareDetailsColumn:
  *      special container comparison func which is
  *      set on the folder cnr if the sort is to be
@@ -699,11 +825,13 @@ LONG EXPENTRY CompareULongs(PULONG pul1,     // ptr to ul1
  *      values are assumed to refer to details
  *      columns.
  *
+ *      Now, this function is quite a monster.
  *      Quite a bit of trickery is necessary to
  *      get access to the objects' details data
  *      since the stupid container control doesn't
  *      support the "pStorage" parameter when a
- *      sort function is set permanently via CNRINFO.
+ *      sort function is set permanently via CNRINFO,
+ *      which would have made things a bit easier.
  *
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
@@ -720,22 +848,59 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
     WPFolder *pFolder = _wpQueryFolder(pobj1);
     // get folder instance data
     XFolderData *somThis = XFolderGetData(pFolder);
-    // get WPFolder sort struct
+    // get WPFolder-internal sort struct
+    // from pointer hacked in wpRestoreData
     PWPSSORTINFO pSortInfo = (PWPSSORTINFO)_pFolderSortInfo;
+
+    BOOL    f1IsOfSortClass,
+            f2IsOfSortClass;
+
+    // check if we have "folders first" enabled
+    // (either locally or globally, this flag is
+    // set by fdrQuerySortFunc)
+    if (_fCachedFoldersFirst)
+    {
+        // yes:
+        // resolve shadows
+        // (watch out, _wpQueryShadowedObject can return NULL)
+        WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
+                                    ? _wpQueryShadowedObject(pobj1, TRUE)
+                                    : pobj1;
+        WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
+                                    ? _wpQueryShadowedObject(pobj2, TRUE)
+                                    : pobj2;
+        BOOL IsFldr1 = (pobjDeref1)
+                          ? _somIsA(pobjDeref1, _WPFolder)
+                          : FALSE;      // treat broken shadows as non-folders
+        BOOL IsFldr2 = (pobjDeref2)
+                          ? _somIsA(pobjDeref2, _WPFolder)
+                          : FALSE;      // treat broken shadows as non-folders
+
+        if (IsFldr1 != IsFldr2)
+        {
+            if (IsFldr1)
+                return (-1);
+            else if (IsFldr2)
+                return (1);
+        }
+
+        // else: both are folders, or both are non-folders:
+        // run the details comparison below...
+    }
 
     // check if the objects are descended from the
     // folder's sort class; the "Class" field has
     // been set by fdrQuerySortFunc
-    BOOL    f1IsOfSortClass = _somIsA(pobj1, pSortInfo->Class),
-            f2IsOfSortClass = _somIsA(pobj2, pSortInfo->Class);
+    f1IsOfSortClass = _somIsA(pobj1, pSortInfo->Class),
+    f2IsOfSortClass = _somIsA(pobj2, pSortInfo->Class);
 
     if (     (f1IsOfSortClass)
           && (f2IsOfSortClass)
        )
     {
         // OK, we can go for the data values... this is VERY
-        // kludgy: the object details data comes directly after
-        // the MINIRECORDCORE of an object.
+        // kludgy: the WPS allocates the object details data
+        // directly after the MINIRECORDCORE of an object.
         // The field offset has been set by fdrQuerySortFunc.
         PBYTE   pb1 =   (PBYTE)pmrc1                // object 1's MINIRECORDCORE
                       + sizeof(MINIRECORDCORE)      // plus MINIRECORDCORE: start of data
@@ -755,18 +920,19 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
             return (-1);
 
         return (lResult);
-   }
-   // else: at least one object doesn't support the criterion...
+    }
+    // else: at least one object doesn't support the criterion...
 
-   if (!f1IsOfSortClass)
-      // but object 2 is:
-      return (1);
+    if (!f1IsOfSortClass)
+        // but object 2 is:
+        return (1);
 
-   if (!f2IsOfSortClass)
-      return (-1);
+    if (!f2IsOfSortClass)
+        // but object 1 is:
+        return (-1);
 
-   // neither does:
-   return (0);
+    // neither is:
+    return (0);
 }
 
 /*
@@ -792,33 +958,48 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
 PFN fdrQuerySortFunc(WPFolder *somSelf,
                      LONG lSort)        // in: sort criterion
 {
+    XFolderData *somThis = XFolderGetData(somSelf);
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    BOOL fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
+                            ? pGlobalSettings->fFoldersFirst
+                            : _lFoldersFirst;
+
     if (lSort == SET_DEFAULT)
-    {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         lSort =  pGlobalSettings->lDefaultSort;
-    }
 
     switch (lSort)
     {
         // hard-coded criteria: return sort functions from shared\cnrsort.c
         case -1:
-            return ((PFN)fnCompareType);
+            if (fFoldersFirst)
+                return ((PFN)fnCompareTypeFoldersFirst);
+            else
+                return ((PFN)fnCompareType);
 
         case -2:
-            return ((PFN)fnCompareName);
+            if (fFoldersFirst)
+                return ((PFN)fnCompareNameFoldersFirst);
+            else
+                return ((PFN)fnCompareName);
 
         case -3:
-            return ((PFN)fnCompareClass);
+            if (fFoldersFirst)
+                return ((PFN)fnCompareClassFoldersFirst);
+            else
+                return ((PFN)fnCompareClass);
 
         case -4:
-            return ((PFN)fnCompareExt);
+            if (fFoldersFirst)
+                return ((PFN)fnCompareExtFoldersFirst);
+            else
+                return ((PFN)fnCompareExt);
 
         default:
         {
             // looks like caller wants a details column... well then.
             if (lSort >= 0)
             {
-                XFolderData *somThis = XFolderGetData(somSelf);
                 PWPSSORTINFO psi;
 
                 if (    (psi = (PWPSSORTINFO)_pFolderSortInfo)
@@ -853,23 +1034,26 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
 
                     // 2) set the WPS comparison func
 
-                    // a) the details column might have specified
-                    //    its own WPS comparison function (for example,
-                    //    "size" does this)
+                    // a) the sort class might have specified
+                    //    its own WPS comparison function for
+                    //    this details column (for example,
+                    //    the WPS "size" column does this because
+                    //    it's CFA_STRING)
                     psi->pfnCompare = pcfi->pfnSort;
 
                     if (!psi->pfnCompare)
                     {
                         // no special sort function specified:
+                        // b) use our standard ones
                         if (pcfi->flData & CFA_STRING)
                             psi->pfnCompare = (PFNCOMPARE)CompareStrings;
                         else if (pcfi->flData & CFA_ULONG)
                             psi->pfnCompare = (PFNCOMPARE)CompareULongs;
 
-                        // @@todo: sort by date
-                        /* else if (pcfi->flData & CFA_DATE)
+                        else if (pcfi->flData & CFA_DATE)
                             psi->pfnCompare = (PFNCOMPARE)CompareDate;
-                        else if (pcfi->flData & CFA_TIME)
+                        // forget about CFA_TIME, CompareDate handles this
+                        /* else if (pcfi->flData & CFA_TIME)
                             psi->pfnCompare = (PFNCOMPARE)CompareTime; */
 
                         else
@@ -879,7 +1063,12 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                             return (PFN)fnCompareName;
                     }
 
-                    // 3) return the details column _cnr_ comparison func,
+                    // 3) set the cached "folders first" field so
+                    //    that fnCompareDetailsColumn can quickly
+                    //    read this
+                    _fCachedFoldersFirst = fFoldersFirst;
+
+                    // 4) return the details column _cnr_ comparison func,
                     //    which will use the WPS comparison func
                     //    in turn
                     return ((PFN)fnCompareDetailsColumn);
@@ -953,7 +1142,6 @@ MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwn
     {
         _xwpSortViewOnce(somSelf,
                          hwndView,
-                         FALSE,             // @@todo
                          ulSort);
         mrc = (MPARAM)TRUE;
     }
@@ -1162,6 +1350,367 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
         mrc = (MPARAM)TRUE;
     }
     return (mrc);
+}
+
+/* ******************************************************************
+ *
+ *   Notebook callbacks (notebook.c) for "Sort" pages
+ *
+ ********************************************************************/
+
+/*
+ *@@ InsertSortItem:
+ *      quick helper for getting a sort criterion
+ *      into the criteria list box.
+ *
+ *      We use the details column index as the
+ *      list box item handle.
+ *
+ *@@added V0.9.12 (2001-05-18) [umoeller]
+ */
+
+VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
+                    PULONG pulIndex,        // in/out: current index (raised by one here)
+                    const char *pcsz,       // in: criterion name
+                    LONG lItemHandle)       // in: details column index
+{
+    WinInsertLboxItem(hwndListbox,
+                      *pulIndex,
+                      (PSZ)pcsz);
+    winhSetLboxItemHandle(hwndListbox,
+                          (*pulIndex)++,
+                          lItemHandle);
+}
+
+/*
+ * fdrSortInitPage:
+ *      "Sort" page notebook callback function (notebook.c).
+ *      Sets the controls on the page.
+ *
+ *      The "Sort" callbacks are used both for the folder settings
+ *      notebook page AND the respective "Sort" page in the "Workplace
+ *      Shell" object, so we need to keep instance data and the
+ *      Global Settings apart.
+ *
+ *      We do this by examining the page ID in the notebook info struct.
+ *
+ *@@changed V0.9.0 [umoeller]: updated settings page
+ *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: reworked for new sorting features
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: moved this here from fdrnotebooks.c
+ */
+
+VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                     ULONG flFlags)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
+                                              ID_XSDI_SORTLISTBOX);
+
+    if (flFlags & CBI_INIT)
+    {
+        M_WPObject *pSortClass;
+        ULONG       ulIndex = 0,
+                    cColumns = 0,
+                    ul;
+        PCLASSFIELDINFO   pcfi;
+
+        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+        {
+            // if we're being called from a folder's notebook,
+            // get instance data
+            XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
+
+            if (pcnbp->pUser == NULL)
+            {
+                // first call: backup instance data for "Undo" button;
+                // this memory will be freed automatically by the
+                // common notebook window function (notebook.c) when
+                // the notebook page is destroyed
+                pcnbp->pUser = malloc(sizeof(XFolderData));
+                memcpy(pcnbp->pUser, somThis, sizeof(XFolderData));
+            }
+
+            // get folder's sort class
+            pSortClass = _wpQueryFldrSortClass(pcnbp->somSelf);
+        }
+        else
+        {
+            // "Workplace Shell" page:
+            if (pcnbp->pUser == NULL)
+            {
+                // first call: backup Global Settings for "Undo" button;
+                // this memory will be freed automatically by the
+                // common notebook window function (notebook.c) when
+                // the notebook page is destroyed
+                pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+                memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            }
+
+            // sort class: always use _WPFileSystem
+            pSortClass = _WPFileSystem;
+        }
+
+        // 1) insert the hard-coded sort criteria
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_NAME),
+                       -2);
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_TYPE),
+                       -1);
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_CLASS),
+                       -3);
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_EXT),
+                       -4);
+
+        // 2) next, insert the class-specific sort criteria
+        cColumns = _wpclsQueryDetailsInfo(pSortClass,
+                                          &pcfi,
+                                          NULL);
+        for (ul = 0;
+             ul < cColumns;
+             ul++, pcfi = pcfi->pNextFieldInfo)
+        {
+            BOOL fSortable = TRUE;
+
+            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                // call this method only if somSelf is really a folder!
+                fSortable = _wpIsSortAttribAvailable(pcnbp->somSelf, ul);
+
+            if (    (fSortable)
+                    // sortable columns only:
+                 && (pcfi->flCompare & SORTBY_SUPPORTED)
+                    // rule out the images:
+                 && (0 == (pcfi->flTitle & CFA_BITMAPORICON))
+               )
+            {
+                // OK, usable sort column:
+                // add this to the list box
+                InsertSortItem(hwndListbox,
+                               &ulIndex,
+                               pcfi->pTitleData,
+                               ul);     // column number as handle
+            }
+        }
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        LONG lDefaultSort,
+             lFoldersFirst,
+             lAlwaysSort;
+        ULONG ulIndex;
+
+        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+        {
+            // instance notebook:
+            XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
+            lDefaultSort = (_lDefaultSort == SET_DEFAULT)
+                                ? pGlobalSettings->lDefaultSort
+                                : _lDefaultSort;
+            lFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
+                                  ? pGlobalSettings->fFoldersFirst
+                                  : _lFoldersFirst;
+            lAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
+                                  ? pGlobalSettings->AlwaysSort
+                                  : _lAlwaysSort;
+        }
+        else
+        {
+            // "Workplace Shell":
+            lDefaultSort = pGlobalSettings->lDefaultSort;
+            lFoldersFirst = pGlobalSettings->fFoldersFirst;
+            lAlwaysSort = pGlobalSettings->AlwaysSort;
+        }
+
+        // find the list box entry with the matching handle
+        ulIndex = winhLboxFindItemFromHandle(hwndListbox,
+                                             lDefaultSort);
+        if (ulIndex != -1)
+            winhSetLboxSelectedItem(hwndListbox,
+                                    ulIndex,
+                                    TRUE);
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+                              ID_XSDI_SORTFOLDERSFIRST,
+                              lFoldersFirst);
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+                              ID_XSDI_ALWAYSSORT,
+                              lAlwaysSort);
+    }
+}
+
+/*
+ * fdrSortItemChanged:
+ *      "Sort" page notebook callback function (notebook.c).
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *      The "Sort" callbacks are used both for the folder settings notebook page
+ *      AND the respective "Sort" page in the "Workplace Shell" object, so we
+ *      need to keep instance data and the XFolder GLobal Settings apart.
+ *
+ *@@changed V0.9.0 [umoeller]: updated settings page
+ *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: reworked for new sorting features
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: moved this here from fdrnotebooks.c
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: added inititialized check
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed folder refresh
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed global "Undo", which never worked
+ */
+
+MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                           ULONG ulItemID,
+                           USHORT usNotifyCode,
+                           ULONG ulExtra)      // for checkboxes: contains new state
+{
+    if (pcnbp->fPageInitialized)        // V0.9.12 (2001-05-22) [umoeller]
+    {
+        BOOL fGlobalRefreshViews = FALSE;
+
+        switch (ulItemID)
+        {
+            case ID_XSDI_ALWAYSSORT:
+            case ID_XSDI_SORTFOLDERSFIRST:
+            case ID_XSDI_SORTLISTBOX:
+            {
+                HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
+                                                          ID_XSDI_SORTLISTBOX);
+
+                ULONG ulSortIndex = (USHORT)(WinSendMsg(hwndListbox,
+                                                        LM_QUERYSELECTION,
+                                                        (MPARAM)LIT_CURSOR,
+                                                        MPNULL));
+                LONG lDefaultSort = winhQueryLboxItemHandle(hwndListbox, ulSortIndex);
+
+                BOOL fFoldersFirst = winhIsDlgItemChecked(pcnbp->hwndDlgPage,
+                                                          ID_XSDI_SORTFOLDERSFIRST);
+
+                BOOL fAlways = winhIsDlgItemChecked(pcnbp->hwndDlgPage,
+                                                    ID_XSDI_ALWAYSSORT);
+
+                if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                {
+                    // change instance data
+                    _xwpSetFldrSort(pcnbp->somSelf,
+                                    lDefaultSort,
+                                    fFoldersFirst,
+                                    fAlways);
+                        // this refreshes the folder already
+                }
+                else
+                {
+                    // change global data
+                    GLOBALSETTINGS *pGlobalSettings;
+
+                    // if the user enabled "always sort", check if
+                    // the desktop would be sorted
+                    if (fAlways)
+                    {
+                        LONG lFoldersFirst,
+                             lAlwaysSort;
+                        _xwpQueryFldrSort(cmnQueryActiveDesktop(),
+                                          &lDefaultSort,
+                                          &lFoldersFirst,
+                                          &lAlwaysSort);
+                        if (lAlwaysSort != 0)
+                        {
+                            // issue warning that this might also sort the Desktop
+                            if (cmnMessageBoxMsg(pcnbp->hwndFrame,
+                                                 116, 133,
+                                                 MB_YESNO)
+                                           == MBID_YES)
+                                _xwpSetFldrSort(cmnQueryActiveDesktop(),
+                                                lDefaultSort,
+                                                lFoldersFirst,
+                                                0);
+                        }
+                    }
+
+                    // moved lock down V0.9.12 (2001-05-20) [umoeller]
+                    pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    pGlobalSettings->fFoldersFirst = fFoldersFirst;
+                    pGlobalSettings->lDefaultSort = lDefaultSort;
+                    pGlobalSettings->AlwaysSort = fAlways;
+                    cmnUnlockGlobalSettings();
+
+                    fGlobalRefreshViews = TRUE;
+                }
+            break; }
+
+            // control other than listbox:
+            case DID_UNDO:
+                // "Undo" button: restore backed up instance/global data
+                if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                {
+                    // if we're being called from a folder's notebook,
+                    // restore instance data
+                    if (pcnbp->pUser)
+                    {
+                        XFolderData *Backup = (pcnbp->pUser);
+                        _xwpSetFldrSort(pcnbp->somSelf,
+                                        Backup->lDefaultSort,
+                                        Backup->lFoldersFirst,
+                                        Backup->lAlwaysSort);
+                    }
+                }
+                else
+                {
+                    // global sort page:
+                    GLOBALSETTINGS *pBackup = (GLOBALSETTINGS*)pcnbp->pUser;
+                    // fixed undo V0.9.12 (2001-05-22) [umoeller]
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    pGlobalSettings->fFoldersFirst = pBackup->fFoldersFirst;
+                    pGlobalSettings->lDefaultSort = pBackup->lDefaultSort;
+                    pGlobalSettings->AlwaysSort = pBackup->AlwaysSort;
+                    cmnUnlockGlobalSettings();
+
+                    fGlobalRefreshViews = TRUE;
+                }
+
+                // update the display by calling the INIT callback
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            break;
+
+            case DID_DEFAULT:
+                // "Default" button:
+                if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                    _xwpSetFldrSort(pcnbp->somSelf,
+                                    SET_DEFAULT,
+                                    SET_DEFAULT,
+                                    SET_DEFAULT);
+                else
+                {
+                    cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL);
+                    fGlobalRefreshViews = TRUE;
+                }
+
+                // update the display by calling the INIT callback
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            break;
+        }
+
+        if (fGlobalRefreshViews)
+        {
+            HPOINTER hptrOld = winhSetWaitPointer();
+            // global:
+            cmnStoreGlobalSettings();
+            // update all open folders
+            fdrForEachOpenGlobalView(TRUE,  // force
+                                     fdrUpdateFolderSorts);
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+        }
+    }
+
+    return 0;
 }
 
 

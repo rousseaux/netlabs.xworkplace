@@ -1,7 +1,7 @@
 
 XWorkplace Source README
 (W) Ulrich M”ller, July 2, 1999
-Last updated April 17, 2001, Ulrich M”ller
+Last updated May 22, 2001, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -50,15 +50,17 @@ Last updated April 17, 2001, Ulrich M”ller
 
     See PROGREF.INF for detailed instructions.
 
-    If you only want to translate XWorkplace, you need no compiler.
-    Otherwise, compiling requires IBM VAC++ 3.0, fixpak 8 installed,
-    plus the OS/2 Developer's Toolkit for Warp 3. There's no way
-    around that, so EMX won't work.
+    NOTE: The build process has been changed with V0.9.12.
+    PROGREF.INF has been updated to reflect these changes.
+    Essentially, if you managed to build XWP before, you
+    need to
 
-    The SRC\HELPERS and INCLUDE\HELPERS directories are no longer
-    present in this source tree. Starting with V0.9.6, these have
-    been exported to a separate CVS repository at Netlabs called
-    "xwphelpers". See PROGREF.INF.
+    1)  take a look at the new "config.in" file and adjust it to
+        match your system (this replaces the environment
+        variables which were necessary previously);
+
+    2)  run "nmake dep" before the regular "nmake" or
+        "nmake really_all".
 
 
     Working With Netlabs CVS

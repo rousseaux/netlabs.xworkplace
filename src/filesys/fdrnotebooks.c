@@ -232,7 +232,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_FDRDEFAULTDOC:
             pGlobalSettings->fFdrDefaultDoc = ulExtra;
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSDI_FDRDEFAULTDOCVIEW:
@@ -279,7 +279,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->bDefaultFolderView = pGSBackup->bDefaultFolderView;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fUpdate = TRUE;
         break; }
 
@@ -290,7 +290,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fUpdate = TRUE;
         break; }
 
@@ -419,7 +419,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->GridCY = pGSBackup->GridCY;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -429,7 +429,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -576,7 +576,7 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_FULLPATH:
             _bFullPathInstance = ulExtra;
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
         break;
 
@@ -616,7 +616,7 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            Backup->bStatusBarInstance,
                                            TRUE);  // update open folder views
                 // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
             }
         break;
@@ -631,7 +631,7 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         STATUSBAR_DEFAULT,
                         TRUE);  // update open folder views
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
         break;
 
@@ -644,361 +644,6 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         _wpSaveDeferred(pcnbp->somSelf);
 
     return ((MPARAM)0);
-}
-
-/* ******************************************************************
- *
- *   Notebook callbacks (notebook.c) for "Sort" pages
- *
- ********************************************************************/
-
-/*
- *@@ InsertSortItem:
- *
- *@@added V0.9.12 (2001-05-18) [umoeller]
- */
-
-VOID InsertSortItem(HWND hwndListbox,
-                    PULONG pulIndex,
-                    const char *pcsz,
-                    LONG lItemHandle)
-{
-    WinInsertLboxItem(hwndListbox,
-                      *pulIndex,
-                      (PSZ)pcsz);
-    winhSetLboxItemHandle(hwndListbox,
-                          (*pulIndex)++,
-                          lItemHandle);
-}
-
-/*
- *@@ winhLboxFindItemFromHandle:
- *      finds the list box item with the specified
- *      handle.
- *
- *      Of course this only makes sense if each item
- *      has a unique handle indeed.
- *
- *      Returns the index of the item found or -1.
- *
- *@@added V0.9.12 (2001-05-18) [umoeller]
- */
-
-ULONG winhLboxFindItemFromHandle(HWND hwndListBox,
-                                 ULONG ulHandle)
-{
-    LONG cItems = WinQueryLboxCount(hwndListBox);
-    if (cItems)
-    {
-        ULONG ul;
-        for (ul = 0;
-             ul < cItems;
-             ul++)
-        {
-            if (ulHandle == winhQueryLboxItemHandle(hwndListBox,
-                                                    ul))
-                return (ul);
-        }
-    }
-
-    return (-1);
-}
-
-/*
- * fdrSortInitPage:
- *      "Sort" page notebook callback function (notebook.c).
- *      Sets the controls on the page.
- *
- *      The "Sort" callbacks are used both for the folder settings
- *      notebook page AND the respective "Sort" page in the "Workplace
- *      Shell" object, so we need to keep instance data and the
- *      Global Settings apart.
- *
- *      We do this by examining the page ID in the notebook info struct.
- *
- *@@changed V0.9.0 [umoeller]: updated settings page
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                     ULONG flFlags)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
-                                              ID_XSDI_SORTLISTBOX);
-
-    if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-    {
-        // if we're being called from a folder's notebook,
-        // get instance data
-        XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
-
-        if (flFlags & CBI_INIT)
-        {
-            if (pcnbp->pUser == NULL)
-            {
-                // first call: backup instance data for "Undo" button;
-                // this memory will be freed automatically by the
-                // common notebook window function (notebook.c) when
-                // the notebook page is destroyed
-                pcnbp->pUser = malloc(sizeof(XFolderData));
-                memcpy(pcnbp->pUser, somThis, sizeof(XFolderData));
-            }
-        }
-    }
-
-    if (flFlags & CBI_INIT)
-    {
-        M_WPObject *pSortClass;
-        ULONG       ulIndex = 0,
-                    cColumns = 0,
-                    ul;
-        PCLASSFIELDINFO   pcfi;
-
-        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-            // instance notebook:
-            // get folder's sort class
-            pSortClass = _wpQueryFldrSortClass(pcnbp->somSelf);
-        else
-            // "Workplace Shell" page: always use _WPFileSystem
-            pSortClass = _WPFileSystem;
-
-        // 1) insert the new XWP sort criteria
-        InsertSortItem(hwndListbox,
-                       &ulIndex,
-                       cmnGetString(ID_XSSI_SV_NAME),
-                       -2);
-        InsertSortItem(hwndListbox,
-                       &ulIndex,
-                       cmnGetString(ID_XSSI_SV_TYPE),
-                       -1);
-        InsertSortItem(hwndListbox,
-                       &ulIndex,
-                       cmnGetString(ID_XSSI_SV_CLASS),
-                       -3);
-        InsertSortItem(hwndListbox,
-                       &ulIndex,
-                       cmnGetString(ID_XSSI_SV_EXT),
-                       -4);
-
-        // 2) next, insert the class-specific sort criteria
-        cColumns = _wpclsQueryDetailsInfo(pSortClass,
-                                          &pcfi,
-                                          NULL);
-        for (ul = 0;
-             ul < cColumns;
-             ul++, pcfi = pcfi->pNextFieldInfo)
-        {
-            BOOL fSortable = TRUE;
-
-            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-                // call this method only if somSelf is really a folder!
-                fSortable = _wpIsSortAttribAvailable(pcnbp->somSelf, ul);
-
-            if (    (fSortable)
-                    // sortable columns only:
-                 && (pcfi->flCompare & SORTBY_SUPPORTED)
-                    // rule out the images:
-                 && (0 == (pcfi->flTitle & CFA_BITMAPORICON))
-               )
-            {
-                // OK, usable sort column:
-                // add this to the list box
-                InsertSortItem(hwndListbox,
-                               &ulIndex,
-                               pcfi->pTitleData,
-                               ul);     // column number as handle
-            }
-        }
-    }
-
-    if (flFlags & CBI_SET)
-    {
-        LONG lDefaultSort,
-             lAlwaysSort;
-        ULONG ulIndex;
-
-        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-        {
-            // instance notebook:
-            XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
-            lDefaultSort = (_lDefaultSort == SET_DEFAULT)
-                                ? pGlobalSettings->lDefaultSort
-                                : _lDefaultSort;
-            lAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
-                                  ? pGlobalSettings->AlwaysSort
-                                  : _lAlwaysSort;
-        }
-        else
-        {
-            // "Workplace Shell":
-            lDefaultSort = pGlobalSettings->lDefaultSort;
-            lAlwaysSort = pGlobalSettings->AlwaysSort;
-        }
-
-        // find the list box entry with the matching handle
-        ulIndex = winhLboxFindItemFromHandle(hwndListbox,
-                                             lDefaultSort);
-        if (ulIndex != -1)
-            winhSetLboxSelectedItem(hwndListbox,
-                                    ulIndex,
-                                    TRUE);
-
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
-                              ID_XSDI_ALWAYSSORT,
-                              lAlwaysSort);
-    }
-}
-
-/*
- * fdrSortItemChanged:
- *      "Sort" page notebook callback function (notebook.c).
- *      Reacts to changes of any of the dialog controls.
- *
- *      The "Sort" callbacks are used both for the folder settings notebook page
- *      AND the respective "Sort" page in the "Workplace Shell" object, so we
- *      need to keep instance data and the XFolder GLobal Settings apart.
- *
- *@@changed V0.9.0 [umoeller]: updated settings page
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                           ULONG ulItemID,
-                           USHORT usNotifyCode,
-                           ULONG ulExtra)      // for checkboxes: contains new state
-{
-    BOOL fUpdate = TRUE;
-
-    switch (ulItemID)
-    {
-        case ID_XSDI_ALWAYSSORT:
-        case ID_XSDI_SORTLISTBOX:
-        {
-            HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
-                                                      ID_XSDI_SORTLISTBOX);
-
-            ULONG ulSortIndex = (USHORT)(WinSendMsg(hwndListbox,
-                                                    LM_QUERYSELECTION,
-                                                    (MPARAM)LIT_CURSOR,
-                                                    MPNULL));
-            LONG lDefaultSort = winhQueryLboxItemHandle(hwndListbox, ulSortIndex);
-
-            BOOL fFoldersFirst = FALSE;     // @@todo
-
-            BOOL fAlways = (USHORT)(winhIsDlgItemChecked(pcnbp->hwndDlgPage,
-                                                         ID_XSDI_ALWAYSSORT));
-
-            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-            {
-                // if we're being called from a folder's notebook,
-                // change instance data
-                _xwpSetFldrSort(pcnbp->somSelf,
-                                lDefaultSort,
-                                fFoldersFirst,
-                                fAlways);
-            }
-            else
-            {
-                GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-
-                pGlobalSettings->lDefaultSort = lDefaultSort;
-
-                if (fAlways)
-                {
-                    LONG lFoldersFirst,
-                         lAlwaysSort;
-                    _xwpQueryFldrSort(cmnQueryActiveDesktop(),
-                                      &lDefaultSort,
-                                      &lFoldersFirst,
-                                      &lAlwaysSort);
-                    if (lAlwaysSort != 0)
-                    {
-                        // issue warning that this might also sort the Desktop
-                        if (cmnMessageBoxMsg(pcnbp->hwndFrame,
-                                             116, 133,
-                                             MB_YESNO)
-                                       == MBID_YES)
-                            _xwpSetFldrSort(cmnQueryActiveDesktop(),
-                                            lDefaultSort,
-                                            lFoldersFirst,
-                                            0);
-                    }
-                }
-                pGlobalSettings->AlwaysSort = fAlways;
-
-                cmnUnlockGlobalSettings();
-            }
-        break; }
-
-        // control other than listbox:
-        case DID_UNDO:
-            // "Undo" button: restore backed up instance/global data
-            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-            {
-                // if we're being called from a folder's notebook,
-                // restore instance data
-                if (pcnbp->pUser)
-                {
-                    XFolderData *Backup = (pcnbp->pUser);
-                    _xwpSetFldrSort(pcnbp->somSelf,
-                                    Backup->lDefaultSort,
-                                    Backup->lFoldersFirst,
-                                    Backup->lAlwaysSort);
-                }
-            }
-            else
-            {
-                // global sort page:
-                 cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL);
-            }
-            // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-        break;
-
-        case DID_DEFAULT:
-            // "Default" button:
-            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-                _xwpSetFldrSort(pcnbp->somSelf,
-                                SET_DEFAULT,
-                                SET_DEFAULT,
-                                SET_DEFAULT);
-            else
-                cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL);
-
-            // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-        break;
-
-        default:
-            fUpdate = FALSE;
-        break;
-    }
-
-    if (fUpdate)
-    {
-        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-        {
-            // instance:
-            _wpSaveDeferred(pcnbp->somSelf);
-            // update our folder only
-            fdrForEachOpenInstanceView(pcnbp->somSelf,
-                                       0,
-                                       fdrUpdateFolderSorts);
-        }
-        else
-        {
-            // global:
-            cmnStoreGlobalSettings();
-            // update all open folders
-            fdrForEachOpenGlobalView(0,
-                                     fdrUpdateFolderSorts);
-        }
-    }
-
-    return 0;
 }
 
 /* ******************************************************************
@@ -1166,7 +811,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->ShowStartupProgress = pGSBackup->ShowStartupProgress;
                 pGlobalSettings->ulStartupInitialDelay = pGSBackup->ulStartupInitialDelay;
                 // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             }
         break;
 
@@ -1176,7 +821,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _ulObjectDelay = XSTARTUP_DEFAULTOBJECTDELAY;
             cmnSetDefaultSettings(SP_STARTUPFOLDER);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:

@@ -890,7 +890,7 @@ LONG EXPENTRY CompareTrashSize(PULONG pul1,     // ptr to ul1
  *      initialize itself.
  *
  *@@changed V0.9.4 (2000-08-03) [umoeller]: KERNELGLOBALS flag was wrong, fixed
- *@@changed V0.9.12 (2001-05-18) [umoeller]: fixed sort by size
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: fixed sort by size and date
  */
 
 SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
@@ -999,7 +999,9 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
 
             // sixth item: deletion time
             case 5:
-                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
+                pcfi->flCompare   = COMPARE_SUPPORTED;
+                                // removed SORTBY_SUPPORTED because sort by date
+                                // takes time into account as well V0.9.12 (2001-05-20) [umoeller]
                 pcfi->flData            |= CFA_TIME | CFA_RIGHT;
                 pcfi->pTitleData        = cmnGetString(ID_XTSI_DELTIME);  // pszDelTime
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ctimeDeleted));
@@ -1115,8 +1117,10 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryDetailsInfo(M_XWPTrashObject *somSelf,
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "Trash object".
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  */
 
 SOM_Scope PSZ  SOMLINK xtroM_wpclsQueryTitle(M_XWPTrashObject *somSelf)

@@ -85,6 +85,7 @@
 #include <assert.h>             // needed for except.h
 
 // generic headers
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"                      // code generation and debugging options
 
 // disable wrappers, because we're not linking statically

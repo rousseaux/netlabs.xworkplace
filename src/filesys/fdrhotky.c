@@ -1099,7 +1099,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             memcpy(fdrQueryFldrHotkeys(), pcnbp->pUser2, FLDRHOTKEYSSIZE);
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fdrStoreFldrHotkeys();
         break; }
 
@@ -1111,7 +1111,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetDefaultSettings(pcnbp->ulPageID);
             fdrLoadDefaultFldrHotkeys();
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             cmnStoreGlobalSettings();
             fdrStoreFldrHotkeys();
         break; }

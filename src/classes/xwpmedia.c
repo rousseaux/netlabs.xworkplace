@@ -1143,7 +1143,10 @@ SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryStyle(M_XWPMedia *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  */
 
 SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)

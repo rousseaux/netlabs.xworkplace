@@ -21,17 +21,20 @@ The history of the previous XFolder packages are on a <A HREF="vers_2history2.ht
 
 <H6>New features:
 
-<UL><LI>General: XWP can now read extended BLDLEVEL information, as used by most
-of the IBM networking software. Reworked the "Module" page in XFldProgramFile for
-displaying additional data, if available.
+<UL><LI>Extended associations can now be imported/exported through an XML file.
 <P><LI>XFolder: Added default folder view override to "View" page in "Workplace Shell"
 to prevent inheriting the default view from the parent folder.
 <P><LI>XFolder: Folder sorting was mostly rewritten. This now finally supports
 non-default sort classes (e.g. in the trash can, which can finally be sorted now too).
-Also added "Folders first" as an additional sort setting.
-<P><LI>XFldProgramFile: "Module" pages support NOSTUB executables now (e.g. JFS.IFS).
+Also added "Folders first" as an additional sort setting to be applied on top of
+the standard criterion.
 <P><LI>XCenter: added "lockup" to X-button menu.
 <P><LI>XWPString: added setup string support.
+<P><LI>General: XWP can now read extended BLDLEVEL information, as used by most
+of the IBM networking software. Reworked the "Module" page in XFldProgramFile for
+displaying additional data, if available. We also support NOSTUB executables now
+(e.g. JFS.IFS).
+<P><LI>General: Added "Fix class titles" feature to "XWorkplace setup".
 
 </UL>Miscellaneous changes:
 <UL><LI>General: Reworked trap logs a bit for more lucid output. Added seg:ofs translation of
@@ -42,7 +45,8 @@ trapping CS:EIP for each stack frame.
 thread now. This should fix some of the problems on startup, like endlessly looping
 startup folders, I hope. At least it makes the code much more readable.
 <P><LI>Folder auto-refresh: reworked quite a bit, this now picks up file rename
-too and refreshes the entire folder if an overflow occured.
+too and refreshes the entire folder if an overflow occured. Also fixed some
+crashes and locks on the way.
 <P><LI>Function keys: removed "Modifier" setting, since it did nothing in the first place.
 <P><LI>XCenter: Winlist widget filters now match the first characters only.
 
@@ -54,6 +58,7 @@ problems. Also fixed some other minor problems.
 places.
 <P><LI>General: Chart control (used on XFldDisk "Details" page)
 caused huge PM resource leaks which could lead to system hangs. Fixed.
+<P><LI>General: Fixed three minor memory leaks.
 <P><LI>XFolder: Disabled "Cleanup INI files" for now. Did more harm than good.
 <P><LI>XFolder: Replacement "File exists" dialog never populated the target folder,
 which could lead to duplicate objects and even system hangs. Fixed.
@@ -62,10 +67,13 @@ which could lead to duplicate objects and even system hangs. Fixed.
 Fixed, this now _really_ displays the sector size.
 <P><LI>Extended file types: Removing an association or type on program/file settings
 notebook pages caused a trap. Fixed. Also fixed a small memory leak.
+<P><LI>"Workplace Shell": "Undo" never really worked on the "Sort" page. Fixed.
 <P><LI>OS/2 Kernel: "Drivers" page frequently displayed garbage for the driver
 info. Fixed.
 <P><LI>OS/2 Kernel: HPFS and HPFS386 dialogs crashed if no parameters existed
 in CONFIG.SYS. Fixed, thanks Lars Erdmann.
+<P><LI>OS/2 Kernel: Fixed another quirk in the CONFIG.SYS routines which caused
+the wrong line to be replaced in rare cases.
 <P><LI>Trash can wasn't very good at setting meaningful drive support defaults. Fixed;
 per default drives are supported only if they are FAT, HPFS, JFS, or FAT32.
 <P><LI>XCenter: Added mutex protection to the internal timers to prevent some
@@ -74,7 +82,7 @@ race conditions.
 <P><LI>XCenter: Winlist widget filter changes weren't picked up any longer since
 the changes in 0.9.11. Fixed.
 <P><LI>XCenter: Pulse widget didn't update display if some app occupied the SIQ.
-Fixed; now using separate thread to get performance data from OS/2 kernel.
+Fixed; a separate thread now gets the performance data from OS/2 kernel.
 <P><LI>XCenter: Trapped sometimes when several threads attempted to load the
 widget classes. Fixed, added mutex protection to DLL loading.
 <P><LI>XCenter: Added extra checks for view creation/destruction.

@@ -7,31 +7,30 @@ Troubleshooting
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
 
-<OL><LI>If you get errors from the <B>makefiles,</B> make sure you have set up the
-<A HREF="src1_32env.html">environment variables</A> right.
+<OL><LI>If you get errors from the <B>makefiles,</B> make sure you have set up
+<A HREF="src1_32env.html">config.in</A> correctly.
+
+<P><LI>Same thing if the compiler cannot find an include file, or the linker
+cannot find libraries.
 
 <P><LI>Also, you need to check out the "xwphelpers" CVS archive from Netlabs for the
 <A HREF="src1_5helpers.html">helpers</A> code. Make sure that this code
-is not outdated, and that the environment variables are set correctly.
+is not outdated (I usually update it together with the main XWorkplace code).
 
-<P><LI>If you get something like <B>"File XWPDAEMN.EXE/XWPHOOK.DLL is in use",</B> the
-XWorkplace hook DLL is currently loaded and running. While all other executables
-are automatically unlocked and replaced by the makefiles even while they're running,
-this cannot be done with the daemon, which is using the XWorkplace hook DLL,
-because then you'd only be able to reload
-that DLL by rebooting (it will _never_ get released otherwise).
+<P>Same thing if you get unknown definitions or unresolved externals during
+compiling/linking. This is most probably due to outdated helpers.
 
-<P>Use WatchCat or some other process killer to kill <CODE>XWPDAEMN.EXE</CODE>, which
+<P><LI>If you get unresolved externals while linking the XCenter widgets, take
+a look at <CODE>src\shared\xwp.def</CODE>, which exports the functions from
+XFLDR.DLL.
+
+<P><LI>If you get something like <B>"File XWPDAEMN.EXE/XWPHOOK.DLL is in use",</B>
+use WatchCat or some other process killer to kill <CODE>XWPDAEMN.EXE</CODE>, which
 will automatically unload the hook DLL. Then, after the build, restart the daemon
 by executing <CODE>XWPDAEMN -D</CODE> (to circumvent the error message box which
 comes up otherwise).
 
-<P>Warning: If you don't restart the daemon before restarting the WPS, the XWorkplace
-startup folder will get processed again after the WPS restart.
-
-<P><LI>If you get unknown definitions or unresolved externals during compiling/linking,
-make sure that the "xwphelpers" and XWorkplace sources have the same code levels. I tend
-to change the <A HREF="src1_5helpers.html">helpers</A> code from time to time.
+<P>See <A HREF="src1_32env.html">config.in</A> for details.
 
 <P><LI>If you get really strange compilation errors, VAC might have gotten confused
 with precompiled headers. Delete all <CODE>.PCH</CODE> files in your TEMP directory,

@@ -1649,8 +1649,10 @@ SOM_Scope void  SOMLINK xtrcM_wpclsUnInitData(M_XWPTrashCan *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title:
- *      "Trash can".
+ *      this WPObject class method tells the WPS the clear
+ *      name of a class, which is shown in the third column
+ *      of a Details view and also used as the default title
+ *      for new objects of a class.
  */
 
 SOM_Scope PSZ  SOMLINK xtrcM_wpclsQueryTitle(M_XWPTrashCan *somSelf)

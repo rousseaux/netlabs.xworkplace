@@ -17,7 +17,7 @@ however, they work only when XFolder is properly installed.
 <DD>Sets for an individual folder whether it will respond to folder hotkeys.
 This setting corresponds to the one on the "XFolder" notebook settings page.
 YES or NO will set this setting for this folder no matter what was specified in the
-global settings, while DEFAULT will set this setting to the Global Settings value.
+global settings, while DEFAULT will set this setting to the global value.
 See <A HREF="fldr_5xelerators.html">"Folder hotkeys"</A> for details.
 
 <P><DT><CODE><B>ALWAYSSORT</B>={YES|NO|DEFAULT}</CODE>
@@ -29,18 +29,18 @@ the setting to what you specified on the "Sort" page in the "System" object.
 <P><DT><CODE><B>DEFAULTSORT</B>=<I>crit</I></CODE>
 <DD>This will set the default sort criterion for an individual folder to something
 different from the global sort criterion.
+<!-- V0.9.12: the following has been rewritten -->
 <CODE><I>crit</I></CODE> may be one of the following:
-<BR><CODE>  0    </CODE>sort by name
-<BR><CODE>  1    </CODE>sort by type
-<BR><CODE>  2    </CODE>sort by object class
-<BR><CODE>  3    </CODE>sort by real name
-<BR><CODE>  4    </CODE>sort by size
-<BR><CODE>  5    </CODE>sort by last write date
-<BR><CODE>  6    </CODE>sort by last access date
-<BR><CODE>  7    </CODE>sort by creation date
-<BR><CODE>  8    </CODE>sort by file name extension
-<BR><CODE>  9    </CODE>sort folders first
+<BR><CODE>  -1   </CODE>sort by type
+<BR><CODE>  -2   </CODE>sort by name
+<BR><CODE>  -3   </CODE>sort by object class
+<BR><CODE>  -4   </CODE>sort by file name extension
 <BR><CODE>  255  </CODE>reset to global default sort criterion
+<P>Note that depending on the folder sort class, values between 0 and 100 may also
+be supported. Those values correspond to the indices of object details columns
+in Details view and are class-specific. Experiment with with the setup string values
+reported in a folder's settings notebook.
+<!-- end V0.9.12 -->
 
 <P><DT><CODE><B>FAVORITEFOLDER</B>={YES|NO}</CODE>
 <DD>Sets for an individual folder whether its contents can be viewed from
@@ -53,7 +53,7 @@ See <A HREF="menu_6favorite.html">"Folder content functions"</A> for details.
 <DD>Sets for an individual folder whether its full path will be displayed in its window title.
 This setting corresponds to the one on the "XFolder" notebook settings page.
 YES or NO will set this setting for this folder no matter what was specified in the
-global settings, while DEFAULT will set this setting to the Global Settings value.
+global settings, while DEFAULT will set this setting to the global&ouml; value.
 See <A HREF="fldr_2fullpath.html">"Full path in window titles"</A> for details.
 
 <!-- V0.9.9: added QUICKOPEN -->
@@ -73,23 +73,31 @@ rather a command to be performed on a folder.
 in the folder's context menu.
 This setting corresponds to the one on the "XFolder" notebook settings page.
 YES or NO will set this setting for this folder no matter what was specified in the
-global settings, while DEFAULT will set this setting to the Global Settings value.
+global settings, while DEFAULT will set this setting to the global value.
 EXEC will execute the "Snap to grid" function on the folder, just as if you had
 selected it from the context menu. EXEC is thus no setting, but a command to be performed
 on a folder.
 See <A HREF="menu_8snaptogrid.html">"Snap to grid"</A> for details.
 
+<!-- V0.9.12: added this -->
+<P><DT><CODE><B>SORTFOLDERSFIRST</B>={YES|NO|DEFAULT}</CODE>
+<DD>Sets for an individual folder whether folders will always be sorted in first.
+This setting corresponds to the one on the folder's "Sort" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+<!-- end V0.9.12 -->
+
 <P><DT><CODE><B>SORTNOW</B>=<I>crit</I></CODE>
 <DD>This will sort all currently open views of an individual folder without changing
 a folder's setting (as opposed to <CODE>DEFAULTSORT</CODE>). This is not really a
 "setting", but rather a command to be performed on a folder.
-<CODE><I>crit</I></CODE> is used as in <CODE>DEFAULTSORT</CODE>.
+<CODE><I>crit</I></CODE> has the same meaning as with <CODE>DEFAULTSORT</CODE>.
 
 <P><DT><CODE><B>STATUSBAR</B>={YES|NO|DEFAULT}</CODE>
 <DD>Sets the visibility state for an individual folder status bar.
 This setting corresponds to the one on the "XFolder" notebook settings page.
 YES or NO will set this setting for this folder no matter what was specified in the
-global settings, while DEFAULT will set this setting to the Global Settings value.
+global settings, while DEFAULT will set this setting to the global value.
 See <A HREF="stat_1intro.html">"Folder status bars"</A> for details.
 </DL>
 </BODY>

@@ -2849,7 +2849,7 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->ulTrashConfirmEmpty = pGSBackup->ulTrashConfirmEmpty;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -2859,7 +2859,7 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -3052,7 +3052,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
 
                 // re-enable items
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
             }
         break;
 
@@ -3087,7 +3087,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fNoDeselection = FALSE;
 
             // re-enable buttons
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
 
             // update internal drives data
             StoreSupportedDrives(hwndSupportedLB,
@@ -3125,7 +3125,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fNoDeselection = FALSE;
 
             // re-enable buttons
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
 
             // update internal drives data
             StoreSupportedDrives(hwndSupportedLB,
@@ -3138,7 +3138,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _xwpclsSetDrivesSupport(_XWPTrashCan,
                                     pcnbp->pUser);  // backup data
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -3147,7 +3147,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _xwpclsSetDrivesSupport(_XWPTrashCan,
                                     NULL);     // defaults
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -3240,7 +3240,7 @@ MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set backed-up title
             _wpSetTitle(pcnbp->somSelf, (PSZ)pcnbp->pUser);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case DID_DEFAULT:
@@ -3248,7 +3248,7 @@ MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _wpSetTitle(pcnbp->somSelf,
                         _wpclsQueryTitle(_somGetClass(pcnbp->somSelf)));
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
     }
 

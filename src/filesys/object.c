@@ -702,7 +702,10 @@ BOOL objAddToList(WPObject *somSelf,
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "hmtxFolderLists request failed.");
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
 
     if (fSemOwned)
     {
@@ -759,7 +762,10 @@ BOOL objIsOnList(WPObject *somSelf,
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "hmtxFolderLists request failed.");
     }
-    CATCH(excpt1) { } END_CATCH();
+    CATCH(excpt1)
+    {
+        rc = FALSE;
+    } END_CATCH();
 
     if (fSemOwned)
     {
@@ -844,7 +850,10 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "hmtxFolderLists request failed.");
     }
-    CATCH(excpt1) { } END_CATCH();
+    CATCH(excpt1)
+    {
+        pObjectFound = NULL;
+    } END_CATCH();
 
     if (fSemOwned)
     {
@@ -2911,6 +2920,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
         }
         CATCH(excpt1)
         {
+            brc = FALSE;
         } END_CATCH();
 
         if (brc)

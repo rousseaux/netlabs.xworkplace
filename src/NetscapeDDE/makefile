@@ -59,28 +59,48 @@ HEADERS = netscdde.h
 
 ALL_OBJ1 = $(OUTPUTDIR)\netscdde.obj
 
+EXENAME = netscdde
+
 # TARGETS
 # -------
 
-all: $(XWPRUNNING)\bin\netscdde.exe
+all: $(XWPRUNNING)\bin\$(EXENAME).exe
     @echo ----- Leaving $(MAKEDIR)
 
-$(OUTPUTDIR)\netscdde.obj: netscdde.c $(HEADERS)
-          $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj netscdde.c
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
+
+.c.{$(OUTPUTDIR)}.obj:
+        @echo $(MAKEDIR)\makefile: Compiling $(@B).c
+!ifndef PRECH
+# precompiled headers disabled:
+        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+!else
+        $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+!endif
 
 # build targets
-netscdde.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace Netscape DDE Interface"
+$(EXENAME).def: ..\..\include\bldlevel.h
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace Netscape DDE Interface"
 
-$(OUTPUTDIR)\netscdde.res: netscdde.rc netscdde.h netscdde.dlg
+$(OUTPUTDIR)\$(EXENAME).res: $(EXENAME).rc $(EXENAME).h $(EXENAME).dlg
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(MODULESDIR)\netscdde.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
+$(MODULESDIR)\$(EXENAME).exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
           $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
           $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target
-$(XWPRUNNING)\bin\netscdde.exe: $(MODULESDIR)\$(@B).exe
+$(XWPRUNNING)\bin\$(EXENAME).exe: $(MODULESDIR)\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
+
+!include .depend
 
 

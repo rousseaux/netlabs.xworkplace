@@ -78,7 +78,7 @@ $(OUTPUTDIR)\helpers.lib: helpers_exe_mt
 
 # build targets
 xpstat.def: ..\..\include\bldlevel.h
-    cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace process status utility"
+    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace process status utility"
 
 $(OUTPUTDIR)\xpstat.res: $(@B).rc *.ico
     $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

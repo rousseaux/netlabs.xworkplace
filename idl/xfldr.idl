@@ -184,7 +184,6 @@ interface XFolder : WPFolder
                         in LONG lFoldersFirst,
                         in LONG lAlwaysSort);
     BOOL xwpSortViewOnce(in HWND hwndFrame,
-                         in BOOL fFoldersFirst,
                          in LONG lSort);
 
     BOOL xwpGetIconPos(in WPObject pObject,
@@ -291,6 +290,9 @@ interface XFolder : WPFolder
                     lFoldersFirst,
                     lDefaultSort;
 
+    BOOL            fCachedFoldersFirst;
+                                  // for sort funcs
+
     //# BOOL            fXFolderSortSettingRestored;
             // this is TRUE after wpRestoreState has detected
             // an XFolder sort setting...
@@ -357,7 +359,7 @@ interface XFolder : WPFolder
 
     // file-system notifications for replacement auto-refresh
     // V0.9.9 (2001-02-01) [umoeller]
-    PVOID           pvllNotifications;
+    // PVOID           pvllNotifications;
                 // WARNINGS: This is a PLINKLIST to XWPNOTIFY structures
                 // really. This list is maintained by the functions in
                 // src\refresh.c directly. There are NO XFolder method
@@ -366,6 +368,14 @@ interface XFolder : WPFolder
                 // dangerous to request BOTH the WPS notify mutex AND
                 // the folder's object mutex, per definition, we only
                 // use the notify mutex for this (wpshGetNotifySem).
+
+                // removed this V0.9.12 (2001-05-22) [umoeller]
+
+    ULONG       cNotificationsPending;
+                // count of notifications of this folder; 0 if none.
+                // This is maintained by the refresh functions
+                // (filesys\refresh.c)
+                // V0.9.12 (2001-05-22) [umoeller]
 
     /*
      * WPFolder methods overridden by XFolder:
@@ -496,9 +506,7 @@ interface M_XFolder : M_WPFolder
 
     wpclsQueryDefaultView: override;
 
-//# wpclsQueryTitle: override;
-//# wpclsQueryTitle:
-//# removed (V0.9.0)
+    wpclsQueryTitle: override;
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;

@@ -2029,7 +2029,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->SBStyle = pGSBackup->SBStyle;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
             fShowStatusBars = TRUE;
         break; }
@@ -2041,7 +2041,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
             fShowStatusBars = TRUE;
         break; }
@@ -2329,7 +2329,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
 
                 // update the display by calling the INIT callback
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
 
                 // refresh the "Undo" data for this
                 strcpy(szSBText1SelBackup,
@@ -2362,7 +2362,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      szSBText1SelBackup);
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -2385,7 +2385,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      NULL);  // load default
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
