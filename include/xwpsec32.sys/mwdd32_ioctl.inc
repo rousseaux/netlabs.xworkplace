@@ -1,9 +1,6 @@
-;
-; $Header$
-;
 
-; 32 bits OS/2 device driver and IFS support. Provides 32 bits kernel 
-; services (DevHelp) and utility functions to 32 bits OS/2 ring 0 code 
+; 32 bits OS/2 device driver and IFS support. Provides 32 bits kernel
+; services (DevHelp) and utility functions to 32 bits OS/2 ring 0 code
 ; (device drivers and installable file system drivers).
 ; Copyright (C) 1995, 1996, 1997  Matthieu WILLM (willm@ibm.net)
 ;
@@ -48,8 +45,8 @@ mwdd32_ioctl_int_fsd_parm_input         struc
         fs32_init_ptr       dd (?)                      ; FLAT address of fs32_init()
         fs32_init_parms_ofs dw (?)                      ; offset  of fs32_init() parameter block pointer
         fs32_init_parms_seg dw (?)                      ; segment of fs32_init() parameter block pointer
-	pTKSSBase           dd (?)
-	pDevHelp32          dd (?)
+    pTKSSBase           dd (?)
+    pDevHelp32          dd (?)
 mwdd32_ioctl_int_fsd_parm_input         ends
 
 mwdd32_ioctl_int_fsd_parm_output        struc
@@ -82,8 +79,8 @@ mwdd32_ioctl_init_device_parm       ends
 mwdd32_ioctl_init_device_parm_input         struc
         b_device_init_ptr       dd (?)                      ; FLAT address of device_init()
         b_pReqPkt               dd (?)                      ; 16:16 address of INIT request packet
-	b_pTKSSBase             dd (?)			    ; FLAT address of _TKSSBase pointer
-	b_pDevHelp32            dd (?)			    ; FLAT address of mwdd32.sys entry points struct
+    b_pTKSSBase             dd (?)              ; FLAT address of _TKSSBase pointer
+    b_pDevHelp32            dd (?)              ; FLAT address of mwdd32.sys entry points struct
 mwdd32_ioctl_init_device_parm_input         ends
 
 mwdd32_ioctl_init_device_parm_output        struc

@@ -40,6 +40,8 @@
 #define __NOXSHUTDOWN__                         1
 #define __EASYSHUTDOWN__                        1
 
+#define __ALWAYSCHECKDESKTOP__                  1
+
 // file operations
 #define __ALWAYSREPLACEFILEEXISTS__             1
 #define __NEVERNEWFILEDLG__                     1

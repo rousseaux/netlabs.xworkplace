@@ -78,15 +78,15 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.16"
+#define XFOLDER_VERSION        "0.9.17"
 
 #define XFOLDER_MAJOR          0
 #define XFOLDER_MINOR          9
-#define XFOLDER_REVISION       16
+#define XFOLDER_REVISION       17
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.16"
+#define MINIMUM_NLS_VERSION    "0.9.17"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -218,10 +218,10 @@
 #define ID_XFDI_SOME_SELECTALL          214
 #define ID_XFDI_SOME_DESELECTALL        215
 
-// generic dlg text
-#define ID_XFD_GENERICDLG               220
-#define ID_XFDI_GENERICDLGTEXT          221
-#define ID_XFDI_GENERICDLGICON          222
+// generic dlg text removed V0.9.18 (2002-02-06) [umoeller]
+// #define ID_XFD_GENERICDLG               220
+// #define ID_XFDI_GENERICDLGTEXT          221
+// #define ID_XFDI_GENERICDLGICON          222
 
 #define ID_XFD_EMPTYDLG                 225     // V0.9.16 (2001-09-29) [umoeller]
 
@@ -247,7 +247,7 @@
 #define ID_XFDI_BOOTUPSTATUSTEXT        252
 
 /* Dialog box templates */
-#define ID_XFD_NOCONFIG                 270
+// #define ID_XFD_NOCONFIG                 270      removed V0.9.18 (2002-02-06) [umoeller]
 // #define ID_XFD_NOOBJECT                 271      removed V0.9.12 (2001-05-18) [umoeller]
 #define ID_XFD_LIMITREACHED             272
 #define ID_XFD_WRONGVERSION             273
@@ -319,6 +319,7 @@
 #ifndef __NOTURBOFOLDERS__
 #define ID_XFDI_PANIC_DISABLETURBOFOLDERS 419   // V0.9.16 (2001-10-25) [umoeller]
 #endif
+#define ID_XFDI_PANIC_DISABLECHECKDESKTOP   420    // V0.9.17 (2002-02-05) [umoeller]
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
@@ -1333,6 +1334,10 @@
 #define ID_SDDI_EMPTYTRASHCAN           4319
 #define ID_SDDI_CONFIRM_TEXT            4320  // V0.9.5 (2000-08-10) [umoeller]
 #define ID_SDDI_CONFIRMWPS_TITLE        4205        // V0.9.16 (2002-01-13) [umoeller]
+#define ID_SDDI_PROGRESS1               4321 // V0.9.17 (2002-02-05) [pr]
+#define ID_SDDI_PROGRESS2               4322
+#define ID_SDDI_COMPLETE                4323
+#define ID_SDDI_SWITCHOFF               4324
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400
@@ -2012,6 +2017,9 @@
 #ifndef __NOXSHUTDOWN__
 #define ID_XCSI_RESTARTWPS              6022
 #define ID_XCSI_XSHUTDOWN               6023
+#endif
+#ifndef __ALWAYSCHECKDESKTOP__
+#define ID_XCSI_CHECKDESKTOP            6024
 #endif
 
 #define ID_XCSI_FILEOPERATIONS          6040

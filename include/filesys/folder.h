@@ -512,8 +512,11 @@
 
     #endif
 
-    WPObject* fdrFindFSFromName(WPFolder *pFolder,
-                                PCSZ pcszShortName);
+    WPObject* fdrFastFindFSFromName(WPFolder *pFolder,
+                                    const char *pcszShortName);
+
+    WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
+                                    const char *pcszShortName);
 
     BOOL fdrAddToContent(WPFolder *somSelf,
                          WPObject *pObject,

@@ -1,6 +1,3 @@
-//
-// $Header$
-//
 
 // 32 bits OS/2 device driver and IFS support. Provides 32 bits kernel
 // services (DevHelp) and utility functions to 32 bits OS/2 ring 0 code

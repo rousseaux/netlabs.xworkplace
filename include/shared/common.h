@@ -789,6 +789,9 @@
 #ifndef __NOCFGSTATUSBARS__
         sfStatusBars,
 #endif
+#ifndef __ALWAYSCHECKDESKTOP__
+        sfCheckDesktop,
+#endif
 #ifndef __NOSNAPTOGRID__
         sfSnap2Grid,
         sfAddSnapToGridDefault,
