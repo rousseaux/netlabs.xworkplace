@@ -634,6 +634,7 @@ static void _Optlink fntMethodCollectThread(PTHREADINFO pti)
                WM_FILLCNR,
                (MPARAM)pMethodInfo,
                0);
+
     free(pmti);
 }
 

@@ -696,8 +696,6 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
     // QMSG qmsg;
     ULONG   ulWaitTime = 1000;
 
-    WinCancelShutdown(ptiMyself->hmq, TRUE);
-
     while (!G_fExitAllRefreshThreads)
     {
         BOOL    fLocked = FALSE;
@@ -1283,8 +1281,6 @@ static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 static VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
 {
     QMSG qmsg;
-
-    WinCancelShutdown(ptiMyself->hmq, TRUE);
 
     G_hwndFindFolder = WinCreateWindow(HWND_OBJECT,
                                        WC_STATIC,

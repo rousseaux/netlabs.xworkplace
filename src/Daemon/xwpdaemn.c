@@ -3339,6 +3339,7 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
  *@@changed V0.9.11 (2001-04-25) [umoeller]: added termination exception handler for proper hook cleanup
  *@@changed V0.9.11 (2001-04-25) [umoeller]: reordered all this code for readability
  *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed startup directory
+ *@@changed V0.9.21 (2002-08-21) [umoeller]: fixed hangs on default OS/2 shutdown
  */
 
 int main(int argc, char *argv[])
@@ -3361,6 +3362,11 @@ int main(int argc, char *argv[])
 
         // disable hard errors V0.9.14 (2001-08-01) [umoeller]
         DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
+
+        // cancel shutdown requests to avoid hangs with
+        // default OS/2 shutdown
+        // V0.9.21 (2002-08-21) [umoeller]
+        WinCancelShutdown(G_hmqDaemon, TRUE);
 
         // initialize click-watch list V0.9.14 (2001-08-21) [umoeller]
         lstInit(&G_llClickWatches, TRUE);

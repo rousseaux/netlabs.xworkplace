@@ -1158,6 +1158,7 @@ static BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip refresh
  *@@changed V0.9.14 (2001-07-12) [umoeller]: fixed sporadic crash on some systems
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
+ *@@changed V0.9.21 (2002-08-21) [umoeller]: rewrote the graph part for fixing the vertical line on the left and much better speed
  */
 
 static VOID PwgtUpdateGraph(HWND hwnd,
@@ -1194,65 +1195,82 @@ static VOID PwgtUpdateGraph(HWND hwnd,
              && pPrivate->cLoads
            )    // V0.9.14 (2001-07-12) [umoeller]
         {
-            ULONG    iCPU;
-            PSZ      pszTooltipLoc;
+            ULONG   iCPU;
+            PSZ     pszTooltipLoc;
 
-            for (iCPU = 0;
-                 iCPU < pPrivate->cProcessors;
-                 iCPU++)
+            // V0.9.21 (2002-08-21) [umoeller]:
+            // big optimization. Saved ourselves about 200
+            // GpiSetColor and GpiMove calls here for each
+            // loop, besides fixed the painting that always
+            // started at (0,0) in the bottom left corner,
+            // which resulted in a vertical line on the very
+            // left always if the CPU load of index 0 was high.
+
+            // 1) interrupt loads; this only exists for CPU 0,
+            //    so no need for looping through all CPUs for that
+            //    V0.9.21 (2002-08-21) [umoeller]
+
+            if (pPrivate->palIntrs)
             {
-                PLONG   plCurIntr = &pPrivate->palIntrs[pPrivate->cLoads * iCPU];
-                PLONG   plCurLoad = &pPrivate->palLoads[pPrivate->cLoads * iCPU];
+                PLONG   plIntThis = &pPrivate->palIntrs[0];
 
-                // go thru all values in the "Loads" LONG array
-                for (ptl.x = 0;
+                // set start position to the first array item
+                // V0.9.21 (2002-08-21) [umoeller]
+                ptl.x = 0;
+                ptl.y = rclBmp.yTop * (*plIntThis++) / 1000;
+                GpiMove(hpsMem, &ptl);
+                GpiSetColor(hpsMem,
+                            pPrivate->Setup.lcolGraphIntr);
+
+                for (ptl.x = 1;     // V0.9.21 (2002-08-21) [umoeller]
                      (    (ptl.x < pPrivate->cLoads)
                        && (ptl.x < rclBmp.xRight)
                      );
-                     ptl.x++, plCurIntr++, plCurLoad++)
+                     ptl.x++)
                 {
-                    POINTL ptlPrev = ptl;   //kso: we wanted line mode didn't we?
-                    ptlPrev.y = ptl.y = 0;
-                    ptlPrev.x = ptl.x > 0 ? ptl.x - 1 : 0;
+                    ptl.y = rclBmp.yTop * (*plIntThis++) / 1000;
+                    GpiLine(hpsMem, &ptl);
 
-                    // interrupt load on bottom
-                    // IRQ processing only takes place on CPU(0) so we only need
-                    // that information ONCE [bvl]
-                    if (pPrivate->palIntrs && iCPU == 0)  //kso: only cpu 0 *currently*!
-                    {
+                    // GpiLine changes the current position, so
+                    // there's no need for running GpiMove again
+                    // V0.9.21 (2002-08-21) [umoeller]
+                }
+            }
+
+            // 2) user loads
+
+            if (pPrivate->palLoads)
+            {
+                // paint once for each CPU
+                for (iCPU = 0;
+                     iCPU < pPrivate->cProcessors;
+                     iCPU++)
+                {
+                    PLONG   plUserThis = &pPrivate->palLoads[pPrivate->cLoads * iCPU];
+
+                    // set start position to the first array item
+                    // V0.9.21 (2002-08-21) [umoeller]
+                    ptl.x = 0;
+                    ptl.y = rclBmp.yTop * (*plUserThis++) / 1000;
+                    GpiMove(hpsMem, &ptl);
+
+                    if (pPrivate->Setup.palcolGraph)
                         GpiSetColor(hpsMem,
-                                    pPrivate->Setup.lcolGraphIntr);
-                        // go thru all values in the "Interrupt Loads" LONG array
-                        // Note: number of "loads" entries and "intrs" entries is the same
+                                    pPrivate->Setup.palcolGraph[iCPU]);
 
-                        // bvl: this ensures line mode.. if the this is the first item in the load
-                        //      start at the bottom, otherwise the previous point
-                        ptlPrev.y = ptl.x > 0 ? rclBmp.yTop * plCurIntr[-1] / 1000 : 0;
-
-                        GpiMove(hpsMem, &ptlPrev);
-                        ptl.y = rclBmp.yTop * *plCurIntr / 1000;
-                        GpiLine(hpsMem, &ptl);
-                    }
-
-
-                    // scan the CPU loads
-                    if (pPrivate->palLoads)
+                    // go thru all values in the "Loads" LONG array for this CPU
+                    for (ptl.x = 1;     // V0.9.21 (2002-08-21) [umoeller]
+                         (    (ptl.x < pPrivate->cLoads)
+                           && (ptl.x < rclBmp.xRight)
+                         );
+                         ptl.x++)
                     {
-                        if (pPrivate->Setup.palcolGraph)
-                            GpiSetColor(hpsMem,
-                                        pPrivate->Setup.palcolGraph[iCPU]);
-
-                        // bvl: this ensures line mode.. if the this is the first item in the load
-                        //      start at the bottom, otherwise the previous point
-                        ptlPrev.y += ptl.x > 0 ? rclBmp.yTop * plCurLoad[-1] / 1000 : 0;
-
-                        GpiMove(hpsMem, &ptlPrev);
-                        ptl.y += rclBmp.yTop * *plCurLoad / 1000;
+                        // scan the CPU loads
+                        ptl.y = rclBmp.yTop * (*plUserThis++) / 1000;
                         GpiLine(hpsMem, &ptl);
-                    }
-
-                } // end if (fLocked)
-            } // for iCPU
+                    } // end for (ptl.x = 0;
+                } // for (iCPU = 0;
+            }
 
             // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
 
@@ -1268,6 +1286,7 @@ static VOID PwgtUpdateGraph(HWND hwnd,
                                      pPrivate->pPerfData->palIntrs[0] % 10,
                                      '%'
                                      );
+
             for (iCPU = 0;
                  iCPU < pPrivate->cProcessors;
                  iCPU++)
