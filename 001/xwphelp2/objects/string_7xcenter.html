@@ -1,0 +1,106 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        XCenter Setup Strings
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.16 -->
+<BODY>
+In addition to the setup strings supported by the
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE>
+class, the XCenter class supports the following strings:
+
+<DL>
+<DT><P><CITE><B>3DBORDERWIDTH</B>=<I>value</I></CITE>
+<DD>Corresponds to the "3D border width" setting on an XCenter's "Style" page.
+The value must be in the range of 0 to 10.
+The default is "2".
+
+<DT><P><CITE><B>ALL3DBORDERS</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Draw all four 3D borders" setting on an XCenter's "Style" page.
+The default is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>ALWAYSONTOP</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Always on top" setting on an XCenter's "View" page.
+The default is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>ANIMATE</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Animate" setting on an XCenter's "View" page.
+The default is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>AUTOHIDE</B>=<I>milliseconds</I></CITE>
+<DD>Corresponds to the "Autohide" setting on an XCenter's "View" page.
+The value is the auto-hide delay in milliseconds; if it is 0, auto-hide is
+disabled.
+The default is "0" for disabling auto-hide.
+
+<DT><P><CITE><B>BORDERSPACING</B>=<I>value</I></CITE>
+<DD>Corresponds to the "Border spacing" setting on an XCenter's "Style" page.
+The value must be in the range of 0 to 10.
+The default is "2".
+
+<DT><P><CITE><B>CLIENTCOLOR</B>=<I>red green blue</I></CITE>
+<DD>Specifies the background color for the main XCenter window that is not
+covered by widgets.
+The default is <CODE>244 244 244</CODE> for "light gray".
+
+<DT><P><CITE><B>FLATBUTTONS</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Flat buttons" setting on an XCenter's "Style" page.
+The default is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>HIDEONCLICK</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Hide immediately on mouse click" setting on an XCenter's
+"View" page. This setting is only respected if the "Auto hide" setting is enabled.
+The default is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>NOHATCHOPENOBJ</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Hatch open objects" setting on an XCenter's "Style" page;
+note however that the value for this setup string is reverse to the checkbox
+state on that page.
+The default is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>POSITION</B>={TOP|BOTTOM}</CITE>
+<DD>Corresponds to the "Position" setting on an XCenter's "View" page.
+The default is <CODE>BOTTOM</CODE>.
+
+<DT><P><CITE><B>PRIORITYDELTA</B>=<I>delta</I></CITE>
+<DD>Corresponds to the "View thread priority" setting on an XCenter's "View" page.
+The value is the priority delta of the XCenter thread, which must be
+in the range of 0 to 31.
+The default is "0".
+
+<DT><P><CITE><B>REDUCEDESKTOP</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Reduce desktop workarea" setting on an XCenter's "View" page.
+The default is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>SIZINGBARS</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Draw sizing bars" setting on an XCenter's "Style" page.
+The default is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>SPACINGLINES</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Draw spacing lines" setting on an XCenter's "Style" page.
+The default is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>SUNKBORDERS</B>={YES|NO}</CITE>
+<DD>Corresponds to the "Frame around statics" setting on an XCenter's "Style" page.
+The default is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>WIDGETS</B>=<I>widget[,widget]...</I></CITE>
+<DD>A complete, comma-separated list of the widgets that have been added to the XCenter.
+Each <CODE>widget</CODE> string has the following format:
+<BR><CODE>classname[(setup)]</CODE>
+<BR>where <CODE>classname</CODE> is the name of the widget class (as displayed on the
+"Classes" notebook page in the XCenter's properties notebook and
+<CODE>(setup)</CODE> optionally specifies the setup sub-string of the
+widget. The setup sub-string is partially encoded so that it will not contain
+characters that are forbidden in WPS setup strings.
+
+<DT><P><CITE><B>WIDGETSPACING</B>=<I>value</I></CITE>
+<DD>Corresponds to the "Widget spacing" setting on an XCenter's "Style" page.
+The value must be in the range of 1 to 10.
+The default is "2".
+
+</DL>
+</BODY>
+</HTML>
+
