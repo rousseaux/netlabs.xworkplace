@@ -14,6 +14,7 @@
 #define xcenter "XCenter"
 #define xbutton "X-Button"
 #define xshutdown "XShutdown"
+#define pgr "XPager"
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 

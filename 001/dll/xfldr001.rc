@@ -639,7 +639,7 @@ BEGIN
     ID_MMSI_PAGETITLE_IOPROCS           "~IOProcs"
     ID_MMSI_PAGETITLE_CODECS            "~Codecs"
 
-    ID_XSSI_PAGETITLE_PAGEMAGE          "~XPager"
+    ID_XSSI_PAGETITLE_PAGER             "X~Pager"
 
     ID_XSSI_XWPSTRING_PAGE              "~Setup string"
     ID_XSSI_XWPSTRING_OPENMENU          "~Invoke setup string"
@@ -723,7 +723,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
     ID_XCSI_XWPHOOK                     "Enable &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
-    ID_XCSI_PAGEMAGE                    "XPager: virtual desktops"
+    ID_XCSI_PAGER                       "XPager: virtual desktops"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace Desktop archiving"
@@ -826,10 +826,10 @@ BEGIN
     ID_XSSI_COLMN_RESOURCEFLAGS         "Flags"
 
     /* XPager special functions in XWPMouse "Movement" page V0.9.9 (2001-03-11 [lafaix] */
-    ID_XSSI_SPECIAL_PAGEMAGEUP          "One screen up"
-    ID_XSSI_SPECIAL_PAGEMAGERIGHT       "One screen right"
-    ID_XSSI_SPECIAL_PAGEMAGEDOWN        "One screen down"
-    ID_XSSI_SPECIAL_PAGEMAGELEFT        "One screen left"
+    ID_XSSI_SPECIAL_PAGERUP          "One screen up"
+    ID_XSSI_SPECIAL_PAGERRIGHT       "One screen right"
+    ID_XSSI_SPECIAL_PAGERDOWN        "One screen down"
+    ID_XSSI_SPECIAL_PAGERLEFT        "One screen left"
 
     /* new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller] */
     ID_XSSI_MB3_AUTOSCROLL              "AutoScroll"
@@ -1066,7 +1066,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Permanently ~disable all features"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Permanently disable ~icon replacements"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "~Remove all object hotkeys"
-    ID_XFDI_PANIC_DISABLEPAGEMAGE       "Disable X~Pager"
+    ID_XFDI_PANIC_DISABLEPAGER          "Disable X~Pager"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "Disable ~multimedia"
     ID_XFDI_PANIC_CONTINUE              "C~ontinue"
     ID_XFDI_PANIC_CONTINUE_TXT          "This will continue Desktop startup."
@@ -1164,7 +1164,7 @@ BEGIN
     ID_XSDI_MOUSE_BRING2TOP             "Bring windows to ~top"
     ID_XSDI_MOUSE_IGNORESEAMLESS        "Ignore seamless ~Win-OS/2"
     ID_XSDI_MOUSE_IGNOREDESKTOP         "~Ignore Desktop"
-    ID_XSDI_MOUSE_IGNOREPAGEMAGE        "Ignore Pa~geMage"
+    ID_XSDI_MOUSE_IGNOREPAGER           "Ignore XPa~ger"
     ID_XSDI_MOUSE_IGNOREXCENTER         "Ignore ~XCenter"
     ID_XSDI_MOUSE_SLIDINGMENU_GRP       "Sliding menu selection"
     ID_XSDI_MOUSE_SLIDINGMENU           "E~nable"
