@@ -127,6 +127,9 @@ interface XCenter : WPAbstract
     LONG lcolClientBackground;      // client background color
                                     // V0.9.9 (2001-03-07) [umoeller]
 
+    ULONG ulWidth;                  // XCenter width (V0.9.19 (2002-04-16) [lafaix])
+    ULONG ulHeight;                 // XCenter height (V0.9.19 (2002-04-16) [lafaix])
+
     // Open view data:
     ULONG tidRunning;               // thread ID of running XCenter thread or NULLHANDLE
     PVOID pvOpenView;               // if != NULLHANDLE, XCenter is currently open,

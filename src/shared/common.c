@@ -13,9 +13,11 @@
  *      -- NLS management (cmnQueryNLSModuleHandle,
  *         cmnQueryNLSStrings);
  *
- *      -- global settings (cmnQueryGlobalSettings);
+ *      -- global settings (cmnQuerySetting, cmnSetSetting);
  *
- *      -- extended XWorkplace message boxes (cmnMessageBox).
+ *      -- miscellaneous dialog wrappers for our own NLS
+ *         string support (cmnMessageBox, cmnLoadDialogStrings,
+ *         and many others).
  *
  *      Note that the system sound functions have been exported
  *      to helpers\syssound.c (V0.9.0).
@@ -98,6 +100,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\regexp.h"             // extended regular expressions
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
@@ -1325,6 +1328,16 @@ static VOID UnloadAllStrings(VOID)
 // V0.9.16 (2001-10-08) [umoeller]
 
 const CONTROLDEF
+    G_OKButton = CONTROLDEF_DEFPUSHBUTTON(     // added V0.9.19 (2002-04-17) [umoeller]
+                            LOAD_STRING,
+                            DID_OK,
+                            100,
+                            30),
+    G_CancelButton = CONTROLDEF_PUSHBUTTON( // added V0.9.19 (2002-04-17) [umoeller]
+                            LOAD_STRING,
+                            DID_CANCEL,
+                            100,
+                            30),
     G_UndoButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING, // "~Undo",
                             DID_UNDO,
@@ -4414,13 +4427,7 @@ static CONTROLDEF
     ProductInfoText3 = CONTROLDEF_TEXT_WORDBREAK(
                             NULL,
                             ID_XSDI_INFO_STRING,
-                            INFO_WIDTH),
-
-    OKButton = CONTROLDEF_DEFPUSHBUTTON(
-                            LOAD_STRING,
-                            ID_XSSI_DLG_OK,
-                            100,
-                            30);
+                            INFO_WIDTH);
 
 static const DLGHITEM dlgProductInfo[] =
     {
@@ -4437,7 +4444,7 @@ static const DLGHITEM dlgProductInfo[] =
                     START_ROW(0),
                         CONTROL_DEF(&ProductInfoText3),
                     START_ROW(0),
-                        CONTROL_DEF(&OKButton),
+                        CONTROL_DEF(&G_OKButton),
                 END_TABLE,
         END_TABLE
     };
@@ -4511,16 +4518,13 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
         WinReleasePS(hps);
     }
 
-    // reset string V0.9.19 (2002-04-02) [umoeller]
-    OKButton.pcszText = LOAD_STRING;
-
     if (!cmnLoadDialogStrings(dlgProductInfo,
                               ARRAYITEMCOUNT(dlgProductInfo),
                               &paNew))
     {
         if (!dlghCreateDlg(&hwndInfo,
                            hwndOwner,
-                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           FCF_FIXED_DLG,
                            WinDefDlgProc,
                            cmnGetString(ID_XSDI_INFO_TITLE),
                            paNew,
@@ -5635,22 +5639,20 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
     // set our extended exception handler
     TRY_LOUD(excpt1)
     {
-        static fStringsLoaded = FALSE;
-        static MSGBOXSTRINGS Strings;
+        // no, this must not be static, or NLS changes
+        // won't be picked up V0.9.19 (2002-04-17) [umoeller]
+        /* static */ MSGBOXSTRINGS Strings;
 
-        if (!fStringsLoaded)
-        {
-            // first call: load all the strings
-            Strings.pcszYes = cmnGetString(ID_XSSI_DLG_YES);
-            Strings.pcszNo = cmnGetString(ID_XSSI_DLG_NO);
-            Strings.pcszOK = cmnGetString(ID_XSSI_DLG_OK);
-            Strings.pcszCancel = cmnGetString(ID_XSSI_DLG_CANCEL);
-            Strings.pcszAbort = cmnGetString(ID_XSSI_DLG_ABORT);
-            Strings.pcszRetry = cmnGetString(ID_XSSI_DLG_RETRY);
-            Strings.pcszIgnore = cmnGetString(ID_XSSI_DLG_IGNORE);
-            Strings.pcszEnter = "Enter"; // never used anyway
-            Strings.pcszYesToAll = cmnGetString(ID_XSSI_DLG_YES2ALL);
-        }
+        // first call: load all the strings
+        Strings.pcszYes = cmnGetString(DID_YES);
+        Strings.pcszNo = cmnGetString(DID_NO);
+        Strings.pcszOK = cmnGetString(DID_OK);
+        Strings.pcszCancel = cmnGetString(DID_CANCEL);
+        Strings.pcszAbort = cmnGetString(DID_ABORT);
+        Strings.pcszRetry = cmnGetString(DID_RETRY);
+        Strings.pcszIgnore = cmnGetString(DID_IGNORE);
+        Strings.pcszEnter = "Enter"; // never used anyway
+        Strings.pcszYesToAll = cmnGetString(DID_YES2ALL);
 
         // now using new dynamic dialog routines
         // V0.9.13 (2001-06-23) [umoeller]
@@ -5856,6 +5858,8 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
                       PSZ pszReplString,    // in: string for %1 message or NULL
                       BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
 {
+    PCSZ pcszPlainMsg = NULL;
+
     XSTRING str2;
     xstrInit(&str2, 0);
 
@@ -5881,171 +5885,268 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
     {
         xstrPrintf(pstr, "Dialog engine error %d", arc);
     }
+    else if (IS_IN_RANGE(arc, ERROR_REGEXP_FIRST, ERROR_REGEXP_LAST))
+    {
+        switch (arc)
+        {
+            case EREE_UNF_SUB:
+                pcszPlainMsg = "Unfinished sub-expression; invalid \"()\" nesting";
+            break;
+
+            case EREE_UNEX_RANGE:
+                pcszPlainMsg = "Unexpected range specifier '-'";
+            break;
+
+            case EREE_UNF_RANGE:
+                pcszPlainMsg = "Unfinished range specification; invalid \"[]\" nesting";
+            break;
+
+            case EREE_UNF_CCLASS:
+                pcszPlainMsg = "Unfinished character class; must be \"[:class:]\"";
+            break;
+
+            case EREE_UNEX_RSQR:
+                pcszPlainMsg = "Unexpected ']'";
+            break;
+
+            case EREE_UNEX_RPAR:
+                pcszPlainMsg = "Unexpected ')'";
+            break;
+
+            case EREE_UNEX_QUERY:
+                pcszPlainMsg = "Unexpected '?'";
+            break;
+
+            case EREE_UNEX_PLUS:
+                pcszPlainMsg = "Unexpected '+'";
+            break;
+
+            case EREE_UNEX_STAR:
+                pcszPlainMsg = "Unexpected '*'";
+            break;
+
+            case EREE_UNEX_LCUR:
+                pcszPlainMsg = "Unexpected '{'";
+            break;
+
+            case EREE_UNEX_RCUR:
+                pcszPlainMsg = "Unexpected '}'";
+            break;
+
+            case EREE_BAD_CREP_M:
+                pcszPlainMsg = "Bad minimum in counted repetition";
+            break;
+
+            case EREE_BAD_CREP_N:
+                pcszPlainMsg = "Bad maximum in counted repetition";
+            break;
+
+            case EREE_UNF_CREP:
+                pcszPlainMsg = "Unfinished counted repetition";
+            break;
+
+            case EREE_BAD_CREP:
+                pcszPlainMsg = "Bad counted repetition";
+            break;
+
+            case EREE_TOO_MANY_SUB:
+                pcszPlainMsg = "Too many sub-expressions";
+            break;
+
+            case EREE_COMPILE_FSM:
+                pcszPlainMsg = "Regular expression is too complex to process";
+            break;
+
+            case EREE_POSIX_COLLATING:
+                pcszPlainMsg = "POSIX collating symbols not supported";
+            break;
+
+            case EREE_POSIX_EQUIVALENCE:
+                pcszPlainMsg = "POSIX equivalence classes not supported";
+            break;
+
+            case EREE_POSIX_CCLASS_BAD:
+                pcszPlainMsg = "Bad POSIX character class";
+            break;
+
+            case EREE_BAD_BACKSLASH:
+                pcszPlainMsg = "Bad '\\' in substitution string";
+            break;
+
+            case EREE_BAD_BACKREF:
+                pcszPlainMsg = "Bad backreference in substitution string";
+            break;
+
+            case EREE_SUBS_LEN:
+                pcszPlainMsg = "Substituted string is too long";
+            break;
+        }
+    }
     else if (IS_IN_RANGE(arc, ERROR_XWP_FIRST, ERROR_XWP_LAST))
     {
         switch (arc)
         {
             case FOPSERR_NOT_HANDLED_ABORT:
-                xstrcpy(pstr, "Unhandled file operations error", 0);
+                pcszPlainMsg = "Unhandled file operations error";
             break;
 
             case FOPSERR_INVALID_OBJECT:
-                xstrcpy(pstr, "Invalid object in file operation", 0);
+                pcszPlainMsg = "Invalid object in file operation";
             break;
 
             case FOPSERR_NO_OBJECTS_FOUND:
-                xstrcpy(pstr, "No objects found for file operation", 0);
+                pcszPlainMsg = "No objects found for file operation";
             break;
 
                     // no objects found to process
             case FOPSERR_INTEGRITY_ABORT:
-                xstrcpy(pstr, "Data integrity error with file operation", 0);
+                pcszPlainMsg = "Data integrity error with file operation";
             break;
 
             case FOPSERR_FILE_THREAD_CRASHED:
-                xstrcpy(pstr, "File thread crashed", 0);
+                pcszPlainMsg = "File thread crashed";
             break;
 
                     // fopsFileThreadProcessing crashed
             case FOPSERR_CANCELLEDBYUSER:
-                xstrcpy(pstr, "File operation cancelled by user", 0);
+                pcszPlainMsg = "File operation cancelled by user";
             break;
 
             case FOPSERR_NO_TRASHCAN:
-                xstrcpy(pstr, "Cannot find trash can", 0);
+                pcszPlainMsg = "Cannot find trash can";
             break;
 
                     // trash can doesn't exist, cannot delete
                     // V0.9.16 (2001-11-10) [umoeller]
             /* case FOPSERR_MOVE2TRASH_READONLY:
-                xstrcpy(pstr, "Cannot move read-only file to trash can", 0);
+                pcszPlainMsg = "Cannot move read-only file to trash can";
             break; */
                     // moving WPFileSystem which has read-only:
                     // this should prompt the user
 
             case FOPSERR_MOVE2TRASH_NOT_DELETABLE:
-                xstrcpy(pstr, "Cannot move undeletable file to trash can", 0);
+                pcszPlainMsg = "Cannot move undeletable file to trash can";
             break;
                     // moving non-deletable to trash can: this should abort
 
             /* case FOPSERR_DELETE_CONFIRM_FOLDER:
-                xstrcpy(pstr, "FOPSERR_DELETE_CONFIRM_FOLDER", 0);
+                pcszPlainMsg = "FOPSERR_DELETE_CONFIRM_FOLDER";
             break; */
                     // deleting WPFolder and "delete folder" confirmation is on:
                     // this should prompt the user (non-fatal)
                     // V0.9.16 (2001-12-06) [umoeller]
 
             /* case FOPSERR_DELETE_READONLY:
-                xstrcpy(pstr, "FOPSERR_DELETE_READONLY", 0);
+                pcszPlainMsg = "FOPSERR_DELETE_READONLY";
             break; */
                     // deleting WPFileSystem which has read-only flag;
                     // this should prompt the user (non-fatal)
 
             case FOPSERR_DELETE_NOT_DELETABLE:
-                xstrcpy(pstr, "File is not deletable", 0);
+                pcszPlainMsg = "File is not deletable";
             break;
                     // deleting not-deletable; this should abort
 
             case FOPSERR_TRASHDRIVENOTSUPPORTED:
-                xstrcpy(pstr, "Drive is not supported by trash can", 0);
+                pcszPlainMsg = "Drive is not supported by trash can";
             break;
 
             case FOPSERR_WPFREE_FAILED:
-                xstrcpy(pstr, "wpFree failed on file-system object", 0);
+                pcszPlainMsg = "wpFree failed on file-system object";
             break;
 
             case FOPSERR_LOCK_FAILED:
-                xstrcpy(pstr, "Cannot get file operations lock", 0);
+                pcszPlainMsg = "Cannot get file operations lock";
             break;
                     // requesting object mutex failed
 
             case FOPSERR_START_FAILED:
-                xstrcpy(pstr, "Cannot start file task", 0);
+                pcszPlainMsg = "Cannot start file task";
             break;
                     // fopsStartTask failed
 
             case FOPSERR_POPULATE_FOLDERS_ONLY:
-                xstrcpy(pstr, "FOPSERR_POPULATE_FOLDERS_ONLY", 0);
+                pcszPlainMsg = "FOPSERR_POPULATE_FOLDERS_ONLY";
             break;
                     // fopsAddObjectToTask works on folders only with XFT_POPULATE
 
             case FOPSERR_POPULATE_FAILED:
-                xstrcpy(pstr, "Cannot populate folder", 0);
+                pcszPlainMsg = "Cannot populate folder";
             break;
                     // wpPopulate failed on folder during XFT_POPULATE
 
             case FOPSERR_WPQUERYFILENAME_FAILED:
-                xstrcpy(pstr, "wpQueryFilename failed", 0);
+                pcszPlainMsg = "wpQueryFilename failed";
             break;
                     // wpQueryFilename failed
 
             case FOPSERR_WPSETATTR_FAILED:
-                xstrcpy(pstr, "Unable to set new attributes for file", 0);
+                pcszPlainMsg = "Unable to set new attributes for file";
             break;
                     // wpSetAttr failed
 
             case FOPSERR_GETNOTIFYSEM_FAILED:
-                xstrcpy(pstr, "Cannot get notify semaphore", 0);
+                pcszPlainMsg = "Cannot get notify semaphore";
             break;
                     // fdrGetNotifySem failed
 
             case FOPSERR_REQUESTFOLDERMUTEX_FAILED:
-                xstrcpy(pstr, "Cannot get folder semaphore", 0);
+                pcszPlainMsg = "Cannot get folder semaphore";
             break;
                     // wpshRequestFolderSem failed
 
             case FOPSERR_NOT_FONT_FILE:
-                xstrcpy(pstr, "FOPSERR_NOT_FONT_FILE", 0);
+                pcszPlainMsg = "FOPSERR_NOT_FONT_FILE";
             break;
                     // with XFT_INSTALLFONTS: non-XWPFontFile passed
 
             case FOPSERR_FONT_ALREADY_INSTALLED:
-                xstrcpy(pstr, "Font is already installed", 0);
+                pcszPlainMsg = "Font is already installed";
             break;
                     // with XFT_INSTALLFONTS: XWPFontFile is already installed
 
             case FOPSERR_NOT_FONT_OBJECT:
-                xstrcpy(pstr, "FOPSERR_NOT_FONT_OBJECT", 0);
+                pcszPlainMsg = "FOPSERR_NOT_FONT_OBJECT";
             break;
                     // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
 
             case FOPSERR_FONT_ALREADY_DELETED:
-                xstrcpy(pstr, "Font is no longer present in OS2.INI", 0);
+                pcszPlainMsg = "Font is no longer present in OS2.INI";
             break;
                     // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
 
             case FOPSERR_FONT_STILL_IN_USE:
-                xstrcpy(pstr, "Font is still in use", 0);
+                pcszPlainMsg = "Font is still in use";
             break;
                     // with XFT_DEINSTALLFONTS: font is still in use;
                     // this is only a warning, it will be gone after a reboot
 
             case ERROR_XCENTER_FIRST:
-                xstrcpy(pstr, "ERROR_XCENTER_FIRST", 0);
+                pcszPlainMsg = "ERROR_XCENTER_FIRST";
             break;
 
             case XCERR_INVALID_ROOT_WIDGET_INDEX:
-                xstrcpy(pstr, "XCERR_INVALID_ROOT_WIDGET_INDEX", 0);
+                pcszPlainMsg = "XCERR_INVALID_ROOT_WIDGET_INDEX";
             break;
 
             case XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY:
-                xstrcpy(pstr, "XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY", 0);
+                pcszPlainMsg = "XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY";
             break;
 
             case XCERR_INVALID_TRAY_INDEX:
-                xstrcpy(pstr, "XCERR_INVALID_TRAY_INDEX", 0);
+                pcszPlainMsg = "XCERR_INVALID_TRAY_INDEX";
             break;
 
             case XCERR_INVALID_SUBWIDGET_INDEX:
-                xstrcpy(pstr, "XCERR_INVALID_SUBWIDGET_INDEX", 0);
+                pcszPlainMsg = "XCERR_INVALID_SUBWIDGET_INDEX";
             break;
 
             case BASEERR_BUILDPTR_FAILED:
-                xstrcpy(pstr, "BASEERR_BUILDPTR_FAILED", 0);
+                pcszPlainMsg = "BASEERR_BUILDPTR_FAILED";
             break;
 
             case BASEERR_DAEMON_DEAD:
-                xstrcpy(pstr, "BASEERR_DAEMON_DEAD", 0);
+                pcszPlainMsg = "BASEERR_DAEMON_DEAD";
             break;
 
             default:
@@ -6060,103 +6161,103 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
         switch (arc)
         {
             case XWPSEC_INTEGRITY:
-                xstrcpy(pstr, "Data integrity error", 0);
+                pcszPlainMsg = "Data integrity error";
             break;
 
             case XWPSEC_INVALID_DATA:
-                xstrcpy(pstr, "Invalid data.", 0);
+                pcszPlainMsg = "Invalid data.";
             break;
 
             case XWPSEC_CANNOT_GET_MUTEX:
-                xstrcpy(pstr, "Cannot get mutex.", 0);
+                pcszPlainMsg = "Cannot get mutex.";
             break;
 
             case XWPSEC_CANNOT_START_DAEMON:
-                xstrcpy(pstr, "Cannot start daemon.", 0);
+                pcszPlainMsg = "Cannot start daemon.";
             break;
 
             case XWPSEC_INSUFFICIENT_AUTHORITY:
-                xstrcpy(pstr, "Insufficient authority for processing this request.", 0);
+                pcszPlainMsg = "Insufficient authority for processing this request.";
             break;
 
             case XWPSEC_HSUBJECT_EXISTS:
-                xstrcpy(pstr, "Subject handle is already in use.", 0);
+                pcszPlainMsg = "Subject handle is already in use.";
             break;
 
             case XWPSEC_INVALID_HSUBJECT:
-                xstrcpy(pstr, "Subject handle is invalid.", 0);
+                pcszPlainMsg = "Subject handle is invalid.";
             break;
 
             case XWPSEC_INVALID_PID:
-                xstrcpy(pstr, "Invalid process ID.", 0);
+                pcszPlainMsg = "Invalid process ID.";
             break;
 
             case XWPSEC_NO_CONTEXTS:
-                xstrcpy(pstr, "No contexts.", 0);
+                pcszPlainMsg = "No contexts.";
             break;
 
             case XWPSEC_USER_EXISTS:
-                xstrcpy(pstr, "User exists already.", 0);
+                pcszPlainMsg = "User exists already.";
             break;
 
             case XWPSEC_NO_USERS:
-                xstrcpy(pstr, "No users in user database.", 0);
+                pcszPlainMsg = "No users in user database.";
             break;
 
             case XWPSEC_NO_GROUPS:
-                xstrcpy(pstr, "No groups in user database.", 0);
+                pcszPlainMsg = "No groups in user database.";
             break;
 
             case XWPSEC_INVALID_USERID:
-                xstrcpy(pstr, "Invalid user ID.", 0);
+                pcszPlainMsg = "Invalid user ID.";
             break;
 
             case XWPSEC_INVALID_GROUPID:
-                xstrcpy(pstr, "Invalid group ID.", 0);
+                pcszPlainMsg = "Invalid group ID.";
             break;
 
             case XWPSEC_NOT_AUTHENTICATED:
-                xstrcpy(pstr, "Authentication failed.", 0);
+                pcszPlainMsg = "Authentication failed.";
             break;
 
             case XWPSEC_NO_USER_PROFILE:
-                xstrcpy(pstr, "User profile (OS2.INI) could not be found.", 0);
+                pcszPlainMsg = "User profile (OS2.INI) could not be found.";
             break;
 
             case XWPSEC_CANNOT_START_SHELL:
-                xstrcpy(pstr, "Cannot start shell.", 0);
+                pcszPlainMsg = "Cannot start shell.";
             break;
 
             case XWPSEC_INVALID_PROFILE:
-                xstrcpy(pstr, "Invalid profile.", 0);
+                pcszPlainMsg = "Invalid profile.";
             break;
 
             case XWPSEC_NO_LOCAL_USER:
-                xstrcpy(pstr, "No local user.", 0);
+                pcszPlainMsg = "No local user.";
             break;
 
             case XWPSEC_DB_GROUP_SYNTAX:
-                xstrcpy(pstr, "Syntax error with group entries in user database.", 0);
+                pcszPlainMsg = "Syntax error with group entries in user database.";
             break;
 
             case XWPSEC_DB_USER_SYNTAX:
-                xstrcpy(pstr, "Syntax error with user entries in user database.", 0);
+                pcszPlainMsg = "Syntax error with user entries in user database.";
             break;
 
             case XWPSEC_DB_INVALID_GROUPID:
-                xstrcpy(pstr, "Invalid group ID in user database.", 0);
+                pcszPlainMsg = "Invalid group ID in user database.";
             break;
 
             case XWPSEC_DB_ACL_SYNTAX:
-                xstrcpy(pstr, "Syntax error in ACL database.", 0);
+                pcszPlainMsg = "Syntax error in ACL database.";
             break;
 
             case XWPSEC_RING0_NOT_FOUND:
-                xstrcpy(pstr, "Error contacting ring-0 device driver.", 0);
+                pcszPlainMsg = "Error contacting ring-0 device driver.";
             break;
 
             case XWPSEC_QUEUE_INVALID_CMD:
-                xstrcpy(pstr, "Invalid command code in security queue.", 0);
+                pcszPlainMsg = "Invalid command code in security queue.";
             break;
 
             default:
@@ -6214,14 +6315,62 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
         }
     }
 
+    if (pcszPlainMsg)
+        xstrcpy(pstr, pcszPlainMsg, 0);
+
     xstrClear(&str2);
 }
 
 /*
+ *@@ cmnErrorMsgBox:
+ *      displays a message box with an error description
+ *      for the given error code (as returned by
+ *      cmnDescribeError).
+ *
+ *      This expects a TMF message number whose %1 placeholder
+ *      will be replaced with the error description.
+ *
+ *      Returns the return value from cmnMessageBoxMsgExt.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+ULONG cmnErrorMsgBox(HWND hwndOwner,        // in: owner window
+                     APIRET arc,            // in: DOS or XWP error code to get msg for
+                     ULONG ulMsg,           // in: TMF msg no. where %1 will be replaced with error msg
+                     ULONG flFlags,         // in: as in cmnMessageBox flStyle
+                     BOOL fShowExplanation) // in: as in cmnDescribeError
+{
+    ULONG ulrc;
+    XSTRING str;
+    PCSZ pcsz;
+    xstrInit(&str, 0);
+    cmnDescribeError(&str, arc, NULL, fShowExplanation);
+
+    pcsz = str.psz;
+
+    ulrc = cmnMessageBoxMsgExt(hwndOwner,
+                               104,
+                               &pcsz,
+                               1,
+                               ulMsg,
+                               flFlags);
+
+    xstrClear(&str);
+
+    return ulrc;
+}
+
+/*
  *@@ cmnDosErrorMsgBox:
- *      displays a message box with an error
- *      description for the given error.
- *      This calls cmnDescribeError and cmnMessageBox in turn.
+ *      displays an extended message box with an error
+ *      description for the given error code (as returned
+ *      by cmnDescribeError).
+ *
+ *      As opposed to cmnErrorMsgBox, this allows you to
+ *      specify strings as C strings.
+ *
+ *      Returns the return value from cmnMessageBoxMsgExt.
  *
  *@@added V0.9.1 (2000-02-08) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
@@ -6235,10 +6384,10 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
                         PSZ pszReplString,  // in: string for %1 message or NULL
                         PCSZ pcszTitle,     // in: msgbox title
                         PCSZ pcszPrefix,    // in: string before error or NULL
-                        APIRET arc,         // in: DOS error code to get msg for
+                        APIRET arc,         // in: DOS or XWP error code to get msg for
                         PCSZ pcszSuffix,    // in: string after error or NULL
                         ULONG ulFlags,      // in: as in cmnMessageBox flStyle
-                        BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
+                        BOOL fShowExplanation) // in: as in cmnDescribeError
 {
     ULONG   mbrc = 0;
     XSTRING strError,
@@ -6372,8 +6521,8 @@ PSZ cmnTextEntryBox(HWND hwndOwner,
                              pcszTitle,
                              pcszDescription,
                              pcszDefault,
-                             cmnGetString(ID_XSSI_DLG_OK),
-                             cmnGetString(ID_XSSI_DLG_CANCEL),
+                             cmnGetString(DID_OK),
+                             cmnGetString(DID_CANCEL),
                              ulMaxLen,
                              fl,
                              cmnQueryDefaultFont()));

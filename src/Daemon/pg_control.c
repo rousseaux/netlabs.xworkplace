@@ -495,6 +495,7 @@ typedef struct _MINIWINDOW
  *@@changed V0.9.7 (2001-01-21) [umoeller]: largely rewritten for speed
  *@@changed V0.9.18 (2002-02-11) [lafaix]: fixed painting glitches
  *@@changed V0.9.18 (2002-02-20) [lafaix]: fixed missing restored windows
+ *@@changed V0.9.19 (2002-04-11) [lafaix]: added optional painting of secondary and sticky windows
  */
 
 VOID UpdateClientBitmap(PPAGERCLIENTDATA pClientData)
@@ -693,6 +694,12 @@ VOID UpdateClientBitmap(PPAGERCLIENTDATA pClientData)
 
                                     if (    (pWinInfo->bWindowType == WINDOW_NORMAL)
                                          || (pWinInfo->bWindowType == WINDOW_MAXIMIZE)
+                                         || (    (pWinInfo->bWindowType == WINDOW_STICKY)
+                                              && (pXPagerConfig->ulMiniDisplayFlags & MDF_INCLUDESTICKY)
+                                            )
+                                         || (    (pWinInfo->bWindowType == WINDOW_RESCAN)
+                                              && (pXPagerConfig->ulMiniDisplayFlags & MDF_INCLUDESECONDARY)
+                                            )
                                        )
                                     {
                                         // this window is to be painted:
@@ -1820,7 +1827,7 @@ MRESULT EXPENTRY fnwpSubclXPagerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
         {
             PTRACKINFO  ptr;
             G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
-            ptr = (PTRACKINFO)PVOIDFROMMP(mp2);
+            ptr = (PTRACKINFO) PVOIDFROMMP(mp2);
             ptr->ptlMinTrackSize.x = 20;
             ptr->ptlMinTrackSize.y = 20;
 

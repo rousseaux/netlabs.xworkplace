@@ -77,6 +77,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
@@ -84,6 +85,8 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\regexp.h"             // extended regular expressions
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
@@ -2482,6 +2485,129 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
 }
 
 /*
+ *@@ DoSelect:
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+static VOID DoSelect(HWND hwndDlg,
+                     BOOL fSelect,
+                     BOOL fRegExp)
+{
+    CHAR szMask[CCHMAXPATH];
+
+    HWND    hwndFrame;
+    HWND    hwndCnr;
+
+    if (    (hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER))
+         && (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+       )
+    {
+        HWND  hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
+        SHORT sLBIndex = 0;
+
+        WinQueryWindowText(hwndDropDown,
+                           sizeof(szMask),
+                           szMask);
+
+        if (strlen(szMask))
+        {
+            PMINIRECORDCORE pmrc = NULL;
+            ERE *pERE = NULL;
+            int rc = 0;
+
+            if (fRegExp)
+                if (!(pERE = rxpCompile(szMask,
+                                        0,
+                                        &rc)))
+                {
+                    cmnErrorMsgBox(hwndDlg,
+                                   rc,
+                                   234,
+                                   MB_OK,
+                                   TRUE);
+
+                    WinSetFocus(HWND_DESKTOP, WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD));
+
+                    return;
+                }
+
+            // now go through all the container items in hwndCnr
+            // and select / deselct them accordingly
+            do
+            {
+                pmrc =
+                    (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                CM_QUERYRECORD,
+                                                (MPARAM)pmrc,
+                                                MPFROM2SHORT(
+                                                    (pmrc)
+                                                        ? CMA_NEXT
+                                                        : CMA_FIRST,
+                                                    CMA_ITEMORDER)
+                                                );
+                if (pmrc)
+                {
+                    BOOL fMatch;
+                    int pos, length;
+                    ERE_MATCHINFO   mi;
+
+                    if (fRegExp)
+                        fMatch = (    (rxpMatch_fwd(pERE,
+                                                    0,
+                                                    pmrc->pszIcon,
+                                                    0,
+                                                    &pos,
+                                                    &length,
+                                                    &mi))
+                                   && (pos == 0)
+                                   && (length = strlen(pmrc->pszIcon))
+                                 );
+                    else
+                        fMatch = doshMatch(szMask, pmrc->pszIcon);
+
+                    if (fMatch)
+                    {
+                        WinSendMsg(hwndCnr,
+                                   CM_SETRECORDEMPHASIS,
+                                   pmrc,
+                                   MPFROM2SHORT(
+                                       // select or deselect flag
+                                       fSelect,
+                                       CRA_SELECTED
+                                   ));
+                    }
+                }
+            } while (pmrc);
+
+            if (pERE)
+                rxpFree(pERE);
+
+        }
+
+        WinSetFocus(HWND_DESKTOP, hwndDropDown);
+        // select entire string in drop-down
+        winhEntryFieldSelectAll(hwndDropDown);
+
+        // add file mask to list box (V0.9.0);
+        // if it exists, delete the old one first
+        sLBIndex = (SHORT)WinSendMsg(hwndDropDown,
+                                     LM_SEARCHSTRING,
+                                     MPFROM2SHORT(0,       // no flags
+                                                  LIT_FIRST),
+                                     szMask);
+        if (sLBIndex != LIT_NONE)
+            // found: remove
+            WinDeleteLboxItem(hwndDropDown,
+                              sLBIndex);
+
+        WinInsertLboxItem(hwndDropDown,
+                          0,            // at beginning
+                          szMask);
+    }
+}
+
+/*
  *@@ fdr_fnwpSelectSome:
  *      dlg proc for "Select by name" window.
  *
@@ -2490,10 +2616,11 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
  *
  *@@changed V0.9.0 [umoeller]: added drop-down box with history
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- *@@changed V0.9.1 (2000-02-01) [umoeller]: WinDestroyWindow was never called. Fixed.
+ *@@changed V0.9.1 (2000-02-01) [umoeller]: WinDestroyWindow was never called; fixed
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: added regexp; fixed entry field length
  */
 
-MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
     BOOL    fWriteAndClose = FALSE;
@@ -2514,17 +2641,15 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             HWND    hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
 
             WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)mp2); // Owner frame hwnd;
-            WinQueryWindowText((HWND)mp2,
-                               sizeof(szTitle),
-                               szTitle);
-            WinSetWindowText(hwndDlg, szTitle);
+
+            winhSetEntryFieldLimit(ID_XFDI_SOME_ENTRYFIELD, 250);
+                    // was missing V0.9.19 (2002-04-17) [umoeller]
 
             // load last 10 selections from OS2.INI (V0.9.0)
-            pszLast10 = prfhQueryProfileData(HINI_USER,
-                                             INIAPP_XWORKPLACE,
-                                             INIKEY_LAST10SELECTSOME, // "SelectSome"
-                                             &cbLast10);
-            if (pszLast10)
+            if (pszLast10 = prfhQueryProfileData(HINI_USER,
+                                                 INIAPP_XWORKPLACE,
+                                                 INIKEY_LAST10SELECTSOME, // "SelectSome"
+                                                 &cbLast10))
             {
                 // something found:
                 PSZ     p = pszLast10;
@@ -2560,81 +2685,9 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
                 case ID_XFDI_SOME_SELECT:
                 case ID_XFDI_SOME_DESELECT:
-                {
-                    CHAR szMask[CCHMAXPATH];
-
-                    HWND hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER);
-
-                    if (hwndFrame)
-                    {
-                        HWND    hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
-                        HWND    hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-
-                        if (hwndCnr)
-                        {
-                            SHORT sLBIndex = 0;
-
-                            WinQueryWindowText(hwndDropDown,
-                                               sizeof(szMask),
-                                               szMask);
-
-                            if (strlen(szMask))
-                            {
-                                // now go through all the container items in hwndCnr
-                                // and select / deselct them accordingly
-                                PMINIRECORDCORE pmrc = NULL;
-                                do
-                                {
-                                    pmrc =
-                                        (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                                    CM_QUERYRECORD,
-                                                                    (MPARAM)pmrc,
-                                                                    MPFROM2SHORT(
-                                                                        (pmrc)
-                                                                            ? CMA_NEXT
-                                                                            : CMA_FIRST,
-                                                                        CMA_ITEMORDER)
-                                                                    );
-                                    if (pmrc)
-                                    {
-                                        if (doshMatch(szMask, pmrc->pszIcon))
-                                        {
-                                            WinSendMsg(hwndCnr,
-                                                       CM_SETRECORDEMPHASIS,
-                                                       pmrc,
-                                                       MPFROM2SHORT(
-                                                           // select or deselect flag
-                                                           (SHORT1FROMMP(mp1)
-                                                                == ID_XFDI_SOME_SELECT),
-                                                           CRA_SELECTED
-                                                       ));
-                                        }
-                                    }
-                                } while (pmrc);
-                            }
-
-                            WinSetFocus(HWND_DESKTOP, hwndDropDown);
-                            // select entire string in drop-down
-                            winhEntryFieldSelectAll(hwndDropDown);
-
-                            // add file mask to list box (V0.9.0);
-                            // if it exists, delete the old one first
-                            sLBIndex = (SHORT)WinSendMsg(hwndDropDown,
-                                                         LM_SEARCHSTRING,
-                                                         MPFROM2SHORT(0,       // no flags
-                                                                      LIT_FIRST),
-                                                         szMask);
-                            if (sLBIndex != LIT_NONE)
-                                // found: remove
-                                WinDeleteLboxItem(hwndDropDown,
-                                                  sLBIndex);
-
-                            WinInsertLboxItem(hwndDropDown,
-                                              0,            // at beginning
-                                              szMask);
-                        }
-                    }
-                }
+                    DoSelect(hwndDlg,
+                             (SHORT1FROMMP(mp1) == ID_XFDI_SOME_SELECT),
+                             winhIsDlgItemChecked(hwndDlg, ID_XFDI_SOME_REGEXP_CP));
                 break;
 
                 case ID_XFDI_SOME_SELECTALL:
@@ -2680,6 +2733,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                 break;
 
                 case DID_CANCEL:
+                case DID_CLOSE:
                     WinPostMsg(hwndDlg, WM_CLOSE, 0, 0);
                 break;
 
@@ -2749,6 +2803,106 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
     }
 
     return (mrc);
+}
+
+#define BUTTON_WIDTH        150
+
+static const CONTROLDEF
+    IntroText = CONTROLDEF_TEXT_WORDBREAK(
+                            LOAD_STRING,
+                            ID_XFDI_SOME_INTROTXT,
+                            -100),
+    MaskEF = CONTROLDEF_DROPDOWN(
+                            ID_XFDI_SOME_ENTRYFIELD,
+                            -100,
+                            300),
+    RegExpCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XFDI_SOME_REGEXP_CP,
+                            -100,
+                            -1),
+    SelectButton = CONTROLDEF_DEFNOFOCUSBUTTON(
+                            LOAD_STRING,
+                            ID_XFDI_SOME_SELECT,
+                            BUTTON_WIDTH,
+                            30),
+    DeselectButton = CONTROLDEF_NOFOCUSBUTTON(
+                            LOAD_STRING,
+                            ID_XFDI_SOME_DESELECT,
+                            BUTTON_WIDTH,
+                            30),
+    SelectAllButton = CONTROLDEF_NOFOCUSBUTTON(
+                            LOAD_STRING,
+                            ID_XFDI_SOME_SELECTALL,
+                            BUTTON_WIDTH,
+                            30),
+    DeselectAllButton = CONTROLDEF_NOFOCUSBUTTON(
+                            LOAD_STRING,
+                            ID_XFDI_SOME_DESELECTALL,
+                            BUTTON_WIDTH,
+                            30),
+    CloseButton = CONTROLDEF_NOFOCUSBUTTON(
+                            LOAD_STRING,
+                            DID_CLOSE,
+                            BUTTON_WIDTH,
+                            30),
+    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+                            LOAD_STRING,
+                            DID_HELP,
+                            BUTTON_WIDTH,
+                            30);
+
+static const DLGHITEM dlgSelectSome[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&IntroText),
+            START_ROW(0),
+                CONTROL_DEF(&MaskEF),
+            START_ROW(0),
+                CONTROL_DEF(&RegExpCB),
+            START_ROW(0),
+                CONTROL_DEF(&SelectButton),
+                CONTROL_DEF(&DeselectButton),
+            START_ROW(0),
+                CONTROL_DEF(&SelectAllButton),
+                CONTROL_DEF(&DeselectAllButton),
+            START_ROW(0),
+                CONTROL_DEF(&CloseButton),
+                CONTROL_DEF(&HelpButton),
+        END_TABLE,
+    };
+
+/*
+ *@@ fdrShowSelectSome:
+ *      shows the "Select some" window.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+VOID fdrShowSelectSome(HWND hwndFrame)
+{
+    HWND hwndSelectSome;
+    PDLGHITEM paNew;
+
+    if (!cmnLoadDialogStrings(dlgSelectSome,
+                              ARRAYITEMCOUNT(dlgSelectSome),
+                              &paNew))
+        if (!dlghCreateDlg(&hwndSelectSome,
+                           hwndFrame,         // owner
+                           FCF_FIXED_DLG,
+                           fdr_fnwpSelectSome,
+                           cmnGetString(ID_XFDI_SELECTSOME_TITLE),
+                           paNew,
+                           ARRAYITEMCOUNT(dlgSelectSome),
+                           (PVOID)hwndFrame,    // dlg params
+                           cmnQueryDefaultFont()))
+        {
+            winhPlaceBesides(hwndSelectSome,
+                             wpshQueryCnrFromFrame(hwndFrame),
+                             PLF_SMART);
+            WinShowWindow(hwndSelectSome, TRUE);
+        }
 }
 
 /*
@@ -2992,16 +3146,17 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                         WinSetDlgItemText(ppf->hwndStatus, ID_SDDI_STATUS, szStarting2);
                     }
 
+                    // V0.9.19 (2002-04-11) [pr]: Must open on thread 1!!!
                     // have the object opened on thread-1
-                    /* hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                    hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                                                     (MPARAM)ppf->pObject,
-                                                                    (MPARAM)OPEN_DEFAULT); */
-
+                                                                    (MPARAM)OPEN_DEFAULT);
+                    /*
                     hwndCurrentView = _wpViewObject(ppf->pObject,
                                                     NULLHANDLE,
                                                     OPEN_DEFAULT,
                                                     0);
-
+                    */
                     // update status bar
                     if (cmnQuerySetting(sfShowStartupProgress))
                         WinSendDlgItemMsg(ppf->hwndStatus, ID_SDDI_PROGRESSBAR,

@@ -77,6 +77,7 @@ $(OUTPUTDIR)\linklist.obj \
 $(OUTPUTDIR)\except.obj \
 $(OUTPUTDIR)\dosh.obj \
 $(OUTPUTDIR)\memdebug.obj \
+$(OUTPUTDIR)\regexp.obj \
 $(OUTPUTDIR)\shapewin.obj \
 $(OUTPUTDIR)\stringh.obj \
 $(OUTPUTDIR)\threads.obj \

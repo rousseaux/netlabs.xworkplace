@@ -2092,9 +2092,9 @@ static const DLGHITEM dlgMovement1[] =
                         CONTROL_DEF(&MenuHiliteCB),
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
@@ -2436,6 +2436,7 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added delay for auto-move ptr
+ *@@changed V0.9.19 (2002-04-11) [lafaix]: added AMF_ALWAYSMOVE support
  */
 
 VOID hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -2497,6 +2498,8 @@ VOID hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                  pdc->__ulAutoMoveDelay / 100);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_ANIMATE,
                               ((pdc->__ulAutoMoveFlags & AMF_ANIMATE) != 0));
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_CENTER,
+                              ((pdc->__ulAutoMoveFlags & AMF_ALWAYSMOVE) != 0));
 
     }
 
@@ -2525,6 +2528,8 @@ VOID hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_ANIMATE,
                              (pdc->__fAutoMoveMouse)
                           && (pdc->__ulAutoMoveDelay > 0));
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_CENTER,
+                          pdc->__fAutoMoveMouse);
     }
 }
 
@@ -2536,6 +2541,7 @@ VOID hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@added V0.9.14 (2001-08-02) [lafaix]
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added delay for auto-move ptr
+ *@@changed V0.9.19 (2002-04-11) [lafaix]: added AMF_ALWAYSMOVE support
  */
 
 MRESULT hifMouseMovement2ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -2616,6 +2622,14 @@ MRESULT hifMouseMovement2ItemChanged(PNOTEBOOKPAGE pnbp,
                 pdc->__ulAutoMoveFlags |= AMF_ANIMATE;
             else
                 pdc->__ulAutoMoveFlags &= ~AMF_ANIMATE;
+        break;
+
+        case ID_XSDI_MOUSE_AUTOMOVE_CENTER:
+            hifLoadHookConfig(pdc);
+            if (ulExtra)
+                pdc->__ulAutoMoveFlags |= AMF_ALWAYSMOVE;
+            else
+                pdc->__ulAutoMoveFlags &= ~AMF_ALWAYSMOVE;
         break;
 
         /*

@@ -294,6 +294,22 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     default, ulExtra,            min, max
                FALSE,   0,                  0,   0,
 
+        // V0.9.19 (2002-04-16) [lafaix]
+        // type,  setup string,     offset,
+        STG_LONG_DEC,    "HEIGHT", FIELDOFFSET(XCenterData, ulHeight),
+        //     key for wpSaveState/wpRestoreState
+               16,
+        //     default, ulExtra,            min, max
+               0,       0,                  0,   0xFFFF,
+
+        // V0.9.19 (2002-04-16) [lafaix]
+        // type,  setup string,     offset,
+        STG_LONG_DEC,    "WIDTH", FIELDOFFSET(XCenterData, ulWidth),
+        //     key for wpSaveState/wpRestoreState
+               17,
+        //     default, ulExtra,            min, max
+               0,       0,                  0,   0xFFFF,
+
         /*
          * fonts/colors
          *      V0.9.9 (2001-03-07) [umoeller]
@@ -1458,9 +1474,9 @@ static const DLGHITEM dlgXCenterStyle[] =
                         CONTROL_DEF(&HatchInUseCB),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 

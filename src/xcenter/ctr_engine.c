@@ -1339,6 +1339,16 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
         if (pGlobals->flDisplayStyle & XCS_ALL3DBORDERS)
             pXCenterData->cyFrame += pGlobals->ul3DBorderWidth;
 
+        // if a specific height has been defined, use it if it's not
+        // too small V0.9.19 (2002-04-16) [lafaix]
+        if (pXCenterData->cyFrame < _ulHeight)
+        {
+            pXCenterData->cyFrame = _ulHeight;
+            pGlobals->cyInnerClient =   pXCenterData->cyFrame
+                                      - 2 * pGlobals->ulBorderSpacing
+                                      - pGlobals->ul3DBorderWidth;
+        }
+
         ulFlags |= XFMF_REPOSITIONWIDGETS;
     }
 
@@ -4180,6 +4190,7 @@ static MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
  *      in fnwpXCenterMainClient.
  *
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added XCenter resize
+ *@@changed V0.9.19 (2002-04-16) [lafaix]: added saving XCenter's new height
  */
 
 static MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
@@ -4255,10 +4266,16 @@ static MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
         {
             // set new client height
             ULONG cyFrameNew = ti.rclTrack.yTop - ti.rclTrack.yBottom;
+            XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+
             pGlobals->cyInnerClient =   cyFrameNew
                                       - cyAllBorders;
             ctrpReformat(pXCenterData,
                          XFMF_RECALCHEIGHT);
+
+            // saving height attribute
+            _ulHeight = cyFrameNew;
+            _wpSaveDeferred(pXCenterData->somSelf);
         }
     }
     else if (    (G_ulWidgetFromXY == 1)

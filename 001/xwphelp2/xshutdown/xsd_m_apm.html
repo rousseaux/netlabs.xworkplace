@@ -1,9 +1,10 @@
 <HTML>
 <HEAD>
     <TITLE>
-        "Attempt APM V1.2 Power-Off"
+        "APM V1.2 Power-Off"
     </TITLE>
 </HEAD>
+<!-- V0.9.19: title changed -->
 <BODY>
 If this setting is enabled, &xshutdown; will attempt to automatically switch off your
 computer after shutdown has completed, instead of displaying the usual message
@@ -12,14 +13,16 @@ that you may now switch off your computer.
 <!-- V0.9.7: changed all the following. -->
 <P>This will only work if your computer supports this. For this, both your BIOS and
 your &os2; must support at least
-Advanced Power Management (APM) V1.1. The APM level of your system (and the APM.SYS
+<!-- V0.9.19: added link -->
+<A HREF="glossary/gls_apm.html">APM V1.1</A>.
+The APM level of your system (and the <CODE>APM.SYS</CODE>
 driver level version) is displayed on the shutdown notebook page for your convenience.
 
 <P>If the <B>"Delay"</B> setting is also enabled, &xshutdown; will wait three seconds
-before actually issuing the power-off request to the APM.SYS driver. This might
-help on a few systems where the APM driver switched off the power before all caches
-were flushed. If you get CHKDSK's after using APM power-off, you might want to
-try to enable this setting.
+before actually issuing the power-off request to the <CODE>APM.SYS</CODE> driver.
+This might help on a few systems where the APM driver switched off the power before
+all caches were flushed. If you get CHKDSK's after using APM power-off, you might want
+to try to enable this setting.
 
 <BR>
 </BODY>

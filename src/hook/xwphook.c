@@ -1058,6 +1058,7 @@ VOID ProcessMsgsForXPager(HWND hwnd,
  *@@changed V0.9.14 (2001-08-01) [lafaix]: added menu mode check for auto hide
  *@@changed V0.9.14 (2001-08-02) [lafaix]: added auto move to default button
  *@@changed V0.9.16 (2001-11-22) [umoeller]: hotkeys stopped working after lockup if XPager wasn't running; fixed
+ *@@changed V0.9.19 (2002-04-04) [lafaix]: enabled AMF_ALWAYSMOVE for auto move feature
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1185,6 +1186,12 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                    && (((PSWP)psmh->mp1)->fl & SWP_SHOW)
                  )
             )
+         // we should ignore frames in notebooks; the parent
+         // ID is hardcored as it's much faster than querying the
+         // parent class and looks safe enough (at worst we don't
+         // move the pointer)
+         // V0.9.19 (2002-04-04) [lafaix]
+         && (WinQueryWindowUShort(WinQueryWindow(psmh->hwnd, QW_PARENT), QWS_ID) != (USHORT)8006)
        )
     {
         HWND hwndDefButton;
@@ -1195,6 +1202,19 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
             WinPostMsg(G_HookData.hwndDaemonObject,
                        XDM_MOVEPTRTOBUTTON,
                        (MPARAM)hwndDefButton,
+                       0);
+        }
+        else
+        // if the dialog contains no default button, center the
+        // pointer over the window
+        // V0.9.19 (2002-04-04) [lafaix]
+        if (    (G_HookData.HookConfig.__ulAutoMoveFlags & AMF_ALWAYSMOVE)
+             && (WinQueryWindowUShort(psmh->hwnd, QWS_FLAGS) & FF_DIALOGBOX)
+           )
+        {
+            WinPostMsg(G_HookData.hwndDaemonObject,
+                       XDM_MOVEPTRTOBUTTON,
+                       (MPARAM)psmh->hwnd,
                        0);
         }
     }

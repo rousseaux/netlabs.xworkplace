@@ -42,6 +42,8 @@ FIXED SINCE 0.9.18
 CURRENT PROBLEMS
 ----------------
 
+--  programs: NLS settings are not respected
+
 --  NLS: if NLS DLL cannot be found, revert to 001 automatically
     instead of hanging the system
 

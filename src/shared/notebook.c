@@ -367,6 +367,7 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added support for direct editing
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added support for valuesets
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed ulExtra for CN_RECORDCHECKED
+ *@@changed V0.9.19 (2002-04-15) [lafaix]: added support for CN_ENTER
  */
 
 static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
@@ -518,6 +519,17 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                             // or NULL for cnr whitespace
                         WinQueryPointerPos(HWND_DESKTOP,
                                            &pnbp->ptlMenuMousePos);
+                    break;
+
+                    case CN_ENTER:
+                    {
+                        PNOTIFYRECORDENTER pnre = (PNOTIFYRECORDENTER)mp2;
+                        if (pnre)
+                        {
+                            fCallItemChanged = TRUE;
+                            ulExtra = (ULONG)pnre->pRecord;
+                        }
+                    }
                     break;
 
                     case CN_PICKUP:
@@ -1410,7 +1422,7 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *      Note that the usage of this func changed with V0.9.18.
  *      The caller is no longer required to allocate memory for
  *      this function; instead, he fills an INSERTNOTEBOOKPAGE
- *      struct on the stack which is then copied here.
+ *      struct on the stack of which we make a heap copy here.
  *
  *      <B>Example usage</B> from some WPS "add notebook page" method:
  *
@@ -1502,6 +1514,20 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *
  *      This is especially useful with the ntbUpdateVisiblePage function,
  *      which iterates over all open pages.
+ *
+ *      <B>Using the dialog formatter</B>
+ *
+ *      You can use the xwphelpers dialog formatter (src\helpers\dialog.c)
+ *      instead of fixed dialog resources with these functions too.
+ *      For this, do the following:
+ *
+ *      1)  For INSERTNOTEBOOKPAGE.hwndDlg, use ID_XFD_EMPTYDLG.
+ *          That is an empty dialog frame. Unfortunately this is
+ *          necessary because wpInsertSettingsPages always need
+ *          a dialog resource.
+ *
+ *      2)  When CBI_INIT comes into your "init" callback, call
+ *          ntbFormatPage. See remarks there for details.
  *
  *      <B>The "item changed" callback</B>
  *
@@ -1717,7 +1743,18 @@ ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
  *      2)  In your "init page" callback, when CBI_INIT
  *          comes in, call this function on the array of
  *          DLGHITEM which represents the controls to
- *          be added.
+ *          be added. Example:
+ *
+ +          static VOID blahInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+ +                                   ULONG flFlags)        // CBI_* flags (notebook.h)
+ +          {
+ +              if (flFlags & CBI_INIT)
+ +              {
+ +                  ntbFormatPage(pnbp->hwndDlgPage,
+ +                                dlgBlah,
+ +                                ARRAYITEMCOUNT(dlgBlah);
+ +              }
+ +          }
  *
  *      3)  For dynamic string loading, set each dialog
  *          item's pcszText to LOADSTRING, which will
@@ -1727,6 +1764,7 @@ ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
  *          the same ID as the control.
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: adjusted for new cmnLoadDialogStrings to avoid NLS blowups
  */
 
 APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on

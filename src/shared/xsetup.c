@@ -1469,9 +1469,9 @@ static VOID ShowClassesDlg(HWND hwndOwner)
                                       ARRAYITEMCOUNT(dlgClassesMiddle),
                                       &paNewMiddle))
             {
-                OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
-                CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
-                HelpButton.pcszText = cmnGetString(ID_XSSI_DLG_HELP);
+                OKButton.pcszText = cmnGetString(DID_OK);
+                CancelButton.pcszText = cmnGetString(DID_CANCEL);
+                HelpButton.pcszText = cmnGetString(DID_HELP);
 
                 // copy front
                 for (ul = 0;
@@ -1514,7 +1514,7 @@ static VOID ShowClassesDlg(HWND hwndOwner)
 
                 if (!(arc = dlghCreateDlg(&hwndDlg,
                                           hwndOwner,
-                                          FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                          FCF_FIXED_DLG,
                                           fnwpXWorkplaceClasses,
                                           cmnGetString(ID_XCD_CLASSES_TITLE),
                                           paDlgItems,

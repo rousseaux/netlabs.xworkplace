@@ -720,10 +720,10 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                  pDlgData->pcszKernelTitle,
                  pDlgData->pDriverSpec->pszFilename);
 
-    OKButton.pcszText = pcmnGetString(ID_XSSI_DLG_OK);
-    CancelButton.pcszText = pcmnGetString(ID_XSSI_DLG_CANCEL);
-    DefaultButton.pcszText = pcmnGetString(ID_XSSI_DLG_DEFAULT);
-    HelpButton.pcszText = pcmnGetString(ID_XSSI_DLG_HELP);
+    OKButton.pcszText = pcmnGetString(DID_OK);
+    CancelButton.pcszText = pcmnGetString(DID_CANCEL);
+    DefaultButton.pcszText = pcmnGetString(DID_DEFAULT);
+    HelpButton.pcszText = pcmnGetString(DID_HELP);
 
     // set the cache slider's scale: one chunk every 512 KB,
     // and set the max to system's available memory / 4 / 512
@@ -735,7 +735,7 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
 
     if (NO_ERROR == pdlghCreateDlg(&hwndDlg,
                                    hwndOwner,
-                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                   FCF_FIXED_DLG,
                                    fnwpConfigJFS,
                                    szTitle,
                                    dlgCDFS,      // DLGHITEM array

@@ -735,8 +735,8 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
         ProcessorsGroup.pcszText = cmnGetString(ID_CRSI_PWGT_CPUGRAPHCOLORS);
         OthersGroup.pcszText = cmnGetString(ID_CRSI_PWGT_OTHERCOLORS);
 
-        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
-        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+        OKButton.pcszText = cmnGetString(DID_OK);
+        CancelButton.pcszText = cmnGetString(DID_CANCEL);
 
         if (!(arc = dlghCreateArray(   ARRAYITEMCOUNT(dlgPulseFront)
                                      +    cProcessors
@@ -782,7 +782,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                            ARRAYITEMCOUNT(dlgPulseTail))))
              && (!(arc = dlghCreateDlg(&hwndDlg,
                                        pData->hwndOwner,
-                                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                       FCF_FIXED_DLG,
                                        WinDefDlgProc,
                                        cmnGetString(ID_CRSI_PWGT_TITLE),
                                        pArray->paDlgItems,

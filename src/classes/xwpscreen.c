@@ -139,73 +139,8 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
 #ifndef __NOPAGER__
         if (cmnQuerySetting(sfEnableXPager))
         {
-            // "XPager" colors
-            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-            inbp.somSelf = somSelf;
-            inbp.hwndNotebook = hwndDlg;
-            inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiXPagerColorsInitPage;
-            inbp.pfncbItemChanged = pgmiXPagerColorsItemChanged;
-            inbp.usPageStyleFlags = BKA_MINOR;
-            inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~XPager";
-            inbp.ulDlgID = ID_SCD_PAGER_COLORS;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_COLORS;
-            // give this page a unique ID, which is
-            // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGER_COLORS;
-            ntbInsertPage(&inbp);
-
-            // "XPager" sticky windows
-            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-            inbp.somSelf = somSelf;
-            inbp.hwndNotebook = hwndDlg;
-            inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiXPagerStickyInitPage;
-            inbp.pfncbItemChanged = pgmiXPagerStickyItemChanged;
-            inbp.usPageStyleFlags = BKA_MINOR;
-            inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~XPager";
-            inbp.ulDlgID = ID_SCD_PAGER_STICKY;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
-            // give this page a unique ID, which is
-            // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGER_STICKY;
-            ntbInsertPage(&inbp);
-
-            // "XPager" window settings V0.9.9 (2001-03-15) [lafaix]
-            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-            inbp.somSelf = somSelf;
-            inbp.hwndNotebook = hwndDlg;
-            inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiXPagerWindowInitPage;
-            inbp.pfncbItemChanged = pgmiXPagerWindowItemChanged;
-            inbp.usPageStyleFlags = BKA_MINOR;
-            inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~XPager";
-            inbp.ulDlgID = ID_SCD_PAGER_WINDOW;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_WINDOW;
-            // give this page a unique ID, which is
-            // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGER_WINDOW;
-            ntbInsertPage(&inbp);
-
-            // "XPager" general settings
-            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-            inbp.somSelf = somSelf;
-            inbp.hwndNotebook = hwndDlg;
-            inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiXPagerGeneralInitPage;
-            inbp.pfncbItemChanged = pgmiXPagerGeneralItemChanged;
-            inbp.usPageStyleFlags = BKA_MAJOR;
-            inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~XPager";
-            inbp.ulDlgID = ID_SCD_PAGER_GENERAL;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_GENERAL;
-            // give this page a unique ID, which is
-            // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGER_MAIN;
-            ulrc = ntbInsertPage(&inbp);
+            // moved all this to pager.c
+            ulrc = pgmiInsertPagerPages(somSelf, hwndDlg, savehmod);
         }
 #endif
     }

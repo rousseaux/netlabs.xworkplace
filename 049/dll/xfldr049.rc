@@ -67,6 +67,10 @@
 #define WPMENUID_USER          0x6500
 #include "..\..\include\dlgids.h"
 
+#ifndef FCF_CLOSEBUTTON         // V0.9.19 (2002-04-14) [umoeller]
+#define FCF_CLOSEBUTTON            0x04000000L
+#endif
+
 /* icons, bitmaps */
 POINTER ID_ICONDLG LOADONCALL MOVEABLE DISCARDABLE xfldrdlg.ico
 POINTER ID_SDICON LOADONCALL MOVEABLE DISCARDABLE xfldshut.ico
@@ -243,12 +247,15 @@ END
 
 MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Neues Haftfenster...", ID_XSMI_STICKY_NEW
+    MENUITEM "~HinzufÅgen...", ID_XSMI_STICKY_NEW
 END
 
+/* changed V0.9.19 (2002-04-17) [umoeller] */
 MENU ID_XSM_STICKY_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "Aus Liste der Haftfenster entfe~rnen", ID_XSMI_STICKY_DELETE
+    MENUITEM "~Bearbeiten...", ID_XSMI_STICKY_EDIT
+    MENUITEM SEPARATOR
+    MENUITEM "Entfe~rnen", ID_XSMI_STICKY_DELETE
 END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
@@ -471,17 +478,19 @@ BEGIN
     ID_XSSI_SV_ALWAYSSORT           "Sortierreihenfolge stets beibehalten"
 
     /* XWorkplace standard dialog box (cmnMessageBox in common.c) */
-    ID_XSSI_DLG_UNDO                    "~Widerrufen"       /* added V0.9.13 (2001-06-27) [umoeller] */
-    ID_XSSI_DLG_DEFAULT                 "~Standard"    /* added V0.9.13 (2001-06-27) [umoeller] */
-    ID_XSSI_DLG_HELP                    "~Hilfe"       /* added V0.9.13 (2001-06-27) [umoeller] */
+    /* all changed to DID_* strings, see below with DID_YES2ALL etc.
+        V0.9.19 (2002-04-17) [umoeller]
+    ID_XSSI_DLG_UNDO                    "~Widerrufen"
+    ID_XSSI_DLG_DEFAULT                 "~Standard"
+    ID_XSSI_DLG_HELP                    "~Hilfe"
     ID_XSSI_DLG_YES                     "~Ja"
-    ID_XSSI_DLG_YES2ALL                 "Ja zu ~allen" /* added V0.9.4 (2000-07-27) [umoeller] */
+    ID_XSSI_DLG_YES2ALL                 "Ja zu ~allen"
     ID_XSSI_DLG_NO                      "~Nein"
     ID_XSSI_DLG_OK                      "~OK"
     ID_XSSI_DLG_CANCEL                  "~Abbruch"
     ID_XSSI_DLG_ABORT                   "~Abbrechen"
     ID_XSSI_DLG_RETRY                   "~Wiederholen"
-    ID_XSSI_DLG_IGNORE                  "~Ignorieren"
+    ID_XSSI_DLG_IGNORE                  "~Ignorieren" */
 
     /* "WPS Classes" notebook page */
     ID_XSSI_SB_CLASSMNEMONICS           "Statuszeileninformation fÅr diese Klasse:"
@@ -901,8 +910,6 @@ BEGIN
             */
     ID_CRSI_BUILTINCLASS                "Eingebaut"
     ID_CRSI_OWGT_MENUITEMS              "Sichtbare MenÅeintrÑge"
-    /* this one is new with V0.9.19 */
-    ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
 
     ID_CRSI_PWGT_TITLE                  "Puls"
     ID_CRSI_PWGT_IRQLOADCOLOR           "IRQ-Last"
@@ -930,6 +937,48 @@ BEGIN
 
     /* the following have been added with V0.9.18 */
     ID_XSSI_SPECIAL_SCREENWRAP          "Bildschirmrand umbrechen"
+
+    /* the following have been added with V0.9.19 */
+    ID_XSSI_DOUBLEFILES_FILENAME        "Dateiname"
+    ID_XSSI_DOUBLEFILES_DIR             "Verzeichnis"
+    ID_XSSI_DOUBLEFILES_SIZE            "Grî·e"
+    ID_XSSI_DOUBLEFILES_DATE            "Datum"
+    ID_XSSI_DOUBLEFILES_TIME            "Uhrzeit"
+
+    ID_NDSI_STARTNETSCAPE               "Ihr Browser scheint momentan nicht geladen zu sein. Soll er jetzt gestartet werden?"
+    ID_NDSI_SYNTAX                      "Die Syntax fÅr die Netscape DDE-Kommandozeile ist fehlerhaft. Mîchten Sie die Online-Hilfe lesen?"
+
+    ID_XSSI_ADMIN_LOCAL_USER            "~Aktueller Benutzer"
+    ID_XSSI_ADMIN_ALL_USERS             "Alle ~Benutzer"
+    ID_XSSI_ADMIN_ALL_GROUPS            "Alle ~Gruppen"
+
+    ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
+
+    /* XPager "sticky" page and related dialogs */
+    ID_SCDI_STICKY_GROUP                "Haftfenster"
+    ID_SCDI_STICKY_ADD                  "Hin~zufÅgen..."
+    ID_SCDI_STICKY_EDIT                 "~Bearbeiten..."
+    ID_SCDI_STICKY_REMOVE               "~Entfernen"
+
+    ID_SCDI_STICKY_INCLUDE               "E"
+    ID_SCDI_STICKY_EXCLUDE               "A"
+    ID_SCDI_STICKY_CONTAINS              "enthÑlt"
+    ID_SCDI_STICKY_BEGINSWITH            "beginnt mit"
+    ID_SCDI_STICKY_ENDSWITH              "endet in"
+    ID_SCDI_STICKY_EQUALS                "ist gleich"
+    ID_SCDI_STICKY_MATCHES               "pa·t auf"
+    ID_SCDI_STICKY_TITLEATTRIBUTE        "Titel"
+    ID_SCDI_STICKY_CRITERIA              "Kriterium"
+    ID_SCDI_STICKY_ATTRIBUTE             "Attribut"
+    ID_SCDI_STICKY_OPERATOR              "Operator"
+    ID_SCDI_STICKY_VALUE                 "Wert"
+    ID_SCDI_STICKY_EDITTITLE             "Haftfenster-Kriterien bearbeiten"
+    ID_SCDI_STICKY_ADDTITLE              "Haftfenster-Kriterien hinzufÅgen"
+
+    ID_SCDI_STICKY_CRITERIAGROUP         "Kriterium"
+    ID_SCDI_STICKY_MATCHINGGROUP         "Matching criteria"
+    ID_SCDI_STICKY_RADIO_INCLUDE         "I - Include matching windows"
+    ID_SCDI_STICKY_RADIO_EXCLUDE         "E - Exclude matching windows"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -996,6 +1045,19 @@ BEGIN
     DID_BROWSE                          "S~uchen..."
     DID_DETAILS                         "De~tails..."
     DID_CLOSE                           "S~chlie·en"
+
+    /*  the following added; these are the strings formerly
+        under the ID_XSSI_DLG_* IDs, which was really causing
+        quite some inefficiency in the code
+        V0.9.19 (2002-04-17) [umoeller] */
+    DID_OK                              "~OK"
+    DID_CANCEL                          "~Abbruch"
+    DID_YES                             "~Ja"
+    DID_YES2ALL                         "Ja zu ~allen"
+    DID_NO                              "~Nein"
+    DID_ABORT                           "~Abbrechen"
+    DID_RETRY                           "~Wiederholen"
+    DID_IGNORE                          "~Ignorieren"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
     ID_XSDI_FILEMENUS_GROUP             "DateimenÅs"
@@ -1218,6 +1280,15 @@ BEGIN
     ID_XTDI_CONFIRMEMPTY                "Aus~leeren bestÑtigen"
     ID_XTDI_CONFIRMDESTROY              "~EndgÅltiges Lîschen bestÑtigen"
     ID_XTDI_ALWAYSTRUEDELETE            "S~tets sofort lîschen (Papierkorb umgehen)"
+
+    /* strings formerly in ID_XFD_SELECTSOME */
+    ID_XFDI_SELECTSOME_TITLE            "Nach Namen auswÑhlen"
+    ID_XFDI_SOME_INTROTXT               "Bitte geben Sie eine Auswahlmaske (z.B. ""*.txt"") oder einen regulÑren Ausdruck an:"
+    ID_XFDI_SOME_SELECT                 "~AuswÑhlen"
+    ID_XFDI_SOME_DESELECT               "~ZurÅcknehmen"
+    ID_XFDI_SOME_SELECTALL              "Alles aus~wÑhlen"
+    ID_XFDI_SOME_DESELECTALL            "A~lles zurÅcknehmen"
+    ID_XFDI_SOME_REGEXP_CP              "~RegulÑrer Ausdruck"
 END
 
 /* Treesize definitions; added V0.9.0 */

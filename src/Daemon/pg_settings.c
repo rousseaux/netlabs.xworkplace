@@ -37,6 +37,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\gpih.h"               // GPI helper routines
+#include "helpers\regexp.h"             // extended regular expressions
 
 #include "xwpapi.h"                     // public XWorkplace definitions
 
@@ -97,10 +98,10 @@ VOID pgmsSetDefaults(VOID)
            0,
            sizeof(pXPagerConfig->aszSticky));
     pXPagerConfig->usStickyTextNum = 0;
-    memset(pXPagerConfig->hwndSticky2,
+    memset(pXPagerConfig->aulStickyFlags,
            0,
-           sizeof(pXPagerConfig->hwndSticky2));
-    pXPagerConfig->usSticky2Num = 0;
+           sizeof(pXPagerConfig->aulStickyFlags));
+    pXPagerConfig->usUnused1 = 0;
 
     // Colors 1
     pXPagerConfig->lcNormal = RGBCOL_DARKBLUE;
@@ -176,7 +177,28 @@ BOOL pgmsLoadSettings(ULONG flConfig)
            )
         {
             if (flConfig & PGMGCFG_STICKIES)
+            {
+                // stickies changed:
+                if (pgmwLock())
+                {
+                    // kill all regexps that were compiled
+                    // V0.9.19 (2002-04-17) [umoeller]
+                    ULONG ul;
+                    for (ul = 0;
+                         ul < MAX_STICKIES;
+                         ul++)
+                    {
+                        if (G_pHookData->paEREs[ul])
+                        {
+                            rxpFree(G_pHookData->paEREs[ul]);
+                            G_pHookData->paEREs[ul] = NULL;
+                        }
+                    }
+
+                    pgmwUnlock();
+                }
                 pgmwScanAllWindows();
+            }
 
             if (flConfig & PGMGCFG_REFORMAT)
                 pgmcSetPgmgFramePos(G_pHookData->hwndXPagerFrame);

@@ -1288,6 +1288,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
  *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked submenu arrow handling
  *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked painting stuff
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: fixed text vertical position
  */
 
 BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
@@ -1383,14 +1384,22 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
             ptl.x =    poi->rclItem.xLeft
                      + G_ulMiniIconSize
                      + 10;
-            ptl.y =    poi->rclItem.yBottom
-                     + (    (   poi->rclItem.yTop
-                              - poi->rclItem.yBottom
-                              - G_ulMiniIconSize
-                            ) / 2
-                       )
-                     + G_lMaxDescender
-                     + 2;
+
+            ptl.y = poi->rclItem.yBottom + G_lMaxDescender + 1;
+
+            // centering the text vertically if smaller than the mini icon
+            // V0.9.18 (2002-03-11) [lafaix]
+            if ((G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom) < (G_ulMiniIconSize + 2))
+                ptl.y += (G_ulMiniIconSize + 2 - (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom)) / 2;
+
+//            ptl.y =    poi->rclItem.yBottom
+//                     + (    (   poi->rclItem.yTop
+//                              - poi->rclItem.yBottom
+//                              - G_ulMiniIconSize
+//                            ) / 2
+//                       )
+//                     + G_lMaxDescender
+//                     + 2;
 
             // center this vertically V0.9.16 (2001-10-31) [umoeller]
             // ptl.y += (cyMenuItem - G_ulMiniIconSize) / 2;

@@ -66,6 +66,10 @@
 #define WPMENUID_USER          0x6500
 #include "..\..\include\dlgids.h"
 
+#ifndef FCF_CLOSEBUTTON         // V0.9.19 (2002-04-14) [umoeller]
+#define FCF_CLOSEBUTTON            0x04000000L
+#endif
+
 /* icons, bitmaps */
 POINTER ID_ICONDLG LOADONCALL MOVEABLE DISCARDABLE xfldrdlg.ico
 POINTER ID_SDICON LOADONCALL MOVEABLE DISCARDABLE xfldshut.ico
@@ -242,12 +246,17 @@ END
 
 MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~New sticky window...", ID_XSMI_STICKY_NEW
+    MENUITEM "~Add...", ID_XSMI_STICKY_NEW
+    MENUITEM SEPARATOR
+    MENUITEM "~Remove all", ID_XSMI_STICKY_DELETEALL
 END
 
+/* changed V0.9.19 (2002-04-17) [umoeller] */
 MENU ID_XSM_STICKY_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Remove from Sticky Windows list", ID_XSMI_STICKY_DELETE
+    MENUITEM "~Edit...", ID_XSMI_STICKY_EDIT
+    MENUITEM SEPARATOR
+    MENUITEM "~Remove", ID_XSMI_STICKY_DELETE
 END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
@@ -473,17 +482,19 @@ BEGIN
     ID_XSSI_SV_ALWAYSSORT           "Always maintain sort order"
 
     /* XWorkplace standard dialog box (cmnMessageBox in common.c) */
-    ID_XSSI_DLG_UNDO                    "~Undo"       /* added V0.9.13 (2001-06-27) [umoeller] */
-    ID_XSSI_DLG_DEFAULT                 "~Default"    /* added V0.9.13 (2001-06-27) [umoeller] */
-    ID_XSSI_DLG_HELP                    "~Help"       /* added V0.9.13 (2001-06-27) [umoeller] */
+    /* all changed to DID_* strings, see below with DID_YES2ALL etc.
+        V0.9.19 (2002-04-17) [umoeller]
+    ID_XSSI_DLG_UNDO                    "~Undo"
+    ID_XSSI_DLG_DEFAULT                 "~Default"
+    ID_XSSI_DLG_HELP                    "~Help"
     ID_XSSI_DLG_YES                     "~Yes"
-    ID_XSSI_DLG_YES2ALL                 "Yes to ~all" /* added V0.9.4 (2000-07-27) [umoeller] */
+    ID_XSSI_DLG_YES2ALL                 "Yes to ~all"
     ID_XSSI_DLG_NO                      "~No"
     ID_XSSI_DLG_OK                      "~OK"
     ID_XSSI_DLG_CANCEL                  "~Cancel"
     ID_XSSI_DLG_ABORT                   "~Abort"
     ID_XSSI_DLG_RETRY                   "~Retry"
-    ID_XSSI_DLG_IGNORE                  "~Ignore"
+    ID_XSSI_DLG_IGNORE                  "~Ignore" */
 
     /* "WPS Classes" notebook page */
     ID_XSSI_SB_CLASSMNEMONICS           "Status bar info of this class:"
@@ -903,8 +914,6 @@ BEGIN
             */
     ID_CRSI_BUILTINCLASS                "Built-in"
     ID_CRSI_OWGT_MENUITEMS              "Visible menu items"
-    /* this one is new with V0.9.19 */
-    ID_CRSI_OWGT_BITMAPFILE             "OS/2 bitmap file"
 
     ID_CRSI_PWGT_TITLE                  "Pulse"
     ID_CRSI_PWGT_IRQLOADCOLOR           "IRQ load"
@@ -947,6 +956,33 @@ BEGIN
     ID_XSSI_ADMIN_ALL_USERS             "All ~users"
     ID_XSSI_ADMIN_ALL_GROUPS            "All ~groups"
 
+    ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
+
+    /* XPager "sticky" page and related dialogs */
+    ID_SCDI_STICKY_GROUP                "Sticky windows"
+    ID_SCDI_STICKY_ADD                  "~Add..."
+    ID_SCDI_STICKY_EDIT                 "~Edit..."
+    ID_SCDI_STICKY_REMOVE               "~Remove"
+
+    ID_SCDI_STICKY_INCLUDE               "I"
+    ID_SCDI_STICKY_EXCLUDE               "E"
+    ID_SCDI_STICKY_CONTAINS              "contains"
+    ID_SCDI_STICKY_BEGINSWITH            "begins with"
+    ID_SCDI_STICKY_ENDSWITH              "ends with"
+    ID_SCDI_STICKY_EQUALS                "equals"
+    ID_SCDI_STICKY_MATCHES               "matches"
+    ID_SCDI_STICKY_TITLEATTRIBUTE        "Title"
+    ID_SCDI_STICKY_CRITERIA              "Criterion"
+    ID_SCDI_STICKY_ATTRIBUTE             "Attribute"
+    ID_SCDI_STICKY_OPERATOR              "Operator"
+    ID_SCDI_STICKY_VALUE                 "Value"
+    ID_SCDI_STICKY_EDITTITLE             "Edit sticky criteria"
+    ID_SCDI_STICKY_ADDTITLE              "Add sticky criteria"
+
+    ID_SCDI_STICKY_CRITERIAGROUP         "Criteria"
+    ID_SCDI_STICKY_MATCHINGGROUP         "Matching criteria"
+    ID_SCDI_STICKY_RADIO_INCLUDE         "I - Include matching windows"
+    ID_SCDI_STICKY_RADIO_EXCLUDE         "E - Exclude matching windows"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1013,6 +1049,19 @@ BEGIN
     DID_BROWSE                          "Bro~wse..."
     DID_DETAILS                         "De~tails..."
     DID_CLOSE                           "~Close"
+
+    /*  the following added; these are the strings formerly
+        under the ID_XSSI_DLG_* IDs, which was really causing
+        quite some inefficiency in the code
+        V0.9.19 (2002-04-17) [umoeller] */
+    DID_OK                              "~OK"
+    DID_CANCEL                          "~Cancel"
+    DID_YES                             "~Yes"
+    DID_YES2ALL                         "Yes to ~all"
+    DID_NO                              "~No"
+    DID_ABORT                           "~Abort"
+    DID_RETRY                           "~Retry"
+    DID_IGNORE                          "~Ignore"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
     ID_XSDI_FILEMENUS_GROUP             "File menus"
@@ -1237,6 +1286,15 @@ BEGIN
     ID_XTDI_CONFIRMEMPTY                "~Confirm empty"
     ID_XTDI_CONFIRMDESTROY              "Confirm destro~y"
     ID_XTDI_ALWAYSTRUEDELETE            "~Always delete immediately (never use trash can)"
+
+    /* strings formerly in ID_XFD_SELECTSOME */
+    ID_XFDI_SELECTSOME_TITLE            "Select by Name"
+    ID_XFDI_SOME_INTROTXT               "Please specify a selection mask (e.g. ""*.txt"") or a regular expression:"
+    ID_XFDI_SOME_SELECT                 "~Select"
+    ID_XFDI_SOME_DESELECT               "~Deselect"
+    ID_XFDI_SOME_SELECTALL              "Select ~all"
+    ID_XFDI_SOME_DESELECTALL            "Deselect a~ll"
+    ID_XFDI_SOME_REGEXP_CP              "~Regular expression"
 END
 
 /* Treesize definitions; added V0.9.0 */

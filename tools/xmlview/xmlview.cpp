@@ -258,9 +258,9 @@ int APIENTRY GetCPData(PXMLDOM pDom,
              ul < cEntries;
              ul++)
         {
-            USHORT usFrom = pMap[ul].usFrom;        // cp value
-            if (usFrom < 256)
-                piMap[usFrom] = (ULONG)pMap[ul].usUni;     // unicode value
+            USHORT usCP = pMap[ul].usCP;        // cp value
+            if (usCP < 256)
+                piMap[usCP] = (ULONG)pMap[ul].usUni;     // unicode value
         }
 
         // success
@@ -443,7 +443,7 @@ CHAR GetCPCharFromUnicode(ULONG ulUni)
          ul++)
     {
         if ((ULONG)pMap[ul].usUni == ulUni)
-            return (pMap[ul].usFrom);
+            return (pMap[ul].usCP);
     }
 
     return '#';

@@ -1954,16 +1954,9 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 case ID_XFMI_OFS_SELECTSOME:
-                {
-                    HWND hwndSelectSome = WinLoadDlg(HWND_DESKTOP,    // parent
-                                                     hwndFrame,         // owner
-                                                     (PFNWP)fdr_fnwpSelectSome,
-                                                     cmnQueryNLSModuleHandle(FALSE),
-                                                     ID_XFD_SELECTSOME,
-                                                     (PVOID)hwndFrame);    // dlg params
-                    WinShowWindow(hwndSelectSome, TRUE);
+                    fdrShowSelectSome(hwndFrame);
+                            // V0.9.19 (2002-04-17) [umoeller]
                     brc = TRUE;
-                }
                 break;
 
                 /*
@@ -2766,9 +2759,9 @@ static const DLGHITEM dlgAddMenus[] =
 #endif
                 END_TABLE,      // end of group
             START_ROW(0),       // notebook buttons (will be moved)
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 

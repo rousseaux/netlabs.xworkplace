@@ -620,14 +620,14 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
         ChecksGroup.pcszText = cmnGetString(ID_CRSI_OWGT_MENUITEMS);
         BitmapGroup.pcszText = cmnGetString(ID_CRSI_OWGT_BITMAPFILE);
-        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
-        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+        OKButton.pcszText = cmnGetString(DID_OK);
+        CancelButton.pcszText = cmnGetString(DID_CANCEL);
         HelpButton.pcszText = cmnGetString(DID_HELP);
         BitmapBrowse.pcszText = cmnGetString(DID_BROWSE);
 
         if (!(arc = dlghCreateDlg(&hwndDlg,
                                   pData->hwndOwner,
-                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                  FCF_FIXED_DLG,
                                   fnwpSettingsDlg,
                                   G_pcszXButton,
                                   dlgXButtonSettings,

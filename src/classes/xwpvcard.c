@@ -185,9 +185,9 @@ static const DLGHITEM dlgSummary[] =
                 CONTROL_DEF(&SummaryEmailText),
                 CONTROL_DEF(&SummaryEmailEF),
             START_ROW(0),
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
@@ -378,9 +378,9 @@ static const DLGHITEM dlgName[] =
                            CONTROL_DEF(&NameSuffixEF),
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
@@ -555,9 +555,9 @@ static const DLGHITEM dlgPhone[] =
                         END_TABLE,
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
@@ -765,9 +765,9 @@ static const DLGHITEM dlgAddresses[] =
                            CONTROL_DEF(&AddressesCountryEF),
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 

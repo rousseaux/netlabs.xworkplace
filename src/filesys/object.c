@@ -1795,7 +1795,7 @@ VOID objShowObjectDetails(HWND hwndOwner,
     {
         if (!dlghCreateDlg(&hwndDlg,
                            hwndOwner,
-                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           FCF_FIXED_DLG,
                            fnwpObjectDetails,
                            cmnGetString(ID_XSDI_DETAILS_DIALOG),
                            paNew,

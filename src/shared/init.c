@@ -632,7 +632,7 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
         {
             if (!(arc = dlghCreateDlg(&hwndPanic,
                                       NULLHANDLE,
-                                      FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                      FCF_FIXED_DLG,
                                       WinDefDlgProc,
                                       cmnGetString(ID_XFDI_PANIC_TITLE),
                                       paNew,

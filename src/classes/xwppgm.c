@@ -1410,13 +1410,13 @@ APIRET progStore(WPObject *somSelf,
  *
  *@@added V0.9.16 (2002-01-04) [umoeller]
  *@@changed V0.9.18 (2002-03-16) [umoeller]: adjusted for new instance data handling
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: added mutex
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                                              PPROGDETAILS pProgDetails)
 {
     PIBMPROGRAMDATA  pData;
-    BOOL        brc = FALSE;
 
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgDetails");
@@ -1431,178 +1431,188 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
          && (icoRunReplacement())
        )
     {
+        BOOL brc = FALSE;
+        BOOL fLocked = FALSE;
+
         TRY_LOUD(excpt1)
         {
-            PSZ     pszMyTitle = _wpQueryTitle(somSelf);
-            BOOL    fSetProgIcon = FALSE;
-
-            // progtype
-            pData->ProgType.progc = pProgDetails->progt.progc;
-            pData->ProgType.fbVisible = pProgDetails->progt.fbVisible;
-
-            // title
-            if (    (pProgDetails->pszTitle)
-                 && (strhcmp(pszMyTitle, pProgDetails->pszTitle))
-               )
+            // V0.9.19 (2002-04-17) [umoeller]
+            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
-                #ifdef DEBUG_PROGRAMSTART
-                    _Pmpf(("    setting new title \"%s\"", pProgDetails->pszTitle));
-                #endif
+                PSZ     pszMyTitle = _wpQueryTitle(somSelf);
+                BOOL    fSetProgIcon = FALSE;
 
-                _wpSetTitle(somSelf, pProgDetails->pszTitle);
-            }
+                // progtype
+                pData->ProgType.progc = pProgDetails->progt.progc;
+                pData->ProgType.fbVisible = pProgDetails->progt.fbVisible;
 
-            // executable
-            if (pProgDetails->pszExecutable)
-            {
-                // executable specified:
-                ULONG hfs;
-
-                #ifdef DEBUG_PROGRAMSTART
-                    _Pmpf(("    input exec \"%s\"", pProgDetails->pszExecutable));
-                #endif
-
-                // "*" means command prompt
-                if (pProgDetails->pszExecutable[0] == '*')
+                // title
+                if (    (pProgDetails->pszTitle)
+                     && (strhcmp(pszMyTitle, pProgDetails->pszTitle))
+                   )
                 {
-                    if (    (pData->pszExecutable)
-                         || (pData->ulExecutableHandle != 0xFFFF)
-                       )
-                    {
-                        // handle changed:
-                        progStore(somSelf,
-                                  &pData->pszExecutable,
-                                  &_fWeAllocatedExecutable,
-                                  NULL,
-                                  NULL);
-                        pData->ulExecutableHandle = 0xFFFF;
-                        fSetProgIcon = TRUE;
-                    }
+                    #ifdef DEBUG_PROGRAMSTART
+                        _Pmpf(("    setting new title \"%s\"", pProgDetails->pszTitle));
+                    #endif
+
+                    _wpSetTitle(somSelf, pProgDetails->pszTitle);
                 }
-                // try to find it
-                else if (    (pProgDetails->pszExecutable[1] == ':')
-                          && (strchr(pProgDetails->pszExecutable, '\\'))
-                          && (hfs = GetFSHandle(pProgDetails->pszExecutable))
-                        )
-                {
-                    // got executable file handle:
-                    if (    (pData->pszExecutable)
-                         || (pData->ulExecutableHandle != hfs)
-                       )
-                    {
-                        // handle changed:
-                        #ifdef DEBUG_PROGRAMSTART
-                            _Pmpf(("    setting new exe handle 0xlX", hfs));
-                        #endif
 
-                        progStore(somSelf,
-                                  &pData->pszExecutable,
-                                  &_fWeAllocatedExecutable,
-                                  NULL,
-                                  NULL);
-                        pData->ulExecutableHandle = hfs;
-                        fSetProgIcon = TRUE;
+                // executable
+                if (pProgDetails->pszExecutable)
+                {
+                    // executable specified:
+                    ULONG hfs;
+
+                    #ifdef DEBUG_PROGRAMSTART
+                        _Pmpf(("    input exec \"%s\"", pProgDetails->pszExecutable));
+                    #endif
+
+                    // "*" means command prompt
+                    if (pProgDetails->pszExecutable[0] == '*')
+                    {
+                        if (    (pData->pszExecutable)
+                             || (pData->ulExecutableHandle != 0xFFFF)
+                           )
+                        {
+                            // handle changed:
+                            progStore(somSelf,
+                                      &pData->pszExecutable,
+                                      &_fWeAllocatedExecutable,
+                                      NULL,
+                                      NULL);
+                            pData->ulExecutableHandle = 0xFFFF;
+                            fSetProgIcon = TRUE;
+                        }
+                    }
+                    // try to find it
+                    else if (    (pProgDetails->pszExecutable[1] == ':')
+                              && (strchr(pProgDetails->pszExecutable, '\\'))
+                              && (hfs = GetFSHandle(pProgDetails->pszExecutable))
+                            )
+                    {
+                        // got executable file handle:
+                        if (    (pData->pszExecutable)
+                             || (pData->ulExecutableHandle != hfs)
+                           )
+                        {
+                            // handle changed:
+                            #ifdef DEBUG_PROGRAMSTART
+                                _Pmpf(("    setting new exe handle 0xlX", hfs));
+                            #endif
+
+                            progStore(somSelf,
+                                      &pData->pszExecutable,
+                                      &_fWeAllocatedExecutable,
+                                      NULL,
+                                      NULL);
+                            pData->ulExecutableHandle = hfs;
+                            fSetProgIcon = TRUE;
+                        }
+                    }
+                    else
+                    {
+                        // file doesn't exist (or is not fully qualified):
+                        if (    (!pData->pszExecutable)
+                             || (stricmp(pData->pszExecutable,
+                                         pProgDetails->pszExecutable))
+                           )
+                        {
+                            // file changed:
+                            #ifdef DEBUG_PROGRAMSTART
+                                _Pmpf(("    setting new exe handle 0xlX", hfs));
+                            #endif
+
+                            progStore(somSelf,
+                                      &pData->pszExecutable,
+                                      &_fWeAllocatedExecutable,
+                                      pProgDetails->pszExecutable,
+                                      NULL);
+                            pData->ulExecutableHandle = 0;
+                            fSetProgIcon = TRUE;
+                        }
                     }
                 }
                 else
                 {
-                    // file doesn't exist (or is not fully qualified):
-                    if (    (!pData->pszExecutable)
-                         || (stricmp(pData->pszExecutable,
-                                     pProgDetails->pszExecutable))
+                    // executable not specified: nuke it then
+                    progStore(somSelf,
+                              &pData->pszExecutable,
+                              &_fWeAllocatedExecutable,
+                              NULL,
+                              NULL);
+                    pData->ulExecutableHandle = NULLHANDLE;
+                    fSetProgIcon = TRUE;
+                }
+
+                #ifdef DEBUG_PROGRAMSTART
+                    _Pmpf(("   new hfs 0x%lX", pData->ulExecutableHandle));
+                    _Pmpf(("   new _pszExecutable %s", pData->pszExecutable));
+                #endif
+
+                // startup dir
+                pData->ulStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);
+
+                // parameters
+                progStore(somSelf,
+                          &pData->pszParameters,
+                          &_fWeAllocatedParameters,
+                          pProgDetails->pszParameters,      // can be NULL
+                          NULL);
+
+                // environment
+                if (pData->pszEnvironment && _fWeAllocatedEnvironment)
+                {
+                    _wpFreeMem(somSelf, pData->pszEnvironment);
+                    _fWeAllocatedEnvironment = FALSE;
+                }
+
+                pData->pszEnvironment = NULL;
+
+                if (pProgDetails->pszEnvironment)
+                {
+                    ULONG cb;
+                    APIRET arc;
+                    if (    (cb = appQueryEnvironmentLen(pProgDetails->pszEnvironment))
+                         && (pData->pszEnvironment = _wpAllocMem(somSelf, cb, &arc))
                        )
                     {
-                        // file changed:
-                        #ifdef DEBUG_PROGRAMSTART
-                            _Pmpf(("    setting new exe handle 0xlX", hfs));
-                        #endif
-
-                        progStore(somSelf,
-                                  &pData->pszExecutable,
-                                  &_fWeAllocatedExecutable,
-                                  pProgDetails->pszExecutable,
-                                  NULL);
-                        pData->ulExecutableHandle = 0;
-                        fSetProgIcon = TRUE;
+                        memcpy(pData->pszEnvironment,
+                               pProgDetails->pszEnvironment,
+                               cb);
                     }
                 }
+
+                // pszIcon: ignored
+
+                // SWPInitial
+                memcpy(&pData->SWPInitial,
+                       &pProgDetails->swpInitial,
+                       sizeof(SWP));
+
+                if (fSetProgIcon)
+                    // refresh icon
+                    _wpSetProgIcon(somSelf, NULL);
+
+                // save ourselves
+                _wpSaveDeferred(somSelf);
+
+                brc = TRUE;
             }
-            else
-            {
-                // executable not specified: nuke it then
-                progStore(somSelf,
-                          &pData->pszExecutable,
-                          &_fWeAllocatedExecutable,
-                          NULL,
-                          NULL);
-                pData->ulExecutableHandle = NULLHANDLE;
-                fSetProgIcon = TRUE;
-            }
-
-            #ifdef DEBUG_PROGRAMSTART
-                _Pmpf(("   new hfs 0x%lX", pData->ulExecutableHandle));
-                _Pmpf(("   new _pszExecutable %s", pData->pszExecutable));
-            #endif
-
-            // startup dir
-            pData->ulStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);
-
-            // parameters
-            progStore(somSelf,
-                      &pData->pszParameters,
-                      &_fWeAllocatedParameters,
-                      pProgDetails->pszParameters,      // can be NULL
-                      NULL);
-
-            // environment
-            if (pData->pszEnvironment && _fWeAllocatedEnvironment)
-            {
-                _wpFreeMem(somSelf, pData->pszEnvironment);
-                _fWeAllocatedEnvironment = FALSE;
-            }
-
-            pData->pszEnvironment = NULL;
-
-            if (pProgDetails->pszEnvironment)
-            {
-                ULONG cb;
-                APIRET arc;
-                if (    (cb = appQueryEnvironmentLen(pProgDetails->pszEnvironment))
-                     && (pData->pszEnvironment = _wpAllocMem(somSelf, cb, &arc))
-                   )
-                {
-                    memcpy(pData->pszEnvironment,
-                           pProgDetails->pszEnvironment,
-                           cb);
-                }
-            }
-
-            // pszIcon: ignored
-
-            // SWPInitial
-            memcpy(&pData->SWPInitial,
-                   &pProgDetails->swpInitial,
-                   sizeof(SWP));
-
-            if (fSetProgIcon)
-                // refresh icon
-                _wpSetProgIcon(somSelf, NULL);
-
-            // save ourselves
-            _wpSaveDeferred(somSelf);
-
-            brc = TRUE;
         }
         CATCH(excpt1)
         {
         } END_CATCH();
+
+        if (fLocked)
+            _wpReleaseObjectMutexSem(somSelf);
+
+        return (brc);       // do not call parent, whatever happens
+                            // V0.9.19 (2002-04-17) [umoeller]
     }
 
-    if (!brc)
-        brc = XWPProgram_parent_WPProgram_wpSetProgDetails(somSelf,
-                                                           pProgDetails);
-
-    return (brc);
+    return XWPProgram_parent_WPProgram_wpSetProgDetails(somSelf,
+                                                        pProgDetails);
 }
 
 /*

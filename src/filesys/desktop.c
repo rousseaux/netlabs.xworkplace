@@ -725,33 +725,6 @@ static const XWPSETTING G_DtpMenuItemsBackup[] =
 #endif
     };
 
-/*
-DLGTEMPLATE ID_XSD_DTP_MENUITEMS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_MENUITEMS, 0, 0, 295, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Visible standard menu items", -1, 6, 54, 188, 52
-        AUTOCHECKBOX    "S~ort", ID_XSDI_DTP_SORT, 10, 90, 38, 8
-        AUTOCHECKBOX    "~Arrange", ID_XSDI_DTP_ARRANGE, 10, 82, 50, 8
-        AUTOCHECKBOX    "System ~setup", ID_XSDI_DTP_SYSTEMSETUP, 10, 74, 72,
-                        8
-        AUTOCHECKBOX    "~Lockup", ID_XSDI_DTP_LOCKUP, 10, 66, 46, 8
-        AUTOCHECKBOX    "Lo~goff network now", ID_XSDI_DTP_LOGOFFNETWORKNOW,
-                        10, 58, 176, 8
-        GROUPBOX        "Shutdown menu items", -1, 6, 22, 188, 28
-        AUTOCHECKBOX    "Add su~bmenu", ID_XSDI_DTP_SHUTDOWNMENU, 10, 34, 76,
-                        8
-        AUTOCHECKBOX    "Show ""Shu~tdown"" menu item", ID_XSDI_DTP_SHUTDOWN,
-                        10, 26, 136, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 6, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 70, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 134, 6, 60, 12, BS_HELP |
-                        WS_GROUP
-    END
-END
-*/
-
 static const CONTROLDEF
     MenuItemsGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
@@ -820,9 +793,9 @@ static const DLGHITEM dlgDesktopMenus[] =
                         CONTROL_DEF(&SystemSetupCB),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
@@ -1102,9 +1075,9 @@ static const DLGHITEM dlgDesktopStartup[] =
                 CONTROL_DEF(&CreateStartupFolderButton),
 #endif
             START_ROW(0),       // notebook buttons (will be moved)
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 

@@ -6,10 +6,11 @@
 </HEAD>
 <!-- this is all new with V0.9.13 -->
 <BODY>
-Wildcards are a common mechanism with all operating systems that allow
-for matching several file names with one character string. Wildcards
-are most frequently used on the DOS or &os2; command line, but are
-also used in the Workplace Shell.
+<!-- V0.9.19: first paragraph rewritten -->
+Wildcards are a greatly simplified variant of UNIX-style
+<A HREF="glossary/gls_regexps.html">regular expressions</A>.
+They allow for matching several file names with one character string
+and are most frequently used on the DOS and &os2; command lines.
 
 <P>&os2; understands two wildcard characters:
 
@@ -24,13 +25,12 @@ of characters (no character, one character, or many characters).
 <P>For example, <CODE>h??e</CODE> will match <CODE>home</CODE>, but
 not <CODE>he</CODE> or <CODE>house</CODE>.
 
-</OL>Wildcards can also be combined. For example, <CODE>h*e.?xt</CODE>
-will match <CODE>house.txt</CODE>.
+</OL>Wildcards can also be combined. For example, <CODE>h*e.?x?</CODE>
+will match <CODE>house.txt</CODE> and <CODE>he.exe</CODE>
 
-<P>Note that as opposed to DOS, the dot (<CODE>.</CODE>) in file names
-is not a special character, unless you are working with files on the
-<A HREF="glossary/gls_fs.html">FAT</A>
-file system.
+<P>Note that as opposed to DOS, under &os2; the dot (<CODE>.</CODE>)
+in file names is a special character only with
+files on the <A HREF="glossary/gls_fs.html">FAT</A> file system.
 
 <BR>
 </BODY>

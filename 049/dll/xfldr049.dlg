@@ -730,63 +730,36 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_SCD_PAGER_NEWSTICKY LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Haftfenster hinzufÅgen", ID_SCD_PAGER_NEWSTICKY, 12, 6, 228,
-            164, , FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "Geben Sie einen beliebigen Fenster- oder Fensterlis"
-                        "tennamen ein oder wÑhlen Sie einen aus der Liste:",
-                        -1, 4, 150, 218, 8
-        COMBOBOX        "", ID_SCD_PAGER_COMBO_STICKIES, 6, 20, 216, 125,
-                        LS_HORZSCROLL | WS_GROUP
-        DEFPUSHBUTTON   "~OK", DID_OK, 6, 6, 66, 12
-        PUSHBUTTON      "~Abbruch", DID_CANCEL, 80, 6, 66, 12
-        PUSHBUTTON      "~Hilfe", DID_HELP, 152, 6, 70, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_SCD_PAGER_STICKY LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_SCD_PAGER_STICKY, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_SCDI_PGMG_STICKY_CNR, 12, 28, 192, 114,
-                        CCS_SINGLESEL | WS_GROUP
-        GROUPBOX        "Haftfenster", -1, 6, 24, 206, 128, NOT WS_GROUP
-        PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Alle entfernen", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Hilfe", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_SCD_PAGER_WINDOW LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_SCD_PAGER_WINDOW, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "XPager-Kontrollfenster", -1, 4, 19, 192, 89
-        AUTOCHECKBOX    "T~itelleiste", ID_SCDI_PGMG1_TITLEBAR, 13, 88, 154,
-                        8
+        GROUPBOX        "XPager-Kontrollfenster", -1, 4, 19, 192, 109
+        AUTOCHECKBOX    "T~itelleiste", ID_SCDI_PGMG1_TITLEBAR, 13, 104, 154, 8
         AUTOCHECKBOX    "Bildschirmpr~oportionen erzwingen",
-                        ID_SCDI_PGMG1_PRESERVEPROPS, 13, 80, 154, 8
-        AUTOCHECKBOX    "Immer im ~Vordergrund", ID_SCDI_PGMG1_STAYONTOP, 13,
-                        72, 110, 8
-        AUTOCHECKBOX    "Kurz na~ch vorne holen", ID_SCDI_PGMG1_FLASHTOTOP,
-                        13, 64, 80, 8
-        LTEXT           "Verzîgerung:", ID_SCDI_PGMG1_FLASH_TXT1, 97, 64, 20,
-                        8, DT_VCENTER
-        SPINBUTTON      ID_SCDI_PGMG1_FLASH_SPIN, 119, 62, 40, 12,
+                        ID_SCDI_PGMG1_PRESERVEPROPS, 13, 96, 154, 8
+        AUTOCHECKBOX    "Immer im ~Vordergrund", ID_SCDI_PGMG1_STAYONTOP, 13, 88, 70,
+                        8
+        AUTOCHECKBOX    "Kurz na~ch vorne holen", ID_SCDI_PGMG1_FLASHTOTOP, 13, 80,
+                        70, 8
+        LTEXT           "Verzîgerung:", ID_SCDI_PGMG1_FLASH_TXT1, 71, 80, 20, 8,
+                        DT_VCENTER
+        SPINBUTTON      ID_SCDI_PGMG1_FLASH_SPIN, 93, 78, 40, 12,
                         SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTLEFT |
                         SPBS_JUSTRIGHT | SPBS_JUSTCENTER | WS_GROUP
-        LTEXT           "s", ID_SCDI_PGMG1_FLASH_TXT2, 161, 64, 20, 8,
+        LTEXT           "s", ID_SCDI_PGMG1_FLASH_TXT2, 135, 80, 20, 8,
                         DT_VCENTER
-        AUTOCHECKBOX    "~Mini-Fenster", ID_SCDI_PGMG1_SHOWWINDOWS, 13, 44,
+        AUTOCHECKBOX    "~Mini-Fenster", ID_SCDI_PGMG1_SHOWWINDOWS, 13, 60,
                         158, 8
-        AUTOCHECKBOX    "Fenster~titel anzeigen",
-                        ID_SCDI_PGMG1_SHOWWINTITLES, 23, 34, 142, 8
+        AUTOCHECKBOX    "Fenster~titel anzeigen", ID_SCDI_PGMG1_SHOWWINTITLES,
+                        23, 50, 142, 8
         AUTOCHECKBOX    "~Mausoperationen fÅr Mini-Fenster",
-                        ID_SCDI_PGMG1_CLICK2ACTIVATE, 23, 26, 144, 8
+                        ID_SCDI_PGMG1_CLICK2ACTIVATE, 23, 42, 144, 8
+        AUTOCHECKBOX    "Show ~secondary windows", ID_SCDI_PGMG1_SHOWSECONDARY,
+                        23, 34, 121, 8
+        AUTOCHECKBOX    "Show stic~ky windows", ID_SCDI_PGMG1_SHOWSTICKY,
+                        23, 26, 103, 8
         PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Standard", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Hilfe", DID_HELP, 125, 6, 55, 12, BS_HELP
@@ -1187,40 +1160,6 @@ BEGIN
         DEFPUSHBUTTON   "~Abbruch", DID_CANCEL, 60, 4, 50, 12, WS_GROUP
         PUSHBUTTON      "S~uchen...", ID_XFD_RUN_BROWSE, 115, 4, 50, 12
         PUSHBUTTON      "~Hilfe", DID_HELP, 170, 4, 50, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XFD_SELECTSOME LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace: Objektauswahl", ID_XFD_SELECTSOME, 30, -45, 165, 81,
-            WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "Bitte geben Sie eine Auswahlmaske an (z.B. ""*.txt"""
-                        "):", -1, 5, 60, 153, 17, DT_WORDBREAK | NOT
-                        WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        CONTROL         "", ID_XFDI_SOME_ENTRYFIELD, 5, 3, 155, 56,
-                        WC_COMBOBOX, CBS_DROPDOWN | WS_GROUP | WS_TABSTOP |
-                        WS_VISIBLE
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~AuswÑhlen", ID_XFDI_SOME_SELECT, 5, 33, 75, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~ZurÅcknehmen", ID_XFDI_SOME_DESELECT, 85, 33, 75,
-                        12, BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "Alles aus~wÑhlen", ID_XFDI_SOME_SELECTALL, 5, 18,
-                        75, 12, BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "A~lles zurÅcknehmen", ID_XFDI_SOME_DESELECTALL, 85,
-                        18, 75, 12, BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "S~chlie·en", DID_CANCEL, 5, 3, 75, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Hilfe", -1, 85, 3, 75, 12, BS_HELP |
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
     END
 END
 
@@ -1743,34 +1682,36 @@ BEGIN
     DIALOG  "", ID_XSD_MOUSE_MOVEMENT2, 0, 0, 232, 164, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Mauszeiger automatisch verstecken", -1, 6, 66, 194,
-                        48
-        AUTOCHECKBOX    "~Aktivieren", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 98,
-                        44, 8
-        LTEXT           "Ver~zîgerung:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 22, 86,
-                        28, 12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 56, 86, 106, 12,
+        GROUPBOX        "Mauszeiger automatisch verstecken", -1, 6, 78, 194, 48
+        AUTOCHECKBOX    "~Aktivieren", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 110, 44,
+                        8
+        LTEXT           "Ver~zîgerung:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 22, 98, 28,
+                        12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 56, 98, 106, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
                         CTLDATA 12, 0, 60, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 160, 86, 28, 12,
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 160, 98, 28, 12,
                         DT_VCENTER | DT_MNEMONIC
         AUTOCHECKBOX    "Bei geîffnetem MenÅ nicht verstecken",
-                        ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 76, 164, 10
+                        ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 88, 164, 10
         AUTOCHECKBOX    "öber SchaltflÑche nicht verstecken",
-                        ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 68, 164, 10
-        GROUPBOX        "Mauszeiger auf Dialog bewegen", -1, 6, 20, 194, 44
-        AUTOCHECKBOX    "Aktviere~n", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 48,
-                        46, 8
-        LTEXT           "Verz~îgerung:", ID_XSDI_MOUSE_AUTOMOVE_TXT1, 22, 34,
-                        28, 12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOMOVE_SLIDER, 56, 34, 106, 12,
+                        ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 80, 164, 10
+        GROUPBOX        "Mauszeiger auf Dialog bewegen", -1, 6,
+                        20, 194, 56
+        AUTOCHECKBOX    "Aktviere~n", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 60, 46,
+                        8
+        LTEXT           "Verz~îgerung:", ID_XSDI_MOUSE_AUTOMOVE_TXT1, 22, 46, 28,
+                        12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOMOVE_SLIDER, 56, 46, 106, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
                         CTLDATA 12, 0, 50, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOMOVE_TXT2, 160, 34, 28, 12,
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOMOVE_TXT2, 160, 46, 28, 12,
                         DT_VCENTER | DT_MNEMONIC
-        AUTOCHECKBOX    "~Animation", ID_XSDI_MOUSE_AUTOMOVE_ANIMATE, 22, 24,
+        AUTOCHECKBOX    "~Animation", ID_XSDI_MOUSE_AUTOMOVE_ANIMATE, 22, 36,
                         50, 8
-        PUSHBUTTON      "~Wiederruf", DID_UNDO, 4, 4, 70, 12, WS_GROUP
+        AUTOCHECKBOX    "~Center over button-less dialogs", 3482, 22, 28, 145,
+                        8
+        PUSHBUTTON      "~Widerrufen", DID_UNDO, 4, 4, 70, 12, WS_GROUP
         PUSHBUTTON      "~Standard", DID_DEFAULT, 78, 4, 70, 12
         PUSHBUTTON      "~Hilfe", DID_HELP, 152, 4, 70, 12, BS_HELP
     END

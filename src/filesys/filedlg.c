@@ -1650,7 +1650,7 @@ static MPARAM MainControlCreate(HWND hwnd,
                                 WC_BUTTON,
                                 (pWinData->pfd->pszOKButton)
                                   ? pWinData->pfd->pszOKButton
-                                  : cmnGetString(ID_XSSI_DLG_OK),
+                                  : cmnGetString(DID_OK),
                                 WS_VISIBLE | BS_PUSHBUTTON | BS_DEFAULT,
                                 DID_OK);
         lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndOK);
@@ -1658,7 +1658,7 @@ static MPARAM MainControlCreate(HWND hwnd,
         pWinData->hwndCancel
             = winhCreateControl(hwnd,           // parent
                                 WC_BUTTON,
-                                cmnGetString(ID_XSSI_DLG_CANCEL),
+                                cmnGetString(DID_CANCEL),
                                 WS_VISIBLE | BS_PUSHBUTTON,
                                 DID_CANCEL);
         lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndCancel);
@@ -1668,7 +1668,7 @@ static MPARAM MainControlCreate(HWND hwnd,
             pWinData->hwndHelp
                 = winhCreateControl(hwnd,           // parent
                                     WC_BUTTON,
-                                    cmnGetString(ID_XSSI_DLG_HELP),
+                                    cmnGetString(DID_HELP),
                                     WS_VISIBLE | BS_PUSHBUTTON | BS_HELP,
                                     DID_HELP);
             lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndHelp);

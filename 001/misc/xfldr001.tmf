@@ -441,6 +441,10 @@ Do you wish to restart the daemon now?
 
 <--XFL0233-->: &xwp; was unable to find the WPS class "%1". Probably the class is not installed.
 
+<--XFL0234-->: The regular expression you have specified is invalid. The following error occured:
+
+%1
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

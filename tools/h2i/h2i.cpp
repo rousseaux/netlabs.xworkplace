@@ -1520,9 +1520,16 @@ PCSZ HandleIMG(PARTICLETREENODE pFile2Process,
                   "The bitmap file \"%s\" was not found.",
                   str.psz);
 
-        xstrCatf(pxstrIPF,
-                   ":artwork name='%s' align=left.",
-                   str.psz);
+        if (pstat->fNeedsP)
+            // if we had a <P> just before, do not use runin
+            xstrCatf(pxstrIPF,
+                       ":artwork name='%s' align=left.",
+                       str.psz);
+        else
+            xstrCatf(pxstrIPF,
+                       ":artwork name='%s' runin align=left.",
+                       str.psz);
+
         xstrClear(&str);
 
         pstat->fNeedsP = FALSE;

@@ -3158,15 +3158,15 @@ VOID SelectByName(HWND hwndCnr)
     HWND hwndDlg = NULLHANDLE;
     PSZ  pszReturn = NULL;
 
-    if (NO_ERROR == dlghCreateDlg(&hwndDlg,
-                                  G_hwndMain,
-                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
-                                  fnwpSelectByName,
-                                  "xfix: Select By Name",
-                                  dlgSelect,      // DLGHITEM array
-                                  ARRAYITEMCOUNT(dlgSelect),
-                                  NULL,
-                                  "9.WarpSans"))
+    if (!dlghCreateDlg(&hwndDlg,
+                       G_hwndMain,
+                       FCF_FIXED_DLG,
+                       fnwpSelectByName,
+                       "xfix: Select By Name",
+                       dlgSelect,      // DLGHITEM array
+                       ARRAYITEMCOUNT(dlgSelect),
+                       NULL,
+                       "9.WarpSans"))
     {
         HWND hwndEF = WinWindowFromID(hwndDlg, IDDI_FILEMASK);
         winhCenterWindow(hwndDlg);

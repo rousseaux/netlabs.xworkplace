@@ -48,12 +48,17 @@ to perform some memory cleanup and such things.
 <P><LI><B>File:</B> The &xwp; "File" thread becomes active when &xwp;
 is doing file operations, such as moving files to the trash can or deleting files.
 
-<P><LI><B>&xcenter;:</B> Since each &xcenter; is running on its own thread, you will
+<P><LI><B>&xcenter;:</B> Since each
+<!-- V0.9.19: added link -->
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+is running on its own thread, you will
 see one such thread for each open &xcenter;.
 
 <!-- V0.9.13: added this -->
-<P><LI><B>PulseWidgetCollect:</B> this is only visible if you have the "Pulse"
-widget running in an open &xcenter;. The pulse widget starts a second thread
+<P><LI><B>PulseWidgetCollect:</B> this is only visible if you have the
+<!-- V0.9.19: added link -->
+<A HREF="xcenter/xc_pulse.html">"Pulse" widget</A>
+running in an open &xcenter;. The pulse widget starts a second thread
 for getting CPU usage information from the &os2; kernel in order not to be
 blocked out if some application monopolizes the PM single input queue.
 

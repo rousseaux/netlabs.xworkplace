@@ -2546,9 +2546,9 @@ static const DLGHITEM dlgTrashSettings[] =
                         CONTROL_DEF(&AlwaysTrueDeleteCB),
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 

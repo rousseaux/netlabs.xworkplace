@@ -47,8 +47,10 @@
 #define INCL_WINSYS
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
+#define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
+#define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
 #define INCL_WINSTDVALSET
@@ -64,7 +66,11 @@
 
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\gpih.h"               // GPI helper routines
+#include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\regexp.h"             // extended regular expressions
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
@@ -213,8 +219,8 @@ static VOID UpdateValueSet(HWND hwndValueSet,
  *@@changed V0.9.9 (2001-03-15) [lafaix]: "window" part moved to pgmiXPagerWindowInitPage
  */
 
-VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                                 ULONG flFlags)        // CBI_* flags (notebook.h)
+static VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -298,9 +304,9 @@ VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-03-15) [lafaix]: fixed odd undo/default behavior
  */
 
-MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
-                                       ULONG ulItemID, USHORT usNotifyCode,
-                                       ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
+                                            ULONG ulItemID, USHORT usNotifyCode,
+                                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
     BOOL    fSave = TRUE;      // save settings per default; this is set to FALSE if not needed
@@ -485,10 +491,11 @@ MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
  *      Global Settings.
  *
  *@@added V0.9.9 (2001-03-15) [lafaix]
+ *@@changed V0.9.19 (2002-04-11) [lafaix]: added support for MDF_INCLUDE*
  */
 
-VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                                ULONG flFlags)        // CBI_* flags (notebook.h)
+static VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                                     ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -535,6 +542,10 @@ VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               pPgmgConfig->fShowWindowText);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
                               pPgmgConfig->fClick2Activate);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWSECONDARY,
+                              pPgmgConfig->ulMiniDisplayFlags & MDF_INCLUDESECONDARY);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWSTICKY,
+                              pPgmgConfig->ulMiniDisplayFlags & MDF_INCLUDESTICKY);
 
     }
 
@@ -544,6 +555,10 @@ VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
                          fEnable);
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
+                         fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWSECONDARY,
+                         fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWSTICKY,
                          fEnable);
 
         // flash
@@ -566,11 +581,12 @@ VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@added V0.9.9 (2001-03-15) [lafaix]
  *@@changed V0.9.9 (2001-03-15) [lafaix]: fixed odd undo/default behavior
+ *@@changed V0.9.19 (2002-04-11) [lafaix]: added support for MDF_INCLUDE*
  */
 
-MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
-                                      ULONG ulItemID, USHORT usNotifyCode,
-                                      ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
+                                           ULONG ulItemID, USHORT usNotifyCode,
+                                           ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
     BOOL    fSave = TRUE;      // save settings per default; this is set to FALSE if not needed
@@ -627,6 +643,24 @@ MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
             ulPgmgChangedFlags = PGMGCFG_REPAINT;
         break;
 
+        case ID_SCDI_PGMG1_SHOWSECONDARY:
+            LoadXPagerConfig(pnbp->pUser);
+            if (ulExtra)
+                pPgmgConfig->ulMiniDisplayFlags |= MDF_INCLUDESECONDARY;
+            else
+                pPgmgConfig->ulMiniDisplayFlags &= ~MDF_INCLUDESECONDARY;
+            ulPgmgChangedFlags = PGMGCFG_REPAINT;
+        break;
+
+        case ID_SCDI_PGMG1_SHOWSTICKY:
+            LoadXPagerConfig(pnbp->pUser);
+            if (ulExtra)
+                pPgmgConfig->ulMiniDisplayFlags |= MDF_INCLUDESTICKY;
+            else
+                pPgmgConfig->ulMiniDisplayFlags &= ~MDF_INCLUDESTICKY;
+            ulPgmgChangedFlags = PGMGCFG_REPAINT;
+        break;
+
         case ID_SCDI_PGMG1_CLICK2ACTIVATE:
             LoadXPagerConfig(pnbp->pUser);
             pPgmgConfig->fClick2Activate = ulExtra;
@@ -647,6 +681,7 @@ MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
             pPgmgConfig->fMirrorWindows = TRUE;
             pPgmgConfig->fShowWindowText = TRUE;
             pPgmgConfig->fClick2Activate = TRUE;
+            pPgmgConfig->ulMiniDisplayFlags = 0;
 
             SaveXPagerConfig(pPgmgConfig,
                                PGMGCFG_REPAINT | PGMGCFG_REFORMAT | PGMGCFG_ZAPPO);
@@ -675,6 +710,7 @@ MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
             pPgmgConfig->fMirrorWindows = pBackup->fMirrorWindows;
             pPgmgConfig->fShowWindowText = pBackup->fShowWindowText;
             pPgmgConfig->fClick2Activate = pBackup->fClick2Activate;
+            pPgmgConfig->ulMiniDisplayFlags = pBackup->ulMiniDisplayFlags;
 
             SaveXPagerConfig(pPgmgConfig,
                                PGMGCFG_REPAINT | PGMGCFG_REFORMAT | PGMGCFG_ZAPPO);
@@ -713,13 +749,61 @@ MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
  *      extended record core for "Sticky windows" container.
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: added pcszCriteria, pcszAttribute and pcszOperator
  */
 
 typedef struct _STICKYRECORD
 {
     RECORDCORE  recc;
     CHAR        szSticky[PGMG_TEXTLEN];
+    PSZ         pcszCriteria;
+    PSZ         pcszAttribute;
+    PSZ         pcszOperator;
+    PSZ         pcszValue;
+    ULONG       ulFlags;
 } STICKYRECORD, *PSTICKYRECORD;
+
+/*
+ *@@ AdjustStickyRecord:
+ *      adjusts the pcsz* values in the STICKYRECORD
+ *
+ *@@added V0.9.19 (2002-04-15) [lafaix]
+ */
+
+static VOID AdjustStickyRecord(PSTICKYRECORD pRec)
+{
+    switch (pRec->ulFlags & SF_CRITERIA_MASK)
+    {
+        case SF_INCLUDE:
+            pRec->pcszCriteria = cmnGetString(ID_SCDI_STICKY_INCLUDE);
+        break;
+        case SF_EXCLUDE:
+            pRec->pcszCriteria = cmnGetString(ID_SCDI_STICKY_EXCLUDE);
+        break;
+    }
+    switch (pRec->ulFlags & SF_OPERATOR_MASK)
+    {
+        case SF_CONTAINS:
+            pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_CONTAINS);
+        break;
+        case SF_BEGINSWITH:
+            pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_BEGINSWITH);
+        break;
+        case SF_ENDSWITH:
+            pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_ENDSWITH);
+        break;
+        case SF_EQUALS:
+            pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_EQUALS);
+        break;
+        case SF_MATCHES:
+            pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_MATCHES);
+        break;
+    }
+
+    // only one attribute supported so far, SF_TITLE
+    pRec->pcszAttribute = cmnGetString(ID_SCDI_STICKY_TITLEATTRIBUTE);
+    pRec->pcszValue = pRec->szSticky;
+}
 
 /*
  *@@ AddStickyRecord:
@@ -727,19 +811,25 @@ typedef struct _STICKYRECORD
  *      container with the specified title.
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: added ulFlags support
  */
 
 static VOID AddStickyRecord(HWND hwndCnr,
                             PSZ pszStickyName,     // in: window or switch list title (for XPager)
+                            ULONG ulFlags,         // in: entry flags (SF_*)
                             BOOL fInvalidate)      // in: if TRUE, invalidate records
 {
-    PSTICKYRECORD pRec
-        = (PSTICKYRECORD)cnrhAllocRecords(hwndCnr,
-                                          sizeof(STICKYRECORD),
-                                          1);   // one rec at a time
-    if (pRec)
+    PSTICKYRECORD pRec;
+
+    if (pRec = (PSTICKYRECORD)cnrhAllocRecords(hwndCnr,
+                                               sizeof(STICKYRECORD),
+                                               1))
     {
         strhncpy0(pRec->szSticky, pszStickyName, PGMG_TEXTLEN);
+        pRec->ulFlags = ulFlags;
+
+        AdjustStickyRecord(pRec);
+
         cnrhInsertRecords(hwndCnr,
                           NULL, // parent
                           (PRECORDCORE)pRec,
@@ -757,6 +847,7 @@ static VOID AddStickyRecord(HWND hwndCnr,
  *      list. This calls SaveXPagerConfig in turn.
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: added flags support
  */
 
 static VOID SaveStickies(HWND hwndCnr,
@@ -766,6 +857,7 @@ static VOID SaveStickies(HWND hwndCnr,
     USHORT          usCmd = CMA_FIRST;
     BOOL            fCont = TRUE;
     USHORT          usStickyIndex = 0;      // raised with each iteration
+
     do
     {
         pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
@@ -777,6 +869,7 @@ static VOID SaveStickies(HWND hwndCnr,
 
         if ((pRec) && ((ULONG)pRec != -1))
         {
+            pPgmgConfig->aulStickyFlags[usStickyIndex] = pRec->ulFlags;
             strcpy(pPgmgConfig->aszSticky[usStickyIndex],
                    pRec->szSticky);
             usStickyIndex++;
@@ -795,6 +888,384 @@ static VOID SaveStickies(HWND hwndCnr,
                          | PGMGCFG_STICKIES);
 }
 
+#define ATTRWIDTH       100
+#define OPERWIDTH       100
+#define VALUEWIDTH      200
+
+static const CONTROLDEF
+    CriteriaGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_CRITERIAGROUP,
+                            -1,
+                            -1),
+    AttrTxt = CONTROLDEF_TEXT_CENTER(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_ATTRIBUTE,
+                            ATTRWIDTH,
+                            -1),
+    AttrList = CONTROLDEF_DROPDOWNLIST(
+                            ID_SCDI_STICKY_ATTRIBUTE_DROP,
+                            ATTRWIDTH,
+                            150),
+    OperTxt = CONTROLDEF_TEXT_CENTER(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_OPERATOR,
+                            OPERWIDTH,
+                            -1),
+    OperList = CONTROLDEF_DROPDOWNLIST(
+                            ID_SCDI_STICKY_OPERATOR_DROP,
+                            OPERWIDTH,
+                            150),
+    ValueTxt = CONTROLDEF_TEXT_CENTER(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_VALUE,
+                            VALUEWIDTH,
+                            -1),
+    ValueList = CONTROLDEF_DROPDOWN(
+                            ID_SCDI_STICKY_VALUE_DROP,
+                            VALUEWIDTH,
+                            400),
+    MatchingGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING, // ""Folder view settings"
+                            ID_SCDI_STICKY_MATCHINGGROUP,
+                            -1,
+                            -1),
+    IncludeRadio = CONTROLDEF_FIRST_AUTORADIO(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_RADIO_INCLUDE,
+                            -1,
+                            -1),
+    ExcludeRadio = CONTROLDEF_NEXT_AUTORADIO(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_RADIO_EXCLUDE,
+                            -1,
+                            -1);
+
+static const DLGHITEM dlgAddSticky[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // row 1 in the root table, required
+                // create group on top
+                START_GROUP_TABLE(&CriteriaGroup),
+                    START_ROW(0),
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&AttrTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&AttrList),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&OperTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&OperList),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&ValueTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&ValueList),
+                        END_TABLE,
+                    START_ROW(0),
+                        START_GROUP_TABLE(&MatchingGroup),
+                            START_ROW(0),
+                                CONTROL_DEF(&IncludeRadio),
+                            START_ROW(0),
+                                CONTROL_DEF(&ExcludeRadio),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_OKButton),           // common.c
+                CONTROL_DEF(&G_CancelButton),       // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+/*
+ *@@ fnwpEditStickyRecord:
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+static MRESULT EXPENTRY fnwpEditStickyRecord(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_COMMAND:
+        {
+            BOOL fDismiss = TRUE;
+            HWND hwndCombo;
+
+            if (    (SHORT1FROMMP(mp1) == DID_OK)
+                 && (hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP))
+                 && (WinQueryLboxSelectedItem(hwndCombo) == 4)      // SF_MATCHES
+                 // reassign for below
+                 && (hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_VALUE_DROP))
+               )
+            {
+                // before allowing OK, check if the regexp is valid
+                PSZ pszRegExp;
+                if (pszRegExp = winhQueryWindowText(hwndCombo))
+                {
+                    ERE *ere;
+                    int rc;
+                    if (!(ere = rxpCompile(pszRegExp,
+                                           0,
+                                           &rc)))
+                    {
+                        cmnErrorMsgBox(hwndDlg,
+                                    rc,
+                                    234,
+                                    MB_OK,
+                                    TRUE);
+                        fDismiss = FALSE;
+
+                        WinSetFocus(HWND_DESKTOP, hwndCombo);
+                    }
+
+                    if (ere)
+                        rxpFree(ere);
+
+                    free(pszRegExp);
+                }
+                else
+                    fDismiss = FALSE;
+            }
+
+            if (fDismiss)
+                WinDismissDlg(hwndDlg, SHORT1FROMMP(mp1));
+        }
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL, ID_XSH_SETTINGS_PAGER_STICKY + 2);
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+/*
+ *@@ EditStickyRecord:
+ *      edit and possibly inserts a STICKYRECORD.
+ *
+ *@@added V0.9.19 (2002-04-14) [lafaix]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter
+ */
+
+static VOID EditStickyRecord(PSTICKYRECORD pRec,
+                             PNOTEBOOKPAGE pnbp,
+                             HWND hwndCnr,
+                             BOOL fInsert)
+{
+    HWND        hwndDlg;
+    PDLGHITEM   paNew;
+
+    if (!cmnLoadDialogStrings(dlgAddSticky,
+                              ARRAYITEMCOUNT(dlgAddSticky),
+                              &paNew))
+    {
+        if (!dlghCreateDlg(&hwndDlg,
+                           pnbp->hwndDlgPage,
+                           FCF_FIXED_DLG,
+                           fnwpEditStickyRecord,
+                           cmnGetString(fInsert
+                                            ? ID_SCDI_STICKY_ADDTITLE
+                                            : ID_SCDI_STICKY_EDITTITLE),
+                           paNew,
+                           ARRAYITEMCOUNT(dlgAddSticky),
+                           NULL,
+                           cmnQueryDefaultFont()))
+        {
+            PSWBLOCK    pSwBlock;
+
+            winhCenterWindow(hwndDlg);
+
+            // get all the tasklist entries into a buffer
+            // V0.9.16 (2002-01-05) [umoeller]: now using winhQuerySwitchList
+            if (pSwBlock = winhQuerySwitchList(WinQueryAnchorBlock(pnbp->hwndDlgPage)))
+            {
+                ULONG ul;
+                HWND  hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_ATTRIBUTE_DROP);
+
+                // filling the possible attributes (just Title currently)
+                WinInsertLboxItem(hwndCombo,
+                                  0,
+                                  cmnGetString(ID_SCDI_STICKY_TITLEATTRIBUTE));
+                WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
+
+                // filling the possible operators
+                hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP);
+                WinInsertLboxItem(hwndCombo, 0, cmnGetString(ID_SCDI_STICKY_CONTAINS));
+                WinInsertLboxItem(hwndCombo, 1, cmnGetString(ID_SCDI_STICKY_BEGINSWITH));
+                WinInsertLboxItem(hwndCombo, 2, cmnGetString(ID_SCDI_STICKY_ENDSWITH));
+                WinInsertLboxItem(hwndCombo, 3, cmnGetString(ID_SCDI_STICKY_EQUALS));
+                WinInsertLboxItem(hwndCombo, 4, cmnGetString(ID_SCDI_STICKY_MATCHES));
+
+                switch (pRec->ulFlags & SF_OPERATOR_MASK)
+                {
+                    case SF_CONTAINS:
+                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
+                    break;
+                    case SF_BEGINSWITH:
+                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(1), MPFROMSHORT(TRUE));
+                    break;
+                    case SF_ENDSWITH:
+                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(2), MPFROMSHORT(TRUE));
+                    break;
+                    case SF_EQUALS:
+                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(3), MPFROMSHORT(TRUE));
+                    break;
+                    case SF_MATCHES:
+                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(4), MPFROMSHORT(TRUE));
+                    break;
+                }
+
+                // loop through all the tasklist entries
+                hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_VALUE_DROP);
+                for (ul = 0;
+                     ul < pSwBlock->cswentry;
+                     ul++)
+                {
+                    PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
+                    if (    (strlen(pCtrl->szSwtitle))
+                         && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
+                       )
+                        WinInsertLboxItem(hwndCombo,
+                                          LIT_SORTASCENDING,
+                                          pCtrl->szSwtitle);
+                }
+                WinSetWindowText(hwndCombo, pRec->szSticky);
+
+                WinCheckButton(hwndDlg,
+                               ID_SCDI_STICKY_RADIO_INCLUDE,
+                               (pRec->ulFlags & SF_CRITERIA_MASK) == SF_INCLUDE);
+                WinCheckButton(hwndDlg,
+                               ID_SCDI_STICKY_RADIO_EXCLUDE,
+                               (pRec->ulFlags & SF_CRITERIA_MASK) == SF_EXCLUDE);
+
+                if (WinProcessDlg(hwndDlg) == DID_OK)
+                {
+                    // OK pressed:
+                    PSZ pszSticky;
+                    if (pszSticky = winhQueryWindowText(hwndCombo))
+                    {
+                        ULONG ulFlags = 0;
+
+                        // build flags from settings
+                        if (WinQueryButtonCheckstate(hwndDlg,
+                                                     ID_SCDI_STICKY_RADIO_EXCLUDE))
+                            ulFlags |= SF_EXCLUDE;
+                        hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP);
+                        switch (WinQueryLboxSelectedItem(hwndCombo))
+                        {
+                            case 1:
+                                ulFlags |= SF_BEGINSWITH;
+                            break;
+                            case 2:
+                                ulFlags |= SF_ENDSWITH;
+                            break;
+                            case 3:
+                                ulFlags |= SF_EQUALS;
+                            break;
+                            case 4:
+                                ulFlags |= SF_MATCHES;
+                            break;
+                        }
+                        pRec->ulFlags = ulFlags;
+                        strhncpy0(pRec->szSticky, pszSticky, PGMG_TEXTLEN);
+
+                        if (fInsert)
+                            AddStickyRecord(hwndCnr,
+                                            pszSticky,
+                                            ulFlags,
+                                            TRUE);          // invalidate
+                        else
+                        {
+                            // pRec is already in container
+                            AdjustStickyRecord(pRec);
+
+                            // invalidate container to refresh view
+                            WinSendMsg(hwndCnr,
+                                       CM_INVALIDATERECORD,
+                                       (MPARAM)&pRec,
+                                       MPFROM2SHORT(1,
+                                                    CMA_TEXTCHANGED));
+                        }
+
+                        SaveStickies(hwndCnr,
+                                     (PAGERCONFIG*)pnbp->pUser);
+                        free(pszSticky);
+                    }
+                }
+
+                free(pSwBlock);
+            }
+
+            WinDestroyWindow(hwndDlg);
+        }
+
+        free(paNew);
+    }
+}
+
+static const CONTROLDEF
+    StickiesGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_GROUP,
+                            -1,
+                            -1),
+    StickiesCnr = CONTROLDEF_CONTAINER(
+                            ID_SCDI_STICKY_CNR,
+                            400,        // for now, will be resized
+                            200),       // for now, will be resized
+    AddButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_ADD,
+                            100,
+                            30),
+    EditButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_EDIT,
+                            100,
+                            30),
+    RemoveButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING,
+                            ID_SCDI_STICKY_REMOVE,
+                            100,
+                            30);
+
+static const DLGHITEM dlgStickies[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // row 1 in the root table, required
+                // create group on top
+                START_GROUP_TABLE(&StickiesGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&StickiesCnr),
+                    START_ROW(0),
+                        CONTROL_DEF(&AddButton),
+                        CONTROL_DEF(&EditButton),
+                        CONTROL_DEF(&RemoveButton),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+MPARAM G_ampStickies[] =
+    {
+        MPFROM2SHORT(ID_SCDI_STICKY_CNR, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_SCDI_STICKY_GROUP, XAC_SIZEX | XAC_SIZEY),
+    };
+
 /*
  *@@ pgmiXPagerStickyInitPage:
  *      notebook callback function (notebook.c) for the
@@ -803,38 +1274,73 @@ static VOID SaveStickies(HWND hwndCnr,
  *      Global Settings.
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: modified container view
  */
 
-VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                                ULONG flFlags)        // CBI_* flags (notebook.h)
+static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                                     ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
-                                       ID_SCDI_PGMG_STICKY_CNR);
+        HWND hwndCnr;
+
+        XFIELDINFO xfi[5];
+        int        i = 0;
 
         if (pnbp->pUser == 0)
         {
-            // ULONG ul = 0;
-
             // first call: create PAGERCONFIG
             // structure;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(PAGERCONFIG));
-            if (pnbp->pUser)
+            if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
                 LoadXPagerConfig(pnbp->pUser);
 
             // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(PAGERCONFIG));
-            if (pnbp->pUser2)
+            if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
                 memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
+
+            // insert the controls using the dialog formatter
+            // V0.9.19 (2002-04-17) [umoeller]
+            ntbFormatPage(pnbp->hwndDlgPage,
+                          dlgStickies,
+                          ARRAYITEMCOUNT(dlgStickies));
         }
+
+        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
+                                  ID_SCDI_STICKY_CNR);
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(STICKYRECORD, pcszCriteria);
+        xfi[i].pszColumnTitle = cmnGetString(ID_SCDI_STICKY_CRITERIA);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(STICKYRECORD, pcszAttribute);
+        xfi[i].pszColumnTitle = cmnGetString(ID_SCDI_STICKY_ATTRIBUTE);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(STICKYRECORD, pcszOperator);
+        xfi[i].pszColumnTitle = cmnGetString(ID_SCDI_STICKY_OPERATOR);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(STICKYRECORD, pcszValue);
+        xfi[i].pszColumnTitle = cmnGetString(ID_SCDI_STICKY_VALUE);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        cnrhSetFieldInfos(hwndCnr,
+                          xfi,
+                          i,             // array item count
+                          FALSE,         // don't draw lines
+                          1);            // return first column
 
         BEGIN_CNRINFO()
         {
-            cnrhSetView(CV_TEXT | CV_FLOW);
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
         } END_CNRINFO(hwndCnr);
     }
 
@@ -845,7 +1351,7 @@ VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         USHORT          us;
 
         HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
-                                       ID_SCDI_PGMG_STICKY_CNR);
+                                       ID_SCDI_STICKY_CNR);
 
         cnrhRemoveAll(hwndCnr);
 
@@ -853,10 +1359,27 @@ VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
              us < pPgmgConfig->usStickyTextNum;
              us++)
         {
-            AddStickyRecord(hwndCnr, pPgmgConfig->aszSticky[us], FALSE);
+            AddStickyRecord(hwndCnr,
+                            pPgmgConfig->aszSticky[us],
+                            pPgmgConfig->aulStickyFlags[us],
+                            FALSE);
             cnrhInvalidateAll(hwndCnr);
         }
+    }
 
+    if (flFlags & CBI_ENABLE)
+    {
+        PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+
+        winhEnableDlgItem(pnbp->hwndDlgPage,
+                          ID_SCDI_STICKY_ADD,
+                          pPgmgConfig->usStickyTextNum < MAX_STICKIES);
+        winhEnableDlgItem(pnbp->hwndDlgPage,
+                          ID_SCDI_STICKY_EDIT,
+                          pPgmgConfig->usStickyTextNum != 0);
+        winhEnableDlgItem(pnbp->hwndDlgPage,
+                          ID_SCDI_STICKY_REMOVE,
+                          pPgmgConfig->usStickyTextNum != 0);
     }
 }
 
@@ -868,20 +1391,22 @@ VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: no longer listing invisible switchlist entries
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: using new sticky settings dialog
+ *@@changed V0.9.19 (2002-04-16) [lafaix]: fixed popup menu font and DID_UNDO
  */
 
-MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
-                                      ULONG ulItemID, USHORT usNotifyCode,
-                                      ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
+                                           ULONG ulItemID, USHORT usNotifyCode,
+                                           ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
 
     HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
-                                   ID_SCDI_PGMG_STICKY_CNR);
+                                   ID_SCDI_STICKY_CNR);
 
     switch (ulItemID)
     {
-        case ID_SCDI_PGMG_STICKY_CNR:
+        case ID_SCDI_STICKY_CNR:
             switch (usNotifyCode)
             {
                 /*
@@ -904,6 +1429,11 @@ MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                         hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
                                                  cmnQueryNLSModuleHandle(FALSE),
                                                  ID_XSM_STICKY_SEL);
+                        // disabling "add" item if sticky array full
+                        if (hPopupMenu)
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_XSMI_STICKY_NEW,
+                                              (((PAGERCONFIG*)pnbp->pUser)->usStickyTextNum < MAX_STICKIES));
                     }
                     else
                     {
@@ -911,14 +1441,52 @@ MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                         hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
                                                  cmnQueryNLSModuleHandle(FALSE),
                                                  ID_XSM_STICKY_NOSEL);
+
+                        // disabling "add" item if sticky array full
+                        if (hPopupMenu)
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_XSMI_STICKY_NEW,
+                                              (((PAGERCONFIG*)pnbp->pUser)->usStickyTextNum < MAX_STICKIES));
                     }
 
                     if (hPopupMenu)
+                    {
+                        // font stuff snarfed from ctr_engine.c
+                        PSZ pszStdMenuFont;
+                        if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                    PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                    PMINIKEY_MENUSFONT, // "Menus",
+                                                                    NULL)))
+                            pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                  PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                  PMINIKEY_DEFAULTFONT, // "DefaultFont",
+                                                                  NULL);
+
+                        if (pszStdMenuFont)
+                        {
+                            winhSetWindowFont(hPopupMenu,
+                                              pszStdMenuFont);
+                            free(pszStdMenuFont);
+                        }
+
                         cnrhShowContextMenu(pnbp->hwndControl,  // cnr
                                             (PRECORDCORE)pnbp->preccSource,
                                             hPopupMenu,
                                             pnbp->hwndDlgPage);    // owner
+                    }
                 }
+                break;
+
+                /*
+                 * CN_ENTER:
+                 *
+                 */
+
+                case CN_ENTER:
+                    EditStickyRecord((PSTICKYRECORD)ulExtra,
+                                     pnbp,
+                                     hwndCnr,
+                                     FALSE); // do not create a new record
                 break;
             }
         break;
@@ -929,67 +1497,65 @@ MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
          *      a new sticky window from that dialog.
          */
 
+        case ID_SCDI_STICKY_ADD:
         case ID_XSMI_STICKY_NEW:
         {
-            HWND        hwndDlg;
-            if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
-                                     pnbp->hwndDlgPage,
-                                     cmn_fnwpDlgWithHelp,
-                                     cmnQueryNLSModuleHandle(FALSE),
-                                     ID_SCD_PAGER_NEWSTICKY,
-                                     NULL))
-            {
-                PSWBLOCK    pSwBlock;
+            STICKYRECORD rec;
 
-                cmnSetDlgHelpPanel(ID_XSH_SETTINGS_PAGER_STICKY + 2);
-                cmnSetControlsFont(hwndDlg, 1, 2000);
+            memset(&rec, 0, sizeof(rec));
 
-                // get all the tasklist entries into a buffer
-                // V0.9.16 (2002-01-05) [umoeller]: now using winhQuerySwitchList
-                if (pSwBlock = winhQuerySwitchList(WinQueryAnchorBlock(pnbp->hwndDlgPage)))
-                {
-                    // loop through all the tasklist entries
-                    HWND hwndCombo = WinWindowFromID(hwndDlg, ID_SCD_PAGER_COMBO_STICKIES);
-                    ULONG       ul;
-                    for (ul = 0;
-                         ul < pSwBlock->cswentry;
-                         ul++)
-                    {
-                        PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
-                        if (    (strlen(pCtrl->szSwtitle))
-                             && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
-                           )
-                            WinInsertLboxItem(hwndCombo,
-                                              LIT_SORTASCENDING,
-                                              pCtrl->szSwtitle);
-                    }
+            EditStickyRecord(&rec,
+                             pnbp,
+                             hwndCnr,
+                             TRUE); // create a new record if needed
 
-                    if (WinProcessDlg(hwndDlg) == DID_OK)
-                    {
-                        // OK pressed:
-                        PSZ pszSticky;
-                        if (pszSticky = winhQueryWindowText(hwndCombo))
-                        {
-                            AddStickyRecord(hwndCnr,
-                                            pszSticky,
-                                            TRUE);          // invalidate
-                            SaveStickies(hwndCnr,
-                                         (PAGERCONFIG*)pnbp->pUser);
-                            free(pszSticky);
-                        }
-                    }
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        }
+        break;
 
-                    free(pSwBlock);
-                }
+        /*
+         * ID_XSMI_STICKY_EDIT:
+         *      show "Edit sticky window entry" dialog and edit
+         *      the entry from that dialog
+         *      (menu item command).
+         */
 
-                WinDestroyWindow(hwndDlg);
-            }
+        case ID_XSMI_STICKY_EDIT:
+            EditStickyRecord((PSTICKYRECORD)pnbp->preccSource,
+                             pnbp,
+                             hwndCnr,
+                             FALSE); // do not create a new record
+        break;
+
+        /*
+         * ID_SCDI_STICKY_EDIT
+         *      show "Edit sticky window entry" dialog and edit
+         *      the currently selected entry from that dialog
+         *      (button command).
+         */
+
+        case ID_SCDI_STICKY_EDIT:
+        {
+            // get current selected record
+            PSTICKYRECORD pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
+                                                           CM_QUERYRECORDEMPHASIS,
+                                                           (MPARAM)CMA_FIRST,
+                                                           (MPARAM)CRA_SELECTED);
+
+            if (    (pRec)
+                 && ((LONG)pRec != -1L)
+               )
+                EditStickyRecord(pRec,
+                                 pnbp,
+                                 hwndCnr,
+                                 FALSE); // do not create a new record
         }
         break;
 
         /*
          * ID_XSMI_STICKY_DELETE:
          *      remove sticky window record
+         *      (menu item command).
          */
 
         case ID_XSMI_STICKY_DELETE:
@@ -999,6 +1565,36 @@ MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                        MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
             SaveStickies(hwndCnr,
                          (PAGERCONFIG*)pnbp->pUser);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        break;
+
+        /*
+         * ID_SCDI_STICKY_REMOVE:
+         *      remove the currently selected entry
+         *      (button command).
+         */
+
+        case ID_SCDI_STICKY_REMOVE:
+        {
+            // get current selected record
+            PSTICKYRECORD pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
+                                                           CM_QUERYRECORDEMPHASIS,
+                                                           (MPARAM)CMA_FIRST,
+                                                           (MPARAM)CRA_SELECTED);
+
+            if (    (pRec)
+                 && ((LONG)pRec != -1L)
+               )
+            {
+                WinSendMsg(hwndCnr,
+                           CM_REMOVERECORD,
+                           &pRec, // double pointer...
+                           MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
+                SaveStickies(hwndCnr,
+                             (PAGERCONFIG*)pnbp->pUser);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+            }
+        }
         break;
 
         /*
@@ -1010,15 +1606,26 @@ MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
         {
             PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
             PAGERCONFIG* pBackup = (PAGERCONFIG*)pnbp->pUser2;
+            USHORT       us;
 
             // overwrite entire string array with backup
-            memcpy(pBackup->aszSticky,
-                   pPgmgConfig->aszSticky,
+            memcpy(pPgmgConfig->aszSticky,
+                   pBackup->aszSticky,
                    sizeof(pPgmgConfig->aszSticky));
+            // overwrite entire flags array
+            memcpy(pPgmgConfig->aulStickyFlags,
+                   pBackup->aulStickyFlags,
+                   sizeof(pPgmgConfig->aulStickyFlags));
             // and count too
             pPgmgConfig->usStickyTextNum = pBackup->usStickyTextNum;
-            SaveStickies(hwndCnr,
-                         pPgmgConfig);
+
+            // SaveXPagerConfig is cheaper that SaveStickies: we don't
+            // have to update the container first
+            SaveXPagerConfig(pPgmgConfig,
+                             PGMGCFG_REPAINT
+                               | PGMGCFG_REFORMAT
+                               | PGMGCFG_STICKIES);
+
             // call INIT callback to reinitialize page
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
@@ -1029,10 +1636,12 @@ MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
          *      "Clear" button.
          */
 
+        case ID_XSMI_STICKY_DELETEALL:
         case DID_DEFAULT:
             cnrhRemoveAll(hwndCnr);
             SaveStickies(hwndCnr,
                          (PAGERCONFIG*)pnbp->pUser);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break;
     }
 
@@ -1094,7 +1703,7 @@ static PLONG GetColorPointer(HWND hwndStatic,
  *@@changed V0.9.7 (2001-01-17) [umoeller]: fixed inclusive rect bug
  */
 
-MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
     // access settings; these have been stored in QWL_USER
@@ -1195,8 +1804,8 @@ static USHORT ausStaticFrameIDs[] =
  *      Global Settings.
  */
 
-VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                                ULONG flFlags)        // CBI_* flags (notebook.h)
+static VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                                     ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -1256,9 +1865,9 @@ VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  */
 
-MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
-                                      ULONG ulItemID, USHORT usNotifyCode,
-                                      ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
+                                           ULONG ulItemID, USHORT usNotifyCode,
+                                           ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
 
@@ -1320,6 +1929,91 @@ MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
     }
 
     return (mrc);
+}
+
+/*
+ *@@ pgmiInsertPagerPages:
+ *      implementation for XWPScreen::xwpAddXWPScreenPages,
+ *      as far as the pager config pages are concerned.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
+                           HWND hwndDlg,            // in: notebook
+                           HMODULE savehmod)        // in: NLS module
+{
+    INSERTNOTEBOOKPAGE  inbp;
+
+    // "XPager" colors
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = pgmiXPagerColorsInitPage;
+    inbp.pfncbItemChanged = pgmiXPagerColorsItemChanged;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = "~XPager";
+    inbp.ulDlgID = ID_SCD_PAGER_COLORS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_COLORS;
+    // give this page a unique ID, which is
+    // passed to the common config.sys callbacks
+    inbp.ulPageID = SP_PAGER_COLORS;
+    ntbInsertPage(&inbp);
+
+    // "XPager" sticky windows
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = pgmiXPagerStickyInitPage;
+    inbp.pfncbItemChanged = pgmiXPagerStickyItemChanged;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = "~XPager";
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_STICKY;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
+    inbp.pampControlFlags = G_ampStickies;
+    inbp.cControlFlags = ARRAYITEMCOUNT(G_ampStickies);
+    // give this page a unique ID, which is
+    // passed to the common config.sys callbacks
+    inbp.ulPageID = SP_PAGER_STICKY;
+    ntbInsertPage(&inbp);
+
+    // "XPager" window settings V0.9.9 (2001-03-15) [lafaix]
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = pgmiXPagerWindowInitPage;
+    inbp.pfncbItemChanged = pgmiXPagerWindowItemChanged;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = "~XPager";
+    inbp.ulDlgID = ID_SCD_PAGER_WINDOW;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_WINDOW;
+    // give this page a unique ID, which is
+    // passed to the common config.sys callbacks
+    inbp.ulPageID = SP_PAGER_WINDOW;
+    ntbInsertPage(&inbp);
+
+    // "XPager" general settings
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = pgmiXPagerGeneralInitPage;
+    inbp.pfncbItemChanged = pgmiXPagerGeneralItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = "~XPager";
+    inbp.ulDlgID = ID_SCD_PAGER_GENERAL;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_GENERAL;
+    // give this page a unique ID, which is
+    // passed to the common config.sys callbacks
+    inbp.ulPageID = SP_PAGER_MAIN;
+    return ntbInsertPage(&inbp);
 }
 
 #endif // __NOPAGER__

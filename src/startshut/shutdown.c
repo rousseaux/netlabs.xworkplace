@@ -719,12 +719,12 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                               ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
                               &paNew))
     {
-        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
-        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+        OKButton.pcszText = cmnGetString(DID_OK);
+        CancelButton.pcszText = cmnGetString(DID_CANCEL);
 
         if (!dlghCreateDlg(&hwndConfirm,
                            hwndDim,
-                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           FCF_FIXED_DLG,
                            fnwpConfirm,
                            cmnGetString(ID_SDDI_CONFIRMWPS_TITLE),
                            paNew,
@@ -2461,9 +2461,9 @@ static const DLGHITEM dlgShutdown[] =
 #endif
                 END_TABLE,      // end of group
             START_ROW(0),       // notebook buttons (will be moved)
-                CONTROL_DEF(&G_UndoButton),         // notebook.c
-                CONTROL_DEF(&G_DefaultButton),      // notebook.c
-                CONTROL_DEF(&G_HelpButton),         // notebook.c
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
@@ -4133,12 +4133,14 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     if (LogFile)
     {
         // write log header
+        /*
         DATETIME DT;
         DosGetDateTime(&DT);
         doshWriteLogEntry(LogFile,
                 "XWorkplace Shutdown Log -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d",
                 DT.year, DT.month, DT.day,
                 DT.hours, DT.minutes, DT.seconds);
+        */
         doshWriteLogEntry(LogFile, "-----------------------------------------------------------\n");
         doshWriteLogEntry(LogFile, "XWorkplace version: %s", XFOLDER_VERSION);
         doshWriteLogEntry(LogFile, "Shutdown thread started, TID: 0x%lX",

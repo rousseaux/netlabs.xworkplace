@@ -35,6 +35,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\regexp.h"             // extended regular expressions
 #include "helpers\shapewin.h"           // shaped windows;
                                         // only needed for the window class names
 #include "helpers\standards.h"          // some standard macros
@@ -584,11 +585,15 @@ BOOL pgmwWindowListRescan(VOID)
  *@@ pgmwIsSticky:
  *      returns TRUE if the window with the specified window
  *      and switch titles is a sticky window. A window is
- *      considered sticky if its switch list title is in
- *      the "sticky windows" list.
+ *      considered sticky if its switch list title matches
+ *      an include entry in the "sticky windows" list or if
+ *      it is an XCenter and it does not match an exclude
+ *      entry.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now making system window list sticky always
+ *@@changed V0.9.19 (2002-04-14) [lafaix]: now uses matching criteria
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: added regular expressions (SF_MATCHES)
  */
 
 BOOL pgmwIsSticky(HWND hwnd,
@@ -612,10 +617,86 @@ BOOL pgmwIsSticky(HWND hwnd,
              usIdx < pXPagerConfig->usStickyTextNum;
              usIdx++)
         {
-            if (strstr(pcszSwitchName,
-                       pXPagerConfig->aszSticky[usIdx]))
+            BOOL bMatch = (pXPagerConfig->aulStickyFlags[usIdx] & SF_CRITERIA_MASK) == SF_INCLUDE;
+
+            if ((pXPagerConfig->aulStickyFlags[usIdx] & SF_OPERATOR_MASK) == SF_MATCHES)
             {
-                return TRUE;
+                // regular expression:
+                // check if we have compiled this one already
+                int rc;
+                ERE *pERE;
+                if (!(G_pHookData->paEREs[usIdx]))
+                    // compile now
+                    G_pHookData->paEREs[usIdx] = rxpCompile(pXPagerConfig->aszSticky[usIdx],
+                                                            0,
+                                                            &rc);
+
+                if (pERE = G_pHookData->paEREs[usIdx])
+                {
+                    int             pos, length;
+                    ERE_MATCHINFO   mi;
+                    _Pmpf((__FUNCTION__ ": checking %s", pcszSwitchName));
+                    if (rxpMatch_fwd(pERE,
+                                     0,
+                                     pcszSwitchName,
+                                     0,
+                                     &pos,
+                                     &length,
+                                     &mi))
+                    {
+                        _Pmpf(("regexp matched, pos %d, len %d, namelen %d",
+                                pos, length, strlen(pcszSwitchName)));
+                         // make sure we don't just have a substring
+                         if (    (pos == 0)
+                              && (    (length >= PGMG_TEXTLEN - 1)
+                                   || (length == strlen(pcszSwitchName))
+                                 )
+                            )
+                            return bMatch;
+                    }
+                }
+            }
+            else
+            {
+                PCSZ pResult = strstr(pcszSwitchName, pXPagerConfig->aszSticky[usIdx]);
+
+                switch (pXPagerConfig->aulStickyFlags[usIdx] & SF_OPERATOR_MASK)
+                {
+                     case SF_CONTAINS:
+                         if (pResult)
+                             return bMatch;
+                     break;
+
+                     case SF_BEGINSWITH:
+                         if (pResult == pcszSwitchName)
+                             return bMatch;
+                     break;
+
+                     case SF_ENDSWITH:
+                         if (    (pResult)
+                                 // as the pattern has been found, the switch name
+                                 // is at least as long as the pattern, so the following
+                                 // is safe
+                              && (!strcmp(  pcszSwitchName
+                                          + strlen(pcszSwitchName)
+                                          - strlen(pXPagerConfig->aszSticky[usIdx]),
+                                          pXPagerConfig->aszSticky[usIdx]))
+                            )
+                         {
+                             return bMatch;
+                         }
+                     break;
+
+                     case SF_EQUALS:
+                         if (     (pResult)
+                              &&  (!strcmp(pcszSwitchName,
+                                           pXPagerConfig->aszSticky[usIdx]))
+                            )
+                         {
+                             return bMatch;
+                         }
+                     break;
+                }
             }
         }
     }

@@ -103,6 +103,7 @@ BOOL pgmmIsPartlyOnCurrentDesktop(PSWP pswp)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: fixed excessive window repainting
  *@@changed V0.9.4 (2000-08-08) [umoeller]: added special maximized window handling
+ *@@changed V0.9.19 (2002-04-04) [lafaix]: moves all valid non-sticky windows too
  */
 
 BOOL pgmmMoveIt(HAB hab,
@@ -169,7 +170,6 @@ BOOL pgmmMoveIt(HAB hab,
                             // very well...
                 else
                 {
-                    BOOL fMoveThis = FALSE;
                     BOOL fRescanThis = FALSE;
 
                     if (     (!strcmp(pEntryThis->szClassName, "#1")
@@ -212,27 +212,36 @@ BOOL pgmmMoveIt(HAB hab,
 
                     if (fRescanThis)
                     {
-                        if (pgmwFillWinInfo(pEntryThis->hwnd,
-                                            pEntryThis))
+                        if (!pgmwFillWinInfo(pEntryThis->hwnd,
+                                             pEntryThis))
                         {
-                            // window still valid:
-                            fMoveThis = TRUE;
-                        }
-                        else
                             // window no longer valid:
                             // remove from the list NOW
                             // V0.9.15 (2001-09-14) [umoeller]
                             lstRemoveNode(&G_llWinInfos, pNode);
-                    }
-                    else
-                        if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
-                             || (    (pEntryThis->bWindowType == WINDOW_NORMAL)
-                                  && (!(pswpThis->fl & SWP_HIDE))
-                                )
-                           )
-                            fMoveThis = TRUE;
 
-                    if (fMoveThis)
+                            // update pEntryThis so that we don't try to
+                            // move it later
+                            // V0.9.19 (2002-04-04) [lafaix]
+                            pEntryThis = NULL;
+                        }
+                    }
+
+                    // move the window if it is not sticky, minimized,
+                    // hidden, or invisible
+                    // V0.9.19 (2002-04-04) [lafaix]
+                    if (    (pEntryThis)
+                         && (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
+                              || (    (pEntryThis->bWindowType == WINDOW_NORMAL)
+                                   && (!(pswpThis->fl & SWP_HIDE))
+                                 )
+                              || (    (pEntryThis->bWindowType == WINDOW_RESCAN)
+                                   && (!(pswpThis->fl & SWP_HIDE))
+                                   && (WinQueryWindowULong(pEntryThis->hwnd,
+                                                           QWL_STYLE) & WS_VISIBLE)
+                                 )
+                            )
+                       )
                     {
                         // OK, window to be moved:
 
@@ -256,7 +265,7 @@ BOOL pgmmMoveIt(HAB hab,
                         // use next entry in SWP array
                         cSwpNewUsed++;
 
-                    } // end if (bResult)
+                    } // end if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)...
                 }
 
                 pNode = pNext;      // V0.9.15 (2001-09-14) [umoeller]
@@ -521,6 +530,7 @@ BOOL pgmmZMoveIt(HAB hab,
  *@@changed V0.9.7 (2000-12-04) [umoeller]: now preventing sticky windows from switching
  *@@changed V0.9.9 (2001-03-14) [lafaix]: now preventing erratic mouse screen switch
  *@@changed V0.9.18 (2002-02-19) [lafaix]: now using G_szlXPagerClient
+ *@@changed V0.9.19 (2002-04-11) [lafaix]: context menu no longer requires fClick2Activate
  */
 
 MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -614,6 +624,21 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                        0);
                         }
                 }
+                else
+                // allow for context menu even if mini window action disabled
+                if (msg == PGOM_CLICK2LOWER)
+                {
+                    WinMapWindowPoints(G_pHookData->hwndXPagerClient,
+                                       HWND_DESKTOP,
+                                       &ptlMouse,
+                                       1);
+                    WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
+                               T1M_PAGERCTXTMENU,
+                               MPFROM2SHORT(ptlMouse.x,
+                                            ptlMouse.y),
+                               0);
+                }
+
             }
             break;
 
