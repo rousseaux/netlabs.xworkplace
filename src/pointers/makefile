@@ -156,7 +156,7 @@ $(OUTPUTDIR)\aniedit2.obj: \
     $(MYOWNINC)\mptrfile.h \
     $(MYOWNINC)\mptrutil.h \
     $(MYOWNINC)\mptrptr.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(MYOWNINC)\mptrcnr.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -173,8 +173,7 @@ $(OUTPUTDIR)\cursor.obj: \
 
 $(OUTPUTDIR)\dll.obj: \
     $(INC)\setup.h \
-    $(MYOWNINC)\title.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(MYOWNINC)\dll.h \
     $(MYOWNINC)\lx.h \
     $(MYOWNINC)\mptrptr.h \
@@ -197,7 +196,6 @@ $(OUTPUTDIR)\dllbin.obj: template.dll
 
 $(OUTPUTDIR)\mptranim.obj: \
     $(INC)\setup.h \
-    $(MYOWNINC)\title.h \
     $(MYOWNINC)\mptranim.h \
     $(MYOWNINC)\mptrset.h \
     $(MYOWNINC)\mptrppl.h \
@@ -223,7 +221,7 @@ $(OUTPUTDIR)\mptrcnr.obj: \
     $(MYOWNINC)\wmuser.h \
     $(MYOWNINC)\macros.h \
     $(MYOWNINC)\debug.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\mptredit.obj: \
@@ -236,7 +234,7 @@ $(OUTPUTDIR)\mptredit.obj: \
     $(MYOWNINC)\wmuser.h \
     $(MYOWNINC)\macros.h \
     $(MYOWNINC)\debug.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\mptrfile.obj: \
@@ -248,13 +246,12 @@ $(OUTPUTDIR)\mptrfile.obj: \
     $(MYOWNINC)\mptrutil.h \
     $(MYOWNINC)\macros.h \
     $(MYOWNINC)\debug.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\mptrhook.obj: \
     $(INC)\setup.h \
     $(MYOWNINC)\mptrhook.h \
-    $(MYOWNINC)\title.h \
     $(MYOWNINC)\debug.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -272,7 +269,7 @@ $(OUTPUTDIR)\mptrldr.obj: \
     $(MYOWNINC)\mptrprop.h \
     $(MYOWNINC)\mptrset.h \
     $(MYOWNINC)\mptrlset.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\mptrlset.obj: \
@@ -299,7 +296,7 @@ $(OUTPUTDIR)\mptrpag1.obj: \
     $(MYOWNINC)\wmuser.h \
     $(MYOWNINC)\macros.h \
     $(MYOWNINC)\debug.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\mptrppl.obj: \
@@ -334,7 +331,7 @@ $(OUTPUTDIR)\mptrprop.obj: \
     $(MYOWNINC)\wmuser.h \
     $(MYOWNINC)\macros.h \
     $(MYOWNINC)\debug.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\mptrptr.obj: \
@@ -380,8 +377,7 @@ $(OUTPUTDIR)\mptrutil.obj: \
     $(MYOWNINC)\debug.h \
     $(MYOWNINC)\mptrutil.h \
     $(MYOWNINC)\mptrptr.h \
-    $(MYOWNINC)\title.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\pointer.obj: \
@@ -395,8 +391,7 @@ $(OUTPUTDIR)\pointer.obj: \
 
 $(OUTPUTDIR)\script.obj: \
     $(INC)\setup.h \
-    $(MYOWNINC)\title.h \
-    $(MYOWNINC)\r_amptreng.h \
+    ..\..\001\dll\r_amptr001.h \
     $(MYOWNINC)\dll.h \
     $(MYOWNINC)\script.h \
     $(MYOWNINC)\mptrptr.h \

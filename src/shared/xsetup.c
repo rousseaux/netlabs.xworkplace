@@ -1537,6 +1537,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          fShowHookDeinstalled = FALSE,
          fShowClassesSetup = FALSE,
          fShowWarnExtAssocs = FALSE,
+         fShowWarnPageMage = FALSE,
          fUpdateMouseMovementPage = FALSE;
     signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
                 cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
@@ -1625,10 +1626,13 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (hifEnablePageMage(ulExtra) == ulExtra)
             {
                 pGlobalSettings->fEnablePageMage = ulExtra;
-                ulUpdateFlags = CBI_SET | CBI_ENABLE;
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
             }
+
+            ulUpdateFlags = CBI_SET | CBI_ENABLE;
+            if (ulExtra)
+                fShowWarnPageMage = TRUE;
         break;
 
         /* case ID_XCSI_MONITORCDROMS:
@@ -1779,6 +1783,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         cmnMessageBox(pcnbp->hwndFrame,
                       "XWorkplace",
                       "Warning: Extended file associations don't work properly yet. Daily use is NOT recommended.",
+                      MB_OK);
+    else if (fShowWarnPageMage)
+        cmnMessageBox(pcnbp->hwndFrame,
+                      "XWorkplace",
+                      "Warning: PageMage is still extremely unstable.",
                       MB_OK);
     else if (cAskSoundsInstallMsg != -1)
     {

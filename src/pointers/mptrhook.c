@@ -41,8 +41,9 @@
 #include "setup.h"              // code generation and debugging options
 
 #include "pointers\mptrhook.h"
-#include "pointers\title.h"
 #include "pointers\debug.h"
+
+#include "bldlevel.h"
 
 // globale variablen
 static HOOKDATA hookdataGlobal;

@@ -71,6 +71,7 @@
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+#define INCL_WINSWITCHLIST
 #define INCL_WINSHELLDATA
 #include <os2.h>
 
@@ -660,9 +661,11 @@ VOID krn_T1M_DaemonReady(VOID)
  *@@added V0.9.3 (2000-04-20) [umoeller]
  *@@changed V0.9.3 (2000-04-20) [umoeller]: added system sound
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed desktop menu position
+ *@@changed V0.9.4 (2000-06-15) [umoeller]: fixed VIO windows in background
  */
 
-VOID krn_T1M_OpenObjectFromHandle(MPARAM mp1,
+VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
+                                  MPARAM mp1,
                                   MPARAM mp2)
 {
     if (mp1)
@@ -694,10 +697,58 @@ VOID krn_T1M_OpenObjectFromHandle(MPARAM mp1,
                                      NULLHANDLE,   // hwndCnr (?!?)
                                      OPEN_DEFAULT,
                                      0);           // "optional parameter" (?!?)
+
+                _Pmpf(("krn_T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+
                 if (hwnd)
-                    // move to front;
-                    // doesn't work with VIO objects ###
-                    WinSetActiveWindow(HWND_DESKTOP, hwnd);
+                {
+                    if (WinIsWindow(WinQueryAnchorBlock(hwndObject),
+                                    hwnd))
+                    {
+                        // it's a window:
+                        // move to front
+                        WinSetActiveWindow(HWND_DESKTOP, hwnd);
+                    }
+                    else
+                    {
+                        // wpViewObject only returns a window handle for
+                        // WPS windows. By contrast, if a program object is
+                        // started, an obscure USHORT value is returned.
+                        // From my testing, the lower byte (0xFF) contains
+                        // the session ID of the started application, while
+                        // the higher byte (0xFF00) contains the application
+                        // type, which is:
+                        // --   0x0300  presentation manager
+                        // --   0x0200  VIO
+
+                        // IBM, this is sick.
+
+                        // So now we go thru the switch list and find the
+                        // session which has this lo-byte. V0.9.4 (2000-06-15) [umoeller]
+                        ULONG   cbItems = WinQuerySwitchList(NULLHANDLE, NULL, 0),
+                                ul;
+                        ULONG   ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
+                        PSWBLOCK pSwBlock = (PSWBLOCK)malloc(ulBufSize);
+                        cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize);
+
+                        // loop through all the tasklist entries
+                        for (ul = 0; ul < (pSwBlock->cswentry); ul++)
+                        {
+                            _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
+                                    ul,
+                                    pSwBlock->aswentry[ul].swctl.hwnd,
+                                    pSwBlock->aswentry[ul].swctl.hprog,
+                                    pSwBlock->aswentry[ul].swctl.idSession));
+                            if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
+                            {
+                                // got it:
+                                _Pmpf(("      Found!"));
+                                WinSetActiveWindow(HWND_DESKTOP,
+                                                   pSwBlock->aswentry[ul].swctl.hwnd);
+                            }
+                        }
+                    }
+                }
             }
         }
         else
@@ -797,389 +848,392 @@ VOID krn_T1M_OpenObjectFromHandle(MPARAM mp1,
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added T1M_PAGEMAGECONFIGDELAYED
  *@@changed V0.9.3 (2000-04-09) [umoeller]: fixed timer problem, which was never stopped... this solves the "disappearing windows" problem!!
  *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
+ *@@changed V0.9.4 (2000-06-05) [umoeller]: added exception handling
  */
 
 MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    MPARAM mrc = NULL;
+    MPARAM  mrc = NULL;
+    BOOL    fCallDefault = FALSE;
 
-    switch(msg)
+    TRY_LOUD(excpt1, NULL)
     {
-        /*
-         * WM_TIMER:
-         *
-         */
-
-        case WM_TIMER:
-            switch ((USHORT)mp1)    // timer ID
-            {
-                case 1:
-                    // archive status timer
-                    WinDestroyWindow(hwndArchiveStatus);
-                break;
-
-                case 2: // started from T1M_PAGEMAGECONFIGDELAYED
-                {
-                    PDAEMONSHARED   pDaemonShared = G_KernelGlobals.pDaemonShared;
-
-                    if (pDaemonShared)
-                        if (pDaemonShared->hwndDaemonObject)
-                        {
-                            // cross-process send msg: this
-                            // does not return until the daemon
-                            // has re-read the data
-                            BOOL brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
-                                                        XDM_PAGEMAGECONFIG,
-                                                        (MPARAM)G_PageMageConfigFlags,
-                                                        0);
-                            // reset flags
-                            G_PageMageConfigFlags = 0;
-                        }
-                break; }
-            }
-
-            // stop timer; this was missing!! V0.9.3 (2000-04-09) [umoeller]
-            WinStopTimer(WinQueryAnchorBlock(hwndObject),
-                         hwndObject,
-                         (USHORT)mp1);      // timer ID
-        break;
-
-        /*
-         *@@ T1M_BEGINSTARTUP:
-         *      this is an XFolder msg posted by the Worker thread after
-         *      the Desktop has been populated; this performs initialization
-         *      of the Startup folder process, which will then be further
-         *      performed by (again) the Worker thread.
-         *
-         *      Parameters: none.
-         */
-
-        case T1M_BEGINSTARTUP:
+        switch(msg)
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-            XFolder         *pStartupFolder;
+            /*
+             * WM_TIMER:
+             *
+             */
 
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("T1M_BEGINSTARTUP"));
-            #endif
-
-            // no: find startup folder
-            if (pStartupFolder = _wpclsQueryFolder(_WPFolder, XFOLDER_STARTUPID, TRUE))
-            {
-                // startup folder exists: create status window w/ progress bar,
-                // start folder content processing in worker thread
-                ULONG   hPOC;
-                HWND    hwndStartupStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
-                                                       fnwpStartupDlg,
-                                                       cmnQueryNLSModuleHandle(FALSE),
-                                                       ID_XFD_STARTUPSTATUS,
-                                                       NULL);
-                if (pGlobalSettings->ShowStartupProgress)
+            case WM_TIMER:
+                switch ((USHORT)mp1)    // timer ID
                 {
-                    // get last window position from INI
-                    winhRestoreWindowPos(hwndStartupStatus,
-                                         HINI_USER,
-                                         INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
-                                         // move only, no resize
-                                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                    case 1:
+                        // archive status timer
+                        WinDestroyWindow(hwndArchiveStatus);
+                    break;
+
+                    case 2: // started from T1M_PAGEMAGECONFIGDELAYED
+                    {
+                        PDAEMONSHARED   pDaemonShared = G_KernelGlobals.pDaemonShared;
+
+                        if (pDaemonShared)
+                            if (pDaemonShared->hwndDaemonObject)
+                            {
+                                // cross-process send msg: this
+                                // does not return until the daemon
+                                // has re-read the data
+                                BOOL brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
+                                                            XDM_PAGEMAGECONFIG,
+                                                            (MPARAM)G_PageMageConfigFlags,
+                                                            0);
+                                // reset flags
+                                G_PageMageConfigFlags = 0;
+                            }
+                    break; }
                 }
 
-                hPOC = _xwpBeginProcessOrderedContent(pStartupFolder,
-                                                      pGlobalSettings->ulStartupDelay,
-                                                      &fncbStartup,
-                                                      (ULONG)hwndStartupStatus);
+                // stop timer; this was missing!! V0.9.3 (2000-04-09) [umoeller]
+                WinStopTimer(WinQueryAnchorBlock(hwndObject),
+                             hwndObject,
+                             (USHORT)mp1);      // timer ID
+            break;
 
-                WinSetWindowULong(hwndStartupStatus, QWL_USER, hPOC);
-            }
-            else
-                // startup folder does not exist:
-                xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
-                                (MPARAM)1,      // done with startup
-                                MPNULL);
-        break; }
+            /*
+             *@@ T1M_BEGINSTARTUP:
+             *      this is an XFolder msg posted by the Worker thread after
+             *      the Desktop has been populated; this performs initialization
+             *      of the Startup folder process, which will then be further
+             *      performed by (again) the Worker thread.
+             *
+             *      Parameters: none.
+             */
 
-        /*
-         *@@ T1M_POCCALLBACK:
-         *      this msg is posted from the Worker thread whenever
-         *      a callback func needs to be called during those
-         *      "process ordered content" (POC) functions (initiated by
-         *      XFolder::xwpProcessOrderedContent); we need this message to
-         *      have the callback func run on the folder's thread.
-         *
-         *      Parameters:
-         *      --  PPROCESSCONTENTINFO mp1:
-         *                          structure with all the information;
-         *                          this routine must set the hwndView field
-         *      --  mp2: always NULL.
-         */
-
-        case T1M_POCCALLBACK:
-        {
-            PPROCESSCONTENTINFO ppci = (PPROCESSCONTENTINFO)mp1;
-            if (ppci)
+            case T1M_BEGINSTARTUP:
             {
-                ppci->hwndView = (HWND)((*(ppci->pfnwpCallback))(ppci->ulCallbackParam,
-                                                                (ULONG)ppci->pObject,
-                                                                (MPARAM)ppci->ulObjectNow,
-                                                                (MPARAM)ppci->ulObjectMax));
-            }
-        break; }
+                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+                XFolder         *pStartupFolder;
 
-        /*
-         *@@ T1M_BEGINQUICKOPEN:
-         *      this is posted by the Worker thread after the startup
-         *      folder has been processed; we will now go for the
-         *      "Quick Open" folders by populating them and querying
-         *      all their icons. If this is posted for the first time,
-         *      mp1 must be NULL; for subsequent postings, mp1 contains the
-         *      folder to be populated or (-1) if it's the last.
-         */
+                #ifdef DEBUG_STARTUP
+                    _Pmpf(("T1M_BEGINSTARTUP"));
+                #endif
 
-        case T1M_BEGINQUICKOPEN:
-        {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-            BOOL fWorkToDo = FALSE;
-
-            if (mp1 == NULL)
-            {
-                // first posting: prepare
-
-                // "quick open" disabled because Shift key pressed?
-                if ((pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN) == 0)
+                // no: find startup folder
+                if (pStartupFolder = _wpclsQueryFolder(_WPFolder, XFOLDER_STARTUPID, TRUE))
                 {
-                    // no:
-                    XFolder *pQuick = NULL;
-
-                    // count quick-open folders
-                    G_ulQuickOpenNow = 0;
-                    G_ulQuickOpenMax = 0;
-                    for (pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
-                         pQuick;
-                         pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick))
-                    {
-                        G_ulQuickOpenMax++;
-                    }
-
-                    if (G_ulQuickOpenMax)
-                    {
-                        fWorkToDo = TRUE;
-                        // if we have any quick-open folders: go
-                        if (pGlobalSettings->ShowStartupProgress)
-                        {
-                            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-                            G_hwndQuickStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
-                                                           fnwpQuickOpenDlg,
+                    // startup folder exists: create status window w/ progress bar,
+                    // start folder content processing in worker thread
+                    ULONG   hPOC;
+                    HWND    hwndStartupStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                                                           fnwpStartupDlg,
                                                            cmnQueryNLSModuleHandle(FALSE),
                                                            ID_XFD_STARTUPSTATUS,
                                                            NULL);
-                            WinSetWindowText(G_hwndQuickStatus,
-                                             pNLSStrings->pszQuickStatus);
+                    if (pGlobalSettings->ShowStartupProgress)
+                    {
+                        // get last window position from INI
+                        winhRestoreWindowPos(hwndStartupStatus,
+                                             HINI_USER,
+                                             INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
+                                             // move only, no resize
+                                             SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                    }
 
-                            winhRestoreWindowPos(G_hwndQuickStatus,
-                                                 HINI_USER,
-                                                 INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
-                                                 SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-                            WinSendMsg(WinWindowFromID(G_hwndQuickStatus, ID_SDDI_PROGRESSBAR),
-                                                       WM_UPDATEPROGRESSBAR,
-                                                       (MPARAM)0,
-                                                       (MPARAM)G_ulQuickOpenMax);
-                            G_fQuickOpenCancelled = FALSE;
+                    hPOC = _xwpBeginProcessOrderedContent(pStartupFolder,
+                                                          pGlobalSettings->ulStartupDelay,
+                                                          &fncbStartup,
+                                                          (ULONG)hwndStartupStatus);
+
+                    WinSetWindowULong(hwndStartupStatus, QWL_USER, hPOC);
+                }
+                else
+                    // startup folder does not exist:
+                    xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
+                                    (MPARAM)1,      // done with startup
+                                    MPNULL);
+            break; }
+
+            /*
+             *@@ T1M_POCCALLBACK:
+             *      this msg is posted from the Worker thread whenever
+             *      a callback func needs to be called during those
+             *      "process ordered content" (POC) functions (initiated by
+             *      XFolder::xwpProcessOrderedContent); we need this message to
+             *      have the callback func run on the folder's thread.
+             *
+             *      Parameters:
+             *      --  PPROCESSCONTENTINFO mp1:
+             *                          structure with all the information;
+             *                          this routine must set the hwndView field
+             *      --  mp2: always NULL.
+             */
+
+            case T1M_POCCALLBACK:
+            {
+                PPROCESSCONTENTINFO ppci = (PPROCESSCONTENTINFO)mp1;
+                if (ppci)
+                {
+                    ppci->hwndView = (HWND)((*(ppci->pfnwpCallback))(ppci->ulCallbackParam,
+                                                                    (ULONG)ppci->pObject,
+                                                                    (MPARAM)ppci->ulObjectNow,
+                                                                    (MPARAM)ppci->ulObjectMax));
+                }
+            break; }
+
+            /*
+             *@@ T1M_BEGINQUICKOPEN:
+             *      this is posted by the Worker thread after the startup
+             *      folder has been processed; we will now go for the
+             *      "Quick Open" folders by populating them and querying
+             *      all their icons. If this is posted for the first time,
+             *      mp1 must be NULL; for subsequent postings, mp1 contains the
+             *      folder to be populated or (-1) if it's the last.
+             */
+
+            case T1M_BEGINQUICKOPEN:
+            {
+                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+                BOOL fWorkToDo = FALSE;
+
+                if (mp1 == NULL)
+                {
+                    // first posting: prepare
+
+                    // "quick open" disabled because Shift key pressed?
+                    if ((pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN) == 0)
+                    {
+                        // no:
+                        XFolder *pQuick = NULL;
+
+                        // count quick-open folders
+                        G_ulQuickOpenNow = 0;
+                        G_ulQuickOpenMax = 0;
+                        for (pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
+                             pQuick;
+                             pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick))
+                        {
+                            G_ulQuickOpenMax++;
                         }
 
-                        // get first quick-open folder
-                        pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
-                        if (pQuick)
-                            krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN,
-                                                    (MPARAM)pQuick,
-                                                    MPNULL);
-                        // else none defined: do nothing
+                        if (G_ulQuickOpenMax)
+                        {
+                            fWorkToDo = TRUE;
+                            // if we have any quick-open folders: go
+                            if (pGlobalSettings->ShowStartupProgress)
+                            {
+                                PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                                G_hwndQuickStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                                                               fnwpQuickOpenDlg,
+                                                               cmnQueryNLSModuleHandle(FALSE),
+                                                               ID_XFD_STARTUPSTATUS,
+                                                               NULL);
+                                WinSetWindowText(G_hwndQuickStatus,
+                                                 pNLSStrings->pszQuickStatus);
+
+                                winhRestoreWindowPos(G_hwndQuickStatus,
+                                                     HINI_USER,
+                                                     INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
+                                                     SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                                WinSendMsg(WinWindowFromID(G_hwndQuickStatus, ID_SDDI_PROGRESSBAR),
+                                                           WM_UPDATEPROGRESSBAR,
+                                                           (MPARAM)0,
+                                                           (MPARAM)G_ulQuickOpenMax);
+                                G_fQuickOpenCancelled = FALSE;
+                            }
+
+                            // get first quick-open folder
+                            pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
+                            if (pQuick)
+                                krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN,
+                                                        (MPARAM)pQuick,
+                                                        MPNULL);
+                            // else none defined: do nothing
+                        }
+                    }
+                } // end if (mp1 == NULL)
+                else
+                {
+                    // subsequent postings
+                    XFolder *pQuick = (XFolder*)mp1;
+
+                    if (    (((ULONG)pQuick) != -1)
+                        &&  (!G_fQuickOpenCancelled)
+                       )
+                    {
+                        fWorkToDo = TRUE;
+                        // subsequent postings: mp1 contains folder
+                        if (pGlobalSettings->ShowStartupProgress)
+                        {
+                            CHAR szTemp[256];
+
+                            _wpQueryFilename(pQuick, szTemp, TRUE);
+                            WinSetDlgItemText(G_hwndQuickStatus, ID_SDDI_STATUS, szTemp);
+                        }
+
+                        // populate object in Worker thread
+                        xthrPostWorkerMsg(WOM_QUICKOPEN,
+                                         (MPARAM)pQuick,
+                                         (MPARAM)fncbQuickOpen);
+                        // the Worker thread will then post
+                        // T1M_NEXTQUICKOPEN when it's done
+                    }
+                    else
+                    {
+                        DosSleep(500);
+                        // -1 => no more folders: clean up
+                        if (pGlobalSettings->ShowStartupProgress)
+                        {
+                            winhSaveWindowPos(G_hwndQuickStatus,
+                                              HINI_USER,
+                                              INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
+                            WinDestroyWindow(G_hwndQuickStatus);
+                        }
                     }
                 }
-            } // end if (mp1 == NULL)
-            else
+
+                if (!fWorkToDo)
+                    xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
+                                    (MPARAM)2,      // done with quick-open folders
+                                    0);
+            break; }
+
+            case T1M_NEXTQUICKOPEN:
             {
-                // subsequent postings
+                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 XFolder *pQuick = (XFolder*)mp1;
 
-                if (    (((ULONG)pQuick) != -1)
-                    &&  (!G_fQuickOpenCancelled)
-                   )
+                if (pQuick)
                 {
-                    fWorkToDo = TRUE;
-                    // subsequent postings: mp1 contains folder
+                    G_ulQuickOpenNow++;
+
                     if (pGlobalSettings->ShowStartupProgress)
-                    {
-                        CHAR szTemp[256];
+                        WinSendMsg(WinWindowFromID(G_hwndQuickStatus, ID_SDDI_PROGRESSBAR),
+                                   WM_UPDATEPROGRESSBAR,
+                                   (MPARAM)(G_ulQuickOpenNow*100),
+                                   (MPARAM)(G_ulQuickOpenMax*100));
 
-                        _wpQueryFilename(pQuick, szTemp, TRUE);
-                        WinSetDlgItemText(G_hwndQuickStatus, ID_SDDI_STATUS, szTemp);
-                    }
-
-                    // populate object in Worker thread
-                    xthrPostWorkerMsg(WOM_QUICKOPEN,
-                                     (MPARAM)pQuick,
-                                     (MPARAM)fncbQuickOpen);
-                    // the Worker thread will then post
-                    // T1M_NEXTQUICKOPEN when it's done
+                    // get next quick-open folder
+                    pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick);
+                    krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN,
+                                            (pQuick != NULL)
+                                                    ? (MPARAM)pQuick
+                                                    // last folder reached: cleanup signal
+                                                    : (MPARAM)-1,
+                                            MPNULL);
+                    break;
                 }
-                else
-                {
-                    DosSleep(500);
-                    // -1 => no more folders: clean up
-                    if (pGlobalSettings->ShowStartupProgress)
-                    {
-                        winhSaveWindowPos(G_hwndQuickStatus,
-                                          HINI_USER,
-                                          INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
-                        WinDestroyWindow(G_hwndQuickStatus);
-                    }
-                }
-            }
 
-            if (!fWorkToDo)
-                xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
-                                (MPARAM)2,      // done with quick-open folders
-                                0);
-        break; }
-
-        case T1M_NEXTQUICKOPEN:
-        {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            XFolder *pQuick = (XFolder*)mp1;
-
-            if (pQuick)
-            {
-                G_ulQuickOpenNow++;
-
+                // error or cancelled:
                 if (pGlobalSettings->ShowStartupProgress)
-                    WinSendMsg(WinWindowFromID(G_hwndQuickStatus, ID_SDDI_PROGRESSBAR),
-                               WM_UPDATEPROGRESSBAR,
-                               (MPARAM)(G_ulQuickOpenNow*100),
-                               (MPARAM)(G_ulQuickOpenMax*100));
+                    WinPostMsg(G_hwndQuickStatus, WM_CLOSE, MPNULL, MPNULL);
+            break; }
 
-                // get next quick-open folder
-                pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick);
-                krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN,
-                                        (pQuick != NULL)
-                                                ? (MPARAM)pQuick
-                                                // last folder reached: cleanup signal
-                                                : (MPARAM)-1,
-                                        MPNULL);
-                break;
-            }
+            /*
+             *@@ T1M_LIMITREACHED:
+             *      this is posted by cmnAppendMi2List when too
+             *      many menu items are in use, i.e. the user has
+             *      opened a zillion folder content menus; we
+             *      will display a warning dlg, which will also
+             *      destroy the open menu.
+             */
 
-            // error or cancelled:
-            if (pGlobalSettings->ShowStartupProgress)
-                WinPostMsg(G_hwndQuickStatus, WM_CLOSE, MPNULL, MPNULL);
-        break; }
-
-        /*
-         *@@ T1M_LIMITREACHED:
-         *      this is posted by cmnAppendMi2List when too
-         *      many menu items are in use, i.e. the user has
-         *      opened a zillion folder content menus; we
-         *      will display a warning dlg, which will also
-         *      destroy the open menu.
-         */
-
-        case T1M_LIMITREACHED:
-        {
-            if (!fLimitMsgOpen)
+            case T1M_LIMITREACHED:
             {
-                // avoid more than one dlg window
-                fLimitMsgOpen = TRUE;
-                cmnSetDlgHelpPanel(ID_XFH_LIMITREACHED);
-                WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                          HWND_DESKTOP,             // owner is desktop
-                          (PFNWP)cmn_fnwpDlgWithHelp,    // dialog procedure, defd. at bottom
-                          cmnQueryNLSModuleHandle(FALSE),  // from resource file
-                          ID_XFD_LIMITREACHED,        // dialog resource id
-                          (PVOID)NULL);             // no dialog parameters
-                fLimitMsgOpen = FALSE;
-            }
-        break; }
+                if (!fLimitMsgOpen)
+                {
+                    // avoid more than one dlg window
+                    fLimitMsgOpen = TRUE;
+                    cmnSetDlgHelpPanel(ID_XFH_LIMITREACHED);
+                    WinDlgBox(HWND_DESKTOP,         // parent is desktop
+                              HWND_DESKTOP,             // owner is desktop
+                              (PFNWP)cmn_fnwpDlgWithHelp,    // dialog procedure, defd. at bottom
+                              cmnQueryNLSModuleHandle(FALSE),  // from resource file
+                              ID_XFD_LIMITREACHED,        // dialog resource id
+                              (PVOID)NULL);             // no dialog parameters
+                    fLimitMsgOpen = FALSE;
+                }
+            break; }
 
-        /*
-         *@@ T1M_EXCEPTIONCAUGHT:
-         *      this is posted from the various XFolder threads
-         *      when something trapped; it is assumed that
-         *      mp1 is a PSZ to an error msg allocated with
-         *      malloc(), and after displaying the error,
-         *      (PSZ)mp1 is freed here. If mp2 != NULL, the WPS will
-         *      be restarted (this is demanded by XSHutdown traps).
-         */
+            /*
+             *@@ T1M_EXCEPTIONCAUGHT:
+             *      this is posted from the various XFolder threads
+             *      when something trapped; it is assumed that
+             *      mp1 is a PSZ to an error msg allocated with
+             *      malloc(), and after displaying the error,
+             *      (PSZ)mp1 is freed here. If mp2 != NULL, the WPS will
+             *      be restarted (this is demanded by XSHutdown traps).
+             */
 
-        case T1M_EXCEPTIONCAUGHT:
-        {
-            if (mp1)
+            case T1M_EXCEPTIONCAUGHT:
             {
-                if (mp2)
+                if (mp1)
                 {
-                    // restart WPS: Yes/No box
-                    if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                      (PSZ)mp1, (PSZ)"XFolder: Exception caught",
-                                      0, MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
-                             == MBID_YES)
-                        // if yes: terminate the current process,
-                        // which is PMSHELL.EXE. We cannot use DosExit()
-                        // directly, because this might mess up the
-                        // C runtime library.
-                        exit(99);
+                    if (mp2)
+                    {
+                        // restart WPS: Yes/No box
+                        if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                                          (PSZ)mp1, (PSZ)"XFolder: Exception caught",
+                                          0, MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
+                                 == MBID_YES)
+                            // if yes: terminate the current process,
+                            // which is PMSHELL.EXE. We cannot use DosExit()
+                            // directly, because this might mess up the
+                            // C runtime library.
+                            exit(99);
+                    }
+                    else
+                    {
+                        // just report:
+                        PSZ pszMsg = (PSZ)mp1;
+                        xstrcat(&pszMsg,
+                                "\n\nPlease post a bug report to "
+                                "xworkplace-user@egroups.com and attach the the file "
+                                "XWPTRAP.LOG, which you will find in the root "
+                                "directory of your boot drive. ");
+                        DebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
+                    }
+
+                    free((PSZ)mp1);
                 }
-                else
-                {
-                    // just report:
-                    PSZ pszMsg = (PSZ)mp1;
-                    xstrcat(&pszMsg,
-                             "\n\nPlease post a bug report to "
-                             "xworkplace-user@egroups.com and attach the the file "
-                             "XFLDTRAP.LOG, which you will find in the root "
-                             "directory of your boot drive. ");
-                    DebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
-                }
+            break; }
 
-                free((PSZ)mp1);
-            }
-        break; }
+            /*
+             *@@ T1M_QUERYXFOLDERVERSION:
+             *      this msg may be send to the XFolder object
+             *      window from external programs to query the
+             *      XFolder version number which is currently
+             *      installed. We will return:
+             *          mrc = MPFROM2SHORT(major, minor)
+             *      which may be broken down by the external
+             *      program using the SHORT1/2FROMMP macros.
+             *      This is used by the XShutdown command-line
+             *      interface (XSHUTDWN.EXE) to assert that
+             *      XFolder is up and running, but can be used
+             *      by other software too.
+             */
 
-        /*
-         *@@ T1M_QUERYXFOLDERVERSION:
-         *      this msg may be send to the XFolder object
-         *      window from external programs to query the
-         *      XFolder version number which is currently
-         *      installed. We will return:
-         *          mrc = MPFROM2SHORT(major, minor)
-         *      which may be broken down by the external
-         *      program using the SHORT1/2FROMMP macros.
-         *      This is used by the XShutdown command-line
-         *      interface (XSHUTDWN.EXE) to assert that
-         *      XFolder is up and running, but can be used
-         *      by other software too.
-         */
+            case T1M_QUERYXFOLDERVERSION:
+            {
+                ULONG   ulMajor = 0,
+                        ulMinor = 0;
+                sscanf(XFOLDER_VERSION, // e.g. 0.9.2, this is defined in dlgids.h
+                        "%d.%d", &ulMajor, &ulMinor);   // V0.9.0
 
-        case T1M_QUERYXFOLDERVERSION:
-        {
-            ULONG   ulMajor = 0,
-                    ulMinor = 0;
-            sscanf(XFOLDER_VERSION, // e.g. 0.9.2, this is defined in dlgids.h
-                    "%d.%d", &ulMajor, &ulMinor);   // V0.9.0
+                mrc = MPFROM2SHORT(ulMajor, ulMinor);
+            break; }
 
-            mrc = MPFROM2SHORT(ulMajor, ulMinor);
-        break; }
+            /*
+             *@@ T1M_EXTERNALSHUTDOWN:
+             *      this msg may be posted to the XFolder object
+             *      window from external programs to initiate
+             *      the eXtended shutdown. mp1 is assumed to
+             *      point to a block of shared memory containing
+             *      a SHUTDOWNPARAMS structure.
+             */
 
-        /*
-         *@@ T1M_EXTERNALSHUTDOWN:
-         *      this msg may be posted to the XFolder object
-         *      window from external programs to initiate
-         *      the eXtended shutdown. mp1 is assumed to
-         *      point to a block of shared memory containing
-         *      a SHUTDOWNPARAMS structure.
-         */
-
-        case T1M_EXTERNALSHUTDOWN:
-            TRY_LOUD(excpt1, NULL)
+            case T1M_EXTERNALSHUTDOWN:
             {
                 PSHUTDOWNPARAMS psdpShared = (PSHUTDOWNPARAMS)mp1;
 
@@ -1218,131 +1272,139 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     // finally free shared mem
                     DosFreeMem(psdpShared);
                 }
-            }
-            CATCH(excpt1) {} END_CATCH();
-        break;
+            break; }
 
-        /*
-         *@@ T1M_DESTROYARCHIVESTATUS:
-         *      this gets posted from arcCheckIfBackupNeeded,
-         *      which gets called from krnInitializeXWorkplace
-         *      with the handle of this object wnd and this message ID.
-         */
+            /*
+             *@@ T1M_DESTROYARCHIVESTATUS:
+             *      this gets posted from arcCheckIfBackupNeeded,
+             *      which gets called from krnInitializeXWorkplace
+             *      with the handle of this object wnd and this message ID.
+             */
 
-        case T1M_DESTROYARCHIVESTATUS:
-            hwndArchiveStatus = (HWND)mp1;
-            WinStartTimer(WinQueryAnchorBlock(hwndObject),
-                          hwndObject,
-                          1,
-                          10);
-        break;
+            case T1M_DESTROYARCHIVESTATUS:
+                hwndArchiveStatus = (HWND)mp1;
+                WinStartTimer(WinQueryAnchorBlock(hwndObject),
+                              hwndObject,
+                              1,
+                              10);
+            break;
 
-        /*
-         *@@ T1M_OPENOBJECTFROMHANDLE:
-         *      this can be posted to the thread-1 object
-         *      window from anywhere to have an object
-         *      opened in its default view. As opposed to
-         *      WinOpenObject, which opens the object on
-         *      thread 13 (on my system), the thread-1
-         *      object window will always open the object
-         *      on thread 1, which leads to less problems.
-         *
-         *      See krn_T1M_OpenObjectFromHandle for the
-         *      parameters.
-         */
+            /*
+             *@@ T1M_OPENOBJECTFROMHANDLE:
+             *      this can be posted to the thread-1 object
+             *      window from anywhere to have an object
+             *      opened in its default view. As opposed to
+             *      WinOpenObject, which opens the object on
+             *      thread 13 (on my system), the thread-1
+             *      object window will always open the object
+             *      on thread 1, which leads to less problems.
+             *
+             *      See krn_T1M_OpenObjectFromHandle for the
+             *      parameters.
+             *
+             *      Most notably, this is posted from the daemon
+             *      to open "screen border objects" and global
+             *      hotkey objects.
+             */
 
-        case T1M_OPENOBJECTFROMHANDLE:
-            krn_T1M_OpenObjectFromHandle(mp1, mp2);
-        break;
+            case T1M_OPENOBJECTFROMHANDLE:
+                krn_T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
+            break;
 
-        /*
-         *@@ T1M_DAEMONREADY:
-         *      posted by the XWorkplace daemon after it has
-         *      successfully created its object window.
-         *      This can happen in two situations:
-         *
-         *      -- during WPS startup, after krnInitializeXWorkplace
-         *         has started the daemon;
-         *      -- any time later, if the daemon has been restarted
-         *         (shouldn't happen).
-         *
-         *      The thread-1 object window will then send XDM_HOOKINSTALL
-         *      back to the daemon if the global settings have the
-         *      hook enabled.
-         */
+            /*
+             *@@ T1M_DAEMONREADY:
+             *      posted by the XWorkplace daemon after it has
+             *      successfully created its object window.
+             *      This can happen in two situations:
+             *
+             *      -- during WPS startup, after krnInitializeXWorkplace
+             *         has started the daemon;
+             *      -- any time later, if the daemon has been restarted
+             *         (shouldn't happen).
+             *
+             *      The thread-1 object window will then send XDM_HOOKINSTALL
+             *      back to the daemon if the global settings have the
+             *      hook enabled.
+             */
 
-        case T1M_DAEMONREADY:
-            krn_T1M_DaemonReady();
-        break;
+            case T1M_DAEMONREADY:
+                krn_T1M_DaemonReady();
+            break;
 
-        /*
-         *@@ T1M_PAGEMAGECLOSED:
-         *      this gets posted by dmnKillPageMage when
-         *      the user has closed the PageMage window.
-         *      We then disable PageMage in the GLOBALSETTINGS.
-         *
-         *      Parameters:
-         *      -- BOOL mp1: if TRUE, PageMage will be disabled
-         *                   in the global settings.
-         *
-         *@@added V0.9.2 (2000-02-23) [umoeller]
-         *@@changed V0.9.3 (2000-04-25) [umoeller]: added mp1 parameter
-         */
+            /*
+             *@@ T1M_PAGEMAGECLOSED:
+             *      this gets posted by dmnKillPageMage when
+             *      the user has closed the PageMage window.
+             *      We then disable PageMage in the GLOBALSETTINGS.
+             *
+             *      Parameters:
+             *      -- BOOL mp1: if TRUE, PageMage will be disabled
+             *                   in the global settings.
+             *
+             *@@added V0.9.2 (2000-02-23) [umoeller]
+             *@@changed V0.9.3 (2000-04-25) [umoeller]: added mp1 parameter
+             */
 
-        case T1M_PAGEMAGECLOSED:
-        {
-            _Pmpf(("T1M_PAGEMAGECLOSED %d", mp1));
-
-            if (mp1)
+            case T1M_PAGEMAGECLOSED:
             {
-                GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(4000);
-                pGlobalSettings->fEnablePageMage = FALSE;
-                cmnUnlockGlobalSettings();
-                _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
-            }
+                _Pmpf(("T1M_PAGEMAGECLOSED %d", mp1));
 
-            // update "Features" page, if open
-            ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
-        break; }
+                if (mp1)
+                {
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(4000);
+                    pGlobalSettings->fEnablePageMage = FALSE;
+                    cmnUnlockGlobalSettings();
+                    _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
+                }
 
-        /*
-         *@@ T1M_PAGEMAGECONFIGDELAYED:
-         *      posted by XWPScreen when any PageMage configuration
-         *      has changed. We delay sending XDM_PAGEMAGECONFIG to
-         *      the daemon for a little while in order not to overload
-         *      the system, because PageMage needs to reconfigure itself
-         *      every time.
-         *
-         *      Parameters:
-         *      -- ULONG mp1: any of the following flags:
-         *          -- PGMGCFG_REPAINT: repaint PageMage client
-         *          -- PGMGCFG_REFORMAT: reformat whole window (e.g.
-         *                  because Desktops have changed)
-         *
-         *@@added V0.9.3 (2000-04-09) [umoeller]
-         */
+                // update "Features" page, if open
+                ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
+            break; }
 
-        case T1M_PAGEMAGECONFIGDELAYED:
-        {
-            // add flags to global variable which will be
-            // passed (and reset) when timer elapses
-            G_PageMageConfigFlags |= (ULONG)mp1;
-            // start timer 2
-            WinStartTimer(WinQueryAnchorBlock(hwndObject),
-                          hwndObject,
-                          2,
-                          500);     // half a second delay
-        break; }
+            /*
+             *@@ T1M_PAGEMAGECONFIGDELAYED:
+             *      posted by XWPScreen when any PageMage configuration
+             *      has changed. We delay sending XDM_PAGEMAGECONFIG to
+             *      the daemon for a little while in order not to overload
+             *      the system, because PageMage needs to reconfigure itself
+             *      every time.
+             *
+             *      Parameters:
+             *      -- ULONG mp1: any of the following flags:
+             *          -- PGMGCFG_REPAINT: repaint PageMage client
+             *          -- PGMGCFG_REFORMAT: reformat whole window (e.g.
+             *                  because Desktops have changed)
+             *
+             *@@added V0.9.3 (2000-04-09) [umoeller]
+             */
 
-        #ifdef __DEBUG__
-        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
-            CRASH;
-        break;
-        #endif
+            case T1M_PAGEMAGECONFIGDELAYED:
+            {
+                // add flags to global variable which will be
+                // passed (and reset) when timer elapses
+                G_PageMageConfigFlags |= (ULONG)mp1;
+                // start timer 2
+                WinStartTimer(WinQueryAnchorBlock(hwndObject),
+                              hwndObject,
+                              2,
+                              500);     // half a second delay
+            break; }
 
-        default:
-            mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+            #ifdef __DEBUG__
+            case XM_CRASH:          // posted by debugging context menu of XFldDesktop
+                CRASH;
+            break;
+            #endif
+
+            default:
+                fCallDefault = TRUE;
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fCallDefault)
+        mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+
     return (mrc);
 }
 

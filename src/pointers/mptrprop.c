@@ -55,7 +55,7 @@
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 
-#include "pointers\r_amptreng.h"
+#include "..\..\001\dll\r_amptr001.h"
 
 #define TABTEXT_SIZEX                 80
 #define TABTEXT_SIZEY                 22

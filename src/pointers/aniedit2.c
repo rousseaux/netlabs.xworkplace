@@ -52,7 +52,7 @@
 #include "pointers\mptrfile.h"  // V0.9.3 (2000-05-21) [umoeller]
 #include "pointers\mptrutil.h"
 #include "pointers\mptrptr.h"
-#include "pointers\r_amptreng.h"
+#include "..\..\001\dll\r_amptr001.h"
 
 #include "pointers\mptrcnr.h"   // V0.9.3 (2000-05-21) [umoeller]
 

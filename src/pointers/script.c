@@ -37,8 +37,7 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
-#include "pointers\title.h"
-#include "pointers\r_amptreng.h"
+#include "..\..\001\dll\r_amptr001.h"
 
 #include "pointers\dll.h"
 #include "pointers\script.h"

@@ -22,26 +22,45 @@
  *      GNU General Public License for more details.
  */
 
+/*
+ *  Suggested #include order:
+ *  1)  os2.h
+ *  2)  C library headers
+ *  3)  setup.h (code generation and debugging options)
+ *  4)  headers in helpers\
+ *  5)  at least one SOM implementation header (*.ih)
+ *  6)  dlgids.h, headers in shared\ (as needed)
+ *  7)  headers in implementation dirs (e.g. filesys\, as needed)
+ *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
+ */
+
 #define INCL_ERRORS
 #define INCL_PM
 #define INCL_DOS
 #define INCL_DEV
 #define INCL_WPCLASS
 #define INCL_WINWORKPLACE
-
 #include <os2.h>
+
+// C library headers
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <somobj.h>
+#include <setjmp.h>
 
 // generic headers
-#include "setup.h"              // code generation and debugging options
+#include "setup.h"                      // code generation and debugging options
 
+// headers in /helpers
+#include "helpers\except.h"             // exception handling
+
+// SOM headers which don't crash with prec. header files
+#include "xwpmouse.ih"
+
+// XWorkplace implementation headers
 #include "shared\common.h"
 
-// include own stuff
-#include "pointers\r_wpamptr.h"
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 #include "pointers\wmuser.h"
@@ -52,16 +71,11 @@
 #include "pointers\mptrlset.h"
 #include "pointers\warp4.h"
 
-#include "xwpmouse.ih"          // V0.9.3 (2000-05-21) [umoeller]
+#include "..\..\001\dll\r_amptr001.h"
 
 #pragma hdrstop
 // fÅr wpQueryFileName
 #include <wpfsys.h>
-
-// Prototypes
-/* MRESULT EXPENTRY AnimatedMousePointerPageProc(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
-int APIENTRY InitDll(void);
-int APIENTRY UnInitDll(void); */
 
 // =====================================================================================
 
@@ -80,24 +94,26 @@ WPSWINDOWDATA, *PWPSWINDOWDATA;
 
 MRESULT EXPENTRY AnimatedMousePointerPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
+    MRESULT mrc = 0;
+    BOOL    fCallDefault = TRUE;
 
-    PWPSWINDOWDATA pwd = WinQueryWindowPtr(hwnd, QWL_USER);
-    SOMAny *somSelf;
-    XWPMouseData *somThis;
-    // APIRET rc;
-
-    if (pwd)
+    TRY_LOUD(excpt1, NULL)
     {
-        // Zugriff auf Klassenvariablen immer ermîglichen
-        somSelf = pwd->somSelf;
-        somThis = XWPMouseGetData(somSelf);
-    }
+        PWPSWINDOWDATA pwd = WinQueryWindowPtr(hwnd, QWL_USER);
+        SOMAny *somSelf;
+        XWPMouseData *somThis;
 
-    switch (msg)
+        if (pwd)
+        {
+            // Zugriff auf Klassenvariablen immer ermîglichen
+            somSelf = pwd->somSelf;
+            somThis = XWPMouseGetData(somSelf);
+        }
 
-    {
+        switch (msg)
+        {
 
-        case WM_INITDLG:
+            case WM_INITDLG:
             {
                 PFNWP pfnwpOriginal;
 
@@ -131,17 +147,17 @@ MRESULT EXPENTRY AnimatedMousePointerPageProc(HWND hwnd, ULONG msg, MPARAM mp1, 
                     pwd->phd->pfnwpOriginal = pfnwpOriginal;
                     pwd->phd->ppcnrrec = &_pcnrrec;
                 }
-                return DialogHandlerProc(hwnd, msg, 0, 0);
-
+                mrc = DialogHandlerProc(hwnd, msg, 0, 0);
+                fCallDefault = FALSE;
 // ### integrated code end
             }
-            // break;              // WM_INITDLG
+            break;              // WM_INITDLG
 
-// ### integrated code begin
-#define SETTINGS_LOADSET      "CLASSLIST=WPFolder;STARTFOLDER=%s;SUBTREESRCH=NO;DEFAULTCRITERIA=YES;"
-#define SETTINGS_FINDPOINTER  "CLASSLIST=WPPointer;STARTFOLDER=%s;SUBTREESRCH=NO;DEFAULTCRITERIA=YES;"
+    // ### integrated code begin
+    #define SETTINGS_LOADSET      "CLASSLIST=WPFolder;STARTFOLDER=%s;SUBTREESRCH=NO;DEFAULTCRITERIA=YES;"
+    #define SETTINGS_FINDPOINTER  "CLASSLIST=WPPointer;STARTFOLDER=%s;SUBTREESRCH=NO;DEFAULTCRITERIA=YES;"
 
-        case WM_USER_SERVICE:
+            case WM_USER_SERVICE:
             {
                 switch (LONGFROMMP(mp1))
                 {
@@ -194,12 +210,12 @@ MRESULT EXPENTRY AnimatedMousePointerPageProc(HWND hwnd, ULONG msg, MPARAM mp1, 
                              (mp2) ? PVOIDFROMMP(mp2) : DEFAULT_ANIMATIONPATH,
                                        szFullname, sizeof(szFullname), FALSE);
                             if (rc == NO_ERROR)
-                                return strdup(szFullname);
+                                mrc = strdup(szFullname);
                             else
-                                return NULL;
-
+                                mrc = NULL;
+                            fCallDefault = FALSE;
                         }
-                        // break;  // SERVICE_FIND
+                        break;  // SERVICE_FIND
 
                     case SERVICE_LOAD:
                         {
@@ -214,30 +230,32 @@ MRESULT EXPENTRY AnimatedMousePointerPageProc(HWND hwnd, ULONG msg, MPARAM mp1, 
                              (mp2) ? PVOIDFROMMP(mp2) : DEFAULT_ANIMATIONPATH,
                                         szFullname, sizeof(szFullname), TRUE);
                             if (rc == NO_ERROR)
-                                return strdup(szFullname);
+                                mrc = strdup(szFullname);
                             else
-                                return NULL;
-
+                                mrc = NULL;
+                            fCallDefault = FALSE;
                         }
-                        // break;  // SERVICE_LOAD
+                        break;  // SERVICE_LOAD
 
-                }               // switch (SHORT1FROMMP(mp1))
-
+                } // switch (SHORT1FROMMP(mp1))
             }
             break;              // end case WM_USER_SERVICE:
 
-// ### integrated code end
+    // ### integrated code end
 
-        case WM_DESTROY:
-            // reset window handle
-            _hwndNotebookPage = NULLHANDLE;
-            _pcnrrec = NULL;
-            break;
-
+            case WM_DESTROY:
+                // reset window handle
+                _hwndNotebookPage = NULLHANDLE;
+                _pcnrrec = NULL;
+                break;
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    return WinDefDlgProc(hwnd, msg, mp1, mp2);
+   if (fCallDefault)
+       mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
 
+    return (mrc);
 }
 
 // -------------------------------------------------------------------------------------

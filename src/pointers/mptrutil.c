@@ -50,9 +50,10 @@
 
 #include "pointers\mptrutil.h"
 #include "pointers\mptrptr.h"
-#include "pointers\title.h"
 
-#include "pointers\r_amptreng.h"
+#include "..\..\001\dll\r_amptr001.h"
+
+#include "bldlevel.h"
 
 /*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
  *� Name      : GetModuleHandle                                            �

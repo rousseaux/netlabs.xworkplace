@@ -40,7 +40,6 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
-#include "pointers\title.h"
 #include "pointers\mptranim.h"
 #include "pointers\mptrset.h"
 #include "pointers\mptrppl.h"
@@ -51,6 +50,8 @@
 #include "pointers\wmuser.h"
 #include "pointers\macros.h"
 #include "pointers\debug.h"
+
+#include "bldlevel.h"
 
 // Timer IDs fÅr die 2 Timer Variante
 #define ANIMATION_TIMER_ID   256

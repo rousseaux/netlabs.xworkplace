@@ -1947,7 +1947,10 @@ void _Optlink fntFileThread(PTHREADINFO pti)
             pszErrMsg = malloc(1000);
             if (pszErrMsg)
             {
-                strcpy(pszErrMsg, "An error occured in the XFolder File thread. ");
+                strcpy(pszErrMsg, "An error occured in the XFolder File thread.\n"
+                                  "The File thread has been terminated. This severely limits "
+                                  "XWorkplace's functionality. Please restart the WPS now "
+                                  "to have the File thread restarted also. ");
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
             }
         }

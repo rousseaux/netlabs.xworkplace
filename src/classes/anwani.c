@@ -79,7 +79,7 @@
 #include "pointers\macros.h"
 #include "pointers\mptrptr.h"
 #include "pointers\mptrppl.h"
-#include "pointers\r_wpamptr.h"
+#include "..\..\001\dll\r_amptr001.h"
 #include "pointers\mptrutil.h"
 #include "pointers\mptrcnr.h"
 

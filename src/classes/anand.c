@@ -79,7 +79,7 @@
 #include "pointers\macros.h"
 #include "pointers\mptrptr.h"
 #include "pointers\mptrppl.h"
-#include "pointers\r_wpamptr.h"
+#include "..\..\001\dll\r_amptr001.h"
 #include "pointers\mptrutil.h"
 #include "pointers\mptrcnr.h"
 
@@ -844,7 +844,7 @@ MRESULT EXPENTRY wpand_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
     SOMAny *somSelf;
     XWPAnimouseData *somThis;
     APIRET rc = NO_ERROR;
-    BOOL fSuccess = FALSE;
+    // BOOL fSuccess = FALSE;
     USHORT usPageId = WinQueryWindowUShort(hwnd, QWS_ID);
     HAB hab = WinQueryAnchorBlock(hwnd);
 
@@ -1157,8 +1157,8 @@ MRESULT EXPENTRY wpand_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                         {
                             CHAR szFilename[_MAX_PATH];
                             SOURCEINFO sourceinfo;
-                            CHAR szInfoName[_MAX_PATH];
-                            CHAR szInfoArtist[_MAX_PATH];
+                            CHAR szInfoName0[_MAX_PATH];
+                            CHAR szInfoArtist0[_MAX_PATH];
 
                             BOOL fNameChanged = DLGQUERYCHANGED(hwnd, IDDLG_EF_INFONAME);
                             BOOL fArtistChanged = DLGQUERYCHANGED(hwnd, IDDLG_EF_INFOARTIST);

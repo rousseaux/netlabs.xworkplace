@@ -183,21 +183,17 @@ Last updated June 5, 2000
     5)  Trash can icons are somewhat shaky. Do not attempt to change
         them using the "Icon" page.
 
-    6)  VIO windows started via object hotkeys never come up right to
-        the foreground.
-
-    7)  PageMage is completely experimental at this point. We have
+    6)  PageMage is completely experimental at this point. We have
         problems during WPS startup and the configuration is quite
         unstable. Using PageMage can lead to system hangs, so be
         warned. Also, the "Sticky windows" feature doesn't work yet.
 
-    8)  I am currently having some problems with WPS restarts since
-        I have installed FP13. The WPS crashes on exit and/or becomes
-        terminally slow after the restart. After reverting to FP11,
-        those problems were gone, so I suspect it's not XWorkplace's
-        fault.
+    7)  I had some problems with WPS restarts since I have installed
+        FP13. The WPS crashes on exit and/or becomes terminally slow
+        after the restart. After reverting to FP11, those problems
+        were gone, so I suspect it's not XWorkplace's fault.
 
-    9)  From time to time, creating folders from templates (using the
+    8)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
         screen. Some people never get this, but I do from time to time.
         I think I have found the problem, but solving it requires some

@@ -51,7 +51,7 @@
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 
-#include "pointers\r_amptreng.h"
+#include "..\..\001\dll\r_amptr001.h"
 
 // Daten fÅr Editierfunktion
 static BOOL fEditPending = FALSE;

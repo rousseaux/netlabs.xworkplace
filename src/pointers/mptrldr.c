@@ -53,7 +53,7 @@
 #include "pointers\mptrset.h"
 #include "pointers\mptrlset.h"          // V0.9.3 (2000-05-21) [umoeller]
 
-#include "pointers\r_amptreng.h"
+#include "..\..\001\dll\r_amptr001.h"
 
 #define SEM_LOADER_ACTIVE                     "\\SEM32\\WPAMPTR\\ACTIVE"
 
