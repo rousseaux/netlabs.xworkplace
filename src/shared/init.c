@@ -156,6 +156,9 @@ BOOL cmnTurboFoldersEnabled(VOID);
 
 extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 
+// Desktop startup date and time (initMain) moved here V1.0.1 (2002-12-20) [umoeller]
+static DATETIME         G_StartupDateTime = {0};
+
 extern PIBMDRIVEDATA    G_paDriveData = NULL;
 
 static THREADINFO       G_tiSentinel = {0};
@@ -177,6 +180,8 @@ static CHAR             G_szDesktopPath[CCHMAXPATH];
 static HMTX             G_hmtxLog = NULLHANDLE;
 
 static PXFILE           G_pStartupLogFile = NULL;
+
+static ULONG            G_flPanic = 0;              // panic flags moved here V1.0.1 (2002-12-20) [umoeller]
 
 /* ******************************************************************
  *
@@ -265,6 +270,23 @@ void initLog(const char* pcszFormat,
 
         UnlockLog();
     }
+}
+
+/* ******************************************************************
+ *
+ *   Panic flags
+ *
+ ********************************************************************/
+
+/*
+ *@@ initQueryPanicFlags:
+ *
+ *@@added V1.0.1 (2002-12-20) [umoeller]
+ */
+
+ULONG initQueryPanicFlags(VOID)
+{
+    return G_flPanic;
 }
 
 /* ******************************************************************
@@ -371,22 +393,6 @@ STATIC ULONG WaitForApp(PCSZ pcszTitle,
 
     return ulrc;
 }
-
-/*
-        LTEXT           "You have held down the Shift key while the WPS is i"
-                        "nitializing.", -1, 5, 182, 210, 8, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "You can now selectively disable certain XWorkplace "
-                        "features in case these don't work right.", -1, 5,
-                        164, 210, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Note that most of these changes will only affect th"
-                        "is one WPS session. To permanently disable a featur"
-                        "e, open the respective XWorkplace settings object a"
-                        "fter the WPS has started.", -1, 5, 146, 210, 20,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-*/
 
 static const CONTROLDEF
 #ifndef __NOBOOTLOGO__
@@ -612,15 +618,15 @@ STATIC VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                 {
 #ifndef __NOBOOTLOGO__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
-                        G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
+                        G_flPanic |= SUF_SKIPBOOTLOGO;
 #endif
 #ifndef __NOXWPSTARTUP__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
-                        G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
+                        G_flPanic |= SUF_SKIPXFLDSTARTUP;
 #endif
 #ifndef __NOQUICKOPEN__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
-                        G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
+                        G_flPanic |= SUF_SKIPQUICKOPEN;
 #endif
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
                     {
@@ -1397,7 +1403,7 @@ VOID initMain(VOID)
     }
 
     // store Desktop startup time
-    DosGetDateTime(&G_KernelGlobals.StartupDateTime);
+    DosGetDateTime(&G_StartupDateTime);
 
     // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
     winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
@@ -1678,7 +1684,7 @@ VOID initMain(VOID)
             initLog("  DosAllocSharedMem returned %d",
                               arc);
 
-            if (arc == NO_ERROR)
+            if (!arc)
             {
                 // shared mem successfully allocated:
                 memset(pXwpGlobalShared, 0, sizeof(XWPGLOBALSHARED));
@@ -2343,7 +2349,7 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 
 #ifndef __NOXWPSTARTUP__
         // check if startup folder is to be skipped
-        if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+        if (!(G_flPanic & SUF_SKIPXFLDSTARTUP))
                 // V0.9.3 (2000-04-25) [umoeller]
         {
             // OK, process startup folder
@@ -2418,7 +2424,7 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 
 #ifndef __NOQUICKOPEN__
         // "quick open" disabled because Shift key pressed?
-        if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+        if (!(G_flPanic & SUF_SKIPQUICKOPEN))
         {
             // no:
             // get the quick-open folders

@@ -1735,7 +1735,7 @@
                                         MPARAM mp2);
     #define CMN_CALLWINPROC(pfnwp, hwnd, msg, mp1, mp2) cmnDebugWindowProc(__FILE__, __LINE__, __FUNCTION__, (pfnwp), (hwnd), (msg), (mp1), (mp2))
 #else
-    #define CMN_CALLWINPROC(pfnwp, hwnd, msg, mp1, mp2) pfnwp((pfnwp), (hwnd), (msg), (mp1), (mp2))
+    #define CMN_CALLWINPROC(pfnwp, hwnd, msg, mp1, mp2) pfnwp((hwnd), (msg), (mp1), (mp2))
 #endif
 
     PCSZ cmnIdentifyView(ULONG ulView);

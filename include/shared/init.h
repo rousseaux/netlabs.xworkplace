@@ -33,6 +33,33 @@
 
     /* ******************************************************************
      *
+     *   Panic flags
+     *
+     ********************************************************************/
+
+    ULONG initQueryPanicFlags(VOID);
+
+        // flags set by the "panic" dialog if "Shift"
+        // was pressed during startup.
+        // Per default, this field is set to zero,
+        // but if the user disables something in the
+        // "Panic" dialog, this may have any of the
+        // following flags:
+        // -- SUF_SKIPBOOTLOGO: skip boot logo
+        // -- SUF_SKIPXFLDSTARTUP: skip XFldStartup processing
+        // -- SUF_SKIPQUICKOPEN: skip "quick open" folder processing
+        #ifndef __NOBOOTLOGO__
+            #define SUF_SKIPBOOTLOGO            0x0001  // skip boot logo
+        #endif
+        #ifndef __NOXWPSTARTUP__
+            #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
+        #endif
+        #ifndef __NOQUICKOPEN__
+            #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
+        #endif
+
+    /* ******************************************************************
+     *
      *   XWorkplace initialization
      *
      ********************************************************************/

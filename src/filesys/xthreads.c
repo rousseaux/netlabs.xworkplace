@@ -177,297 +177,6 @@ static ULONG        G_CurFileThreadMsg = 0;
             // current message that File thread is processing,
             // or null if none
 
-#if 0       // disabled V0.9.20 (2002-07-25) [umoeller]
-
-/* ******************************************************************
- *
- *   Awake objects list for Worker thread
- *
- ********************************************************************/
-
-/*
- *@@ WorkerExpandHeap:
- *      this is the function _umalloc calls to get more storage.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-STATIC void* WorkerExpandHeap(Heap_t uh,
-                              size_t *length,
-                              int *clean)
-{
-    char *p;
-
-    // DosAllocMem sets storage to 0, so it is "clean"
-    *clean = _BLOCK_CLEAN;
-
-    // round the block size to a multiple of 64K for efficiency
-    *length = (*length / 65536) * 65536 + 65536;
-
-    // get the storage from the system
-    DosAllocMem((VOID*)&p,
-                *length,
-                PAG_COMMIT | PAG_READ | PAG_WRITE);
-
-    return p;
-}
-
-/*
- *@@ WorkerShrinkHeap:
- *      this is the the function _heapmin and _destroy
- *      call to return storage to the system.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-STATIC void WorkerShrinkHeap(Heap_t uh,
-                             void *p,
-                             size_t size)
-{
-    DosFreeMem(p);
-    return;
-}
-
-/*
- *@@ xthrLockAwakeObjectsList:
- *      locks G_hmtxAwakeObjectsList. Creates the mutex on
- *      the first call.
- *
- *      This mutex is used to protect the list of all awake
- *      objects ONLY.
- *
- *      Returns TRUE if the mutex was obtained.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-BOOL xthrLockAwakeObjectsList(VOID)
-{
-    if (G_hmtxAwakeObjectsList)
-        return !DosRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
-
-    // first call:
-    if (!DosCreateMutexSem(NULL,
-                           &G_hmtxAwakeObjectsList,
-                           0,
-                           TRUE))
-    {
-        treeInit(&G_AwakeObjectsTree,
-                 &G_lAwakeObjectsCount);
-
-        if (!(G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
-                                            _HEAP_MIN_SIZE,
-                                            !_BLOCK_CLEAN,    // memory is not set to 0
-                                            _HEAP_REGULAR,    // regular memory
-                                            WorkerExpandHeap,
-                                            WorkerShrinkHeap)))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "_ucreate failed for Worker heap.");
-        else if (_uopen(G_AwakeObjectsHeap))        // open heap and check for failure
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "_uopen failed for Worker heap.");
-
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-/*
- *@@ xthrUnlockAwakeObjectsList:
- *      the reverse to xthrLockAwakeObjectsLists.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-VOID xthrUnlockAwakeObjectsList(VOID)
-{
-    DosReleaseMutexSem(G_hmtxAwakeObjectsList);
-}
-
-/*
- *@@ xthrQueryAwakeObjectsMutexOwner:
- *      invokes DosQueryMutexSem on the awake
- *      objects mutex. Needed by the exception
- *      handlers.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-APIRET xthrQueryAwakeObjectsMutexOwner(PPID ppid,
-                                       PTID ptid,
-                                       PULONG pulCount)
-{
-    return DosQueryMutexSem(G_hmtxAwakeObjectsList,
-                            ppid,
-                            ptid,
-                            pulCount);
-}
-
-/*
- *@@ xthrQueryAwakeObjectsCount:
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-LONG xthrQueryAwakeObjectsCount(VOID)
-{
-    LONG    l = 0;
-
-    if (xthrLockAwakeObjectsList())
-    {
-        l = G_lAwakeObjectsCount;
-        xthrUnlockAwakeObjectsList();
-    }
-
-    return l;
-}
-
-/*
- *@@ WorkerAddObject:
- *      implementation for WOM_ADDAWAKEOBJECT
- *      in fnwpWorkerObject.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- *@@changed V0.9.16 (2001-10-25) [umoeller]: fixed memory leak
- */
-
-STATIC VOID WorkerAddObject(WPObject *pObj2Store)
-{
-    BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
-
-    TRY_LOUD(excpt3)  // V0.9.7 (2000-12-13) [umoeller]
-    {
-        #ifdef DEBUG_AWAKEOBJECTS
-           // _PmpfF(("WT: Adding awake object..."));
-        #endif
-
-        // set the quiet exception handler, because
-        // sometimes we get a message for an object too
-        // late, i.e. it is not awake any more, and then
-        // we'll trap
-        TRY_QUIET(excpt2)
-        {
-            // V0.9.9 (2001-2-17) [pr]: fix object count bug
-            if (!strcmp(_somGetClassName(pObj2Store), G_pcszSmartCenter))
-            {
-                // only for the WarpCenter, lock the globals
-                // V0.9.9 (2001-04-04) [umoeller]
-                PKERNELGLOBALS  pKernelGlobals = NULL;
-                if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
-                {
-                    pKernelGlobals->pAwakeWarpCenter = pObj2Store;
-                    krnUnlockGlobals();
-                }
-            }
-
-            // get the awake-objects mutex semaphore
-            if (fWorkerAwakeObjectsSemOwned = xthrLockAwakeObjectsList())
-            {
-                TREE        *pNode;
-
-                #ifdef DEBUG_AWAKEOBJECTS
-                    _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
-                #endif
-
-                // check if this object is stored already
-                if (pNode = (TREE*)_umalloc(G_AwakeObjectsHeap,
-                                            sizeof(TREE)))
-                {
-                    pNode->ulKey = (ULONG)pObj2Store;
-
-                    if (treeInsert(&G_AwakeObjectsTree,
-                                   // increment global count
-                                   &G_lAwakeObjectsCount,
-                                   pNode,
-                                   treeCompareKeys))
-                        // FAILED:
-                        // V0.9.16 (2001-10-25) [umoeller]
-                        (free)(pNode);        // works with user heap
-                            // free must be in brackets so it won't
-                            // get replaced with debug malloc, if enabled
-
-                    // note that we now store all objects, no matter
-                    // what class they are; we used to have only
-                    // WPAbstract and WPFolder
-                }
-            }
-        }
-        CATCH(excpt2)
-        {
-            // the thread exception handler puts us here
-            // if an exception occured:
-            #ifdef DEBUG_AWAKEOBJECTS
-                DosBeep(10000, 10);
-            #endif
-        } END_CATCH();
-    }
-    CATCH(excpt3) {} END_CATCH();
-
-    if (fWorkerAwakeObjectsSemOwned)
-    {
-        xthrUnlockAwakeObjectsList();
-        fWorkerAwakeObjectsSemOwned = FALSE;
-    }
-}
-
-/*
- *@@ WorkerRemoveObject:
- *      implementation for WOM_REMOVEAWAKEOBJECT
- *      in fnwpWorkerObject.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-STATIC VOID WorkerRemoveObject(WPObject *pObj)
-{
-    BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
-
-    #ifdef DEBUG_AWAKEOBJECTS
-        _Pmpf(("WT: Removing asleep object, mp1: 0x%lX", mp1));
-    #endif
-
-    TRY_QUIET(excpt2)
-    {
-        // get the mutex semaphore
-        if (fWorkerAwakeObjectsSemOwned = xthrLockAwakeObjectsList())
-        {
-            // remove the object from the list
-            if (pObj)
-            {
-                TREE    *pNode;
-                #ifdef DEBUG_AWAKEOBJECTS
-                    _Pmpf(("WT: Calling lstRemoveItem with poli = 0x%lX",
-                           pObj));
-                #endif
-
-                if (pNode = treeFind(G_AwakeObjectsTree,
-                                     (ULONG)pObj,
-                                     treeCompareKeys))
-                {
-                    treeDelete(&G_AwakeObjectsTree,
-                               // decrement global count
-                               &G_lAwakeObjectsCount,
-                               pNode);
-                    (free)(pNode);        // works with user heap
-                            // free must be in brackets so it won't
-                            // get replaced with debug malloc, if enabled
-                            // V0.9.12 (2001-05-21) [umoeller]
-                }
-            }
-        }
-    }
-    CATCH(excpt2) {} END_CATCH();
-
-    if (fWorkerAwakeObjectsSemOwned)
-    {
-        xthrUnlockAwakeObjectsList();
-        fWorkerAwakeObjectsSemOwned = FALSE;
-    }
-}
-
-#endif // V0.9.20 (2002-07-25) [umoeller]
-
 /* ******************************************************************
  *
  *   Worker thread
@@ -745,155 +454,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
     switch (msg)
     {
-        /*
-         * WM_CREATE:
-         *      set a timer to periodically free storage
-         */
-
-        case WM_CREATE:
-        {
-            mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-            /* WinStartTimer(G_habWorkerThread,
-                          hwndObject,
-                          2,          // id
-                          5*60*1000); // every five minutes
-            */ // moved this to new Wimp thread V0.9.18 (2002-02-23) [umoeller]
-        }
-        break;
-
-        /*
-         * WM_TIMER:
-         *      timer 2 is started in WM_CREATE to run every
-         *      five minutes. This returns unused memory
-         *      back to the system and reloads the country
-         *      settings which we have cached (V0.9.6 (2000-11-12) [umoeller]).
-         */
-
-        /*  removed V0.9.18 (2002-02-23) [umoeller]
-        case WM_TIMER:
-        {
-            switch ((USHORT)mp1)   // timer id
-            {
-                // timer 2: free unused memory
-                case 2:
-                break;
-            }
-        }
-        break;
-        */
-
-        /*
-         * WOM_QUICKOPEN:
-         *      this is posted by the XFolder Object window
-         *      on the main PM thread for each folder with
-         *      the QuickOpen flag on: we will populate it
-         *      here and load all the icons.
-         *      Parameters:
-         *          XFolder* mp1    folder pointer
-         *          ULONG    mp2    callback function (PFNWP)
-         *      The callback will be called if mp2 != NULL
-         *      with the following parameters:
-         *          HWND    current folder
-         *          ULONG   current object therein
-         *          MPARAM  current object count
-         *          MPARAM  maximum object count
-         *  removed V0.9.12 (2001-04-29) [umoeller]
-         */
-
-        /* case WOM_QUICKOPEN:
-        {
-            XFolder *pFolder = (XFolder*)mp1;
-            PFNWP   pfncb = (PFNWP)mp2;
-            BOOL    fContinue = FALSE;
-
-            PMPF_STARTUP(("WOM_QUICKOPEN %lX", mp1));
-
-            if (pFolder)
-            {
-                fContinue = fdrQuickOpen(pFolder,
-                                         pfncb);
-
-                if (fContinue)
-                    // now go for the next folder
-                    krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, mp1, MPNULL);
-                    break;
-            }
-
-            krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, NULL, MPNULL);
-        }
-        break; */
-
-        /*
-         * WOM_PROCESSORDEREDCONTENT:
-         *      this msg is posted by xfProcessOrderedContent to
-         *      begin working our way through the contents of a
-         *      folder; from here we will call a callback func
-         *      which has been specified with xfProcessOrderedContent.
-         *      Msg params:
-         *          XFolder *mp1    folder to process
-         *          PPROCESSCONTENTINFO
-         *                  *mp2    structure with process info,
-         *                          composed by xfProcessOrderedContent
-         * removed V0.9.12 (2001-04-29) [umoeller]
-         */
-
-        /* case WOM_PROCESSORDEREDCONTENT:
-        {
-            XFolder             *pFolder = (XFolder*)mp1;
-            PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO)mp2;
-
-            PMPF_STARTUP(("Entering WOM_PROCESSORDEREDCONTENT..."));
-
-
-        }
-        break;  */
-
-        /* case WOM_WAITFORPROCESSNEXT:
-        {
-            PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO)mp2;
-            BOOL                OKGetNext = FALSE;
-
-            if (pPCI)
-            {
-            }
-        }
-        break;  */
-
-        /*
-         * WOM_ADDAWAKEOBJECT:
-         *      this is posted by XFldObject for each
-         *      object that is awaked by the WPS; we
-         *      need to maintain a list of these objects
-         *      for XShutdown.
-         *
-         *      Parameters:
-         *          WPObject* mp1: somSelf as in XFldObject::wpObjectReady
-         */
-
-        // case WOM_ADDAWAKEOBJECT:         // removed V0.9.20 (2002-07-25) [umoeller]
-        //     WorkerAddObject((WPObject*)mp1);
-        // break;
-
-        /*
-         * WOM_REMOVEAWAKEOBJECT:
-         *      this is posted by WPObject also, but
-         *      when an object goes back to sleep.
-         *      Be careful: the object pointer in mp1
-         *      does not point to a valid SOM object
-         *      any more, because the object has
-         *      already been freed in memory; so we
-         *      must not call any methods here.
-         *      We only use the object pointer
-         *      for finding the respective object
-         *      in the linked list.
-         *
-         *      Parameters:
-         *          WPObject* mp1: somSelf as in XFldObject::wpUnInitData
-         */
-
-        // case WOM_REMOVEAWAKEOBJECT:      // removed V0.9.20 (2002-07-25) [umoeller]
-        //     WorkerRemoveObject((WPObject*)mp1);
-        // break;
 
         /*
          *@@ WOM_REFRESHFOLDERVIEWS:
@@ -1374,7 +934,6 @@ STATIC VOID CollectDoubleFiles(MPARAM mp1)
 MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = NULL;
-    // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     G_CurFileThreadMsg = msg;
 
@@ -1425,43 +984,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             ULONG   ulAction = (ULONG)mp1;
             ULONG   ulReturn = ulAction;
 
-            // removed RCF_QUERYACTION V0.9.16 (2001-10-11) [umoeller]
-            /* if (ulAction == RCF_QUERYACTION)
-            {
-                HWND  hwndDlg;
-
-                if (fWarningOpen)
-                    break;
-
-                cmnSetDlgHelpPanel(ID_XFH_NOCONFIG);
-                hwndDlg = WinLoadDlg(HWND_DESKTOP,
-                                    HWND_DESKTOP,
-                                    (PFNWP)cmn_fnwpDlgWithHelp,
-                                    cmnQueryNLSModuleHandle(FALSE),
-                                    ID_XFD_NOCONFIG, // "not found" dialog
-                                    (PVOID)NULL);
-                fWarningOpen = TRUE;
-                ulReturn = (WinProcessDlg(hwndDlg)
-                                 == DID_DEFAULT)
-                            ?  RCF_DEFAULTCONFIGFOLDER
-                            :  RCF_EMPTYCONFIGFOLDERONLY;
-                WinDestroyWindow(hwndDlg);
-                fWarningOpen = FALSE;
-            } */
-
-            // ulReturn is either set from dialog or
-            // from initial value, if no prompt
-            /* if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
-            {
-                CHAR szObjectID[50];
-                sprintf(szObjectID, "OBJECTID=%s;", XFOLDER_CONFIGID);
-                WinCreateObject((PSZ)G_pcszWPFolder,          // now create new config folder w/ proper objID
-                                "XFolder Configuration",
-                                szObjectID,
-                                (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",                 // on desktop
-                                CO_UPDATEIFEXISTS);
-            }
-            else*/
             if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
                 || (ulReturn == RCF_MAININSTALLFOLDER)
                )
@@ -1528,20 +1050,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                      (HFILETASKLIST)mp1,
                                      (HWND)mp2);
         break;
-
-        /*
-         * FIM_REFRESH:
-         *      this refreshes a folder's content by invoking
-         *      wpRefresh on it. This gets posted from
-         *      mnuMenuItemSelected if the
-         *
-         *      Parameters:
-         *          WPFolder* mp1:  folder to refresh
-         *          HWND hwndFrame:  frame of folder to refresh
-         *
-         *changed V0.9.4 (2000-08-02) [umoeller]: now invalidating cnr also
-         *      removed this   V0.9.6 (2000-10-16) [umoeller]
-         */
 
         /*
          *@@ FIM_DOUBLEFILES:
@@ -1788,54 +1296,55 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             memset(&sb, 0, sizeof(sb));
 
             // boot logo disabled because Shift pressed at Desktop startup?
-            if ((pKernelGlobals->ulPanicFlags & SUF_SKIPBOOTLOGO) == 0)
-                // no: logo allowed?
-                if (cmnQuerySetting(sfBootLogo))
+            if (    (!(initQueryPanicFlags() & SUF_SKIPBOOTLOGO))
+                    // no: logo allowed?
+                 && (cmnQuerySetting(sfBootLogo))
+               )
+            {
+                PSZ pszBootLogoFile = cmnQueryBootLogoFile();
+
+                if (cmnQuerySetting(sulBootLogoStyle) == 1)
                 {
-                    PSZ pszBootLogoFile = cmnQueryBootLogoFile();
-
-                    if (cmnQuerySetting(sulBootLogoStyle) == 1)
+                    // blow-up mode:
+                    HDC         hdcMem;
+                    HPS         hpsMem;
+                    SIZEL       szlPage = {0, 0};
+                    if (gpihCreateMemPS(G_habBushThread,
+                                        &szlPage,
+                                        &hdcMem,
+                                        &hpsMem))
                     {
-                        // blow-up mode:
-                        HDC         hdcMem;
-                        HPS         hpsMem;
-                        SIZEL       szlPage = {0, 0};
-                        if (gpihCreateMemPS(G_habBushThread,
-                                            &szlPage,
-                                            &hdcMem,
-                                            &hpsMem))
+                        HBITMAP hbmBootLogo;
+                        if (!gpihLoadBitmapFile(&hbmBootLogo,
+                                                hpsMem,
+                                                pszBootLogoFile))
                         {
-                            HBITMAP hbmBootLogo;
-                            if (!gpihLoadBitmapFile(&hbmBootLogo,
-                                                    hpsMem,
-                                                    pszBootLogoFile))
-                            {
-                                HPS     hpsScreen = WinGetScreenPS(HWND_DESKTOP);
-                                anmBlowUpBitmap(hpsScreen,
-                                                hbmBootLogo,
-                                                1000);  // total animation time
-                                WinReleasePS(hpsScreen);
+                            HPS     hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+                            anmBlowUpBitmap(hpsScreen,
+                                            hbmBootLogo,
+                                            1000);  // total animation time
+                            WinReleasePS(hpsScreen);
 
-                                // delete the bitmap again
-                                GpiDeleteBitmap(hbmBootLogo);
-                            }
-                            GpiDestroyPS(hpsMem);
-                            DevCloseDC(hdcMem);
+                            // delete the bitmap again
+                            GpiDeleteBitmap(hbmBootLogo);
                         }
+                        GpiDestroyPS(hpsMem);
+                        DevCloseDC(hdcMem);
                     }
-                    else
-                    {
-                        // transparent mode:
-                        if (shpLoadBitmap(G_habBushThread,
-                                          pszBootLogoFile, // from file,
-                                          0, 0,     // not from resources
-                                          &sb))
-                            // create shape (transparent) windows
-                            shpCreateWindows(&sb);
-                    }
+                }
+                else
+                {
+                    // transparent mode:
+                    if (shpLoadBitmap(G_habBushThread,
+                                      pszBootLogoFile, // from file,
+                                      0, 0,     // not from resources
+                                      &sb))
+                        // create shape (transparent) windows
+                        shpCreateWindows(&sb);
+                }
 
-                    free(pszBootLogoFile);
-                } // end if (cmnQuerySetting(sfBootLogo))
+                free(pszBootLogoFile);
+            } // end if (cmnQuerySetting(sfBootLogo))
 
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
         }
@@ -2040,8 +1549,8 @@ void _Optlink fntBushThread(PTHREADINFO pti)
         {
             if (G_hmqBushThread = WinCreateMsgQueue(G_habBushThread, 3000))
             {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-                if (pKernelGlobals)
+                PKERNELGLOBALS pKernelGlobals;
+                if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
                 {
                     WinCancelShutdown(G_hmqBushThread, TRUE);
 
@@ -2188,72 +1697,62 @@ void _Optlink fntWimpThread(PTHREADINFO pti)
 BOOL xthrStartThreads(VOID)
 {
     BOOL brc = FALSE;
-    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
 
     initLog("Entering " __FUNCTION__":");
 
-    if (pKernelGlobals)
+    if (thrQueryID(&G_tiWorkerThread) == NULLHANDLE)
     {
-        if (thrQueryID(&G_tiWorkerThread) == NULLHANDLE)
-        {
-            // store the thread ID of the calling thread;
-            // this should always be 1
-            // ... moved this to initMain
+        // store the thread ID of the calling thread;
+        // this should always be 1
+        // ... moved this to initMain
 
-            /*
-             *  start threads
-             *
-             */
+        /*
+         *  start threads
+         *
+         */
 
-            // if (cmnQuerySetting(sNoWorkerThread) == 0)
-                // removed this setting V0.9.16 (2002-01-04) [umoeller]
-            {
-                // threads not disabled:
-                G_ulWorkerMsgCount = 0;
-                thrCreate(&G_tiWorkerThread,
-                          fntWorkerThread,
-                          NULL, // running flag
-                          "Worker",
-                          THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
-                          0);
+        // threads not disabled:
+        G_ulWorkerMsgCount = 0;
+        thrCreate(&G_tiWorkerThread,
+                  fntWorkerThread,
+                  NULL, // running flag
+                  "Worker",
+                  THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
+                  0);
 
-                initLog("  Started XWP Worker thread, TID: %d",
-                                  G_tiWorkerThread.tid);
+        initLog("  Started XWP Worker thread, TID: %d",
+                          G_tiWorkerThread.tid);
 
-                thrCreate(&G_tiBushThread,
-                          fntBushThread,
-                          NULL, // running flag
-                          "Bush",
-                          THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
-                          0);
+        thrCreate(&G_tiBushThread,
+                  fntBushThread,
+                  NULL, // running flag
+                  "Bush",
+                  THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
+                  0);
 
-                initLog("  Started XWP Bush thread, TID: %d",
-                                  G_tiBushThread.tid);
+        initLog("  Started XWP Bush thread, TID: %d",
+                          G_tiBushThread.tid);
 
-                // start Wimp thread V0.9.18 (2002-02-23) [umoeller]
-                thrCreate(&G_tiWimpThread,
-                          fntWimpThread,
-                          NULL, // running flag
-                          "Wimp",
-                          THRF_WAIT,            // no msgq
-                          0);
+        // start Wimp thread V0.9.18 (2002-02-23) [umoeller]
+        thrCreate(&G_tiWimpThread,
+                  fntWimpThread,
+                  NULL, // running flag
+                  "Wimp",
+                  THRF_WAIT,            // no msgq
+                  0);
 
-                initLog("  Started XWP Wimp thread, TID: %d",
-                                  G_tiWimpThread.tid);
-            }
+        initLog("  Started XWP Wimp thread, TID: %d",
+                          G_tiWimpThread.tid);
 
-            thrCreate(&G_tiFileThread,
-                      fntFileThread,
-                      NULL, // running flag
-                      "File",
-                      THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
-                      0);
+        thrCreate(&G_tiFileThread,
+                  fntFileThread,
+                  NULL, // running flag
+                  "File",
+                  THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
+                  0);
 
-            initLog("  Started XWP File thread, TID: %d",
-                              G_tiFileThread.tid);
-        }
-
-        krnUnlockGlobals();
+        initLog("  Started XWP File thread, TID: %d",
+                          G_tiFileThread.tid);
     }
 
     return brc;

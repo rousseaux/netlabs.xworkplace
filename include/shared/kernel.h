@@ -133,32 +133,9 @@
 
         typedef struct _KERNELGLOBALS
         {
-            // Desktop startup date and time (initMain)
-            DATETIME            StartupDateTime;
-
             // PM error windows queried by initMain
             HWND                hwndHardError,
                                 hwndSysError;
-
-            ULONG               ulPanicFlags;
-                    // flags set by the "panic" dialog if "Shift"
-                    // was pressed during startup.
-                    // Per default, this field is set to zero,
-                    // but if the user disables something in the
-                    // "Panic" dialog, this may have any of the
-                    // following flags:
-                    // -- SUF_SKIPBOOTLOGO: skip boot logo
-                    // -- SUF_SKIPXFLDSTARTUP: skip XFldStartup processing
-                    // -- SUF_SKIPQUICKOPEN: skip "quick open" folder processing
-                    #ifndef __NOBOOTLOGO__
-                        #define SUF_SKIPBOOTLOGO            0x0001  // skip boot logo
-                    #endif
-                    #ifndef __NOXWPSTARTUP__
-                        #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
-                    #endif
-                    #ifndef __NOQUICKOPEN__
-                        #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
-                    #endif
 
             /*
              * XWorkplace daemon
@@ -191,40 +168,6 @@
             HWND                hwndAPIObject;  // V0.9.9 (2001-03-23) [umoeller]
 
             /*
-             * Worker thread:
-             *      this thread is always running.
-             */
-
-            // HWND                hwndWorkerObject;
-
-            // here comes the linked list to remember all objects which
-            // have been awakened by the WPS; this list is maintained
-            // by the Worker thread and evaluated during XShutdown
-
-            // root of this linked list; this holds plain
-            // WPObject* pointers and is created in initMain
-            // with lstCreate(FALSE)
-            // PVOID               pllAwakeObjects;
-                    // this has changed with V0.90; this is actually a PLINKLIST,
-                    // but since not all source files have #include'd linklist.h,
-                    // we declare this as PVOID to avoid compilation errors.
-
-                    // V0.9.9 (2001-04-04) [umoeller]: moved this to xthreads.c
-
-            // mutex semaphore for access to this list
-            // HMTX                hmtxAwakeObjects;
-                    // V0.9.9 (2001-04-04) [umoeller]: moved this to xthreads.c
-
-            // count of currently awake objects
-            // LONG                lAwakeObjectsCount;
-                    // V0.9.9 (2001-04-04) [umoeller]: moved this to xthreads.c
-
-            // address of awake WarpCenter; stored by Worker
-            // thread, read by Shutdown thread
-            // WPObject            *pAwakeWarpCenter;
-                    // removed V0.9.20 (2002-07-25) [umoeller]
-
-            /*
              * Bush thread:
              *      this thread is always running.
              */
@@ -251,15 +194,6 @@
                                     // stopped and the sentinel was started.
                                     // Always use this setting instead of
                                     // calling krnReplaceRefreshEnabled.
-
-            /*
-             * Shutdown threads:
-             *      the following threads are only running
-             *      while XShutdown is in progress.
-             */
-
-            // BOOL                fShutdownRunning;
-                    // removbed V0.9.16 (2001-11-22) [umoeller]
 
             // desktop already populated?
             BOOL                fDesktopPopulated;

@@ -661,7 +661,7 @@ STATIC BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
  *@@ DumpSwitchList:
  *      puts the current switch list entries into the listbox.
  *
- *@@changed V0.9.21 (2002-09-26) [kai]: remove CRLFs from switchlist title
+ *@@changed V1.0.1 (2002-09-26) [kai]: remove CRLFs from switchlist title
  */
 
 STATIC VOID DumpSwitchList(HWND hwnd)
@@ -1289,7 +1289,7 @@ STATIC PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
  *      and now matches a filter.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
- *@@changed V0.9.21 (2002-09-26) [kai]: remove CRLFs from switchlist title
+ *@@changed V1.0.1 (2002-09-26) [kai]: remove CRLFs from switchlist title
  */
 
 STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
@@ -1359,7 +1359,7 @@ STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
  *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
  *@@changed V0.9.12 (2001-04-28) [umoeller]: didn't pick up changes in the filters, fixed
  *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten to use XWPDAEMN
- *@@changed V0.9.21 (2002-09-26) [kai]: remove CRLFs from switchlist title
+ *@@changed V1.0.1 (2002-09-26) [kai]: remove CRLFs from switchlist title
  */
 
 STATIC VOID ScanSwitchList(HWND hwndWidget,

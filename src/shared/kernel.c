@@ -761,12 +761,10 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
     {
         if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
         {
-            if (pKernelGlobals->pXwpGlobalShared)
-            {
-                // cast PVOID
-                PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
+            // cast PVOID
+            PXWPGLOBALSHARED pXwpGlobalShared;
+            if (pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared)
                 pXwpGlobalShared->fProcessStartupFolder = fReuse;
-            }
         }
     }
     CATCH(excpt1) {} END_CATCH();
