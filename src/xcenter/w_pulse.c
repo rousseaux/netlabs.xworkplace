@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -741,6 +741,7 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip refresh
+ *@@changed V0.9.14 (2001-07-12) [umoeller]: fixed sporadic crash on some systems
  */
 
 VOID PwgtUpdateGraph(HWND hwnd,
@@ -765,8 +766,6 @@ VOID PwgtUpdateGraph(HWND hwnd,
     {
         HPS     hpsMem = pPrivate->pBitmap->hpsMem;
         PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
-        LONG    lLoad1000 = pPrivate->pPerfData->palLoads[0],
-                lIRQ1000 = pPrivate->pPerfData->palIntrs[0];
 
         // fill the bitmap rectangle
         GpiSetColor(hpsMem,
@@ -775,58 +774,63 @@ VOID PwgtUpdateGraph(HWND hwnd,
                 DRO_FILL,
                 &rclBmp);
 
-        // go thru all values in the "Loads" LONG array
-        for (ptl.x = 0;
-             ((ptl.x < pPrivate->cLoads) && (ptl.x < rclBmp.xRight));
-             ptl.x++)
+        if (pPrivate->pPerfData && pPrivate->cLoads)    // V0.9.14 (2001-07-12) [umoeller]
         {
-            ptl.y = 0;
+            LONG    lLoad1000 = pPrivate->pPerfData->palLoads[0],
+                    lIRQ1000 = pPrivate->pPerfData->palIntrs[0];
 
-            // interrupt load on bottom
-            if (pPrivate->palIntrs)
+            // go thru all values in the "Loads" LONG array
+            for (ptl.x = 0;
+                 ((ptl.x < pPrivate->cLoads) && (ptl.x < rclBmp.xRight));
+                 ptl.x++)
             {
-                GpiSetColor(hpsMem,
-                            pPrivate->Setup.lcolGraphIntr);
-                // go thru all values in the "Interrupt Loads" LONG array
-                // Note: number of "loads" entries and "intrs" entries is the same
-                GpiMove(hpsMem, &ptl);
-                ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
-                GpiLine(hpsMem, &ptl);
-            }
+                ptl.y = 0;
 
-            // scan the CPU loads
-            if (pPrivate->palLoads)
-            {
-                GpiSetColor(hpsMem,
-                            pPrivate->Setup.lcolGraph);
-                GpiMove(hpsMem, &ptl);
-                ptl.y += rclBmp.yTop * pPrivate->palLoads[ptl.x] / 1000;
-                GpiLine(hpsMem, &ptl);
-            }
-        } // end if (fLocked)
+                // interrupt load on bottom
+                if (pPrivate->palIntrs)
+                {
+                    GpiSetColor(hpsMem,
+                                pPrivate->Setup.lcolGraphIntr);
+                    // go thru all values in the "Interrupt Loads" LONG array
+                    // Note: number of "loads" entries and "intrs" entries is the same
+                    GpiMove(hpsMem, &ptl);
+                    ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
+                    GpiLine(hpsMem, &ptl);
+                }
 
-        // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
-        sprintf(pPrivate->szTooltipText,
-                "CPU load"                  // @@todo localize
-                "\nUser: %lu%c%lu%c"
-                "\nIRQ: %lu%c%lu%c",
-                lLoad1000 / 10,
-                pCountrySettings->cDecimal,
-                lLoad1000 % 10,
-                '%',
-                lIRQ1000 / 10,
-                pCountrySettings->cDecimal,
-                lIRQ1000 % 10,
-                '%');
+                // scan the CPU loads
+                if (pPrivate->palLoads)
+                {
+                    GpiSetColor(hpsMem,
+                                pPrivate->Setup.lcolGraph);
+                    GpiMove(hpsMem, &ptl);
+                    ptl.y += rclBmp.yTop * pPrivate->palLoads[ptl.x] / 1000;
+                    GpiLine(hpsMem, &ptl);
+                }
+            } // end if (fLocked)
 
-        if (pPrivate->fTooltipShowing)
-            // tooltip currently showing:
-            // refresh its display
-            WinSendMsg(pWidget->pGlobals->hwndTooltip,
-                       TTM_UPDATETIPTEXT,
-                       (MPARAM)pPrivate->szTooltipText,
-                       0);
+            // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
+            sprintf(pPrivate->szTooltipText,
+                    "CPU load"                  // @@todo localize
+                    "\nUser: %lu%c%lu%c"
+                    "\nIRQ: %lu%c%lu%c",
+                    lLoad1000 / 10,
+                    pCountrySettings->cDecimal,
+                    lLoad1000 % 10,
+                    '%',
+                    lIRQ1000 / 10,
+                    pCountrySettings->cDecimal,
+                    lIRQ1000 % 10,
+                    '%');
 
+            if (pPrivate->fTooltipShowing)
+                // tooltip currently showing:
+                // refresh its display
+                WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                           TTM_UPDATETIPTEXT,
+                           (MPARAM)pPrivate->szTooltipText,
+                           0);
+        }
     }
 
     pPrivate->fUpdateGraph = FALSE;

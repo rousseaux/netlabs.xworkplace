@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -421,10 +421,6 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
  *      made dormant or being deleted. All allocated resources
  *      should be freed here.
  *      The parent method must always be called last.
- */
-
-/*
- * wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
  */
 
 SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)

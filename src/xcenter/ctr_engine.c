@@ -191,6 +191,11 @@ static LINKLIST                 G_llWorkAreaViews;
 static HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
                                     // mutex protecting that list;
 
+static ULONG                    G_ulWidgetFromXY = 0;
+                                    // MB1/MB2 drag about to happen?
+static BOOL                     G_fSizeable = FALSE;
+static PWIDGETVIEWSTATE         G_pViewOver = NULL;
+
 /* ******************************************************************
  *
  *   Built-in widgets
@@ -1225,6 +1230,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
  *@@added V0.9.7 (2000-12-07) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: rewritten, prototype changed
  *@@changed V0.9.12 (2001-05-20) [umoeller]: moved show dlg outside locks
+ *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed possible null dereference
  */
 
 VOID ctrpShowSettingsDlg(XCenter *somSelf,
@@ -1314,7 +1320,8 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
         if (hwndOwner)
             WinEnableWindow(hwndOwner, TRUE);
 
-        pXCenterData->fShowingSettingsDlg = FALSE;
+        if (pXCenterData) // V0.9.14 (2001-07-14) [lafaix]
+            pXCenterData->fShowingSettingsDlg = FALSE;
     }
 }
 
@@ -3456,30 +3463,23 @@ MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
 }
 
 /*
- *@@ ClientButton12Down:
+ *@@ ClientButton12Drag:
  *      implementation for WM_BUTTON1DOWN and WM_BUTTON2DOWN
  *      in fnwpXCenterMainClient.
  *
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added XCenter resize
  */
 
-MRESULT ClientButton12Down(HWND hwnd, MPARAM mp1)
+MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     SHORT           sx = SHORT1FROMMP(mp1);
     SHORT           sy = SHORT2FROMMP(mp1);
-    PWIDGETVIEWSTATE pViewOver = NULL;
-    BOOL            fSizeable = FALSE;
+    PWIDGETVIEWSTATE pViewOver = G_pViewOver;
+    BOOL            fSizeable = G_fSizeable;
 
-    ULONG   ulrc = FindWidgetFromClientXY(pXCenterData,
-                                          NULLHANDLE,       // tray widget
-                                          sx,
-                                          sy,
-                                          &fSizeable,
-                                          &pViewOver,
-                                          NULL);
-    if (ulrc == 2)
+    if (G_ulWidgetFromXY == 2)
     {
         // mouse over sizing border:
         // resize XCenter's height then V0.9.9 (2001-03-09) [umoeller]
@@ -3499,8 +3499,8 @@ MRESULT ClientButton12Down(HWND hwnd, MPARAM mp1)
         memset(&ti, 0, sizeof(ti));
         ti.cxBorder = max(1, pGlobals->ulBorderSpacing); // V0.9.12 (2001-05-28) [lafaix]
         ti.cyBorder = max(1, pGlobals->ulBorderSpacing); // V0.9.12 (2001-05-28) [lafaix]
-        ti.cxGrid = 0;
-        ti.cyGrid = 0;
+        // ti.cxGrid = 0; V0.9.14 (2001-07-14) [lafaix]
+        // ti.cyGrid = 0;
         ti.rclTrack.xLeft = swpXCenter.x;
         ti.rclTrack.xRight = swpXCenter.x + swpXCenter.cx;
         ti.rclTrack.yBottom = swpXCenter.y;
@@ -3549,7 +3549,7 @@ MRESULT ClientButton12Down(HWND hwnd, MPARAM mp1)
                          XFMF_RECALCHEIGHT);
         }
     }
-    else if (    (ulrc == 1)
+    else if (    (G_ulWidgetFromXY == 1)
               && (fSizeable)
             )
     {
@@ -3597,8 +3597,10 @@ MRESULT ClientButton12Down(HWND hwnd, MPARAM mp1)
             }
         }
     }
+    else
+        return ((MPARAM)FALSE); // V0.9.14 (2001-07-14) [lafaix]
 
-    return ((MPARAM)TRUE);      // message processed
+     return ((MPARAM)TRUE);      // message processed
 }
 
 /*
@@ -3797,6 +3799,7 @@ BOOL ClientSaveSetup(HWND hwndClient,
  *
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy
+ *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed MB2 click on border/resizing bar
  */
 
 MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3865,7 +3868,29 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             case WM_BUTTON1DOWN:
             case WM_BUTTON2DOWN:
-                mrc = ClientButton12Down(hwnd, mp1);
+            {
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                G_fSizeable = FALSE;
+                G_pViewOver = NULL;
+                G_ulWidgetFromXY = FindWidgetFromClientXY(pXCenterData,
+                                                          NULLHANDLE,
+                                                          SHORT1FROMMP(mp1),
+                                                          SHORT2FROMMP(mp1),
+                                                          &G_fSizeable,
+                                                          &G_pViewOver,
+                                                          NULL);
+                mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+            break; }
+
+            /*
+             * WM_BUTTON1MOTIONSTART:
+             * WM_BUTTON2MOTIONSTART:
+             *
+             */
+
+            case WM_BUTTON1MOTIONSTART:
+            case WM_BUTTON2MOTIONSTART: // V0.9.14 (2001-07-14) [lafaix]
+                mrc = ClientButton12Drag(hwnd, mp1);
             break;
 
             /*
@@ -4576,6 +4601,8 @@ VOID FreeSettingData(PPRIVATEWIDGETSETTING pSetting)
  *      current tray.
  *
  *      This does not save the widget settings.
+ *
+ *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
 PTRAYSETTING ctrpCreateTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
@@ -4613,6 +4640,8 @@ PTRAYSETTING ctrpCreateTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widg
  *      first, if it is.
  *
  *      This does not save the widget settings.
+ *
+ *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
 BOOL ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
@@ -4658,6 +4687,8 @@ BOOL ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setti
  *      tray. Does not create a subwidget window though.
  *
  *      This does not save the widget settings.
+ *
+ *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
 PTRAYSUBWIDGET ctrpCreateWidgetSetting(PTRAYSETTING pTray,              // in: tray to create subwidget in
@@ -4701,6 +4732,8 @@ PTRAYSUBWIDGET ctrpCreateWidgetSetting(PTRAYSETTING pTray,              // in: t
  *      Preconditions:
  *
  *      -- The subwidget's window must have been destroyed first.
+ *
+ *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
 BOOL ctrpDeleteWidgetSetting(PTRAYSUBWIDGET pSubwidget)     // in: subwidget to delete
@@ -4714,10 +4747,6 @@ BOOL ctrpDeleteWidgetSetting(PTRAYSUBWIDGET pSubwidget)     // in: subwidget to 
     {
         // now clean up
         FreeSettingData(&pSubwidget->Setting);
-        /* if (pSubwidget->Setting.Public.pszWidgetClass)
-            free(pSubwidget->Setting.Public.pszWidgetClass);
-        if (pSubwidget->Setting.Public.pszSetupString)
-            free(pSubwidget->Setting.Public.pszSetupString); */
 
         free(pSubwidget);
 

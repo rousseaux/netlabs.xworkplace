@@ -17,6 +17,11 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
+archiving:
+   --  I have archiving enabled when ini files have changed 5%. Just now I rebooted and a
+       dialog came up saying "ini files changed 0.000000%, limit 5.000000%" upon which it
+       started the archive process. This seems to be a bug, doesn't it?
+
 documentation:
     -- some subsections in the TOC of the user guide are currently
        sorted wrong. This will be fixed in the next release, didn't
@@ -44,6 +49,17 @@ prog start:
     --  cmd files not started minimized?
 
 XCenter:
+    --  if widget class is broken "wanna remove" msg displays garbage
+        and doesn't work if yes is pressed.
+
+    --  adding pulse traps (traytrap.log
+
+    --  trays: no settings dialogs from member widget menus
+
+    --  trays: cycle when clicking on whitespace
+
+    --  if XCenter on top, menus show up wrong way
+
     --  tray widgets drag'n'drop doesn't work yet
 
     --  winlist widget behavior: make buttons wider (configurable)

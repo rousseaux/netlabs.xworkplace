@@ -198,14 +198,13 @@ static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
 BOOL ftypLockCaches(VOID)
 {
     BOOL    brc = FALSE;
-    if (G_hmtxAssocsCaches == NULLHANDLE)
+    if (!G_hmtxAssocsCaches)
     {
         // first call:
-        brc = (DosCreateMutexSem(NULL,
-                                 &G_hmtxAssocsCaches,
-                                 0,
-                                 TRUE)     // lock!
-                     == NO_ERROR);
+        brc = (!DosCreateMutexSem(NULL,
+                                  &G_hmtxAssocsCaches,
+                                  0,
+                                  TRUE));     // lock!
         if (brc)
         {
             lstInit(&G_llTypesWithFilters,
@@ -230,23 +229,6 @@ VOID ftypUnlockCaches(VOID)
 {
     DosReleaseMutexSem(G_hmtxAssocsCaches);
 }
-
-/*
- * TraverseWPSTypes:
- *      traversal function for treeTraverse (tree.c)
- *      to add all tree nodes to a linked list so
- *      we can delete all tree nodes quickly.
- *
- *added V0.9.9 (2001-02-06) [umoeller]
- *removed V0.9.12 (2001-05-31) [umoeller], no longer needed
- */
-
-/* void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
-                      void *pUser)      // in: PLINKLIST to add to
-{
-    lstAppendItem((PLINKLIST)pUser,
-                  t);
-} */
 
 /*
  *@@ ftypInvalidateCaches:
@@ -330,6 +312,7 @@ VOID ftypInvalidateCaches(VOID)
             // reset the tree root
             treeInit(&G_WPSTypeAssocsTreeRoot);
             G_cWPSTypeAssocsTreeItems = 0;
+
             G_fWPSTypesValid = FALSE;
         }
 
@@ -410,38 +393,6 @@ PLINKLIST GetCachedTypesWithFilters(VOID)
 
     return (&G_llTypesWithFilters);
 }
-
-/*
- *@@ CompareWPSTypes:
- *      tree node comparison func (helpers\tree.c).
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-/* int TREEENTRY CompareWPSTypes(TREE *t1, TREE *t2)
-{
-    int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
-                   ((PWPSTYPEASSOCTREENODE)t2)->pszType);
-    if (i < 0) return -1;
-    if (i > 0) return +1;
-    return (0);
-} */
-
-/*
- *@@ CompareWPSTypeData:
- *      tree node comparison func (helpers\tree.c).
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-/* int TREEENTRY CompareWPSTypeData(TREE *t1, void *pData)
-{
-    int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
-                   (const char*)pData);
-    if (i < 0) return -1;
-    if (i > 0) return +1;
-    return (0);
-} */
 
 /*
  *@@ CompareTypeStrings:

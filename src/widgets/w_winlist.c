@@ -1803,9 +1803,9 @@ MRESULT WwgtCreate(HWND hwnd,
 
     // start update timer
     pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
-                                         hwnd,
-                                         1,
-                                         300);
+                                          hwnd,
+                                          1,
+                                          250);
 
     return (mrc);
 }

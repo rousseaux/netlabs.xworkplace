@@ -813,15 +813,15 @@ typedef struct _HOTKEYSPAGEDATA
  *
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
+ *@@changed V0.9.14 (2001-07-07) [pr]: fixed container font
  */
 
 VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOTKEYSPAGEDATA pPageData = 0;
         XFIELDINFO      xfi[7];
         PFIELDINFO      pfi = NULL;
@@ -850,6 +850,11 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
                                   HWND_TOP,
                                   ID_XFDI_CNR_CNR,
                                   NULL, NULL);
+        if (pGlobalSettings->fUse8HelvFont)  // V0.9.14
+            winhSetControlsFont(pcnbp->hwndDlgPage,
+                                ID_XFDI_CNR_CNR,
+                                ID_XFDI_CNR_CNR,
+                                "8.Helv");
         WinShowWindow(hwndCnr, TRUE);
 
         // set up cnr details view

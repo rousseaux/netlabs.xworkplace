@@ -227,8 +227,9 @@ APIRET UnlockSubjects(VOID)
 PSUBJECTTREENODE FindSubjectInfoFromHandle(HXSUBJECT hSubject)
 {
     PSUBJECTTREENODE pTreeItem
-        = (PSUBJECTTREENODE)treeFindEQID(&G_treeSubjects,
-                                         hSubject);
+        = (PSUBJECTTREENODE)treeFind(G_treeSubjects,
+                                     hSubject,
+                                     treeCompareKeys);
 
     return (pTreeItem);
 }
@@ -255,7 +256,7 @@ PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: SUBJ_USER, SUBJ_
 {
     PSUBJECTTREENODE p = NULL;
 
-    PSUBJECTTREENODE pNode = treeFirst(G_treeSubjects);
+    PSUBJECTTREENODE pNode = (PSUBJECTTREENODE)treeFirst(G_treeSubjects);
     while (pNode)
     {
         PXWPSUBJECTINFO psi = &pNode->SubjectInfo;
@@ -266,7 +267,7 @@ PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: SUBJ_USER, SUBJ_
             break;
         }
 
-        pNode = treeNext((TREE*)pNode);
+        pNode = (PSUBJECTTREENODE)treeNext((TREE*)pNode);
     }
 
     return (p);
@@ -372,12 +373,12 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
                     ulNewSubjectHandle = G_ulNextHSubject++;
 
                 // set key
-                pNewSubject->Tree.id = ulNewSubjectHandle;
+                pNewSubject->Tree.ulKey = ulNewSubjectHandle;
 
                 // append new item
-                if (treeInsertID(&G_treeSubjects,
-                                 (TREE*)pNewSubject,
-                                 FALSE))
+                if (treeInsert(&G_treeSubjects,
+                               (TREE*)pNewSubject,
+                               treeCompareKeys))
                 {
                     arc = XWPSEC_INTEGRITY;
                     free(pNewSubject);

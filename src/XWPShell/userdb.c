@@ -308,8 +308,8 @@ APIRET CreateUser(PXWPUSERDB pDB,
         arc = ERROR_NOT_ENOUGH_MEMORY;
     else
     {
-        const XSTRING *pstrUserID = xmlGetAttribute(pUserElementThis,
-                                                    "USERID");
+        const XSTRING *pstrUserID  = xmlGetAttribute(pUserElementThis,
+                                                     "USERID");
         const XSTRING *pstrGroupID = xmlGetAttribute(pUserElementThis,
                                                      "GROUPID");
         const XSTRING *pstrName    = xmlGetAttribute(pUserElementThis,

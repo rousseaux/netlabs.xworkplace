@@ -55,7 +55,8 @@
 
 typedef struct _CONTEXTTREENODE
 {
-    TREE        Tree;               // tree item (required for tree* to work)
+    TREE        Tree;               // tree item (required for tree* to work);
+                                    // ID has the PID
     XWPSECURITYCONTEXT Context;     // security context
 } CONTEXTTREENODE, *PCONTEXTTREENODE;
 
@@ -152,8 +153,10 @@ APIRET UnlockContexts(VOID)
 
 PCONTEXTTREENODE FindContextFromPID(ULONG ulPID)
 {
-    PCONTEXTTREENODE pTreeItem = (PCONTEXTTREENODE)treeFindEQID(&G_treeContexts,
-                                                                ulPID);
+    PCONTEXTTREENODE pTreeItem = (PCONTEXTTREENODE)treeFind(G_treeContexts,
+                                                            ulPID,
+                                                            treeCompareKeys);
+
 
     return (pTreeItem);
 }
@@ -201,16 +204,15 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
             {
                 int i = 0;
 
-                pContextItem->Tree.id = ulPID;
+                pContextItem->Tree.ulKey = ulPID;
 
                 pContextItem->Context.ulPID = ulPID;
                 pContextItem->Context.hsubjUser = hsubjUser;
                 pContextItem->Context.hsubjGroup = hsubjGroup;
 
-                i = treeInsertID(&G_treeContexts,
-                                 (TREE*)pContextItem,
-                                 FALSE);      // no duplicates
-                if (i != TREE_OK)
+                if (treeInsert(&G_treeContexts,
+                               (TREE*)pContextItem,
+                               treeCompareKeys))
                     // shouldn't happen
                     arc = XWPSEC_INTEGRITY;
                 else
@@ -252,9 +254,8 @@ APIRET scxtDeleteSecurityContext(ULONG ulPID)
             arc = XWPSEC_INVALID_PID;
         else
         {
-            int i = treeDelete(&G_treeContexts,
-                               (TREE*)pContextItem);
-            if (i != TREE_OK)
+            if (treeDelete(&G_treeContexts,
+                           (TREE*)pContextItem))
                 // shouldn't happen
                 arc = XWPSEC_INTEGRITY;
             else
@@ -318,7 +319,7 @@ APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext)
  *      is running.
  */
 
-typedef struct _ENUMCONTEXTS
+/* typedef struct _ENUMCONTEXTS
 {
     HXSUBJECT           hsubjUser;
 
@@ -327,14 +328,14 @@ typedef struct _ENUMCONTEXTS
     ULONG               ulMax;
 
     APIRET              arc;
-} ENUMCONTEXTS, *PENUMCONTEXTS;
+} ENUMCONTEXTS, *PENUMCONTEXTS; */
 
 /*
  * fnEnumContexts:
  *
  */
 
-void fnEnumContexts(TREE *t,
+/* void fnEnumContexts(TREE *t,
                     void *pUser)
 {
     PCONTEXTTREENODE pContextItem = (PCONTEXTTREENODE)t;
@@ -353,7 +354,7 @@ void fnEnumContexts(TREE *t,
         else
             pEnum->arc = XWPSEC_INTEGRITY;
     }
-}
+} */
 
 /*
  *@@ scxtEnumSecurityContexts:
@@ -398,23 +399,33 @@ APIRET scxtEnumSecurityContexts(HXSUBJECT hsubjUser,
                 arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
-                ENUMCONTEXTS Enum;
+                ULONG   cCount = 0;
+                PXWPSECURITYCONTEXT pContextThis = paContexts;
 
-                Enum.hsubjUser = hsubjUser;
-                Enum.pContextThis = paContexts;
-                Enum.cCount = 0;
-                Enum.ulMax = G_cContexts;
-                Enum.arc = NO_ERROR;
+                TREE *t = treeFirst(G_treeContexts);
+                while (t && !arc)
+                {
+                    if (    (hsubjUser == 0)     // enumerate all?
+                         || (hsubjUser == ((PCONTEXTTREENODE)t)->Context.hsubjUser)
+                       )
+                    {
+                        // security check:
+                        if (cCount++ < G_cContexts)
+                        {
+                            memcpy(pContextThis,
+                                   &(((PCONTEXTTREENODE)t)->Context),
+                                   sizeof(XWPSECURITYCONTEXT));
+                            pContextThis++;
+                        }
+                        else
+                            arc = XWPSEC_INTEGRITY;
+                    }
 
-                treeTraverse(G_treeContexts,
-                             fnEnumContexts,
-                             &Enum,
-                             1);
+                    t = treeNext(t);
+                }
 
                 *ppaContexts = paContexts;
-                *pulCount = Enum.cCount;
-
-                arc = Enum.arc;
+                *pulCount = cCount;
             }
         }
     }

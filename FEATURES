@@ -10,6 +10,9 @@ entry; start a new VIO window, and change it back to the original value. I wrote
 script that does this - it's part of my INF file REXX Tips & Tricks. The only strange thing
 is, that the name of the key is language dependent.
 
+--  Win32 icon support (shell32\shell32_main.c in odin)
+    user32\oslibres.cpp, OSLibWinCreatePointer
+
 XCenter:
     --  more options for winlist... button size, minimize behavior.
     --  winlist: edit filter entries (instead of remove and add).

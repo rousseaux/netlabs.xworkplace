@@ -215,6 +215,15 @@
 typedef struct _ACLDBENTRYNODE
 {
     TREE        Tree;
+            // base tree node; "ulkey" is a PSZ to the resource name
+
+    // PSZ         pszName;
+            // name of the resource to which this entry applies
+            // (in a new buffer allocated with malloc());
+            // one of the following:
+            // -- ACLTYPE_DRIVE:        the drive name (e.g. "G:")
+            // -- ACLTYPE_DIRECTORY     the capitalized directory name (e.g. "DESKTOP")
+            // -- ACLTYPE_FILE          the capitalized file name (e.g. "INDEX.HTML")
 
     ULONG       ulType;
             // one of the following:
@@ -226,14 +235,6 @@ typedef struct _ACLDBENTRYNODE
             // user ID (owner of resource)
     XWPSECID    gid;
             // group ID (owner of resource)
-
-    PSZ         pszName;
-            // name of the resource to which this entry applies
-            // (in a new buffer allocated with malloc());
-            // one of the following:
-            // -- ACLTYPE_DRIVE:        the drive name (e.g. "G:")
-            // -- ACLTYPE_DIRECTORY     the capitalized directory name (e.g. "DESKTOP")
-            // -- ACLTYPE_FILE          the capitalized file name (e.g. "INDEX.HTML")
 
     ULONG       ulUnixAccessRights;
             // Unix access rights flags as stored in ACL database;
@@ -349,29 +350,10 @@ APIRET UnlockACLs(VOID)
  *
  */
 
-int TREEENTRY fnCompareACLDBNames_Nodes(TREE *t1, TREE *t2)
+int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 {
-    int i;
-    i = strcmp( ((PACLDBENTRYNODE)t1)->pszName,
-                ((PACLDBENTRYNODE)t2)->pszName);
-    if (i < 0) return -1;
-    if (i > 0) return +1;
-    return (0);
-}
-
-/*
- *@@ fnCompareACLDBNames_Data:
- *
- */
-
-int TREEENTRY fnCompareACLDBNames_Data(TREE *t1, void *pName)
-{
-    int i;
-    i = strcmp( ((PACLDBENTRYNODE)t1)->pszName,
-                (PSZ)pName);
-    if (i < 0) return -1;
-    if (i > 0) return +1;
-    return (0);
+    return (strcmp((PSZ)ul1,
+                   (PSZ)ul2));
 }
 
 #ifdef _PMPRINTF_
@@ -517,7 +499,8 @@ ULONG G_aulRights[]          // rwxrwxrwx
 
 /*
  *@@ CreateACLDBEntry:
- *
+ *      creates a new ACLDB entry. pszName must have
+ *      been malloc'd.
  */
 
 APIRET CreateACLDBEntry(ULONG ulType,
@@ -540,7 +523,7 @@ APIRET CreateACLDBEntry(ULONG ulType,
         memset(pNewEntry, 0, sizeof(*pNewEntry));
 
         pNewEntry->ulType = ulType;
-        pNewEntry->pszName = pszName;
+        pNewEntry->Tree.ulKey = (ULONG)pszName;
         pNewEntry->uid = uid;
         pNewEntry->gid = gid;
 
@@ -574,10 +557,9 @@ APIRET CreateACLDBEntry(ULONG ulType,
             = ConvertUnix2XWP(GET_OTHER_RIGHTS(pNewEntry->ulUnixAccessRights),
                               ulType);
 
-        treeInsertNode(&G_treeACLDB,
-                       (TREE*)pNewEntry,
-                       fnCompareACLDBNames_Nodes,
-                       FALSE);
+        treeInsert(&G_treeACLDB,
+                   (TREE*)pNewEntry,
+                   fnCompareStrings);
         G_cACLDBEntries++;
 
         _Pmpf(("LoadACLDatabase: got entry \"%s\" -> 0x%lX",
@@ -729,10 +711,9 @@ APIRET LoadACLDatabase(PULONG pulLineWithError)
 
 PACLDBENTRYNODE FindACLDBEntry(const char *pcszName)
 {
-    PACLDBENTRYNODE pEntry = treeFindEQData(&G_treeACLDB,
-                                            (PVOID)pcszName,
-                                            fnCompareACLDBNames_Data);
-    return (pEntry);
+    return ((PACLDBENTRYNODE)treeFind(G_treeACLDB,
+                                      (ULONG)pcszName,
+                                      fnCompareStrings));
 }
 
 /* ******************************************************************
