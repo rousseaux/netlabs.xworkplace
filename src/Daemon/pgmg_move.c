@@ -114,13 +114,6 @@ BOOL pgmmMoveIt(LONG lXDelta,
     if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
-        // HWND        ahwndMoveList[MAX_WINDOWS];
-                    // here we build a second list of windows to be moved
-        // SWP         swp[MAX_WINDOWS];
-
-        // ULONG       ulMoveListCtr = 0;
-        // ULONG       usIdx = 0;
-
         // LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
         // LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
 

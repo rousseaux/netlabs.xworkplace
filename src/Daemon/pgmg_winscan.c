@@ -205,11 +205,11 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                     if (hswitch == NULLHANDLE)
                     {
                         // V0.9.7 (2001-01-23) [dk]
-                        ULONG ulQ = WinQueryWindowULong(pWinInfo->hwnd, QWL_STYLE);
+                        /* ULONG ulQ = WinQueryWindowULong(pWinInfo->hwnd, QWL_STYLE);
                         if (
                                 (!(ulQ & WS_VISIBLE))
                              || (ulQ & FCF_SCREENALIGN)  // netscape dialog
-                           )
+                           ) */
                             pWinInfo->bWindowType = WINDOW_RESCAN;
                     }
                     else
