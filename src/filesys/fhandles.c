@@ -185,7 +185,7 @@ BOOL fhdlUnlockHandles(VOID)
  *
  */
 
-VOID _System fhdlOnKill(VOID)
+VOID _System fhdlOnKill(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
 {
     fhdlUnlockHandles();
 }
@@ -208,7 +208,10 @@ BOOL fhdlLoadHandles(VOID)
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, fhdlOnKill)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
         fSemOwned = fhdlLockHandles(SEM_INDEFINITE_WAIT);
         if (fSemOwned)
@@ -268,6 +271,8 @@ BOOL fhdlLoadHandles(VOID)
 
     if (fSemOwned)
         fhdlUnlockHandles();
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }

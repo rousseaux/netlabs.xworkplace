@@ -47,7 +47,8 @@
                                     PULONG pulErrorCode);
 
     #ifdef SOM_WPDisk_h
-        WPFolder* wpshQueryRootFolder(WPDisk* somSelf, APIRET *parc);
+        WPFolder* wpshQueryRootFolder(WPDisk* somSelf, BOOL bForceMap,
+                                      APIRET *parc);
     #endif
 
     #ifdef SOM_WPFolder_h
@@ -119,6 +120,37 @@
     #else
         #define wpshIdentifyRestoreID(psz, ul) ""
         #define wpshDumpTaskRec(somSelf, pszMethodName, pTaskRec)
+    #endif
+
+    /* ******************************************************************
+     *
+     *   Object locks
+     *
+     ********************************************************************/
+
+    #ifdef EXCEPT_HEADER_INCLUDED
+
+        /*
+         *@@ WPSHLOCKSTRUCT:
+         *      structure used with wpshLockObject. This
+         *      must be on the function's stack. See
+         *      wpshLockObject for usage.
+         *
+         *@@added V0.9.7 (2000-12-08) [umoeller]
+         */
+
+        typedef struct _WPSHLOCKSTRUCT
+        {
+            EXCEPTSTRUCT    ExceptStruct;       // exception struct from helpers\except.h
+            BOOL            fLocked;            // TRUE if object was locked
+            ULONG           ulNesting;          // for DosEnter/ExitMustComplete
+        } WPSHLOCKSTRUCT, *PWPSHLOCKSTRUCT;
+
+        BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
+                            WPObject *somSelf);
+
+        BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock);
+
     #endif
 
     /* ******************************************************************

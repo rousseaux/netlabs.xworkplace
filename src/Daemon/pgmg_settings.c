@@ -19,11 +19,16 @@
  *      GNU General Public License for more details.
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
-#define INCL_WIN
-#define INCL_GPI
+
+#define INCL_WININPUT
+#define INCL_WINSYS
+#define INCL_WINSHELLDATA
 #include <os2.h>
+
 #include <stdio.h>
 #include <process.h>
 

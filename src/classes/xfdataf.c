@@ -104,7 +104,7 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\program.h"            // program implementation
 
 // other SOM headers
@@ -301,7 +301,8 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                                                       "wpModifyMenu");
 
     if (!_parent_wpModifyMenu)
-        CMN_LOG(("wpshParentNumResolve failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "wpshParentNumResolve failed.");
     else
     {
         // call parent method
@@ -377,7 +378,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
  *      We don't need a wpMenuItemSelected method override
  *      for data files, because the new menu items are
  *      completely handled by the subclassed folder frame
- *      window procedure by calling the functions in menus.c.
+ *      window procedure by calling the functions in fdrmenus.c.
  */
 
 SOM_Scope BOOL  SOMLINK xfdf_wpModifyPopupMenu(XFldDataFile *somSelf,
@@ -418,7 +419,7 @@ SOM_Scope BOOL  SOMLINK xfdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpMenuItemHelpSelected");
 
-    // call the common help processor in menus.c;
+    // call the common help processor in fdrmenus.c;
     if (mnuMenuItemHelpSelected(somSelf, MenuId))
         // if this returns TRUE, help was requested for one
         // of the new menu items
@@ -786,7 +787,8 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
             // on Warp 4, override wpModifyMenu (Warp 4-specific method)
             somidMethod = somIdFromString("wpModifyMenu");
             if (!somidMethod)
-                CMN_LOG(("xfobjM_somClassReady: Cannot get id for wpModifyMenu"));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "xfobjM_somClassReady: Cannot get id for wpModifyMenu");
             else
             {
                 _somOverrideSMethod(somSelf,

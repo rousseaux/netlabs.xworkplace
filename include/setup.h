@@ -157,10 +157,27 @@
             // #define DEBUG_TRASHCAN
     #endif
 
+    /*************************************************************
+     *
+     *   Common helpers declarations
+     *
+     *************************************************************/
+
+    // XWPEXPORT defines the standard linkage for the
+    // XWorkplace helpers.
+
+    #ifdef __EMX__
+        #define XWPENTRY
+    #else
+        #ifdef __IBMC__
+            #define XWPENTRY _Optlink
+        #endif
+    #endif
+
     /********************************************************************
-     *                                                                  *
-     *   Global #include's                                              *
-     *                                                                  *
+     *
+     *   Global #include's
+     *
      ********************************************************************/
 
     #ifdef OS2_INCLUDED
@@ -206,7 +223,7 @@
     #ifdef __DEBUG__
         // enable memory debugging; comment out this line
         // if you don't want it
-        #define __XWPMEMDEBUG__
+        // #define __XWPMEMDEBUG__
 
         #include "helpers\memdebug.h"
     #endif

@@ -69,7 +69,6 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-// #define INCL_DOS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
@@ -274,13 +273,15 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
             {
                 if (!lstRemoveItem(G_pllOpenPages,
                                    pcnbp->pnbli))
-                    CMN_LOG(("lstRemoveItem returned FALSE."));
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "lstRemoveItem returned FALSE.");
                         // this free's the pnbli
                 DosReleaseMutexSem(G_hmtxNotebookLists);
                 *pfSemOwned = FALSE;
             }
             else
-                CMN_LOG(("hmtxNotebookLists request failed."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxNotebookLists request failed.");
         }
 
         // free allocated user memory
@@ -1148,7 +1149,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                 mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
         }
         else
-            CMN_LOG(("hmtxNotebookLists mutex request failed"));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "hmtxNotebookLists mutex request failed");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1276,29 +1278,54 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      --  ULONG  ulExtra:            additional control data.
  *
  *      <B>ulExtra</B> has the following:
- *      -- For checkboxes and radiobuttons (BN_CLICKED), this is
- *         the new selection state of the control (0 or 1, or, for
- *         tri-state checkboxes, possibly 2).
+ *
+ *      -- For checkboxes (BN_CLICKED), this is the new selection state
+ *         of the control (0 or 1, or, for tri-state checkboxes, possibly 2).
+ *
+ *      -- For radio buttons (BN_CLICKED), only the radio button that
+ *         got selected gets a callback with ulExtra == 1. The other radio
+ *         buttons in the group (which got unchecked) do not produce
+ *         messages.
+ *
  *      -- For pushbuttons (WM_COMMAND message), this contains
  *         the mp2 of WM_COMMAND (usSourceType, usPointer).
+ *
  *      -- For spinbuttons, this contains the new LONG value if
  *         a value has changed. This works for numerical spinbuttons only.
+ *
  *      -- Container CN_EMPHASIS: has the new selected record
  *                    (only if CRA_SELECTED changed).
+ *
  *      -- Container CN_CONTEXTMENU: has the record core (mp2);
  *                    rclMenuMousePos has the mouse position.
+ *
  *      -- Container CN_INITDRAG or
  *                   CN_PICKUP:   has the PCNRDRAGINIT (mp2).
+ *
  *      -- Container CN_DRAGOVER,
  *                   CN_DROP:     has the PCNRDRAGINFO (mp2).
+ *
  *      -- Container CN_DROPNOTIFY: has the PCNRLAZYDRAGINFO (mp2).
+ *
  *      -- For circular and linear sliders (CSN_CHANGED or CSN_TRACKING),
  *                this has the new slider value.
+ *
  *      -- For all other controls/messages, this is always -1.
  *
  *      Whatever the "item changed" callback returns will be the
  *      return value ntb_fnwpPageCommon. Normally, you should return 0,
  *      except for the container d'n'd messages.
+ *
+ *      A couple of remarks about using this on radio buttons...
+ *      If radio buttons just won't work in your dialog:
+ *
+ *      --  Make sure that the first radio button has the WS_GROUP style,
+ *          and the first item _after_ the radio buttons has the WS_GROUP
+ *          style as well.
+ *
+ *      --  The group of radio buttons should not appear at the top of the
+ *          dialog. PM just keeps sending the wrong BN_CLICKED things if
+ *          radio buttons are on top. I think this is a PM bug.
  *
  *      <B>Implementing an "Undo" button</B>
  *
@@ -1465,7 +1492,8 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                 }
             } // end if (fSemOwned)
             else
-                CMN_LOG(("hmtxNotebookLists mutex request failed"));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxNotebookLists mutex request failed");
         }
         else
             winhDebugBox(HWND_DESKTOP,
@@ -1550,7 +1578,8 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
                     }
             } // end if (fSemOwned)
             else
-                CMN_LOG(("hmtxNotebookLists mutex request failed"));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxNotebookLists mutex request failed");
         } // end if (pllOpenPages)
     }
     CATCH(excpt1) { } END_CATCH();

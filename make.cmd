@@ -55,7 +55,7 @@ mydir = directory();
 Say "***********************************************"
 Say "*  Making XWorkplace main module (./MAIN/)... *"
 Say "***********************************************"
-"nmake -nologo"
+"nmake -nologo really_all"
 
 Say "***********************************************"
 Say "*  Making NLS files...                        *"
@@ -69,7 +69,7 @@ Say "   Making /001/INF.001/XFLDR001.INF..."
 "nmake /nologo"
 
 Say "   Making /001/HELP.001/XFLDR001.HLP..."
-"cd ..\help.001"
+"cd ..\xwphelp"
 "nmake /nologo"
 "cd ..\.."
 

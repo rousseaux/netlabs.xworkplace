@@ -27,9 +27,31 @@
     #define FILESYS_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   "File" pages replacement in WPDataFile/WPFolder                *
-     *                                                                  *
+     *
+     *   File system information implementation
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPFileSystem_h
+
+        PSZ fsysQueryEASubject(WPFileSystem *somSelf);
+
+        PSZ fsysQueryEAComments(WPFileSystem *somSelf);
+
+        PSZ fsysQueryEAKeyphrases(WPFileSystem *somSelf);
+
+        BOOL fsysSetEASubject(WPFileSystem *somSelf, const char *psz);
+
+        BOOL fsysSetEAComments(WPFileSystem *somSelf, const char *psz);
+
+        BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, const char *psz);
+
+    #endif
+
+    /* ******************************************************************
+     *
+     *   "File" pages replacement in WPDataFile/WPFolder
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
@@ -53,9 +75,9 @@
                                   HWND hwndNotebook);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFldProgramFile notebook callbacks (notebook.c)                *
-     *                                                                  *
+     *
+     *   XFldProgramFile notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
         VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,

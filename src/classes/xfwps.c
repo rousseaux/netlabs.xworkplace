@@ -91,7 +91,7 @@
 
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers

@@ -177,8 +177,10 @@ typedef struct _FILETASKLIST
  *         OR delete the list using fopsDeleteFileTaskList.
  *
  *      WARNING: This function requests the folder mutex semaphore
- *      for pSourceFolder. You must add objects to the returned
- *      task list (using fopsAddFileTask) as quickly as possible.
+ *      for pSourceFolder. (While this semaphore is held, no other
+ *      thread can add or remove objects from the folder.) You must
+ *      add objects to the returned task list (using fopsAddFileTask)
+ *      as quickly as possible.
  *
  *      The mutex will only be released after all file processing
  *      has been completed (thru fopsStartTask) or if you call
@@ -203,16 +205,23 @@ typedef struct _FILETASKLIST
  *          can is determined automatically.
  *
  *      -- XFT_RESTOREFROMTRASHCAN: restore objects from trash can.
+ *          This expects trash objects (XWPTrashObject) on the list.
  *          In that case, pSourceFolder has the trash can to
  *          restore from (XWPTrashCan*).
  *          If (pTargetFolder == NULL), the objects will be restored
- *          to the trash object's original location.
+ *          to the respective locations where they were deleted from.
  *          If (pTargetFolder != NULL), the objects will all be moved
  *          to that folder.
  *
  *      -- XFT_DELETE: delete list items from pSourceFolder without
  *          moving them into the trash can first.
  *          In that case, pTargetFolder is ignored.
+ *
+ *          This is used with "true delete" (shift and "delete"
+ *          context menu item). Besides, this is used to empty the
+ *          trash can and to destroy trash objects; in these cases,
+ *          this function assumes to be operating on the related
+ *          objects, not the trash objects.
  *
  *      -- XFT_POPULATE: populate folders on list. pSourcefolder
  *          and pTargetFolder are ignored. Also you must specify
@@ -717,9 +726,11 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
 
     BOOL    fFolderSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
-    {
+    ULONG   ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting); ###
 
+    TRY_LOUD(excpt1)
+    {
         fFolderSemOwned = !wpshRequestFolderMutexSem(pFolder, 5000);
         if (!fFolderSemOwned)
             frc = FOPSERR_REQUESTFOLDERMUTEX_FAILED;
@@ -848,6 +859,8 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
     if (fFolderSemOwned)
         wpshReleaseFolderMutexSem(pFolder);
 
+    // DosExitMustComplete(&ulnesting) ###
+
     return (frc);
 }
 
@@ -887,7 +900,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
              FALSE);    // no free, we have WPObject* pointers
 
     // another exception handler to allow for cleanup
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // say "collecting objects"
         pfu->pSourceObject = *ppObject;      // callback has already been called
@@ -1100,7 +1113,7 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
         _Pmpf(("fopsFileThreadProcessing hftl: 0x%lX", hftl));
     #endif
 
-    TRY_LOUD(excpt2, NULL)
+    TRY_LOUD(excpt2)
     {
         if (pftl)
         {

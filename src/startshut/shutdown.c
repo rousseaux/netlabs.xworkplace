@@ -57,9 +57,27 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSESMGR
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSDEVICES
+#define INCL_DOSDEVIOCTL
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WINDIALOGS
+#define INCL_WINPOINTERS
+#define INCL_WINSHELLDATA
+#define INCL_WINPROGRAMLIST
+#define INCL_WINSWITCHLIST
+#define INCL_WINCOUNTRY
+#define INCL_WINMENUS
+#define INCL_WINENTRYFIELDS
+#define INCL_WINBUTTONS
+#define INCL_WINLISTBOXES
 #include <os2.h>
 
 // C library headers
@@ -92,7 +110,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-#include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
@@ -235,6 +253,7 @@ BOOL xsdInitiateShutdown(VOID)
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
         psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
         psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
+        psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
         psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
         if (psdp->optReboot)
             // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
@@ -349,6 +368,7 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
         psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
         psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
+        psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
         psdp->optLog =  ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
         #ifdef DEBUG_SHUTDOWN
             psdp->optDebug = doshQueryShiftState();
@@ -434,6 +454,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
         psdpNew->optWPSCloseWindows = psdpShared->optWPSCloseWindows;
         psdpNew->optConfirm = psdpShared->optConfirm;
         psdpNew->optAutoCloseVIO = psdpShared->optAutoCloseVIO;
+        // psdpNew->optWarpCenterFirst = psdpShared->optWarpCenterFirst;
         psdpNew->optLog = psdpShared->optLog;
         psdpNew->optAnimate = psdpShared->optAnimate;
 
@@ -717,6 +738,8 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
             (pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
+            (pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
             (pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
 
@@ -728,6 +751,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
+        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
         BOOL fXShutdownValid = (pGlobalSettings->NoWorkerThread == 0);
         BOOL fXShutdownEnabled =
                 (   (fXShutdownValid)
@@ -764,6 +788,13 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
+
+        // enable "warpcenter first" if shutdown or WPS have been enabled
+        // AND if the WarpCenter was found
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
+                         ((fXShutdownOrWPSValid)
+                         && (pKernelGlobals->pAwakeWarpCenter != NULL)));
+
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
@@ -834,6 +865,10 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_SDDI_AUTOCLOSEVIO:
             ulFlag = XSD_AUTOCLOSEVIO;
+        break;
+
+        case ID_SDDI_WARPCENTERFIRST:
+            ulFlag = XSD_WARPCENTERFIRST;
         break;
 
         case ID_SDDI_LOG:
@@ -1181,7 +1216,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     BOOL        fStore = FALSE;
     HWND        hwndConfirm = NULLHANDLE;
 
-    TRY_LOUD(excpt1, krnOnKillDuringLock)
+    TRY_LOUD(excpt1)
     {
         BOOL        fCanEmptyTrashCan = FALSE;
         HMODULE     hmodResource = cmnQueryNLSModuleHandle(FALSE);
@@ -2407,18 +2442,20 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
 PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
                              PID pid,
-                             HMTX hmtx,
-                             ULONG ulTimeout)
+                             HMTX hmtx)
 {
-    PSHUTLISTITEM pItem = NULL;
-    BOOL          fAccess = FALSE,
-                  fSemOwned = FALSE;
+    PSHUTLISTITEM   pItem = NULL;
+    BOOL            fAccess = FALSE,
+                    fSemOwned = FALSE;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG           ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         if (hmtx)
         {
-            fSemOwned = (WinRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
+            fSemOwned = (WinRequestMutexSem(hmtx, SEM_INDEFINITE_WAIT) == NO_ERROR);
             fAccess = fSemOwned;
         }
         else
@@ -2446,6 +2483,8 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
         fSemOwned = FALSE;
     }
 
+    DosExitMustComplete(&ulNesting);
+
     return (pItem);
 }
 
@@ -2466,12 +2505,17 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     BOOL          fAccess = FALSE,
                   fSemOwned = FALSE;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG           ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
-        if (hmtx) {
+        if (hmtx)
+        {
             fSemOwned = (WinRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
             fAccess = fSemOwned;
-        } else
+        }
+        else
             fAccess = TRUE;
 
         if (fAccess)
@@ -2490,10 +2534,13 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fSemOwned) {
+    if (fSemOwned)
+    {
         DosReleaseMutexSem(hmtx);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (pItem);
 }
@@ -2513,7 +2560,10 @@ ULONG xsdCountRemainingItems(VOID)
     BOOL    fShutdownSemOwned = FALSE,
             fSkippedSemOwned = FALSE;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG           ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         fShutdownSemOwned = (WinRequestMutexSem(G_hmtxShutdown, 4000) == NO_ERROR);
         fSkippedSemOwned = (WinRequestMutexSem(G_hmtxSkipped, 4000) == NO_ERROR);
@@ -2525,14 +2575,19 @@ ULONG xsdCountRemainingItems(VOID)
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fShutdownSemOwned) {
+    if (fShutdownSemOwned)
+    {
         DosReleaseMutexSem(G_hmtxShutdown);
         fShutdownSemOwned = FALSE;
     }
-    if (fSkippedSemOwned) {
+
+    if (fSkippedSemOwned)
+    {
         DosReleaseMutexSem(G_hmtxSkipped);
         fSkippedSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (ulrc);
 }
@@ -2594,7 +2649,10 @@ PSHUTLISTITEM xsdQueryCurrentItem(VOID)
                     fSkippedSemOwned = FALSE;
     PSHUTLISTITEM   pliShutItem = 0;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG           ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         fShutdownSemOwned = (WinRequestMutexSem(G_hmtxShutdown, 4000) == NO_ERROR);
         fSkippedSemOwned = (WinRequestMutexSem(G_hmtxSkipped, 4000) == NO_ERROR);
@@ -2635,14 +2693,18 @@ PSHUTLISTITEM xsdQueryCurrentItem(VOID)
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fShutdownSemOwned) {
+    if (fShutdownSemOwned)
+    {
         DosReleaseMutexSem(G_hmtxShutdown);
         fShutdownSemOwned = FALSE;
     }
-    if (fSkippedSemOwned) {
+    if (fSkippedSemOwned)
+    {
         DosReleaseMutexSem(G_hmtxSkipped);
         fSkippedSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (pliShutItem);
 }
@@ -2957,7 +3019,9 @@ void xsdBuildShutList(PSHUTDOWNCONSTS pSDConsts,
                  || (lrc == XSD_WARPCENTER)
                )
                 // Desktop and WarpCenter need special handling,
-                // will be closed last always
+                // will be closed last always;
+                // note that we NEVER append the WarpCenter to
+                // the close list
                 Append = FALSE;
 
             if (Append)
@@ -3007,7 +3071,10 @@ void xsdUpdateListBox(PSHUTDOWNCONSTS pSDConsts,
 
     BOOL            fSemOwned = FALSE;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG           ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxShutdown, 4000) == NO_ERROR);
         if (fSemOwned)
@@ -3039,6 +3106,8 @@ void xsdUpdateListBox(PSHUTDOWNCONSTS pSDConsts,
         DosReleaseMutexSem(G_hmtxShutdown);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 }
 
 /* ******************************************************************
@@ -3227,12 +3296,13 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                 fprintf(G_fileShutdownLog, "\nXWorkplace version: %s\n", XFOLDER_VERSION);
                 fprintf(G_fileShutdownLog, "\nShutdown thread started, TID: 0x%lX\n",
                         thrQueryID(pti));
-                fprintf(G_fileShutdownLog, "Settings: RestartWPS %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, APMPowerOff %s\n\n",
+                fprintf(G_fileShutdownLog, "Settings: RestartWPS %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, APMPowerOff %s\n\n",
                         G_psdParams->ulRestartWPS,
                         (G_psdParams->optConfirm) ? "ON" : "OFF",
                         (G_psdParams->optReboot) ? "ON" : "OFF",
                         (G_psdParams->optWPSCloseWindows) ? "ON" : "OFF",
                         (G_psdParams->optAutoCloseVIO) ? "ON" : "OFF",
+                        (G_psdParams->optWarpCenterFirst) ? "ON" : "OFF",
                         (G_psdParams->optAPMPowerOff) ? "ON" : "OFF");
             }
 
@@ -3245,7 +3315,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                            PRTYD_MAXIMUM, // priority delta
                            0);
 
-            TRY_LOUD(excpt1, NULL)
+            TRY_LOUD(excpt1)
             {
                 SWCNTRL     swctl;
                 HSWITCH     hswitch;
@@ -3494,7 +3564,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
             xsdLog("  Done closing semaphores.\n");
 
             xsdLog("  Freeing lists...\n");
-            TRY_LOUD(excpt1, NULL)
+            TRY_LOUD(excpt1)
             {
                 // destroy all global lists; this time, we need
                 // no mutex semaphores, because the Update thread
@@ -3669,6 +3739,9 @@ ULONG       ulAwakeNow, ulAwakeMax;
  *@@ xsdCloseVIO:
  *      this gets called upon ID_SDMI_CLOSEVIO in
  *      xsd_fnwpShutdown when a VIO window is encountered.
+ *      (To be precise, this gets called for all non-PM
+ *      sessions, not just VIO windows.)
+ *
  *      This function queries the list of auto-close
  *      items and closes the VIO window accordingly.
  *      If no corresponding item was found, we display
@@ -3911,6 +3984,7 @@ VOID xsdCloseVIO(HWND hwndFrame)
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added wpWaitForClose for Desktop
  *@@changed V0.9.4 (2000-07-15) [umoeller]: added special treatment for WarpCenter
  *@@changed V0.9.6 (2000-10-27) [umoeller]: fixed special treatment for WarpCenter
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: now taking WarpCenterFirst setting into account
  */
 
 MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3946,6 +4020,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 if (thrQueryID(&pKernelGlobals->tiUpdateThread) == NULLHANDLE)
                 {
                     // first call; this one's called twice!
+                    // create update thread
                     thrCreate(&(pKernelGlobals->tiUpdateThread),
                               xsd_fntUpdateThread,
                               NULL, // running flag
@@ -4030,22 +4105,32 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     // all windows
                     xsdLog("  ID_SDMI_BEGINCLOSINGITEMS, hwnd: 0x%lX\n", hwndFrame);
 
-                    // close open WarpCenter first...
+                    // close open WarpCenter first, if desired
+                    // V0.9.7 (2000-12-08) [umoeller]
+                    xsdLog("  WarpCenter treatment:\n");
                     xsdGetShutdownConsts(&SDConsts);
                     if (SDConsts.hwndOpenWarpCenter)
                     {
-                        xsdUpdateClosingStatus("WarpCenter");
-                        xsdLog("      Found open WarpCenter, posting WM_COMMAND 0x66F7\n");
-                        WinPostMsg(SDConsts.hwndOpenWarpCenter,
-                                   WM_COMMAND,
-                                   MPFROMSHORT(0x66F7),
-                                        // "Close" menu item in WarpCenter context menu...
-                                        // nothing else works right!
-                                   MPFROM2SHORT(CMDSRC_OTHER,
-                                                FALSE));     // keyboard?!?
-                        DosBeep(1000, 100);
-                        winhSleep(G_habShutdownThread, 400);
+                        xsdLog("      WarpCenter found, has HWND 0x%lX\n",
+                               SDConsts.hwndOpenWarpCenter);
+                        if (G_psdParams->optWarpCenterFirst)
+                        {
+                            xsdLog("      WarpCenterFirst is ON, posting WM_COMMAND 0x66F7\n");
+                            xsdUpdateClosingStatus("WarpCenter");
+                            WinPostMsg(SDConsts.hwndOpenWarpCenter,
+                                       WM_COMMAND,
+                                       MPFROMSHORT(0x66F7),
+                                            // "Close" menu item in WarpCenter context menu...
+                                            // nothing else works right!
+                                       MPFROM2SHORT(CMDSRC_OTHER,
+                                                    FALSE));     // keyboard?!?
+                            winhSleep(G_habShutdownThread, 400);
+                        }
+                        else
+                            xsdLog("      WarpCenterFirst is OFF, skipping...\n");
                     }
+                    else
+                        xsdLog("      WarpCenter not found.\n");
 
                     G_fClosingApps = TRUE;
                     WinEnableControl(G_hwndMain, ID_SDDI_BEGINSHUTDOWN, FALSE);
@@ -4523,7 +4608,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // we install an exception handler because
                         // this crashes sometimes (V0.84) when
                         // the object no longer exists
-                        TRY_QUIET(excpt2, NULL)
+                        TRY_QUIET(excpt2)
                         {
                             if (pAwakeObject)
                             {
@@ -5219,7 +5304,7 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
             xsdGetShutdownConsts(&SDConsts);
             lstInit(&llTestList, TRUE);     // auto-free items
 
-            TRY_LOUD(excpt1, NULL)
+            TRY_LOUD(excpt1)
             {
                 ULONG           ulShutItemCount = 0,
                                 ulTestItemCount = 0;
@@ -5284,6 +5369,8 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
                              && (!(pKernelGlobals->tiUpdateThread.fExit))
                           )
                     {
+                        ULONG ulNesting = 0;
+
                         // this is the second loop: we stay in here until the
                         // task list has changed; for monitoring this, we create
                         // a second task item list similar to the pliShutdownFirst
@@ -5301,13 +5388,19 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
                         // count items in the list of the Shutdown thread;
                         // here we need a mutex semaphore, because the
                         // Shutdown thread might be working on this too
-                        fSemOwned = (WinRequestMutexSem(G_hmtxShutdown, 4000) == NO_ERROR);
-                        if (fSemOwned)
+                        DosEnterMustComplete(&ulNesting);
+                        TRY_LOUD(excpt2)
                         {
-                            ulShutItemCount = lstCountItems(G_pllShutdown);
-                            DosReleaseMutexSem(G_hmtxShutdown);
-                            fSemOwned = FALSE;
+                            fSemOwned = (WinRequestMutexSem(G_hmtxShutdown, 4000) == NO_ERROR);
+                            if (fSemOwned)
+                            {
+                                ulShutItemCount = lstCountItems(G_pllShutdown);
+                                DosReleaseMutexSem(G_hmtxShutdown);
+                                fSemOwned = FALSE;
+                            }
                         }
+                        CATCH(excpt2) {} END_CATCH();
+                        DosExitMustComplete(&ulNesting);
 
                         if (!(pKernelGlobals->tiUpdateThread.fExit))
                             DosSleep(100);

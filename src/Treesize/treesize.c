@@ -33,11 +33,24 @@
  *      GNU General Public License for more details.
  */
 
-#define  INCL_WIN
-#define  INCL_WINWORKPLACE
-#define  INCL_DOS
-#define  INCL_DOSERRORS
+#define INCL_DOSPROCESS
+#define INCL_DOSMODULEMGR
+#define INCL_DOSERRORS
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WINDIALOGS
+#define INCL_WINCOUNTRY
+#define INCL_WINSHELLDATA
+#define INCL_WINPROGRAMLIST
+#define INCL_WINPOINTERS
+#define INCL_WINTIMER
+#define INCL_WINMENUS
+#define INCL_WINMLE
+#define INCL_WINSTDCNR
+#define INCL_WINWORKPLACE
 #include <os2.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

@@ -71,7 +71,7 @@
     } SORTBYICONPOS, *PSORTBYICONPOS;
 
     // prototype for wpSetMenuBarVisibility;
-    // this is resolved by name (menus.c)
+    // this is resolved by name (fdrmenus.c)
 
     typedef BOOL SOMLINK FN_WPSETMENUBARVISIBILITY(WPFolder *somSelf,
                                                    ULONG ulVisibility);

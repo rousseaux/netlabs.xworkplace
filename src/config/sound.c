@@ -45,9 +45,21 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
+#define INCL_DOSSESMGR
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINDIALOGS
+#define INCL_WINSHELLDATA
+#define INCL_WINBUTTONS
+#define INCL_WINLISTBOXES
+#define INCL_WINENTRYFIELDS
+#define INCL_WINCIRCULARSLIDER
+#define INCL_WINSTDFILE
+
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIPRIMITIVES
 #include <os2.h>
@@ -220,7 +232,7 @@ BOOL sndInstallAddtlSounds(HAB hab,
         // call install\soundxxx.cmd in the
         // XWorkplace install directory;
         // this is necessary because of NLS
-        if (cmnQueryXFolderBasePath(szPath))
+        if (cmnQueryXWPBasePath(szPath))
         {
             PID     pid;
             ULONG   sid;

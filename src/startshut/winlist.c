@@ -37,9 +37,16 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINFRAMEMGR
+#define INCL_WINSWITCHLIST
+#define INCL_WINMENUS
+#define INCL_WINSTDCNR
+#define INCL_WINSYS
 #include <os2.h>
 
 // C library headers
@@ -213,7 +220,7 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
     {
         case WM_CREATE:
         {
-            TRY_LOUD(excpt1, NULL)
+            TRY_LOUD(excpt1)
             {
                 // PCREATESTRUCT pcs = (PCREATESTRUCT)mp2;
                 HWND hwndCnr;

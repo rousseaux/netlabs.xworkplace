@@ -91,9 +91,9 @@ callmainmake:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-        $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # main include path
@@ -123,6 +123,7 @@ $(OUTPUTDIR)\mmhelp.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
         $(HLPINC)\stringh.h $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+    $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\media.h
 
 $(OUTPUTDIR)\mmthread.obj: \

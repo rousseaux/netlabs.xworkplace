@@ -62,7 +62,8 @@
                     optAPMPowerOff,
                     optAPMDelay,
                     optWPSReuseStartupFolder,
-                    optEmptyTrashCan;
+                    optEmptyTrashCan,
+                    optWarpCenterFirst;
         CHAR        szRebootCommand[CCHMAXPATH];
     } SHUTDOWNPARAMS, *PSHUTDOWNPARAMS;
 

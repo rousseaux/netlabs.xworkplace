@@ -535,7 +535,7 @@ HWND partCreatePartitionsView(WPObject *somSelf,     // of WPDrives, really
 {
     HWND            hwndFrame = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         HAB         hab = WinQueryAnchorBlock(HWND_DESKTOP);
         HWND        hwndClient;

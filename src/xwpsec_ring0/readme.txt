@@ -25,4 +25,5 @@ Add the following lines to CONFIG.SYS (in this order):
 Make sure you have SES installed (you should have an \OS2\security
 directory). The rest of the SES setup is NOT needed however.
 
+Ulrich M”ller (2000-11-28)
 

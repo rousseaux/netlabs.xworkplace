@@ -92,7 +92,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\datetime.h"
+#include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\dosh.h"
 #include "helpers\prfh.h"
 #include "helpers\stringh.h"

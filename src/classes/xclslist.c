@@ -428,9 +428,12 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 {
     HWND    hwndNewView = 0;
     BOOL    fLocked = FALSE;
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
     XWPClassListMethodDebug("XWPClassList","xwlist_wpOpen");
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         XWPClassListData *somThis = XWPClassListGetData(somSelf);
@@ -455,6 +458,8 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
+
+    DosExitMustComplete(&ulNesting);
 
     return (hwndNewView);
 }

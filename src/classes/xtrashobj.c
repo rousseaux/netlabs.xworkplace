@@ -462,13 +462,20 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
  *      made dormant or being deleted. All allocated resources
  *      should be freed here.
  *      The parent method must always be called last.
+ *
+ *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
  */
 
 SOM_Scope void  SOMLINK xtro_wpUnInitData(XWPTrashObject *somSelf)
 {
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpUnInitData");
 
-    trshUninitTrashObject(somSelf);
+    if (_pszSourcePath)
+    {
+        free(_pszSourcePath);
+        _pszSourcePath = NULL;
+    }
 
     XWPTrashObject_parent_WPTransient_wpUnInitData(somSelf);
 }

@@ -405,7 +405,7 @@ Car 1 Sample WPS class from OS/2 Developer's Toolkit.
 Carpp 1 Sample WPS class from OS/2 Developer's Toolkit.
 ObjectUtility 1 Sample WPS class from OS/2 Developer's Toolkit. Implements a tool for creating instances of classes at a specified location.
 TSObjAdv 1 (Object Desktop) "Object Advisor" class.
-RWMonitor 4 (OS/2 V3) Undocumented class used by the WPS to serialize access to folder resources. Note that this is not derived from WPObject.
+RWMonitor 4 (OS/2 V3) Undocumented class, apparently used by the WPS to serialize access to folder resources. Note that this is not derived from WPObject.
 ClassAssociationManager 4 (OS/2 V4) Undocumented class used by the WPS to organize classes for "Become" support. Note that this is not derived from WPObject.
 WPDev 4 Undocumented class, apparently used by the WPS to organize printers. Note that this is not derived from WPObject.
 WPLm 4 Undocumented class, apparently used by the WPS to organize printers. Note that this is not derived from WPObject.
@@ -424,5 +424,12 @@ StarWriterFile1 (SUN StarOffice/2 5.1a) Document class for StarWriter texts.
 StarWriterGlobalFile1 (SUN StarOffice/2 5.1a) Document class for StarWriter global documents.
 
 LTFolder 1 (OS/2 Warp 3 Bonus Pak only) Light Table folder class which allows viewing different file types both through a viewer and as a large icon.
+
+// Items added with V0.9.7
+WPProgramWithEnvironment 1 subclass of WPProgram by Rich Walsh. Unlike DTProgram, this one has a BEGINLIBPATH/ENDLIBPATH settings page.
+PracticeMooV 1 QuickTime Movie player by Practice, Inc.
+WPZORX 1 WPFolder subclass for the ObjectREXX WPS interface.
+WPZORXINIT 1 WPTransient subclass for the ObjectREXX WPS interface.
+
 
 

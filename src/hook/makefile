@@ -85,9 +85,9 @@ MYOWNINC = $(INC)\hook
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-    $(CC_DLL) -I$(INCLUDE) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) -I$(INCLUDE) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-    $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # Now define dependencies for all our .OBJ files by telling NMAKE

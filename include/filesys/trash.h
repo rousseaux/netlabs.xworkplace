@@ -93,10 +93,6 @@
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 
-    // BOOL trshDestroyTrashObject(XWPTrashObject *somSelf);
-
-    VOID trshUninitTrashObject(XWPTrashObject *somSelf);
-
     /* ******************************************************************
      *                                                                  *
      *   Trash can drives support                                       *

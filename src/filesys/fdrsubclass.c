@@ -116,12 +116,13 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\contentmenus.h"        // shared menu logic
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // shared context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -144,23 +145,6 @@ BOOL                G_WPFolderWinClassExtended = FALSE;
 CLASSINFO           G_WPFolderWinClassInfo;
 
 ULONG               G_SFVOffset = 0;
-
-// root of linked list to remember original window
-// procedures when subclassing frame windows for folder hotkeys
-// LINKLIST            G_llSubclassed;                   // changed V0.9.0
-// mutex semaphore for access to this list
-// HMTX                G_hmtxSubclassed = NULLHANDLE;
-
-// original wnd proc for folder content menus,
-// which we must subclass
-PFNWP               G_pfnwpFolderContentMenuOriginal = NULL;
-
-// flags for fdr_fnwpSubclassedFolderFrame;
-// these are set by fdr_fnwpSubclFolderContentMenu.
-// We can afford using global variables here
-// because opening menus is a modal operation.
-BOOL                G_fFldrContentMenuMoved = FALSE,
-                    G_fFldrContentMenuButtonDown = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -280,8 +264,9 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
         memset(psliNew, 0, sizeof(SUBCLASSEDFOLDERVIEW)); // V0.9.0
 
         if (hwndCnr == NULLHANDLE)
-            CMN_LOG(("hwndCnr is NULLHANDLE for folder %s.",
-                   _wpQueryTitle(somSelf)));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hwndCnr is NULLHANDLE for folder %s.",
+                      _wpQueryTitle(somSelf));
 
         // store various other data here
         psliNew->hwndFrame = hwndFrame;
@@ -302,7 +287,8 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                                      psliNew);
 
         if (!psliNew->hwndSupplObject)
-            CMN_LOG(("Unable to create suppl. folder object window."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Unable to create suppl. folder object window.");
 
         // store SFV in frame's window words
         WinSetWindowPtr(hwndFrame,
@@ -313,7 +299,8 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                                                    fdr_fnwpSubclassedFolderFrame);
     }
     else
-        CMN_LOG(("psliNew is NULL (malloc failed)."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "psliNew is NULL (malloc failed).");
 
     return (psliNew);
 }
@@ -693,14 +680,11 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                 _Pmpf(( "  preparing owner draw"));
             #endif
 
-            mnuPrepareOwnerDraw(sMenuIDMsg, hwndMenuMsg);
+            cmnuPrepareOwnerDraw(hwndMenuMsg);
         }
 
         // add menu items according to folder contents
-        mnuFillContentSubmenu(sMenuIDMsg, hwndMenuMsg,
-                              // this func subclasses the folder content
-                              // menu wnd and stores the result here:
-                              &G_pfnwpFolderContentMenuOriginal);
+        cmnuFillContentSubmenu(sMenuIDMsg, hwndMenuMsg);
     }
     else
     {
@@ -855,7 +839,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
     // moved by fdr_fnwpSubclFolderContentMenu and (b) no mouse
     // button is pressed. These flags are all set by
     // fdr_fnwpSubclFolderContentMenu.
-    if (G_fFldrContentMenuMoved)
+    /* if (G_fFldrContentMenuMoved)
     {
         #ifdef DEBUG_MENUS
             _Pmpf(( "  FCMenuMoved set!"));
@@ -876,7 +860,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
         }
         fHandled = TRUE;
     }
-    else
+    else */
     {
         USHORT      usItem = SHORT1FROMMP(mp1),
                     usPostCommand = SHORT2FROMMP(mp1);
@@ -910,7 +894,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                     if (_somIsA(pObject, _WPShadow))
                         pObject = _wpQueryShadowedObject(pObject, TRUE);
 
-                // now call the functions in menus.c for this,
+                // now call the functions in fdrmenus.c for this,
                 // depending on the class of the object for which
                 // the menu was opened
                 if (pObject)
@@ -1025,7 +1009,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
     MRESULT mrc = 0;
     BOOL            fCallDefault = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         switch(msg)
         {
@@ -1245,7 +1229,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                     }
 
                     // unset flag for WM_MENUSELECT above
-                    G_fFldrContentMenuMoved = FALSE;
+                    // G_fFldrContentMenuMoved = FALSE;
                 }
 
                 mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
@@ -1260,7 +1244,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
              *      non-owner-draw ones, but we need to calculate the width
              *      according to the item text.
              *
-             *      Return value: check mnuMeasureItem (menus.c)
+             *      Return value: check mnuMeasureItem.
              */
 
             case WM_MEASUREITEM:
@@ -1268,8 +1252,8 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                 PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 if ( (SHORT)mp1 > (pGlobalSettings->VarMenuOffset+ID_XFMI_OFS_VARIABLE) )
                 {
-                    // call the measure-item func in menus.c
-                    mrc = mnuMeasureItem((POWNERITEM)mp2, pGlobalSettings);
+                    // call the measure-item func in fdrmenus.c
+                    mrc = cmnuMeasureItem((POWNERITEM)mp2, pGlobalSettings);
                 }
                 else
                     // none of our items: pass to original wnd proc
@@ -1294,9 +1278,9 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                 {
                     // variable menu item: this must be a folder-content
                     // menu item, because for others no WM_DRAWITEM is sent
-                    // (menus.c)
-                    if (mnuDrawItem(pGlobalSettings,
-                                    mp1, mp2))
+                    // (fdrmenus.c)
+                    if (cmnuDrawItem(pGlobalSettings,
+                                     mp1, mp2))
                         mrc = (MRESULT)TRUE;
                     else // error occured:
                         fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
@@ -1387,7 +1371,6 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                 }
 
                 fCallDefault = TRUE;
-
             break; }
 
             /*
@@ -1594,11 +1577,6 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                 }
             break; }
 
-            case WM_SYSVALUECHANGED:
-                DosBeep(3000, 10);
-                fCallDefault = TRUE;
-            break;
-
             /*
              * WM_DESTROY:
              *      clean up resources we allocated for
@@ -1653,7 +1631,8 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
             mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
         else
         {
-            CMN_LOG(("Folder's pfnwpOrig not found."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Folder's pfnwpOrig not found.");
             mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
         }
     }
@@ -1685,10 +1664,10 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
  *      --  Warp 4 folder menu bar manipulation (WM_INITMENU)
  *
  *      --  handling of certain menu items w/out dismissing
- *          the menu; this calls functions in menus.c
+ *          the menu; this calls functions in fdrmenus.c
  *
  *      --  menu owner draw (folder content menus w/ icons);
- *          this calls functions in menus.c also
+ *          this calls functions in fdrmenus.c also
  *
  *      --  complete interception of file-operation menu items
  *          such as "delete" for deleting all objects into the
@@ -1735,7 +1714,8 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
         // SFV not found: use the default
         // folder window procedure, but issue
         // a warning to the log
-        CMN_LOG(("Folder SUBCLASSEDFOLDERVIEW not found."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Folder SUBCLASSEDFOLDERVIEW not found.");
 
         mrc = G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2);
     }
@@ -1858,7 +1838,7 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
          *      has been selected. We now need to
          *      create a new object from that template
          *      and move it to the mouse position.
-         *      This is again done in menus.c by
+         *      This is again done in fdrmenus.c by
          *      mnuCreateFromTemplate, we just use
          *      this message to do this asynchronously
          *      and to make sure that function runs on
@@ -1879,169 +1859,6 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
-    return (mrc);
-}
-
-/*
- *@@ fdr_fnwpSubclFolderContentMenu:
- *      this is the subclassed wnd proc for folder content menus;
- *      we need to intercept mouse button 2 msgs to open a folder
- *      (WarpCenter behavior).
- *
- *      This function resides in folder.c because we need access
- *      to some folder globals. Subclassing happens in menus.c though.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT     mrc = 0;
-    PFNWP       pfnwpOrig = 0;
-
-    if (G_pfnwpFolderContentMenuOriginal)
-        pfnwpOrig = G_pfnwpFolderContentMenuOriginal;
-    else
-    {
-        CMN_LOG(("G_pfnwpFolderContentMenuOriginal is NULL"));
-        pfnwpOrig = WinDefWindowProc;
-    }
-
-    TRY_LOUD(excpt1, NULL)
-    {
-        USHORT  sSelected;
-        POINTL  ptlMouse;
-        RECTL   rtlItem;
-
-        switch(msg)
-        {
-            case WM_ADJUSTWINDOWPOS:
-            {
-                PSWP pswp = (PSWP)mp1;
-                BOOL fAdjusted = FALSE;
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_ADJUSTWINDOWPOS"));
-                #endif
-
-                if ((pswp->fl & (SWP_MOVE)) == (SWP_MOVE))
-                {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  SWP_MOVE set"));
-                    #endif
-
-                    if (!G_fFldrContentMenuMoved)
-                    {
-                        #ifdef DEBUG_MENUS
-                            _Pmpf(("    Checking bounds"));
-                        #endif
-                        if ((pswp->x + pswp->cx)
-                               > WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN))
-                        {
-                            pswp->x = 0;
-                            #ifdef DEBUG_MENUS
-                                _Pmpf(("    Changed x pos"));
-                            #endif
-                            // avoid several changes for this menu;
-                            // this flag is reset by WM_INITMENU in
-                            // fdr_fnwpSubclassedFolderFrame
-                            G_fFldrContentMenuMoved = TRUE;
-                            fAdjusted = TRUE;
-                        }
-                        if ((pswp->y + pswp->cy) >
-                                WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN))
-                        {
-                            pswp->y = 0;
-                            #ifdef DEBUG_MENUS
-                                _Pmpf(("    Changed y pos"));
-                            #endif
-                            // avoid several changes for this menu;
-                            // this flag is reset by WM_INITMENU in
-                            // fdr_fnwpSubclassedFolderFrame
-                            G_fFldrContentMenuMoved = TRUE;
-                            fAdjusted = TRUE;
-                        }
-                    }
-                }
-                if (fAdjusted)
-                    pswp->fl |= (SWP_NOADJUST);
-                mrc = (MRESULT)(pfnwpOrig)(hwndMenu, msg, mp1, mp2);
-                G_fFldrContentMenuButtonDown = FALSE;
-            break; }
-
-            #ifdef DEBUG_MENUS
-                case MM_SELECTITEM:
-                {
-                    _Pmpf(( "MM_SELECTITEM: mp1 = %lX/%lX, mp2 = %lX",
-                        SHORT1FROMMP(mp1),
-                        SHORT2FROMMP(mp1),
-                        mp2 ));
-                    mrc = (MRESULT)(*pfnwpFolderContentMenuOriginal)(hwndMenu, msg, mp1, mp2);
-                break; }
-            #endif
-
-            case WM_BUTTON2DOWN:
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_BUTTON2DOWN"));
-                #endif
-
-                ptlMouse.x = SHORT1FROMMP(mp1);
-                ptlMouse.y = SHORT2FROMMP(mp1);
-                WinSendMsg(hwndMenu, MM_SELECTITEM,
-                           MPFROM2SHORT(MIT_NONE, FALSE),
-                           MPFROM2SHORT(0, FALSE));
-                sSelected = winhQueryItemUnderMouse(hwndMenu, &ptlMouse, &rtlItem);
-                WinSendMsg(hwndMenu, MM_SETITEMATTR,
-                           MPFROM2SHORT(sSelected,
-                                        FALSE),
-                           MPFROM2SHORT(MIA_HILITED,
-                                        MIA_HILITED)
-                    );
-            break;
-
-            case WM_BUTTON1DOWN:
-                // let this be handled by the default proc
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_BUTTON1DOWN"));
-                #endif
-                G_fFldrContentMenuButtonDown = TRUE;
-                mrc = (MRESULT)(pfnwpOrig)(hwndMenu, msg, mp1, mp2);
-            break;
-
-            case WM_BUTTON1DBLCLK:
-            case WM_BUTTON2UP:
-            {
-                // upon receiving these, we will open the object directly; we need to
-                // cheat a little bit because sending MM_SELECTITEM would open the submenu
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_BUTTON2UP"));
-                #endif
-                G_fFldrContentMenuButtonDown = TRUE;
-                ptlMouse.x = SHORT1FROMMP(mp1);
-                ptlMouse.y = SHORT2FROMMP(mp1);
-                WinSendMsg(hwndMenu, MM_SELECTITEM,
-                           MPFROM2SHORT(MIT_NONE, FALSE),
-                           MPFROM2SHORT(0, FALSE));
-                sSelected = winhQueryItemUnderMouse(hwndMenu, &ptlMouse, &rtlItem);
-
-                cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
-
-                WinPostMsg(WinQueryWindow(hwndMenu, QW_OWNER),
-                           WM_COMMAND,
-                           (MPARAM)sSelected,
-                           MPFROM2SHORT(CMDSRC_MENU, FALSE));
-            break; }
-
-            default:
-                mrc = (MRESULT)(pfnwpOrig)(hwndMenu, msg, mp1, mp2);
-            break;
-        } // end switch
-    }
-    CATCH(excpt1)
-    {
-        // exception occured:
-        return (MRESULT)0; // keep compiler happy
-    } END_CATCH();
-
     return (mrc);
 }
 

@@ -17,17 +17,18 @@
  *      GNU General Public License for more details.
  */
 
-#define  INCL_WIN
-#define  INCL_DOS
-#define  INCL_GPI
-
+#define INCL_DOSSEMAPHORES
 #include <os2.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "setup.h"
+
 #include "helpers\winh.h"
+
 #include "shared\common.h"
 #include "shared\kernel.h"
+
 #include "startshut\shutdown.h"
 
 void Explain(void)

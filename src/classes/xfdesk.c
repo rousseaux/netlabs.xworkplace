@@ -600,15 +600,15 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
                                                                         pSizl);
     if (brc)
     {
-        LONG lCompCY = 153;
+        LONG lCompCY = 153; // this is the height of the "XDesktop" page,
+                            // which is pretty large
         if (doshIsWarp4())
             // on Warp 4, reduce again, because we're moving
             // the notebook buttons to the bottom
             lCompCY -= WARP4_NOTEBOOK_OFFSET;
 
         if (pSizl->cy < lCompCY)
-            pSizl->cy = lCompCY;  // this is the height of the "XDesktop" page,
-                                // which is pretty large
+            pSizl->cy = lCompCY;
         if (pSizl->cx < 260)
             pSizl->cx = 260;    // and the width
 

@@ -63,9 +63,10 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINMENUS
 #include  <os2.h>
 
 // C library headers
@@ -91,7 +92,7 @@
 
 #include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 
 #include "media\media.h"                // XWorkplace multimedia support
@@ -344,7 +345,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
  *      This gets called _after_ wpFilterPopupMenu.
  *
  *      We add the various XFolder menu entries here
- *      by calling mnuModifyFolderPopupMenu in menus.c,
+ *      by calling mnuModifyFolderPopupMenu in fdrmenus.c,
  *      which is also used by the XFolder class.
  */
 
@@ -389,7 +390,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
  *
- *      We pass the input to mnuMenuItemSelected in menus.c
+ *      We pass the input to mnuMenuItemSelected in fdrmenus.c
  *      because disk menu items are mostly shared with XFolder.
  *
  *      Note that the WPS invokes this method upon every
@@ -419,7 +420,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemSelected(XFldDisk *somSelf,
 /*
  *@@ wpMenuItemHelpSelected:
  *      display help for a context menu item;
- *      we pass the input to mnuMenuItemHelpSelected in menus.c.
+ *      we pass the input to mnuMenuItemHelpSelected in fdrmenus.c.
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
@@ -538,7 +539,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                 // pRootFolder instead of somSelf to most following method calls.
                 // We use wpshQueryRootFolder instead of wpQueryRootFolder to
                 // avoid "Drive not ready" popups.
-                pRootFolder = wpshQueryRootFolder(somSelf, &arc);
+                pRootFolder = wpshQueryRootFolder(somSelf, FALSE, &arc);
                 if (pRootFolder)
                     // drive ready: call parent to get frame handle
                     hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,

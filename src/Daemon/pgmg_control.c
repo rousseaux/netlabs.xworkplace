@@ -33,10 +33,23 @@
  *
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
-#define INCL_WIN
-#define INCL_GPI
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WININPUT
+#define INCL_WINSYS
+#define INCL_WINSHELLDATA
+#define INCL_WINTIMER
+#define INCL_WINTRACKRECT
+
+#define INCL_GPIPRIMITIVES
+#define INCL_GPILOGCOLORTABLE
+#define INCL_GPIBITMAPS
+#define INCL_GPILCIDS
 #include <os2.h>
 
 #include <stdio.h>
@@ -657,7 +670,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
     MRESULT                     mReturn  = 0;
     BOOL                        bHandled = TRUE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         switch (msg)
         {

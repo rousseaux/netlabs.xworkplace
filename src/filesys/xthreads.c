@@ -53,9 +53,19 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSSESMGR
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
+#define INCL_WINDIALOGS
+#define INCL_WINTIMER
+#define INCL_WINSHELLDATA
+#define INCL_WINSTDCNR
+
 #define INCL_GPIBITMAPS
 #include <os2.h>
 
@@ -319,6 +329,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.0 [umoeller]: removed WM_INVALIDATEORDEREDCONTENT
  *@@changed V0.9.0 [umoeller]: WOM_ADDAWAKEOBJECT is now storing plain WPObject pointers (no more OBJECTLISTITEM)
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: fixed crash when kernel globals weren't returned
  */
 
 MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -635,83 +646,90 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WOM_ADDAWAKEOBJECT:
         {
             WPObject              *pObj2Store = (WPObject*)(mp1);
-            PKERNELGLOBALS        pKernelGlobals = krnLockGlobals(5000);
+            PKERNELGLOBALS        pKernelGlobals = 0;
 
-            #ifdef DEBUG_AWAKEOBJECTS
-               // _PmpfF(("WT: Adding awake object..."));
-            #endif
+            ULONG   ulNesting = 0;
+            DosEnterMustComplete(&ulNesting);
 
-            // increment global count
-            pKernelGlobals->lAwakeObjectsCount++;
-
-            // set the quiet exception handler, because
-            // sometimes we get a message for an object too
-            // late, i.e. it is not awake any more, and then
-            // we'll trap
-            TRY_QUIET(excpt2, NULL)
+            if (pKernelGlobals = krnLockGlobals(5000))     // V0.9.7 (2000-12-08) [umoeller]
             {
+                #ifdef DEBUG_AWAKEOBJECTS
+                   // _PmpfF(("WT: Adding awake object..."));
+                #endif
 
-                // only save awake abstract and folder objects;
-                // if we included all WPFileSystem objects, all
-                // of these will be saved at XShutdown, that is,
-                // they'll all get .CLASSINFO EAs, which we don't
-                // want
-                if (    (_somIsA(pObj2Store, _WPAbstract))
-                     // || (_somIsA(pObj2Store, _WPFolder))
-                   )
+                // increment global count
+                pKernelGlobals->lAwakeObjectsCount++;
+
+                // set the quiet exception handler, because
+                // sometimes we get a message for an object too
+                // late, i.e. it is not awake any more, and then
+                // we'll trap
+                TRY_QUIET(excpt2)
                 {
-                    if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
-                        pKernelGlobals->pAwakeWarpCenter = pObj2Store;
-
-                    // get the mutex semaphore
-                    G_fWorkerAwakeObjectsSemOwned
-                          = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
-                             == NO_ERROR);
-
-                    if (G_fWorkerAwakeObjectsSemOwned)
+                    // only save awake abstract and folder objects;
+                    // if we included all WPFileSystem objects, all
+                    // of these will be saved at XShutdown, that is,
+                    // they'll all get .CLASSINFO EAs, which we don't
+                    // want
+                    if (    (_somIsA(pObj2Store, _WPAbstract))
+                         // || (_somIsA(pObj2Store, _WPFolder))
+                       )
                     {
-                        PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
+                        if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
+                            pKernelGlobals->pAwakeWarpCenter = pObj2Store;
 
-                        #ifdef DEBUG_AWAKEOBJECTS
-                            _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
-                        #endif
+                        // get the mutex semaphore
+                        G_fWorkerAwakeObjectsSemOwned
+                              = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
+                                 == NO_ERROR);
 
-                        // check if this object is stored already
-                        if (lstNodeFromItem(pllAwakeObjects, pObj2Store) == NULL)
+                        if (G_fWorkerAwakeObjectsSemOwned)
                         {
-                            // object not stored yet: do it now
+                            PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
+
                             #ifdef DEBUG_AWAKEOBJECTS
-                                _Pmpf(("WT:lstAppendItem rc: %d",
-                                       lstAppendItem(pllAwakeObjects,
-                                                     pObj2Store)));
-                            #else
-                                lstAppendItem(pllAwakeObjects,
-                                              pObj2Store);
+                                _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
+                            #endif
+
+                            // check if this object is stored already
+                            if (lstNodeFromItem(pllAwakeObjects, pObj2Store) == NULL)
+                            {
+                                // object not stored yet: do it now
+                                #ifdef DEBUG_AWAKEOBJECTS
+                                    _Pmpf(("WT:lstAppendItem rc: %d",
+                                           lstAppendItem(pllAwakeObjects,
+                                                         pObj2Store)));
+                                #else
+                                    lstAppendItem(pllAwakeObjects,
+                                                  pObj2Store);
+                                #endif
+                            }
+                            #ifdef DEBUG_AWAKEOBJECTS
+                                else
+                                    _Pmpf(("WT: Item is already on list"));
                             #endif
                         }
-                        #ifdef DEBUG_AWAKEOBJECTS
-                            else
-                                _Pmpf(("WT: Item is already on list"));
-                        #endif
                     }
                 }
-            }
-            CATCH(excpt2)
-            {
-                // the thread exception handler puts us here
-                // if an exception occured:
-                #ifdef DEBUG_AWAKEOBJECTS
-                    DosBeep(10000, 10);
-                #endif
-            } END_CATCH();
+                CATCH(excpt2)
+                {
+                    // the thread exception handler puts us here
+                    // if an exception occured:
+                    #ifdef DEBUG_AWAKEOBJECTS
+                        DosBeep(10000, 10);
+                    #endif
+                } END_CATCH();
 
-            if (G_fWorkerAwakeObjectsSemOwned)
-            {
-                DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                G_fWorkerAwakeObjectsSemOwned = FALSE;
-            }
+                if (G_fWorkerAwakeObjectsSemOwned)
+                {
+                    DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
+                    G_fWorkerAwakeObjectsSemOwned = FALSE;
+                }
 
-            krnUnlockGlobals();
+                krnUnlockGlobals();
+            } // end if (pKernelGlobals)
+
+            DosExitMustComplete(&ulNesting);
         break; }
 
         /*
@@ -734,42 +752,54 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WOM_REMOVEAWAKEOBJECT:
         {
             WPObject            *pObj = (WPObject*)(mp1);
-            PKERNELGLOBALS      pKernelGlobals = krnLockGlobals(5000);
+            PKERNELGLOBALS      pKernelGlobals = 0;
+
+            ULONG   ulNesting = 0;
+            DosEnterMustComplete(&ulNesting);
 
             #ifdef DEBUG_AWAKEOBJECTS
                 _Pmpf(("WT: Removing asleep object, mp1: 0x%lX", mp1));
             #endif
 
-            // get the mutex semaphore
-            G_fWorkerAwakeObjectsSemOwned =
-                    (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
-                    == NO_ERROR);
-            if (G_fWorkerAwakeObjectsSemOwned)
+            TRY_QUIET(excpt2)
             {
-                // remove the object from the list
-                if (pObj)
+                if (pKernelGlobals = krnLockGlobals(5000))     // V0.9.7 (2000-12-08) [umoeller]
                 {
-                    #ifdef DEBUG_AWAKEOBJECTS
-                        _Pmpf(("WT: Calling lstRemoveItem with poli = 0x%lX",
-                               pObj));
-                    #endif
-                    #ifdef DEBUG_AWAKEOBJECTS
-                        _Pmpf(("WT: lstRemoveItem rc: %d",
-                               lstRemoveItem(pKernelGlobals->pllAwakeObjects,
-                                             pObj)));
-                    #else
-                        lstRemoveItem(pKernelGlobals->pllAwakeObjects,
-                                      pObj);
-                    #endif
-                    // decrement global count
-                    pKernelGlobals->lAwakeObjectsCount--;
+                    // get the mutex semaphore
+                    G_fWorkerAwakeObjectsSemOwned =
+                            (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
+                            == NO_ERROR);
+                    if (G_fWorkerAwakeObjectsSemOwned)
+                    {
+                        // remove the object from the list
+                        if (pObj)
+                        {
+                            #ifdef DEBUG_AWAKEOBJECTS
+                                _Pmpf(("WT: Calling lstRemoveItem with poli = 0x%lX",
+                                       pObj));
+                            #endif
+                            #ifdef DEBUG_AWAKEOBJECTS
+                                _Pmpf(("WT: lstRemoveItem rc: %d",
+                                       lstRemoveItem(pKernelGlobals->pllAwakeObjects,
+                                                     pObj)));
+                            #else
+                                lstRemoveItem(pKernelGlobals->pllAwakeObjects,
+                                              pObj);
+                            #endif
+                            // decrement global count
+                            pKernelGlobals->lAwakeObjectsCount--;
+                        }
+
+                        DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
+                        G_fWorkerAwakeObjectsSemOwned = FALSE;
+                    }
+
+                    krnUnlockGlobals();
                 }
-
-                DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                G_fWorkerAwakeObjectsSemOwned = FALSE;
             }
+            CATCH(excpt2) {} END_CATCH();
 
-            krnUnlockGlobals();
+            DosExitMustComplete(&ulNesting);
         break; }
 
         /*
@@ -934,7 +964,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                     pGlobalSettings, sizeof(GLOBALSETTINGS));
             }
             else
-                CMN_LOG(("Unable to lock GLOBALSETTINGS."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to lock GLOBALSETTINGS.");
             cmnUnlockGlobalSettings();
         break; }
 
@@ -971,7 +1002,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *@@added V0.9.0 [umoeller]
  */
 
-VOID APIENTRY xthrOnKillWorkerThread(VOID)
+VOID APIENTRY xthrOnKillWorkerThread(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
 {
     if (G_fWorkerAwakeObjectsSemOwned)
     {
@@ -1040,8 +1071,11 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                              "XFolder failed to create the Worker thread object window.");
 
                 {
-                    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                    if (pKernelGlobals)
+                    PKERNELGLOBALS pKernelGlobals = 0;
+                    ULONG ulNesting = 0;
+                    DosEnterMustComplete(&ulNesting);
+
+                    if (pKernelGlobals = krnLockGlobals(5000))
                     {
                         pKernelGlobals->hwndWorkerObject = hwndWorkerObjectTemp;
 
@@ -1053,9 +1087,11 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
 
                         krnUnlockGlobals();
                     }
+
+                    DosExitMustComplete(&ulNesting);
                 }
 
-                TRY_LOUD(excpt1, xthrOnKillWorkerThread)
+                TRY_LOUD(excpt1)
                 {
                     // now enter the message loop
                     while (WinGetMsg(G_habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
@@ -1159,8 +1195,9 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
         }
 
     if (!rc)
-        CMN_LOG(("Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
-               msg, mp1, mp2));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+               msg, mp1, mp2);
 
     return (rc);
 }
@@ -1586,7 +1623,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             {
                 HWND    hwndCreating;
                 CHAR    szPath[CCHMAXPATH], szPath2[CCHMAXPATH], szPath3[CCHMAXPATH];
-                if (cmnQueryXFolderBasePath(szPath))
+                if (cmnQueryXWPBasePath(szPath))
                 {   // INI entry found: append "\" if necessary
                     PID     pid;
                     ULONG   sid;
@@ -1759,7 +1796,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
  *@@added V0.9.0 [umoeller]
  */
 
-VOID APIENTRY xthrOnKillFileThread(VOID)
+VOID APIENTRY xthrOnKillFileThread(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
 {
     krnUnlockGlobals(); // just to make sure
 }
@@ -1790,7 +1827,7 @@ void _Optlink fntFileThread(PTHREADINFO pti)
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
 
-    TRY_LOUD(excpt1, xthrOnKillFileThread)
+    TRY_LOUD(excpt1)
     {
         if (G_habFileThread = WinInitialize(0))
         {
@@ -1888,8 +1925,9 @@ BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                             mp1,
                             mp2);
     if (!rc)
-        CMN_LOG(("Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
-               msg, mp1, mp2));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+               msg, mp1, mp2);
 
     return (rc);
 }
@@ -2161,7 +2199,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *@@added V0.9.0 [umoeller]
  */
 
-VOID APIENTRY xthrOnKillSpeedyThread(VOID)
+VOID APIENTRY xthrOnKillSpeedyThread(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
 {
     krnUnlockGlobals(); // just to make sure
 }
@@ -2193,7 +2231,7 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
     PSZ                   pszErrMsg = NULL;
     BOOL                  fTrapped = FALSE;
 
-    TRY_LOUD(excpt1, xthrOnKillSpeedyThread)
+    TRY_LOUD(excpt1)
     {
         if (G_habSpeedyThread = WinInitialize(0))
         {
@@ -2310,7 +2348,7 @@ BOOL xthrStartThreads(VOID)
                     pKernelGlobals->tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
 
         // attempt to load SOUND.DLL
-        /* if (cmnQueryXFolderBasePath(szSoundDLL))
+        /* if (cmnQueryXWPBasePath(szSoundDLL))
         {
             // path found: append DLL name
             strcat(szSoundDLL,

@@ -8,7 +8,7 @@
  *      The driver dialogs have been exported to this file so that
  *      new driver dialogs can be added more easily without having
  *      to mess with the SOM interface. SO TO WRITE A DRIVER DIALOG,
- *      YOU NEED NOT KNOW NOTHING ABOUT WPS PROGRAMMING. ;-)
+ *      YOU NEED NOT KNOW NOTHING ABOUT NO WPS PROGRAMMING. ;-)
  *
  *      Each driver dialog function can presently handle one CONFIG.SYS
  *      line with all the driver parameters. Presently, we have:

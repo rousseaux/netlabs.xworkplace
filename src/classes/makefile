@@ -119,9 +119,9 @@ callmainmake:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-        $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # main include path
@@ -169,6 +169,7 @@ $(OUTPUTDIR)\xcenter.obj: \
             $(HLPINC)\except.h $(HLPINC)\winh.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\shared\center.h $(INC)\xcenter\centerp.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xclslist.obj: \
@@ -197,7 +198,7 @@ $(OUTPUTDIR)\xfdataf.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h $(INC)\filesys\folder.h \
-                $(INC)\filesys\menus.h $(INC)\filesys\program.h \
+                $(INC)\filesys\fdrmenus.h $(INC)\filesys\program.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfdesk.obj: \
@@ -216,7 +217,7 @@ $(OUTPUTDIR)\xfdisk.obj: \
             $(INC)\classes\xfldr.ih \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\disk.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h $(INC)\filesys\statbars.h \
+            $(INC)\filesys\disk.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h $(INC)\filesys\statbars.h \
             $(INC)\media\media.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
 
@@ -226,7 +227,7 @@ $(OUTPUTDIR)\xfldr.obj: \
             $(INC)\classes\xfdisk.h $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\filesys.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
+            $(INC)\filesys\filesys.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
 
 $(OUTPUTDIR)\xfobj.obj: \
@@ -270,7 +271,7 @@ $(OUTPUTDIR)\xfwps.obj: \
             $(INC)\classes\xfldr.ih \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-            $(INC)\filesys\filetype.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h $(INC)\filesys\statbars.h \
+            $(INC)\filesys\filetype.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h $(INC)\filesys\statbars.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xtrash.obj: \
@@ -278,7 +279,7 @@ $(OUTPUTDIR)\xtrash.obj: \
             $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\stringh.h \
             $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\trash.h \
             $(@B).c \
             $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
@@ -320,6 +321,7 @@ $(OUTPUTDIR)\xwpmedia.obj: \
             $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\threads.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\media\media.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpmouse.obj: \

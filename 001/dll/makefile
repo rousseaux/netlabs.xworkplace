@@ -82,7 +82,7 @@ all: $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll
 #
 
 .c{$(OUTPUTDIR)}.obj:
-        $(CC_DLL) -I$(INCLUDE) -c /Fo$(OUTPUTDIR)\$(@B).obj $<
+        $(CC_DLL_MT) -I$(INCLUDE) -c /Fo$(OUTPUTDIR)\$(@B).obj $<
 
 #
 # Now define inference rules for the different file types.

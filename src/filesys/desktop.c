@@ -39,10 +39,10 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-// #define INCL_DOS
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINPOINTERS
@@ -57,6 +57,7 @@
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINSTDFILE
 #define INCL_WINSYS
+
 #define INCL_GPIBITMAPS
 #include <os2.h>
 
@@ -89,7 +90,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "filesys\desktop.h"            // XFldDesktop implementation
-#include "filesys\menus.h"              // shared context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -425,7 +426,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
     {
         if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_RESTARTWPS)
         {
-            xsdInitiateRestartWPS(FALSE);        // restart WPS
+            xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
             return (TRUE);
         }
         else if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_LOGOFF)
@@ -1019,7 +1020,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
                         // delete the bitmap again
                         if (!GpiDeleteBitmap(hbmBootLogo))
-                            CMN_LOG(("Unable to free bootlogo bitmap."));
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                "Unable to free bootlogo bitmap.");
                     }
                     GpiDestroyPS(hpsMem);
                     DevCloseDC(hdcMem);

@@ -76,9 +76,9 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
+
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIPRIMITIVES
 #include <os2.h>

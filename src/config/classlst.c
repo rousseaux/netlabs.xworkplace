@@ -1421,14 +1421,15 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 // remove this window from the object's use list
                 _wpDeleteFromObjUseList(pClientData->somSelf,
                                         &pClientData->clvi.UseItem);
-                // free the use list item
-                _wpFreeMem(pClientData->somSelf, (PBYTE)pClientData);
 
                 pClientData->somThis->hwndOpenView = NULLHANDLE;
 
                 // destroy popups
                 WinDestroyWindow(pClientData->hmenuClassPopup);
                 WinDestroyWindow(pClientData->hmenuMethodsWhitespacePopup);
+
+                // free the use list item
+                _wpFreeMem(pClientData->somSelf, (PBYTE)pClientData);
             }
 
             // return default NULL
@@ -1614,7 +1615,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
 
     PCLASSLISTTREECNRDATA pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         switch(msg)
         {
@@ -1755,7 +1756,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                     // we don't need no callback for class selections
 
                 // prepare class info text file path
-                if (cmnQueryXFolderBasePath(szClassInfoFile))
+                if (cmnQueryXWPBasePath(szClassInfoFile))
                 {
                     sprintf(szClassInfoFile+strlen(szClassInfoFile),
                             "\\help\\xfcls%s.txt",
@@ -3157,7 +3158,7 @@ HWND cllCreateClassListView(WPObject *somSelf,
 {
     HWND            hwndFrame = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         HAB         hab = WinQueryAnchorBlock(HWND_DESKTOP);
         HWND        hwndClient;
@@ -3240,7 +3241,8 @@ HWND cllCreateClassListView(WPObject *somSelf,
             pClientData->clvi.ViewItem.view   = ulView;
             pClientData->clvi.ViewItem.handle = hwndFrame;
             if (!_wpAddToObjUseList(somSelf, &(pClientData->clvi.UseItem)))
-                CMN_LOG(("_wpAddToObjUseList failed."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "_wpAddToObjUseList failed.");
 
             // create view title: remove ~ char
             p = strchr(pszViewTitle, '~');

@@ -611,15 +611,28 @@ SOM_Scope void  SOMLINK xmsM_wpclsUnInitData(M_XWPMouse *somSelf)
 SOM_Scope BOOL  SOMLINK xmsM_wpclsQuerySettingsPageSize(M_XWPMouse *somSelf,
                                                         PSIZEL pSizl)
 {
+    BOOL brc;
     /* M_XWPMouseData *somThis = M_XWPMouseGetData(somSelf); */
     M_XWPMouseMethodDebug("M_XWPMouse","xmsM_wpclsQuerySettingsPageSize");
 
-    return (M_XWPMouse_parent_M_WPMouse_wpclsQuerySettingsPageSize(somSelf,
-                                                                   pSizl));
+    brc = M_XWPMouse_parent_M_WPMouse_wpclsQuerySettingsPageSize(somSelf,
+                                                                 pSizl);
 
-    // fr WARP 3 ein wenig h”her
-    /* if (IsWARP3())
-        pSizl->cy += 20; */
+    if (brc)
+    {
+        LONG lCompCY = 164 - WARP4_NOTEBOOK_OFFSET;
 
+                            // this is the height of the "Movement" page,
+                            // which is pretty large
+        /* if (doshIsWarp4())
+            // on Warp 4, reduce again, because we're moving
+            // the notebook buttons to the bottom
+            lCompCY -= WARP4_NOTEBOOK_OFFSET; */
+
+        if (pSizl->cy < lCompCY)
+            pSizl->cy = lCompCY;
+    }
+
+    return (brc);
 }
 

@@ -52,6 +52,7 @@ OUTPUTDIR = ..\..\bin
 OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\disk.obj \
        $(OUTPUTDIR)\fdrhotky.obj \
+       $(OUTPUTDIR)\fdrmenus.obj \
        $(OUTPUTDIR)\fdrnotebooks.obj \
        $(OUTPUTDIR)\fdrsubclass.obj \
        $(OUTPUTDIR)\fhandles.obj \
@@ -61,7 +62,6 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\folder.obj \
        $(OUTPUTDIR)\fops_bottom.obj \
        $(OUTPUTDIR)\fops_top.obj \
-       $(OUTPUTDIR)\menus.obj \
        $(OUTPUTDIR)\object.obj \
        $(OUTPUTDIR)\program.obj \
        $(OUTPUTDIR)\statbars.obj \
@@ -106,9 +106,9 @@ callmainmake:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-        $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # main include path
@@ -134,7 +134,7 @@ $(OUTPUTDIR)\desktop.obj: \
     $(INC)\classes\xfdesk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-    $(INC)\filesys\menus.h $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\fdrmenus.h $(INC)\filesys\xthreads.h \
     $(INC)\startshut\shutdown.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -144,7 +144,7 @@ $(OUTPUTDIR)\disk.obj: \
     $(INC)\classes\xfdisk.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-    $(INC)\filesys\folder.h $(INC)\filesys\menus.h $(INC)\filesys\statbars.h \
+    $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h $(INC)\filesys\statbars.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\fdrhotky.obj: \
@@ -154,6 +154,19 @@ $(OUTPUTDIR)\fdrhotky.obj: \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(@B).c $(INC)\filesys\folder.h
+
+$(OUTPUTDIR)\fdrmenus.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
+           $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h \
+           $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+    $(INC)\dlgids.h \
+    $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
+    $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\notebook.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\config\partitions.h \
+    $(INC)\filesys\folder.h $(INC)\filesys\xthreads.h \
+    $(INC)\startshut\shutdown.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\fdrnotebooks.obj: \
     $(INC)\setup.h \
@@ -170,8 +183,8 @@ $(OUTPUTDIR)\fdrsubclass.obj: \
         $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
-    $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h \
+    $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h \
         $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
     $(@B).c $(INC)\filesys\folder.h
 
@@ -216,7 +229,7 @@ $(OUTPUTDIR)\folder.obj: \
     $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-    $(INC)\filesys\fileops.h $(INC)\filesys\filesys.h $(INC)\filesys\menus.h \
+    $(INC)\filesys\fileops.h $(INC)\filesys\filesys.h $(INC)\filesys\fdrmenus.h \
         $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -235,19 +248,6 @@ $(OUTPUTDIR)\fops_top.obj: \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(@B).c $(MYOWNINC)\fileops.h
-
-$(OUTPUTDIR)\menus.obj: \
-    $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
-           $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h \
-           $(HLPINC)\winh.h $(HLPINC)\undoc.h \
-    $(INC)\dlgids.h \
-    $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
-    $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
-    $(INC)\config\partitions.h \
-    $(INC)\filesys\folder.h $(INC)\filesys\xthreads.h \
-    $(INC)\startshut\shutdown.h \
-    $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \

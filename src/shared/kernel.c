@@ -125,9 +125,9 @@
 // #include <wpdesk.h>                     // WPDesktop
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // global lock semaphore for krnLock etc.
@@ -164,9 +164,9 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MPARAM mpMax);
 
 /* ******************************************************************
- *                                                                  *
- *   Resource protection (thread safety)                            *
- *                                                                  *
+ *
+ *   Resource protection (thread safety)
+ *
  ********************************************************************/
 
 /*
@@ -211,7 +211,8 @@ BOOL krnLock(ULONG ulTimeout)
         return TRUE;
     else
     {
-        CMN_LOG(("krnLock mutex request failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock mutex request failed.");
         return FALSE;
     }
 }
@@ -263,15 +264,15 @@ ULONG krnQueryLock(VOID)
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
  */
 
-VOID APIENTRY krnOnKillDuringLock(VOID)
+VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
 {
     DosReleaseMutexSem(G_hmtxCommonLock);
 }
 
 /********************************************************************
- *                                                                  *
- *   KERNELGLOBALS structure                                        *
- *                                                                  *
+ *
+ *   KERNELGLOBALS structure
+ *
  ********************************************************************/
 
 PCKERNELGLOBALS krnQueryGlobals(VOID)
@@ -308,9 +309,9 @@ VOID krnUnlockGlobals(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFolder hook for exception handlers (\helpers\except.c)        *
- *                                                                  *
+ *
+ *   XFolder hook for exception handlers (\helpers\except.c)
+ *
  ********************************************************************/
 
 /*
@@ -481,20 +482,24 @@ VOID APIENTRY krnExceptError(const char *pcszFile,
 
 /*
  *@@ krnMemoryError:
+ *      reports memory error msgs if XWorkplace is
+ *      compiled in debug mode _and_ memory debugging
+ *      is enabled.
  *
  *@@added V0.9.3 (2000-04-11) [umoeller]
  */
 
 VOID krnMemoryError(const char *pcszMsg)
 {
-    CMN_LOG(("Memory error:\n    %s",
-           pcszMsg));
+    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "Memory error:\n    %s",
+           pcszMsg);
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Startup/Daemon interface                                       *
- *                                                                  *
+ *
+ *   Startup/Daemon interface
+ *
  ********************************************************************/
 
 /*
@@ -582,11 +587,13 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
         // cast PVOID
         PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
         if (!pDaemonShared)
-            CMN_LOG(("pDaemonShared is NULL."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "pDaemonShared is NULL.");
         else
             // get the handle of the daemon's object window
             if (!pDaemonShared->hwndDaemonObject)
-                CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
             else
                 brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
     }
@@ -595,9 +602,9 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Thread-1 object window                                         *
- *                                                                  *
+ *
+ *   Thread-1 object window
+ *
  ********************************************************************/
 
 BOOL     fLimitMsgOpen = FALSE;
@@ -677,6 +684,7 @@ VOID krn_T1M_DaemonReady(VOID)
  *@@changed V0.9.3 (2000-04-20) [umoeller]: added system sound
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed desktop menu position
  *@@changed V0.9.4 (2000-06-15) [umoeller]: fixed VIO windows in background
+ *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
  */
 
 VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
@@ -747,29 +755,33 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
                                 ul;
                         ULONG   ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
                         PSWBLOCK pSwBlock = (PSWBLOCK)malloc(ulBufSize);
-                        cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize);
-
-                        // loop through all the tasklist entries
-                        for (ul = 0; ul < (pSwBlock->cswentry); ul++)
+                        if (pSwBlock)
                         {
-                            #ifdef DEBUG_KEYS
-                                _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
-                                        ul,
-                                        pSwBlock->aswentry[ul].swctl.hwnd,
-                                        pSwBlock->aswentry[ul].swctl.hprog, // always 0...
-                                        pSwBlock->aswentry[ul].swctl.idSession));
-                            #endif
+                            cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize);
 
-                            if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
+                            // loop through all the tasklist entries
+                            for (ul = 0; ul < (pSwBlock->cswentry); ul++)
                             {
-                                // got it:
                                 #ifdef DEBUG_KEYS
-                                    _Pmpf(("      Found!"));
+                                    _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
+                                            ul,
+                                            pSwBlock->aswentry[ul].swctl.hwnd,
+                                            pSwBlock->aswentry[ul].swctl.hprog, // always 0...
+                                            pSwBlock->aswentry[ul].swctl.idSession));
                                 #endif
 
-                                WinSetActiveWindow(HWND_DESKTOP,
-                                                   pSwBlock->aswentry[ul].swctl.hwnd);
+                                if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
+                                {
+                                    // got it:
+                                    #ifdef DEBUG_KEYS
+                                        _Pmpf(("      Found!"));
+                                    #endif
+
+                                    WinSetActiveWindow(HWND_DESKTOP,
+                                                       pSwBlock->aswentry[ul].swctl.hwnd);
+                                }
                             }
+                            free(pSwBlock);  // V0.9.7 (2000-11-29) [umoeller]
                         }
                     }
                 }
@@ -881,7 +893,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
     MPARAM  mrc = NULL;
     BOOL    fCallDefault = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         switch(msg)
         {
@@ -1708,9 +1720,9 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWorkplace initialization                                      *
- *                                                                  *
+ *
+ *   XWorkplace initialization
+ *
  ********************************************************************/
 
 /*
@@ -2141,7 +2153,7 @@ VOID krnInitializeXWorkplace(VOID)
                 // the daemon won't find XWPHOOK.DLL.
 
                 // compose paths
-                if (cmnQueryXFolderBasePath(szDir))
+                if (cmnQueryXWPBasePath(szDir))
                 {
                     // path found:
                     PROGDETAILS pd;

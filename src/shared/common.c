@@ -165,28 +165,34 @@ void _CRT_term(void);
 
 /*
  *@@ _DLL_InitTerm:
- *      this function gets called automatically by the OS/2 DLL
- *      during DosLoadModule processing, on the thread which
- *      invoked DosLoadModule.
+ *      this function gets called automatically by the OS/2
+ *      module manager during DosLoadModule processing, on
+ *      the thread which invoked DosLoadModule.
  *
  *      Since this is a SOM DLL for the WPS, this gets called
- *      right when the WPS is starting and when the WPS process ends, e.g.
- *      due to a WPS restart or trap. Since the WPS is the only process
- *      calling this DLL, we need not bother with details.
+ *      right when the WPS is starting and when the WPS process
+ *      ends, e.g. due to a WPS restart or trap. Since the WPS
+ *      is the only process loading this DLL, we need not bother
+ *      with details.
  *
- *      Defining this function is my preferred way of getting the DLL's module
- *      handle, instead of querying the SOM kernel for the module name, like
- *      this is done in most WPS sample programs provided by IBM. I have found
- *      this to be much easier and less error-prone when several classes are
- *      put into one DLL (as is the case with XWorkplace).
+ *      Defining this function is my preferred way of getting the
+ *      DLL's module handle, instead of querying the SOM kernel
+ *      for the module name, like this is done in most WPS sample
+ *      programs provided by IBM. I have found this to be much
+ *      easier and less error-prone when several classes are put
+ *      into one DLL (as is the case with XWorkplace).
  *
- *      We store the module handle in a global variable which can later quickly
- *      be retrieved using cmnQueryMainModuleHandle.
+ *      Besides, this is faster, since we store the module handle
+ *      in a global variable which can later quickly be retrieved
+ *      using cmnQueryMainModuleHandle.
  *
- *      Since OS/2 calls this function directly, it must have _System linkage.
- *      Note: You must then link using the /NOE option, because the VAC++ runtimes
- *      also contain a _DLL_Initterm, and the linker gets in trouble otherwise.
- *      The XWorkplace makefile takes care of this.
+ *      Since OS/2 calls this function directly, it must have
+ *      _System linkage.
+ *
+ *      Note: You must then link using the /NOE option, because
+ *      the VAC++ runtimes also contain a _DLL_Initterm, and the
+ *      linker gets in trouble otherwise. The XWorkplace makefile
+ *      takes care of this.
  *
  *      This function must return 0 upon errors or 1 otherwise.
  *
@@ -281,9 +287,6 @@ const char* cmnQueryMainModuleFilename(VOID)
  *      logs a message to the XWorkplace log file
  *      in the root directory of the boot drive.
  *
- *      You can use the CMN_LOG macro which inserts
- *      the first three parameters automatically.
- *
  *@@added V0.9.2 (2000-03-06) [umoeller]
  */
 
@@ -336,18 +339,19 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
  */
 
 /*
- *@@ cmnQueryXFolderBasePath:
+ *@@ cmnQueryXWPBasePath:
  *      this routine returns the path of where XFolder was installed,
  *      i.e. the parent directory of where the xfldr.dll file
  *      resides, without a trailing backslash (e.g. "C:\XFolder").
  *      The buffer to copy this to is assumed to be CCHMAXPATH in size.
  *      As opposed to versions before V0.81, OS2.INI is no longer
  *      needed for this to work. The path is retrieved from the
- *      DLL directly by evaluating what was passed to _DLL_InitModule
- *      (module.c).
+ *      DLL directly by evaluating what was passed to _DLL_InitTerm.
+ *
+ *@@changed V0.9.7 (2000-12-02) [umoeller]: renamed from cmnQueryXFolderBasePath
  */
 
-BOOL cmnQueryXFolderBasePath(PSZ pszPath)
+BOOL cmnQueryXWPBasePath(PSZ pszPath)
 {
     BOOL brc = FALSE;
     const char *pszDLL = cmnQueryMainModuleFilename();
@@ -364,7 +368,7 @@ BOOL cmnQueryXFolderBasePath(PSZ pszPath)
         brc = TRUE;
     }
     #ifdef DEBUG_LANGCODES
-        _Pmpf(( "cmnQueryXFolderBasePath: %s", pszPath ));
+        _Pmpf(( "cmnQueryXWPBasePath: %s", pszPath ));
     #endif
     return (brc);
 }
@@ -400,7 +404,8 @@ const char* cmnQueryLanguageCode(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (G_szLanguageCode);
 }
@@ -434,7 +439,8 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (brc);
 }
@@ -459,7 +465,7 @@ const char* cmnQueryHelpLibrary(VOID)
     {
         TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
-            if (cmnQueryXFolderBasePath(G_szHelpLibrary))
+            if (cmnQueryXWPBasePath(G_szHelpLibrary))
             {
                 // path found: append helpfile
                 sprintf(G_szHelpLibrary + strlen(G_szHelpLibrary),
@@ -476,7 +482,8 @@ const char* cmnQueryHelpLibrary(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (rc);
 }
@@ -525,7 +532,7 @@ const char* cmnQueryMessageFile(VOID)
     {
         TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
-            if (cmnQueryXFolderBasePath(G_szMessageFile))
+            if (cmnQueryXWPBasePath(G_szMessageFile))
             {
                 // path found: append message file
                 sprintf(G_szMessageFile + strlen(G_szMessageFile),
@@ -542,7 +549,8 @@ const char* cmnQueryMessageFile(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (rc);
 }
@@ -575,7 +583,7 @@ HMODULE cmnQueryIconsDLL(VOID)
             {
                 CHAR    szIconsDLL[CCHMAXPATH],
                         szNewIconsDLL[CCHMAXPATH];
-                cmnQueryXFolderBasePath(szIconsDLL);
+                cmnQueryXWPBasePath(szIconsDLL);
                 strcpy(szNewIconsDLL, szIconsDLL);
 
                 sprintf(szIconsDLL+strlen(szIconsDLL),
@@ -622,7 +630,8 @@ HMODULE cmnQueryIconsDLL(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (G_hmodIconsDLL);
 }
@@ -657,7 +666,7 @@ PSZ cmnQueryBootLogoFile(VOID)
             {
                 CHAR szBootLogoFile[CCHMAXPATH];
                 // INI data not found: return default file
-                cmnQueryXFolderBasePath(szBootLogoFile);
+                cmnQueryXWPBasePath(szBootLogoFile);
                 strcat(szBootLogoFile,
                         "\\bootlogo\\xfolder.bmp");
                 pszReturn = strdup(szBootLogoFile);
@@ -668,7 +677,8 @@ PSZ cmnQueryBootLogoFile(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (pszReturn);
 }
@@ -1270,7 +1280,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                 NLSSTRINGS *pNLSStrings = (NLSSTRINGS*)cmnQueryNLSStrings();
 
                 // get the XFolder path first
-                if (cmnQueryXFolderBasePath(szResourceModuleName))
+                if (cmnQueryXWPBasePath(szResourceModuleName))
                 {
                     // now compose module name from language code
                     strcat(szResourceModuleName, "\\bin\\xfldr");
@@ -1375,7 +1385,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     // return (new?) module handle
     return (G_hmodNLS);
@@ -1407,7 +1418,8 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (G_pNLSStringsGlobal);
 }
@@ -1598,7 +1610,8 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (rc);
 }
@@ -1683,7 +1696,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (brc);
 }
@@ -1806,7 +1820,8 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 
     return (G_pGlobalSettings);
 }
@@ -1843,7 +1858,8 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
     return (G_pGlobalSettings);
 }
 
@@ -1868,7 +1884,8 @@ GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
         return (G_pGlobalSettings);
     else
     {
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
         return (NULL);
     }
 }
@@ -2198,7 +2215,8 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
         cmnUnlockGlobalSettings();
 
         if (krnQueryLock())
-            CMN_LOG(("Global lock already requested."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Global lock already requested.");
         else
         {
             // disable:
@@ -2556,7 +2574,8 @@ VOID cmnSetControlsFont(HWND hwnd,
         krnUnlock();
     }
     else
-        CMN_LOG(("krnLock failed."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "krnLock failed.");
 }
 
 PFNWP pfnwpOrigStatic = NULL;

@@ -28,10 +28,21 @@
  *      GNU General Public License for more details.
  */
 
-#define  INCL_WIN
-#define  INCL_DOS
+#define INCL_DOSMEMMGR
+#define INCL_DOSMODULEMGR
+#define INCL_DOSSESMGR
 
+#define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WINDIALOGS
+#define INCL_WINTIMER
+#define INCL_WINPOINTERS
+#define INCL_WINSHELLDATA
+#define INCL_WINPROGRAMLIST
+#define INCL_WINLISTBOXES
+#define INCL_WINDDE
 #include <os2.h>
+
 #include <stdio.h>
 #include <string.h>
 

@@ -61,9 +61,15 @@
  *  8)  for non-SOM-class files: corresponding header (e.g. classlst.h)
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINPOINTERS
+#define INCL_WINSHELLDATA
+#define INCL_WINCLIPBOARD
+#define INCL_WINSTDCNR
 #include <os2.h>
 
 // C library headers
@@ -254,7 +260,7 @@ BOOL wpshCheckObject(WPObject *pObject)
 
     if (pObject)
     {
-        TRY_QUIET(excpt1, NULL)
+        TRY_QUIET(excpt1)
         {
             // call an object method; if this doesn't fail,
             // TRUE is returned, otherwise an xcpt occurs
@@ -339,9 +345,11 @@ WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
  *      you may pass parc as NULL.
  *
  *@@changed V0.9.2 (2000-03-09) [umoeller]: added another check
+ *@@changed V0.9.6 (2000-11-24) [pr]: added logical drive mapping for floppies
  */
 
 WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
+                              BOOL bForceMap,  // in: force mapping change
                               APIRET *parc)    // out: DOS error code; may be NULL
 {
     WPFolder *pReturnFolder = NULL;
@@ -349,6 +357,16 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
 
     ULONG ulLogicalDrive = _wpQueryLogicalDrive(somSelf);
     arc = doshAssertDrive(ulLogicalDrive);
+
+    if (    (arc == ERROR_DISK_CHANGE)
+         && (bForceMap)
+         && ((ulLogicalDrive == 1) || (ulLogicalDrive == 2))
+         && (doshSetLogicalMap(ulLogicalDrive) == NO_ERROR)
+       )
+    {
+        arc = doshAssertDrive(ulLogicalDrive);
+    }
+
     if (arc == NO_ERROR)
     {
         // drive seems to be ready:
@@ -361,6 +379,7 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
 
     if (parc)
         *parc = arc;
+
     return (pReturnFolder);
 }
 
@@ -596,7 +615,7 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                         // fNewObjSemOwned = FALSE,
                         fShiftPressed = doshQueryShiftState();
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // change the mouse pointer to "wait" state
         hptrOld = winhSetWaitPointer();
@@ -918,31 +937,24 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
                     HWND hwndFrame)         // in: frame window of open view of somSelf
 {
     ULONG   ulView = 0;
-    BOOL    fFolderLocked = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        PUSEITEM    pUseItem = NULL;
+        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
         {
-            PUSEITEM    pUseItem = NULL;
-            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-                 pUseItem;
-                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (pViewItem->handle == hwndFrame)
             {
-                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-                if (pViewItem->handle == hwndFrame)
-                {
-                    ulView = pViewItem->view;
-                    break;
-                }
+                ulView = pViewItem->view;
+                break;
             }
-        } // end if fFolderLocked
+        }
     }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    wpshUnlockObject(&Lock);
 
     return (ulView);
 }
@@ -970,31 +982,24 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
                    HWND hwndCnr)
 {
     BOOL    brc = FALSE;
-    BOOL    fFolderLocked = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        PUSEITEM    pUseItem = NULL;
+        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
         {
-            PUSEITEM    pUseItem = NULL;
-            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-                 pUseItem;
-                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
             {
-                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-                if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
-                {
-                    brc = TRUE;
-                    break;
-                }
+                brc = TRUE;
+                break;
             }
-        } // end if fFolderLocked
+        }
     }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -1069,7 +1074,7 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
  *      returned object might be a shadow, which you might need to
  *      dereference before working on it.
  *
- *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from menus.c; changed prefix
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from fdrmenus.c; changed prefix
  *@@changed V0.9.1 (2000-01-31) [umoeller]: added fKeyboardMode support
  */
 
@@ -1192,7 +1197,7 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
  *      This will return the next object after pObject which
  *      is selected or NULL if it's the last.
  *
- *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from menus.c; changed prefix
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from fdrmenus.c; changed prefix
  */
 
 WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
@@ -1779,6 +1784,126 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
 
 /* ******************************************************************
  *
+ *   Object locks
+ *
+ ********************************************************************/
+
+/*
+ *@@ wpshLockObject:
+ *      locks the specified object (somSelf) by calling
+ *      WPObject::wpRequestObjectMutexSem on it. Before
+ *      that, this installs a private exception handler
+ *      which makes sure that the object gets unlocked
+ *      if an exception occurs or the current thread gets
+ *      terminated while the mutex is held.
+ *
+ *      Returns TRUE only if the exception handler was
+ *      installed _and_ the object is now locked.
+ *
+ *      You must ALWAYS call wpshUnlockObject afterwards, as
+ *      shown below, or you will definitely get hangs and
+ *      traps which are impossible to debug. This is true
+ *      even if this function returned FALSE.
+ *
+ *      This is extremely sick code internally, but makes
+ *      it easy to implement proper serialization for WPS
+ *      objects.
+ *
+ *      <B>Usage:</B>
+ +
+ +          WPSHLOCKSTRUCT Lock;
+ +          if (wpshLockObject(&Lock, somSelf))
+ +          {
+ +              // exception handler installed, object locked:
+ +              // do protected processing
+ +              ...
+ +          }
+ +          // else: lock failed;
+ +          // also, if an exception occured, wpshLockObject is jumped back
+ +          // in and returns FALSE then...
+ +          // in any case, call "unlock object"
+ +          wpshUnlockObject(&Lock);
+ *
+ *@@added V0.9.7 (2000-12-08) [umoeller]
+ */
+
+BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
+                    WPObject *somSelf)
+{
+    BOOL brc = FALSE;
+
+    memset(pLock, 0, sizeof(*pLock));
+
+    // enter must-complete section!
+    DosEnterMustComplete(&pLock->ulNesting);
+
+    // install exception handler!
+    pLock->ExceptStruct.RegRec2.pfnHandler = (PFN)excHandlerLoud;
+    pLock->ExceptStruct.arc
+            = DosSetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&pLock->ExceptStruct.RegRec2);
+    if (pLock->ExceptStruct.arc == NO_ERROR)
+    {
+        // exception handler installed:
+        // set jump buf for exception handler
+        pLock->ExceptStruct.ulExcpt = setjmp(pLock->ExceptStruct.RegRec2.jmpThread);
+        if (pLock->ExceptStruct.ulExcpt == 0)
+        {
+            // setjmp == 0 means no exception occured:
+            // lock the object!
+            pLock->fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+            if (pLock->fLocked)
+            {
+                // object was locked:
+                // store the object ptr in the extended exception registration record,
+                // which gets passed to wpshOnKill
+                pLock->ExceptStruct.RegRec2.pvUser = somSelf;
+                // only then return TRUE
+                brc = TRUE;
+            }
+        }
+        else
+        {
+            // the exception handler puts us here if an exception occured...
+            DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&pLock->ExceptStruct.RegRec2);
+            // return FALSE
+            brc = FALSE;
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ wpshUnlockObject:
+ *      returns TRUE if the object was unlocked.
+ *
+ *@@added V0.9.7 (2000-12-08) [umoeller]
+ */
+
+BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
+{
+    BOOL brc = FALSE;
+    if (    (pLock->fLocked)
+         && (pLock->ExceptStruct.RegRec2.pvUser)        // has the object
+       )
+    {
+        if (!_wpReleaseObjectMutexSem((WPObject*)pLock->ExceptStruct.RegRec2.pvUser))
+        {
+            pLock->ExceptStruct.RegRec2.pvUser = NULL;
+            pLock->fLocked = FALSE;
+            brc = TRUE;
+        }
+    }
+
+    DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&pLock->ExceptStruct.RegRec2);
+
+    DosExitMustComplete(&pLock->ulNesting);
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
  *   Additional WPFolder method prototypes
  *
  ********************************************************************/
@@ -1798,7 +1923,8 @@ ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
             = (xfTD_wpRequestFolderMutexSem)somResolveByName(somSelf,
                                                              "wpRequestFolderMutexSem");
     if (!_wpRequestFolderMutexSem)
-        CMN_LOG(("Unable to resolve method."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method.");
     else
         ulrc = _wpRequestFolderMutexSem(somSelf, ulTimeout);
 
@@ -1819,7 +1945,8 @@ ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf)
             = (xfTD_wpReleaseFolderMutexSem)somResolveByName(somSelf,
                                                              "wpReleaseFolderMutexSem");
     if (!_wpReleaseFolderMutexSem)
-        CMN_LOG(("Unable to resolve method."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method.");
     else
         ulrc = _wpReleaseFolderMutexSem(somSelf);
 
@@ -1840,7 +1967,8 @@ ULONG wpshFlushNotifications(WPFolder *somSelf)
         = (xfTD_wpFlushNotifications)somResolveByName(somSelf,
                                                       "wpFlushNotifications");
     if (!_wpFlushNotifications)
-        CMN_LOG(("Unable to resolve method."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method.");
     else
         _wpFlushNotifications(somSelf);
 
@@ -1866,7 +1994,8 @@ BOOL wpshGetNotifySem(ULONG ulTimeout)
             = (xfTD_wpclsGetNotifySem)somResolveByName(pWPFolder,
                                                        "wpclsGetNotifySem");
     if (!_wpclsGetNotifySem)
-        CMN_LOG(("Unable to resolve method pointer."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method pointer.");
     else
         brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
 
@@ -1887,7 +2016,8 @@ VOID wpshReleaseNotifySem(VOID)
             = (xfTD_wpclsReleaseNotifySem)somResolveByName(pWPFolder,
                                                            "wpclsReleaseNotifySem");
     if (!_wpclsReleaseNotifySem)
-        CMN_LOG(("Unable to resolve method pointer."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Unable to resolve method pointer.");
     else
         _wpclsReleaseNotifySem(pWPFolder);
 }

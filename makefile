@@ -89,21 +89,23 @@ OBJS = \
     bin\xwpkeybd.obj bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
     bin\xwpstring.obj \
 # code from shared \
-    bin\classes.obj bin\cnrsort.obj bin\common.obj bin\notebook.obj \
-    bin\kernel.obj bin\xsetup.obj bin\wpsh.obj \
+    bin\center.obj bin\classes.obj bin\cnrsort.obj bin\common.obj bin\contentmenus.obj \
+    bin\notebook.obj bin\kernel.obj bin\xsetup.obj bin\wpsh.obj \
 # code from config\
     bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\hookintf.obj \
     bin\pagemage.obj bin\partitions.obj bin\sound.obj \
 # code from filesys\
-    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fhandles.obj \
-    bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
+    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fdrmenus.obj \
+    bin\fhandles.obj bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
     bin\filetype.obj \
-    bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
+    bin\folder.obj bin\object.obj bin\desktop.obj \
     bin\program.obj bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from media\
     bin\mmhelp.obj bin\mmthread.obj bin\mmvolume.obj \
 # code from startshut\
-    bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj
+    bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj \
+# code from xcenter\
+    bin\ctr_engine.obj bin\ctr_notebook.obj bin\w_objbutton.obj bin\w_pulse.obj bin\w_xbutton.obj
 
 OBJS_ANICLASSES = bin\anand.obj bin\anos2ptr.obj bin\anwani.obj bin\anwcur.obj
 OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj
@@ -122,6 +124,10 @@ ANIOBJS =
 # The HLPOBJS macro contains all the .OBJ files which have been
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = bin\helpers.lib
+
+# The following macros contains the .OBJ files for the XCenter plugins.
+WINLISTOBJS = bin\widgets\w_winlist.obj
+MONITOROBJS = bin\widgets\w_monitors.obj
 
 !ifdef PAGEMAGE
 PGMGDMNOBJS = bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
@@ -170,19 +176,19 @@ all: idl cpl_main link
     @echo ----- Leaving $(MAKEDIR)
 
 # "really_all" references "all".
-really_all: tools all nls
+really_all: all treesize netscdde xshutdwn tools nls
     @echo ----- Leaving $(MAKEDIR)
 
 # If you add a subdirectory to SRC\, add a target to
 # "cpl_main" also to have automatic recompiles.
-cpl_main: helpers helpers_exe_mt classes config filesys media \
+cpl_main: helpers helpers_exe_mt classes config filesys media widgets xcenter \
 !ifdef ANIMATED_MOUSE_POINTERS
 pointers \
 !endif
 !ifdef XWPSECURITY
 xwpsecurity \
 !endif
-shared startshut hook treesize netscdde xshutdwn
+shared startshut hook
 #animouse
 
 # COMPILER PSEUDOTARGETS
@@ -222,6 +228,20 @@ media:
 # V0.9.3 (2000-04-25) [umoeller]
     @echo $(MAKEDIR)\makefile: Going for subdir src\media
     @cd src\media
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..\..
+
+widgets:
+# V0.9.7 (2000-12-02) [umoeller]
+    @echo $(MAKEDIR)\makefile: Going for subdir src\widgets
+    @cd src\widgets
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..\..
+
+xcenter:
+# V0.9.7 (2000-12-02) [umoeller]
+    @echo $(MAKEDIR)\makefile: Going for subdir src\xcenter
+    @cd src\xcenter
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
@@ -326,8 +346,11 @@ nls:
 # --------------------
 
 link: $(XWPRUNNING)\bin\xfldr.dll \
+      $(XWPRUNNING)\plugins\xcenter\monitors.dll \
+      $(XWPRUNNING)\plugins\xcenter\winlist.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
       $(XWPRUNNING)\bin\xwpdaemn.exe
+#      $(XWPRUNNING)\bin\xwpfonts.fon
 #      $(XWPRUNNING)\bin\xdebug.dll
 
 # Finally, define rules for linking the target DLLs and EXEs
@@ -338,11 +361,11 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
 # and then copy it thereto.
 
 #
-# XFLDR.DLL
+# Linking XFLDR.DLL
 #
 $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $(XWPRUNNING)\bin\$(@B).dll
+        unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 !ifndef DEBUG
@@ -362,11 +385,11 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\shared\xwp.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\shared\$(@B).def include\bldlevel.h "XWorkplace main WPS classes module"
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace main WPS classes module"
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def bin\xwp.res
-        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\xwp.def @<<link.tmp
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def bin\xwp.res makefile
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\shared\xwp.def @<<link.tmp
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
         @cd $(MODULESDIR)
@@ -378,7 +401,66 @@ $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
         @cd $(CURRENT_DIR)
 
 #
-# XWPDAEMN.EXE
+# Linking WINLIST.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\winlist.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+!ifndef DEBUG
+# copy symbol file, which is only needed if debug code is disabled
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+!endif
+
+# update DEF file if buildlevel has changed
+src\widgets\winlist.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter window-list plugin DLL"
+
+$(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+$(WINLISTOBJS)
+<<
+        @cd $(MODULESDIR)
+!ifndef DEBUG
+# create symbol file, which is only needed if debug code is disabled
+        mapsym /n $(@B).map > NUL
+!endif
+        @cd $(CURRENT_DIR)
+
+#
+# Linking MONITORS.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+!ifndef DEBUG
+# copy symbol file, which is only needed if debug code is disabled
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+!endif
+
+# update DEF file if buildlevel has changed
+src\widgets\monitors.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter monitors plugin DLL"
+
+$(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+$(MONITOROBJS)
+<<
+        @cd $(MODULESDIR)
+!ifndef DEBUG
+# create symbol file, which is only needed if debug code is disabled
+        mapsym /n $(@B).map > NUL
+!endif
+        @cd $(CURRENT_DIR)
+
+
+#
+# Linking XWPDAEMN.EXE
 #
 $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
         cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
@@ -389,7 +471,7 @@ $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
 
 # update DEF file if buildlevel has changed
 src\Daemon\xwpdaemn.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\Daemon\$(@B).def include\bldlevel.h "XWorkplace PM daemon"
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace PM daemon"
 
 # create import library from XWPHOOK.DLL
 bin\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
@@ -407,10 +489,10 @@ $(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
         @cd $(CURRENT_DIR)
 
 #
-# XWPHOOK.DLL
+# Linking XWPHOOK.DLL
 #
 $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
-# no unlock, this is a hook        unlock $(XWPRUNNING)\bin\$(@B).dll
+# no unlock, this is a hook        unlock $@
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 !ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
@@ -429,11 +511,11 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\hook\xwphook.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\hook\$(@B).def include\bldlevel.h "XWorkplace PM hook module"
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace PM hook module"
 
 $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
-        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
@@ -442,11 +524,34 @@ $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
         @cd $(CURRENT_DIR)
 
 #
+# Linking XWPFONTS.FON
+#
+$(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).fon $(XWPRUNNING)\bin
+
+# update DEF file if buildlevel has changed
+src\shared\xwpfonts.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace bitmap fonts"
+
+$(MODULESDIR)\xwpfonts.fon: bin\dummyfont.obj bin\$(@B).res makefile
+        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).fon
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def bin\dummyfont.obj
+        @cd $(MODULESDIR)
+# rename manually because otherwise the linker warns
+#        cmd.exe /c del $(@B).fon
+        cmd.exe /c ren $(@B).dll $(@B).fon
+        $(RC) ..\$(@B).res $(@B).fon
+        @cd $(CURRENT_DIR)
+
+#
 # XDEBUG.DLL
 #
 $(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
-        unlock $(XWPRUNNING)\bin\$(@B).dll
+        unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
@@ -577,6 +682,16 @@ release: really_all
 !if [@md $(XWPRELEASE_MAIN)\wav 2> NUL]
 !endif
     $(COPY) release\wav\* $(XWPRELEASE_MAIN)\wav
+    @echo $(MAKEDIR)\makefile: Done copying files.
+# 8) plugins
+!if [@md $(XWPRELEASE_MAIN)\plugins 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_MAIN)\plugins\xcenter 2> NUL]
+!endif
+    $(COPY) $(MODULESDIR)\monitors.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\monitors.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\winlist.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     @echo $(MAKEDIR)\makefile: Done copying files.
 
 

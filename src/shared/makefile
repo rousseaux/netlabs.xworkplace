@@ -49,9 +49,12 @@ OUTPUTDIR = ..\..\bin
 # created from the files in this directory.
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = $(OUTPUTDIR)\classes.obj \
+OBJS = $(OUTPUTDIR)\center.obj \
+       $(OUTPUTDIR)\classes.obj \
        $(OUTPUTDIR)\cnrsort.obj \
        $(OUTPUTDIR)\common.obj \
+       $(OUTPUTDIR)\contentmenus.obj \
+       $(OUTPUTDIR)\dummyfont.obj \
        $(OUTPUTDIR)\notebook.obj \
        $(OUTPUTDIR)\kernel.obj \
        $(OUTPUTDIR)\xsetup.obj \
@@ -67,7 +70,7 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(OUTPUTDIR)\xwp.res
+    $(OBJS) $(OUTPUTDIR)\xwp.res $(OUTPUTDIR)\xwpfonts.res
     @echo ----- Leaving $(MAKEDIR)
 !endif
 
@@ -95,9 +98,9 @@ callmainmake:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-        $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # main include path
@@ -122,6 +125,15 @@ MYOWNINC = $(INC)\shared
 
 # XWorkplace "library" .OBJ files used by several classes.
 # Source code is here in SRC\MAIN.
+
+$(OUTPUTDIR)\center.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\linklist.h  $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\timer.h \
+    $(INC)\classes\xcenter.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h \
+    $(INC)\xcenter\centerp.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\classes.obj: \
     $(INC)\setup.h \
@@ -150,6 +162,12 @@ $(OUTPUTDIR)\common.obj: \
      $(INC)\media\media.h \
      $(INC)\startshut\shutdown.h \
      $(@B).c $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\contentmenus.obj: \
+    $(INC)\setup.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\dummyfont.obj: $(@B).c
 
 $(OUTPUTDIR)\notebook.obj: \
      $(INC)\setup.h \
@@ -201,6 +219,8 @@ $(OUTPUTDIR)\wpsh.obj: \
         cmd.exe /c ..\..\tools\raisebld.cmd ..\..\include\build.h
 
 $(OUTPUTDIR)\xwp.res: *.ico xwp.rc ..\..\include\build.h
-        $(RC) -r -i $(OUTPUTDIR) xwp.rc $(OUTPUTDIR)\xwp.res
+        $(RC) -r -i $(OUTPUTDIR) $(@B).rc $(OUTPUTDIR)\$(@B).res
 
+$(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc
+        $(RC) -r -i $(OUTPUTDIR) $(@B).rc $(OUTPUTDIR)\$(@B).res
 

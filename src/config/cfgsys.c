@@ -154,9 +154,9 @@ PLINKLIST G_pllSysPathsList;
 PSYSPATH  G_pSysPathSelected = 0;
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c)                                *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*

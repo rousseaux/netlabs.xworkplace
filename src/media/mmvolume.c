@@ -44,8 +44,11 @@
 
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINCIRCULARSLIDER
+
 #define INCL_GPI                // required for INCL_MMIO_CODEC
 #define INCL_GPIBITMAPS         // required for INCL_MMIO_CODEC
 #include <os2.h>
@@ -144,7 +147,11 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                                         _wpQueryTitle(somSelf), // title bar
                                         0,                      // res IDs
                                         WC_CIRCULARSLIDER,      // client class: circular slider
-                                        WS_VISIBLE,             // client wnd style
+                                        WS_VISIBLE              // slider wnd style:
+                                            | CSS_CIRCULARVALUE     // draw knob instead of triangle
+                                            | CSS_NOTEXT            // no title text under dial
+                                            // | CSS_POINTSELECT       // click-to-value
+                                            ,
                                         1000,                   // ID
                                         NULL,
                                         &hwndClient);
@@ -160,11 +167,23 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
 
             if (pWinData)
             {
+
                 memset(pWinData, 0, sizeof(*pWinData));
 
                 pWinData->somSelf = somSelf;
 
                 WinSetWindowPtr(hwndFrame, QWL_USER, pWinData);
+
+                // set up slider more
+                WinSendMsg(hwndClient,
+                           CSM_SETRANGE,
+                           (MPARAM)0,
+                           (MPARAM)100);
+                WinSendMsg(hwndClient,
+                           CSM_SETINCREMENT,
+                           (MPARAM)1,           // scoll increment
+                           (MPARAM)10);         // tick marks increment
+
 
                 // subclass frame
                 pWinData->pfnwpFrameOriginal = WinSubclassWindow(hwndFrame,
@@ -199,7 +218,8 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                     pWinData->ViewItem.view   = ulView;
                     pWinData->ViewItem.handle = hwndFrame;
                     if (!_wpAddToObjUseList(somSelf, &(pWinData->UseItem))) // comes before view item
-                        CMN_LOG(("_wpAddToObjUseList failed."));
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "_wpAddToObjUseList failed.");
 
                     // create view title: remove ~ char
                     p = strchr(pszViewTitle, '~');

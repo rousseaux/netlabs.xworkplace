@@ -24,7 +24,7 @@
 ;      SOM Emitter emitdef: 2.41
 
 LIBRARY xfldr INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.6#@ XWorkplace main WPS classes module'
+Description '@#Ulrich M”ller:0.9.7#@ XWorkplace main WPS classes module'
 PROTMODE
 DATA MULTIPLE NONSHARED LOADONCALL
 
@@ -33,6 +33,37 @@ IMPORTS
     DosQuerySysState = DOSCALLS.368
 
 EXPORTS
+   cmnQueryDefaultFont
+   cmnQueryHelpLibrary
+   cmnQueryNLSModuleHandle
+   cmnSetControlsFont
+   ctrDisplayHelp
+   ctrFreeSetupValue
+   ctrParseColorString
+   ctrScanSetupString
+   ctrSetSetupString
+   gpihDraw3DFrame
+   lstAppendItem
+   lstClear
+   lstCountItems
+   lstInit
+   lstMalloc
+   lstQueryFirstNode
+   lstStrDup
+   strhDateTime
+   strhThousandsULong
+   tmrStartTimer
+   tmrStopTimer
+   winhCenterWindow
+   winhFree
+   winhQueryPresColor
+   winhQuerySwitchList
+   winhQueryWindowFont
+   winhSetWindowFont
+   xstrcat
+   xstrClear
+   xstrInit
+
    XFldDataFileCClassData
    XFldDataFileClassData
    XFldDataFileNewClass

@@ -303,6 +303,19 @@
 
     #define ID_XFH_CLOSEVIO                  95     // V0.9.6: was missing
 
+    #define ID_XSH_XCENTER_MAIN              96     // V0.9.7: XCenter default help
+    #define ID_XSH_XCENTER_VIEW              97     // V0.9.7: XCenter "View" page
+    #define ID_XSH_XCENTER_WIDGETS           98     // V0.9.7: XCenter "Widgets" page
+
+    #define ID_XSH_WIDGET_CLOCK_MAIN         99     // V0.9.7: Winlist widget main help
+    #define ID_XSH_WIDGET_MEMORY_MAIN       100     // V0.9.7: Memory widget main help
+    #define ID_XSH_WIDGET_OBJBUTTON_MAIN    101     // V0.9.7: Object button widget main help
+    #define ID_XSH_WIDGET_PULSE_MAIN        102     // V0.9.7: Pulse widget main help
+    #define ID_XSH_WIDGET_SWAP_MAIN         103     // V0.9.7: Swapper widget main help
+    #define ID_XSH_WIDGET_WINLIST_MAIN      104     // V0.9.7: Winlist widget main help
+    #define ID_XSD_WIDGET_WINLIST_SETTINGS  105     // V0.9.7: Winlist widget properties
+    #define ID_XSH_WIDGET_XBUTTON_MAIN      106     // V0.9.7: X-Button widget main help
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations
@@ -499,6 +512,10 @@
     #define SP_MEDIA_CODECS         161     // new with V0.9.3 (2000-04-29) [umoeller]
     #define SP_MEDIA_IOPROCS        162     // new with V0.9.3 (2000-04-29) [umoeller]
 
+    // 17) XCenter
+    #define SP_XCENTER_VIEW         170     // new with V0.9.7 (2000-12-05) [umoeller]
+    #define SP_XCENTER_WIDGETS      171     // new with V0.9.7 (2000-12-05) [umoeller]
+
     /********************************************************************
      *
      *   Global structures
@@ -529,6 +546,7 @@
     #define XSD_APM_DELAY           0x040000     // added V0.9.2 (2000-03-04) [umoeller]
     #define XSD_ANIMATE_REBOOT      0x080000     // added V0.9.3 (2000-05-22) [umoeller]
     #define XSD_EMPTY_TRASH         0x100000     // added V0.9.4 (2000-08-03) [umoeller]
+    #define XSD_WARPCENTERFIRST     0x200000     // added V0.9.7 (2000-12-08) [umoeller]
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
@@ -1006,7 +1024,7 @@
                 pszDtpMenuPage,     // title of XFldDesktop "Menu" page
                 pszFileTypesPage,   // title of "File types" page (XFldWPS)
                 pszSoundsPage,      // title of "Sounds" page (XWPSound)
-                pszViewPage,        // title of "View" page (XFldWPS)
+                pszViewPage,        // title of "View" page (XFldWPS, XCenter)
                 pszArchivesPage,    // title of WPDesktop "Archives" page replacement
                 pszModulePage,      // title of XFldProgramFile "Module" page
                 pszObjectHotkeysPage, // title of XWPKeyboard "Hotkeys" page
@@ -1173,21 +1191,6 @@
     #ifdef SOM_WPObject_h
 
         /*
-         *@@ VARMENULISTITEM:
-         *     linked list item for variable menu items
-         *     inserted into folder context menus; these
-         *     list items are created for both config folder
-         *     and folder content items
-         */
-
-        typedef struct _VARMENULISTITEM
-        {
-            WPObject                    *pObject;
-            CHAR                        szTitle[100];
-            USHORT                      usObjType;
-        } VARMENULISTITEM, *PVARMENULISTITEM;
-
-        /*
          *@@ ORDEREDLISTITEM:
          *      linked list structure for the ordered list
          *      of objects in a folder
@@ -1259,21 +1262,21 @@
                 const char *pcszFormat,
                 ...);
 
-    #define CMN_LOG(str) cmnLog(__FILE__, __LINE__, __FUNCTION__, str)
-
     /* ******************************************************************
      *
      *   XWorkplace National Language Support (NLS)
      *
      ********************************************************************/
 
-    BOOL cmnQueryXFolderBasePath(PSZ pszPath);
+    BOOL cmnQueryXWPBasePath(PSZ pszPath);
 
     const char* cmnQueryLanguageCode(VOID);
 
     BOOL cmnSetLanguageCode(PSZ pszLanguage);
 
-    const char* cmnQueryHelpLibrary(VOID);
+    const char* XWPENTRY cmnQueryHelpLibrary(VOID);
+    typedef const char* XWPENTRY CMNQUERYHELPLIBRARY(VOID);
+    typedef CMNQUERYHELPLIBRARY *PCMNQUERYHELPLIBRARY;
 
     #ifdef SOM_WPObject_h
         BOOL cmnDisplayHelp(WPObject *somSelf,
@@ -1288,7 +1291,9 @@
 
     void cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
 
-    HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload);
+    HMODULE XWPENTRY cmnQueryNLSModuleHandle(BOOL fEnforceReload);
+    typedef HMODULE XWPENTRY CMNQUERYNLSMODULEHANDLE(BOOL fEnforceReload);
+    typedef CMNQUERYNLSMODULEHANDLE *PCMNQUERYNLSMODULEHANDLE;
 
     PNLSSTRINGS cmnQueryNLSStrings(VOID);
 
@@ -1361,11 +1366,13 @@
 
     VOID cmnShowProductInfo(ULONG ulSound);
 
-    const char* cmnQueryDefaultFont(VOID);
+    const char* XWPENTRY cmnQueryDefaultFont(VOID);
+    typedef const char* XWPENTRY CMNQUERYDEFAULTFONT(VOID);
+    typedef CMNQUERYDEFAULTFONT *PCMNQUERYDEFAULTFONT;
 
-    VOID cmnSetControlsFont(HWND hwnd,
-                            SHORT usIDMin,
-                            SHORT usIDMax);
+    VOID XWPENTRY cmnSetControlsFont(HWND hwnd, SHORT usIDMin, SHORT usIDMax);
+    typedef VOID XWPENTRY CMNSETCONTROLSFONT(HWND hwnd, SHORT usIDMin, SHORT usIDMax);
+    typedef CMNSETCONTROLSFONT *PCMNSETCONTROLSFONT;
 
     /* the following are in os2.h somewhere:
     #define MB_OK                      0x0000

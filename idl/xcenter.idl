@@ -44,10 +44,29 @@ interface XCenter : WPAbstract
 
     ULONG xwpAddXCenterPages(in HWND hwndNotebook);
 
+    PVOID xwpQueryWidgets(in PULONG pulCount);
+
+    VOID xwpFreeWidgetsBuf(in PVOID pBuf,
+                           in ULONG ulCount);
+
+    BOOL xwpInsertWidget(in ULONG ulBeforeIndex,
+                         in PSZ pszWidgetClass,
+                         in PSZ pszSetupString);
+
+    BOOL xwpRemoveWidget(in ULONG ulIndex);
+
+    ULONG xwpQuerySetup2(in PSZ pszSetupString,
+                         in ULONG cbSetupString);
+
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddXCenterPages;
+    releaseorder: xwpAddXCenterPages,
+                  xwpQueryWidgets,
+                  xwpFreeWidgetsBuf,
+                  xwpInsertWidget,
+                  xwpRemoveWidget,
+                  xwpQuerySetup2;
 
     /*
      * Class Modifiers:
@@ -68,6 +87,26 @@ interface XCenter : WPAbstract
      *
      */
 
+    ULONG ulWindowStyle;            // XCenter frame's window style;
+                                    // defaults to WS_TOPMOST | WS_ANIMATE
+
+    ULONG ulAutoHide;               // auto-hide delay in milliseconds; if 0,
+                                    // auto-hide is off
+
+    ULONG ulPosition;               // 0 = bottom (XCENTER_BOTTOM)
+                                    // 1 = top (XCENTER_TOP)
+
+    HWND hwndOpenView;              // if != NULLHANDLE, currently open XCenter view
+
+    BOOL fShowingOpenViewMenu;      // TRUE if context menu on XCenter client
+
+    PSZ pszPackedWidgetSettings;    // packed widget settings restored in wpRestoreState
+                                    // (allocated with malloc())
+    ULONG cbPackedWidgetSettings;   // size of that buffer
+
+    PVOID pllWidgetSettings;        // linked list of XCENTERWIDGETSETTING entries
+                                    // (this is a PLINKLIST really)
+
     /*
      * WPAbstract methods overridden by XCenter:
      *
@@ -86,10 +125,11 @@ interface XCenter : WPAbstract
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
-    wpOpen: override;
-
     wpQueryDefaultHelp: override;
     wpQueryDefaultView: override;
+
+    wpOpen: override;
+    wpSwitchTo: override;
 
     wpAddObjectWindowPage: override;
 
@@ -142,8 +182,6 @@ interface M_XCenter : M_WPAbstract
     wpclsQueryIconData: override;
 
     wpclsQuerySettingsPageSize: override;
-
-    wpclsCreateDefaultTemplates: override;
   };
 #endif /* __SOMIDL__ */
 };

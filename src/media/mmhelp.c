@@ -59,14 +59,19 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINMESSAGEMGR
+
 #define INCL_GPI                // required for INCL_MMIO_CODEC
 #define INCL_GPIBITMAPS         // required for INCL_MMIO_CODEC
 #include <os2.h>
 
 // multimedia includes
+#define INCL_MMIOOS2
 #define INCL_MCIOS2
 #define INCL_MMIOOS2
 #define INCL_MMIO_CODEC
@@ -90,6 +95,8 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // XWorkplace implementation headers
+#include "shared\common.h"              // the majestic XWorkplace include file
+
 #include "media\media.h"                // XWorkplace multimedia support
 
 /* ******************************************************************
@@ -780,13 +787,13 @@ BOOL xmmCDPause(USHORT usDeviceID)
  *                                                                  *
  ********************************************************************/
 
-typedef struct _DEVICETYPE
+/* typedef struct _DEVICETYPE
 {
     ULONG   ulDeviceTypeID;
     PSZ     pszDeviceType;
-} DEVICETYPE, *PDEVICETYPE;
+} DEVICETYPE, *PDEVICETYPE; */
 
-DEVICETYPE aDeviceTypes[] =
+/* DEVICETYPE aDeviceTypes[] =
         {
             MCI_DEVTYPE_VIDEOTAPE, "Video tape",        // ### NLS!
             MCI_DEVTYPE_VIDEODISC, "Video disc",
@@ -807,7 +814,124 @@ DEVICETYPE aDeviceTypes[] =
             MCI_DEVTYPE_CDXA, "CDXA",
             MCI_DEVTYPE_FILTER, "Filter",       // Warp 4 only
             MCI_DEVTYPE_TTS, "Text-to-speech"
+        }; */
+
+ULONG aulDeviceTypes[] =
+        {
+            MCI_DEVTYPE_VIDEOTAPE,
+            MCI_DEVTYPE_VIDEODISC,
+            MCI_DEVTYPE_CD_AUDIO,
+            MCI_DEVTYPE_DAT,
+            MCI_DEVTYPE_AUDIO_TAPE,
+            MCI_DEVTYPE_OTHER,
+            MCI_DEVTYPE_WAVEFORM_AUDIO,
+            MCI_DEVTYPE_SEQUENCER,
+            MCI_DEVTYPE_AUDIO_AMPMIX,
+            MCI_DEVTYPE_OVERLAY,
+            MCI_DEVTYPE_ANIMATION,
+            MCI_DEVTYPE_DIGITAL_VIDEO,
+            MCI_DEVTYPE_SPEAKER,
+            MCI_DEVTYPE_HEADPHONE,
+            MCI_DEVTYPE_MICROPHONE,
+            MCI_DEVTYPE_MONITOR,
+            MCI_DEVTYPE_CDXA,
+            MCI_DEVTYPE_FILTER, // Warp 4 only
+            MCI_DEVTYPE_TTS
         };
+
+/*
+ *@@ GetDeviceTypeName:
+ *      returns an NLS string describing the
+ *      input MCI_DEVTYPE_* device type.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+const char* GetDeviceTypeName(ULONG ulDeviceType)
+{
+    const char *prc = "Unknown";
+    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    switch (ulDeviceType)
+    {
+        case MCI_DEVTYPE_VIDEOTAPE:
+            prc = pNLSStrings->pszDevTypeVideotape;
+        break;
+
+        case MCI_DEVTYPE_VIDEODISC:
+            prc = pNLSStrings->pszDevTypeVideodisc;
+        break;
+
+        case MCI_DEVTYPE_CD_AUDIO:
+            prc = pNLSStrings->pszDevTypeCDAudio;
+        break;
+
+        case MCI_DEVTYPE_DAT:
+            prc = pNLSStrings->pszDevTypeDAT;
+        break;
+
+        case MCI_DEVTYPE_AUDIO_TAPE:
+            prc = pNLSStrings->pszDevTypeAudioTape;
+        break;
+
+        case MCI_DEVTYPE_OTHER:
+            prc = pNLSStrings->pszDevTypeOther;
+        break;
+
+        case MCI_DEVTYPE_WAVEFORM_AUDIO:
+            prc = pNLSStrings->pszDevTypeWaveformAudio;
+        break;
+
+        case MCI_DEVTYPE_SEQUENCER:
+            prc = pNLSStrings->pszDevTypeSequencer;
+        break;
+
+        case MCI_DEVTYPE_AUDIO_AMPMIX:
+            prc = pNLSStrings->pszDevTypeAudioAmpmix;
+        break;
+
+        case MCI_DEVTYPE_OVERLAY:
+            prc = pNLSStrings->pszDevTypeOverlay;
+        break;
+
+        case MCI_DEVTYPE_ANIMATION:
+            prc = pNLSStrings->pszDevTypeAnimation;
+        break;
+
+        case MCI_DEVTYPE_DIGITAL_VIDEO:
+            prc = pNLSStrings->pszDevTypeDigitalVideo;
+        break;
+
+        case MCI_DEVTYPE_SPEAKER:
+            prc = pNLSStrings->pszDevTypeSpeaker;
+        break;
+
+        case MCI_DEVTYPE_HEADPHONE:
+            prc = pNLSStrings->pszDevTypeHeadphone;
+        break;
+
+        case MCI_DEVTYPE_MICROPHONE:
+            prc = pNLSStrings->pszDevTypeMicrophone;
+        break;
+
+        case MCI_DEVTYPE_MONITOR:
+            prc = pNLSStrings->pszDevTypeMonitor;
+        break;
+
+        case MCI_DEVTYPE_CDXA:
+            prc = pNLSStrings->pszDevTypeCDXA;
+        break;
+
+        case MCI_DEVTYPE_FILTER:
+            prc = pNLSStrings->pszDevTypeFilter;
+        break;
+
+        case MCI_DEVTYPE_TTS:
+            prc = pNLSStrings->pszDevTypeTTS;
+        break;
+    }
+
+    return (prc);
+}
 
 /*
  *@@ xmmQueryDevices:
@@ -817,6 +941,7 @@ DEVICETYPE aDeviceTypes[] =
  *      (not the array size!). Use xmmFreeDevices to clean up.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
+ *@@changed V0.9.7 (2000-11-30) [umoeller]: added NLS for device types
  */
 
 PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
@@ -829,14 +954,14 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
 
     ULONG   ulDevTypeThis = 0;
     for (ulDevTypeThis = 0;
-         ulDevTypeThis < sizeof(aDeviceTypes) / sizeof(aDeviceTypes[0]); // array item count
+         ulDevTypeThis < sizeof(aulDeviceTypes) / sizeof(aulDeviceTypes[0]); // array item count
          ulDevTypeThis++)
     {
         ULONG   ulrc,
                 ulCurrentDeviceIndex = 0;
         BOOL    fContinue = FALSE;
 
-        _Pmpf(("Opening type %d", aDeviceTypes[ulDevTypeThis].ulDeviceTypeID));
+        // _Pmpf(("Opening type %d", aDeviceTypes[ulDevTypeThis].ulDeviceTypeID));
 
         // now, for this device type, enumerate
         // devices; start with device "1", because
@@ -847,7 +972,7 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
         {
             USHORT  usDeviceID = 0;
 
-            if (xmmOpenDevice(aDeviceTypes[ulDevTypeThis].ulDeviceTypeID,
+            if (xmmOpenDevice(aulDeviceTypes[ulDevTypeThis],    // device type
                               ulCurrentDeviceIndex,
                               &usDeviceID))
             {
@@ -875,8 +1000,8 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
                     ulDevicesAllocated += XMM_QDEV_ALLOC_DELTA;
                 }
 
-                paDevices[cDevices].ulDeviceType = aDeviceTypes[ulDevTypeThis].ulDeviceTypeID;
-                paDevices[cDevices].pszDeviceType = aDeviceTypes[ulDevTypeThis].pszDeviceType;
+                paDevices[cDevices].ulDeviceType = aulDeviceTypes[ulDevTypeThis];
+                paDevices[cDevices].pcszDeviceType = GetDeviceTypeName(aulDeviceTypes[ulDevTypeThis]);
                 paDevices[cDevices].ulDeviceIndex = ulCurrentDeviceIndex;
 
                 cDevices++;

@@ -147,9 +147,12 @@
  *
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSDEVICES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINPOINTERS
@@ -179,6 +182,7 @@
 
 #include "bldlevel.h"
 
+#include "shared\center.h"              // public XCenter interfaces
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 /* ******************************************************************
@@ -794,6 +798,7 @@ VOID DeinstallHook(VOID)
  *
  *@@changed V0.9.3 (2000-05-23) [umoeller]: fixed MDI-subframes problem (VIEW.EXE)
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 handling, which broke with 0.9.3
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  */
 
 VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
@@ -820,6 +825,24 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
             // target is PM desktop:
             return;
 
+    // V0.9.7 (2000-12-08) [umoeller]:
+    // rule out XCenter, if "ignore XCenter" is on
+    hwndClient = WinWindowFromID(hwnd2Activate, FID_CLIENT);
+            // also needed below for seamless
+    if (G_pHookData->HookConfig.fSlidingIgnoreXCenter)
+    {
+        // Is-XCenter check: the window must have an FID_CLIENT
+        // whose class name is WNDCLASS_XCENTER_CLIENT
+        if (hwndClient)
+        {
+            CHAR szClass[100];
+            WinQueryClassName(hwndClient, sizeof(szClass), szClass);
+            if (strcmp(szClass, WNDCLASS_XCENTER_CLIENT) == 0)
+                // target is XCenter:
+                return;
+        }
+    }
+
     // always ignore window list
     if (hwnd2Activate == G_pHookData->hwndWindowList)
         return;
@@ -836,8 +859,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
 
     // handle seamless Win-OS/2 windows: those have a frame
     // and an FID_CLIENT of the SeamlessClass class
-    hwndClient = WinWindowFromID(hwnd2Activate, FID_CLIENT);
-    if (hwndClient)
+    if (hwndClient)     // queried above
     {
         CHAR szClassName[200];
         WinQueryClassName(hwndClient, sizeof(szClassName), szClassName);
@@ -1038,7 +1060,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
     static HWND     S_hwndUnderMouse = NULLHANDLE;
     static HWND     S_hwnd2Activate = NULLHANDLE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         switch (msg)
         {
@@ -1570,7 +1592,7 @@ int main(int argc, char *argv[])
                              dmnExceptError,
                              TRUE);     // beeps
 
-            TRY_LOUD(excpt1, NULL)
+            TRY_LOUD(excpt1)
             {
                 // check security dummy parameter "-D"
                 if (    (argc == 2)
@@ -1584,7 +1606,7 @@ int main(int argc, char *argv[])
                     if (DosCreateMutexSem(IDMUTEX_ONEINSTANCE,
                                           &hmtx,
                                           DC_SEM_SHARED,
-                                          TRUE)
+                                          TRUE)     // owned!!
                          == NO_ERROR)
                     {
                         // semaphore successfully created: this means

@@ -82,17 +82,17 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 PFNWP   G_pfnwpOrigStatic = NULL;
 
 /* ******************************************************************
- *                                                                  *
- *   PageMage (XWPScreen) helpers                                   *
- *                                                                  *
+ *
+ *   PageMage (XWPScreen) helpers
+ *
  ********************************************************************/
 
 /*
@@ -145,9 +145,9 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   PageMage General page notebook functions (notebook.c)          *
- *                                                                  *
+ *
+ *   PageMage General page notebook functions (notebook.c)
+ *
  ********************************************************************/
 
 #ifdef __PAGEMAGE__
@@ -471,9 +471,9 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   PageMage Sticky page notebook functions (notebook.c)           *
- *                                                                  *
+ *
+ *   PageMage Sticky page notebook functions (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -809,9 +809,9 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   PageMage Colors page notebook functions (notebook.c)           *
- *                                                                  *
+ *
+ *   PageMage Colors page notebook functions (notebook.c)
+ *
  ********************************************************************/
 
 /*

@@ -12,7 +12,7 @@
  *
  *      -- XFolder::wpModifyPopupMenu adds all the XFolder menu items
  *         to folder context menus. This calls code in
- *         src/filesys/menus.c which is shared with XFldDisk,
+ *         src/filesys/fdrmenus.c which is shared with XFldDisk,
  *         because both classes largely do the same thing.
  *
  *      -- XFolder::wpOpen calls fdrManipulateNewView, which
@@ -142,7 +142,7 @@
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -229,48 +229,42 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                                           USHORT usAlwaysSort)
 {
     BOOL        Update = FALSE;
-    BOOL        fFolderLocked = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        XFolderData *somThis = XFolderGetData(somSelf);
+        XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
+
+        #ifdef DEBUG_SORT
+            _Pmpf(("xwpSetFldrSort %s", _wpQueryTitle(somSelf)));
+            _Pmpf(("  Old: Default %d, Always %d", _bDefaultSortInstance, _bAlwaysSortInstance));
+            _Pmpf(("  New: Default %d, Always %d", usDefaultSort, usAlwaysSort));
+        #endif
+
+        if (usDefaultSort != _bDefaultSortInstance)
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            XFolderData *somThis = XFolderGetData(somSelf);
-            XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
+            _bDefaultSortInstance = usDefaultSort;
+            Update = TRUE;
+        }
 
-            #ifdef DEBUG_SORT
-                _Pmpf(("xwpSetFldrSort %s", _wpQueryTitle(somSelf)));
-                _Pmpf(("  Old: Default %d, Always %d", _bDefaultSortInstance, _bAlwaysSortInstance));
-                _Pmpf(("  New: Default %d, Always %d", usDefaultSort, usAlwaysSort));
-            #endif
+        if (usAlwaysSort != _bAlwaysSortInstance)
+        {
+            _bAlwaysSortInstance = usAlwaysSort;
+            // if _wpRestoreState has found the pointer to the
+            // WPFOlder-internal sort structure, we will update
+            // this one also, because otherwise the WPS keeps
+            // messing with the container attributes;
+            // but make sure the folder is not being copied right now
+            if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+                if (_pFolderSortInfo)
+                    (_pFolderSortInfo)->fAlwaysSort = ALWAYS_SORT;
+            Update = TRUE;
+        }
+    } // end if (fFolderLocked)
 
-            if (usDefaultSort != _bDefaultSortInstance)
-            {
-                _bDefaultSortInstance = usDefaultSort;
-                Update = TRUE;
-            }
-
-            if (usAlwaysSort != _bAlwaysSortInstance)
-            {
-                _bAlwaysSortInstance = usAlwaysSort;
-                // if _wpRestoreState has found the pointer to the
-                // WPFOlder-internal sort structure, we will update
-                // this one also, because otherwise the WPS keeps
-                // messing with the container attributes;
-                // but make sure the folder is not being copied right now
-                if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-                    if (_pFolderSortInfo)
-                        (_pFolderSortInfo)->fAlwaysSort = ALWAYS_SORT;
-                Update = TRUE;
-            }
-        } // end if (fFolderLocked)
-    }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    wpshUnlockObject(&Lock);
 
     if (Update)
     {
@@ -317,50 +311,44 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            USHORT usSort)
 {
     BOOL        rc = FALSE;
-    BOOL        fFolderLocked = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+        // XFolderData *somThis = XFolderGetData(somSelf);
+        XFolderMethodDebug("XFolder","xf_xfSortByExt");
+
+        if (hwndCnr)
         {
-            HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-            // XFolderData *somThis = XFolderGetData(somSelf);
-            XFolderMethodDebug("XFolder","xf_xfSortByExt");
+            CNRINFO CnrInfo;
+            ULONG   ulStyle = 0;
 
-            if (hwndCnr)
+            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+
+            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
             {
-                CNRINFO CnrInfo;
-                ULONG   ulStyle = 0;
-
-                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                {
-                    // for some reason, icon views need to have "auto arrange" on,
-                    // or nothing will happen
-                    ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
-                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
-                }
-
-                // send sort msg with proper sort (comparison) func
-                WinSendMsg(hwndCnr,
-                           CM_SORTRECORD,
-                           (MPARAM)fdrQuerySortFunc(usSort),
-                           MPNULL);
-
-                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                    // restore old cnr style
-                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
-
-                rc = TRUE;
+                // for some reason, icon views need to have "auto arrange" on,
+                // or nothing will happen
+                ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
+                WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
             }
-        } // end if (fFolderLocked)
-    }
-    CATCH(excpt1) {} END_CATCH();
 
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+            // send sort msg with proper sort (comparison) func
+            WinSendMsg(hwndCnr,
+                       CM_SORTRECORD,
+                       (MPARAM)fdrQuerySortFunc(usSort),
+                       MPNULL);
+
+            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                // restore old cnr style
+                WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
+
+            rc = TRUE;
+        }
+    } // end if (fFolderLocked)
+
+    wpshUnlockObject(&Lock);
 
     return (rc);
 }
@@ -495,6 +483,9 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         WPObject             *pObj;
         BOOL                 fFolderLocked = FALSE;
 
+        ULONG ulNesting = 0;
+        DosEnterMustComplete(&ulNesting);
+
         memset(pec, 0, sizeof(ENUMCONTENT));
 
         wpshCheckIfPopulated(somSelf,
@@ -503,7 +494,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         // build new list for ORDEREDLISTITEMs:
         pec->pllOrderedContent = lstCreate(TRUE);       // auto-free list items
 
-        TRY_LOUD(excpt1, NULL)
+        TRY_LOUD(excpt1)
         {
             fFolderLocked = !wpshRequestFolderMutexSem(somSelf, 5000);
             if (fFolderLocked)
@@ -571,6 +562,8 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 
         if (fFolderLocked)
             wpshReleaseFolderMutexSem(somSelf);
+
+        DosExitMustComplete(&ulNesting);
 
         if (!fItemsFound)
         {
@@ -930,41 +923,35 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
                                                  WPFileSystem* pDefDoc)
 {
+    WPSHLOCKSTRUCT Lock;
     BOOL brc = FALSE;
-    BOOL fFolderLocked = FALSE;
     XFolderMethodDebug("XFolder","xf_xwpSetDefaultDocument");
 
-    TRY_LOUD(excpt1, NULL)
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
-        {
-            XFolderData *somThis = XFolderGetData(somSelf);
+        XFolderData *somThis = XFolderGetData(somSelf);
 
-            if (!pDefDoc)
+        if (!pDefDoc)
+        {
+            // NULL:
+            _pDefaultDocument = NULL;
+            brc = TRUE;
+        }
+        else
+        {
+            if (    (_somIsA(pDefDoc, _WPFileSystem))       // must be a WPFileSystem
+                 && (_wpQueryFolder(pDefDoc) == somSelf)    // must be in this folder
+               )
             {
-                // NULL:
-                _pDefaultDocument = NULL;
+                _pDefaultDocument = pDefDoc;
                 brc = TRUE;
             }
-            else
-            {
-                if (    (_somIsA(pDefDoc, _WPFileSystem))       // must be a WPFileSystem
-                     && (_wpQueryFolder(pDefDoc) == somSelf)    // must be in this folder
-                   )
-                {
-                    _pDefaultDocument = pDefDoc;
-                    brc = TRUE;
-                }
-            }
+        }
 
-            _wpSaveDeferred(somSelf);
-        } // end if (fFolderLocked)
+        _wpSaveDeferred(somSelf);
     }
-    CATCH(excpt1) {} END_CATCH();
 
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    wpshUnlockObject(&Lock);
 
     return (brc);
 }
@@ -981,33 +968,26 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
 SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
 {
     WPFileSystem *rc = NULL;
-    BOOL fFolderLocked = FALSE;
 
     XFolderMethodDebug("XFolder","xf_xwpQueryDefaultDocument");
 
-    TRY_LOUD(excpt1, NULL)
+    if (!_somIsA(somSelf, _WPDesktop))
     {
-        if (!_somIsA(somSelf, _WPDesktop))
+        WPSHLOCKSTRUCT Lock;
+        if (wpshLockObject(&Lock, somSelf))
         {
-            fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-            if (fFolderLocked)
-            {
-                XFolderData *somThis = XFolderGetData(somSelf);
+            XFolderData *somThis = XFolderGetData(somSelf);
 
-                if (_pszDefaultDocDeferred)
-                    // we have a default document, but this hasn't been
-                    // resolved yet:
-                    rc = NULL;
-                else
-                    rc = _pDefaultDocument;
-            } // end if (fFolderLocked)
+            if (_pszDefaultDocDeferred)
+                // we have a default document, but this hasn't been
+                // resolved yet:
+                rc = NULL;
+            else
+                rc = _pDefaultDocument;
         }
+
+        wpshUnlockObject(&Lock);
     }
-
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
 
     return (rc);
 }
@@ -1247,7 +1227,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
                                            ULONG cbSetupString)
 {
     ULONG ulReturn = 0;
-
     // method pointer for parent class
     somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
 
@@ -1264,10 +1243,10 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
                                                             "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
-        // now call XFldObject method
+        // now call parent method
         if ( (pszSetupString) && (cbSetupString) )
             // string buffer already specified:
-            // tell XFldObject to append to that string
+            // tell parent to append to that string
             ulReturn += pfn_xwpQuerySetup2(somSelf,
                                            pszSetupString + ulReturn, // append to existing
                                            cbSetupString - ulReturn); // remaining size
@@ -1613,8 +1592,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                                          ULONG ulCode,
                                          WPObject* refObject)
 {
-    BOOL        fFolderLocked = FALSE;
-
+    WPSHLOCKSTRUCT Lock;
     // XFolderMethodDebug("XFolder","xf_wpObjectReady");
 
     #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
@@ -1637,28 +1615,22 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                       (MPARAM)somSelf,
                       MPNULL);
 
-    TRY_LOUD(excpt1, NULL)
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        XFolderData *somThis = XFolderGetData(somSelf);
+        if (_pszDefaultDocDeferred)
         {
-            XFolderData *somThis = XFolderGetData(somSelf);
-            if (_pszDefaultDocDeferred)
-            {
-                // _Pmpf(("_pszDefaultDocDeferred: %s", _pszDefaultDocDeferred));
-                // this has been set by wpRestoreState
-                _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
-                    // can return NULL if not found
-                // _Pmpf(("  Resolved _pDefaultDocument: 0x%lX", _pDefaultDocument));
-                free(_pszDefaultDocDeferred);
-                _pszDefaultDocDeferred = NULL;
-            }
-        } // end if (fFolderLocked)
+            // _Pmpf(("_pszDefaultDocDeferred: %s", _pszDefaultDocDeferred));
+            // this has been set by wpRestoreState
+            _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
+                // can return NULL if not found
+            // _Pmpf(("  Resolved _pDefaultDocument: 0x%lX", _pDefaultDocument));
+            free(_pszDefaultDocDeferred);
+            _pszDefaultDocDeferred = NULL;
+        }
     }
-    CATCH(excpt1) {} END_CATCH();
 
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    wpshUnlockObject(&Lock);
 }
 
 /*
@@ -1698,7 +1670,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
  *      deletes.
  *
  *      If the folder is somewhere in the config folder hierarchy,
- *      we also invalidate the config folder caches in menus.c.
+ *      we also invalidate the config folder caches in fdrmenus.c.
  *
  *@@changed V0.9.0 [umoeller]: adjusted to new config folder handling
  */
@@ -2282,7 +2254,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
  *      This gets called _after_ wpFilterPopupMenu.
  *
  *      We add the various XFolder menu entries here
- *      by calling the common XFolder function in menus.c,
+ *      by calling the common XFolder function in fdrmenus.c,
  *      which is also used by the XFldDisk class.
  */
 
@@ -2315,7 +2287,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
         hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fdr_fnwpSubclassedFolderFrame
     }
 
-    // call menu manipulator common to XFolder and XFldDisk (menus.c)
+    // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
     rc = mnuModifyFolderPopupMenu(somSelf,
                                   hwndMenu,
                                   hwndCnr2,
@@ -2335,7 +2307,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
  *
- *      We pass the input to mnuMenuItemSelected in menus.c
+ *      We pass the input to mnuMenuItemSelected in fdrmenus.c
  *      because disk menu items are mostly shared with XFldDisk.
  *
  *      Note that the WPS invokes this method upon every
@@ -2355,7 +2327,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_wpMenuItemSelected");
 
     // call the menu item checker common to XFolder and XFldDisk
-    // (menus.c); this returns TRUE if one of the manipulated
+    // (fdrmenus.c); this returns TRUE if one of the manipulated
     // menu items was selected
     if (mnuMenuItemSelected(somSelf, hwndFrame, ulMenuId))
         return (TRUE);
@@ -2375,7 +2347,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpMenuItemHelpSelected");
 
-    // call the common help processor in menus.c;
+    // call the common help processor in fdrmenus.c;
     // if this returns TRUE, help was requested for one
     // of the new menu items
     if (mnuMenuItemHelpSelected(somSelf, MenuId))
@@ -2507,8 +2479,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
-    // XFolderMethodDebug("XFolder","xf_wpOpen");
 
+    // XFolderMethodDebug("XFolder","xf_wpOpen");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
                     somSelf,
@@ -2540,7 +2512,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     else
     {
         // not default document:
-        TRY_LOUD(excpt1, NULL)
+        TRY_LOUD(excpt1)
         {
             // request object mutex;
             // parent_wpOpen starts the Populate thread, and we
@@ -3143,7 +3115,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
  *      notified that we need to to invalidate our
  *      internal lists of the config folder contents.
  *
- *@@changed V0.9.0 [umoeller]: now invaliding lists in menus.c
+ *@@changed V0.9.0 [umoeller]: now invaliding lists in fdrmenus.c
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,

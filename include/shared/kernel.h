@@ -54,7 +54,9 @@
 
     ULONG krnQueryLock(VOID);
 
-    VOID APIENTRY krnOnKillDuringLock(VOID);
+    #ifdef EXCEPT_HEADER_INCLUDED
+    VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2);
+    #endif
 
     /********************************************************************
      *                                                                  *

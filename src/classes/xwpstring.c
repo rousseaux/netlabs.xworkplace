@@ -163,15 +163,16 @@ typedef struct _INVOKESETUPSTRING
 void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
 {
     BOOL brc = FALSE;
-    TRY_LOUD(excpt1, NULL)
+
+    TRY_LOUD(excpt1)
     {
         PINVOKESETUPSTRING pInvoke = (PINVOKESETUPSTRING)(pti->ulData);
         if (pInvoke)
         {
             XWPStringData *somThis = XWPStringGetData(pInvoke->somSelf);
 
-            _Pmpf(("xwstrfntSetupThread for obj %s", _wpQueryTitle(somSelf)));
-            _Pmpf(("    invoking on obj %s", _wpQueryTitle(pobjStatic)));
+            /* _Pmpf(("xwstrfntSetupThread for obj %s", _wpQueryTitle(somSelf)));
+            _Pmpf(("    invoking on obj %s", _wpQueryTitle(pobjStatic))); */
 
             if (pInvoke->cTargetObjects)
             {
@@ -230,10 +231,9 @@ VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         if (pcnbp->pUser == NULL)
         {
-
             // copy data for "Undo"
-            XWPStringData *pBackup = (XWPStringData*)malloc(sizeof(XWPStringData));
-            memset(pBackup, 0, sizeof(XWPStringData));
+            XWPStringData *pBackup = (XWPStringData*)malloc(sizeof(*somThis));
+            memset(pBackup, 0, sizeof(*somThis));
             if (_pszSetupString)
                 pBackup->pszSetupString = strdup(_pszSetupString);
             pBackup->hobjStatic = _hobjStatic;
@@ -574,7 +574,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
     XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_xwpInvokeString");
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         if (_pszSetupString)
         {
@@ -1069,10 +1069,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpQueryDefaultHelp(XWPString *somSelf,
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_SETTINGS_XWPSTRING_MAIN;
     return (TRUE);
-
-    /* return (XWPString_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
-                                                           pHelpPanelId,
-                                                           HelpLibrary)); */
 }
 
 /*

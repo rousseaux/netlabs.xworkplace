@@ -289,7 +289,7 @@ STANDARDOBJECT  G_WPSObjects[] = {
 
 VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
                         ULONG idLB,                     // in: listbox item ID
-                        PSZ pszXFolderBasePath,         // in: from cmnQueryXFolderBasePath
+                        PSZ pszXFolderBasePath,         // in: from cmnQueryXWPBasePath
                         PSZ pszFileName)
 {
     CHAR    szLBEntry[2*CCHMAXPATH] = "",   // changed V0.85
@@ -1381,7 +1381,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         if (!ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
                                      ID_XCDI_CONTAINER))
-            CMN_LOG(("ctlMakeCheckboxContainer failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "ctlMakeCheckboxContainer failed.");
         else
         {
             cRecords = sizeof(G_FeatureItemsList) / sizeof(FEATURESITEM);
@@ -1444,7 +1445,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // register tooltip class
         if (!ctlRegisterTooltip(WinQueryAnchorBlock(pcnbp->hwndDlgPage)))
-            CMN_LOG(("ctlRegisterTooltip failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "ctlRegisterTooltip failed.");
         else
         {
             // create tooltip
@@ -1461,7 +1463,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                  NULL);         // presparams
 
             if (!pcnbp->hwndTooltip)
-               CMN_LOG(("WinCreateWindow failed creating tooltip."));
+               cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                      "WinCreateWindow failed creating tooltip.");
             else
             {
                 // tooltip successfully created:
@@ -2146,7 +2149,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // language drop-down box
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE, LM_DELETEALL, 0, 0);
 
-        if (cmnQueryXFolderBasePath(szXFolderBasePath))
+        if (cmnQueryXWPBasePath(szXFolderBasePath))
         {
             sprintf(szSearchMask, "%s\\bin\\xfldr*.dll", szXFolderBasePath);
 
@@ -2217,7 +2220,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                     (MPARAM)cmnQueryLanguageCode()),
                                   (MPARAM)TRUE); // select
             }
-        } // end if (cmnQueryXFolderBasePath...
+        } // end if (cmnQueryXWPBasePath...
 
         // NLS info
         if (WinLoadString(hab, hmodNLS, ID_XSSI_XFOLDERVERSION,

@@ -382,6 +382,7 @@ SOM_Scope HWND  SOMLINK vol_wpOpen(XMMVolume *somSelf, HWND hwndCnr,
 
     if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
         hwndNewView = xmmCreateVolumeView(somSelf, hwndCnr, ulView);
+                                // src/media/mmvolume.c
     else
         // other view (probably settings):
         hwndNewView = XMMVolume_parent_WPAbstract_wpOpen(somSelf,

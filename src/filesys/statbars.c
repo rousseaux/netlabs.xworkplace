@@ -627,8 +627,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
-            if (dbl == -1)
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp, dbl,
@@ -649,8 +648,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
-            if (dbl == -1)
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
@@ -672,7 +670,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
             if (dbl == -1)
                 strcpy(szTemp, "?");
             else
@@ -695,8 +693,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
-            if (dbl == -1)
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
@@ -718,8 +715,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
-            if (dbl == -1)
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                strhThousandsDouble(szTemp,
@@ -743,8 +739,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
-            if (dbl == -1)
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 stbVar1000Double(szTemp,
@@ -767,8 +762,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            dbl = doshQueryDiskFree(ulLogicalDrive);
-            if (dbl == -1)
+            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 stbVar1024Double(szTemp,
@@ -1167,7 +1161,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         if ((LONG)pmrcSelected == -1)
         {
             // error: V0.9.3 (2000-04-08) [umoeller]
-            CMN_LOG(("Unable to query container records for status bar."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to query container records for status bar.");
             break;
         }
 

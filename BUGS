@@ -73,6 +73,12 @@ NOT-SO-SERIOUS PROBLEMS
 >and voila pop-up appears telling user that there is a name conflict, but the
 >new name is not in that folder!
 
+file types:
+    -- pickup doesn't work right
+    -- help menu items don't work
+    -- fix environments
+    -- spaces in files names don't work
+
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
@@ -82,6 +88,8 @@ sounds:
        however, this didn't work for old WPS page either
     -- Do not use default device for WAV files. Instead, open the default
        device and let it play the WAV files.
+    -- broke with V0.9.6
+    -- codes page hangs sometimes
 
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated

@@ -24,9 +24,10 @@
 #       macros, which will all be properly set for debug or non-debug mode
 #       and with the include directories set properly:
 #
-#       $(CC_DLL)    compile DLL code (multi-threaded)
+#       $(CC_DLL_MT)    compile DLL code (multi-threaded)
 #       $(CC_EXE_MT)    compile EXE code (multi-threaded)
-#       $(CC_EXE_ST) compile EXE code (single-threaded)
+#       $(CC_EXE_ST)    compile EXE code (single-threaded)
+#       $(CC_WIDGET_DLL) compile widget DLL (single-threaded)
 #
 #       $(LINK)      call linker (ILINK.EXE per default)
 #
@@ -267,21 +268,22 @@ CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
 # /tm+
 !else
 # release code
-CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol-
+CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol- /tn+
 !endif
 
 # DLL code (multi-threaded)
-CC_DLL = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS)
+CC_DLL_MT = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS)
+# DLL code (single-threaded)
+CC_DLL_SUBSYS = $(CC_TEMP) /ge- /rn $(CC_WARNINGS)
 # EXE code (multi-threaded)
 CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS)
 # EXE code (single-threaded)
 CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS)
 
-# compiler options for WarpIN helpers;
-# this is necessary because WarpIN uses a different compiler
-# setup to compile the helpers
+# compiler options for XWorkplace helpers;
+# these are passed to the XWPHelpers makefiles
 CC_HELPERS_EXE_MT = $(CC_EXE_MT)
-CC_HELPERS_DLL    = $(CC_DLL)
+CC_HELPERS_DLL    = $(CC_DLL_MT)
 
 # Some VisualAge C++ compiler options explained [default in brackets]:
 # /c:   compile only, no link (we'll call the linker explicitly)
@@ -309,8 +311,8 @@ CC_HELPERS_DLL    = $(CC_DLL)
 # /ss:  allow double slashes comments in C too
 # /ti+: debug code
 # /tdp: compile everything as C++, even if it has a .C suffix
-# /Tm:  use debug memory management (malloc etc.)
-# /Tn:  add source line numbers to object files (for mapfile)
+# /tm:  use debug memory management (malloc etc.)
+# /tn:  add source line numbers to object files (for mapfile); a subset of /ti+
 # /Wcls: class problems
 # /Wcnd: conditional exprs problems (= / == etc.)
 # /Wcmp: possible unsigned comparison redundancies
@@ -345,7 +347,8 @@ LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers
 !ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /debug
 !else
-LINK =  $(LINK_BASE) /exepack:2 /packcode /packdata
+LINK =  $(LINK_BASE) /exepack:2
+#/packcode /packdata
 # /optfunc
 !endif
 

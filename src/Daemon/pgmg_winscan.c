@@ -57,7 +57,6 @@ BOOL pgmwGetWinInfo(HWND hwnd,         // in: window to test
     if (WinIsWindow(G_habDaemon, hwnd))
     {
         HSWITCH     hswitch;
-        SWCNTRL     swctl;
 
         ULONG       pidPM;      // process ID of first PMSHELL.EXE process
         WinQueryWindowProcess(HWND_DESKTOP, &pidPM, NULL);
@@ -106,6 +105,7 @@ BOOL pgmwGetWinInfo(HWND hwnd,         // in: window to test
                     }
                     else
                     {
+                        SWCNTRL     swctl;
                         // window is in tasklist:
                         WinQuerySwitchEntry(hswitch, &swctl);
                         strcpy(phl->szSwitchName, swctl.szSwtitle);
@@ -355,7 +355,9 @@ BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
     BOOL    bFound;
 
     bFound = FALSE;
-    for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.usSticky2Num; usIdx++)
+    for (usIdx = 0;
+         usIdx < G_pHookData->PageMageConfig.usSticky2Num;
+         usIdx++)
     {
         if (G_pHookData->PageMageConfig.hwndSticky2[usIdx] == hwndTest)
         {

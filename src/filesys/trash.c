@@ -450,6 +450,9 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
                                     // because they're empty
     ULONG       ulTrashObjectCountSub = 0;
 
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
     if (!pXWPTrashObjectClass)
         // error
         return (0);
@@ -460,7 +463,7 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
 
     lstInit(&llEmptyDirs, FALSE);       // no auto-free items, these are WPFOlder* pointers
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // populate
         if (wpshCheckIfPopulated(pTrashDir,
@@ -560,10 +563,12 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
                 }
             } // end if (fTrashDirSemOwned)
             else
-                CMN_LOG(("Couldn't request mutex semaphore for \\trash subdir."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Couldn't request mutex semaphore for \\trash subdir.");
         } // end if (wpshCheckIfPopulated(pTrashDir))
         else
-            CMN_LOG(("wpPopulate failed for \\trash subdir."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "wpPopulate failed for \\trash subdir.");
     }
     CATCH(excpt1)
     {
@@ -576,6 +581,8 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
         wpshReleaseFolderMutexSem(pTrashDir);
         fTrashDirSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     *pulObjectCount += ulTrashObjectCountSub;
 
@@ -631,7 +638,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
     BOOL        brc = FALSE;
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         _wpSetFldrFlags(somSelf, ulFldrFlags | FOI_POPULATEINPROGRESS);
 
@@ -928,7 +935,7 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
     BOOL        brc = FALSE;
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(pTrashObject);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         do  // for breaks only
         {
@@ -1264,7 +1271,7 @@ BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
 {
     FOPSRET     frc = NO_ERROR;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         if (hwndConfirmOwner)
             // confirmations desired:
@@ -1360,18 +1367,6 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
         _wpFree(somSelf);
 
     return (arc);
-}
-
-/*
- *@@ trshUninitTrashObject:
- *      implementation for XWPTrashObject::wpUninitData.
- *
- *@@added V0.9.2 (2000-02-28) [umoeller]
- */
-
-VOID trshUninitTrashObject(XWPTrashObject *somSelf)
-{
-    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
 }
 
 /* ******************************************************************
@@ -1551,7 +1546,7 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
     PSUBCLASSEDTRASHFRAME   pstfNew = NULL;
     BOOL                    fSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // now check if frame wnd has already been subclassed;
         // just another security check
@@ -1590,7 +1585,8 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
                         pstfNew->hwndCnr = hwndCnr;
                     }
                     else
-                        CMN_LOG(("hmtxSubclassedTrashCans request failed."));
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "hmtxSubclassedTrashCans request failed.");
                 }
             }
         }
@@ -1623,7 +1619,10 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
     BOOL                fSemOwned = FALSE;
     ULONG               ulIndex = 0;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         if (hwndFrame)
         {
@@ -1648,7 +1647,8 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
                 }
             }
             else
-                CMN_LOG(("hmtxSubclassedTrashCans request failed."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxSubclassedTrashCans request failed.");
         }
     }
     CATCH(excpt1) {  } END_CATCH();
@@ -1658,6 +1658,8 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
         DosReleaseMutexSem(hmtxSubclassedTrashCans);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (psliFound);
 }
@@ -1674,14 +1676,18 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
 {
     BOOL fSemOwned = FALSE;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(hmtxSubclassedTrashCans, 4000) == NO_ERROR);
         if (fSemOwned)
             lstRemoveItem(&llSubclassedTrashCans,
                           pstf);
         else
-            CMN_LOG(("hmtxSubclassedTrashCans request failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxSubclassedTrashCans request failed.");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1690,6 +1696,8 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
         DosReleaseMutexSem(hmtxSubclassedTrashCans);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 }
 
 /*
@@ -1715,7 +1723,7 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
     MRESULT         mrc = MRFALSE;
     BOOL            fCallDefault = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // find the original wnd proc in the
         // global linked list, so we can pass messages
@@ -1813,7 +1821,8 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
         {
             // original window procedure not found:
             // that's an error
-            CMN_LOG(("Trash can's pfnwpOriginal not found."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Trash can's pfnwpOriginal not found.");
             mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
         }
     } // end TRY_LOUD
@@ -2083,7 +2092,7 @@ BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supported d
         memset(abSupportedDrivesNew, XTRC_INVALID, sizeof(abSupportedDrivesNew));
 
         // go thru "supported" listbox
-        sItemCount = winhQueryLboxItemCount(hwndSupportedLB);
+        sItemCount = WinQueryLboxCount(hwndSupportedLB);
         for (sIndexThis = 0;
              sIndexThis < sItemCount;
              sIndexThis++)
@@ -2094,7 +2103,7 @@ BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supported d
         }
 
         // go thru "unsupported" listbox
-        sItemCount = winhQueryLboxItemCount(hwndUnsupportedLB);
+        sItemCount = WinQueryLboxCount(hwndUnsupportedLB);
         for (sIndexThis = 0;
              sIndexThis < sItemCount;
              sIndexThis++)

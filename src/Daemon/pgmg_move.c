@@ -19,10 +19,13 @@
  *      GNU General Public License for more details.
  */
 
-#define INCL_DOS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
-#define INCL_WIN
-#define INCL_GPI
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINSWITCHLIST
 #include <os2.h>
 
 #include <stdio.h>
@@ -335,6 +338,7 @@ INT pgmmZMoveIt(LONG lXDelta,
  *      be doing OK.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
+ *@@changed V0.9.7 (2000-12-04) [umoeller]: now preventing sticky windows from switching
  */
 
 MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -343,7 +347,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
     LONG        lDeltaX = 0,
                 lDeltaY = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         switch (msg)
         {
@@ -441,6 +445,20 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 SWP         swpActive;
                 // determine the middle coordinate of the active window
                 HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+
+                // test if this is a stick window;
+                // if so, never switch desktops
+                // V0.9.7 (2000-12-04) [umoeller]
+                HSWITCH hsw = WinQuerySwitchHandle(hwndActive, 0);
+                if (hsw)
+                {
+                    SWCNTRL swc;
+                    if (WinQuerySwitchEntry(hsw, &swc))
+                        if (pgmwStickyCheck(swc.szSwtitle))
+                            // it's sticky: get outta here
+                            break;
+                }
+
                 WinQueryWindowPos(hwndActive, &swpActive);
 
                 // make sure we pick up valid windows only
@@ -474,7 +492,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             default:
                 mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-        }
+        } // end switch (msg)
 
         if (lDeltaX || lDeltaY)
         {

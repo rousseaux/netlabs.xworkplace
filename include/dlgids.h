@@ -56,6 +56,7 @@
    -    OS   for "OS/2 Kernel" settings
    -    XC   for XWPSetup object ("XWorkplace Setup", new with V0.9.0),
    -    XL   for XWPClassList object ("WPS Class List", new with V0.9.0)
+   -    CR   for XCenter object (V0.9.7 (2000-11-39) [umoeller])
    -    SD   for XShutdown,
    -    XT   for XWPTrashCan,
    -    WP   for previously undocumented WPS ID's,
@@ -75,11 +76,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.6"
+#define XFOLDER_VERSION        "0.9.7"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.6"
+#define MINIMUM_NLS_VERSION    "0.9.7"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -115,6 +116,8 @@
 #define ID_ICONXWPMEDIA        123
 #define ID_ICONXWPSTRING       124
 #define ID_ICONXMMVOLUME       125
+#define ID_ICONXCENTER         126
+#define ID_ICONXMINI           127
 
 #define ID_XFLDRBITMAP         130
 
@@ -799,13 +802,13 @@
 
 // XFldDesktop "Shutdown" page (V0.9.0)
 #define ID_XSD_DTP_SHUTDOWN             2125
-// #define ID_SDDI_ENABLED                 2126
-#define ID_SDDI_REBOOT                  2127
-#define ID_SDDI_ANIMATE_SHUTDOWN        2128
-#define ID_SDDI_ANIMATE_REBOOT          2129
-#define ID_SDDI_APMPOWEROFF             2130
-#define ID_SDDI_DELAY                   2131
-#define ID_SDDI_CONFIRM                 2132
+#define ID_SDDI_REBOOT                  2126
+#define ID_SDDI_ANIMATE_SHUTDOWN        2127
+#define ID_SDDI_ANIMATE_REBOOT          2128
+#define ID_SDDI_APMPOWEROFF             2129
+#define ID_SDDI_DELAY                   2130
+#define ID_SDDI_CONFIRM                 2131
+#define ID_SDDI_WARPCENTERFIRST         2132
 #define ID_SDDI_AUTOCLOSEVIO            2133
 #define ID_SDDI_LOG                     2134
 
@@ -913,16 +916,17 @@
 #define ID_XSDI_MOUSE_IGNORESEAMLESS    3406
 #define ID_XSDI_MOUSE_IGNOREDESKTOP     3407
 #define ID_XSDI_MOUSE_IGNOREPAGEMAGE    3408
-#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3409
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3410
-#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3411
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3412
-#define ID_XSDI_MOUSE_SLIDINGMENU       3413
-#define ID_XSDI_MOUSE_MENUDELAY_TXT1    3414
-#define ID_XSDI_MOUSE_MENUDELAY_SLIDER  3415
-#define ID_XSDI_MOUSE_MENUDELAY_TXT2    3416
-#define ID_XSDI_MOUSE_MENUHILITE        3417
-#define ID_XSDI_MOUSE_CONDCASCADE       3418    // V0.9.6 (2000-10-27) [umoeller]
+#define ID_XSDI_MOUSE_IGNOREXCENTER     3409    // V0.9.7 (2000-12-08) [umoeller]
+#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3410
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3411
+#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3412
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3413
+#define ID_XSDI_MOUSE_SLIDINGMENU       3414
+#define ID_XSDI_MOUSE_MENUDELAY_TXT1    3415
+#define ID_XSDI_MOUSE_MENUDELAY_SLIDER  3416
+#define ID_XSDI_MOUSE_MENUDELAY_TXT2    3417
+#define ID_XSDI_MOUSE_MENUHILITE        3418
+#define ID_XSDI_MOUSE_CONDCASCADE       3419    // V0.9.6 (2000-10-27) [umoeller]
 
 #define ID_XSD_MOUSE_CORNERS            3430
 #define ID_XSDI_MOUSE_RADIO_TOPLEFT     3431
@@ -953,6 +957,23 @@
 #define ID_XSDI_MOUSE_MB3AMP_TXT2       3461
 #define ID_XSDI_MOUSE_MB3SCROLLREVERSE  3462
 #define ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK  3463
+
+/******************************************
+ * XCenter (V0.9.7)         >= 3600       *
+ ******************************************/
+
+#define ID_CRD_SETTINGS_VIEW            3600
+#define ID_CRDI_VIEW_TOPOFSCREEN        3601
+#define ID_CRDI_VIEW_BOTTOMOFSCREEN     3602
+#define ID_CRDI_VIEW_ALWAYSONTOP        3603
+#define ID_CRDI_VIEW_ANIMATE            3604
+#define ID_CRDI_VIEW_AUTOHIDE           3605
+
+#define ID_CRD_WINLISTWGT_SETTINGS      3700
+#define ID_CRDI_FILTERS_CURRENTLB       3701
+#define ID_CRDI_FILTERS_REMOVE          3702
+#define ID_CRDI_FILTERS_NEWCOMBO        3703
+#define ID_CRDI_FILTERS_ADD             3704
 
 /******************************************
  * XWPString (V0.9.3)       >= 3800       *
@@ -1088,6 +1109,21 @@
 
 #define ID_XSM_STICKY_SEL               (WPMENUID_USER+1142)
 #define ID_XSMI_STICKY_DELETE           (WPMENUID_USER+1143)
+
+/* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
+#define ID_CRM_XCENTERBUTTON            (WPMENUID_USER+1144)
+// menu items; these only need to be unique within the menu
+#define ID_CRMI_SEP1                    100
+#define ID_CRMI_SEP2                    101
+#define ID_CRMI_SUSPEND                 102
+#define ID_CRMI_LOGOFF                  103
+#define ID_CRMI_RESTARTWPS              104
+#define ID_CRMI_SHUTDOWN                105
+
+#define ID_CRM_WIDGET                   200
+#define ID_CRMI_PROPERTIES              201
+#define ID_CRMI_HELP                    202
+#define ID_CRMI_REMOVEWGT               203
 
 // The following menu ID's (with _OFS_ in their names)
 // are _variable_ menu ID's: XFolder will add the value
@@ -1656,7 +1692,6 @@
 
 // --- diverse res ids
 
-#define IDDLG_UNUSED                      -1
 #define IDTAB_NBPAGE                      0x60F0
 #define IDDLG_GB_NBPAGE                   0x60F1
 

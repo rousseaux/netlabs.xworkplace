@@ -110,11 +110,12 @@ int utilSemRequest(PULONG pulMutex,
         // thread 2 unblocks: check mutex again
         _disable();
     }
-    if (rc == NO_ERROR)
+    // if (rc == NO_ERROR) // V0.9.6 (2000-11-27) [umoeller]
         (*pulMutex)++;
     _enable();
 
-    return (rc);
+    // return (rc);
+    return (NO_ERROR);
 }
 
 /*
@@ -124,8 +125,10 @@ int utilSemRequest(PULONG pulMutex,
 
 VOID utilSemRelease(PULONG pulMutex)
 {
+    _disable();
     (*pulMutex)--;
     DevHlp32_ProcRun((ULONG)pulMutex);
+    _enable();
 
     // DevHlp32_SemClearRam1();
 }

@@ -81,9 +81,246 @@
 #include <wpdesk.h>             // this includes wpfolder.h
 
 /* ******************************************************************
- *                                                                  *
- *   "File" pages replacement in WPDataFile/WPFolder                *
- *                                                                  *
+ *
+ *   File system information implementation
+ *
+ ********************************************************************/
+
+/*
+ *@@ fsysQueryEASubject:
+ *      returns the contents of the .SUBJECT extended
+ *      attribute in a new buffer, which must be free()'d
+ *      by the caller.
+ *
+ *      Returns NULL on errors or if the EA doesn't exist.
+ *
+ *      The .SUBJECT extended attribute is a plain PSZ
+ *      without line breaks.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+PSZ fsysQueryEASubject(WPFileSystem *somSelf)
+{
+    PSZ     psz = 0;
+    CHAR    szFilename[CCHMAXPATH];
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        PEABINDING  peab = NULL;
+        peab = eaPathReadOneByName(szFilename, ".SUBJECT");
+
+        if (peab)
+        {
+            psz = eaCreatePSZFromBinding(peab);
+            eaFreeBinding(peab);
+        }
+    }
+
+    return (psz);
+}
+
+/*
+ *@@ fsysQueryEAComments:
+ *      returns the contents of the .COMMENTS extended
+ *      attribute in a new buffer, which must be free()'d
+ *      by the caller.
+ *
+ *      Returns NULL on errors or if the EA doesn't exist.
+ *
+ *      The .COMMENTS EA is multi-value multi-type, but all
+ *      of the sub-types are EAT_ASCII. We convert all the
+ *      sub-items into one string and separate the items
+ *      with CR/LF.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+PSZ fsysQueryEAComments(WPFileSystem *somSelf)
+{
+    PSZ     psz = 0;
+    CHAR    szFilename[CCHMAXPATH];
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        PEABINDING  peab = NULL;
+
+        peab = eaPathReadOneByName(szFilename, ".COMMENTS");
+        if (peab)
+        {
+            psz = eaCreatePSZFromMVBinding(peab,
+                                           "\r\n", // separator string
+                                           NULL);  // codepage (not needed)
+            eaFreeBinding(peab);
+        }
+    }
+
+    return (psz);
+}
+
+/*
+ *@@ fsysQueryEAKeyphrases:
+ *      returns the contents of the .KEYPHRASES extended
+ *      attribute in a new buffer, which must be free()'d
+ *      by the caller.
+ *
+ *      Returns NULL on errors or if the EA doesn't exist.
+ *
+ *      The .KEYPHRASES EA is multi-value multi-type, but all
+ *      of the sub-types are EAT_ASCII. We convert all the
+ *      sub-items into one string and separate the items
+ *      with CR/LF.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+PSZ fsysQueryEAKeyphrases(WPFileSystem *somSelf)
+{
+    PSZ     psz = 0;
+    CHAR    szFilename[CCHMAXPATH];
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        PEABINDING  peab = NULL;
+
+        peab = eaPathReadOneByName(szFilename, ".KEYPHRASES");
+        if (peab)
+        {
+            psz = eaCreatePSZFromMVBinding(peab,
+                                           "\r\n", // separator string
+                                           NULL);  // codepage (not needed)
+
+            eaFreeBinding(peab);
+        }
+    }
+
+    return (psz);
+}
+
+/*
+ *@@ fsysSetEASubject:
+ *      sets a new value for the .SUBJECT extended
+ *      attribute.
+ *
+ *      If (psz == NULL), the EA is deleted.
+ *
+ *      This EA expects a plain PSZ string without
+ *      line breaks.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+BOOL fsysSetEASubject(WPFileSystem *somSelf, const char *psz)
+{
+    BOOL brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        const char *pcszEA = ".SUBJECT";
+        if (psz)
+        {
+            PEABINDING  peab = NULL;
+            if (peab = eaCreateBindingFromPSZ(pcszEA, psz))
+            {
+                brc = (NO_ERROR == eaPathWriteOne(szFilename, peab));
+                eaFreeBinding(peab);
+            }
+        }
+        else
+            brc = (NO_ERROR == eaPathDeleteOne(szFilename, pcszEA));
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ fsysSetEAComments:
+ *      sets a new value for the .COMMENTS extended
+ *      attribute.
+ *
+ *      If (psz == NULL), the EA is deleted.
+ *
+ *      This EA is multi-value multi-type, but all of
+ *      the sub-types are EAT_ASCII. This function
+ *      expects a string where several lines are
+ *      separated with CR/LF, which is then converted
+ *      into the multi-value EA.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+BOOL fsysSetEAComments(WPFileSystem *somSelf, const char *psz)
+{
+    BOOL brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        const char *pcszEA = ".COMMENTS";
+        if (psz)
+        {
+            PEABINDING  peab = NULL;
+            if (peab = eaCreateMVBindingFromPSZ(pcszEA,
+                                                psz,
+                                                "\r\n",     // separator
+                                                0))         // codepage
+            {
+                brc = (NO_ERROR == eaPathWriteOne(szFilename, peab));
+                eaFreeBinding(peab);
+            }
+        }
+        else
+            brc = (NO_ERROR == eaPathDeleteOne(szFilename, pcszEA));
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ fsysSetEAKeyphrases:
+ *      sets a new value for the .KEYPHRASES extended
+ *      attribute.
+ *
+ *      If (psz == NULL), the EA is deleted.
+ *
+ *      This EA is multi-value multi-type, but all of
+ *      the sub-types are EAT_ASCII. This function
+ *      expects a string where several lines are
+ *      separated with CR/LF, which is then converted
+ *      into the multi-value EA.
+ *
+ *@@added V0.9.7 (2000-11-30) [umoeller]
+ */
+
+BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, const char *psz)
+{
+    BOOL brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        const char *pcszEA = ".KEYPHRASES";
+        if (psz)
+        {
+            PEABINDING  peab = NULL;
+            if (peab = eaCreateMVBindingFromPSZ(pcszEA,
+                                                psz,
+                                                "\r\n",     // separator
+                                                0))         // codepage
+            {
+                brc = (NO_ERROR == eaPathWriteOne(szFilename, peab));
+                eaFreeBinding(peab);
+            }
+        }
+        else
+            brc = (NO_ERROR == eaPathDeleteOne(szFilename, pcszEA));
+    }
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   "File" pages replacement in WPDataFile/WPFolder
+ *
  ********************************************************************/
 
 /*
@@ -97,9 +334,12 @@ typedef struct _FILEPAGEDATA
     // file attributes backup
     ULONG       ulAttr;
     // EA backups
-    PEABINDING  peabSubject;
+    /* PEABINDING  peabSubject;
     PEABINDING  peabComments;
-    PEABINDING  peabKeyphrases;
+    PEABINDING  peabKeyphrases; */
+    PSZ         pszSubject,
+                pszComments,
+                pszKeyphrases;
 } FILEPAGEDATA, *PFILEPAGEDATA;
 
 /*
@@ -140,12 +380,13 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             // the notebook page is destroyed
             CHAR            szFilename[CCHMAXPATH];
             PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)malloc(sizeof(FILEPAGEDATA));
+            memset(pfpd, 0, sizeof(FILEPAGEDATA));
             pcnbp->pUser = pfpd;
             pfpd->ulAttr = _wpQueryAttr(pcnbp->somSelf);
             _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-            pfpd->peabSubject = eaPathReadOneByName(szFilename, ".SUBJECT");
-            pfpd->peabComments = eaPathReadOneByName(szFilename, ".COMMENTS");
-            pfpd->peabKeyphrases = eaPathReadOneByName(szFilename, ".KEYPHRASES");
+            pfpd->pszSubject = fsysQueryEASubject(pcnbp->somSelf);
+            pfpd->pszComments = fsysQueryEAComments(pcnbp->somSelf);
+            pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pcnbp->somSelf);
 
             if (doshIsFileOnFAT(szFilename))
             {
@@ -186,7 +427,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         PSZ     pszString = NULL;
         ULONG   ulAttr;
         FILESTATUS3 fs3;
-        PEABINDING  peab;       // \helpers\eas.c
+        // PEABINDING  peab;       // \helpers\eas.c
 
         PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
 
@@ -248,13 +489,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                               ((ulAttr & FILE_SYSTEM) != 0));
 
         // .SUBJECT EA; this is plain text
-        pszString = NULL;
-        peab = eaPathReadOneByName(szFilename, ".SUBJECT");
-        if (peab)
-        {
-            pszString = eaCreatePSZFromBinding(peab);
-            eaFreeBinding(peab);
-        }
+        pszString = fsysQueryEASubject(pcnbp->somSelf);
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                           pszString);
         if (pszString)
@@ -264,15 +499,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // of the sub-types are EAT_ASCII. We need to convert
         // the sub-items into one string and separate the items
         // with CR/LF.
-        pszString = NULL;
-        peab = eaPathReadOneByName(szFilename, ".COMMENTS");
-        if (peab)
-        {
-            pszString = eaCreatePSZFromMVBinding(peab,
-                                                 "\r\n", // separator string
-                                                 NULL);  // codepage (not needed)
-            eaFreeBinding(peab);
-        }
+        pszString = fsysQueryEAComments(pcnbp->somSelf);
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_COMMENTS,
                           pszString);
         if (pszString)
@@ -282,16 +509,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // of the sub-types are EAT_ASCII. We need to convert
         // the sub-items into one string and separate the items
         // with CR/LF.
-        pszString = NULL;
-        peab = eaPathReadOneByName(szFilename, ".KEYPHRASES");
-        if (peab)
-        {
-            pszString = eaCreatePSZFromMVBinding(peab,
-                                                 "\r\n", // separator string
-                                                 NULL);  // codepage (not needed)
-
-            eaFreeBinding(peab);
-        }
+        pszString = fsysQueryEAKeyphrases(pcnbp->somSelf);
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_KEYPHRASES,
                         pszString);
         if (pszString)
@@ -304,9 +522,12 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // free the backup EAs we created before
         PFILEPAGEDATA   pfpd = pcnbp->pUser;
 
-        eaFreeBinding(pfpd->peabSubject);
-        eaFreeBinding(pfpd->peabComments);
-        eaFreeBinding(pfpd->peabKeyphrases);
+        if (pfpd->pszSubject)
+            free(pfpd->pszSubject);
+        if (pfpd->pszComments)
+            free(pfpd->pszComments);
+        if (pfpd->pszKeyphrases)
+            free(pfpd->pszKeyphrases);
 
         // the pcnbp->pUser field itself is free()'d automatically
     }
@@ -386,18 +607,11 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             if (usNotifyCode == EN_KILLFOCUS)
             {
                 PSZ         pszSubject = NULL;
-                PEABINDING  peab;
-                CHAR        szFilename[CCHMAXPATH];
                 pszSubject = winhQueryWindowText(WinWindowFromID(pcnbp->hwndDlgPage,
                                                                  ID_XSDI_FILES_SUBJECT));
-                if (peab = eaCreateBindingFromPSZ(".SUBJECT", pszSubject))
-                {
-                    _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-                    eaPathWriteOne(szFilename, peab);
-                    eaFreeBinding(peab);
-                    if (pszSubject)
-                        free(pszSubject);
-                }
+                fsysSetEASubject(pcnbp->somSelf, pszSubject);
+                if (pszSubject)
+                    free(pszSubject);
             }
         break;
 
@@ -412,23 +626,9 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             {
                 HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
+                fsysSetEAComments(pcnbp->somSelf, pszText);
                 if (pszText)
-                {
-                    PEABINDING  peab;
-                    CHAR        szFilename[CCHMAXPATH];
-                    _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-
-                    if (peab = eaCreateMVBindingFromPSZ(".COMMENTS",
-                                                        pszText,
-                                                        "\r\n",     // separator
-                                                        0))         // codepage
-                    {
-                        // cmnDumpMemoryBlock(peab->pszValue, peab->usValueLength, 4);
-                        eaPathWriteOne(szFilename, peab);
-                        eaFreeBinding(peab);
-                    }
                     free(pszText);
-                }
             }
         break;
 
@@ -443,23 +643,9 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             {
                 HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
+                fsysSetEAKeyphrases(pcnbp->somSelf, pszText);
                 if (pszText)
-                {
-                    PEABINDING  peab;
-                    CHAR        szFilename[CCHMAXPATH];
-                    _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-
-                    if (peab = eaCreateMVBindingFromPSZ(".KEYPHRASES",
-                                                        pszText,
-                                                        "\r\n",     // separator
-                                                        0))         // codepage
-                    {
-                        // cmnDumpMemoryBlock(peab->pszValue, peab->usValueLength, 4);
-                        eaPathWriteOne(szFilename, peab);
-                        eaFreeBinding(peab);
-                    }
                     free(pszText);
-                }
             }
         break;
 
@@ -467,29 +653,15 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             if (pcnbp->pUser)
             {
                 // restore the file's data from the backup data
-                CHAR            szFilename[CCHMAXPATH];
                 PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)pcnbp->pUser;
 
                 // reset attributes
                 _wpSetAttr(pcnbp->somSelf, pfpd->ulAttr);
 
                 // reset EAs
-                _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-
-                if (pfpd->peabSubject)
-                    eaPathWriteOne(szFilename, pfpd->peabSubject);
-                else
-                    eaPathDeleteOne(szFilename, ".SUBJECT");
-
-                if (pfpd->peabComments)
-                    eaPathWriteOne(szFilename, pfpd->peabComments);
-                else
-                    eaPathDeleteOne(szFilename, ".COMMENTS");
-
-                if (pfpd->peabKeyphrases)
-                    eaPathWriteOne(szFilename, pfpd->peabKeyphrases);
-                else
-                    eaPathDeleteOne(szFilename, ".KEYPHRASES");
+                fsysSetEASubject(pcnbp->somSelf, pfpd->pszSubject); // can be NULL
+                fsysSetEAComments(pcnbp->somSelf, pfpd->pszComments); // can be NULL
+                fsysSetEAKeyphrases(pcnbp->somSelf, pfpd->pszKeyphrases); // can be NULL
 
                 // have the page updated by calling the callback above
                 fsysFile1InitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -499,7 +671,6 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case DID_DEFAULT:
         {
             // "Default" button:
-            CHAR            szFilename[CCHMAXPATH];
             ULONG           ulAttr = 0;
             // EABINDING       eab;
             if (_somIsA(pcnbp->somSelf, _WPFolder))
@@ -508,10 +679,10 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             _wpSetAttr(pcnbp->somSelf, ulAttr);
 
             // delete EAs
-            _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-            eaPathDeleteOne(szFilename, ".SUBJECT");
-            eaPathDeleteOne(szFilename, ".COMMENTS");
-            eaPathDeleteOne(szFilename, ".KEYPHRASES");
+            fsysSetEASubject(pcnbp->somSelf, NULL);
+            fsysSetEAComments(pcnbp->somSelf, NULL);
+            fsysSetEAKeyphrases(pcnbp->somSelf, NULL);
+
             // have the page updated by calling the callback above
             fsysFile1InitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }

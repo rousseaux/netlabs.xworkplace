@@ -3,9 +3,10 @@
  *@@sourcefile xcenter.c:
  *      This file contains SOM code for the following XWorkplace classes:
  *
- *      --  XCenter: a WarpCenter look-alike.
+ *      --  XCenter: a WarpCenter replacement.
  *
- *      This class is new with V0.9.3.
+ *      This class is fairly functional with V0.9.7 now.
+ *      See src\shared\center.c for an introduction.
  *
  *      Installation of this class is completely optional.
  *
@@ -87,6 +88,9 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "shared\center.h"              // public XCenter interfaces
+#include "xcenter\centerp.h"            // private XCenter implementation
+
 // other SOM headers
 
 #pragma hdrstop
@@ -97,20 +101,183 @@
  *
  ********************************************************************/
 
+const char *G_pcszXCenter = "XCenter";
+
 /* ******************************************************************
  *
  *   XCenter instance methods
  *
  ********************************************************************/
 
+/*
+ *@@ xwpAddXCenterPages:
+ *
+ */
+
 SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
                                                  HWND hwndNotebook)
 {
-    ULONG ulrc = 0;
+    PCREATENOTEBOOKPAGE pcnbp;
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_xwpAddXCenterPages");
 
-    return ulrc;
+    // add the "Widgets" page
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = "Wi~dgets";   // ###
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_WIDGETS;
+    pcnbp->ulPageID = SP_XCENTER_WIDGETS;
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
+    pcnbp->pfncbInitPage    = ctrpWidgetsInitPage;
+    pcnbp->pfncbItemChanged = ctrpWidgetsItemChanged;
+    ntbInsertPage(pcnbp);
+
+    // add the "View" page on top
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszViewPage;
+    pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW;
+    pcnbp->ulPageID = SP_XCENTER_VIEW;
+    pcnbp->pfncbInitPage    = ctrpViewInitPage;
+    pcnbp->pfncbItemChanged = ctrpViewItemChanged;
+    return (ntbInsertPage(pcnbp));
+}
+
+/*
+ *@@ xwpQueryWidgets:
+ *      returns an array of XWPWIDGETSETTING structures
+ *      describing the widgets in this XCenter instance.
+ *
+ *      *pulCount receives the array item count (_not_
+ *      the array size). Use XCenter::xwpFreeWidgetsBuf
+ *      to free the memory allocated by this method.
+ *
+ *      If no widgets are present, NULL is returned, and
+ *      *pulCount is set to 0.
+ *
+ *@@added V0.9.7 (2000-12-08) [umoeller]
+ */
+
+SOM_Scope PVOID  SOMLINK xctr_xwpQueryWidgets(XCenter *somSelf,
+                                              PULONG pulCount)
+{
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpQueryWidgets");
+
+    return (ctrpQueryWidgets(somSelf, pulCount));
+}
+
+/*
+ *@@ xwpFreeWidgetsBuf:
+ *      frees the widget buffer allocated by
+ *      XCenter::xwpQueryWidgets. pBuf must
+ *      be the value returned from there
+ *      and ulCount must be the value of
+ *      *pulCount from there.
+ *
+ *@@added V0.9.7 (2000-12-08) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xctr_xwpFreeWidgetsBuf(XCenter *somSelf,
+                                               PVOID pBuf, ULONG ulCount)
+{
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpFreeWidgetsBuf");
+
+    ctrpFreeWidgetsBuf(pBuf, ulCount);
+}
+
+/*
+ *@@ xwpInsertWidget:
+ *      inserts a new widget into an XCenter at the
+ *      specified index.
+ *
+ *      If (ulBeforeIndex == -1), we insert the new
+ *      widget as the last widget.
+ *
+ *      An open view of this XCenter is automatically
+ *      updated.
+ *
+ *@@added V0.9.7 (2000-12-02) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_xwpInsertWidget(XCenter *somSelf,
+                                             ULONG ulBeforeIndex,
+                                             PSZ pszWidgetClass,
+                                             PSZ pszSetupString)
+{
+    BOOL brc = FALSE;
+    XCenterMethodDebug("XCenter","xctr_xwpInsertWidget");
+
+    TRY_LOUD(excpt1)
+    {
+        _Pmpf((__FUNCTION__ ": calling ctrInsertWidget with %s, %s",
+                (pszWidgetClass) ? pszWidgetClass : "NULL",
+                (pszSetupString) ? pszSetupString : "NULL"));
+        brc = ctrpInsertWidget(somSelf,
+                               ulBeforeIndex,
+                               pszWidgetClass,
+                               pszSetupString);
+        _Pmpf((__FUNCTION__ ": got %d from ctrInsertWidget", brc));
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
+}
+
+/*
+ *@@ xwpRemoveWidget:
+ *      removes the widget at the position specified
+ *      with ulIndex (with 0 being the leftmost widget).
+ *
+ *@@added V0.9.7 (2000-12-02) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_xwpRemoveWidget(XCenter *somSelf,
+                                             ULONG ulIndex)
+{
+    BOOL brc = FALSE;
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpRemoveWidget");
+
+    return (ctrpRemoveWidget(somSelf, ulIndex));
+}
+
+/*
+ *@@ xwpQuerySetup2:
+ *      this XFldObject method is overridden to support
+ *      setup strings for folders.
+ *
+ *      See XFldObject::xwpQuerySetup2 for details.
+ *
+ *V0.9.7 (2000-12-09) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
+                                             PSZ pszSetupString,
+                                             ULONG cbSetupString)
+{
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpQuerySetup2");
+
+    // call implementation
+    return (ctrpQuerySetup(somSelf, pszSetupString, cbSetupString));
 }
 
 /*
@@ -123,10 +290,24 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
 
 SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 {
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
+    XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpInitData");
 
     XCenter_parent_WPAbstract_wpInitData(somSelf);
+
+    _ulWindowStyle = 0; // WS_TOPMOST | WS_ANIMATE;
+    _ulAutoHide = 0; // 4000;
+
+    _ulPosition = XCENTER_BOTTOM;
+
+    _hwndOpenView = NULLHANDLE;
+
+    _fShowingOpenViewMenu = FALSE;
+
+    _pszPackedWidgetSettings = NULL;
+    _cbPackedWidgetSettings = 0;
+
+    _pllWidgetSettings = NULL;
 }
 
 /*
@@ -140,8 +321,16 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 
 SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
 {
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
+    XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpUnInitData");
+
+    ctrpFreeWidgets(somSelf);
+
+    if (_pszPackedWidgetSettings)
+    {
+        free(_pszPackedWidgetSettings);
+        _pszPackedWidgetSettings = NULL;
+    }
 
     XCenter_parent_WPAbstract_wpUnInitData(somSelf);
 }
@@ -179,14 +368,78 @@ SOM_Scope void  SOMLINK xctr_wpObjectReady(XCenter *somSelf,
  *      with wpRestoreState. This gets called during wpClose,
  *      wpSaveImmediate or wpSaveDeferred processing.
  *      All persistent instance variables should be stored here.
+ *
+ *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
 {
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
+    BOOL brc = FALSE;
+    XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSaveState");
 
-    return (XCenter_parent_WPAbstract_wpSaveState(somSelf));
+    brc = XCenter_parent_WPAbstract_wpSaveState(somSelf);
+
+    TRY_LOUD(excpt1)
+    {
+        if (brc)
+        {
+            /*
+             * key 1: widget settings
+             *
+             */
+
+            if (_pszPackedWidgetSettings)
+                // settings haven't even been unpacked yet:
+                // just store the packed settings
+                _wpSaveData(somSelf,
+                            (PSZ)G_pcszXCenter,
+                            1,
+                            _pszPackedWidgetSettings,
+                            _cbPackedWidgetSettings);
+            else
+                // once the settings have been unpacked
+                // (i.e. XCenter needed access to them),
+                // we have to repack them on each save
+                if (_pllWidgetSettings)
+                {
+                    // compose array
+                    ULONG cbSettingsArray = 0;
+                    PSZ pszSettingsArray = ctrpStuffSettings(somSelf,
+                                                             &cbSettingsArray);
+                    if (pszSettingsArray)
+                    {
+                        _wpSaveData(somSelf,
+                                    (PSZ)G_pcszXCenter,
+                                    1,
+                                    pszSettingsArray,
+                                    cbSettingsArray);
+                        free(pszSettingsArray);
+                    }
+                }
+
+            /*
+             * other keys
+             *
+             */
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        2,
+                        _ulWindowStyle);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        3,
+                        _ulAutoHide);
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
 }
 
 /*
@@ -194,16 +447,96 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
  *      this WPObject instance method gets called during object
  *      initialization (after wpInitData) to restore the data
  *      which was stored with wpSaveState.
+ *
+ *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                             ULONG ulReserved)
 {
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
+    BOOL brc = FALSE;
+    XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpRestoreState");
 
-    return (XCenter_parent_WPAbstract_wpRestoreState(somSelf,
-                                                     ulReserved));
+    brc = XCenter_parent_WPAbstract_wpRestoreState(somSelf,
+                                                   ulReserved);
+
+    TRY_LOUD(excpt1)
+    {
+        if (brc)
+        {
+            /*
+             * key 1: widget settings
+             *
+             */
+
+            BOOL    fError = FALSE;
+            ULONG   ul;
+
+            if (_pszPackedWidgetSettings)
+            {
+                free(_pszPackedWidgetSettings);
+                _pszPackedWidgetSettings = 0;
+            }
+
+            _cbPackedWidgetSettings = 0;
+            // get size of array
+            if (_wpRestoreData(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               1,
+                               NULL,    // query size
+                               &_cbPackedWidgetSettings))
+            {
+                _pszPackedWidgetSettings = (PSZ)malloc(_cbPackedWidgetSettings);
+                if (_pszPackedWidgetSettings)
+                {
+                    if (!_wpRestoreData(somSelf,
+                                       (PSZ)G_pcszXCenter,
+                                       1,
+                                       _pszPackedWidgetSettings,
+                                       &_cbPackedWidgetSettings))
+                        // error:
+                        fError = TRUE;
+                }
+                else
+                    fError = TRUE;
+            }
+            else
+                // error:
+                fError = TRUE;
+
+            if (fError)
+            {
+                if (_pszPackedWidgetSettings)
+                    free(_pszPackedWidgetSettings);
+                _pszPackedWidgetSettings = NULL;
+                _cbPackedWidgetSettings = 0;
+            }
+
+            /*
+             * other keys
+             *
+             */
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               2,
+                               &ul))
+                _ulWindowStyle = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               3,
+                               &ul))
+                _ulAutoHide = ul;
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
 }
 
 /*
@@ -233,6 +566,8 @@ SOM_Scope ULONG  SOMLINK xctr_wpFilterPopupMenu(XCenter *somSelf,
  *      when a context menu needs to be built for the object
  *      and allows the object to manipulate its context menu.
  *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
@@ -241,7 +576,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
                                                ULONG iPosition)
 {
     BOOL brc;
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
+    XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpModifyPopupMenu");
 
     brc = XCenter_parent_WPAbstract_wpModifyPopupMenu(somSelf,
@@ -249,26 +584,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
                                                       hwndCnr,
                                                       iPosition);
     if (brc)
-    {
-        // we have a member object:
-        MENUITEM mi;
-        // get handle to the "Open" submenu in the
-        // the popup menu
-        if (WinSendMsg(hwndMenu,
-                       MM_QUERYITEM,
-                       MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                       (MPARAM)&mi))
-        {
-            // mi.hwndSubMenu now contains "Open" submenu handle,
-            // which we add items to now
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-            winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER),
-                               "XCenter",
-                               MIS_TEXT, 0);
-        }
-    }
+        brc = ctrpModifyPopupMenu(somSelf, hwndMenu);
 
     return (brc);
 }
@@ -308,33 +624,6 @@ SOM_Scope BOOL  SOMLINK xctr_wpMenuItemHelpSelected(XCenter *somSelf,
 }
 
 /*
- *@@ wpOpen:
- *      this WPObject instance method gets called when
- *      a new view needs to be opened. Normally, this
- *      gets called after wpViewObject has scanned the
- *      object's USEITEMs and has determined that a new
- *      view is needed.
- *
- *      This _normally_ runs on thread 1 of the WPS, but
- *      this is not always the case. If this gets called
- *      in response to a menu selection from the "Open"
- *      submenu or a double-click in the folder, this runs
- *      on the thread of the folder (which _normally_ is
- *      thread 1). However, if this results from WinOpenObject
- *      or an OPEN setup string, this will not be on thread 1.
- */
-
-SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf, HWND hwndCnr,
-                                    ULONG ulView, ULONG param)
-{
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
-    XCenterMethodDebug("XCenter","xctr_wpOpen");
-
-    return (XCenter_parent_WPAbstract_wpOpen(somSelf, hwndCnr,
-                                             ulView, param));
-}
-
-/*
  *@@ wpQueryDefaultHelp:
  *      this WPObject instance method specifies the default
  *      help panel for an object (when "Extended help" is
@@ -350,9 +639,9 @@ SOM_Scope BOOL  SOMLINK xctr_wpQueryDefaultHelp(XCenter *somSelf,
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultHelp");
 
-    return (XCenter_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
-                                                         pHelpPanelId,
-                                                         HelpLibrary));
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XCENTER_MAIN;
+    return (TRUE);
 }
 
 /*
@@ -369,10 +658,119 @@ SOM_Scope BOOL  SOMLINK xctr_wpQueryDefaultHelp(XCenter *somSelf,
 
 SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultView");
 
-    return (XCenter_parent_WPAbstract_wpQueryDefaultView(somSelf));
+    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER);
+}
+
+/*
+ *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
+ *
+ *      We open an XCenter view here by calling ctrCreateXCenterView.
+ */
+
+SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
+                                    HWND hwndCnr,
+                                    ULONG ulView,
+                                    ULONG param)
+{
+    HWND    hwndNewView = 0;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_wpOpen");
+
+    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER))
+    {
+        if (!_hwndOpenView)
+        {
+            // no open view yet (just make sure!)
+            HAB hab;
+            if (hwndCnr)
+                hab = WinQueryAnchorBlock(hwndCnr);
+            else
+                hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
+            hwndNewView = ctrpCreateXCenterView(somSelf,
+                                                hab,
+                                                ulView);
+            // store in instance data
+            _hwndOpenView = hwndNewView;
+        }
+    }
+    else
+        // other view (probably settings):
+        hwndNewView = XCenter_parent_WPAbstract_wpOpen(somSelf,
+                                                       hwndCnr,
+                                                       ulView,
+                                                       param);
+    return (hwndNewView);
+}
+
+/*
+ *@@ wpSwitchTo:
+ *      this WPObject method is called to give focus
+ *      to an already open view. This gets called
+ *      from wpViewObject instead of wpOpen if a view
+ *      already exists, but can be called separately
+ *      as well.
+ *
+ *      For the XCenter, we'll give focus to the
+ *      XCenter view... however, if auto-hide is
+ *      enabled, we'll also have to re-show the
+ *      frame.
+ *
+ *@@added V0.9.7 (2000-12-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
+{
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_wpSwitchTo");
+
+    // check if we should switch to the existing XCenter view
+    if (View == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XCENTER))
+    {
+        // yes:
+        PUSEITEM    pUseItem = NULL;
+        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+        {
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (pViewItem->view == View)
+            {
+                // yes, it's an XCenter view:
+                // instead of activating the view (which is what
+                // the WPS normally does), show the frame and
+                // restart the update timer
+                // DO NOT GIVE FOCUS, DO NOT ACTIVATE
+                ctrpReformatFrameHWND(pViewItem->handle);
+                brc = TRUE;
+                break;
+            }
+        }
+    }
+    else
+        // view other than XCenter view (probably settings):
+        brc = XCenter_parent_WPAbstract_wpSwitchTo(somSelf, View);
+
+    return (brc);
 }
 
 /*
@@ -389,8 +787,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpAddObjectWindowPage(XCenter *somSelf,
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpAddObjectWindowPage");
 
-    return (XCenter_parent_WPAbstract_wpAddObjectWindowPage(somSelf,
-                                                            hwndNotebook));
+    return (SETTINGS_PAGE_REMOVED);
 }
 
 /*
@@ -447,8 +844,9 @@ SOM_Scope ULONG  SOMLINK xctrM_wpclsQueryStyle(M_XCenter *somSelf)
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryStyle");
 
-    return (M_XCenter_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
-                | CLSSTYLE_NEVERPRINT);
+    return (// M_XCenter_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
+            CLSSTYLE_NEVERPRINT);
+                    // but allow templates
 }
 
 /*
@@ -484,8 +882,13 @@ SOM_Scope ULONG  SOMLINK xctrM_wpclsQueryIconData(M_XCenter *somSelf,
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryIconData");
 
-    return (M_XCenter_parent_M_WPAbstract_wpclsQueryIconData(somSelf,
-                                                             pIconInfo));
+    if (pIconInfo) {
+       pIconInfo->fFormat = ICON_RESOURCE;
+       pIconInfo->resid   = ID_ICONXCENTER;
+       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    }
+
+    return (sizeof(ICONINFO));
 }
 
 /*
@@ -508,24 +911,4 @@ SOM_Scope BOOL  SOMLINK xctrM_wpclsQuerySettingsPageSize(M_XCenter *somSelf,
                                                                      pSizl));
 }
 
-/*
- *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
- *      Templates folder to allow a class to
- *      create its default templates.
- *
- *      The default WPS behavior is to create new templates
- *      if the class default title is different from the
- *      existing templates.
- */
-
-SOM_Scope BOOL  SOMLINK xctrM_wpclsCreateDefaultTemplates(M_XCenter *somSelf,
-                                                          WPObject* Folder)
-{
-    /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
-    M_XCenterMethodDebug("M_XCenter","xctrM_wpclsCreateDefaultTemplates");
-
-    return (M_XCenter_parent_M_WPAbstract_wpclsCreateDefaultTemplates(somSelf,
-                                                                      Folder));
-}
 

@@ -226,6 +226,26 @@ BEGIN
     MENUITEM "~Remove from Sticky Windows list", ID_XSMI_STICKY_DELETE
 END
 
+/* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
+MENU ID_CRM_XCENTERBUTTON LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
+    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
+    MENUITEM "~Suspend...", ID_CRMI_SUSPEND
+    MENUITEM "~Log off...", ID_CRMI_LOGOFF
+    MENUITEM "~Restart WPS...", ID_CRMI_RESTARTWPS
+    MENUITEM "Shut~down...", ID_CRMI_SHUTDOWN
+END
+
+MENU ID_CRM_WIDGET LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Propertie~s", ID_CRMI_PROPERTIES
+    MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
+    MENUITEM "~Help", ID_CRMI_HELP
+    MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
+    MENUITEM "~Remove widget", ID_CRMI_REMOVEWGT
+END
+
 /* here come lots of little strings which XWorkplace uses in all kinds
    of places. XWorkplace loads all these strings at once when the
    WPS is being started (see cmnQueryNLSStrings in common.c). */
@@ -696,4 +716,3 @@ POINTER ID_ND_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
 
 rcinclude "xfldr001.dlg"
 
-                                                                                                                                                                                                                                                                                                  

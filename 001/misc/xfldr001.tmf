@@ -310,6 +310,14 @@ Warning: Even though XShutdown has been tested, it MIGHT NOT WORK on your system
 
 Are you sure you want to do this?
 
+;
+; the following items are new with V0.9.7
+;
+
+<--XFL0194-->: XCenter: Error
+
+<--XFL0195-->: The XCenter failed to create the widget of the class "%1".
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

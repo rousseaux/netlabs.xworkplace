@@ -97,9 +97,6 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 
-// XWorkplace implementation headers
-#include "media\media.h"                // XWorkplace multimedia support
-
 // SOM headers which don't crash with prec. header files
 #include "xwpmedia.ih"
 
@@ -108,6 +105,8 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+
+#include "media\media.h"                // XWorkplace multimedia support
 
 // other SOM headers
 
@@ -183,7 +182,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         ULONG       cDevices = 0,
                     ul;
@@ -207,7 +206,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
                                                      1);
                 if (precc)
                 {
-                    precc->pszDeviceType = paDevices[ul].pszDeviceType;
+                    precc->pszDeviceType = (PSZ)paDevices[ul].pcszDeviceType;
                     precc->ulDeviceIndex = paDevices[ul].ulDeviceIndex;
                     precc->pszInfo = paDevices[ul].szInfo;
                     precc->pDevice = &paDevices[ul];
@@ -320,6 +319,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 VOID DescribeMediaType(PSZ pszBuf,          // out: description
+                       ULONG cbBuf,         // in: sizeof(*pszBuf)
                        ULONG ulMediaType)   // in: MMIO_MEDIATYPE_* id
 {
     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
@@ -327,39 +327,39 @@ VOID DescribeMediaType(PSZ pszBuf,          // out: description
     switch (ulMediaType)
     {
         case MMIO_MEDIATYPE_IMAGE:
-            strcpy(pszBuf, pNLSStrings->pszTypeImage);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeImage, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_AUDIO:
-            strcpy(pszBuf, pNLSStrings->pszTypeAudio);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeAudio, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_MIDI:
-            strcpy(pszBuf, pNLSStrings->pszTypeMIDI);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeMIDI, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_COMPOUND:
-            strcpy(pszBuf, pNLSStrings->pszTypeCompound);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeCompound, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_OTHER:
-            strcpy(pszBuf, pNLSStrings->pszTypeOther);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeOther, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_UNKNOWN:
-            strcpy(pszBuf, pNLSStrings->pszTypeUnknown);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeUnknown, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_DIGITALVIDEO:
-            strcpy(pszBuf, pNLSStrings->pszTypeVideo);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeVideo, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_ANIMATION:
-            strcpy(pszBuf, pNLSStrings->pszTypeAnimation);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeAnimation, cbBuf);
         break;
 
         case MMIO_MEDIATYPE_MOVIE:
-            strcpy(pszBuf, pNLSStrings->pszTypeMovie);
+            strhncpy0(pszBuf, pNLSStrings->pszTypeMovie, cbBuf);
         break;
 
         default:
@@ -409,7 +409,8 @@ typedef struct _IOPROCRECORD
 void _Optlink fntInsertIOProcs(PTHREADINFO pti)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
-    TRY_LOUD(excpt1, NULL)
+
+    TRY_LOUD(excpt1)
     {
         HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -508,6 +509,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
 
                             // media type
                             DescribeMediaType(precc->szMediaType,
+                                              sizeof(precc->szMediaType),
                                               pmmfiThis->ulMediaType);
                             precc->pszMediaType = precc->szMediaType;
 
@@ -666,7 +668,8 @@ typedef struct _CODECRECORD
 void _Optlink fntInsertCodecs(PTHREADINFO pti)
 {
     PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
-    TRY_LOUD(excpt1, NULL)
+
+    TRY_LOUD(excpt1)
     {
         HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -741,6 +744,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
 
                     // media type
                     DescribeMediaType(precc->szMediaType,
+                                      sizeof(precc->szMediaType),
                                       cifi.ulMediaType);
                     precc->pszMediaType = precc->szMediaType;
 

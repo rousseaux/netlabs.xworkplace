@@ -18,7 +18,7 @@ BEGIN
 //      CONTAINER                             IDDLG_CN_POINTERSET, 6,  39, 185, 110, CCS_SINGLESEL | CCS_AUTOPOSITION | CCS_MINIICONS | WS_GROUP
         CONTAINER                             IDDLG_CN_POINTERSET, 6,  39, 185, 110, CCS_EXTENDSEL | CCS_AUTOPOSITION | CCS_MINIICONS | WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        GROUPBOX        IDT_IDTXT_GROUPBOX,   IDDLG_UNUSED,        1,  18, 195, 142
+        GROUPBOX        IDT_IDTXT_GROUPBOX,   -1,        1,  18, 195, 142
         PUSHBUTTON      IDT_IDDLG_PB_EDIT,    IDDLG_PB_EDIT,       6,  21,  40,  14, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_FIND,    IDDLG_PB_FIND,      52,  21,  40,  14
         PUSHBUTTON      IDT_IDDLG_PB_LOAD,    IDDLG_PB_LOAD,      98,  21,  57,  14
@@ -37,7 +37,7 @@ BEGIN
     BEGIN
         CONTAINER                             IDDLG_CN_POINTERSET, 11, 26, 200, 110, CCS_SINGLESEL | CCS_AUTOPOSITION | CCS_MINIICONS | WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        GROUPBOX        IDT_IDTXT_GROUPBOX,   IDDLG_UNUSED,        5,   4, 211, 141
+        GROUPBOX        IDT_IDTXT_GROUPBOX,   -1,        5,   4, 211, 141
         PUSHBUTTON      IDT_IDDLG_PB_EDIT,    IDDLG_PB_EDIT,      11,   8,  40,  14, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_FIND,    IDDLG_PB_FIND,      57,   8,  40,  14
         PUSHBUTTON      IDT_IDDLG_PB_LOAD,    IDDLG_PB_LOAD,     103,   8,  57,  14
@@ -56,13 +56,13 @@ BEGIN
     DIALOG  "",  IDDLG_NBANIMATION, 12, 6, 170, 130, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_FRAMELENGTH,   IDDLG_UNUSED,               3,  70, 152,  42, NOT WS_GROUP
-        LTEXT           IDT_IDDLG_ST_VALUE_MS,      IDDLG_UNUSED,               7,  95, 144,   8, NOT WS_GROUP
+        GROUPBOX        IDT_IDDLG_GB_FRAMELENGTH,   -1,               3,  70, 152,  42, NOT WS_GROUP
+        LTEXT           IDT_IDDLG_ST_VALUE_MS,      -1,               7,  95, 144,   8, NOT WS_GROUP
         SPINBUTTON                                  IDDLG_SB_FRAMELENGTH,       9,  85,  52,  12, SPBS_NUMERICONLY | SPBS_MASTER
         AUTOCHECKBOX    IDT_IDDLG_CB_USEFORALL,     IDDLG_CB_USEFORALL,         7,  73, 144,  10
-        GROUPBOX        IDT_IDDLG_GB_LOAD,          IDDLG_UNUSED,               3,  46, 152,  21, NOT WS_GROUP
+        GROUPBOX        IDT_IDDLG_GB_LOAD,          -1,               3,  46, 152,  21, NOT WS_GROUP
         AUTOCHECKBOX    IDT_IDDLG_CB_ANIMATEONLOAD, IDDLG_CB_ANIMATEONLOAD,     7,  49, 144,  10
-        GROUPBOX        IDT_IDDLG_GB_ANIMATIONPATH, IDDLG_UNUSED,               3,  19, 152,  24
+        GROUPBOX        IDT_IDDLG_GB_ANIMATIONPATH, -1,               3,  19, 152,  24
         ENTRYFIELD      "",                         IDDLG_EF_ANIMATIONPATH,     9,  25, 139,   8, ES_MARGIN
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,          IDDLG_PB_UNDO,              6,   3,  35,  12, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_DEFAULT,       IDDLG_PB_DEFAULT,          45,   3,  35,  12, NOT WS_TABSTOP
@@ -77,10 +77,10 @@ BEGIN
     DIALOG  "",  IDDLG_NBHIDE, 12, 6, 170, 130, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_HIDEPOINTER,   IDDLG_UNUSED,               3,  52, 152,  21, NOT WS_GROUP
+        GROUPBOX        IDT_IDDLG_GB_HIDEPOINTER,   -1,               3,  52, 152,  21, NOT WS_GROUP
         AUTOCHECKBOX    IDT_IDDLG_CB_HIDEPOINTER,   IDDLG_CB_HIDEPOINTER,       7,  54, 144,  10
-        GROUPBOX        IDT_IDDLG_GB_HIDEPOINTERDELAY,IDDLG_UNUSED,             3,  19, 152,  32, NOT WS_GROUP
-        LTEXT           IDT_IDDLG_ST_VALUE_S,       IDDLG_UNUSED,               7,  34, 144,   8, NOT WS_GROUP
+        GROUPBOX        IDT_IDDLG_GB_HIDEPOINTERDELAY,-1,             3,  19, 152,  32, NOT WS_GROUP
+        LTEXT           IDT_IDDLG_ST_VALUE_S,       -1,               7,  34, 144,   8, NOT WS_GROUP
         SPINBUTTON                                  IDDLG_SB_HIDEPOINTERDELAY,  9,  24,  52,  12, SPBS_NUMERICONLY | SPBS_MASTER
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,          IDDLG_PB_UNDO,              6,   3,  35,  12, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_DEFAULT,       IDDLG_PB_DEFAULT,          45,   3,  35,  12, NOT WS_TABSTOP
@@ -95,9 +95,9 @@ BEGIN
     DIALOG  "",  IDDLG_NBDRAGDROP, 12, 6, 170, 130, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_DRAGPTRTYPE,   IDDLG_UNUSED,               3,  47, 152,  24
+        GROUPBOX        IDT_IDDLG_GB_DRAGPTRTYPE,   -1,               3,  47, 152,  24
         COMBOBOX        "",                         IDDLG_EF_DRAGPTRTYPE,       9,  36, 139,  25, CBS_DROPDOWNLIST | WS_TABSTOP
-        GROUPBOX        IDT_IDDLG_GB_DRAGSETTYPE,,  IDDLG_UNUSED,               3,  19, 152,  24
+        GROUPBOX        IDT_IDDLG_GB_DRAGSETTYPE,,  -1,               3,  19, 152,  24
         COMBOBOX        "",                         IDDLG_EF_DRAGSETTYPE,       9,   8, 139,  25, CBS_DROPDOWNLIST | WS_TABSTOP
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,          IDDLG_PB_UNDO,              6,   3,  35,  12, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_DEFAULT,       IDDLG_PB_DEFAULT,          45,   3,  35,  12, NOT WS_TABSTOP
@@ -112,8 +112,8 @@ BEGIN
     DIALOG  "",  IDDLG_NBINIT, 12, 6, 170, 130, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_INITDELAY,     IDDLG_UNUSED                3,  19, 152,  32, NOT WS_GROUP
-        LTEXT           IDT_IDDLG_ST_VALUE_S,       IDDLG_UNUSED                7,  34, 144,   8, NOT WS_GROUP
+        GROUPBOX        IDT_IDDLG_GB_INITDELAY,     -1                3,  19, 152,  32, NOT WS_GROUP
+        LTEXT           IDT_IDDLG_ST_VALUE_S,       -1                7,  34, 144,   8, NOT WS_GROUP
         SPINBUTTON                                  IDDLG_SB_INITDELAY          9,  24,  52,  12, SPBS_NUMERICONLY | SPBS_MASTER
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,          IDDLG_PB_UNDO,              6,   3,  35,  12, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_DEFAULT,       IDDLG_PB_DEFAULT,          45,   3,  35,  12, NOT WS_TABSTOP
@@ -130,10 +130,10 @@ BEGIN
     DIALOG  "", IDDLG_DLG_ANIMATIONPAGE1, 16, 32, 210, 185, NOT FS_DLGBORDER | WS_VISIBLE
     PRESPARAMS PP_FONTNAMESIZE, "10.Helv ISO"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_ANIMINFO,    IDDLG_UNUSED,         1,  19, 185, 56
-        LTEXT           IDT_IDDLG_ST_ANIMNAME,    IDDLG_UNUSED,         5,  57, 175,  8
+        GROUPBOX        IDT_IDDLG_GB_ANIMINFO,    -1,         1,  19, 185, 56
+        LTEXT           IDT_IDDLG_ST_ANIMNAME,    -1,         5,  57, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_INFONAME,    8,  47, 171,  8, ES_MARGIN
-        LTEXT           IDT_IDDLG_ST_ANIMARTIST,  IDDLG_UNUSED,         5,  35, 175,  8
+        LTEXT           IDT_IDDLG_ST_ANIMARTIST,  -1,         5,  35, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_INFOARTIST,  8,  24, 171,  8, ES_MARGIN
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,        IDDLG_PB_UNDO,        5,   1,  40, 14, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_HELP,        IDDLG_PB_HELP,       51,   1,  40, 14, BS_NOPOINTERFOCUS | NOT WS_TABSTOP
@@ -147,10 +147,10 @@ BEGIN
     DIALOG  __TITLE__, IDDLG_DLG_ANIMATIONPAGE1, 0, 0, 218, 185, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "10.New Font C ISO"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_ANIMINFO,    IDDLG_UNUSED,         1,  11, 185, 56
-        LTEXT           IDT_IDDLG_ST_ANIMNAME,    IDDLG_UNUSED,         5,  49, 175,  8
+        GROUPBOX        IDT_IDDLG_GB_ANIMINFO,    -1,         1,  11, 185, 56
+        LTEXT           IDT_IDDLG_ST_ANIMNAME,    -1,         5,  49, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_INFONAME,    8,  39, 171,  8, ES_MARGIN
-        LTEXT           IDT_IDDLG_ST_ANIMARTIST,  IDDLG_UNUSED,         5,  27, 175,  8
+        LTEXT           IDT_IDDLG_ST_ANIMARTIST,  -1,         5,  27, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_INFOARTIST,  8,  16, 171,  8, ES_MARGIN
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,        IDDLG_PB_UNDO,        128,  41,  40,  14, WS_GROUP | BS_NOTEBOOKBUTTON
         PUSHBUTTON      IDT_IDDLG_PB_HELP,        IDDLG_PB_HELP,        125,  40,  40,  14, BS_NOPOINTERFOCUS | NOT WS_TABSTOP | BS_NOTEBOOKBUTTON
@@ -164,12 +164,12 @@ BEGIN
     DIALOG  "", IDDLG_DLG_ANIMATIONPAGE2, 16, 32, 210, 185, NOT FS_DLGBORDER | WS_VISIBLE
     PRESPARAMS PP_FONTNAMESIZE, "10.Helv ISO"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_ANIMDETAILS, IDDLG_UNUSED,         1,  19, 185, 55
-        LTEXT           IDT_IDDLG_ST_ANIMFRAMES,  IDDLG_UNUSED,         5,  56, 175,  8
+        GROUPBOX        IDT_IDDLG_GB_ANIMDETAILS, -1,         1,  19, 185, 55
+        LTEXT           IDT_IDDLG_ST_ANIMFRAMES,  -1,         5,  56, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_FRAMES,      8,  46,  26,  8, ES_MARGIN | ES_READONLY | NOT WS_TABSTOP
-        CTEXT           "/",                      IDDLG_UNUSED,        36,  46,  11,  8, DT_VCENTER
+        CTEXT           "/",                      -1,        36,  46,  11,  8, DT_VCENTER
         ENTRYFIELD      "",                       IDDLG_EF_PHYSFRAMES, 49,  46,  26,  8, ES_MARGIN | ES_READONLY | NOT WS_TABSTOP
-        LTEXT           IDT_IDDLG_ST_ANIMTIMEOUT, IDDLG_UNUSED,         5,  34, 175,  8
+        LTEXT           IDT_IDDLG_ST_ANIMTIMEOUT, -1,         5,  34, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_DEFTIMEOUT,  8,  24,  26,  8, ES_MARGIN | ES_READONLY | NOT WS_TABSTOP
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,        IDDLG_PB_UNDO,        5,   1,  40, 14, WS_GROUP
         PUSHBUTTON      IDT_IDDLG_PB_HELP,        IDDLG_PB_HELP,       51,   1,  40, 14, BS_NOPOINTERFOCUS | NOT WS_TABSTOP
@@ -183,12 +183,12 @@ BEGIN
     DIALOG  __TITLE__, IDDLG_DLG_ANIMATIONPAGE2, 0, 0, 218, 185, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "10.New Font C ISO"
     BEGIN
-        GROUPBOX        IDT_IDDLG_GB_ANIMDETAILS, IDDLG_UNUSED,         1,  11, 185, 55
-        LTEXT           IDT_IDDLG_ST_ANIMFRAMES,  IDDLG_UNUSED,         5,  48, 175,  8
+        GROUPBOX        IDT_IDDLG_GB_ANIMDETAILS, -1,         1,  11, 185, 55
+        LTEXT           IDT_IDDLG_ST_ANIMFRAMES,  -1,         5,  48, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_FRAMES,      8,  38,  26,  8, ES_MARGIN | ES_READONLY | NOT WS_TABSTOP
-        CTEXT           "/",                      IDDLG_UNUSED,        36,  38,  11,  8, DT_VCENTER
+        CTEXT           "/",                      -1,        36,  38,  11,  8, DT_VCENTER
         ENTRYFIELD      "",                       IDDLG_EF_PHYSFRAMES, 49,  38,  26,  8, ES_MARGIN | ES_READONLY | NOT WS_TABSTOP
-        LTEXT           IDT_IDDLG_ST_ANIMTIMEOUT, IDDLG_UNUSED,         5,  26, 175,  8
+        LTEXT           IDT_IDDLG_ST_ANIMTIMEOUT, -1,         5,  26, 175,  8
         ENTRYFIELD      "",                       IDDLG_EF_DEFTIMEOUT,  8,  16,  26,  8, ES_MARGIN | ES_READONLY | NOT WS_TABSTOP
         PUSHBUTTON      IDT_IDDLG_PB_UNDO,        IDDLG_PB_UNDO,      128,  41,  40,  14, WS_GROUP | BS_NOTEBOOKBUTTON
         PUSHBUTTON      IDT_IDDLG_PB_HELP,        IDDLG_PB_HELP,      125,  40,  40,  14, BS_NOPOINTERFOCUS | NOT WS_TABSTOP | BS_NOTEBOOKBUTTON
@@ -202,7 +202,7 @@ BEGIN
     DIALOG  "", IDDLG_DLG_ICONPAGE, 33, 30, 180, 132, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "10.Helv ISO"
     BEGIN
-        LTEXT           IDT_IDDLG_ST_TITLE,    IDDLG_UNUSED,       9, 121,  20,  8, NOT WS_GROUP
+        LTEXT           IDT_IDDLG_ST_TITLE,    -1,       9, 121,  20,  8, NOT WS_GROUP
         MLE             "",                    IDDLG_ME_TITLE,    30,  99, 110, 30, MLS_IGNORETAB | WS_GROUP
         GROUPBOX        IDT_IDDLG_GB_CONTENTS, IDDLG_GB_CONTENTS,  9,  40,  66, 50, NOT WS_GROUP
         LTEXT           "",                    IDDLG_IC_CONTENTS, 19,  48,  32, 32, NOT WS_GROUP
@@ -220,7 +220,7 @@ BEGIN
     DIALOG  "", IDDLG_DLG_ICONPAGE, 0, 0, 141, 93, NOT FS_DLGBORDER | WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "10.New Font C ISO"
     BEGIN
-        LTEXT           IDT_IDDLG_ST_TITLE,    IDDLG_UNUSED,       4, 81,  13,  8, NOT WS_GROUP
+        LTEXT           IDT_IDDLG_ST_TITLE,    -1,       4, 81,  13,  8, NOT WS_GROUP
         MLE             "",                    IDDLG_ME_TITLE,    24, 70, 110, 19, MLS_IGNORETAB | WS_GROUP
         GROUPBOX        IDT_IDDLG_GB_CONTENTS, IDDLG_GB_CONTENTS,  4, 18,  66, 50, NOT WS_GROUP
         LTEXT           "",                    IDDLG_IC_CONTENTS, 13, 26,  32, 32, NOT WS_GROUP
@@ -250,10 +250,10 @@ BEGIN
         GROUPBOX        IDT_IDDLG_GB_PREVIEW,      IDDLG_GB_PREVIEW,      100,  60,  80,  35
         LTEXT           "*",                       IDDLG_ST_PREVIEW       115,  64,  31,  23
         PUSHBUTTON      "",                        DID_OK,                143,  69,  30,  14
-        GROUPBOX        IDT_IDDLG_GB_ANIMINFO,     IDDLG_UNUSED,          100,   4, 130,  50
-        LTEXT           IDT_IDDLG_ST_ANIMNAME,     IDDLG_UNUSED,          105,  37, 115,   8
+        GROUPBOX        IDT_IDDLG_GB_ANIMINFO,     -1,          100,   4, 130,  50
+        LTEXT           IDT_IDDLG_ST_ANIMNAME,     -1,          105,  37, 115,   8
         ENTRYFIELD      "",                        IDDLG_EF_INFONAME,     106,  30, 115,   6, ES_MARGIN
-        LTEXT           IDT_IDDLG_ST_ANIMARTIST,   IDDLG_UNUSED,          105,  17, 115,   8
+        LTEXT           IDT_IDDLG_ST_ANIMARTIST,   -1,          105,  17, 115,   8
         ENTRYFIELD      "",                        IDDLG_EF_INFOARTIST,   106,  10, 115,   6, ES_MARGIN
     END
 END

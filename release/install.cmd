@@ -31,11 +31,25 @@ if (right(mydir, 1) = "\") then
 
 nl = '0a0d'x;
 IniKey = "XFolder";
-XFolderVersion = "1.00";
+XFolderVersion = "0.9.0";
 
 foundList.0 = 0
 
 Say "XWorkplace "XFolderVersion" installation"
+
+Say ""
+Say "WARNING!!!"
+Say "This script (install.cmd) was used only by old XFolder versions"
+Say "(before XWorkplace V0.9.1) to install XFolder. XWorkplace now"
+Say "uses WarpIN for installation and de-installation. Using this"
+Say "script is NOT RECOMMENDED and can easily mess up your system,"
+Say "since this script has not been tested for a long time."
+Say "Are you sure you want to continue? (Y/N)"
+do until (pos(key,"YN") > 0)
+   key = translate(SysGetKey("NOECHO"))
+end /* do */
+
+if (key == "N") then exit
 
 /* parse parameters: */
 parse arg args

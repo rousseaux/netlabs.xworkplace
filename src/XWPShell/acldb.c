@@ -609,7 +609,7 @@ APIRET LoadACLDatabase(PULONG pulLineWithError)
 
     ULONG   ulLineCount = 0;
 
-    pszDBPath = getenv("XWPUSERDB");
+    pszDBPath = getenv("XWPACLDB");
     if (!pszDBPath)
     {
         // XWPUSERDB not specified:

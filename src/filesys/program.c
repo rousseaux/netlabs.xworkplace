@@ -159,7 +159,10 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
         if (!G_hmtxRunning)
         {
@@ -284,6 +287,8 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
         fSemOwned = FALSE;
     }
 
+    DosExitMustComplete(&ulNesting);
+
     return (brc);
 }
 
@@ -308,7 +313,10 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxRunning, 4000) == NO_ERROR);
 
@@ -371,6 +379,8 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
         fSemOwned = FALSE;
     }
 
+    DosExitMustComplete(&ulNesting);
+
     return (brc);
 }
 
@@ -397,7 +407,10 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxRunning, 4000) == NO_ERROR);
 
@@ -438,6 +451,8 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
         DosReleaseMutexSem(G_hmtxRunning);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -863,7 +878,10 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
 {
     HAPP happ = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
         PSZ     pszProgTitle = _wpQueryTitle(pProgObject);
 
@@ -960,6 +978,8 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
     {
         happ = 0;
     } END_CATCH();
+
+    DosExitMustComplete(&ulNesting);
 
     return (happ);
 }

@@ -285,6 +285,10 @@
         // using sliding menus (V0.9.6 (2000-10-27) [umoeller])
         BOOL            fConditionalCascadeSensitive;
 
+        // more PageMage configuration V0.9.7 (2000-12-08) [umoeller]
+        BOOL            fSlidingIgnoreXCenter;
+                            // on sliding focus
+
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*

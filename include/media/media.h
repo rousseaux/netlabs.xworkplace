@@ -217,7 +217,7 @@
     typedef struct _XMMDEVICE
     {
         ULONG   ulDeviceType;       // MCI_DEVTYPE_* identifier
-        PSZ     pszDeviceType;      // NLS description (composed by xmmQueryDevices)
+        const char *pcszDeviceType; // NLS description (composed by xmmQueryDevices)
         ULONG   ulDeviceIndex;      // index (1 or higher)
         CHAR    szInfo[200];        // return value of szInfo
     } XMMDEVICE, *PXMMDEVICE;

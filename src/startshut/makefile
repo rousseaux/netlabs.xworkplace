@@ -86,9 +86,9 @@ callmainmake:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-        $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # main include path
@@ -133,7 +133,7 @@ $(OUTPUTDIR)\shutdown.obj: \
            $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xprf.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
-    $(INC)\filesys\menus.h $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\fdrmenus.h $(INC)\filesys\xthreads.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\media\media.h \
     $(INC)\startshut\apm.h $(INC)\filesys\xthreads.h \

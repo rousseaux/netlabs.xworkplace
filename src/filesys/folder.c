@@ -97,7 +97,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // shared context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -145,7 +145,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 {
     ULONG   ulReturn = 0;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // flag defined in
         #define WP_GLOBAL_COLOR         0x40000000
@@ -844,35 +844,28 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
     HWND        hwndFrame = NULLHANDLE;
     BOOL        brc = FALSE;
 
-    BOOL    fFolderLocked = 0;
-
-    TRY_LOUD(excpt1, NULL)
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
     {
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        PUSEITEM    pUseItem = NULL;
+        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
         {
-            PUSEITEM    pUseItem = NULL;
-            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-                 pUseItem;
-                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (    (pViewItem->view == OPEN_CONTENTS)
+                 || (pViewItem->view == OPEN_DETAILS)
+                 || (pViewItem->view == OPEN_TREE)
+               )
             {
-                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-                if (    (pViewItem->view == OPEN_CONTENTS)
-                     || (pViewItem->view == OPEN_DETAILS)
-                     || (pViewItem->view == OPEN_TREE)
-                   )
-                {
-                    fdrSetOneFrameWndTitle(somSelf,
-                                           pViewItem->handle); // hwndFrame);
-                    break;
-                }
+                fdrSetOneFrameWndTitle(somSelf,
+                                       pViewItem->handle); // hwndFrame);
+                break;
             }
-        } // end if fFolderLocked
-    }
-    CATCH(excpt1) {} END_CATCH();
+        }
+    } // end if fFolderLocked
 
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    wpshUnlockObject(&Lock);
 
     /* if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS))
     {
@@ -924,6 +917,8 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
                 ulMax = 0;
     BOOL        fFolderLocked = FALSE;
 
+    ULONG       ulNesting = 0;
+
     // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
     somTD_WPFolder_wpQueryContent rslv_wpQueryContent
             = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
@@ -932,7 +927,9 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     wpshCheckIfPopulated(pFolder,
                          FALSE);        // full populate
 
-    TRY_LOUD(excpt1, NULL)
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
     {
         // lock folder contents
         fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
@@ -973,6 +970,8 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
 
     if (fFolderLocked)
         wpshReleaseFolderMutexSem(pFolder);
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -1248,113 +1247,108 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                        BOOL fForce)            // in: always invalidate container?
 {
     XFolderData *somThis = XFolderGetData(somSelf);
-    BOOL        fFolderLocked = FALSE;
 
     if (hwndCnr)
     {
-        TRY_LOUD(excpt1, NULL)
+        WPSHLOCKSTRUCT Lock;
+        if (wpshLockObject(&Lock, somSelf))
         {
-            fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-            if (fFolderLocked)
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // XFolderData     *somThis = XFolderGetData(somSelf);
+
+            // use our macro for determining this folder's always-sort flag;
+            // this is TRUE if "Always sort" is on either locally or globally
+            BOOL            AlwaysSort = ALWAYS_SORT;
+
+            // get our sort comparison func
+            PFN             pfnSort =  (AlwaysSort)
+                                           ? fdrQuerySortFunc(DEFAULT_SORT)
+                                           : NULL
+                                       ;
+
+            CNRINFO         CnrInfo = {0};
+            BOOL            Update = FALSE;
+
+            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+
+            #ifdef DEBUG_SORT
+                _Pmpf(( "_xfSetCnrSort: %s", _wpQueryTitle(somSelf) ));
+                _Pmpf(( "  _Always: %d, Global->Always: %d", _AlwaysSort, pGlobalSettings->AlwaysSort ));
+                _Pmpf(( "  _Default: %d, Global->Default: %d", _DefaultSort, pGlobalSettings->DefaultSort ));
+            #endif
+
+            // for icon views, we need extra precautions
+            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                // XFolderData     *somThis = XFolderGetData(somSelf);
+                // for some reason, cnr icon views need to have "auto arrange" on
+                // when sorting, or the cnr will allow to drag'n'drop icons freely
+                // within the same cnr, which is not useful when auto-sort is on
 
-                // use our macro for determining this folder's always-sort flag;
-                // this is TRUE if "Always sort" is on either locally or globally
-                BOOL            AlwaysSort = ALWAYS_SORT;
+                ULONG       ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
 
-                // get our sort comparison func
-                PFN             pfnSort =  (AlwaysSort)
-                                               ? fdrQuerySortFunc(DEFAULT_SORT)
-                                               : NULL
-                                           ;
+                if (AlwaysSort)
+                {
+                    // always sort: we need to set CCS_AUTOPOSITION, if not set
+                    if ((ulStyle & CCS_AUTOPOSITION) == 0)
+                    {
+                        #ifdef DEBUG_SORT
+                            _Pmpf(( "  New ulStyle = %lX", ulStyle | CCS_AUTOPOSITION ));
+                        #endif
+                        WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
+                        Update = TRUE;
+                    }
+                }
+                else
+                {
+                    // NO always sort: we need to unset CCS_AUTOPOSITION, if set
+                    if ((ulStyle & CCS_AUTOPOSITION) != 0)
+                    {
+                        #ifdef DEBUG_SORT
+                            _Pmpf(( "  New ulStyle = %lX", ulStyle & (~CCS_AUTOPOSITION) ));
+                        #endif
+                        WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
+                        Update = TRUE;
+                    }
+                }
+            }
 
-                CNRINFO         CnrInfo = {0};
-                BOOL            Update = FALSE;
+            // now also update the internal WPFolder sort info, because otherwise
+            // the WPS will keep reverting the cnr attrs; we have obtained the pointer
+            // to this structure in wpRestoreData
+            if (_wpIsObjectInitialized(somSelf))
+                if (_pFolderSortInfo)
+                    _pFolderSortInfo->fAlwaysSort = AlwaysSort;
 
-                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
+            // finally, set the cnr sort function: we perform these checks
+            // to avoid cnr flickering
+            if (    // sort function changed?
+                    (CnrInfo.pSortRecord != (PVOID)pfnSort)
+                    // CCS_AUTOPOSITION flag changed above?
+                 || (Update)
+                 || (fForce)
+               )
+            {
                 #ifdef DEBUG_SORT
-                    _Pmpf(( "_xfSetCnrSort: %s", _wpQueryTitle(somSelf) ));
-                    _Pmpf(( "  _Always: %d, Global->Always: %d", _AlwaysSort, pGlobalSettings->AlwaysSort ));
-                    _Pmpf(( "  _Default: %d, Global->Default: %d", _DefaultSort, pGlobalSettings->DefaultSort ));
+                    _Pmpf(( "  Resetting pSortRecord to %lX", CnrInfo.pSortRecord ));
                 #endif
 
-                // for icon views, we need extra precautions
-                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                {
-                    // for some reason, cnr icon views need to have "auto arrange" on
-                    // when sorting, or the cnr will allow to drag'n'drop icons freely
-                    // within the same cnr, which is not useful when auto-sort is on
+                // set the cnr sort function; if this is != NULL, the
+                // container will always sort the records. If auto-sort
+                // is off, pfnSort has been set to NULL above.
+                CnrInfo.pSortRecord = (PVOID)pfnSort;
 
-                    ULONG       ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
-
-                    if (AlwaysSort)
-                    {
-                        // always sort: we need to set CCS_AUTOPOSITION, if not set
-                        if ((ulStyle & CCS_AUTOPOSITION) == 0)
-                        {
-                            #ifdef DEBUG_SORT
-                                _Pmpf(( "  New ulStyle = %lX", ulStyle | CCS_AUTOPOSITION ));
-                            #endif
-                            WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
-                            Update = TRUE;
-                        }
-                    }
-                    else
-                    {
-                        // NO always sort: we need to unset CCS_AUTOPOSITION, if set
-                        if ((ulStyle & CCS_AUTOPOSITION) != 0)
-                        {
-                            #ifdef DEBUG_SORT
-                                _Pmpf(( "  New ulStyle = %lX", ulStyle & (~CCS_AUTOPOSITION) ));
-                            #endif
-                            WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
-                            Update = TRUE;
-                        }
-                    }
-                }
-
-                // now also update the internal WPFolder sort info, because otherwise
-                // the WPS will keep reverting the cnr attrs; we have obtained the pointer
-                // to this structure in wpRestoreData
-                if (_wpIsObjectInitialized(somSelf))
-                    if (_pFolderSortInfo)
-                        _pFolderSortInfo->fAlwaysSort = AlwaysSort;
-
-                // finally, set the cnr sort function: we perform these checks
-                // to avoid cnr flickering
-                if (    // sort function changed?
-                        (CnrInfo.pSortRecord != (PVOID)pfnSort)
-                        // CCS_AUTOPOSITION flag changed above?
-                     || (Update)
-                     || (fForce)
-                   )
-                {
-                    #ifdef DEBUG_SORT
-                        _Pmpf(( "  Resetting pSortRecord to %lX", CnrInfo.pSortRecord ));
-                    #endif
-
-                    // set the cnr sort function; if this is != NULL, the
-                    // container will always sort the records. If auto-sort
-                    // is off, pfnSort has been set to NULL above.
-                    CnrInfo.pSortRecord = (PVOID)pfnSort;
-
-                    // now update the CnrInfo, which will sort the
-                    // contents and repaint the cnr also;
-                    // this might take a long time
-                    WinSendMsg(hwndCnr,
-                               CM_SETCNRINFO,
-                               (MPARAM)&CnrInfo,
-                               (MPARAM)CMA_PSORTRECORD);
-                }
-            } // end if (fFolderLocked)
+                // now update the CnrInfo, which will sort the
+                // contents and repaint the cnr also;
+                // this might take a long time
+                WinSendMsg(hwndCnr,
+                           CM_SETCNRINFO,
+                           (MPARAM)&CnrInfo,
+                           (MPARAM)CMA_PSORTRECORD);
+            }
         }
-        CATCH(excpt1) {} END_CATCH();
 
-        if (fFolderLocked)
-            _wpReleaseObjectMutexSem(somSelf);
+        wpshUnlockObject(&Lock);
+
     } // end if (hwndCnr)
 }
 
@@ -1559,6 +1553,9 @@ BOOL fdrAddToList(WPFolder *somSelf,
     PCONTENTMENULISTITEM pcmli = 0,
                          pcmliFound = 0;
 
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
     // create mutex semaphores for serialized access
     if (G_hmtxFolderLists == NULLHANDLE)
         DosCreateMutexSem(NULL,
@@ -1566,12 +1563,11 @@ BOOL fdrAddToList(WPFolder *somSelf,
                           0,
                           FALSE);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxFolderLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
-
             // find folder on list
             pNode = lstQueryFirstNode(pllFolders);
             while (pNode)
@@ -1642,7 +1638,8 @@ BOOL fdrAddToList(WPFolder *somSelf,
             }
         }
         else
-            CMN_LOG(("hmtxFolderLists request failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxFolderLists request failed.");
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -1651,6 +1648,8 @@ BOOL fdrAddToList(WPFolder *somSelf,
         DosReleaseMutexSem(G_hmtxFolderLists);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -1677,6 +1676,9 @@ BOOL fdrIsOnList(WPFolder *somSelf,
     BOOL                 rc = FALSE,
                          fSemOwned = FALSE;
 
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
     // create mutex semaphores for serialized access
     if (G_hmtxFolderLists == NULLHANDLE)
         DosCreateMutexSem(NULL,
@@ -1684,7 +1686,7 @@ BOOL fdrIsOnList(WPFolder *somSelf,
                           0,
                           FALSE);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxFolderLists, 4000) == NO_ERROR);
         if (fSemOwned)
@@ -1703,7 +1705,8 @@ BOOL fdrIsOnList(WPFolder *somSelf,
             }
         }
         else
-            CMN_LOG(("hmtxFolderLists request failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxFolderLists request failed.");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1712,6 +1715,9 @@ BOOL fdrIsOnList(WPFolder *somSelf,
         DosReleaseMutexSem(G_hmtxFolderLists);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
+
     return (rc);
 }
 
@@ -1743,6 +1749,9 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
     PLISTNODE               pNode = lstQueryFirstNode(pllFolders);
     PCONTENTMENULISTITEM    pItemFound = 0;
 
+    ULONG   ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
+
     // create mutex semaphores for serialized access
     if (G_hmtxFolderLists == NULLHANDLE)
         DosCreateMutexSem(NULL,
@@ -1750,7 +1759,7 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
                           0,
                           FALSE);
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxFolderLists, 4000) == NO_ERROR);
         if (fSemOwned)
@@ -1813,7 +1822,8 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
                 pItemFound = pNode->pItemData;
         }
         else
-            CMN_LOG(("hmtxFolderLists request failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxFolderLists request failed.");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1822,6 +1832,8 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
         DosReleaseMutexSem(G_hmtxFolderLists);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     if (pItemFound)
         return (pItemFound->pFolder);
@@ -2158,7 +2170,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
 
             case WM_TIMER:
             {
-                TRY_LOUD(excpt1, NULL)
+                TRY_LOUD(excpt1)
                 {
                     XFolderData *somThis = XFolderGetData(psbd->somSelf);
                     somTD_XFolder_xwpUpdateStatusBar pfnResolvedUpdateStatusBar = NULL;
@@ -2275,7 +2287,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                 HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, &rcl);
                 PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-                TRY_LOUD(excpt1, NULL)
+                TRY_LOUD(excpt1)
                 {
                     POINTL  ptl1;
                     CHAR    szText[1000], szTemp[100] = "0";
@@ -2584,7 +2596,6 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                 if (psbd->psfv)
                 {
                     POINTL  ptl;
-
                     ptl.x = SHORT1FROMMP(mp1);
                     ptl.y = SHORT2FROMMP(mp1)-20; // this is in cnr coords!
                     _wpDisplayMenu(psbd->somSelf,

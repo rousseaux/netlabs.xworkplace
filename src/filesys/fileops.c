@@ -253,14 +253,17 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
     PLINKLIST   pll = lstCreate(FALSE);       // do not free the items
     ULONG       ulSizeContents = 0;
 
-    BOOL fFolderLocked = FALSE;
+    BOOL        fFolderLocked = FALSE;
+
+    ULONG       ulNesting = 0;
+    DosEnterMustComplete(&ulNesting);
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
     #endif
 
     // lock folder for querying content
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         // populate (either fully or with folders only)
         if (wpshCheckIfPopulated(pFolder,
@@ -319,6 +322,8 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
         wpshReleaseFolderMutexSem(pFolder);
         fFolderLocked = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     *pulSizeContents = ulSizeContents;
 
@@ -518,6 +523,9 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
  *      same list. If you call this only once, make
  *      sure pllObjects is empty before calling.
  *
+ *      This is most useful for (and used with) deleting
+ *      a folder and all its contents.
+ *
  *@@added V0.9.3 (2000-04-27) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
@@ -537,9 +545,11 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
     {
         // it's a folder:
         // lock it and build a list from its contents
-        BOOL fFolderLocked = FALSE;
+        BOOL    fFolderLocked = FALSE;
+        ULONG   ulNesting = 0;
+        DosEnterMustComplete(&ulNesting);
 
-        TRY_LOUD(excpt1, NULL)
+        TRY_LOUD(excpt1)
         {
             if (!wpshCheckIfPopulated(pObject,
                                      fFoldersOnly))
@@ -601,6 +611,9 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
             wpshReleaseFolderMutexSem(pObject);
             fFolderLocked = FALSE;
         }
+
+        DosExitMustComplete(&ulNesting);
+
     } // end if (_somIsA(pObject, _WPFolder))
 
     // append this object to the list;
@@ -857,6 +870,7 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
     {
         WPFileSystem    *pExistingFile2 = 0;
         BOOL            fFolderLocked = FALSE;
+        ULONG           ulNesting = 0;
 
         fExit = FALSE;
 
@@ -892,7 +906,8 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
         // check whether we already have a file
         // with the proposed title (not real name!)
         // (V0.84)
-        TRY_LOUD(excpt1, NULL)
+        DosEnterMustComplete(&ulNesting);
+        TRY_LOUD(excpt1)
         {
             fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
             if (fFolderLocked)
@@ -928,6 +943,8 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
 
         if (fFolderLocked)
             wpshReleaseFolderMutexSem(pFolder);
+
+        DosExitMustComplete(&ulNesting);
 
     } while (   (fFileExists)
               && (!fExit)

@@ -837,7 +837,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
 VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
 {
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DTL_SETUP_ENTRY);
         ULONG cbSetupString = _xwpQuerySetup(somSelf,
@@ -1472,7 +1472,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
 
     if (hobjSelf)
     {
-        TRY_LOUD(excpt1, NULL)
+        TRY_LOUD(excpt1)
         {
             PGLOBALHOTKEY   pHotkeys;
             ULONG           cHotkeys = 0;

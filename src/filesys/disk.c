@@ -37,9 +37,12 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
+
+#define INCL_WINPOINTERS
+#define INCL_WINMENUS
+#define INCL_WINENTRYFIELDS
 #include  <os2.h>
 
 // C library headers
@@ -67,7 +70,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\menus.h"              // shared context menu logic
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
@@ -93,12 +96,14 @@
  *      This code used to be in XFldDisk::wpViewObject.
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.6 (2000-11-25) [pr]: on "retry", we now remap drives
  */
 
 WPFolder* dskCheckDriveReady(WPDisk *somSelf)
 {
     WPFolder    *pRootFolder = 0;
     ULONG        mbrc = MBID_OK;
+    BOOL         bForceMap = FALSE;
 
     // query root folder (WPRootFolder class, which is a descendant
     // of WPFolder/XFolder); each WPDisk is paired with one of those,
@@ -115,6 +120,7 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
         mbrc = MBID_OK;
 
         pRootFolder = wpshQueryRootFolder(somSelf,
+                                          bForceMap,
                                           &arc);    // out: DOS error code
 
         // reset mouse pointer
@@ -140,6 +146,8 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
                                      MB_RETRYCANCEL,
                                      TRUE); // show explanation
         }
+
+        bForceMap = TRUE;
 
     } while (mbrc == MBID_RETRY);
 

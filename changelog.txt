@@ -21,6 +21,17 @@ utility handy to be able to search for strings like "V0.9.0".
 \OS2\APPS\PMSEEK.EXE should do also.
 
 
+Changes for V0.9.7
+==================
+
+    --  ID_CRD_SETTINGS_VIEW added.
+    --  ID_CRD_WINLISTWGT_SETTINGS added.
+    --  ID_XSD_MOUSE_MOVEMENT changed.
+    --  ID_XSD_DTP_SHUTDOWN changed.
+    --  ID_XSD_AUTOCLOSE changed.
+    --  ID_SDD_CLOSEVIO changed.
+
+
 Changes for V0.9.6
 ==================
 

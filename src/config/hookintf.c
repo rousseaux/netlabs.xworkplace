@@ -154,11 +154,13 @@ BOOL hifEnableHook(BOOL fEnable)
 
     // (de)install the hook by notifying the daemon
     if (!pDaemonShared)
-        CMN_LOG(("pDaemonShared is NULL."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared is NULL.");
     else
     {
         if (!pDaemonShared->hwndDaemonObject)
-            CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
         else
         {
             _Pmpf(("  Sending XDM_HOOKINSTALL"));
@@ -236,11 +238,13 @@ BOOL hifEnablePageMage(BOOL fEnable)
 
     // (de)install the hook by notifying the daemon
     if (!pDaemonShared)
-        CMN_LOG(("pDaemonShared is NULL."));
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared is NULL.");
     else
     {
         if (!pDaemonShared->hwndDaemonObject)
-            CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE. XWPDAEMN.EXE is probably not running."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "pDaemonShared->hwndDaemonObject is NULLHANDLE. XWPDAEMN.EXE is probably not running.");
         else
         {
             _Pmpf(("hifEnablePageMage: Sending XDM_STARTSTOPPAGEMAGE"));
@@ -299,14 +303,17 @@ BOOL hifHookConfigChanged(PVOID pvdc)
                                   sizeof(HOOKCONFIG));
 
         if (!brc)
-            CMN_LOG(("PrfWriteProfileData failed."));
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "PrfWriteProfileData failed.");
         else
         {
             if (!pDaemonShared)
-                CMN_LOG(("pDaemonShared is NULL."));
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared is NULL.");
             else
                 if (!pDaemonShared->hwndDaemonObject)
-                    CMN_LOG(("pDaemonShared->hwndDaemonObject is NULLHANDLE."));
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
                 else
                     // cross-process send msg: this
                     // does not return until the daemon
@@ -1883,6 +1890,7 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
  *      Global Settings.
  *
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  */
 
 VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1948,6 +1956,8 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                               pdc->fSlidingIgnoreDesktop);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
                               pdc->fSlidingIgnorePageMage);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
+                              pdc->fSlidingIgnoreXCenter);
 
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
@@ -1992,6 +2002,9 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                           (pdc->fSlidingFocus)
                           && (pGlobalSettings->fEnablePageMage)
                          );
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
+                          pdc->fSlidingFocus);
+
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
                           pdc->fSlidingFocus);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
@@ -2027,6 +2040,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2070,6 +2084,11 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_IGNOREPAGEMAGE:
             hifLoadHookConfig(pdc);
             pdc->fSlidingIgnorePageMage = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_IGNOREXCENTER:
+            hifLoadHookConfig(pdc);
+            pdc->fSlidingIgnoreXCenter = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_FOCUSDELAY_SLIDER:

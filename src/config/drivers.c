@@ -621,7 +621,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
         CHAR    szDriverSpecsFilename[CCHMAXPATH];
         PSZ     pszDriverSpecsFile = NULL;
 
-        cmnQueryXFolderBasePath(szDriverSpecsFilename);
+        cmnQueryXWPBasePath(szDriverSpecsFilename);
         sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
                 "\\help\\drvrs%s.txt",
                 cmnQueryLanguageCode());
