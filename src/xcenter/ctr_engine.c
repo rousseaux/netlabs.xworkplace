@@ -791,6 +791,105 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
 
 /*
  *@@ ctrpShowSettingsDlg:
+ *      displays the settings dialog for a widget.
+ *
+ *      This gets called
+ *
+ *      a)  when the respective widget context menu item is selected by
+ *          the user (and its WM_COMMAND is caught by ctrDefWidgetProc);
+ *
+ *      b)  when the widget settings dlg is requested from the "Widgets"
+ *          page in an XCenter settings notebook.
+ *
+ *      This may be called on any thread.
+ *
+ *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: rewritten, prototype changed
+ */
+
+VOID ctrpShowSettingsDlg(XCenter *somSelf,
+                         HWND hwndOwner,    // proposed owner of settings dlg
+                         ULONG ulIndex)     // in: widget index
+{
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock,
+                       somSelf))
+    {
+        PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
+        PXCENTERWIDGETSETTING pSetting = lstItemFromIndex(pllWidgets,
+                                                          ulIndex);
+        if (pSetting)
+        {
+            PXCENTERWIDGETCLASS pClass = ctrpFindClass(pSetting->pszWidgetClass);
+            XCenterData *somThis = XCenterGetData(somSelf);
+            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                                    // can be NULL if we have no open view
+            PXCENTERGLOBALS pGlobals = NULL;
+            PXCENTERWIDGET pViewData = NULL;
+
+            if (pXCenterData)
+            {
+                // we have an open view:
+                pGlobals = &pXCenterData->Globals;
+                // then get widget view data as well
+                pViewData = lstItemFromIndex(&pXCenterData->llWidgets,
+                                             ulIndex);
+            }
+
+            if (    (pClass)
+                 && (pClass->pShowSettingsDlg)
+               )
+            {
+                WGTSETTINGSTEMP Temp;
+                WIDGETSETTINGSDLGDATA DlgData = {0};
+
+                // compose the "ugly hack" structure
+                // represented by the obscure "hSettings" field
+                // in the DlgData... this implementation is
+                // hidden from the widget, but the handle is
+                // passed to ctrSetSetupString
+                Temp.somSelf = somSelf;         // always valid
+                Temp.pSetting = pSetting;       // always valid
+                Temp.pWidget = pViewData;       // NULL if no open view
+                Temp.ulIndex = ulIndex;         // always valid
+
+                // compose the public dlgdata structure, which
+                // the widget will use
+                DlgData.hwndOwner = hwndOwner;
+                DlgData.pcszSetupString = pSetting->pszSetupString;       // can be 0
+                *(PULONG)&DlgData.hSettings = (LHANDLE)&Temp;         // ugly hack
+                DlgData.pGlobals = pGlobals;    // XCenter globals: NULL if no open view
+                DlgData.pView = pViewData;      // widget view: NULL if no open view
+                DlgData.pUser = NULL;
+                DlgData.pctrSetSetupString = ctrSetSetupString;       // func pointer V0.9.9 (2001-02-06) [umoeller]
+
+                // disable auto-hide while we're showing the dlg
+                if (pXCenterData)
+                    pXCenterData->fShowingSettingsDlg = TRUE;
+
+                // disable the XCenter while doing this V0.9.11 (2001-04-18) [umoeller]
+                if (hwndOwner)
+                    WinEnableWindow(hwndOwner, FALSE);
+
+                TRY_LOUD(excpt1)
+                {
+                    pClass->pShowSettingsDlg(&DlgData);
+                                // @@todo no, this must be outside of the lock
+                }
+                CATCH(excpt1) {} END_CATCH();
+
+                if (hwndOwner)
+                    WinEnableWindow(hwndOwner, TRUE);
+
+                pXCenterData->fShowingSettingsDlg = FALSE;
+            } // end if (pViewData->pShowSettingsDlg)
+        } // end if (pClass);
+    } // end if (wpshLockObject)
+    wpshUnlockObject(&Lock);
+}
+
+/*
+ *@@ ctrpShowViewSettingsDlg:
  *      displays the settings dialog for an open widget view.
  *      This gets called when the respective widget context
  *      menu item is selected by the user (and its WM_COMMAND
@@ -799,10 +898,11 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
  *      This may be called on any thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: renamed from ctrpShowSettingsDlg
  */
 
-VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
-                         PXCENTERWIDGET pViewData)
+/* VOID ctrpShowViewSettingsDlg(PXCENTERWINDATA pXCenterData,
+                             PXCENTERWIDGET pViewData)    // in: view data; must not be NULL
 {
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock,
@@ -821,23 +921,22 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                 if (pSettingsNode)
                 {
                     PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pSettingsNode->pItemData;
-                    WGTSETTINGSTEMP Temp
-                        = {
-                                pXCenterData,
-                                pSetting,
-                                pViewData,
-                                ulIndex
-                          };
-                    WIDGETSETTINGSDLGDATA DlgData
-                        = {
-                            pGlobals->hwndFrame,
-                            pSetting->pszSetupString,       // can be 0
-                            (LHANDLE)&Temp,     // ugly hack
-                            pGlobals,
-                            pViewData,
-                            0,           // pUser
-                            ctrSetSetupString      // func pointer V0.9.9 (2001-02-06) [umoeller]
-                          };
+                    WGTSETTINGSTEMP Temp;
+                    WIDGETSETTINGSDLGDATA DlgData = {0};
+
+                    Temp.somSelf = pXCenterData->somSelf;
+                    Temp.pSetting = pSetting;
+                    Temp.pWidget = pViewData;
+                    Temp.ulIndex = ulIndex;
+
+                    DlgData.hwndOwner = pGlobals->hwndFrame;
+                    DlgData.pcszSetupString = pSetting->pszSetupString;       // can be 0
+                    *(PULONG)&DlgData.hSettings = (LHANDLE)&Temp;         // ugly hack
+                    DlgData.pGlobals = pGlobals;
+                    DlgData.pView = pViewData;
+                    DlgData.pUser = NULL;
+                    DlgData.pctrSetSetupString = ctrSetSetupString;       // func pointer V0.9.9 (2001-02-06) [umoeller]
+
                     // disable auto-hide while we're showing the dlg
                     pXCenterData->fShowingSettingsDlg = TRUE;
 
@@ -855,7 +954,7 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
         } // end if (pClass);
     } // end if (wpshLockObject)
     wpshUnlockObject(&Lock);
-}
+} */
 
 /*
  *@@ ctrpDrawEmphasis:
@@ -4273,6 +4372,8 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
  *@@ ctrpRemoveWidget:
  *      implementation for XCenter::xwpRemoveWidget.
  *
+ *      This can run on any thread.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -4296,7 +4397,7 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
             if (_pvOpenView)
             {
                 // XCenter view currently open:
-                PLISTNODE pViewNode;
+                PWIDGETVIEWSTATE pView;
                 PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
                 PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
 
@@ -4304,14 +4405,13 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                 // at the bottom
                 hwndXCenterClient = pGlobals->hwndClient;
 
-                pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
-                                             ulIndex);
-                if (pViewNode)
+                pView = lstItemFromIndex(&pXCenterData->llWidgets,
+                                         ulIndex);
+                if (pView)
                 {
                     // we must send a msg instead of doing WinDestroyWindow
                     // directly because only the XCenter GUI thread can
                     // destroy the window
-                    PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pViewNode->pItemData;
 
                     // unlock the object first!! otherwise we get a deadlock
                     wpshUnlockObject(&Lock);

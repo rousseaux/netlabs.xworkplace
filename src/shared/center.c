@@ -441,6 +441,7 @@ VOID ctrFreeSetupValue(PSZ p)
  *      ID_XCENTER_CLIENT notification code.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: adjusted for new ctrpShowSettingsDlg
  */
 
 BOOL ctrSetSetupString(LHANDLE hSetting,
@@ -452,9 +453,7 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
     PWGTSETTINGSTEMP pSettingsTemp = (PWGTSETTINGSTEMP)hSetting;
     if (pSettingsTemp)
     {
-        PXCENTERWINDATA pXCenterData = pSettingsTemp->pXCenterData;
         PXCENTERWIDGETSETTING pSetting = pSettingsTemp->pSetting;
-        PXCENTERWIDGET pWidget = pSettingsTemp->pWidget;
         if (pSetting)
         {
             // change setup string in the settings structure
@@ -471,18 +470,18 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
             brc = TRUE;
 
             // do we have an open view?
-            if (pWidget)
+            if (pSettingsTemp->pWidget)
             {
                 // yes:
                 // send notification
-                WinSendMsg(pWidget->hwndWidget,
+                WinSendMsg(pSettingsTemp->pWidget->hwndWidget,
                            WM_CONTROL,
                            MPFROM2SHORT(ID_XCENTER_CLIENT,
                                         XN_SETUPCHANGED),
                            (MPARAM)pSetting->pszSetupString);
             }
 
-            _wpSaveDeferred(pXCenterData->somSelf);
+            _wpSaveDeferred(pSettingsTemp->somSelf);
         }
     }
 
@@ -707,8 +706,11 @@ VOID DwgtCommand(HWND hwnd,
                     // widget has a settings dialog:
                     // have the widget show it with the XCenter frame
                     // as its owner
-                    ctrpShowSettingsDlg(pXCenterData,
-                                        pWidget);
+                    ctrpShowSettingsDlg(pXCenterData->somSelf,
+                                        pXCenterData->Globals.hwndFrame,    // owner
+                                        ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                                     pWidget->hwndWidget));
+                            // adjusted V0.9.11 (2001-04-25) [umoeller]
                 break;
 
                 case ID_CRMI_HELP:
@@ -876,12 +878,15 @@ VOID DwgtDestroy(HWND hwnd)
  *         because this function performs important cleanup
  *         as well.
  *
- *      -- WM_COMMAND command values below 1000 are reserved.
+ *      -- WM_COMMAND command values above 0x7f00 are reserved.
  *         If you extend the context menu given to you in
  *         XCENTERWIDGET.hwndContextMenu, you must use
- *         menu item IDs >= 1000.
+ *         menu item IDs < 0x7f00. This has been changed
+ *         with V0.9.11 (2001-04-25) [umoeller] to avoid
+ *         conflicts with the WPS menu item IDs, sorry.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: changed default widget menu item IDs
  */
 
 MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -991,10 +996,12 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *         because this function performs important cleanup
  *         as well.
  *
- *      -- WM_COMMAND command values below 1000 are reserved.
+ *      -- WM_COMMAND command values above 0x7f00 are reserved.
  *         If you extend the context menu given to you in
  *         XCENTERWIDGET.hwndContextMenu, you must use
- *         menu item IDs >= 1000.
+ *         menu item IDs < 0x7f00. This has been changed
+ *         with V0.9.11 (2001-04-25) [umoeller] to avoid
+ *         conflicts with the WPS menu item IDs, sorry.
  *
  *@@added V0.9.9 (2001-02-27) [lafaix]
  */

@@ -263,7 +263,6 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.6 (2000-10-25) [umoeller]: no longer storing data statically, func renamed
  *@@changed V0.9.6 (2000-11-12) [umoeller]: now using thousands separator from "Country"
- **@@todo add mutex
  */
 
 SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,

@@ -820,6 +820,8 @@ release: really_all
 # create directories
 !if [@md $(XWPRELEASE) 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_HEALTH) 2> NUL]
+!endif
 !if [@md $(XWPRELEASE_MAIN) 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_NLS) 2> NUL]
@@ -897,6 +899,10 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAIN)\plugins\xcenter 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_HEALTH)\plugins 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_HEALTH)\plugins\xcenter 2> NUL]
+!endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\monitors.dll $(XWPRELEASE_MAIN)\plugins\xcenter
@@ -905,8 +911,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_MAIN)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
     @echo $(MAKEDIR)\makefile: Done copying files.
 # 9) toolkit
 !if [@md $(XWPRELEASE_MAIN)\toolkit 2> NUL]

@@ -224,7 +224,10 @@
     typedef struct _WIDGETSETTINGSDLGDATA
     {
         HWND                    hwndOwner;
-                    // proposed owner for settings dialog
+                    // proposed owner for settings dialog; this
+                    // will either be the HWND of the XCenter frame
+                    // or some other HWND, if the settings dialog
+                    // is displayed from elsewhere
 
         const char              *pcszSetupString;
                     // present setup string (do not change)

@@ -90,11 +90,6 @@
  *      GNU General Public License for more details.
  */
 
-/*
- *@@todo:
- *
- */
-
 #pragma strings(readonly)
 
 /*

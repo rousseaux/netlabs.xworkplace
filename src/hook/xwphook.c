@@ -444,14 +444,43 @@ HWND GetScrollBar(HWND hwndOwner,
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  *@@changed V0.9.6 (2000-10-27) [pr]: fixed some un-hilite problems; changed prototype
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: rewritten
  */
 
 VOID HiliteMenuItem(HWND hwndMenu,
                     SHORT sItemCount,   // in: item count in hwndMenu
-                    SHORT sItemIndex,   // in: item index to hilite
+                    SHORT sItemID,      // in: item ID to hilite
                     BOOL fHiLite)       // in: to hilite or not
 {
-    SHORT       sItemIndex2;
+    // we now use an undocumented menu message which is used
+    // by the menu control internally to properly select menu
+    // items... if we change the menu item's attributes manually
+    // (which is what we did before V0.9.11), the menu control
+    // easily gets confused with managing the hilites.
+    // Using this message works much better, apparently.
+    #define MM_UNDOCSELECT1    0x019E       // l576 selects a menu item by its index
+                                            // instead of the menu item ID
+
+    // get the item position for the specified item ID
+    SHORT sItemIndex = (SHORT)WinSendMsg(hwndMenu,
+                                         MM_ITEMPOSITIONFROMID,
+                                         MPFROM2SHORT(sItemID, FALSE),
+                                         0);
+            // note that this will only work if the application has
+            // managed to give each menu item a proper ID, but this
+            // is still better than the ugly code we had previously
+
+    WinSendMsg(hwndMenu,
+               MM_UNDOCSELECT1,
+               MPFROM2SHORT(sItemIndex,
+                            0),         // apparently there are some flags in
+                                        // here for opening submenus and stuff,
+                                        // but we'll post MM_SELECTITEM later
+                                        // anyway, so setting this to 0 will
+                                        // work for our purposes
+               0);                      // mp2 is always zero from my testing
+
+    /* SHORT       sItemIndex2;
     // first, un-hilite the item which currently
     // has hilite state; otherwise, we'd successively
     // hilite _all_ items in the menu... doesn't look
@@ -500,6 +529,7 @@ VOID HiliteMenuItem(HWND hwndMenu,
                    MPFROM2SHORT(sItemIndex,
                                 FALSE), // no search submenus
                    MPFROM2SHORT(MIA_HILITED, MIA_HILITED));
+    */
 }
 
 /*
@@ -511,7 +541,7 @@ VOID HiliteMenuItem(HWND hwndMenu,
  */
 
 VOID SelectMenuItem(HWND hwndMenu,
-                    SHORT sItemIndex)
+                    SHORT sItemID)      // item ID to select (NOT index!)
 {
     MENUITEM    menuitemCurrent;
     USHORT      usSelItem;
@@ -519,19 +549,28 @@ VOID SelectMenuItem(HWND hwndMenu,
     // query the current menuentry's menuitem structure
     if (WinSendMsg(hwndMenu,
                    MM_QUERYITEM,
-                   MPFROM2SHORT(sItemIndex, FALSE),
+                   MPFROM2SHORT(sItemID, FALSE),
                    MPFROMP(&menuitemCurrent)))
     {
         // If it's a submenu and the item we are trying to select is
         // already selected, then deselect it first - this prevents problems
         // with multiple cascading menus.
+
+        // V0.9.11 (2001-04-25) [umoeller]: this deselection is still
+        // required with the new hilite code above because otherwise
+        // the menu control falsely assumes that the item has already
+        // been selected (even though it's only been hilited) and will
+        // do nothing with MM_SELECTITEM below.
+        // This will slightly flicker, but it's better than having
+        // nothing displayed.
+
         if (menuitemCurrent.afStyle & MIS_SUBMENU)
         {
             usSelItem = (USHORT) WinSendMsg(hwndMenu,
                                             MM_QUERYSELITEMID,
                                             MPFROM2SHORT(0, FALSE),
                                             MPVOID);
-            if (usSelItem == sItemIndex)
+            if (usSelItem == sItemID)
                 WinSendMsg(hwndMenu,
                            MM_SELECTITEM,
                            MPFROM2SHORT(MIT_NONE, FALSE),
@@ -540,7 +579,7 @@ VOID SelectMenuItem(HWND hwndMenu,
 
         WinSendMsg(hwndMenu,
                    MM_SELECTITEM,
-                   MPFROM2SHORT(sItemIndex, FALSE),
+                   MPFROM2SHORT(sItemID, FALSE),
                    MPFROM2SHORT(0, FALSE));
     }
 }
@@ -2049,7 +2088,10 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                 sLastSelectID = G_HookData.sMenuItemUnderMouse;
             }
         }
-        else
+
+        // V0.9.11 (2001-04-25) [umoeller]:
+        // the following is no longer needed with the new hilite code above
+        /* else
         {
             if (G_HookData.hwndMenuUnderMouse)
             {
@@ -2061,16 +2103,16 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                                         0, 0);
                 HiliteMenuItem(G_HookData.hwndMenuUnderMouse,
                                sItemCount,
-                               G_HookData.sMenuItemUnderMouse,
+                               // G_HookData.sMenuItemUnderMouse,
                                FALSE);
                 G_HookData.hwndMenuUnderMouse = 0;
                 sLastHiliteID = MIT_NONE;
             }
-        }
+        } */ // @@@
     }
     else
     {
-        // no, regular WM_MOUSEMOVE:
+        // not from daemon, but regular WM_MOUSEMOVE:
 
         // check if anything is currently selected in the menu
         // (this rules out main menu bars if user hasn't clicked

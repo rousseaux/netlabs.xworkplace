@@ -78,11 +78,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.10"
+#define XFOLDER_VERSION        "0.9.11"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.10"
+#define MINIMUM_NLS_VERSION    "0.9.11"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -1232,22 +1232,27 @@
 #define ID_XSMI_STICKY_DELETE           (WPMENUID_USER+1143)
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
+/* changed all IDs to above WPMENUID_USER (0x6500) because
+   otherwise we cause conflicts with the WPS menu IDs
+   V0.9.11 (2001-04-25) [umoeller] */
 #define ID_CRM_XCENTERBUTTON            (WPMENUID_USER+1144)
 // menu items; these only need to be unique within the menu
-#define ID_CRMI_SEP1                    100
-#define ID_CRMI_SEP2                    101
-#define ID_CRMI_SUSPEND                 102
-#define ID_CRMI_LOGOFF                  103
-#define ID_CRMI_RESTARTWPS              104
-#define ID_CRMI_SHUTDOWN                105
-#define ID_CRMI_RUN                     106
+#define ID_CRMI_SEP1                    0x7f00
+#define ID_CRMI_SEP2                    0x7f01
+#define ID_CRMI_SUSPEND                 0x7f02
+#define ID_CRMI_LOGOFF                  0x7f03
+#define ID_CRMI_RESTARTWPS              0x7f04
+#define ID_CRMI_SHUTDOWN                0x7f05
+#define ID_CRMI_RUN                     0x7f06
 
-#define ID_CRM_WIDGET                   200
-#define ID_CRMI_PROPERTIES              201
-#define ID_CRMI_HELP                    202
-#define ID_CRMI_REMOVEWGT               203
+#define ID_CRM_WIDGET                   0x7f07
+#define ID_CRMI_PROPERTIES              0x7f08
+#define ID_CRMI_HELP                    0x7f09
+#define ID_CRMI_REMOVEWGT               0x7f0a
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
+
+#define ID_XSM_PAGEMAGECTXTMENU         220
 
 // The following menu ID's (with _OFS_ in their names)
 // are _variable_ menu ID's: XFolder will add the value

@@ -54,11 +54,6 @@
  *      GNU General Public License for more details.
  */
 
-/*
- *@@todo:
- *
- */
-
 #pragma strings(readonly)
 
 /*
@@ -1312,6 +1307,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
  *@@changed V0.9.11 (2001-04-22) [umoeller]: replaced excessive string searches with xstrrpl
  *@@changed V0.9.11 (2001-04-22) [umoeller]: merged three cnr record loops into one (speed)
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed tree view bug introduced on 2001-04-22
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -1462,7 +1458,40 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // pobjSelected is now NULL for single-object mode
     // or contains the last selected object we had in the loop;
     // in one-object mode, it'll be the only object
-    // and might still point to a shadow
+    // and might still point to a shadow.
+
+    // However, in tree view, there might be a selected record
+    // which was not found in the above loop because the loop
+    // didn't go thru child records... so do an additional check:
+    // V0.9.11 (2001-04-25) [umoeller]
+    if (!pobjSelected)
+    {
+        // send an extra "find selected record" msg; this is
+        // sufficient for all cases, since
+        // a)  if we're in a tree view, only one record can
+        //     be selected in the first place;
+        // b)  if we're not in a tree view and pobjSelected
+        //     is NULL, we won't find any records with this
+        //     message either, because there can't be any
+        //     selected records which weren't already found
+        //     in the above loop.
+        // As a result, we can save ourselves from querying
+        // whether the cnr is in tree view in the first place.
+
+        prec = WinSendMsg(hwndCnr,
+                          CM_QUERYRECORDEMPHASIS,
+                          (MPARAM)CMA_FIRST,
+                          (MPARAM)CRA_SELECTED);
+        if (    (prec)
+             && ((ULONG)prec != -1)
+           )
+        {
+            // if we got a selected record HERE, we MUST
+            // be in tree view, so there can be only one
+            pobjSelected = OBJECT_FROM_PREC(prec);
+            cSelectedRecords = 1;
+        }
+    }
 
     // now get the mnemonics which have been set by the
     // user on the "Status bar" page, depending on how many

@@ -28,6 +28,7 @@
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
+#define INCL_WININPUT
 #define INCL_WINPOINTERS
 #define INCL_WINSYS
 #include <os2.h>
@@ -42,6 +43,8 @@
 #include "helpers\threads.h"
 
 #include "xwpapi.h"                     // public XWorkplace definitions
+
+#include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
@@ -564,15 +567,15 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             case PGOM_CLICK2ACTIVATE:      // mouse button 1
             case PGOM_CLICK2LOWER:         // mouse button 2
             {
-                LONG   lX = (ULONG)mp1,
-                       lY = (ULONG)mp2;
+                POINTL ptlMouse = {(LONG)mp1,
+                                   (LONG)mp2};
 
                 // calc new desktop if mb1 was clicked (always)
                 if (msg == PGOM_CLICK2ACTIVATE)
                 {
                     // set lDeltas to which desktop we want
-                    lDeltaX = lX / (G_szlEachDesktopInClient.cx + 1);
-                    lDeltaY = pptlMaxDesktops->y - 1 - lY
+                    lDeltaX = ptlMouse.x / (G_szlEachDesktopInClient.cx + 1);
+                    lDeltaY = pptlMaxDesktops->y - 1 - ptlMouse.y
                               / (G_szlEachDesktopInClient.cy + 1);
                     lDeltaX *= G_szlEachDesktopReal.cx;
                     lDeltaY *= G_szlEachDesktopReal.cy;
@@ -582,7 +585,8 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                 if (pPageMageConfig->fClick2Activate)
                 {
-                    HWND hwndActive = pgmwGetWindowFromClientPoint(lX, lY);
+                    HWND hwndActive = pgmwGetWindowFromClientPoint(ptlMouse.x,
+                                                                   ptlMouse.y);
 
                     if (hwndActive != NULLHANDLE)
                     {
@@ -601,6 +605,27 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                        MPFROMHWND(hwndActive),
                                        MPVOID);
                     }
+                    else
+                        // click on pager background (no mini-window):
+                        if (msg == PGOM_CLICK2LOWER)
+                        {
+                            // mouse button 2:
+                            // tell XFLDR.DLL that pager context menu
+                            // was requested, together with desktop
+                            // coordinates of where the user clicked
+                            // so the XFLDR.DLL can display the context
+                            // menu.... we don't want the NLS stuff in
+                            // the daemon! V0.9.11 (2001-04-25) [umoeller]
+                            WinMapWindowPoints(G_pHookData->hwndPageMageClient,
+                                               HWND_DESKTOP,
+                                               &ptlMouse,
+                                               1);
+                            WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
+                                       T1M_PAGEMAGECTXTMENU,
+                                       MPFROM2SHORT(ptlMouse.x,
+                                                    ptlMouse.y),
+                                       0);
+                        }
                 }
             break; }
 

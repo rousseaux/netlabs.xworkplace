@@ -40,11 +40,6 @@
  *      GNU General Public License for more details.
  */
 
-/*
- *@@todo:
- *
- */
-
 #pragma strings(readonly)
 
 /*
@@ -285,6 +280,7 @@ VOID StartShutdownThread(BOOL fStartShutdown,
  *@@changed V0.9.1 (99-12-12) [umoeller]: fixed memory leak when shutdown was cancelled
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: changed pending spool jobs msg to always abort now
  */
 
 BOOL xsdInitiateShutdown(VOID)
@@ -353,15 +349,23 @@ BOOL xsdInitiateShutdown(VOID)
             if (ulSpooled)
             {
                 // if we have any, issue a warning message and
-                // allow the user to abort shutdown
+                // tell the user to remove print jobs
                 CHAR szTemp[20];
                 PSZ pTable[1];
                 sprintf(szTemp, "%d", ulSpooled);
                 pTable[0] = szTemp;
-                if (cmnMessageBoxMsgExt(HWND_DESKTOP, 114, pTable, 1, 115,
-                                        MB_YESNO | MB_DEFBUTTON2)
-                            != MBID_YES)
-                    fStartShutdown = FALSE;
+                cmnMessageBoxMsgExt(HWND_DESKTOP,
+                                    114,
+                                    pTable,
+                                    1,
+                                    115,            // tmf file updated V0.9.11 (2001-04-25) [umoeller]
+                                    MB_CANCEL);
+                // changed this V0.9.11 (2001-04-25) [umoeller]:
+                // never allow the user to continue here... we used
+                // to have a yesno box here, but apparently continuing
+                // here hangs the system, so I changed the message to
+                // "please remove print jobs from the spooler".
+                fStartShutdown = FALSE;
             }
         }
     }

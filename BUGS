@@ -35,16 +35,6 @@ NOT-SO-SERIOUS PROBLEMS
 --  xcenter:
     stays visible with lockup screen and stay-on-top.
 
---  when I shut down (extended
-    shutdown) while a print job is in the queue (forgotten, printer turned
-    off), then XWP asks if the print job shall be killed. If I click "yes",
-    it will hang on shutdown for quite some time. Then, when turning the
-    machine on, it will not start properly but hang at the first or second
-    object in the startup-folder. Acitivity is still possible, but at some
-    later point, the machine hangs completely. The print job is still found
-    in the queue! Once the print job is killed manually, everything works
-    fine.
-
 tooltips:
     -- rewrite auto-pop
 

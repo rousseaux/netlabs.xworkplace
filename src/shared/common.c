@@ -34,11 +34,6 @@
  *      GNU General Public License for more details.
  */
 
-/*
- *@@todo:
- *
- */
-
 #pragma strings(readonly)
 
 /*
@@ -3532,6 +3527,7 @@ PSZ StripParams(PSZ pcszCommand,
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed parameters
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed fully qualified executables
  */
 
 MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3553,7 +3549,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                         BOOL fOK = FALSE;
                         PSZ pszCommand = winhQueryWindowText(WinWindowFromID(hwnd,
                                                                              usid));
-                        CHAR szExecutable[CCHMAXPATH];
+                        CHAR szExecutable[CCHMAXPATH] = "";
                         if (pszCommand)
                         {
                             // we got a command:
@@ -3561,7 +3557,6 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                                       NULL);
                             if (pszExec)
                             {
-                                // @@todo doesn't work with qualified execs
                                 if (!doshFindExecutable(pszExec,
                                                         szExecutable,
                                                         sizeof(szExecutable),
@@ -3571,6 +3566,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                     strupr(szExecutable);
                                     fOK = TRUE;
                                 }
+
                                 free(pszExec);
                             }
 

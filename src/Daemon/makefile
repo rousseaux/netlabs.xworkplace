@@ -125,6 +125,7 @@ $(EXE_OUTPUTDIR)\pgmg_control.obj: \
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
         $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
+        $(INC)\shared\kernel.h \
         $(@B).c $(SHAREDINC)
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \

@@ -1389,6 +1389,7 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
                                  pSecIOShared->EventData.MovePre.szNewPath));
             pfnAuthorize = AuthorizeMovePre;
         break;
+
         /*
          * SECEVENT_OPEN_PRE:
          *      DosOpen.

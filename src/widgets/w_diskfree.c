@@ -1273,11 +1273,13 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                 // get private data from that widget data
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
                 // V0.9.11 (2001-04-19) [pr]: Update drive list
-                pdoshEnumDrives(pPrivate->szDrives,
+                /* pdoshEnumDrives(pPrivate->szDrives,
                                 NULL,
                                 TRUE);      // skip removeables
-                // V0.9.11 (2001-04-25) [umoeller]: @@todo error checks...
-                // if this fails, e.g. because a CHKDSK is in progress, this
+                */
+                // V0.9.11 (2001-04-25) [umoeller]: removed this again...
+                // this is outright dangerous.
+                // If this fails, e.g. because a CHKDSK is in progress, this
                 // is dangerous, because the user gets the white error box
                 // on each timer tick, making it almost impossible to close the
                 // XCenter. So if this failed for any reason, stop the timer.

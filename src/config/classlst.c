@@ -661,7 +661,6 @@ void _Optlink cll_fntMethodCollectThread(PTHREADINFO pti)
  *@@changed V0.9.0 [umoeller]: added method information
  *@@changed V0.9.0 [umoeller]: now using a delay timer
  *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
- *@@todo fix memory leak with background thread
  */
 
 VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)

@@ -45,11 +45,6 @@
  *      GNU General Public License for more details.
  */
 
-/*
- *@@todo:
- *
- */
-
 #pragma strings(readonly)
 
 /*
@@ -76,6 +71,7 @@
 #define INCL_WINTIMER
 #define INCL_WINSYS
 #define INCL_WINPOINTERS
+#define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
@@ -166,6 +162,9 @@ static THREADINFO       G_tiSentinel = {0};
 // anchor block of WPS thread 1 (queried in krnInitializeXWorkplace);
 // this is exported thru kernel.h and never changed again
 HAB                     G_habThread1 = NULLHANDLE;
+
+// V0.9.11 (2001-04-25) [umoeller]
+static HWND             G_hwndPageMageContextMenu = NULLHANDLE;
 
 // resize information for ID_XFD_CONTAINERPAGE, which is used
 // by many settings pages
@@ -1723,6 +1722,75 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                     xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
                                     (MPARAM)RCF_MAININSTALLFOLDER,
                                     0);
+                }
+            break;
+
+            /*
+             *@@ T1M_PAGEMAGECTXTMENU:
+             *      gets posted from PageMage if the user
+             *      right-clicked onto an empty space in the pager
+             *      window (and not on a mini-window).
+             *
+             *      We should then display the PageMage context
+             *      menu here because
+             *
+             *      1)  PageMage cannot handle the commands in
+             *          the first place (such as open settings)
+             *
+             *      2)  we don't want NLS stuff in the daemon.
+             *
+             *      Parameters:
+             *
+             *      SHORT1FROMMP(mp1): desktop x coordinate of
+             *                         mouse click.
+             *      SHORT2FROMMP(mp1): desktop y coordinate of
+             *                         mouse click.
+             *
+             *@@added V0.9.11 (2001-04-25) [umoeller]
+             */
+
+            case T1M_PAGEMAGECTXTMENU:
+                if (!G_hwndPageMageContextMenu)
+                    G_hwndPageMageContextMenu = WinLoadMenu(hwndObject,
+                                                            cmnQueryNLSModuleHandle(FALSE),
+                                                            ID_XSM_PAGEMAGECTXTMENU);
+
+                WinPopupMenu(HWND_DESKTOP,      // parent
+                             hwndObject,        // owner
+                             G_hwndPageMageContextMenu,
+                             SHORT1FROMMP(mp1),
+                             SHORT2FROMMP(mp1),
+                             0,
+                             PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
+                                | PU_MOUSEBUTTON2 | PU_KEYBOARD);
+                                    // WM_COMMAND is handled below
+            break;
+
+            /*
+             * WM_COMMAND:
+             *      handle commands from the PageMage context menu
+             *      here (thread-1 object window was specified as
+             *      menu's owner above).
+             * added V0.9.11 (2001-04-25) [umoeller]
+             */
+
+            case WM_COMMAND:
+                switch ((USHORT)mp1)
+                {
+                    case ID_CRMI_PROPERTIES:
+                    {
+                        // open "Screen" object
+                        HOBJECT hobj = WinQueryObject((PSZ)XFOLDER_SCREENID);
+                        if (hobj)
+                            krn_T1M_OpenObjectFromHandle(hwndObject,
+                                                         (MPARAM)hobj,
+                                                         (MPARAM)0);   // no screen corner
+                    break; }
+
+                    case ID_CRMI_HELP:
+                        cmnDisplayHelp(NULL,        // active desktop
+                                       ID_XSH_PAGEMAGE_INTRO);
+                    break;
                 }
             break;
 

@@ -1304,7 +1304,6 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: added "System paths" page handling
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
- *@@todo localize
  */
 
 MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1360,9 +1359,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // enumerate all HPFS or FAT drives on the system
             CHAR szHPFSDrives[30];
             doshEnumDrives(szHPFSDrives,
-                           /* (pcnbp->ulPageID == SP_HPFS)
-                                ? "HPFS"
-                                : */ "FAT",
+                           "FAT",
                            TRUE); // skip removeable drives
             WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_AUTOCHECK, szHPFSDrives);
         break; }

@@ -1,6 +1,8 @@
 /*  freshini.cmd
 
-
+    Registers the XWorkplace classes (and class replacements)
+    in the specified user INI file. The WPS will pick up the
+    changes after the next WPS startup with that INI file.
 
     (C) 2001 Ulrich M”ller
  */

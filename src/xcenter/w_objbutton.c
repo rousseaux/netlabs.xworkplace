@@ -995,6 +995,7 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *
  *@@changed V0.9.9 (2001-03-07) [umoeller]: added "run" to X-button
  *@@changed V0.9.11 (2001-04-18) [umoeller]: now opening objects on thread 1 always
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed broken standard widget menu items
  */
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
@@ -1081,6 +1082,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                 ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
                 if (     (ulMenuId >= ulFirstVarMenuId)
                       && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
+                      && (ulMenuId <  0x7f00)       // standard widget menu IDs
                    )
                 {
                     // yes, variable menu item selected:
@@ -1114,6 +1116,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                     if (    pPrivate->ulType == BTF_OBJBUTTON
                          && pPrivate->fOpenedWPSContextMenu
                          && pPrivate->pobjButton
+                         && (ulMenuId <  0x7f00)       // standard widget menu IDs
                        )
                     {
                         // invoke the command on the object...
@@ -1128,7 +1131,6 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                                                          NULLHANDLE,     // hwndFrame
                                                          ulMenuId); */
                     }
-
             }
 
             pPrivate->fOpenedWPSContextMenu = FALSE;
@@ -1149,6 +1151,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *      For X-buttons, this calls ctrDefWidgetProc only.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed context menus for broken objects
  */
 
 MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1166,6 +1169,7 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
             if (pPrivate->ulType == BTF_OBJBUTTON)
             {
                 // for object buttons, show the WPS context menu
+
                 if (!pPrivate->pobjButton)
                     // object not queried yet:
                     pPrivate->pobjButton = FindObject(pPrivate);
@@ -1187,6 +1191,9 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     // the half-documented MENU_NODISPLAY flag
                     // takes care of this: it will only build the
                     // menu, but not display it.
+                    // NOTE: Apparently this flag is not supported
+                    // on Warp 3 (tested Warp 3 without fixpaks
+                    // V0.9.11 (2001-04-25) [umoeller]).
                     hmenuTemp = _wpDisplayMenu(pPrivate->pobjButton,
                                                hwnd,            // owner
                                                NULLHANDLE,
@@ -1194,64 +1201,67 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                                MENU_OBJECTPOPUP | MENU_NODISPLAY,
                                                0);
 
-                    // NOW... we still can't use this because there's
-                    // many menu items in there which will cause the
-                    // WPS to hang if the owner is not a container.
-                    // The WPS simply expects popups to show in containers
-                    // only, so there ain't much we can do about this.
-                    // While "copy", "move" etc. will simply not work,
-                    // "Pickup" will even hang the WPS solidly.
-
-                    // SOOOO.... what we do is make a COPY of the
-                    // WPS context menu with only the items that we support.
-                    pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL);
-                    if (pPrivate->hwndObjectPopup)
+                    if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
                     {
-                        HWND hwndWidgetSubmenu;
+                        // NOW... we still can't use this because there's
+                        // many menu items in there which will cause the
+                        // WPS to hang if the owner is not a container.
+                        // The WPS simply expects popups to show in containers
+                        // only, so there ain't much we can do about this.
+                        // While "copy", "move" etc. will simply not work,
+                        // "Pickup" will even hang the WPS solidly.
 
-                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                         hmenuTemp,
-                                         WPMENUID_OPEN, // 1, "open" submenu
-                                         MIT_END);
-                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                         hmenuTemp,
-                                         WPMENUID_PROPERTIES, // 0x70, properties
-                                         MIT_END);
-                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                         hmenuTemp,
-                                         WPMENUID_HELP, // 2, "help" submenu
-                                         MIT_END);
+                        // SOOOO.... what we do is make a COPY of the
+                        // WPS context menu with only the items that we support.
+                        pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL);
+                        if (pPrivate->hwndObjectPopup)
+                        {
+                            HWND hwndWidgetSubmenu;
 
-                        winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
-                                                MIT_END,
-                                                1234);
+                            winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                             hmenuTemp,
+                                             WPMENUID_OPEN, // 1, "open" submenu
+                                             MIT_END);
+                            winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                             hmenuTemp,
+                                             WPMENUID_PROPERTIES, // 0x70, properties
+                                             MIT_END);
+                            winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                             hmenuTemp,
+                                             WPMENUID_HELP, // 2, "help" submenu
+                                             MIT_END);
 
-                        // add standard widget menu as submenu
-                        hwndWidgetSubmenu
-                            = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
-                                                   MIT_END,
-                                                   "Object button widget", // @@todo NLS
-                                                   2000,
-                                                   pPrivate->pWidget->hwndContextMenu);
-                        if (hwndWidgetSubmenu)
-                            // disable "Properties"... we have none
-                            WinEnableMenuItem(hwndWidgetSubmenu,
-                                              ID_CRMI_PROPERTIES,
-                                              FALSE);
+                            winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
+                                                    MIT_END,
+                                                    1234);
 
-                        ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
-                                // destroyed on WM_MENUEND;
-                                // we need not care about the WPS context
-                                // menu we built because the WPS has its
-                                // internal management for that
-                        pPrivate->fOpenedWPSContextMenu = TRUE;
-                    } // end if (pPrivate->hwndObjectPopup)
+                            // add standard widget menu as submenu
+                            hwndWidgetSubmenu
+                                = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
+                                                       MIT_END,
+                                                       "Object button widget", // @@todo NLS
+                                                       2000,    // submenu ID
+                                                       pPrivate->pWidget->hwndContextMenu);
+                            if (hwndWidgetSubmenu)
+                                // disable "Properties"... we have none
+                                WinEnableMenuItem(hwndWidgetSubmenu,
+                                                  ID_CRMI_PROPERTIES,
+                                                  FALSE);
+
+                            ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
+                                    // destroyed on WM_MENUEND;
+                                    // we need not care about the WPS context
+                                    // menu we built because the WPS has its
+                                    // internal management for that
+                            pPrivate->fOpenedWPSContextMenu = TRUE;
+                        } // end if (pPrivate->hwndObjectPopup)
+                    } // end if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
                 } // end if (pPrivate->pobjButton)
+            } // end if (pPrivate->ulType == BTF_OBJBUTTON)
 
-                mrc = (MPARAM)TRUE;
-            }
-            else
-                // for x-button show default widget menu
+            if (!pPrivate->fOpenedWPSContextMenu) // V0.9.11 (2001-04-25) [umoeller]
+                // x-button, or cannot build WPS popup (Warp 3),
+                // or object broken: show default widget menu
                 mrc = ctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
         }
     }

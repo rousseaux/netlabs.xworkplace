@@ -44,6 +44,7 @@
 #define INCL_DOSMODULEMGR
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINSTDCNR
@@ -1264,6 +1265,9 @@ typedef struct _WIDGETRECORD
  *      Sets the controls on the page according to the
  *      instance settings.
  *
+ *      CREATENOTEBOOKPAGE.pUser is used for the widget
+ *      context menu HWND.
+ *
  *@@added V0.9.9 (2001-03-09) [umoeller]
  */
 
@@ -1313,11 +1317,6 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             cnrhSetSplitBarAfter(pfi);
             cnrhSetSplitBarPos(100);
         } END_CNRINFO(hwndCnr);
-
-        // make backup of instance data
-        if (pcnbp->pUser == NULL)
-        {
-        }
     }
 
     if (flFlags & CBI_SET)
@@ -1367,6 +1366,11 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
+        if (pcnbp->pUser)
+            // unload menu
+            WinDestroyWindow((HWND)pcnbp->pUser);
+
+        pcnbp->pUser = NULL;
     }
 }
 
@@ -1582,8 +1586,102 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
                 break; }
 
+                /*
+                 * CN_CONTEXTMENU:
+                 *      cnr context menu requested
+                 *      for widget
+                 */
+
+                case CN_CONTEXTMENU:
+                {
+                    HWND    hPopupMenu = NULLHANDLE;
+
+                    // we store the container and recc.
+                    // in the CREATENOTEBOOKPAGE structure
+                    // so that the notebook.c function can
+                    // remove source emphasis later automatically
+                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
+                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
+                    if (pcnbp->preccSource)
+                    {
+                        PXCENTERWIDGETCLASS pClass;
+
+                        // popup menu on container recc (not whitespace):
+
+                        if (!pcnbp->pUser)
+                            // context menu not yet loaded:
+                            pcnbp->pUser = (PVOID)WinLoadMenu(pcnbp->hwndControl,
+                                                       cmnQueryNLSModuleHandle(FALSE),
+                                                       ID_CRM_WIDGET);
+
+                        hPopupMenu = (HWND)pcnbp->pUser;
+
+                        // remove the "Help" menu item... we can't display
+                        // help without the widget view from here
+                        WinSendMsg(hPopupMenu,
+                                   MM_DELETEITEM,
+                                   MPFROM2SHORT(ID_CRMI_HELP,
+                                                FALSE),
+                                   0);
+                        WinSendMsg(hPopupMenu,
+                                   MM_DELETEITEM,
+                                   MPFROM2SHORT(ID_CRMI_SEP1,
+                                                FALSE),
+                                   0);
+
+                        // check if the widget class supports a settings dialog
+                        if (pClass = ctrpFindClass(pcnbp->preccSource->pszIcon))  // class name
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_CRMI_PROPERTIES,
+                                              (pClass->pShowSettingsDlg != 0));
+                    }
+
+                    if (hPopupMenu)
+                        cnrhShowContextMenu(pcnbp->hwndControl,  // cnr
+                                            (PRECORDCORE)pcnbp->preccSource,
+                                            hPopupMenu,
+                                            pcnbp->hwndDlgPage);    // owner
+                break; } // CN_CONTEXTMENU
+
             } // end switch (usNotifyCode)
         break;
+
+        /*
+         * ID_CRMI_PROPERTIES:
+         *      command from widget context menu.
+         */
+
+        case ID_CRMI_PROPERTIES:
+        {
+            PXCENTERWIDGETCLASS pClass;
+            if (    (pcnbp->preccSource)
+                 && (pClass = ctrpFindClass(pcnbp->preccSource->pszIcon))  // class name
+                 && (pClass->pShowSettingsDlg != 0)
+               )
+            {
+                PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
+                ctrpShowSettingsDlg(pcnbp->somSelf,
+                                    pcnbp->hwndDlgPage, // owner
+                                    prec->ulIndex);
+            }
+        break; }
+
+        /*
+         * ID_CRMI_REMOVEWGT:
+         *      command from widget context menu.
+         */
+
+        case ID_CRMI_REMOVEWGT:
+        {
+            PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
+            _xwpRemoveWidget(pcnbp->somSelf,
+                             prec->ulIndex);
+                      // this saves the instance data
+                      // and updates the view
+                      // and also calls the init callback
+                      // to update the settings page!
+        break; }
+
     }
 
     return (mrc);

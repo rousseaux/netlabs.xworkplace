@@ -71,7 +71,8 @@
 
 <--XFL0114-->: eXtended Shutdown
 
-<--XFL0115-->: There are currently %1 print job(s) in the spooler queues. Shutting down now will terminate these print jobs. Are you sure you still want to shut down your system?
+; V0.9.11: changed the following
+<--XFL0115-->: There are currently %1 print job(s) in the spooler queues. XShutdown will not work properly when print jobs are still pending. Remove the jobs from the spooler first.
 
 <--XFL0116-->: XWorkplace: Warning
 

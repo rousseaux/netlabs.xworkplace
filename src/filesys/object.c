@@ -3162,7 +3162,7 @@ ULONG objQuerySetup(WPObject *somSelf,
         fsysQueryProgramSetup(somSelf,
                               &strTemp);
     } */        // removed this V0.9.9 (2001-04-02) [umoeller]
-                // because we have now a proper method in WPProgram
+                // because we have now a proper method in XWPProgram
 
     // CCVIEW
     ulValue = _wpQueryConcurrentView(somSelf);

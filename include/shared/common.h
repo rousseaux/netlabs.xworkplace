@@ -360,6 +360,8 @@
 
     #define ID_XSH_ADMIN_USER               127     // V0.9.11: XWPAdmin "Users" page
 
+    #define ID_XSH_PAGEMAGE_INTRO           128     // V0.9.11: XWPAdmin "Users" page
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations

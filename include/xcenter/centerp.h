@@ -210,8 +210,8 @@
 
         typedef struct _WGTSETTINGSTEMP
         {
-            PXCENTERWINDATA         pXCenterData;
-                        // if != NULL, ptr to win data of open XCenter
+            XCenter                 *somSelf;
+                        // changed V0.9.11 (2001-04-25) [umoeller]
 
             PXCENTERWIDGETSETTING   pSetting;
                         // ptr to internal settings list item
@@ -260,8 +260,12 @@
     #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ")x(DRF_UNKNOWN)"
 
     #ifdef LINKLIST_HEADER_INCLUDED
-        VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
-                                 PXCENTERWIDGET pWidget);
+        VOID ctrpShowSettingsDlg(XCenter *somSelf,
+                                 HWND hwndOwner,
+                                 ULONG ulIndex);
+
+        /* VOID ctrpShowViewSettingsDlg(PXCENTERWINDATA pXCenterData,
+                                     PXCENTERWIDGET pWidget); */
 
         VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                               BOOL fRemove,
