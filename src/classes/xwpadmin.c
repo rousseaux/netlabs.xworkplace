@@ -57,6 +57,10 @@
 #define INCL_DOSQUEUES
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
+
+#define INCL_WINSTATICS
+#define INCL_WINBUTTONS
+#define INCL_WINSTDCNR
 #include <os2.h>
 
 // C library headers
@@ -66,6 +70,11 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
+#include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xwpadmin.ih"
@@ -78,236 +87,131 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\xsetup.h"              // XWPSetup implementation
 
-#include "security\xwpsecty.h"          // XWorkplace Security
+#include "security\xwpsecty.h"          // XWorkplace Security base
+#include "shared\xsecapi.h"             // XWorkplace Security API
 
 // other SOM headers
 #pragma hdrstop
 
 /* ******************************************************************
  *
- *   XWPShell security APIs
+ *   Helpers
  *
  ********************************************************************/
 
 /*
- *@@ XWPSHELLCOMMAND:
+ *@@ Error:
  *
- *@@added V0.9.11 (2001-04-22) [umoeller]
+ *@@added V0.9.19 (2002-04-02) [umoeller]
  */
 
-typedef struct _XWPSHELLCOMMAND
+static VOID Error(WPObject *somSelf,
+                  HWND hwndOwner,
+                  APIRET arc)
 {
-    PXWPSHELLQUEUEDATA  pShared;
-    PID                 pidXWPShell;
-    HQUEUE              hqXWPShell;
-} XWPSHELLCOMMAND, *PXWPSHELLCOMMAND;
-
-VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand);
-
-/*
- *@@ CreateXWPShellCommand:
- *      creates a command for XWPShell to process.
- *
- *      See XWPSHELLQUEUEDATA for a description of
- *      what's going on here.
- *
- *      ulCommand must be one of QUECMD_* values.
- *
- *      If this returns NO_ERROR, the caller must
- *      then fill in the shared data according to
- *      what the command requires and use
- *      SendXWPShellCommand then.
- *
- *      Among others, this can return:
- *
- *      --  ERROR_NOT_ENOUGH_MEMORY
- *
- *      --  ERROR_QUE_NAME_NOT_EXIST (343): XWPShell queue
- *          not found, XWPShell is probably not running.
- *
- *@@added V0.9.11 (2001-04-22) [umoeller]
- */
-
-APIRET CreateXWPShellCommand(ULONG ulCommand,               // in: command
-                             PXWPSHELLCOMMAND *ppCommand)   // out: cmd structure if NO_ERROR is returned
-{
-    APIRET      arc = NO_ERROR;
-
-    PXWPSHELLCOMMAND pCommand = (PXWPSHELLCOMMAND)malloc(sizeof(XWPSHELLCOMMAND));
-    if (!pCommand)
-        arc = ERROR_NOT_ENOUGH_MEMORY;
-    else
-    {
-        memset(pCommand, 0, sizeof(*pCommand));
-
-        // check if XWPShell is running; if so the queue must exist
-        if (!(arc = DosOpenQueue(&pCommand->pidXWPShell,
-                                 &pCommand->hqXWPShell,
-                                 QUEUE_XWPSHELL)))
-        {
-            if (!(arc = DosAllocSharedMem((PVOID*)&pCommand->pShared,
-                                          NULL,     // unnamed
-                                          sizeof(XWPSHELLQUEUEDATA),
-                                          PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE)))
-            {
-                PXWPSHELLQUEUEDATA pShared = pCommand->pShared;
-
-                if (    (!(arc = DosGiveSharedMem(pShared,
-                                                  pCommand->pidXWPShell,
-                                                  PAG_READ | PAG_WRITE)))
-                     && (!(arc = DosCreateEventSem(NULL,
-                                                   &pShared->hevData,
-                                                   DC_SEM_SHARED,
-                                                   FALSE)))      // reset
-                   )
-                {
-                    pShared->ulCommand = ulCommand;
-                }
-            }
-        }
-
-        if (!arc)
-            *ppCommand = pCommand;
-        else
-            FreeXWPShellCommand(pCommand);
-    }
-
-    return (arc);
-}
-
-/*
- *@@ SendXWPShellCommand:
- *      sends a command to XWPShell and waits for
- *      the command to be processed.
- *
- *      This will wait a maximum of five seconds
- *      and return 640 (ERROR_TIMEOUT) if XWPShell
- *      didn't manage to respond in that time.
- *
- *      In addition to standard OS/2 error codes,
- *      this may return XWPShell error codes
- *      depending on the command that was sent.
- *      See XWPSHELLQUEUEDATA for commands and
- *      their possible return values.
- *
- *      If XWPSEC_QUEUE_INVALID_CMD is returned,
- *      you have specified an invalid command code.
- *
- *      Be warned, this blocks the calling thread.
- *      Even though XWPShell should be following
- *      the PM 0.1 seconds rule, you might want
- *      to start a second thread for this.
- *
- *@@added V0.9.11 (2001-04-22) [umoeller]
- */
-
-APIRET SendXWPShellCommand(PXWPSHELLCOMMAND pCommand)
-{
-    APIRET arc = NO_ERROR;
-
-    if (!pCommand)
-        arc = ERROR_INVALID_PARAMETER;
-    else
-    {
-        if (!(arc = DosWriteQueue(pCommand->hqXWPShell,
-                                  (ULONG)pCommand->pShared,   // request data
-                                  0,
-                                  NULL,
-                                  0)))              // priority
-        {
-            // wait 5 seconds for XWPShell to write the data
-            if (!(arc = DosWaitEventSem(pCommand->pShared->hevData,
-                                        5*1000)))
-            {
-                // check if XWPShell reported error
-                arc = pCommand->pShared->arc;
-            }
-        }
-    }
-
-    return (arc);
-}
-
-/*
- *@@ FreeXWPShellCommand:
- *      cleans up.
- *
- *@@added V0.9.11 (2001-04-22) [umoeller]
- */
-
-VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand)
-{
-    if (pCommand)
-    {
-        if (pCommand->pShared)
-        {
-            if (pCommand->pShared->hevData)
-                DosCloseEventSem(pCommand->pShared->hevData);
-
-            DosFreeMem(pCommand->pShared);
-        }
-
-        if (pCommand->hqXWPShell)
-            DosCloseQueue(pCommand->hqXWPShell);
-
-        free(pCommand);
-    }
-}
-
-/*
- *@@ xsecQueryLocalLoggedOn:
- *      returns the user who's currently logged
- *      on locally.
- *
- *      Required authority: None.
- *
- *      Among others, this can return:
- *
- *      --  ERROR_NOT_ENOUGH_MEMORY
- *
- *      --  ERROR_QUE_NAME_NOT_EXIST (343): XWPShell queue
- *          not found, XWPShell is probably not running.
- *
- *      --  XWPSEC_NO_LOCAL_USER: no user is currently
- *          logged on locally (XWPShell is probably
- *          displaying logon dialog).
- *
- *@@added V0.9.11 (2001-04-22) [umoeller]
- */
-
-APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)
-{
-    APIRET              arc = NO_ERROR;
-    PXWPSHELLCOMMAND    pCommand;
-
-    if (!(arc = CreateXWPShellCommand(QUECMD_LOCALLOGGEDON,
-                                      &pCommand)))
-    {
-        if (!(arc = SendXWPShellCommand(pCommand)))
-        {
-            // alright:
-            // copy output
-            memcpy(pLoggedOn,
-                   &pCommand->pShared->Data.LoggedOn,      // union member
-                   sizeof(XWPLOGGEDON));
-        }
-
-        FreeXWPShellCommand(pCommand);
-    }
-
-    return (arc);
+    XSTRING str;
+    xstrInit(&str, 0);
+    cmnDescribeError(&str, arc, NULL, TRUE);
+    cmnMessageBox(hwndOwner,
+                  _wpQueryTitle(somSelf),
+                  str.psz,
+                  MB_CANCEL);
 }
 
 /* ******************************************************************
  *
- *   XWPAdmin implementation
+ *   Local User page
  *
  ********************************************************************/
 
-VOID admUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                     ULONG flFlags)        // CBI_* flags (notebook.h)
+static const CONTROLDEF
+    LocalUserGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_AMDI_USER_LOCAL_GROUP,
+                            -1,
+                            -1),
+    LocalUserNameTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_USERNAME_TXT,
+                            200,
+                            -1),
+    LocalUserNameData = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_USERNAME_DATA,
+                            100,
+                            -1),
+    LocalUserIDTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_USERID_TXT,
+                            200,
+                            -1),
+    LocalUserIDData = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_USERID_DATA,
+                            100,
+                            -1),
+    LocalGroupNameTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_GROUPNAME_TXT,
+                            200,
+                            -1),
+    LocalGroupNameData = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_GROUPNAME_DATA,
+                            100,
+                            -1),
+    LocalGroupIDTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_GROUPID_TXT,
+                            200,
+                            -1),
+    LocalGroupIDData = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_AMDI_USER_GROUPID_DATA,
+                            100,
+                            -1);
+
+static const DLGHITEM dlgLocalUser[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // row 1 in the root table, required
+                // create group on top
+                START_GROUP_TABLE(&LocalUserGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalUserNameTxt),
+                        CONTROL_DEF(&LocalUserNameData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalUserIDTxt),
+                        CONTROL_DEF(&LocalUserIDData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalGroupNameTxt),
+                        CONTROL_DEF(&LocalGroupNameData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalGroupIDTxt),
+                        CONTROL_DEF(&LocalGroupIDData),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+/*
+ *@@ admLocalUserInitPage:
+ *
+ */
+
+VOID admLocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
+    {
+        // insert the controls using the dialog formatter
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgLocalUser,
+                      ARRAYITEMCOUNT(dlgLocalUser));
+    }
+
+    if (flFlags & CBI_SET)
     {
         APIRET arc = NO_ERROR;
         XWPLOGGEDON LoggedOn;
@@ -318,26 +222,261 @@ VOID admUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             CHAR szError[100];
             sprintf(szError, "Error %d", arc);
             WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_AMDI_USER_USERNAME,
+                              ID_AMDI_USER_USERNAME_DATA,
                               szError);
         }
         else
         {
             WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_AMDI_USER_USERNAME,
+                              ID_AMDI_USER_USERNAME_DATA,
                               LoggedOn.szUserName);
             WinSetDlgItemShort(pnbp->hwndDlgPage,
-                               ID_AMDI_USER_USERID,
+                               ID_AMDI_USER_USERID_DATA,
                                LoggedOn.uid,
                                FALSE);          // unsigned
             WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_AMDI_USER_GROUPNAME,
+                              ID_AMDI_USER_GROUPNAME_DATA,
                               LoggedOn.szGroupName);
             WinSetDlgItemShort(pnbp->hwndDlgPage,
-                               ID_AMDI_USER_GROUPID,
+                               ID_AMDI_USER_GROUPID_DATA,
                                LoggedOn.gid,
                                FALSE);          // unsigned
         }
+    }
+}
+
+/* ******************************************************************
+ *
+ *   All Users page
+ *
+ ********************************************************************/
+
+typedef struct _USERRECORD
+{
+    RECORDCORE      recc;
+
+    PSZ             pszFullName;
+    PSZ             pszGroupName;
+
+    XWPUSERDBENTRY  Entry;
+
+} USERRECORD, *PUSERRECORD;
+
+/*
+ *@@ admAllUsersInitPage:
+ *
+ */
+
+VOID admAllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                         ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[5];
+        PFIELDINFO pfi = NULL;
+        int        i = 0;
+
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          cmnGetString(ID_XSSI_ADMIN_ALL_USERS));
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, Entry.uid);
+        xfi[i].pszColumnTitle = "User ID";
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
+        xfi[i].pszColumnTitle = "User name";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, pszFullName);
+        xfi[i].pszColumnTitle = "Full name";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, Entry.gid);
+        xfi[i].pszColumnTitle = "Group ID";
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, pszGroupName);
+        xfi[i].pszColumnTitle = "Group name";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                2);            // split bar after third column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+            cnrhSetSplitBarAfter(pfi);
+            cnrhSetSplitBarPos(250);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        APIRET arc;
+        ULONG cUsers;
+        PXWPUSERDBENTRY paUsers;
+
+        if (!(arc = xsecQueryUsers(&cUsers,
+                                   &paUsers)))
+        {
+            PUSERRECORD preccFirst
+                = (PUSERRECORD)cnrhAllocRecords(hwndCnr,
+                                                sizeof(USERRECORD),
+                                                cUsers);
+            if (preccFirst)
+            {
+                PXWPUSERDBENTRY pUserThis = paUsers;
+                PUSERRECORD preccThis = preccFirst;
+                ULONG ul;
+                for (ul = 0;
+                     ul < cUsers;
+                     ++ul)
+                {
+                    memcpy(&preccThis->Entry,
+                           pUserThis,
+                           sizeof(XWPUSERDBENTRY));
+
+                    preccThis->recc.pszIcon = preccThis->Entry.szUserName;
+                    preccThis->pszFullName = preccThis->Entry.szFullName;
+                    preccThis->pszGroupName = preccThis->Entry.szGroupName;
+
+                    ++pUserThis;
+                    preccThis = (PUSERRECORD)preccThis->recc.preccNextRecord;
+                }
+
+                cnrhInsertRecords(hwndCnr,
+                                  NULL,
+                                  (PRECORDCORE)preccFirst,
+                                  TRUE, // invalidate
+                                  NULL,
+                                  CRA_RECORDREADONLY,
+                                  cUsers);
+            }
+
+            free(paUsers);
+        }
+        else
+            Error(pnbp->inbp.somSelf, pnbp->hwndDlgPage, arc);
+    }
+}
+
+/* ******************************************************************
+ *
+ *   All Groups page
+ *
+ ********************************************************************/
+
+typedef struct _GROUPRECORD
+{
+    RECORDCORE      recc;
+
+    XWPSECID        gid;
+    PSZ             pszGroupName;
+    CHAR            szGroupName[XWPSEC_NAMELEN];    // group name
+
+} GROUPRECORD, *PGROUPRECORD;
+
+/*
+ *@@ admAllGroupsInitPage:
+ *
+ */
+
+VOID admAllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                         ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[3];
+        PFIELDINFO pfi = NULL;
+        int        i = 0;
+
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS));
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(GROUPRECORD, gid);
+        xfi[i].pszColumnTitle = "Group ID";
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(GROUPRECORD, pszGroupName);
+        xfi[i].pszColumnTitle = "Group name";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                0);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        APIRET arc;
+        ULONG cGroups;
+        PXWPGROUPDBENTRY paGroups;
+
+        if (!(arc = xsecQueryGroups(&cGroups,
+                                   &paGroups)))
+        {
+            PGROUPRECORD preccFirst
+                = (PGROUPRECORD)cnrhAllocRecords(hwndCnr,
+                                                sizeof(GROUPRECORD),
+                                                cGroups);
+            if (preccFirst)
+            {
+                PXWPGROUPDBENTRY pGroupThis = paGroups;
+                PGROUPRECORD preccThis = preccFirst;
+                ULONG ul;
+                for (ul = 0;
+                     ul < cGroups;
+                     ++ul)
+                {
+                    preccThis->gid = pGroupThis->gid;
+
+                    memcpy(preccThis->szGroupName,
+                           pGroupThis->szGroupName,
+                           sizeof(preccThis->szGroupName));
+                    preccThis->pszGroupName = preccThis->szGroupName;
+
+                    ++pGroupThis;
+                    preccThis = (PGROUPRECORD)preccThis->recc.preccNextRecord;
+                }
+
+                cnrhInsertRecords(hwndCnr,
+                                  NULL,
+                                  (PRECORDCORE)preccFirst,
+                                  TRUE, // invalidate
+                                  NULL,
+                                  CRA_RECORDREADONLY,
+                                  cGroups);
+            }
+
+            free(paGroups);
+        }
+        else
+            Error(pnbp->inbp.somSelf, pnbp->hwndDlgPage, arc);
     }
 }
 
@@ -389,13 +528,39 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
         // XWPShell running:
         DosCloseQueue(hqXWPShell);
 
-        inbp.ulDlgID = ID_AMD_USER;
+        // all groups
         inbp.usPageStyleFlags = BKA_MAJOR;
-        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_USER);
-        inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_USER;
-        inbp.ulPageID = SP_ADMIN_USER;
-        inbp.pfncbInitPage    = admUserInitPage;
+        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS);
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
+        inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_ALL_GROUPS;
+        inbp.ulPageID = SP_ADMIN_ALL_GROUPS;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = admAllGroupsInitPage;
+        ntbInsertPage(&inbp);
+
+        // all users
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_ALL_USERS);
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
+        inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_ALL_USERS;
+        inbp.ulPageID = SP_ADMIN_ALL_USERS;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = admAllUsersInitPage;
+        ntbInsertPage(&inbp);
+
+        // current local user
+        inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_AMD_USER;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_LOCAL_USER);
+        inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_LOCAL_USER;
+        inbp.ulPageID = SP_ADMIN_LOCAL_USER;
+        inbp.pampControlFlags = NULL;
+        inbp.cControlFlags = 0;
+        inbp.pfncbInitPage    = admLocalUserInitPage;
         ulrc = ntbInsertPage(&inbp);
+
     }
 
     return ulrc;

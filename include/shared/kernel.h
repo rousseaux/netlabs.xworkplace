@@ -338,6 +338,8 @@
     typedef HWND APIENTRY KRNQUERYDAEMONOBJECT(VOID);
     typedef KRNQUERYDAEMONOBJECT *PKRNQUERYDAEMONOBJECT;
 
+    HAPP krnStartDaemon(VOID);
+
     BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
@@ -406,7 +408,8 @@
 
     #define T1M_OPENRUNDIALOG           (WM_USER+292)    // V0.9.14 (2001-08-07) [pr]
 
-    #define T1M_PROGOPENPROGRAM         (WM_USER+293)    // V0.9.16 (2001-12-02) [umoeller]
+    // #define T1M_PROGOPENPROGRAM         (WM_USER+293)    // V0.9.16 (2001-12-02) [umoeller]
+            // removed again V0.9.19 (2002-03-28) [umoeller]
 
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 

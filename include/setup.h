@@ -287,7 +287,7 @@
             // #define DEBUG_RESTOREDATA
 
         // debug icon replacements
-            #define DEBUG_ICONREPLACEMENTS
+            // #define DEBUG_ICONREPLACEMENTS
 
 /* startup, shutdown */
 
@@ -348,7 +348,7 @@
 
 /* program objects */
         // debug program startup data
-            #define DEBUG_PROGRAMSTART
+            // #define DEBUG_PROGRAMSTART
 
 /* misc */
 

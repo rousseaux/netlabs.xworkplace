@@ -167,8 +167,12 @@
 #define INCL_WINSCROLLBARS
 #define INCL_WININPUT
 #define INCL_WINSHELLDATA
+#define INCL_WINPROGRAMLIST
 #define INCL_WINSYS
 #define INCL_WINWORKPLACE
+#define INCL_WINSWITCHLIST
+#define INCL_WINERRORS
+#define INCL_SHLERRORS
 
 #define INCL_GPIBITMAPS
 #define INCL_GPIPRIMITIVES
@@ -322,9 +326,9 @@ HPOINTER        G_ahptrPointers[9] = {0};
 ULONG           G_ulAutoScrollTick = 0;
 
 /* ******************************************************************
- *                                                                  *
- *   Exception hooks (except.c)                                     *
- *                                                                  *
+ *
+ *   Exception hooks (except.c)
+ *
  ********************************************************************/
 
 /*
@@ -350,7 +354,7 @@ FILE* _System dmnExceptOpenLogFile(VOID)
 #define LOGFILENAME XFOLDER_DMNCRASHLOG
         fprintf(file, "------------------------------------------------------------------\n"
                       "\nAn internal error occurred in the XWorkplace Daemon (XWPDAEMN.EXE).\n"
-                      "Please send a bug report to " CONTACT_ADDRESS "\n"
+                      "Please send a bug report to " CONTACT_ADDRESS_USER "\n"
                       "so that this error may be fixed for future XWorkplace versions.\n"
                       "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
                       "and describe as exactly as possible the conditions under which\n"
@@ -410,9 +414,9 @@ VOID APIENTRY dmnExceptError(const char *pcszFile,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Hook interface                                                 *
- *                                                                  *
+ *
+ *   Hook interface
+ *
  ********************************************************************/
 
 /*
@@ -531,9 +535,9 @@ VOID dmnKillXPager(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGERCLOSE
 #endif
 
 /* ******************************************************************
- *                                                                  *
- *   Hook interface                                                 *
- *                                                                  *
+ *
+ *   Hook interface
+ *
  ********************************************************************/
 
 /*
@@ -779,9 +783,9 @@ VOID DeinstallHook(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Hook message processing                                        *
- *                                                                  *
+ *
+ *   Hook message processing
+ *
  ********************************************************************/
 
 /*
@@ -794,9 +798,9 @@ VOID DeinstallHook(VOID)
  *@@added V0.9.9 (2001-03-21) [lafaix]
  */
 
-VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
-                       LONG lDelta,
-                       BOOL fHorizontal)
+static VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
+                              LONG lDelta,
+                              BOOL fHorizontal)
 {
     USHORT  usScrollCode;
     ULONG   ulMsg;
@@ -886,10 +890,10 @@ VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
  *@@changed V0.9.16 (2002-01-05) [umoeller]: now disabling sliding focus while "move ptr to button" is in progress
  */
 
-VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
-                                                  // under the mouse before the desktop frame window was
-                                                  // reached
-                         HWND hwnd2Activate)     // in: highest parent of hwndUnderMouse, child of desktop
+static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
+                                                         // under the mouse before the desktop frame window was
+                                                         // reached
+                                HWND hwnd2Activate)     // in: highest parent of hwndUnderMouse, child of desktop
 {
     HWND    hwndCurrentlyActive = NULLHANDLE,
             hwndClient = NULLHANDLE;
@@ -1131,7 +1135,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
  *@@changed V0.9.18 (2002-02-12) [pr]: added screen wrap
  */
 
-VOID ProcessHotCorner(MPARAM mp1)
+static VOID ProcessHotCorner(MPARAM mp1)
 {
     // create array index: mp1
     LONG    lIndex = (LONG)mp1;
@@ -1259,6 +1263,201 @@ VOID ProcessHotCorner(MPARAM mp1)
 }
 
 /*
+ *@@ ProcessChordWinList:
+ *      implementation for XDM_WMCHORDWINLIST in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static VOID ProcessChordWinList(VOID)
+{
+    POINTL  ptlMouse;       // mouse coordinates
+    SWP     WinListPos;     // position of window list window
+    LONG WinListX, WinListY; // new ordinates of window list window
+    // get mouse coordinates (absolute coordinates)
+    WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
+    // get position of window list window
+    WinQueryWindowPos(G_pHookData->hwndSwitchList,
+                      &WinListPos);
+    // calculate window list position (mouse pointer is center)
+    WinListX = ptlMouse.x - (WinListPos.cx / 2);
+    if (WinListX < 0)
+        WinListX = 0;
+    WinListY = ptlMouse.y - (WinListPos.cy / 2);
+    if (WinListY < 0)
+        WinListY = 0;
+    if (WinListX + WinListPos.cx > G_pHookData->lCXScreen)
+        WinListX = G_pHookData->lCXScreen - WinListPos.cx;
+    if (WinListY + WinListPos.cy > G_pHookData->lCYScreen)
+        WinListY = G_pHookData->lCYScreen - WinListPos.cy;
+    // set window list window to calculated position
+    WinSetWindowPos(G_pHookData->hwndSwitchList,
+                    HWND_TOP,
+                    WinListX, WinListY, 0, 0,
+                    SWP_MOVE | SWP_SHOW | SWP_ZORDER);
+    // now make it the active window
+    WinSetActiveWindow(HWND_DESKTOP,
+                       G_pHookData->hwndSwitchList);
+}
+
+/*
+ *@@ ProcessBeginScroll:
+ *      implementation for XDM_BEGINSCROLL in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static VOID ProcessBeginScroll(HWND hwndObject)
+{
+    G_lScrollMode = (G_pHookData->SDXHorz.hwndScrollBar)
+                  ? (G_pHookData->SDYVert.hwndScrollBar)
+                        ? ALL
+                        : HORZ
+                  : VERT;
+
+    switch (G_lScrollMode)
+    {
+        case ALL:
+            G_ahptrPointers[NORTH]     = G_hptrN;
+            G_ahptrPointers[NORTHEAST] = G_hptrNE;
+            G_ahptrPointers[EAST]      = G_hptrE;
+            G_ahptrPointers[SOUTHEAST] = G_hptrSE;
+            G_ahptrPointers[SOUTH]     = G_hptrS;
+            G_ahptrPointers[SOUTHWEST] = G_hptrSW;
+            G_ahptrPointers[WEST]      = G_hptrW;
+            G_ahptrPointers[NORTHWEST] = G_hptrNW;
+            G_ahptrPointers[CENTER]    = G_hptrNESW;
+        break;
+        case HORZ:
+            G_ahptrPointers[NORTH]     = G_hptrEW;
+            G_ahptrPointers[NORTHEAST] = G_hptrE;
+            G_ahptrPointers[EAST]      = G_hptrE;
+            G_ahptrPointers[SOUTHEAST] = G_hptrE;
+            G_ahptrPointers[SOUTH]     = G_hptrEW;
+            G_ahptrPointers[SOUTHWEST] = G_hptrW;
+            G_ahptrPointers[WEST]      = G_hptrW;
+            G_ahptrPointers[NORTHWEST] = G_hptrW;
+            G_ahptrPointers[CENTER]    = G_hptrEW;
+        break;
+        case VERT:
+            G_ahptrPointers[NORTH]     = G_hptrN;
+            G_ahptrPointers[NORTHEAST] = G_hptrN;
+            G_ahptrPointers[EAST]      = G_hptrNS;
+            G_ahptrPointers[SOUTHEAST] = G_hptrS;
+            G_ahptrPointers[SOUTH]     = G_hptrS;
+            G_ahptrPointers[SOUTHWEST] = G_hptrS;
+            G_ahptrPointers[WEST]      = G_hptrNS;
+            G_ahptrPointers[NORTHWEST] = G_hptrN;
+            G_ahptrPointers[CENTER]    = G_hptrNS;
+        break;
+    }
+
+    G_hptrOld = WinQueryPointer(HWND_DESKTOP);
+    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[CENTER]);
+
+    if (shpLoadBitmap(G_habDaemon,
+                      NULL,          // load from resources
+                      NULLHANDLE,    // load from exe
+                      139 + G_lScrollMode,
+                                     // resource ID
+                      &G_sfScrollOrigin))
+    {
+        WinQueryPointerPos(HWND_DESKTOP, &G_ptlScrollOrigin);
+        G_sfScrollOrigin.ptlLowerLeft.x = G_ptlScrollOrigin.x - 16;
+        G_sfScrollOrigin.ptlLowerLeft.y = G_ptlScrollOrigin.y - 16;
+        shpCreateWindows(&G_sfScrollOrigin);
+        G_fScrollOriginLoaded = TRUE;
+    }
+    else
+        G_fScrollOriginLoaded = FALSE;
+
+    // if AutoScroll, start timer
+    if (G_pHookData->bAutoScroll)
+    {
+        G_ulAutoScrollTick = 0;
+        WinStartTimer(G_habDaemon,
+                      hwndObject,
+                      TIMERID_AUTOSCROLL,
+                      100); // 10 times per second
+    }
+}
+
+/*
+ *@@ ProcessEndScroll:
+ *      implementation for XDM_ENDSCROLL in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static VOID ProcessEndScroll(HWND hwndObject)
+{
+    if (G_hptrOld)
+        WinSetPointer(HWND_DESKTOP, G_hptrOld);
+    G_hptrOld = NULLHANDLE;
+
+    if (G_fScrollOriginLoaded)
+    {
+        shpFreeBitmap(&G_sfScrollOrigin);
+        WinDestroyWindow(G_sfScrollOrigin.hwndShapeFrame) ;
+        WinDestroyWindow(G_sfScrollOrigin.hwndShape);
+        G_fScrollOriginLoaded = FALSE;
+    }
+
+    // if AutoScroll, stop timer
+    if (G_pHookData->bAutoScroll)
+    {
+        G_pHookData->bAutoScroll = FALSE;
+        WinStopTimer(G_habDaemon,
+                     hwndObject,
+                     (ULONG)TIMERID_AUTOSCROLL);
+    }
+}
+
+/*
+ *@@ ProcessSetPointer:
+ *      implementation for XDM_SETPOINTER in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static VOID ProcessSetPointer(MPARAM mp1)
+{
+    if (    (abs(G_ptlScrollOrigin.x-SHORT1FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
+         && (abs(G_ptlScrollOrigin.y-SHORT2FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
+       )
+        // too close to call
+        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[CENTER]);
+    else if (G_ptlScrollOrigin.x > SHORT1FROMMP(mp1) + 16)
+    {
+        // in the west part
+        if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1) + 16)
+            WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTHWEST]);
+        else
+        if (G_ptlScrollOrigin.y < SHORT2FROMMP(mp1) - 16)
+            WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTHWEST]);
+        else
+            WinSetPointer(HWND_DESKTOP, G_ahptrPointers[WEST]);
+    }
+    else if (G_ptlScrollOrigin.x < SHORT1FROMMP(mp1) - 16)
+    {
+        // in the east part
+        if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1) + 16)
+            WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTHEAST]);
+        else
+        if (G_ptlScrollOrigin.y < SHORT2FROMMP(mp1) - 16)
+            WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTHEAST]);
+        else
+            WinSetPointer(HWND_DESKTOP, G_ahptrPointers[EAST]);
+    }
+    else if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1))
+        // in the south
+        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTH]);
+    else
+        // in the north
+        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTH]);
+}
+
+/*
  *@@ ProcessTimer:
  *      implementation for WM_TIMER in fnwpDaemonObject.
  *
@@ -1266,7 +1465,7 @@ VOID ProcessHotCorner(MPARAM mp1)
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added delayed move-ptr-to-button
  */
 
-MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PULONG      pulStopTimer = NULL;
 
@@ -1471,10 +1670,294 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
     return 0;
 }
 
+/*
+ *@@ ProcessAddClickWatch:
+ *      implementation for XDM_ADDCLICKWATCH in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static MRESULT ProcessAddClickWatch(MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = (MRESULT)FALSE;
+
+    // check if the hook is running first;
+    // or we'll get crashes if not
+    // V0.9.17 (2002-02-05) [umoeller]
+    if (G_pHookData)
+    {
+        // no need to lock here, since the daemon object
+        // is the only one using this list
+        PCLICKWATCH p = NULL;
+
+        PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches),
+                  pNodeFound = NULL;
+        while (pNode)
+        {
+            PLISTNODE pNext = pNode->pNext;
+            p = (PCLICKWATCH)pNode->pItemData;
+            if (p->hwndNotify == (HWND)mp1)
+            {
+                pNodeFound = pNode;
+                break;
+            }
+
+            pNode = pNext;
+        }
+
+        if ((ULONG)mp2 == -1)
+        {
+            // remove watch:
+            if (pNodeFound)
+            {
+                lstRemoveNode(&G_llClickWatches, pNodeFound);
+                // DosBeep(500, 100);
+                mrc = (MPARAM)TRUE;
+            }
+        }
+        else
+        {
+            // add watch:
+            if (!pNodeFound)
+                // we didn't already have one for this window:
+                p = NEW(CLICKWATCH);
+            // else: p still points to the item found
+
+            p->hwndNotify = (HWND)mp1;
+            p->ulMessage = (ULONG)mp2;
+            if (!pNodeFound)
+                lstAppendItem(&G_llClickWatches, p);
+
+            mrc = (MPARAM)TRUE;
+        }
+
+        // refresh flag for hook
+        G_pHookData->fClickWatches = (lstCountItems(&G_llClickWatches) > 0);
+    } // end if (G_pHookData)
+
+    return mrc;
+}
+
+/*
+ *@@ ProcessMouseClicked:
+ *      implementation for XDM_MOUSECLICKED in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
+{
+    PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches);
+    while (pNode)
+    {
+        PLISTNODE pNext = pNode->pNext;
+        PCLICKWATCH p = (PCLICKWATCH)pNode->pItemData;
+        if (WinIsWindow(G_habDaemon, p->hwndNotify))
+            WinPostMsg(p->hwndNotify,
+                       p->ulMessage,
+                       mp1,             // WM_BUTTONxxxx msg
+                       mp2);            // POINTS mouse pos
+        else
+            // notify window no longer valid:
+            lstRemoveNode(&G_llClickWatches,
+                          pNode);
+        pNode = pNext;
+    }
+
+    // DosBeep(3000, 10);
+}
+
+/*
+ *@@ ProcessMovePtrToButton:
+ *      implementation for XDM_MOVEPTRTOBUTTON in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static VOID ProcessMovePtrToButton(HWND hwndObject, MPARAM mp1)
+{
+    HWND    hwndDefButton = (HWND)mp1;
+    RECTL   rcl;
+
+    // get window pos of the button to move to
+    // and use its middle for the target to move to
+    WinQueryWindowRect(hwndDefButton, &rcl);
+    G_ptlMovingPtrEnd.x = (rcl.xLeft + rcl.xRight) / 2;
+    G_ptlMovingPtrEnd.y = (rcl.yTop + rcl.yBottom) / 2;
+    WinMapWindowPoints(hwndDefButton,
+                       HWND_DESKTOP,
+                       &G_ptlMovingPtrEnd,
+                       1);
+
+    if (G_pHookData->HookConfig.__ulAutoMoveDelay)
+    {
+        // delay configured:
+
+        // get current mouse pointer so we can
+        // calculate where we need to move to
+        WinQueryPointerPos(HWND_DESKTOP, &G_ptlMovingPtrStart);
+        // copy to current
+        memcpy(&G_ptlMovingPtrNow, &G_ptlMovingPtrStart, sizeof(POINTL));
+
+        // get current time in milliseconds so
+        // we can calculate the offset based
+        // on the time that has elapsed
+        G_ulMSMovingPtrStart = doshQuerySysUptime();
+
+        // reset last radius, in case animation is on
+        // and was stopped before done last time
+        // V0.9.15 (2001-08-26) [umoeller]
+        G_lLastMovingPtrRadius = 0;
+
+        // go (re)start the timer for moving
+        G_ulMovingPtrTimer = WinStartTimer(G_habDaemon,
+                                           hwndObject,
+                                           TIMERID_MOVINGPTR,
+                                           25);
+    }
+    else
+        // no delay: go now
+        WinSetPointerPos(HWND_DESKTOP,
+                         G_ptlMovingPtrEnd.x,
+                         G_ptlMovingPtrEnd.y);
+}
+
+typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
+
+/*
+ *@@ ProcessStartApp:
+ *      implementation for XDM_STARTAPP in fnwpDaemonObject.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
+{
+    APIRET arc;
+
+    static WINHSWITCHFROMHAPP *G_WinHSWITCHfromHAPP = NULL;
+
+    if (!(arc = DosGetSharedMem(mp2,
+                                PAG_READ | PAG_WRITE)))
+    {
+        HAPP happ;
+        if ((happ = WinStartApp((HWND)mp1,
+                                (PPROGDETAILS)mp2,
+                                ((PPROGDETAILS)mp2)->pszParameters,
+                                NULL,
+                                SAF_INSTALLEDCMDLINE)))
+        {
+            // app started OK:
+
+            HSWITCH hsw;
+
+            // return HAPP in PROGDETAILS
+            ((PPROGDETAILS)mp2)->Length = happ;
+
+            #ifdef DEBUG_PROGRAMSTART
+                _Pmpf((__FUNCTION__ ": got happ 0x%lX", happ));
+            #endif
+
+            // VIO and fullscreen sessions keep ending up in the
+            // background here, so bring these to the front
+            if (((PPROGDETAILS)mp2)->progt.progc != PROG_PM)
+            {
+                // try to find the switch entry, if there's one
+                if (!G_WinHSWITCHfromHAPP)
+                    // import WinHSWITCHfromHAPP
+                    // WinHSWITCHfromHAPP PMMERGE.5199
+                    if ((arc = doshQueryProcAddr("PMMERGE",
+                                                 5199,
+                                                 (PFN*)&G_WinHSWITCHfromHAPP)))
+                        _Pmpf(("doshQueryProcAddr returned %d resolving WinHSWITCHfromHAPP.", arc));
+
+                if (    (G_WinHSWITCHfromHAPP)
+                     && (hsw = G_WinHSWITCHfromHAPP(happ))
+                   )
+                {
+                    _Pmpf(("switching to hsw 0x%lX.", hsw));
+                    WinSwitchToProgram(hsw);
+                }
+            }
+        }
+        else
+        {
+            // error: try to find out what happened
+            PERRINFO pei;
+
+            #ifdef DEBUG_PROGRAMSTART
+                _Pmpf((__FUNCTION__ ": WinStartApp failed"));
+            #endif
+
+            // unfortunately WinStartApp doesn't
+            // return meaningful codes like DosStartSession, so
+            // try to see what happened
+
+            if (pei = WinGetErrorInfo(G_habDaemon))
+            {
+                #ifdef DEBUG_PROGRAMSTART
+                    _Pmpf(("  WinGetErrorInfo returned 0x%lX, errorid 0x%lX, %d",
+                                pei,
+                                pei->idError,
+                                ERRORIDERROR(pei->idError)));
+                #endif
+
+                switch (ERRORIDERROR(pei->idError))
+                {
+                    case PMERR_DOS_ERROR: //  (0x1200)
+                        arc = ERROR_FILE_NOT_FOUND;
+                    break;
+
+                    case PMERR_INVALID_APPL: //  (0x1530)
+                            // Attempted to start an application whose type is not
+                            // recognized by OS/2.
+                            // This we get also if the executable doesn't exist...
+                            // V0.9.18 (2002-03-27) [umoeller]
+                        // arc = ERROR_INVALID_EXE_SIGNATURE;
+                        arc = ERROR_FILE_NOT_FOUND;
+                    break;
+
+                    case PMERR_INVALID_PARAMETERS: //  (0x1208)
+                            // An application parameter value is invalid for
+                            // its converted PM type. For  example: a 4-byte
+                            // value outside the range -32 768 to +32 767 cannot be
+                            // converted to a SHORT, and a negative number cannot
+                            // be converted to a ULONG or USHORT.
+                        arc = ERROR_INVALID_DATA;
+                    break;
+
+                    case PMERR_STARTED_IN_BACKGROUND: //  (0x1532)
+                            // The application started a new session in the
+                            // background.
+                        arc = ERROR_SMG_START_IN_BACKGROUND;
+                    break;
+
+                    case PMERR_INVALID_WINDOW: // (0x1206)
+                            // The window specified with a Window List call
+                            // is not a valid frame window.
+
+                    default:
+                        arc = ERROR_BAD_FORMAT;
+                    break;
+                }
+
+                WinFreeErrorInfo(pei);
+            }
+            else
+                arc = ERROR_INVALID_DATA;
+        }
+
+        DosFreeMem(mp2);
+
+    } // if (!(arc = DosGetSharedMem(mp2,
+
+    return (MRESULT)arc;
+}
+
 /* ******************************************************************
- *                                                                  *
- *   Daemon object window                                           *
- *                                                                  *
+ *
+ *   Daemon object window
+ *
  ********************************************************************/
 
 /*
@@ -1516,12 +1999,19 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      --  XDM_QUERYDISKS (get info about disks on the
  *          system).
  *
+ *      --  XDM_ADDCLICKWATCH
+ *
+ *      --  XDM_DISABLEHOTKEYSTEMP
+ *
+ *      --  XDM_STARTAPP
+ *
  *@@changed V0.9.3 (2000-04-12) [umoeller]: added exception handling
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed sliding focus bug
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed trap if hook data was NULL
  *@@changed V0.9.14 (2001-08-01) [umoeller]: added drive monitor
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
  *@@changed V0.9.15 (2001-08-26) [umoeller]: move-ptr-to-button animation left circles on screen, fixed
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: moved more code out of main proc for better cache locality
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1640,10 +2130,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_STARTSTOPPAGER:
                 // _Pmpf(("fnwpDaemonObject: got XDM_STARTSTOPPAGER (%d)", mp1));
                 if (mp1)
-                    // install the hook:
                     dmnStartXPager();
-                        // this sets the global pHookData pointer
-                        // to the HOOKDATA in the DLL
                 else
                     dmnKillXPager(FALSE); // no notify
 
@@ -1859,35 +2346,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_WMCHORDWINLIST:
-            {
-                POINTL  ptlMouse;       // mouse coordinates
-                SWP     WinListPos;     // position of window list window
-                LONG WinListX, WinListY; // new ordinates of window list window
-                // get mouse coordinates (absolute coordinates)
-                WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
-                // get position of window list window
-                WinQueryWindowPos(G_pHookData->hwndSwitchList,
-                                  &WinListPos);
-                // calculate window list position (mouse pointer is center)
-                WinListX = ptlMouse.x - (WinListPos.cx / 2);
-                if (WinListX < 0)
-                    WinListX = 0;
-                WinListY = ptlMouse.y - (WinListPos.cy / 2);
-                if (WinListY < 0)
-                    WinListY = 0;
-                if (WinListX + WinListPos.cx > G_pHookData->lCXScreen)
-                    WinListX = G_pHookData->lCXScreen - WinListPos.cx;
-                if (WinListY + WinListPos.cy > G_pHookData->lCYScreen)
-                    WinListY = G_pHookData->lCYScreen - WinListPos.cy;
-                // set window list window to calculated position
-                WinSetWindowPos(G_pHookData->hwndSwitchList,
-                                HWND_TOP,
-                                WinListX, WinListY, 0, 0,
-                                SWP_MOVE | SWP_SHOW | SWP_ZORDER);
-                // now make it the active window
-                WinSetActiveWindow(HWND_DESKTOP,
-                                   G_pHookData->hwndSwitchList);
-            }
+                ProcessChordWinList();
             break;
 
             /*
@@ -1902,77 +2361,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_BEGINSCROLL:
-                G_lScrollMode = (G_pHookData->SDXHorz.hwndScrollBar)
-                              ? (G_pHookData->SDYVert.hwndScrollBar)
-                                    ? ALL
-                                    : HORZ
-                              : VERT;
-
-                switch (G_lScrollMode)
-                {
-                    case ALL:
-                        G_ahptrPointers[NORTH]     = G_hptrN;
-                        G_ahptrPointers[NORTHEAST] = G_hptrNE;
-                        G_ahptrPointers[EAST]      = G_hptrE;
-                        G_ahptrPointers[SOUTHEAST] = G_hptrSE;
-                        G_ahptrPointers[SOUTH]     = G_hptrS;
-                        G_ahptrPointers[SOUTHWEST] = G_hptrSW;
-                        G_ahptrPointers[WEST]      = G_hptrW;
-                        G_ahptrPointers[NORTHWEST] = G_hptrNW;
-                        G_ahptrPointers[CENTER]    = G_hptrNESW;
-                    break;
-                    case HORZ:
-                        G_ahptrPointers[NORTH]     = G_hptrEW;
-                        G_ahptrPointers[NORTHEAST] = G_hptrE;
-                        G_ahptrPointers[EAST]      = G_hptrE;
-                        G_ahptrPointers[SOUTHEAST] = G_hptrE;
-                        G_ahptrPointers[SOUTH]     = G_hptrEW;
-                        G_ahptrPointers[SOUTHWEST] = G_hptrW;
-                        G_ahptrPointers[WEST]      = G_hptrW;
-                        G_ahptrPointers[NORTHWEST] = G_hptrW;
-                        G_ahptrPointers[CENTER]    = G_hptrEW;
-                    break;
-                    case VERT:
-                        G_ahptrPointers[NORTH]     = G_hptrN;
-                        G_ahptrPointers[NORTHEAST] = G_hptrN;
-                        G_ahptrPointers[EAST]      = G_hptrNS;
-                        G_ahptrPointers[SOUTHEAST] = G_hptrS;
-                        G_ahptrPointers[SOUTH]     = G_hptrS;
-                        G_ahptrPointers[SOUTHWEST] = G_hptrS;
-                        G_ahptrPointers[WEST]      = G_hptrNS;
-                        G_ahptrPointers[NORTHWEST] = G_hptrN;
-                        G_ahptrPointers[CENTER]    = G_hptrNS;
-                    break;
-                }
-
-                G_hptrOld = WinQueryPointer(HWND_DESKTOP);
-                WinSetPointer(HWND_DESKTOP, G_ahptrPointers[CENTER]);
-
-                if (shpLoadBitmap(G_habDaemon,
-                                  NULL,          // load from resources
-                                  NULLHANDLE,    // load from exe
-                                  139 + G_lScrollMode,
-                                                 // resource ID
-                                  &G_sfScrollOrigin))
-                {
-                    WinQueryPointerPos(HWND_DESKTOP, &G_ptlScrollOrigin);
-                    G_sfScrollOrigin.ptlLowerLeft.x = G_ptlScrollOrigin.x - 16;
-                    G_sfScrollOrigin.ptlLowerLeft.y = G_ptlScrollOrigin.y - 16;
-                    shpCreateWindows(&G_sfScrollOrigin);
-                    G_fScrollOriginLoaded = TRUE;
-                }
-                else
-                    G_fScrollOriginLoaded = FALSE;
-
-                // if AutoScroll, start timer
-                if (G_pHookData->bAutoScroll)
-                {
-                    G_ulAutoScrollTick = 0;
-                    WinStartTimer(G_habDaemon,
-                                  hwndObject,
-                                  TIMERID_AUTOSCROLL,
-                                  100); // 10 times per second
-                }
+                ProcessBeginScroll(hwndObject);
             break;
 
             /*
@@ -1987,26 +2376,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_ENDSCROLL:
-                if (G_hptrOld)
-                    WinSetPointer(HWND_DESKTOP, G_hptrOld);
-                G_hptrOld = NULLHANDLE;
-
-                if (G_fScrollOriginLoaded)
-                {
-                    shpFreeBitmap(&G_sfScrollOrigin);
-                    WinDestroyWindow(G_sfScrollOrigin.hwndShapeFrame) ;
-                    WinDestroyWindow(G_sfScrollOrigin.hwndShape);
-                    G_fScrollOriginLoaded = FALSE;
-                }
-
-                // if AutoScroll, stop timer
-                if (G_pHookData->bAutoScroll)
-                {
-                    G_pHookData->bAutoScroll = FALSE;
-                    WinStopTimer(G_habDaemon,
-                                 hwndObject,
-                                 (ULONG)TIMERID_AUTOSCROLL);
-                }
+                ProcessEndScroll(hwndObject);
             break;
 
             /*
@@ -2023,39 +2393,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_SETPOINTER:
-                if (    (abs(G_ptlScrollOrigin.x-SHORT1FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
-                     && (abs(G_ptlScrollOrigin.y-SHORT2FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
-                   )
-                    // too close to call
-                    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[CENTER]);
-                else if (G_ptlScrollOrigin.x > SHORT1FROMMP(mp1) + 16)
-                {
-                    // in the west part
-                    if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1) + 16)
-                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTHWEST]);
-                    else
-                    if (G_ptlScrollOrigin.y < SHORT2FROMMP(mp1) - 16)
-                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTHWEST]);
-                    else
-                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[WEST]);
-                }
-                else if (G_ptlScrollOrigin.x < SHORT1FROMMP(mp1) - 16)
-                {
-                    // in the east part
-                    if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1) + 16)
-                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTHEAST]);
-                    else
-                    if (G_ptlScrollOrigin.y < SHORT2FROMMP(mp1) - 16)
-                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTHEAST]);
-                    else
-                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[EAST]);
-                }
-                else if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1))
-                    // in the south
-                    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTH]);
-                else
-                    // in the north
-                    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTH]);
+                ProcessSetPointer(mp1);
             break;
 
             /*
@@ -2215,59 +2553,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_ADDCLICKWATCH:
-                // check if the hook is running first;
-                // or we'll get crashes if not
-                // V0.9.17 (2002-02-05) [umoeller]
-                if (G_pHookData)
-                {
-                    // no need to lock here, since the daemon object
-                    // is the only one using this list
-                    PCLICKWATCH p = NULL;
-
-                    PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches),
-                              pNodeFound = NULL;
-                    while (pNode)
-                    {
-                        PLISTNODE pNext = pNode->pNext;
-                        p = (PCLICKWATCH)pNode->pItemData;
-                        if (p->hwndNotify == (HWND)mp1)
-                        {
-                            pNodeFound = pNode;
-                            break;
-                        }
-
-                        pNode = pNext;
-                    }
-
-                    if ((ULONG)mp2 == -1)
-                    {
-                        // remove watch:
-                        if (pNodeFound)
-                        {
-                            lstRemoveNode(&G_llClickWatches, pNodeFound);
-                            // DosBeep(500, 100);
-                            mrc = (MPARAM)TRUE;
-                        }
-                    }
-                    else
-                    {
-                        // add watch:
-                        if (!pNodeFound)
-                            // we didn't already have one for this window:
-                            p = NEW(CLICKWATCH);
-                        // else: p still points to the item found
-
-                        p->hwndNotify = (HWND)mp1;
-                        p->ulMessage = (ULONG)mp2;
-                        if (!pNodeFound)
-                            lstAppendItem(&G_llClickWatches, p);
-
-                        mrc = (MPARAM)TRUE;
-                    }
-
-                    // refresh flag for hook
-                    G_pHookData->fClickWatches = (lstCountItems(&G_llClickWatches) > 0);
-                } // end if (G_pHookData)
+                mrc = ProcessAddClickWatch(mp1, mp2);
             break;
 
             /*
@@ -2279,26 +2565,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_MOUSECLICKED:
-            {
-                PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches);
-                while (pNode)
-                {
-                    PLISTNODE pNext = pNode->pNext;
-                    PCLICKWATCH p = (PCLICKWATCH)pNode->pItemData;
-                    if (WinIsWindow(G_habDaemon, p->hwndNotify))
-                        WinPostMsg(p->hwndNotify,
-                                   p->ulMessage,
-                                   mp1,             // WM_BUTTONxxxx msg
-                                   mp2);            // POINTS mouse pos
-                    else
-                        // notify window no longer valid:
-                        lstRemoveNode(&G_llClickWatches,
-                                      pNode);
-                    pNode = pNext;
-                }
-
-                // DosBeep(3000, 10);
-            }
+                ProcessMouseClicked(mp1, mp2);
             break;
 
 #ifndef __NOMOVEMENT2FEATURES__
@@ -2310,56 +2577,15 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      a default button, whose HWND is passed in
              *      mp1.
              *
+             *      Parameters:
+             *
+             *      --  HWND mp1: default button to move to.
+             *
              *@@added V0.9.14 (2001-08-21) [umoeller]
              */
 
             case XDM_MOVEPTRTOBUTTON:
-            {
-                HWND    hwndDefButton = (HWND)mp1;
-                RECTL   rcl;
-
-                // get window pos of the button to move to
-                // and use its middle for the target to move to
-                WinQueryWindowRect(hwndDefButton, &rcl);
-                G_ptlMovingPtrEnd.x = (rcl.xLeft + rcl.xRight) / 2;
-                G_ptlMovingPtrEnd.y = (rcl.yTop + rcl.yBottom) / 2;
-                WinMapWindowPoints(hwndDefButton,
-                                   HWND_DESKTOP,
-                                   &G_ptlMovingPtrEnd,
-                                   1);
-
-                if (G_pHookData->HookConfig.__ulAutoMoveDelay)
-                {
-                    // delay configured:
-
-                    // get current mouse pointer so we can
-                    // calculate where we need to move to
-                    WinQueryPointerPos(HWND_DESKTOP, &G_ptlMovingPtrStart);
-                    // copy to current
-                    memcpy(&G_ptlMovingPtrNow, &G_ptlMovingPtrStart, sizeof(POINTL));
-
-                    // get current time in milliseconds so
-                    // we can calculate the offset based
-                    // on the time that has elapsed
-                    G_ulMSMovingPtrStart = doshQuerySysUptime();
-
-                    // reset last radius, in case animation is on
-                    // and was stopped before done last time
-                    // V0.9.15 (2001-08-26) [umoeller]
-                    G_lLastMovingPtrRadius = 0;
-
-                    // go (re)start the timer for moving
-                    G_ulMovingPtrTimer = WinStartTimer(G_habDaemon,
-                                                       hwndObject,
-                                                       TIMERID_MOVINGPTR,
-                                                       25);
-                }
-                else
-                    // no delay: go now
-                    WinSetPointerPos(HWND_DESKTOP,
-                                     G_ptlMovingPtrEnd.x,
-                                     G_ptlMovingPtrEnd.y);
-            }
+                ProcessMovePtrToButton(hwndObject, mp1);
             break;
 #endif
 
@@ -2383,6 +2609,34 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 G_pHookData->fHotkeysDisabledTemp = (BOOL)mp1;
             break;
 
+            /*
+             *@@ XDM_STARTAPP:
+             *      sent from XFLDR.DLL to have WinStartApp
+             *      called from the Daemon process to avoid
+             *      the hangs that occur when WinStartApp
+             *      is used within the Workplace process.
+             *
+             *      Parameters:
+             *
+             *      --  HWND mp1: hwndNotify for WinStartApp.
+             *
+             *      --  PPROGDETAILS mp2: block of gettable
+             *          shared memory containing all the
+             *          program details for WinStartApp
+             *          (as allocated by appBuildProgDetails).
+             *
+             *      Returns APIRET.
+             *
+             *      If NO_ERROR is returned, the PROGDETAILS.ulLength
+             *      field is set to the HAPP that was started.
+             *
+             *@@added V0.9.19 (2002-03-28) [umoeller]
+             */
+
+            case XDM_STARTAPP:
+                mrc = ProcessStartApp(mp1, mp2);
+            break;
+
             default:
                 mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
         }
@@ -2396,9 +2650,9 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 }
 
 /* ******************************************************************
- *                                                                  *
- *   main()                                                         *
- *                                                                  *
+ *
+ *   main()
+ *
  ********************************************************************/
 
 /*
@@ -2488,8 +2742,7 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
  *      not get started by curious XWorkplace users.
  *
  *      Then, we access the XWPGLOBALSHARED structure which
- *      has been allocated by initMain
- *      (filesys\kernel.c).
+ *      has been allocated by initMain (shared\init.c).
  *
  *      We then create our object window (fnwpDaemonObject),
  *      to which the hook will post messages.

@@ -273,7 +273,7 @@ APIRET LoadACLDatabase(PULONG pulLineWithError);
 TREE        *G_treeACLDB;
     // balanced binary tree of currently loaded ACLs;
     // contains ACLDBENTRYNODE's
-ULONG       G_cACLDBEntries = 0;
+LONG        G_cACLDBEntries = 0;
 HMTX        G_hmtxACLs = NULLHANDLE;
     // mutex semaphore protecting global data
 
@@ -302,12 +302,12 @@ APIRET saclInit(VOID)
         if (arc == NO_ERROR)
         {
             ULONG   ulLineWithError;
-            treeInit(&G_treeACLDB);
+            treeInit(&G_treeACLDB, &G_cACLDBEntries);
             arc = LoadACLDatabase(&ulLineWithError);
         }
     }
     else
-        arc = XWPSEC_NO_AUTHORITY;
+        arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
     return (arc);
 }
@@ -559,13 +559,13 @@ APIRET CreateACLDBEntry(ULONG ulType,
                               ulType);
 
         treeInsert(&G_treeACLDB,
+                   &G_cACLDBEntries,
                    (TREE*)pNewEntry,
                    fnCompareStrings);
-        G_cACLDBEntries++;
 
-        _Pmpf(("LoadACLDatabase: got entry \"%s\" -> 0x%lX",
+        /* _Pmpf(("LoadACLDatabase: got entry \"%s\" -> 0x%lX",
                 pNewEntry->pszName,
-                pNewEntry->ulUnixAccessRights));
+                pNewEntry->ulUnixAccessRights)); */
     }
 
     return (arc);
@@ -778,7 +778,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
         PACLDBENTRYNODE pACLEntry = NULL;       // default: not found
 
         PSZ pszDir2 = strdup(pcszResource);
-        nlsUpper(pszDir2);
+        nlsUpper(pszDir2, 0);
 
         _Pmpf(("Authorizing %s", pszDir2));
 
@@ -789,15 +789,13 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
         {
             PSZ p;
             // find matching ACL entry
-            pACLEntry = FindACLDBEntry(pszDir2);
-            if (pACLEntry)
+            if (pACLEntry = FindACLDBEntry(pszDir2))
                 // item found:
                 break;
 
             // no ACL entry found:
             // try parent directory
-            p = strrchr(pszDir2, '\\');
-            if (!p)
+            if (!(p = strrchr(pszDir2, '\\')))
                 // we've reached root:
                 // that means ACL's don't even
                 // exist for the root directory,
@@ -828,8 +826,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
 
             // get subject info for user
             SubjectInfo.hSubject = pContext->hsubjUser;
-            arc = subjQuerySubjectInfo(&SubjectInfo);
-            if (arc == NO_ERROR)
+            if (!(arc = subjQuerySubjectInfo(&SubjectInfo)))
             {
                 // now we know the user ID
                 if (pACLEntry->uid == SubjectInfo.id)

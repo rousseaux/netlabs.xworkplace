@@ -2281,9 +2281,9 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   "Selecting" menu items functions                               *
- *                                                                  *
+ *
+ *   "Selecting" menu items functions
+ *
  ********************************************************************/
 
 /*
@@ -2683,7 +2683,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *
  ********************************************************************/
 
-static CONTROLDEF
+static const CONTROLDEF
     FileMenusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
                             ID_XSDI_FILEMENUS_GROUP,

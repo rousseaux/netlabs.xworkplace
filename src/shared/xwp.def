@@ -24,7 +24,7 @@
 ;      SOM Emitter emitdef: 2.41
 
 LIBRARY xfldr INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.18#@ XWorkplace main module'
+Description '@#Ulrich M”ller:0.9.19#@ XWorkplace main module'
 PROTMODE
 DATA SINGLE SHARED LOADONCALL
 

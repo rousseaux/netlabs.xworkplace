@@ -5,7 +5,8 @@
  *      Netscape DDE interface. This code is much more
  *      messy than XWorkplace's. It's a rather quick hack
  *      done in about two days with DDE code stolen from
- *      various places.
+ *      various places, so don't expect this code to be
+ *      pretty.
  *
  *      Use the undocumented "-D" parameter on the command
  *      line to start NetscDDE in "debug" mode, which will
@@ -62,6 +63,7 @@ HWND            G_hwndDebug = NULLHANDLE,
 PFNWP           G_SysWndProc;
 
 // NLS Resource DLL
+CHAR            G_szNLSDLL[2*CCHMAXPATH];
 HMODULE         G_hmodNLS = NULLHANDLE;
 
 CHAR            G_szURL[400] = "";
@@ -70,8 +72,11 @@ ULONG           G_idTimer = 0;
 
 CONVCONTEXT     G_context;
 
+const char      DEFAULT_BROWSER[] = "NETSCAPE.EXE";
+const char      NETSCDDE_TITLE[] = "Netscape DDE";
+
 CHAR            G_szDDENetscape[] = "NETSCAPE",   // DDE server name
-                G_szNetscapeApp[CCHMAXPATH] = "NETSCAPE.EXE",     // default program to start
+                G_szNetscapeApp[CCHMAXPATH] = "", // default program to start
                                                         // if not running
                 G_szNetscapeParams[CCHMAXPATH] = "",  // space for params
 
@@ -93,6 +98,59 @@ BOOL            G_NetscapeFound = FALSE;
 
 // status window handle
 HWND            G_hwndContacting = NULLHANDLE;
+
+VOID GetNLSString(PSZ pszBuf,
+                  ULONG cbBuf,
+                  ULONG id)
+{
+    if (!WinLoadString(G_hab,
+                       G_hmodNLS,
+                       id,
+                       cbBuf,
+                       pszBuf))
+        sprintf(pszBuf,
+                "Cannot load string resource %d from \"%s\"",
+                id,
+                G_szNLSDLL);
+}
+
+/*
+ *@@ strhistr:
+ *      like strstr, but case-insensitive.
+ *
+ *@@changed V0.9.0 [umoeller]: crashed if null pointers were passed, thanks Rdiger Ihle
+ */
+
+PSZ strhistr(PCSZ string1, PCSZ string2)
+{
+    PSZ prc = NULL;
+
+    if ((string1) && (string2))
+    {
+        PSZ pszSrchIn = strdup(string1);
+        PSZ pszSrchFor = strdup(string2);
+
+        if ((pszSrchIn) && (pszSrchFor))
+        {
+            strupr(pszSrchIn);
+            strupr(pszSrchFor);
+
+            if (prc = strstr(pszSrchIn, pszSrchFor))
+            {
+                // prc now has the first occurence of the string,
+                // but in pszSrchIn; we need to map this
+                // return value to the original string
+                prc = (prc-pszSrchIn) // offset in pszSrchIn
+                      + (PSZ)string1;
+            }
+        }
+        if (pszSrchFor)
+            free(pszSrchFor);
+        if (pszSrchIn)
+            free(pszSrchIn);
+    }
+    return (prc);
+}
 
 /*
  * ShowMessage:
@@ -119,11 +177,17 @@ void ShowMessage(PCSZ pcszFormat, ...)
  *@@added V0.9.16 (2001-10-02) [umoeller]
  */
 
-VOID DisplayError(PCSZ pcsz)
+VOID DisplayError(PCSZ pcszFormat, ...)
 {
+    CHAR szbuf[1000];
+    va_list     args;
+    va_start(args, pcszFormat);
+    vsprintf(szbuf, pcszFormat, args);
+    va_end(args);
+
     WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                  (PSZ)pcsz,
-                  "Netscape DDE",
+                  szbuf,
+                  (PSZ)NETSCDDE_TITLE,
                   0,
                   MB_CANCEL | MB_MOVEABLE);
     if (G_hwndDebug)
@@ -191,15 +255,12 @@ ULONG WinCenteredDlgBox(HWND hwndParent,
 
 VOID ExplainParams(VOID)
 {
-    /* WinCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
-                      WinDefDlgProc,
-                      G_hmodNLS,
-                      ID_NDD_EXPLAIN,
-                      NULL); */
+    BOOL f = FALSE;
+    CHAR szMsg[256];
+    GetNLSString(szMsg, sizeof(szMsg), ID_NDSI_SYNTAX);
     if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                      "The syntax for the NetscDDE command line is incorrect."
-                      "Would you like to view the NetscDDE online help?",
-                      "NetscDDE",
+                      szMsg,
+                      (PSZ)NETSCDDE_TITLE,
                       0, MB_YESNO | MB_MOVEABLE)
             == MBID_YES)
     {
@@ -209,14 +270,16 @@ VOID ExplainParams(VOID)
                                    SHMEM_XWPGLOBAL,
                                    PAG_READ | PAG_WRITE)))
         {
-            WinPostMsg(pXwpGlobalShared->hwndAPIObject,
-                       APIM_SHOWHELPPANEL,
-                       (MPARAM)ID_XSH_NETSCAPEDDE,
-                       0);
+            f = WinPostMsg(pXwpGlobalShared->hwndAPIObject,
+                           APIM_SHOWHELPPANEL,
+                           (MPARAM)ID_XSH_NETSCAPEDDE,
+                           0);
             DosFreeMem(pXwpGlobalShared);
         }
-        else
-            DisplayError("Cannot open the NetscDDE online help. Maybe XWorkplace is not installed and running.");
+
+        if (!f)
+            DisplayError("Cannot open the %s online help. Maybe XWorkplace is not installed or not running.",
+                         NETSCDDE_TITLE);
     }
 }
 
@@ -229,14 +292,15 @@ VOID ExplainParams(VOID)
 
 BOOL LoadNLS(VOID)
 {
-    CHAR        szNLSDLL[2*CCHMAXPATH];
     BOOL Proceed = TRUE;
 
     if (PrfQueryProfileString(HINI_USER,
                               "XWorkplace",
                               "XFolderPath",
                               "",
-                              szNLSDLL, sizeof(szNLSDLL)) < 3)
+                              G_szNLSDLL,
+                              sizeof(G_szNLSDLL))
+                   < 3)
 
     {
         DisplayError("NetscapeDDE was unable to determine the location of the "
@@ -256,27 +320,22 @@ BOOL LoadNLS(VOID)
                               "001",
                               (PVOID)szLanguageCode,
                               sizeof(szLanguageCode));
-        strcat(szNLSDLL, "\\bin\\xfldr");
-        strcat(szNLSDLL, szLanguageCode);
-        strcat(szNLSDLL, ".dll");
+        strcat(G_szNLSDLL, "\\bin\\xfldr");
+        strcat(G_szNLSDLL, szLanguageCode);
+        strcat(G_szNLSDLL, ".dll");
 
         // try to load the module
         if (DosLoadModule(NULL,
                           0,
-                          szNLSDLL,
+                          G_szNLSDLL,
                           &G_hmodNLS))
         {
-            CHAR    szMessage[2000];
-            sprintf(szMessage,
-                    "NetscapeDDE was unable to load \"%s\", "
-                    "the National Language DLL which "
-                    "is specified for XWorkplace in OS2.INI.",
-                    szNLSDLL);
-            DisplayError(szMessage);
+            DisplayError("NetscapeDDE was unable to load \"%s\", "
+                         "the National Language DLL which "
+                         "is specified for XWorkplace in OS2.INI.",
+                         G_szNLSDLL);
             Proceed = FALSE;
         }
-
-        _Pmpf(("Loaded %s --> hmodNLS 0x%lX", szNLSDLL, G_hmodNLS));
     }
 
     return (Proceed);
@@ -287,6 +346,7 @@ BOOL LoadNLS(VOID)
  *      program entry point; accepts URLs on the command line.
  *
  *@@changed V0.9.1 (2000-02-07) [umoeller]: added "-q" option
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: now using WPUrl default browser settings
  */
 
 int main(int argc,
@@ -306,6 +366,29 @@ int main(int argc,
     // now attempt to find the XWorkplace NLS resource DLL,
     // which we need for all resources (new with XWP 0.9.0)
     Proceed = LoadNLS();
+
+    // load browser path from USER_INI
+    // V0.9.19 (2002-03-28) [umoeller]
+    if (PrfQueryProfileString(HINI_USERPROFILE,
+                              "WPURLDEFAULTSETTINGS", "DefaultBrowserExe",
+                              (PSZ)DEFAULT_BROWSER,
+                              G_szNetscapeApp,
+                              sizeof(G_szNetscapeApp)))
+    {
+        // make sure this is not NETSCDDE.EXE, or we'll have
+        // plenty of problems restarting ourselves infinitely
+        // V0.9.19 (2002-04-02) [umoeller]
+        if (strhistr(G_szNetscapeApp, "netscdde.exe"))
+            strcpy(G_szNetscapeApp, DEFAULT_BROWSER);
+    }
+
+    // load browser startup dir from USER_INI
+    // V0.9.19 (2002-03-28) [umoeller]
+    PrfQueryProfileString(HINI_USERPROFILE,
+                          "WPURLDEFAULTSETTINGS", "DefaultWorkingDir",
+                          "",
+                          G_szStartupDir,
+                          sizeof(G_szStartupDir));
 
     if (Proceed)
     {
@@ -463,7 +546,7 @@ int main(int argc,
             // create the frame
             G_hwndDebug = WinCreateWindow(HWND_DESKTOP,
                                           WC_FRAME,
-                                          "Netscape DDE",
+                                          (PSZ)NETSCDDE_TITLE,
                                           0, 0, 0, 0, 0,
                                           NULLHANDLE,
                                           HWND_TOP,
@@ -652,6 +735,8 @@ BOOL DDERequest(HWND hwndClient,
  *      the corresponding messages will be posted automatically.
  *
  *@@changed V0.9.4 (2000-07-10) [umoeller]: added DDE conflicts fix by Rousseau de Pantalon
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: Opera fix
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: replaced ugly message box
  */
 
 MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -692,8 +777,11 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
             // If the app is not Netscape then the handle is nullified.
             // I don't know if assigning 0 to the handle is correct but
             // is seems to solve the problem.
-            if (!strcmp(pddeInit->pszAppName,
-                        G_szDDENetscape))     // V0.9.16 (2001-10-02) [umoeller]
+
+            // V0.9.19 (2002-03-28) [umoeller]
+            // Opera fix: use stricmp instead of strcmp
+            if (!stricmp(pddeInit->pszAppName,
+                         G_szDDENetscape))     // V0.9.16 (2001-10-02) [umoeller]
             {
                 // ShowMessage("!! Netscape answered.");
                 G_hServerWnd = (HWND)mp1;
@@ -828,28 +916,31 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                          && (G_optExecute)
                        )
                     {
+                        CHAR szStart[256];
+                        GetNLSString(szStart, sizeof(szStart), ID_NDSI_STARTNETSCAPE);
+
                         // confirm start netscape
                         if (    (!G_optConfirmStart)
-                             || (WinCenteredDlgBox(HWND_DESKTOP,
+                             // get rid of this hideously ugly dialog
+                             || (WinMessageBox(HWND_DESKTOP,
+                                               HWND_DESKTOP,
+                                               szStart,
+                                               (PSZ)NETSCDDE_TITLE,
+                                               0,
+                                               MB_YESNO | MB_MOVEABLE)
+                                       == MBID_YES)
+                                               /* WinCenteredDlgBox(HWND_DESKTOP,
                                                    G_hwndDebug,
                                                    WinDefDlgProc,
                                                    G_hmodNLS,
                                                    ID_NDD_QUERYSTART,
                                                    NULL)
-                                      == DID_OK)
+                                      == DID_OK) */
                            )
                         {
-                            /* STARTDATA       SData =
-                            {0};
-                            APIRET          rc = 0;
-                            PID             pid = 0;    // PID returned
-
-                            ULONG           ulSessID = 0;   // session ID returned
-                               */
                             UCHAR           achObjBuf[256] = "";
 
                             CHAR            szArgs[CCHMAXPATH];
-                            CHAR            szMsg[1000];     // message
 
                             HWND            hwndNotify = HWND_DESKTOP;
                             PROGDETAILS     pd;
@@ -887,12 +978,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                                                      NULL,
                                                      SAF_INSTALLEDCMDLINE)))
                             {
-                                sprintf(szMsg,
-                                        "WinStartApp failed for app \"%s\", params \"%s\", startup dir \"%s\"",
-                                        G_szNetscapeApp,
-                                        szArgs,
-                                        G_szStartupDir);
-                                DisplayError(szMsg);
+                                DisplayError("WinStartApp failed for app \"%s\", params \"%s\", startup dir \"%s\"",
+                                             G_szNetscapeApp,
+                                             szArgs,
+                                             G_szStartupDir);
                             }
                         }
                     }

@@ -243,6 +243,7 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
+#include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "config\hookintf.h"            // daemon/hook interface
 
@@ -1511,7 +1512,7 @@ typedef struct _XFOBJWINDATA
     WPObject        *somSelf;
     CHAR            szOldID[CCHMAXPATH];
     HWND            hwndCnr;
-    CHAR            szOldObjectID[256];
+    XSTRING         strOldObjectID;         // V0.9.19 (2002-04-02) [umoeller]
     BOOL            fEscPressed;
     PRECORDCORE     preccExpanded;
 } XFOBJWINDATA, *PXFOBJWINDATA;
@@ -1522,6 +1523,7 @@ typedef struct _XFOBJWINDATA
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed crash if "No" was selected on object ID change confirmation
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: now handling WM_TEXTEDIT for keyboard support
  */
 
 static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1622,7 +1624,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                         {
                             PCNREDITDATA pced = (PCNREDITDATA)mp2;
                             PSZ pszChanging = *(pced->ppszText);
-                            strcpy(pWinData->szOldObjectID, pszChanging);
+                            xstrcpy(&pWinData->strOldObjectID, pszChanging, 0);
                             pWinData->fEscPressed = FALSE;
                             mrc = (MPARAM)TRUE;
                         }
@@ -1640,7 +1642,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                 PSZ pszNew = *(pced->ppszText);
                                 BOOL fChange = FALSE;
                                 // has the object ID changed?
-                                if (strcmp(pWinData->szOldObjectID, pszNew) != 0)
+                                if (strhcmp(pWinData->strOldObjectID.psz, pszNew) != 0)
                                 {
                                     // is this a valid object ID?
                                     if (    (pszNew[0] != '<')
@@ -1659,7 +1661,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                     {
                                         // change aborted: restore old recc text
                                         strcpy(((POBJECTUSAGERECORD)(pced->pRecord))->szText,
-                                                pWinData->szOldObjectID);
+                                                pWinData->strOldObjectID.psz);
                                         WinSendMsg(pWinData->hwndCnr,
                                                    CM_INVALIDATERECORD,
                                                    (MPARAM)&pced->pRecord,
@@ -1695,6 +1697,11 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
         }
         break;  // WM_CONTROL
 
+        case WM_TEXTEDIT:
+            // V0.9.19 (2002-04-02) [umoeller]
+            cnrhOpenEdit(pWinData->hwndCnr);
+        break;
+
         case WM_HELP:
             // always display help for the whole page, not for single items
             cmnDisplayHelp(pWinData->somSelf,
@@ -1708,7 +1715,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
     return (mrc);
 }
 
-static CONTROLDEF
+static const CONTROLDEF
     DetailsGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_DETAILS_GROUP,
@@ -1780,61 +1787,69 @@ VOID objShowObjectDetails(HWND hwndOwner,
 
     HPOINTER hptrOld = winhSetWaitPointer();
 
-    cmnLoadDialogStrings(dlgObjDetails,
-                         ARRAYITEMCOUNT(dlgObjDetails));
+    PDLGHITEM paNew;
 
-    if (!dlghCreateDlg(&hwndDlg,
-                       hwndOwner,
-                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
-                       fnwpObjectDetails,
-                       cmnGetString(ID_XSDI_DETAILS_DIALOG),
-                       dlgObjDetails,
-                       ARRAYITEMCOUNT(dlgObjDetails),
-                       NULL,
-                       cmnQueryDefaultFont()))
+    if (!cmnLoadDialogStrings(dlgObjDetails,
+                              ARRAYITEMCOUNT(dlgObjDetails),
+                              &paNew))
     {
-        PXFOBJWINDATA pWinData = NEW(XFOBJWINDATA);
-        ZERO(pWinData);
-        pWinData->somSelf = pobj;
-        pWinData->hwndCnr = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_CONTAINER);
-        WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
-
-        TRY_LOUD(excpt1)
+        if (!dlghCreateDlg(&hwndDlg,
+                           hwndOwner,
+                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           fnwpObjectDetails,
+                           cmnGetString(ID_XSDI_DETAILS_DIALOG),
+                           paNew,
+                           ARRAYITEMCOUNT(dlgObjDetails),
+                           NULL,
+                           cmnQueryDefaultFont()))
         {
-            PSZ pszSetupString;
-            ULONG ulLength;
+            PXFOBJWINDATA pWinData = NEW(XFOBJWINDATA);
+            ZERO(pWinData);
+            xstrInit(&pWinData->strOldObjectID, 0);
+            pWinData->somSelf = pobj;
+            pWinData->hwndCnr = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_CONTAINER);
+            WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
 
-            winhCenterWindow(hwndDlg);
-
-            BEGIN_CNRINFO()
+            TRY_LOUD(excpt1)
             {
-                cnrhSetView(CV_TREE | CV_TEXT | CA_TREELINE);
-                cnrhSetTreeIndent(30);
-                cnrhSetSortFunc(fnCompareName);
-            } END_CNRINFO(pWinData->hwndCnr);
+                PSZ pszSetupString;
+                ULONG ulLength;
 
-            FillCnrWithObjectUsage(pWinData->hwndCnr,
-                                   pobj);
+                winhCenterWindow(hwndDlg);
 
-            if (    (pszSetupString = _xwpQuerySetup(pobj, &ulLength))
-                 && (ulLength)
-               )
-            {
-                HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_SETUPSTR_EF);
-                winhSetEntryFieldLimit(hwndEF, ulLength + 1);
-                WinSetWindowText(hwndEF, pszSetupString);
-                _xwpFreeSetupBuffer(pobj, pszSetupString);
+                BEGIN_CNRINFO()
+                {
+                    cnrhSetView(CV_TREE | CV_TEXT | CA_TREELINE);
+                    cnrhSetTreeIndent(30);
+                    cnrhSetSortFunc(fnCompareName);
+                } END_CNRINFO(pWinData->hwndCnr);
+
+                FillCnrWithObjectUsage(pWinData->hwndCnr,
+                                       pobj);
+
+                if (    (pszSetupString = _xwpQuerySetup(pobj, &ulLength))
+                     && (ulLength)
+                   )
+                {
+                    HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_SETUPSTR_EF);
+                    winhSetEntryFieldLimit(hwndEF, ulLength + 1);
+                    WinSetWindowText(hwndEF, pszSetupString);
+                    _xwpFreeSetupBuffer(pobj, pszSetupString);
+                }
+
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+                hptrOld = NULLHANDLE;
+
+                WinProcessDlg(hwndDlg);
             }
+            CATCH(excpt1) {} END_CATCH();
 
-            WinSetPointer(HWND_DESKTOP, hptrOld);
-            hptrOld = NULLHANDLE;
-
-            WinProcessDlg(hwndDlg);
+            WinDestroyWindow(hwndDlg);
+            xstrClear(&pWinData->strOldObjectID);
+            free(pWinData);
         }
-        CATCH(excpt1) {} END_CATCH();
 
-        WinDestroyWindow(hwndDlg);
-        free(pWinData);
+        free(paNew);
     }
 
     if (hptrOld)
@@ -1846,6 +1861,92 @@ VOID objShowObjectDetails(HWND hwndOwner,
  *   Object creation/destruction
  *
  ********************************************************************/
+
+/*
+ *@@ objReady:
+ *      implementation for XFldObject::wpObjectReady.
+ *
+ *      Since apparently the dumbass IBM WPFolder::wpObjectReady
+ *      does not call its parent, I have isolated this implementation
+ *      into this function, which gets called from both
+ *      XFldObject::wpObjectReady and XFoldser::wpObjectReady.
+ *      We do check whether this has been called before though
+ *      since maybe this WPS bug is not present with all
+ *      implementations.
+ *
+ *      Preconditions: Call the parent method first. (As if that
+ *      helped, since even IBM can't read their own docs.)
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ */
+
+VOID objReady(WPObject *somSelf,
+              ULONG ulCode,
+              WPObject* refObject)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
+    // avoid doing this twice
+    if (!(_flFlags & OBJFL_INITIALIZED))
+    {
+        #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
+            _Pmpf(("xo_wpObjectReady for %s (class %s), ulCode: %s",
+                    _wpQueryTitle(somSelf),
+                    _somGetName(_somGetClass(somSelf)),
+                    (ulCode == OR_AWAKE) ? "OR_AWAKE"
+                    : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
+                    : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
+                    : (ulCode == OR_NEW) ? "OR_NEW"
+                    : (ulCode == OR_SHADOW) ? "OR_SHADOW"
+                    : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
+                    : "unknown code"
+                 ));
+         #endif
+
+        _flFlags |= OBJFL_INITIALIZED;
+
+        if (ulCode & OR_REFERENCE)
+        {
+            _ulListNotify = 0;
+                // V0.9.7 (2000-12-18) [umoeller]
+
+            _pvllWidgetNotifies = NULL;
+
+            #ifdef DEBUG_ICONREPLACEMENTS
+                _Pmpf((__FUNCTION__ ": object \"%s\" created from source \"%s\"",
+                        _wpQueryTitle(somSelf),
+                        _wpQueryTitle(refObject)));
+
+                _Pmpf(("  source hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                        _wpQueryCoreRecord(refObject)->hptrIcon,
+                        _wpQueryStyle(refObject) & OBJSTYLE_NOTDEFAULTICON));
+                _Pmpf(("  new hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                        _wpQueryCoreRecord(somSelf)->hptrIcon,
+                        _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
+            #endif
+        }
+
+        // on my Warp 4 FP 10, this method does not get
+        // called for WPFolder instances, so we override
+        // WPFolder::wpObjectReady also; but we don't know
+        // if this is so with all Warp versions, so we
+        // better check (the worker thread checks for
+        // duplicates, so there's no problem in posting
+        // this twice)
+        // V0.9.19 (2002-04-02) [umoeller] still the case
+        // for eComStation 1.0, but this now gets called
+        // explicitly, so kick out the check
+        // if (!(_flFlags & OBJFL_WPFOLDER))
+        xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
+                          (MPARAM)somSelf,
+                          MPNULL);
+
+        // if this is a template, don't let the WPS make
+        // it go dormant
+        if (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
+            _wpLockObject(somSelf);
+    }
+}
 
 /*
  *@@ objRefreshUseItems:
@@ -1863,7 +1964,8 @@ VOID objShowObjectDetails(HWND hwndOwner,
 VOID objRefreshUseItems(WPObject *somSelf,
                         PSZ pszNewTitleCopy)
 {
-    PUSEITEM    pUseItem = NULL;
+    PUSEITEM    pUseItem;
+
     for (pUseItem = _wpFindUseItem(somSelf, USAGE_RECORD, NULL);
          pUseItem;
          pUseItem = _wpFindUseItem(somSelf, USAGE_RECORD, pUseItem))
@@ -1936,6 +2038,7 @@ VOID objRefreshUseItems(WPObject *somSelf,
     // abstract's title must be stored to OS2.INI
     if (_somIsA(somSelf, _WPAbstract))
         _wpSaveDeferred(somSelf);
+
 }
 
 /* ******************************************************************

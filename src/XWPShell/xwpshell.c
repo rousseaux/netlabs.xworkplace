@@ -339,10 +339,14 @@
 #include "xwpshell.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
+
+typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
+
+WINHSWITCHFROMHAPP *G_WinHSWITCHfromHAPP = NULL;
 
 HWND        G_hwndShellObject = NULLHANDLE;
     // object window for communication
@@ -357,10 +361,13 @@ PSZ         G_pszEnvironment = NULL;
 FILE        *G_LogFile = NULL;
 
 HFILE       G_hfSec32DD = NULLHANDLE;
+BOOL        G_fAccessControl = FALSE;       // TRUE if ring-3 daemon is running
+                                            // and access control is enabled
+                                            // V0.9.19 (2002-04-02) [umoeller]
 
 THREADINFO  G_tiRing3Daemon = {0};
 ULONG       G_tidRing3DaemonRunning = FALSE;
-HEV         G_hevCallback = NULLHANDLE;
+// HEV         G_hevCallback = NULLHANDLE;
 
 PXWPSHELLSHARED G_pXWPShellShared = 0;
 
@@ -368,9 +375,9 @@ HQUEUE      G_hqXWPShell = 0;
 THREADINFO  G_tiQueueThread = {0};
 
 /* ******************************************************************
- *                                                                  *
- *   Helpers                                                        *
- *                                                                  *
+ *
+ *   Helpers
+ *
  ********************************************************************/
 
 /*
@@ -457,27 +464,40 @@ static MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
  *      changes the current user profile using
  *      PrfReset.
  *
- *      Returns a new environment strings buffer
- *      (for use with WinStartApp) or NULL on errors.
+ *      Returns:
+ *
+ *      --  NO_ERROR: profile was successfully changed;
+ *          in that case, *ppszEnvironment has been
+ *          set to an environment strings buffer for
+ *          use with WinStartApp. This must be freed
+ *          by the caller.
+ *
+ *      --  XWPSEC_NO_USER_PROFILE: OS2.INI doesn't
+ *          exist in the new user's home directory.
+ *
+ *      plus the error codes from appGetEnvironment;
  *
  *@@added V0.9.4 (2000-07-19) [umoeller]
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: changed prototype to return APIRET
  */
 
-PSZ SetNewUserProfile(HAB hab,
-                      PCXWPLOGGEDON pNewUser)
+APIRET SetNewUserProfile(HAB hab,                   // in: XWPSHELL anchor block
+                         PCXWPLOGGEDON pNewUser,    // in: new user to set profile for
+                         PSZ *ppszEnvironment)      // out: new environment
 {
+    APIRET arc = NO_ERROR;
     PSZ pEnv2 = NULL;
     DOSENVIRONMENT Env;
-    if (appGetEnvironment(&Env)
-            == NO_ERROR)
+
+    if (!(arc = appGetEnvironment(&Env)))
     {
         ULONG cbEnv2 = 0;
 
         CHAR    szNewProfile[CCHMAXPATH];
 
         CHAR    szHomeBase[CCHMAXPATH];
-        PSZ     pszHomeBase = getenv("XWPHOME");
-        if (!pszHomeBase)
+        PSZ     pszHomeBase;
+        if (!(pszHomeBase = getenv("XWPHOME")))
         {
             // XWPHOME not specified:
             sprintf(szHomeBase, "%c:\\home", doshQueryBootDrive());
@@ -495,52 +515,69 @@ PSZ SetNewUserProfile(HAB hab,
                     pszHomeBase,
                     pNewUser->szUserName);
 
-        if (access(szNewProfile, 0) == 0)
+        if (access(szNewProfile, 0) != 0)
+            // OS2.INI doesn't exist:
+            arc = XWPSEC_NO_USER_PROFILE;
+        else
         {
-            // user profile exists:
-            // call PrfReset
-            if (prfhSetUserProfile(hab,
-                                   szNewProfile))
+            do      // for break
             {
                 CHAR    szNewVar[1000];
                 PSZ     p;
                 sprintf(szNewVar, "USER_INI=%s", szNewProfile);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set HOME var to home directory,
                 // with Unix slashes
                 sprintf(szNewVar, "HOME=%s/%s", pszHomeBase, pNewUser->szUserName);
                 while (p = strchr(szNewVar, '\\'))
                     *p = '/';
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set USER var to user name
                 sprintf(szNewVar, "USER=%s", pNewUser->szUserName);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set USERID var to user name
                 sprintf(szNewVar, "USERID=%d", pNewUser->uid);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set USERSUBJECT var to user subject handle
                 sprintf(szNewVar, "USERSUBJECT=%d", pNewUser->hsubjUser);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set GROUP var to group name
                 sprintf(szNewVar, "GROUP=%s", pNewUser->szGroupName);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set GROUPID var to user name
                 sprintf(szNewVar, "GROUPID=%d", pNewUser->gid);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
                 // set GROUPSUBJECT var to group subject handle
                 sprintf(szNewVar, "GROUPSUBJECT=%d", pNewUser->hsubjGroup);
-                appSetEnvironmentVar(&Env, szNewVar, FALSE);
+                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
+                    break;
 
-                appConvertEnvironment(&Env, &pEnv2, &cbEnv2);
+                if (arc = appConvertEnvironment(&Env, &pEnv2, &cbEnv2))
                     // pEnv != NULL now, which is returned
-                    // == NO_ERROR!
+                    break;
+
+            } while (FALSE);
+
+            if (!arc)
+            {
+                // user profile exists:
+                // call PrfReset
+                arc = prfhSetUserProfile(hab,
+                                         szNewProfile);
             }
         } // end if (access(szNewProfile, 0) == 0)
 
@@ -548,7 +585,13 @@ PSZ SetNewUserProfile(HAB hab,
 
     } // end if (doshGetEnvironment(&Env)
 
-    return (pEnv2);
+    if (!arc)
+        *ppszEnvironment = pEnv2;
+    else
+        if (pEnv2)
+            free(pEnv2);
+
+    return (arc);
 }
 
 /*
@@ -559,35 +602,64 @@ PSZ SetNewUserProfile(HAB hab,
 APIRET StartUserShell(VOID)
 {
     APIRET arc = NO_ERROR;
-    PROGDETAILS pd;
 
-    PSZ pszShell = getenv("XWPSHELL");
-
-    if (pszShell == NULL)
-        pszShell = "PMSHELL.EXE";
-
-    memset(&pd, 0, sizeof(pd));
-    pd.Length = sizeof(PROGDETAILS);
-    pd.progt.progc = PROG_DEFAULT;
-    pd.progt.fbVisible = SHE_VISIBLE;
-    pd.pszTitle = "Workplace Shell";
-    pd.pszExecutable = pszShell;
-    pd.pszParameters = 0;
-    pd.pszStartupDir = 0;
-    pd.pszEnvironment = G_pszEnvironment;
-                // new environment with new USER_INI
-    pd.swpInitial.fl = SWP_ACTIVATE | SWP_ZORDER | SWP_SHOW;
-    pd.swpInitial.hwndInsertBehind = HWND_TOP;
-    G_happWPS = WinStartApp(G_hwndShellObject,
-                            &pd,
-                            NULL,
-                            NULL,
-                            SAF_INSTALLEDCMDLINE | SAF_STARTCHILDAPP);
-    if (!G_happWPS)
+    XWPLOGGEDON loLocal;
+    if (!(arc = slogQueryLocalUser(&loLocal)))
     {
-        Error("WinStartApp returned FALSE for starting %s",
-                pszShell);
-        arc = XWPSEC_CANNOT_START_SHELL;
+        PROGDETAILS pd;
+
+        PSZ pszShell = getenv("XWPSHELL");
+
+        if (pszShell == NULL)
+            pszShell = "PMSHELL.EXE";
+
+        memset(&pd, 0, sizeof(pd));
+        pd.Length = sizeof(PROGDETAILS);
+        pd.progt.progc = PROG_DEFAULT;
+        pd.progt.fbVisible = SHE_VISIBLE;
+        pd.pszTitle = "Workplace Shell";
+        pd.pszExecutable = pszShell;
+        pd.pszParameters = 0;
+        pd.pszStartupDir = 0;
+        pd.pszEnvironment = G_pszEnvironment;
+                    // new environment with new USER_INI
+        pd.swpInitial.fl = SWP_ACTIVATE | SWP_ZORDER | SWP_SHOW;
+        pd.swpInitial.hwndInsertBehind = HWND_TOP;
+
+        if (!(G_happWPS = WinStartApp(G_hwndShellObject,
+                                      &pd,
+                                      NULL,
+                                      NULL,
+                                      SAF_INSTALLEDCMDLINE | SAF_STARTCHILDAPP)))
+        {
+            Error("WinStartApp returned FALSE for starting %s",
+                    pszShell);
+            arc = XWPSEC_CANNOT_START_SHELL;
+        }
+        else
+        {
+            // in case ring-0 support is not running,
+            // create security context for the shell
+            // (otherwise it will be refreshed)
+            HSWITCH hsw;
+            if (!(hsw = G_WinHSWITCHfromHAPP(G_happWPS)))
+            {
+                _Pmpf((__FUNCTION__ ": Cannot find HSWITCH for happ 0x%lX", G_happWPS));
+            }
+            else
+            {
+                SWCNTRL swc;
+                if (!WinQuerySwitchEntry(hsw, &swc))
+                {
+                    arc = scxtCreateSecurityContext(swc.idProcess,
+                                                    loLocal.hsubjUser,
+                                                    loLocal.hsubjGroup);
+                    _Pmpf((__FUNCTION__ ": scxtCreateSecurityContext returned %d", arc));
+                }
+                else
+                    _Pmpf((__FUNCTION__ ": WinQuerySwitchEntry for shell failed"));
+            }
+        }
     }
 
     return (arc);
@@ -617,7 +689,7 @@ APIRET LocalLogon(VOID)
     memset(&uiLogon, 0, sizeof(XWPUSERDBENTRY));
     memset(&LoggedOnUser, 0, sizeof(XWPLOGGEDON));
 
-    _Pmpf(("Entering LocalLogon"));
+    _Pmpf((__FUNCTION__ ": entering"));
 
     if (WinDlgBox(HWND_DESKTOP,
                   NULLHANDLE,      // owner
@@ -629,12 +701,16 @@ APIRET LocalLogon(VOID)
         arc = XWPSEC_NOT_AUTHENTICATED;
     else
     {
-        // debug... remove this! @@todo
+#ifdef __DEBUG__
+        // in debug builds, allow exit
         if (strcmp(uiLogon.szUserName, "exit") == 0)
             // exit:
             WinPostMsg(G_hwndShellObject, WM_QUIT, 0, 0);
         else
+#endif
         {
+            HPOINTER hptrOld = winhSetWaitPointer();
+
             strcpy(LoggedOnUser.szUserName, uiLogon.szUserName);
             arc = slogLogOn(&LoggedOnUser,
                             uiLogon.szPassword,
@@ -659,11 +735,13 @@ APIRET LocalLogon(VOID)
                 // user logged on, authenticated,
                 // subject handles created,
                 // registered with logged-on users:
-                G_pszEnvironment = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
-                                                     &LoggedOnUser);
-                if (!G_pszEnvironment)
+                G_pszEnvironment = NULL;
+
+                if (arc = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
+                                            &LoggedOnUser,
+                                            &G_pszEnvironment))
                 {
-                    Error("SetNewUserProfile returned NULL.", arc);
+                    Error("SetNewUserProfile returned %d.", arc);
                     arc = XWPSEC_INVALID_PROFILE;
                 }
                 else
@@ -679,8 +757,11 @@ APIRET LocalLogon(VOID)
 
             } // end if Logon()
 
+            WinSetPointer(HWND_DESKTOP, hptrOld);
         }
     }
+
+    _Pmpf((__FUNCTION__ ": leaving, returning %d", arc));
 
     return (arc);
 }
@@ -752,8 +833,8 @@ APIRET CreateBaseSecurityContexts(VOID)
         {
             if (pProcess->usPID)
                 arc = scxtCreateSecurityContext(pProcess->usPID,
-                                                0,      // unauthorized
-                                                0);     // unauthorized
+                                                -1,      // pre-running
+                                                -1);     // pre-running
             if (arc != NO_ERROR)
                 break;
         }
@@ -827,8 +908,8 @@ APIRET CleanupSecurityContexts(VOID)
 
 #define SecIOCtl(hfDriver, ulFunctionCode, pvData, cbDataMax, pcbData) \
     DosDevIOCtl((hfDriver), IOCTL_XWPSEC, (ulFunctionCode), \
-                        NULL, 0, NULL, \
-                        (pvData), (cbDataMax), (pcbData))
+                NULL, 0, NULL, \
+                (pvData), (cbDataMax), (pcbData))
 
 typedef APIRET (FNAUTHORIZE) (PXWPSECURITYCONTEXT pContext,
                               PSECIOSHARED pSecIOShared,
@@ -974,18 +1055,24 @@ APIRET AuthorizeOpenPre(PXWPSECURITYCONTEXT pContext,
 
     APIRET  arcAuthorized = NO_ERROR;
 
+    _Pmpf(("SECEVENT_OPEN_PRE %s",
+            pOpenPre->szFileName));
+
     // skip devices (we get calls for "\DEV\MOUSE$" and such too)
     if (    (pOpenPre->szFileName[0] != '\\')
          && (pOpenPre->szFileName[1] == ':')
        )
     {
-        ULONG ulRequiredForDrive = 0,
+        if (    (pOpenPre->szFileName[0] == 'N')
+             && (pOpenPre->szFileName[1] == ':')
+           )
+            arcAuthorized = ERROR_ACCESS_DENIED;
+
+        /* ULONG ulRequiredForDrive = 0,
               ulRequiredForDir = 0,
               ulRequiredForFile = 0;
 
                          CHAR    szTemp[1000] = "";
-                         _Pmpf(("SECEVENT_OPEN_PRE %s",
-                                 pOpenPre->szFileName));
 
                          if (pOpenPre->fsOpenFlags & OPEN_ACTION_FAIL_IF_NEW)
                              strcat(szTemp, "OPEN_ACTION_FAIL_IF_NEW ");
@@ -1091,7 +1178,7 @@ APIRET AuthorizeOpenPre(PXWPSECURITYCONTEXT pContext,
                                                      ulRequiredForFile);
                 }
             }
-        }
+        } */
     }
 
     pSecIOShared->arc = arcAuthorized;
@@ -1415,9 +1502,9 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
         Context.ulPID = pSecIOShared->ulCallerPID;
         arc = scxtFindSecurityContext(&Context);
 
-        if (arc != NO_ERROR)
-            _Pmpf(("   scxtFindSecurityContext returned %d.", arc));
-        else
+        _Pmpf(("   scxtFindSecurityContext returned %d.", arc));
+
+        if (!arc)
         {
             if (Context.hsubjUser != 0)
             {
@@ -1462,76 +1549,49 @@ void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
 {
     APIRET  arc = NO_ERROR;
 
-    // XWPSEC32.SYS file handle opened by main()
-    HFILE   hfSec32DD = (HFILE)ptiMyself->ulData;
-
     // allocate memory for communication with ring-0 driver;
     // we use a buffer of SECIOSHARED, which we pass down
     // to the driver in the SECIOREGISTER struct with IoCtl
 
     PSECIOSHARED pSecIOShared = 0;
 
+    DosSetPriority(PRTYS_THREAD,
+                   4,
+                   +31,
+                   0);          // current thread
+
     // THIS MEMORY MUST BE ON A PAGE BOUNDARY, SO USE DOSALLOCMEM
     arc = DosAllocMem((PVOID*)&pSecIOShared,
                       sizeof(SECIOSHARED),
                       PAG_COMMIT | PAG_READ | PAG_WRITE);
     if (arc != NO_ERROR)
-        Error("fntRing3Daemon: DosAllocMem returned %d.", arc);
+        Error(__FUNCTION__ ": DosAllocMem returned %d.", arc);
     else
     {
         // register this daemon with ring-0 driver (XWPSEC32.SYS);
-        // XWPSECIO_REGISTER IOCtl expects a SECIOREGISTER structure
-        SECIOREGISTER   SecIORegister = {0};
-        ULONG   cbDataLen = sizeof(SecIORegister);
+        ULONG cbDataLen = sizeof(SECIOSHARED);
 
-        // store HEV so driver can post it
-        SecIORegister.hevCallback = G_hevCallback;
-
-        // store memory buffer so driver can lock it
-        SecIORegister.pSecIOShared = pSecIOShared;
-
-        // pass SECIOREGISTER
-        arc = SecIOCtl(hfSec32DD,
-                       XWPSECIO_REGISTER,
-                       &SecIORegister,       // in      address of command data
-                       sizeof(SecIORegister), // in      maximum size of command data
-                       &cbDataLen);        // in out  size of command data returned
-        if (arc != NO_ERROR)
-            Error("fntRing3Daemon: DosDevIOCtl XWPSECIO_REGISTER returned %d.", arc);
-        else
+        // pass SECIOSHARED;
+        // this call blocks until we have something to do!
+        if (!(arc = SecIOCtl(G_hfSec32DD,
+                             XWPSECIO_REGISTER,
+                             pSecIOShared,          // in      address of command data
+                             sizeof(SECIOSHARED),   // in      maximum size of command data
+                             &cbDataLen)))          // in out  size of command data returned
         {
-            // OK, daemon successfully registered:
-
-            // ACCESS CONTROL IS NOW ENABLED!!!
-            // ANY RESOURCE ACCESS ON ANY THREAD IN THE SYSTEM
-            // IS NOW BLOCKED UNTIL THIS THREAD HAS AUTHORIZED IT!!!
-
-            // now loop and wait for ring-0 requests...
-
-            while ((!ptiMyself->fExit) && (arc == NO_ERROR))
+            // this returned: then the buffer is already
+            // filled with an authorization request
+            while ((!ptiMyself->fExit) && (!arc))
             {
-                // wait for event semaphore
-                arc = DosWaitEventSem(G_hevCallback, SEM_INDEFINITE_WAIT);
-                // posted if
-                // -- ring-0 DD got something for us
-                // -- process is exiting (in that case, ptiMyself->fExit is TRUE)
+                // process request
+                // at this point, all requests in XWPSEC32.SYS are BLOCKED
+                // until we return a return code!
 
-                SecIORegister.pSecIOShared->arc = NO_ERROR;
+                pSecIOShared->arc = NO_ERROR;
 
-                if ((arc == NO_ERROR) && (!ptiMyself->fExit))
-                {
-                    // command waiting:
-                    // at this point, all requests in XWPSEC32.SYS are BLOCKED
-                    // until we return a return code!
-
-                    ULONG ulPostCount;
-                    arc = DosResetEventSem(G_hevCallback, &ulPostCount);
-
-                    arc = ProcessRing0Event(SecIORegister.pSecIOShared);
-                    if (arc != NO_ERROR)
-                        // stop:
-                        ptiMyself->fExit = TRUE;
-                }
+                if (arc = ProcessRing0Event(pSecIOShared))
+                    // error:
+                    break;
 
                 // ProcessRing0Event has put the access control
                 // result into SECIOSHARED.arc;
@@ -1539,15 +1599,23 @@ void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
                 // checked... this will unblock the application
                 // thread that was waiting
 
-                arc = SecIOCtl(hfSec32DD,
-                               XWPSECIO_JOBDONE,
-                               NULL, 0, NULL);
-            } // while ((!ptiMyself->fExit) && (arc == NO_ERROR))
+                cbDataLen = sizeof(SECIOSHARED);
+                arc = SecIOCtl(G_hfSec32DD,
+                               XWPSECIO_AUTHORIZED_NEXT,
+                               pSecIOShared,
+                               sizeof(SECIOSHARED),
+                               &cbDataLen);
+            }
 
             // done: deregister daemon...
-            /* arc = */ SecIOCtl(hfSec32DD,
-                           XWPSECIO_DEREGISTER,
-                           NULL, 0, NULL);
+            SecIOCtl(G_hfSec32DD,
+                     XWPSECIO_DEREGISTER,
+                     NULL,
+                     0,
+                     NULL);
+
+            _Pmpf((__FUNCTION__ ": access control disabled."));
+
             if (arc != NO_ERROR)
                 Error("fntRing3Daemon: Error %d occured.", arc);
         }
@@ -1586,31 +1654,18 @@ APIRET InitDaemon(VOID)
     {
         // driver opened:
 
-        // create shared ring-3/ring-0 event semaphore;
-        // XWPSEC32.SYS posts this semaphore when there's a
-        // notification waiting. The semaphore must be created "shared",
-        // otherwise the driver cannot open it.
-        arc = DosCreateEventSem(NULL,               // unnamed
-                                &G_hevCallback,
-                                DC_SEM_SHARED,      // shared
-                                FALSE);             // not posted
-        if (arc != NO_ERROR)
-            Error("fntRing3Daemon: DosCreateEventSem failed.");
-        else
-            // start ring-3 daemon thread, which
-            // interfaces ring-0 driver...
-            if (!thrCreate(&G_tiRing3Daemon,
-                           fntRing3Daemon,
-                           &G_tidRing3DaemonRunning,
-                           "Ring3Daemon",
-                           THRF_WAIT,
-                           G_hfSec32DD))      // driver file handle
-            {
-                Error("Cannot create ring-3 daemon thread.");
-                arc = XWPSEC_CANNOT_START_DAEMON;
-                DosCloseEventSem(G_hevCallback);
-                G_hevCallback = NULLHANDLE;
-            }
+        // start ring-3 daemon thread, which
+        // interfaces ring-0 driver...
+        if (!thrCreate(&G_tiRing3Daemon,
+                       fntRing3Daemon,
+                       &G_tidRing3DaemonRunning,
+                       "Ring3Daemon",
+                       THRF_WAIT,
+                       G_hfSec32DD))      // driver file handle
+        {
+            Error("Cannot create ring-3 daemon thread.");
+            arc = XWPSEC_CANNOT_START_DAEMON;
+        }
 
         if (arc != NO_ERROR)
         {
@@ -1638,24 +1693,13 @@ VOID ShutdownDaemon(VOID)
     if (G_tidRing3DaemonRunning)
     {
         G_tiRing3Daemon.fExit = TRUE;
-        // post event semaphore so that thread
-        // gets a chance to run...
-        arc = DosPostEventSem(G_hevCallback);
-        if (arc != NO_ERROR)
-            Error("main: DosPostEventSem failed.");
-        else
-        {
-            ULONG ulPostCount = 0;
-            // must also reset it or it will post forever
-            DosResetEventSem(G_hevCallback, &ulPostCount);
-            thrWait(&G_tiRing3Daemon);
-        }
-    }
 
-    if (G_hevCallback)
-    {
-        DosCloseEventSem(G_hevCallback);
-        G_hevCallback = NULLHANDLE;
+        SecIOCtl(G_hfSec32DD,
+                 XWPSECIO_DEREGISTER,
+                 NULL,
+                 0,
+                 NULL);
+        thrWait(&G_tiRing3Daemon);
     }
 
     if (G_hfSec32DD)
@@ -1671,8 +1715,110 @@ VOID ShutdownDaemon(VOID)
  *
  ********************************************************************/
 
+APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
+                           ULONG pid)
+{
+    APIRET arc = NO_ERROR;
+
+    // prepare security context so we can check if the
+    // calling process has sufficient authority for
+    // processing this request
+    XWPSECURITYCONTEXT sc;
+    sc.ulPID = pid;
+
+    switch (pSharedQueueData->ulCommand)
+    {
+        case QUECMD_QUERYLOCALLOGGEDON:
+            // no authority needed for this
+            arc = slogQueryLocalUser(&pSharedQueueData->Data.QueryLocalLoggedOn);
+        break;
+
+        case QUECMD_QUERYUSERS:
+            if (    (!(arc = scxtFindSecurityContext(&sc)))
+                 && (!(arc = scxtVerifyAuthority(
+                                    &sc,
+                                    ACTION_QUERYUSERSGROUPS)))
+                 && (!(arc = sudbQueryUsers(
+                                    &pSharedQueueData->Data.QueryUsers.cUsers,
+                                    &pSharedQueueData->Data.QueryUsers.paUsers)))
+               )
+            {
+                // this has allocated a chunk of shared memory, so give
+                // this to the caller
+                arc = DosGiveSharedMem(
+                                    (PBYTE)pSharedQueueData->Data.QueryUsers.paUsers,
+                                    pid, // caller's PID
+                                    PAG_READ | PAG_WRITE);
+
+                // free this for us; usage count is 2 presently,
+                // so the chunk will be freed after the caller
+                // as issued DosFreeMem also
+                DosFreeMem((PBYTE)pSharedQueueData->Data.QueryUsers.paUsers);
+            }
+        break;
+
+        case QUECMD_QUERYGROUPS:
+            if (    (!(arc = scxtFindSecurityContext(&sc)))
+                 && (!(arc = scxtVerifyAuthority(
+                                    &sc,
+                                    ACTION_QUERYUSERSGROUPS)))
+                 && (!(arc = sudbQueryGroups(
+                                    &pSharedQueueData->Data.QueryGroups.cGroups,
+                                    &pSharedQueueData->Data.QueryGroups.paGroups)))
+               )
+            {
+                // this has allocated a chunk of shared memory, so give
+                // this to the caller
+                arc = DosGiveSharedMem(
+                                    (PBYTE)pSharedQueueData->Data.QueryGroups.paGroups,
+                                    pid, // caller's PID
+                                    PAG_READ | PAG_WRITE);
+
+                // free this for us; usage count is 2 presently,
+                // so the chunk will be freed after the caller
+                // as issued DosFreeMem also
+                DosFreeMem((PBYTE)pSharedQueueData->Data.QueryGroups.paGroups);
+            }
+        break;
+
+        case QUECMD_QUERYPROCESSOWNER:
+            // no authority needed for this
+            sc.ulPID = pSharedQueueData->Data.QueryProcessOwner.ulPID;
+            if (!(arc = scxtFindSecurityContext(&sc)))
+            {
+                if (sc.hsubjUser == -1)
+                    pSharedQueueData->Data.QueryProcessOwner.uid = -1;
+                else
+                {
+                    XWPSUBJECTINFO si;
+                    si.hSubject = sc.hsubjUser;
+                    if (!(arc = subjQuerySubjectInfo(&si)))
+                        pSharedQueueData->Data.QueryProcessOwner.uid = si.id;
+                }
+            }
+        break;
+
+        default:
+            // unknown code:
+            arc = XWPSEC_QUEUE_INVALID_CMD;
+        break;
+    }
+
+    return (arc);
+}
+
 /*
  *@@ fntQueueThread:
+ *      "queue" thread started by main() to process the
+ *      XWPShell command queue. This allows other processes
+ *      ("clients") to send commands to XWPShell.
+ *
+ *      The way this works is that a client allocates
+ *      an XWPSHELLQUEUEDATA struct as shared memory,
+ *      gives this to the XWPShell process, and writes
+ *      an entry into the queue. We then process the
+ *      command and post hevData when done to signal
+ *      to the caller that data is available.
  *
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
@@ -1687,6 +1833,7 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
         PULONG      pulDummyData;
         BYTE        bPriority;
 
+        // block on the queue until a command comes in
         if (!(arc = DosReadQueue(G_hqXWPShell,
                                  &rq,
                                  &ulDummySize,
@@ -1696,43 +1843,34 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
                                  &bPriority,            // priority
                                  NULLHANDLE)))           // event semaphore, ignored for DCWW_WAIT
         {
+            // got a command:
             PXWPSHELLQUEUEDATA  pSharedQueueData = (PXWPSHELLQUEUEDATA)(rq.ulData);
+            HEV hev = pSharedQueueData->hevData;
 
             _Pmpf((__FUNCTION__ ": got queue item, pSharedQueueData->ulCommand: %d",
                         pSharedQueueData->ulCommand));
 
-            TRY_LOUD(excpt1)
+            if (!DosOpenEventSem(NULL,
+                                 &hev))
             {
-                HEV hev = pSharedQueueData->hevData;
-
-                if (!DosOpenEventSem(NULL,
-                                     &hev))
+                TRY_LOUD(excpt1)
                 {
-                    switch (pSharedQueueData->ulCommand)
-                    {
-                        case QUECMD_LOCALLOGGEDON:
-                            pSharedQueueData->arc = slogQueryLocalUser(&pSharedQueueData->Data.LoggedOn);
-                        break;
+                    pSharedQueueData->arc = ProcessQueueCommand(pSharedQueueData,
+                                                                // caller's pid
+                                                                rq.pid);
 
-                        case QUECMD_PROCESSLOGGEDON:
-                        break;
-
-                        default:
-                            // unknown code:
-                            pSharedQueueData->arc = XWPSEC_QUEUE_INVALID_CMD;
-                        break;
-                    }
-
-                    DosPostEventSem(hev);
-                    DosCloseEventSem(hev);
+                    // free shared memory for this process... it was
+                    // given to us by the client, so we must lower
+                    // the resource count (client will still own it)
+                    DosFreeMem(pSharedQueueData);
                 }
+                CATCH(excpt1)
+                {
+                } END_CATCH();
 
-                // free shared memory for this process... it was
-                // given to us by the client, so we must lower
-                // the resource count (client will still own it)
-                DosFreeMem(pSharedQueueData);
+                DosPostEventSem(hev);
+                DosCloseEventSem(hev);
             }
-            CATCH(excpt1) {} END_CATCH();
         }
         else
             _Pmpf((__FUNCTION__ ": DosReadQueue returned %d", arc));
@@ -1838,8 +1976,11 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                         // log off the local user
                         // (this deletes the subject handles)
                         arc = slogLogOff(LoggedOnLocal.uid);
-                        free(G_pszEnvironment);
-                        G_pszEnvironment = NULL;
+                        if (G_pszEnvironment)
+                        {
+                            free(G_pszEnvironment);
+                            G_pszEnvironment = NULL;
+                        }
                     }
 
                     if (arc != NO_ERROR)
@@ -1899,6 +2040,10 @@ int main(int argc, char *argv[])
     HMQ         hmq;
     APIRET      arc;
 
+    CHAR szLog[100];
+    sprintf(szLog, "%c:\\xwpshell.log", doshQueryBootDrive());
+    G_LogFile = fopen(szLog, "a");
+
     _Pmpf(("Entering main."));
 
     if (!(hab = WinInitialize(0)))
@@ -1922,8 +2067,14 @@ int main(int argc, char *argv[])
         // sure we survive even shutdown
         WinCancelShutdown(hmq, TRUE);
 
+        // import WinHSWITCHfromHAPP
+        // WinHSWITCHfromHAPP PMMERGE.5199
+        if ((arc = doshQueryProcAddr("PMMERGE",
+                                     5199,
+                                     (PFN*)&G_WinHSWITCHfromHAPP)))
+            Error("doshQueryProcAddr returned %d resolving WinHSWITCHfromHAPP.", arc);
         // allocate XWPSHELLSHARED
-        if ((arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
+        else if ((arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
                                 SHMEM_XWPSHELL,
                                 sizeof(XWPSHELLSHARED),
                                 PAG_COMMIT | PAG_READ | PAG_WRITE)))
@@ -1950,9 +2101,7 @@ int main(int argc, char *argv[])
             irc = 2;
         else
         {
-            G_LogFile = fopen("E:\\xwpshell.log", "a");
-
-            G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
+            if (!(G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
                                                 WC_SHELL_OBJECT,
                                                 "XWPShellObject",
                                                 0,             // style
@@ -1961,20 +2110,19 @@ int main(int argc, char *argv[])
                                                 HWND_BOTTOM,
                                                 0,             // ID
                                                 NULL,
-                                                NULL);
-            if (!G_hwndShellObject)
+                                                NULL)))
                 irc = 3;
             else
             {
                 // OK:
                 QMSG qmsg;
 
-                arc = CreateBaseSecurityContexts();
-                if (arc != NO_ERROR)
-                    irc =3;
+                if (arc = CreateBaseSecurityContexts())
+                    irc = 4;
                 else
                 {
-                    // InitDaemon();
+                    InitDaemon();
+                            // might fail, but who cares
 
                     // create the queue thread
                     thrCreate(&G_tiQueueThread,
@@ -1998,14 +2146,14 @@ int main(int argc, char *argv[])
                     ShutdownDaemon();
                 }
             }
-
-            fclose(G_LogFile);
         }
     }
 
     // clean up on the way out
     WinDestroyMsgQueue(hmq);
     WinTerminate(hab);
+
+    fclose(G_LogFile);
 
     return (irc);
 }

@@ -98,17 +98,17 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *  Global variables                                                *
- *                                                                  *
+ *
+ *  Global variables
+ *
  ********************************************************************/
 
 static BOOL     G_fReplaceHandles = FALSE;
 
 /* ******************************************************************
- *                                                                  *
- *  XWPFileSystem instance methods                                  *
- *                                                                  *
+ *
+ *  XWPFileSystem instance methods
+ *
  ********************************************************************/
 
 /*
@@ -567,9 +567,9 @@ SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
 
 
 /* ******************************************************************
- *                                                                  *
- *  M_XWPFileSystem class methods                                   *
- *                                                                  *
+ *
+ *  M_XWPFileSystem class methods
+ *
  ********************************************************************/
 
 VOID cmnEnableTurboFolders(VOID);

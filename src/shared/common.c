@@ -103,9 +103,13 @@
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
+
+#include "expat\expat.h"                // XWPHelpers expat XML parser
+#include "helpers\xml.h"                // XWPHelpers XML engine
 
 // SOM headers which don't crash with prec. header files
 #include "xtrash.ih"                    // XWPTrashCan; needed for empty trash
@@ -116,6 +120,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #define INCLUDE_COMMON_PRIVATE
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\xsetup.h"              // XWPSetup implementation
@@ -126,6 +131,8 @@
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
+
+#include "security\xwpsecty.h"          // XWorkplace Security
 
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
@@ -496,8 +503,7 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             strcpy(G_szLanguageCode, pszLanguage);
             G_szLanguageCode[3] = 0;
@@ -536,8 +542,7 @@ PCSZ cmnQueryHelpLibrary(VOID)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             if (cmnQueryXWPBasePath(G_szHelpLibrary))
             {
@@ -715,6 +720,7 @@ PSZ cmnQueryBootLogoFile(VOID)
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
  *@@changed V0.9.7 (2000-12-09) [umoeller]: restructured to fix mutex hangs with load errors
  *@@changed V0.9.9 (2001-03-07) [umoeller]: now loading strings from array
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: msg file wasn't reloaded on NLS change, fixed
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
@@ -860,8 +866,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
             TRY_LOUD(excpt1)
             {
-                fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-                if (fLocked)
+                if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
                 {
                     G_hmodNLS = hmodLoaded;
                 }
@@ -869,7 +874,10 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             CATCH(excpt1) { } END_CATCH();
 
             if (fLocked)
+            {
                 krnUnlock();
+                fLocked = FALSE;
+            }
 
             // DosExitMustComplete(&ulNesting);
 
@@ -877,6 +885,24 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             // they will be dynamically re-loaded
             // with the new NLS module
             UnloadAllStrings();
+
+            // close TMF message file to force reload
+            // V0.9.19 (2002-04-02) [umoeller]
+            TRY_LOUD(excpt1)
+            {
+                if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+                {
+                    if (G_pXWPMsgFile)
+                        tmfCloseMessageFile(&G_pXWPMsgFile);
+                }
+            }
+            CATCH(excpt1) { } END_CATCH();
+
+            if (fLocked)
+            {
+                krnUnlock();
+                fLocked = FALSE;
+            }
 
             if (hmodOld)
                 // after all this, unload the old resource module
@@ -964,7 +990,9 @@ typedef const struct _XWPENTITY *PCXWPENTITY;
 
 static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
                 G_pcszBldDate = __DATE__,
-                G_pcszNewLine = "\n";
+                G_pcszNewLine = "\n",
+                G_pcszContactUser = CONTACT_ADDRESS_USER,
+                G_pcszContactDev = CONTACT_ADDRESS_DEVEL;
 
 static const XWPENTITY G_aEntities[] =
     {
@@ -976,7 +1004,9 @@ static const XWPENTITY G_aEntities[] =
         "&version;", &G_pcszBldlevel,
         "&date;", &G_pcszBldDate,
         "&pgr;", &ENTITY_PAGER,
-        "&nl;", &G_pcszNewLine
+        "&nl;", &G_pcszNewLine,
+        "&contact-user;", &G_pcszContactUser,
+        "&contact-dev;", &G_pcszContactDev,
     };
 
 /*
@@ -1294,7 +1324,7 @@ static VOID UnloadAllStrings(VOID)
 // are exported!
 // V0.9.16 (2001-10-08) [umoeller]
 
-CONTROLDEF
+const CONTROLDEF
     G_UndoButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING, // "~Undo",
                             DID_UNDO,
@@ -1318,17 +1348,32 @@ CONTROLDEF
 
 /*
  *@@ cmnLoadDialogStrings:
+ *      builds a copy of the given array of DLGHITEM
+ *      structs, including the variable CONTROLDEF
+ *      structs they point to, and loads NLS strings
+ *      for those CONTROLDEF's that have their
+ *      pcszText set to LOAD_STRING ((PCSZ)-1).
+ *
+ *      The caller should then used the newly created
+ *      array and free() that afterwards.
  *
  *      Used by ntbFormatPage.
  *
  *@@added V0.9.16 (2001-10-08) [umoeller]
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: now building copy to avoid blowups on NLS changes
  */
 
-VOID cmnLoadDialogStrings(PCDLGHITEM paDlgItems,      // in: definition array
-                          ULONG cDlgItems)           // in: array item count (NOT array size)
+APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
+                            ULONG cDlgItems,           // in: array item count (NOT array size)
+                            PDLGHITEM *ppaNew)         // out: new array with NLS strings replaced
 {
-    // load the strings
+    ULONG cControlDefs = 0;
+    PDLGHITEM paNew;
+    PCONTROLDEF pDefTargetThis;
+
+    // first check how much mem we need
     ULONG ul;
+    ULONG cb;
     for (ul = 0;
          ul < cDlgItems;
          ul++)
@@ -1342,9 +1387,51 @@ VOID cmnLoadDialogStrings(PCDLGHITEM paDlgItems,      // in: definition array
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
-            pDef->pcszText = cmnGetString(pDef->usID);
+            ++cControlDefs;
         }
     }
+
+    // now go allocate memory
+    cb =   cDlgItems * sizeof(DLGHITEM)
+         + cControlDefs * sizeof(CONTROLDEF);
+
+    if (!(paNew = malloc(cb)))
+        return ERROR_NOT_ENOUGH_MEMORY;
+
+    memset(paNew, 0, cb);
+
+    // first CONTROLDEF comes after DLGHITEMs array
+    pDefTargetThis = (PCONTROLDEF)(((PBYTE)paNew) + (cDlgItems * sizeof(DLGHITEM)));
+
+    for (ul = 0;
+         ul < cDlgItems;
+         ul++)
+    {
+        // copy DLGHITEM
+        PCDLGHITEM pThis = &paDlgItems[ul];
+        PCONTROLDEF pDef;
+        memcpy(&paNew[ul], pThis, sizeof(DLGHITEM));
+
+        if (    (    (pThis->Type == TYPE_CONTROL_DEF)
+                  || (pThis->Type == TYPE_START_NEW_TABLE)
+                )
+             && (pDef = (PCONTROLDEF)pThis->ulData)
+             && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
+           )
+        {
+            // then use a new CONTROLDEF as well
+            memcpy(pDefTargetThis, pDef, sizeof(CONTROLDEF));
+            pDefTargetThis->pcszText = cmnGetString(pDef->usID);
+            // and point DLGHITEM to this CONTROLDEF instead
+            paNew[ul].ulData = (ULONG)pDefTargetThis;
+            ++pDefTargetThis;
+        }
+    }
+
+    // output pointer
+    *ppaNew = paNew;
+
+    return (NO_ERROR);
 }
 
 /*
@@ -4381,12 +4468,13 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                         ULONG ulSound)      // in: sound intex to play
 {
     // advertise for myself
-    HPS     hps;
-    HBITMAP hbmLogo = NULLHANDLE;
-    HWND    hwndInfo;
-    XSTRING strInfo,
-            strInfoECS1,
-            strInfoECS2;
+    HPS         hps;
+    HBITMAP     hbmLogo = NULLHANDLE;
+    HWND        hwndInfo;
+    XSTRING     strInfo,
+                strInfoECS1,
+                strInfoECS2;
+    PDLGHITEM   paNew;
 
 #ifndef __NOXSYSTEMSOUNDS__
     cmnPlaySystemSound(ulSound);
@@ -4424,22 +4512,29 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
         WinReleasePS(hps);
     }
 
-    cmnLoadDialogStrings(dlgProductInfo,
-                         ARRAYITEMCOUNT(dlgProductInfo));
+    // reset string V0.9.19 (2002-04-02) [umoeller]
+    OKButton.pcszText = LOAD_STRING;
 
-    if (!dlghCreateDlg(&hwndInfo,
-                       hwndOwner,
-                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
-                       WinDefDlgProc,
-                       cmnGetString(ID_XSDI_INFO_TITLE),
-                       dlgProductInfo,
-                       ARRAYITEMCOUNT(dlgProductInfo),
-                       NULL,
-                       cmnQueryDefaultFont()))
+    if (!cmnLoadDialogStrings(dlgProductInfo,
+                              ARRAYITEMCOUNT(dlgProductInfo),
+                              &paNew))
     {
-        winhCenterWindow(hwndInfo);
-        WinProcessDlg(hwndInfo);
-        WinDestroyWindow(hwndInfo);
+        if (!dlghCreateDlg(&hwndInfo,
+                           hwndOwner,
+                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           WinDefDlgProc,
+                           cmnGetString(ID_XSDI_INFO_TITLE),
+                           paNew,
+                           ARRAYITEMCOUNT(dlgProductInfo),
+                           NULL,
+                           cmnQueryDefaultFont()))
+        {
+            winhCenterWindow(hwndInfo);
+            WinProcessDlg(hwndInfo);
+            WinDestroyWindow(hwndInfo);
+        }
+
+        free(paNew);
     }
 
     if (hbmLogo)
@@ -5749,15 +5844,392 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
 }
 
 /*
+ *@@ cmnDescribeError:
+ *      attempts to find an error description for the
+ *      various error codes used by OS/2, the XWorkplace
+ *      helpers, and XWorkplace itself.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be init'ed)
+                      APIRET arc,           // in: error code
+                      PSZ pszReplString,    // in: string for %1 message or NULL
+                      BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
+{
+    XSTRING str2;
+    xstrInit(&str2, 0);
+
+    #define IS_IN_RANGE(a, b, c) (((a) >= (b)) && ((a) <= (c)))
+
+    if (IS_IN_RANGE(arc, ERROR_XML_FIRST, ERROR_XML_LAST))
+    {
+        PCSZ pcsz;
+        if (pcsz = xmlDescribeError(arc))
+            xstrPrintf(pstr, "XML error %d: %s", arc, pcsz);
+        else
+            xstrPrintf(pstr, "Unknown XML error %d", arc);
+    }
+    else if (IS_IN_RANGE(arc, ERROR_WPH_FIRST, ERROR_WPH_LAST))
+    {
+        xstrPrintf(pstr, "Handles engine error %d", arc);
+    }
+    else if (IS_IN_RANGE(arc, ERROR_PRF_FIRST, ERROR_PRF_LAST))
+    {
+        xstrPrintf(pstr, "Profile engine error %d", arc);
+    }
+    else if (IS_IN_RANGE(arc, ERROR_DLG_FIRST, ERROR_DLG_LAST))
+    {
+        xstrPrintf(pstr, "Dialog engine error %d", arc);
+    }
+    else if (IS_IN_RANGE(arc, ERROR_XWP_FIRST, ERROR_XWP_LAST))
+    {
+        switch (arc)
+        {
+            case FOPSERR_NOT_HANDLED_ABORT:
+                xstrcpy(pstr, "Unhandled file operations error", 0);
+            break;
+
+            case FOPSERR_INVALID_OBJECT:
+                xstrcpy(pstr, "Invalid object in file operation", 0);
+            break;
+
+            case FOPSERR_NO_OBJECTS_FOUND:
+                xstrcpy(pstr, "No objects found for file operation", 0);
+            break;
+
+                    // no objects found to process
+            case FOPSERR_INTEGRITY_ABORT:
+                xstrcpy(pstr, "Data integrity error with file operation", 0);
+            break;
+
+            case FOPSERR_FILE_THREAD_CRASHED:
+                xstrcpy(pstr, "File thread crashed", 0);
+            break;
+
+                    // fopsFileThreadProcessing crashed
+            case FOPSERR_CANCELLEDBYUSER:
+                xstrcpy(pstr, "File operation cancelled by user", 0);
+            break;
+
+            case FOPSERR_NO_TRASHCAN:
+                xstrcpy(pstr, "Cannot find trash can", 0);
+            break;
+
+                    // trash can doesn't exist, cannot delete
+                    // V0.9.16 (2001-11-10) [umoeller]
+            /* case FOPSERR_MOVE2TRASH_READONLY:
+                xstrcpy(pstr, "Cannot move read-only file to trash can", 0);
+            break; */
+                    // moving WPFileSystem which has read-only:
+                    // this should prompt the user
+
+            case FOPSERR_MOVE2TRASH_NOT_DELETABLE:
+                xstrcpy(pstr, "Cannot move undeletable file to trash can", 0);
+            break;
+                    // moving non-deletable to trash can: this should abort
+
+            /* case FOPSERR_DELETE_CONFIRM_FOLDER:
+                xstrcpy(pstr, "FOPSERR_DELETE_CONFIRM_FOLDER", 0);
+            break; */
+                    // deleting WPFolder and "delete folder" confirmation is on:
+                    // this should prompt the user (non-fatal)
+                    // V0.9.16 (2001-12-06) [umoeller]
+
+            /* case FOPSERR_DELETE_READONLY:
+                xstrcpy(pstr, "FOPSERR_DELETE_READONLY", 0);
+            break; */
+                    // deleting WPFileSystem which has read-only flag;
+                    // this should prompt the user (non-fatal)
+
+            case FOPSERR_DELETE_NOT_DELETABLE:
+                xstrcpy(pstr, "File is not deletable", 0);
+            break;
+                    // deleting not-deletable; this should abort
+
+            case FOPSERR_TRASHDRIVENOTSUPPORTED:
+                xstrcpy(pstr, "Drive is not supported by trash can", 0);
+            break;
+
+            case FOPSERR_WPFREE_FAILED:
+                xstrcpy(pstr, "wpFree failed on file-system object", 0);
+            break;
+
+            case FOPSERR_LOCK_FAILED:
+                xstrcpy(pstr, "Cannot get file operations lock", 0);
+            break;
+                    // requesting object mutex failed
+
+            case FOPSERR_START_FAILED:
+                xstrcpy(pstr, "Cannot start file task", 0);
+            break;
+                    // fopsStartTask failed
+
+            case FOPSERR_POPULATE_FOLDERS_ONLY:
+                xstrcpy(pstr, "FOPSERR_POPULATE_FOLDERS_ONLY", 0);
+            break;
+                    // fopsAddObjectToTask works on folders only with XFT_POPULATE
+
+            case FOPSERR_POPULATE_FAILED:
+                xstrcpy(pstr, "Cannot populate folder", 0);
+            break;
+                    // wpPopulate failed on folder during XFT_POPULATE
+
+            case FOPSERR_WPQUERYFILENAME_FAILED:
+                xstrcpy(pstr, "wpQueryFilename failed", 0);
+            break;
+                    // wpQueryFilename failed
+
+            case FOPSERR_WPSETATTR_FAILED:
+                xstrcpy(pstr, "Unable to set new attributes for file", 0);
+            break;
+                    // wpSetAttr failed
+
+            case FOPSERR_GETNOTIFYSEM_FAILED:
+                xstrcpy(pstr, "Cannot get notify semaphore", 0);
+            break;
+                    // fdrGetNotifySem failed
+
+            case FOPSERR_REQUESTFOLDERMUTEX_FAILED:
+                xstrcpy(pstr, "Cannot get folder semaphore", 0);
+            break;
+                    // wpshRequestFolderSem failed
+
+            case FOPSERR_NOT_FONT_FILE:
+                xstrcpy(pstr, "FOPSERR_NOT_FONT_FILE", 0);
+            break;
+                    // with XFT_INSTALLFONTS: non-XWPFontFile passed
+
+            case FOPSERR_FONT_ALREADY_INSTALLED:
+                xstrcpy(pstr, "Font is already installed", 0);
+            break;
+                    // with XFT_INSTALLFONTS: XWPFontFile is already installed
+
+            case FOPSERR_NOT_FONT_OBJECT:
+                xstrcpy(pstr, "FOPSERR_NOT_FONT_OBJECT", 0);
+            break;
+                    // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
+
+            case FOPSERR_FONT_ALREADY_DELETED:
+                xstrcpy(pstr, "Font is no longer present in OS2.INI", 0);
+            break;
+                    // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
+
+            case FOPSERR_FONT_STILL_IN_USE:
+                xstrcpy(pstr, "Font is still in use", 0);
+            break;
+                    // with XFT_DEINSTALLFONTS: font is still in use;
+                    // this is only a warning, it will be gone after a reboot
+
+            case ERROR_XCENTER_FIRST:
+                xstrcpy(pstr, "ERROR_XCENTER_FIRST", 0);
+            break;
+
+            case XCERR_INVALID_ROOT_WIDGET_INDEX:
+                xstrcpy(pstr, "XCERR_INVALID_ROOT_WIDGET_INDEX", 0);
+            break;
+
+            case XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY:
+                xstrcpy(pstr, "XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY", 0);
+            break;
+
+            case XCERR_INVALID_TRAY_INDEX:
+                xstrcpy(pstr, "XCERR_INVALID_TRAY_INDEX", 0);
+            break;
+
+            case XCERR_INVALID_SUBWIDGET_INDEX:
+                xstrcpy(pstr, "XCERR_INVALID_SUBWIDGET_INDEX", 0);
+            break;
+
+            case BASEERR_BUILDPTR_FAILED:
+                xstrcpy(pstr, "BASEERR_BUILDPTR_FAILED", 0);
+            break;
+
+            case BASEERR_DAEMON_DEAD:
+                xstrcpy(pstr, "BASEERR_DAEMON_DEAD", 0);
+            break;
+
+            default:
+                xstrPrintf(pstr, "Unknown error", arc);
+        }
+
+        xstrPrintf(&str2, " (code %d)", arc);
+        xstrcats(pstr, &str2);
+    }
+    else if (IS_IN_RANGE(arc, ERROR_XWPSEC_FIRST, ERROR_XWPSEC_LAST))
+    {
+        switch (arc)
+        {
+            case XWPSEC_INTEGRITY:
+                xstrcpy(pstr, "Data integrity error", 0);
+            break;
+
+            case XWPSEC_INVALID_DATA:
+                xstrcpy(pstr, "Invalid data.", 0);
+            break;
+
+            case XWPSEC_CANNOT_GET_MUTEX:
+                xstrcpy(pstr, "Cannot get mutex.", 0);
+            break;
+
+            case XWPSEC_CANNOT_START_DAEMON:
+                xstrcpy(pstr, "Cannot start daemon.", 0);
+            break;
+
+            case XWPSEC_INSUFFICIENT_AUTHORITY:
+                xstrcpy(pstr, "Insufficient authority for processing this request.", 0);
+            break;
+
+            case XWPSEC_HSUBJECT_EXISTS:
+                xstrcpy(pstr, "Subject handle is already in use.", 0);
+            break;
+
+            case XWPSEC_INVALID_HSUBJECT:
+                xstrcpy(pstr, "Subject handle is invalid.", 0);
+            break;
+
+            case XWPSEC_INVALID_PID:
+                xstrcpy(pstr, "Invalid process ID.", 0);
+            break;
+
+            case XWPSEC_NO_CONTEXTS:
+                xstrcpy(pstr, "No contexts.", 0);
+            break;
+
+            case XWPSEC_USER_EXISTS:
+                xstrcpy(pstr, "User exists already.", 0);
+            break;
+
+            case XWPSEC_NO_USERS:
+                xstrcpy(pstr, "No users in user database.", 0);
+            break;
+
+            case XWPSEC_NO_GROUPS:
+                xstrcpy(pstr, "No groups in user database.", 0);
+            break;
+
+            case XWPSEC_INVALID_USERID:
+                xstrcpy(pstr, "Invalid user ID.", 0);
+            break;
+
+            case XWPSEC_INVALID_GROUPID:
+                xstrcpy(pstr, "Invalid group ID.", 0);
+            break;
+
+            case XWPSEC_NOT_AUTHENTICATED:
+                xstrcpy(pstr, "Authentication failed.", 0);
+            break;
+
+            case XWPSEC_NO_USER_PROFILE:
+                xstrcpy(pstr, "User profile (OS2.INI) could not be found.", 0);
+            break;
+
+            case XWPSEC_CANNOT_START_SHELL:
+                xstrcpy(pstr, "Cannot start shell.", 0);
+            break;
+
+            case XWPSEC_INVALID_PROFILE:
+                xstrcpy(pstr, "Invalid profile.", 0);
+            break;
+
+            case XWPSEC_NO_LOCAL_USER:
+                xstrcpy(pstr, "No local user.", 0);
+            break;
+
+            case XWPSEC_DB_GROUP_SYNTAX:
+                xstrcpy(pstr, "Syntax error with group entries in user database.", 0);
+            break;
+
+            case XWPSEC_DB_USER_SYNTAX:
+                xstrcpy(pstr, "Syntax error with user entries in user database.", 0);
+            break;
+
+            case XWPSEC_DB_INVALID_GROUPID:
+                xstrcpy(pstr, "Invalid group ID in user database.", 0);
+            break;
+
+            case XWPSEC_DB_ACL_SYNTAX:
+                xstrcpy(pstr, "Syntax error in ACL database.", 0);
+            break;
+
+            case XWPSEC_RING0_NOT_FOUND:
+                xstrcpy(pstr, "Error contacting ring-0 device driver.", 0);
+            break;
+
+            case XWPSEC_QUEUE_INVALID_CMD:
+                xstrcpy(pstr, "Invalid command code in security queue.", 0);
+            break;
+
+            default:
+                xstrPrintf(pstr, "Unknown error", arc);
+        }
+
+        xstrPrintf(&str2, " (code %d)", arc);
+        xstrcats(pstr, &str2);
+    }
+    else
+    {
+        // probably OS/2 error:
+        APIRET arc2;
+
+        // get error message for APIRET
+        PSZ     pszTable = (pszReplString) ? pszReplString : "?";
+
+        CHAR    szMsgBuf[1000];
+        ULONG   ulLen = 0;
+
+        if (!(arc2 = DosGetMessage(&pszTable, 1,
+                                   szMsgBuf, sizeof(szMsgBuf),
+                                   arc,
+                                   "OSO001.MSG",        // default OS/2 message file
+                                   &ulLen)))
+        {
+            szMsgBuf[ulLen] = 0;
+            xstrcpy(pstr, szMsgBuf, 0);
+
+            if (fShowExplanation)
+            {
+                // get help too
+                if (!(arc2 = DosGetMessage(&pszTable, 1,
+                                           szMsgBuf, sizeof(szMsgBuf),
+                                           arc,
+                                           "OSO001H.MSG",        // default OS/2 help message file
+                                           &ulLen)))
+                {
+                    szMsgBuf[ulLen] = 0;
+                    xstrcatc(pstr, '\n');
+                    xstrcat(pstr, szMsgBuf, 0);
+                }
+            }
+        }
+        else
+        {
+            // cannot find msg:
+            CHAR szError3[20];
+            PCSZ apsz = szError3;
+            sprintf(szError3, "%d", arc);
+            cmnGetMessage(&apsz,
+                          1,
+                          pstr,
+                          219);          // "error %d occured"
+        }
+    }
+
+    xstrClear(&str2);
+}
+
+/*
  *@@ cmnDosErrorMsgBox:
- *      displays a DOS error message.
- *      This calls cmnMessageBox in turn.
+ *      displays a message box with an error
+ *      description for the given error.
+ *      This calls cmnDescribeError and cmnMessageBox in turn.
  *
  *@@added V0.9.1 (2000-02-08) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
  *@@changed V0.9.13 (2001-06-14) [umoeller]: reduced stack consumption
  *@@changed V0.9.16 (2001-12-08) [umoeller]: added pcszPrefix/Suffix
  *@@changed V0.9.16 (2001-12-18) [umoeller]: fixed bad owner window
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: now using cmnDescribeError
  */
 
 ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
@@ -5770,15 +6242,12 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
                         BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
 {
     ULONG   mbrc = 0;
-    CHAR    szMsgBuf[1000];
-    XSTRING strError;
-    ULONG   ulLen = 0;
+    XSTRING strError,
+            str2;
     APIRET  arc2 = NO_ERROR;
 
-    // get error message for APIRET
-    PSZ     pszTable = (pszReplString) ? pszReplString : "?";
-
     xstrInit(&strError, 0);
+    xstrInit(&str2, 0);
 
     if (pcszPrefix)
     {
@@ -5786,41 +6255,8 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
         xstrcat(&strError, "\n\n", 0);
     }
 
-    if (!(arc2 = DosGetMessage(&pszTable, 1,
-                               szMsgBuf, sizeof(szMsgBuf),
-                               arc,
-                               "OSO001.MSG",        // default OS/2 message file
-                               &ulLen)))
-    {
-        szMsgBuf[ulLen] = 0;
-        xstrcat(&strError, szMsgBuf, 0);
-
-        if (fShowExplanation)
-        {
-            // get help too
-            if (!(arc2 = DosGetMessage(&pszTable, 1,
-                                       szMsgBuf, sizeof(szMsgBuf),
-                                       arc,
-                                       "OSO001H.MSG",        // default OS/2 help message file
-                                       &ulLen)))
-            {
-                szMsgBuf[ulLen] = 0;
-                xstrcatc(&strError, '\n');
-                xstrcat(&strError, szMsgBuf, 0);
-            }
-        }
-    }
-    else
-    {
-        // cannot find msg:
-        CHAR szError3[20];
-        PCSZ apsz = szError3;
-        sprintf(szError3, "%d", arc);
-        cmnGetMessage(&apsz,
-                      1,
-                      &strError,
-                      219);          // "error %d occured"
-    }
+    cmnDescribeError(&str2, arc, pszReplString, fShowExplanation);
+    xstrcats(&strError, &str2);
 
     if (pcszSuffix)
     {
@@ -5833,16 +6269,32 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
                          strError.psz,
                          ulFlags);
     xstrClear(&strError);
+    xstrClear(&str2);
 
     return (mbrc);
 }
 
 /*
  *@@ cmnProgramErrorMsgBox:
+ *      reports an error from a program startup and
+ *      prompts the user whether to open the settings
+ *      notebook instead.
  *
  *      Returns MBID_YES or MBID_NO.
  *
+ *      Special cases:
+ *
+ *      --  For BASEERR_DAEMON_DEAD, this instead prompts
+ *          the user whether to restart the daemon and
+ *          returns MBID_NO always.
+ *
+ *      --  For ERROR_INTERRUPT (which is returned from
+ *          a prompt dialog when "Cancel" is pressed),
+ *          this does nothing and returns MBID_NO.
+ *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: now offering to restart daemon
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: fixed error msg with ERROR_INTERRUPT
  */
 
 ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
@@ -5850,36 +6302,53 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
                             PSZ pszFailingName,     // in: failing module from progOpenProgram or NULL
                             APIRET arc)
 {
-    XSTRING strTitle,
-            strPrefix,
-            strSuffix;
-    PCSZ     psz = _wpQueryTitle(pProgram);
-    ULONG   ulrc;
+    ULONG   ulrc = MBID_NO;
 
-    xstrInit(&strTitle, 0);
-    xstrInit(&strPrefix, 0);
-    xstrInit(&strSuffix, 0);
+    switch (arc)
+    {
+        case ERROR_INTERRUPT:           // V0.9.19 (2002-03-28) [umoeller]
+        break;
 
-    cmnGetMessage(NULL, 0, &strTitle, 227);     // cannot start program
-    cmnGetMessage(&psz, 1, &strPrefix, 228);     // error starting %1
-    cmnGetMessage(NULL, 0, &strSuffix, 229);     // open settings?
+        case BASEERR_DAEMON_DEAD:     // V0.9.19 (2002-03-28) [umoeller]
+            if (cmnMessageBoxMsg(hwndOwner,
+                                 104,
+                                 232,       // cannot contact daemn, restart now?
+                                 MB_YESNO)
+                    == MBID_YES)
+            {
+                krnStartDaemon();
+            }
+        break;
 
-    ulrc = cmnDosErrorMsgBox(hwndOwner,
-                             pszFailingName,
-                             strTitle.psz,
-                             strPrefix.psz,
-                             arc,
-                             strSuffix.psz,
-                             MB_YESNO,
-                             TRUE);
-    /* cmnLog(__FILE__, __LINE__, __FUNCTION__,
-           "progOpenProgram returned %d for %s",
-           arc,
-           _wpQueryTitle(pAssocObject)); */
+        default:
+        {
+            XSTRING strTitle,
+                    strPrefix,
+                    strSuffix;
+            PCSZ     psz = _wpQueryTitle(pProgram);
 
-    xstrClear(&strTitle);
-    xstrClear(&strPrefix);
-    xstrClear(&strSuffix);
+            xstrInit(&strTitle, 0);
+            xstrInit(&strPrefix, 0);
+            xstrInit(&strSuffix, 0);
+
+            cmnGetMessage(NULL, 0, &strTitle, 227);     // cannot start program
+            cmnGetMessage(&psz, 1, &strPrefix, 228);     // error starting %1
+            cmnGetMessage(NULL, 0, &strSuffix, 229);     // open settings?
+
+            ulrc = cmnDosErrorMsgBox(hwndOwner,
+                                     pszFailingName,
+                                     strTitle.psz,
+                                     strPrefix.psz,
+                                     arc,
+                                     strSuffix.psz,
+                                     MB_YESNO,
+                                     TRUE);
+
+            xstrClear(&strTitle);
+            xstrClear(&strPrefix);
+            xstrClear(&strSuffix);
+        }
+    }
 
     return (ulrc);
 }
@@ -6085,13 +6554,13 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
            )
         {
             // get the directory that was used
-            PSZ p = strrchr(fd.szFullFile, '\\');
-            if (p)
+            PSZ p;
+            if (p = strrchr(fd.szFullFile, '\\'))
             {
                 // contains directory:
                 // copy to OS2.INI
-                PSZ pszDir = strhSubstr(fd.szFullFile, p);
-                if (pszDir)
+                PSZ pszDir;
+                if (pszDir = strhSubstr(fd.szFullFile, p))
                 {
                     PrfWriteProfileString(hini,
                                           (PSZ)pcszApplication,

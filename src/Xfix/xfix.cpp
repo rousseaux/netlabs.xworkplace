@@ -67,9 +67,9 @@
 #include "xfix.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 ULONG       G_ulrc = 0;         // return code from main()
@@ -3035,7 +3035,7 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
 VOID SelectByName(HWND hwndCnr)
 {
-    static CONTROLDEF
+    static const CONTROLDEF
                 Static = {
                             WC_STATIC,
                             "File mask:",

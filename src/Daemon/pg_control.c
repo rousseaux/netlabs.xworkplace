@@ -1820,7 +1820,7 @@ MRESULT EXPENTRY fnwpSubclXPagerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
         {
             PTRACKINFO  ptr;
             G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
-            ptr = (PTRACKINFO) PVOIDFROMMP(mp2);
+            ptr = (PTRACKINFO)PVOIDFROMMP(mp2);
             ptr->ptlMinTrackSize.x = 20;
             ptr->ptlMinTrackSize.y = 20;
 

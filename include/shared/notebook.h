@@ -30,9 +30,9 @@
     #define NOTEBOOK_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   Declarations                                                   *
-     *                                                                  *
+     *
+     *   Declarations
+     *
      ********************************************************************/
 
     // resize information for ID_XFD_CONTAINERPAGE, which is used
@@ -292,9 +292,9 @@
     } SUBCLNOTEBOOKLISTITEM, *PSUBCLNOTEBOOKLISTITEM;
 
     /********************************************************************
-     *                                                                  *
-     *   Prototypes                                                     *
-     *                                                                  *
+     *
+     *   Prototypes
+     *
      ********************************************************************/
 
     ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp);

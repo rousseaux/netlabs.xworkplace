@@ -157,9 +157,9 @@
 #include <wprootf.h>                    // WPRootFolder
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 extern WPFolder             *G_pConfigFolder = NULL;
@@ -176,9 +176,9 @@ extern OBJECTLIST           G_llQuickOpenFolders = {0};
                             // these two are exported in folder.h
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFolder instance methods                         *
- *                                                                  *
+ *
+ *   here come the XFolder instance methods
+ *
  ********************************************************************/
 
 /*
@@ -1277,6 +1277,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
 /*
  *@@ xwpAddXFolderPages:
  *      this adds the "XFolder" page into a folder settings notebook.
+ *
+ *@@changed V0.9.16 (2001-09-29): now using dialog formatter
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
@@ -1482,6 +1484,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed missing XFldObject initialization, which caused the missing refresh on rename
  */
 
 SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
@@ -1505,11 +1508,16 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
              ));
     #endif
 
+    // call the WPFolder parent method... HOWEVER, apparently WPFolder
+    // doesn't call its parent, that's why the init flags were never
+    // set; so call objReady explicitly afterwards
     XFolder_parent_WPFolder_wpObjectReady(somSelf, ulCode, refObject);
 
-    xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
+    /* xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
                       (MPARAM)somSelf,
-                      MPNULL);
+                      MPNULL); */ // handled by objReady now V0.9.19 (2002-04-02) [umoeller]
+
+    objReady(somSelf, ulCode, refObject);
 
     TRY_LOUD(excpt1)
     {
@@ -2597,6 +2605,8 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
  *
  *@@changed V0.9.2 (2000-03-04) [umoeller]: fixed work-area hangs
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
+ *@@changed V0.9.18 (2002-03-20) [umoeller]: added pre-populate support
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: moved pre-populate to XFldDesktop::wpOpen
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
@@ -2604,12 +2614,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                                   ULONG ulView,
                                   ULONG param)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
-
-    static      s_fDesktopOpened = FALSE;
-    BOOL        fIsDesktop = cmnIsADesktop(somSelf);
 
     // XFolderMethodDebug("XFolder","xf_wpOpen");
     #ifdef DEBUG_SOMMETHODS
@@ -2620,41 +2626,13 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                     param));
     #endif
 
-    if (    (!s_fDesktopOpened)
-         && (fIsDesktop)
-       )
-    {
-        // if this is the first desktop ever opened, it
-        // must be the default desktop...
-        // pre-populate to avoid hangs on startup
-        s_fDesktopOpened = TRUE;
-
-        if (cmnQuerySetting(sfPrePopulateDesktop))
-        {
-            WPObject *pobj;
-
-            HPOINTER hptrOld = winhSetWaitPointer();
-
-            fdrCheckIfPopulated(somSelf,
-                                FALSE);     // not folders only
-            for (pobj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
-                 pobj;
-                 pobj = *wpshGetNextObjPointer(pobj))
-            {
-                _wpQueryIcon(pobj);
-            }
-
-            WinSetPointer(HWND_DESKTOP, hptrOld);
-        }
-    }
-
 #ifndef __NOFDRDEFAULTDOCS__
     // default document support
     if (ulView == OPEN_DEFAULT)
     {
         if (    (cmnQuerySetting(sfFdrDefaultDoc))
              && (cmnQuerySetting(sfFdrDefaultDocView))
-             && (!fIsDesktop)
+             && (!cmnIsADesktop(somSelf))
            )
         {
             fOpenDefaultDoc = TRUE;
@@ -3648,9 +3626,9 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFolder class methods                            *
- *                                                                  *
+ *
+ *   here come the XFolder class methods
+ *
  ********************************************************************/
 
 /*

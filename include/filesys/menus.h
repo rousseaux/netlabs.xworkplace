@@ -40,18 +40,18 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Declarations                                                   *
-     *                                                                  *
+     *
+     *   Declarations
+     *
      ********************************************************************/
 
     #define CLIPBOARDKEY "%**C"        /* code in program object's parameter list for
                                           inserting clipboard data */
 
     /* ******************************************************************
-     *                                                                  *
-     *   Functions for manipulating context menus                       *
-     *                                                                  *
+     *
+     *   Functions for manipulating context menus
+     *
      ********************************************************************/
 
     VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,
@@ -109,9 +109,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Functions for reacting to menu selections                      *
-     *                                                                  *
+     *
+     *   Functions for reacting to menu selections
+     *
      ********************************************************************/
 
     BOOL mnuIsSortMenuItemSelected(WPFolder *somSelf,
@@ -129,9 +129,9 @@
     BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId);
 
     /* ******************************************************************
-     *                                                                  *
-     *   "Selecting" menu items functions                               *
-     *                                                                  *
+     *
+     *   "Selecting" menu items functions
+     *
      ********************************************************************/
 
     BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
@@ -151,9 +151,9 @@
                                     BOOL *pfDismiss);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Functions for folder content menu ownerdraw                    *
-     *                                                                  *
+     *
+     *   Functions for folder content menu ownerdraw
+     *
      ********************************************************************/
 
     VOID mnuPrepareOwnerDraw(SHORT sMenuIDMsg,
@@ -166,9 +166,9 @@
                      MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages       *
-     *                                                                  *
+     *
+     *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

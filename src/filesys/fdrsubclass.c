@@ -169,6 +169,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\contentmenus.h"        // shared menu logic
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -186,9 +187,9 @@
 // #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // flag for whether we have manipulated the "wpFolder window"
@@ -200,9 +201,9 @@ static CLASSINFO           G_WPFolderWinClassInfo;
 static ULONG               G_SFVOffset = 0;
 
 /* ******************************************************************
- *                                                                  *
- *   Send-message hook                                              *
- *                                                                  *
+ *
+ *   Send-message hook
+ *
  ********************************************************************/
 
 /*
@@ -284,9 +285,9 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Management of folder frame window subclassing                  *
- *                                                                  *
+ *
+ *   Management of folder frame window subclassing
+ *
  ********************************************************************/
 
 /*
@@ -560,9 +561,9 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 }
 
 /* ******************************************************************
- *                                                                  *
- *   New subclassed folder frame message processing                 *
- *                                                                  *
+ *
+ *   New subclassed folder frame message processing
+ *
  ********************************************************************/
 
 /*
@@ -1111,9 +1112,11 @@ static BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
  *@@changed V0.9.9 (2001-02-16) [umoeller]: added "shift-delete" support; thanks [pr]
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed broken true delete if trashcan is disabled
  */
 
-static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
+static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv,
+                          BOOL fTrueDelete)             // in: do true delete instead of trash?
 {
     ULONG       ulSelection = 0;
     WPObject    *pSelected = 0;
@@ -1138,10 +1141,7 @@ static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
                                              ulSelection,  // can only be SEL_SINGLESEL
                                                             // or SEL_MULTISEL
                                              psfv->hwndCnr,
-                                             doshQueryShiftState());
-                                                // do a true delete if shift is pressed;
-                                                // otherwise move to trash can
-                                                // V0.9.9 (2001-02-16) [umoeller]
+                                             fTrueDelete);  // V0.9.19 (2002-04-02) [umoeller]
         #ifdef DEBUG_TRASHCAN
             _Pmpf(("    got FOPSRET %d", frc));
         #endif
@@ -1156,6 +1156,7 @@ static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
  *      be swallowed.
  *
  *@@added V0.9.18 (2002-03-23) [umoeller]
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed broken true delete if trashcan is disabled
  */
 
 static BOOL WMChar(HWND hwndFrame,
@@ -1169,25 +1170,43 @@ static BOOL WMChar(HWND hwndFrame,
     if ((usFlags & KC_KEYUP) == 0)
     {
         XFolderData         *somThis = XFolderGetData(psfv->somSelf);
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
         USHORT usch       = SHORT1FROMMP(mp2);
         USHORT usvk       = SHORT2FROMMP(mp2);
 
-        // check whether "delete to trash can" is on
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-        if (cmnQuerySetting(sfTrashDelete))
-#endif
+        // intercept DEL key
+        if (    (usFlags & KC_VIRTUALKEY)
+             && (usvk == VK_DELETE)
+           )
         {
-            // yes: intercept "Del" key
-            if (usFlags & KC_VIRTUALKEY)
-                if (usvk == VK_DELETE)
-                {
-                    WMChar_Delete(psfv);
-                    // swallow this key,
-                    // do not process default winproc
-                    return (TRUE);
-                }
+            // check whether "delete to trash can" is on
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            if (cmnQuerySetting(sfTrashDelete))
+#endif
+            {
+                WMChar_Delete(psfv,
+                              doshQueryShiftState());
+                                                // do a true delete if shift is pressed;
+                                                // otherwise move to trash can
+
+                // swallow this key,
+                // do not process default winproc
+                return (TRUE);
+            }
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            // even if trash can is disabled, we can have true
+            // delete enabled, so check that one too
+            // V0.9.19 (2002-04-02) [umoeller]
+            else if (cmnQuerySetting(sfReplaceTrueDelete))
+            {
+                WMChar_Delete(psfv,
+                              TRUE);
+
+                // swallow this key,
+                // do not process default winproc
+                return (TRUE);
+            }
+#endif
         }
 
         // check whether folder hotkeys are allowed at all
@@ -1197,10 +1216,10 @@ static BOOL WMChar(HWND hwndFrame,
              &&
 #endif
                 // yes: check folder and global settings
-                (   (_bFolderHotkeysInstance == 1)
-                ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
-                     && (cmnQuerySetting(sfFolderHotkeysDefault))
-                    )
+                (    (_bFolderHotkeysInstance == 1)
+                  || (    (_bFolderHotkeysInstance == 2)   // use global settings:
+                       && (cmnQuerySetting(sfFolderHotkeysDefault))
+                     )
                 )
            )
         {

@@ -857,9 +857,9 @@ SOM_Scope BOOL  SOMLINK xctr_wpAddSettingsPages(XCenter *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XCenter class methods                                          *
- *                                                                  *
+ *
+ *   XCenter class methods
+ *
  ********************************************************************/
 
 /*

@@ -6,6 +6,7 @@
  *      the XCenter.
  *
  *@@include #include "helpers\linklist.h"
+ *@@include #include "shared\errors.h"
  *@@include #include "classes\xcenter.h"
  *@@include #include "config\center.h"
  *@@include #include "config\centerp.h"

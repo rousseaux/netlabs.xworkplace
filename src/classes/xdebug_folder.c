@@ -137,9 +137,9 @@ static BOOL    G_fDebugFolderInit = FALSE;
 #define ID_DOMI_DEBUGALL    WPMENUID_USER+2001
 
 /* ******************************************************************
- *                                                                  *
- *   here come the DbgFolder instance methods                     *
- *                                                                  *
+ *
+ *   here come the DbgFolder instance methods
+ *
  ********************************************************************/
 
 SOM_Scope void SOMLINK dfdr_somDefaultInit(DbgFolder *somSelf,
@@ -2266,9 +2266,9 @@ SOM_Scope BOOL  SOMLINK dfdr_wpSearchFolder(DbgFolder *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the DbgFolder class methods                        *
- *                                                                  *
+ *
+ *   here come the DbgFolder class methods
+ *
  ********************************************************************/
 
 SOM_Scope SOMObject*  SOMLINK dfdrM_somNew(M_DbgFolder *somSelf)

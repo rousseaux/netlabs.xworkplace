@@ -120,15 +120,15 @@ typedef struct _SUBJECTTREENODE
 } SUBJECTTREENODE, *PSUBJECTTREENODE;
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // subject infos
 TREE        *G_treeSubjects;
     // global linked list of currently active subjects
-ULONG       G_cSubjects = 0;
+LONG        G_cSubjects = 0;
     // subjects count
 ULONG       G_ulNextHSubject = 1;
     // next HSUBJECT to use (raised with each subject creation);
@@ -160,10 +160,10 @@ APIRET subjInit(VOID)
                                 0,          // unshared
                                 FALSE);     // unowned
         if (arc == NO_ERROR)
-            treeInit(&G_treeSubjects);
+            treeInit(&G_treeSubjects, &G_cSubjects);
     }
     else
-        arc = XWPSEC_NO_AUTHORITY;
+        arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
     return (arc);
 }
@@ -334,9 +334,9 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PSUBJECTTREENODE pExisting = FindSubjectInfoFromID(pSubjectInfo->bType,
-                                                           pSubjectInfo->id);
-        if (pExisting)
+        PSUBJECTTREENODE pExisting;
+        if (pExisting = FindSubjectInfoFromID(pSubjectInfo->bType,
+                                              pSubjectInfo->id))
         {
             // subject exists:
             if (pSubjectInfo->bType == SUBJ_USER)
@@ -377,6 +377,7 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
 
                 // append new item
                 if (treeInsert(&G_treeSubjects,
+                               &G_cSubjects,
                                (TREE*)pNewSubject,
                                treeCompareKeys))
                 {
@@ -385,8 +386,6 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
                 }
                 else
                 {
-                    G_cSubjects++;
-
                     // set up data:
 
                     // new subject handle
@@ -431,17 +430,17 @@ APIRET subjDeleteSubject(LHANDLE hSubject)
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PSUBJECTTREENODE psi = FindSubjectInfoFromHandle(hSubject);
-        if (!psi)
+        PSUBJECTTREENODE psi;
+        if (!(psi = FindSubjectInfoFromHandle(hSubject)))
             // not found:
             arc = XWPSEC_INVALID_HSUBJECT;
         else
             if (treeDelete(&G_treeSubjects,
+                           &G_cSubjects,
                            (TREE*)psi))
                 arc = XWPSEC_INTEGRITY;
             else
             {
-                G_cSubjects--;
                 free(psi);
             }
     }
@@ -474,8 +473,14 @@ APIRET subjQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo)   // in/out: subject i
     BOOL fLocked = (LockSubjects() == NO_ERROR);
     if (fLocked)
     {
-        PSUBJECTTREENODE p = FindSubjectInfoFromHandle(pSubjectInfo->hSubject);
-        if (p)
+        PSUBJECTTREENODE p;
+        LHANDLE hsubj = pSubjectInfo->hSubject;
+
+        // process was started before XWPShell: assume root for now
+        if (hsubj == -1)
+            hsubj = 0;
+
+        if (p = FindSubjectInfoFromHandle(hsubj))
         {
             memcpy(pSubjectInfo, &p->SubjectInfo, sizeof(XWPSUBJECTINFO));
             arc = NO_ERROR;

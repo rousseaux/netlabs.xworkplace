@@ -56,9 +56,9 @@
     #define CLASSES_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   "Classes to container" functions                               *
-     *                                                                  *
+     *
+     *   "Classes to container" functions
+     *
      ********************************************************************/
 
     /*
@@ -205,9 +205,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   "Select class" dialog                                          *
-     *                                                                  *
+     *
+     *   "Select class" dialog
+     *
      ********************************************************************/
 
     #ifdef LINKLIST_HEADER_INCLUDED
@@ -217,9 +217,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Method information functions                                   *
-     *                                                                  *
+     *
+     *   Method information functions
+     *
      ********************************************************************/
 
     #ifdef LINKLIST_HEADER_INCLUDED

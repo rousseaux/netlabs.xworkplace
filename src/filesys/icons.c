@@ -293,6 +293,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -346,7 +347,7 @@ typedef WINBUILDPTRHANDLE *PWINBUILDPTRHANDLE;
  *          the icon on an object via wpSetIcon, set the
  *          OBJSTYLE_NOTDEFAULTICON style on the object.
  *
- *      --  ICONERR_BUILDPTR_FAILED: WinBuildPtrHandle failed
+ *      --  BASEERR_BUILDPTR_FAILED: WinBuildPtrHandle failed
  *          for some unknown reason. Probably the data buffer
  *          is invalid.
  *
@@ -391,7 +392,7 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
 
         if (!arc)
             if (!(*phptr = WinBuildPtrHandle(pbData)))
-                arc = ICONERR_BUILDPTR_FAILED;
+                arc = BASEERR_BUILDPTR_FAILED;
     }
     CATCH(excpt1)
     {
@@ -2647,7 +2648,7 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
  *
  ********************************************************************/
 
-static CONTROLDEF
+static const CONTROLDEF
     /* TitleText = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_ICON_TITLE_TEXT,

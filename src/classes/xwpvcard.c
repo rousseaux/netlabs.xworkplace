@@ -148,7 +148,7 @@ static VOID SetEFText(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_SUMMARY_EMAIL_TEXT       32006
 #define ID_XSDI_VCARD_SUMMARY_EMAIL_EF         32007
 
-static CONTROLDEF
+static const CONTROLDEF
     TEXT_AND_ENTRYFIELD(SummaryName,
                         "~Name:",
                         ID_XSDI_VCARD_SUMMARY_NAME),
@@ -333,7 +333,7 @@ static VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_PERS_SUFFIX_TEXT           30011
 #define ID_XSDI_VCARD_PERS_SUFFIX_EF             30012
 
-static CONTROLDEF
+static const CONTROLDEF
     NameFieldsGroup = CONTROLDEF_GROUP(
                             "Name fields",
                             ID_XSDI_VCARD_PERS_NAMEFIELDS_GROUP,
@@ -460,7 +460,7 @@ static VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_PHONE_VIDEO           33016
 
 
-static CONTROLDEF
+static const CONTROLDEF
     PhoneLB = CONTROLDEF_LISTBOX(
                             ID_XSDI_VCARD_PHONE_LISTBOX,
                             60,
@@ -708,7 +708,7 @@ static MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
 #define ID_XSDI_VCARD_ADDR_COUNTRY_TEXT         31025
 #define ID_XSDI_VCARD_ADDR_COUNTRY_EF           31026
 
-static CONTROLDEF
+static const CONTROLDEF
     AddressFieldsGroup = CONTROLDEF_GROUP(
                             "Address fields",
                             ID_XSDI_VCARD_ADDR_NAMEFIELDS_GROUP,

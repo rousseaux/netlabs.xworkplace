@@ -40,9 +40,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Declarations                                                   *
-     *                                                                  *
+     *
+     *   Declarations
+     *
      ********************************************************************/
 
     #define CLIPBOARDKEY "%**C"        /* code in program object's parameter list for
@@ -95,9 +95,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Functions for reacting to menu selections                      *
-     *                                                                  *
+     *
+     *   Functions for reacting to menu selections
+     *
      ********************************************************************/
 
     VOID mnuCreateFromTemplate(WPObject *pTemplate,
@@ -108,9 +108,9 @@
     BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId);
 
     /* ******************************************************************
-     *                                                                  *
-     *   "Selecting" menu items functions                               *
-     *                                                                  *
+     *
+     *   "Selecting" menu items functions
+     *
      ********************************************************************/
 
     BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
@@ -130,9 +130,9 @@
                                     BOOL *pfDismiss);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages       *
-     *                                                                  *
+     *
+     *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

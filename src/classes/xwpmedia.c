@@ -111,9 +111,9 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 static THREADINFO   G_tiInsertDevices = {0},
@@ -121,9 +121,9 @@ static THREADINFO   G_tiInsertDevices = {0},
                     G_tiInsertIOProcs = {0};
 
 /* ******************************************************************
- *                                                                  *
- *   Shared helpers                                                 *
- *                                                                  *
+ *
+ *   Shared helpers
+ *
  ********************************************************************/
 
 /*
@@ -147,9 +147,9 @@ static THREADINFO   G_tiInsertDevices = {0},
 } */
 
 /* ******************************************************************
- *                                                                  *
- *   XWPMedia "Device" page notebook callbacks (notebook.c)         *
- *                                                                  *
+ *
+ *   XWPMedia "Device" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -360,9 +360,9 @@ VOID xwmmDevicesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPMedia "IOProcs" page notebook callbacks (notebook.c)        *
- *                                                                  *
+ *
+ *   XWPMedia "IOProcs" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -698,9 +698,9 @@ VOID xwmmIOProcsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPMedia "Codecs" page notebook callbacks (notebook.c)         *
- *                                                                  *
+ *
+ *   XWPMedia "Codecs" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -949,9 +949,9 @@ VOID xwmmCodecsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPMedia Instance Methods                                      *
- *                                                                  *
+ *
+ *   XWPMedia Instance Methods
+ *
  ********************************************************************/
 
 SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
@@ -1127,9 +1127,9 @@ SOM_Scope BOOL  SOMLINK xwmm_wpAddSettingsPages(XWPMedia *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPMedia Class Methods                                         *
- *                                                                  *
+ *
+ *   XWPMedia Class Methods
+ *
  ********************************************************************/
 
 /*

@@ -84,6 +84,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -616,7 +617,9 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
                 PSZ pszSourceRealName = (PSZ)pMapping->Tree.ulKey;
                 ULONG ulDriveOfs = pszSourceRealName[0] - 'C';
                         // 0 for C:, 1 for D:, ...
+                #ifdef DEBUG_TRASHCAN
                 _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
+                #endif
                 G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
                 // now clean up
@@ -655,7 +658,9 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
     {
         if (LOCK_OBJECT(Lock, pTrashCan))
         {
-            // _Pmpf((__FUNCTION__ ": Entering"));
+            #ifdef DEBUG_TRASHCAN
+            _Pmpf((__FUNCTION__ ": Entering"));
+            #endif
 
             if (G_fMappingsTreeInitialized)
             {
@@ -706,9 +711,11 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                                 "%c:\\trash\\" MAPPINGS_FILE,
                                 cDrive);
 
-                        /* _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
+                        #ifdef DEBUG_TRASHCAN
+                        _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
                                     cEntries,
-                                    strMappings.psz)); */
+                                    strMappings.psz));
+                        #endif
 
                         if (cEntries)
                             doshWriteTextFile(szMappingsFile,
@@ -1354,8 +1361,10 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                                               pObject);  // related object
                         (*pulObjectCount)++;
 
+                        #ifdef DEBUG_TRASHCAN
                         _Pmpf(("    *pulObjectCount is now %d",
                                (*pulObjectCount)));
+                        #endif
                     }
                 } // end for (   pObject = _wpQueryContent(...
             } // end if (fTrashDirSemOwned)

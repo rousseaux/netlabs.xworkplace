@@ -130,9 +130,10 @@
      *
      ********************************************************************/
 
+    #ifdef XSTRING_HEADER_INCLUDED
     APIRET ftypImportTypes(PCSZ pcszFilename,
-                           PSZ pszErrorBuf,
-                           ULONG cbErrorBuf);
+                           PXSTRING pstrError);
+    #endif
 
     APIRET ftypExportTypes(PCSZ pcszFileName);
 

@@ -63,12 +63,14 @@
    -    FN   for fonts,
    -    WP   for previously undocumented WPS ID's,
    -    TS   for Treesize;
+   -    ND   for NetscapeDDE
    then comes an abbreviation of the ID type:
    -    M    for a menu template,
    -    MI   for a menu item,
    -    D    for a dialog template,
    -    DI   for a dialog item;
-   -    H    for a help panel res id.
+   -    H    for a help panel res id;
+   -    SI   for a string resource.
 
    Example:
         ID_SDDI_SKIPAPP is a dlg item ID for use with XShutdown
@@ -78,15 +80,15 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.18"
+#define XFOLDER_VERSION        "0.9.19"
 
 #define XFOLDER_MAJOR          0
 #define XFOLDER_MINOR          9
-#define XFOLDER_REVISION       18
+#define XFOLDER_REVISION       19
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.18"
+#define MINIMUM_NLS_VERSION    "0.9.19"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -507,25 +509,37 @@
 */  // all removed V0.9.16 (2001-10-15) [umoeller]
 
 // "File" page replacement (XFolder, XFldDataFile, V0.9.0)
-#define ID_XSD_FILESPAGE1               730
-#define ID_XSDI_FILES_REALNAME          731
-#define ID_XSDI_FILES_CREATIONDATE      732
-#define ID_XSDI_FILES_CREATIONTIME      733
-#define ID_XSDI_FILES_LASTWRITEDATE     734
-#define ID_XSDI_FILES_LASTWRITETIME     735
-#define ID_XSDI_FILES_LASTACCESSDATE    736
-#define ID_XSDI_FILES_LASTACCESSTIME    737
-#define ID_XSDI_FILES_ATTR_ARCHIVED     738
-#define ID_XSDI_FILES_ATTR_READONLY     739
-#define ID_XSDI_FILES_ATTR_HIDDEN       740
-#define ID_XSDI_FILES_ATTR_SYSTEM       741
-#define ID_XSDI_FILES_SUBJECT           742
-#define ID_XSDI_FILES_COMMENTS          743
-#define ID_XSDI_FILES_KEYPHRASES        744
-#define ID_XSDI_FILES_VERSION           745
-#define ID_XSDI_FILES_FILESIZE          746
-#define ID_XSDI_FILES_EASIZE            747
-#define ID_XSDI_FILES_WORKAREA          748     // added V0.9.1 (99-12-20) [umoeller]
+// #define ID_XSD_FILESPAGE1               730      // removed V0.9.19 (2001-04-13) [umoeller]
+#define ID_XSDI_FILES_REALNAME              731
+#define ID_XSDI_FILES_CREATIONDATE          732
+#define ID_XSDI_FILES_CREATIONTIME          733
+#define ID_XSDI_FILES_LASTWRITEDATE         734
+#define ID_XSDI_FILES_LASTWRITETIME         735
+#define ID_XSDI_FILES_LASTACCESSDATE        736
+#define ID_XSDI_FILES_LASTACCESSTIME        737
+#define ID_XSDI_FILES_ATTR_ARCHIVED         738
+#define ID_XSDI_FILES_ATTR_READONLY         739
+#define ID_XSDI_FILES_ATTR_HIDDEN           740
+#define ID_XSDI_FILES_ATTR_SYSTEM           741
+#define ID_XSDI_FILES_SUBJECT               742
+#define ID_XSDI_FILES_COMMENTS              743
+#define ID_XSDI_FILES_KEYPHRASES            744
+#define ID_XSDI_FILES_VERSION               745
+#define ID_XSDI_FILES_FILESIZE              746
+#define ID_XSDI_FILES_EASIZE                747
+#define ID_XSDI_FILES_WORKAREA              748     // added V0.9.1 (99-12-20) [umoeller]
+// the following on this page added with V0.9.19 (2001-04-13) [umoeller]
+#define ID_XSDI_FILES_REALNAME_TXT          749
+#define ID_XSDI_FILES_FILESIZE_TXT          750
+#define ID_XSDI_FILES_DATETIME_GROUP        751
+#define ID_XSDI_FILES_CREATIONDATE_TXT      752
+#define ID_XSDI_FILES_LASTWRITEDATE_TXT     753
+#define ID_XSDI_FILES_LASTACCESSDATE_TXT    754
+#define ID_XSDI_FILES_ATTR_GROUP            755
+#define ID_XSDI_FILES_INFO_GROUP            756
+#define ID_XSDI_FILES_SUBJECT_TXT           757
+#define ID_XSDI_FILES_COMMENTS_TXT          758
+#define ID_XSDI_FILES_KEYPHRASES_TXT        759
 
 #ifndef __NOFILEPAGE2__
 #define ID_XSD_FILESPAGE2               760
@@ -1290,11 +1304,16 @@
  * XWPAdmin V0.9.11         >= 4000
  ******************************************/
 
-#define ID_AMD_USER                     4000
-#define ID_AMDI_USER_USERNAME           4001
-#define ID_AMDI_USER_USERID             4002
-#define ID_AMDI_USER_GROUPNAME          4003
-#define ID_AMDI_USER_GROUPID            4004
+// all IDs changed V0.9.19 (2002-04-02) [umoeller]
+#define ID_AMDI_USER_LOCAL_GROUP        4000
+#define ID_AMDI_USER_USERNAME_TXT       4001
+#define ID_AMDI_USER_USERNAME_DATA      4002
+#define ID_AMDI_USER_USERID_TXT         4003
+#define ID_AMDI_USER_USERID_DATA        4004
+#define ID_AMDI_USER_GROUPNAME_TXT      4005
+#define ID_AMDI_USER_GROUPNAME_DATA     4006
+#define ID_AMDI_USER_GROUPID_TXT        4007
+#define ID_AMDI_USER_GROUPID_DATA       4008
 
 /******************************************
  *          Shutdown defs                 *
@@ -1462,6 +1481,9 @@
 
 #define ID_CRMI_SEP0                    0x7f0f
 #define ID_CRMI_WIDGETCLASSNAME         0x7f10
+
+#define ID_CRMI_SEP3                    0x7f11      // added V0.9.19 (2002-04-02) [umoeller]
+#define ID_CRMI_SEP4                    0x7f12      // added V0.9.19 (2002-04-02) [umoeller]
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 
@@ -2146,8 +2168,6 @@
 
 #define ID_XSSI_SCREENBORDERSPAGE       6165           // "Screen borders"
 
-#define ID_XSSI_ADMIN_USER              6166           // "Current user"
-
 #define ID_XSSI_CLASSTITLE_FOLDER       6167
 #define ID_XSSI_CLASSTITLE_DISK         6168
 #define ID_XSSI_CLASSTITLE_DATAFILE     6169
@@ -2209,6 +2229,20 @@
 
 // the following added with V0.9.18 (2002-02-12) [pr]
 #define ID_XSSI_SPECIAL_SCREENWRAP      6215    // "Screen wrap"
+
+// the following added with V0.9.19 (2002-04-02) [umoeller]
+#define ID_XSSI_DOUBLEFILES_FILENAME    6216
+#define ID_XSSI_DOUBLEFILES_DIR         6217
+#define ID_XSSI_DOUBLEFILES_SIZE        6218
+#define ID_XSSI_DOUBLEFILES_DATE        6219
+#define ID_XSSI_DOUBLEFILES_TIME        6220
+
+#define ID_NDSI_STARTNETSCAPE           6221
+#define ID_NDSI_SYNTAX                  6222
+
+#define ID_XSSI_ADMIN_LOCAL_USER        6223
+#define ID_XSSI_ADMIN_ALL_USERS         6224
+#define ID_XSSI_ADMIN_ALL_GROUPS        6225
 
 /******************************************
  *  string IDs for status bar mnemonics
@@ -2284,7 +2318,8 @@
  ******************************************/
 
 // #define ID_NDD_EXPLAIN                  10100        // removed V0.9.16 (2001-10-02) [umoeller]
-#define ID_NDD_QUERYSTART               10101
+// #define ID_NDD_QUERYSTART               10101        // removed V0.9.19 (2002-04-02) [umoeller]
+                                                        // this was hideously ugly
 #define ID_NDD_CONTACTING               10102
 #define ID_NDD_STARTING                 10103
 

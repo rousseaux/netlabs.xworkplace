@@ -125,9 +125,9 @@
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
- *                                                                  *
- *  Global variables                                                *
- *                                                                  *
+ *
+ *  Global variables
+ *
  ********************************************************************/
 
 static HMTX    G_hmtxHandles = NULLHANDLE;
@@ -138,9 +138,9 @@ static HMTX    G_hmtxHandles = NULLHANDLE;
 // PNODE   G_NodeHashTable[65536];
 
 /* ******************************************************************
- *                                                                  *
- *  Helpers                                                         *
- *                                                                  *
+ *
+ *  Helpers
+ *
  ********************************************************************/
 
 /*
@@ -184,9 +184,9 @@ BOOL fhdlUnlockHandles(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *  File-system handles interface                                   *
- *                                                                  *
+ *
+ *  File-system handles interface
+ *
  ********************************************************************/
 
 /*

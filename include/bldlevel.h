@@ -19,8 +19,9 @@
  */
 
 #define BLDLEVEL_VENDOR         "Ulrich M”ller"
-#define BLDLEVEL_VERSION        "0.9.18"
+#define BLDLEVEL_VERSION        "0.9.19"
 #define BLDLEVEL_INFO           "to be overridden"
 
-#define CONTACT_ADDRESS        "xworkplace-user@yahoogroups.com"
+#define CONTACT_ADDRESS_USER    "xworkplace-user@yahoogroups.com"
+#define CONTACT_ADDRESS_DEVEL   "xworkplace-dev@yahoogroups.com"
 

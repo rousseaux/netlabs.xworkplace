@@ -245,6 +245,7 @@ interface XFldObject : WPObject
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
+    wpMenuItemHelpSelected: override;
 
     wpAddObjectGeneralPage: override;
 

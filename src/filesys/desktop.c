@@ -181,13 +181,15 @@ BOOL dtpSetup(WPDesktop *somSelf,
             {
                 if (!strcmp(pszToken, "HALT"))
                 {
-                    xsd.ulRestartWPS = 0;           // shutdown
+                    // xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = FALSE;
                     xsd.optAPMPowerOff = FALSE;
                 }
                 else if (!strcmp(pszToken, "REBOOT"))
                 {
-                    xsd.ulRestartWPS = 0;           // shutdown
+                    // xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = TRUE;
                     xsd.optAPMPowerOff = FALSE;
                 }
@@ -206,25 +208,29 @@ BOOL dtpSetup(WPDesktop *somSelf,
                             free(pszCmd);
                         }
                     }
-                    xsd.ulRestartWPS = 0;           // shutdown
+                    // xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = TRUE;
                     xsd.optAPMPowerOff = FALSE;
                 }
                 else if (!strcmp(pszToken, "POWEROFF"))
                 {
-                    xsd.ulRestartWPS = 0;           // shutdown
+                    // xsd.ulRestartWPS = 0;           // shutdown
+                    xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = FALSE;
                     xsd.optAPMPowerOff = TRUE;
                 }
                 else if (!strcmp(pszToken, "RESTARTWPS"))
                 {
-                    xsd.ulRestartWPS = 1;           // restart Desktop
+                    // xsd.ulRestartWPS = 1;           // restart Desktop
+                    xsd.ulCloseMode = SHUT_RESTARTWPS;
                     xsd.optWPSCloseWindows = FALSE;
                     xsd.optWPSReuseStartupFolder = FALSE;
                 }
                 else if (!strcmp(pszToken, "FULLRESTARTWPS"))
                 {
-                    xsd.ulRestartWPS = 1;           // restart Desktop
+                    // xsd.ulRestartWPS = 1;           // restart Desktop
+                    xsd.ulCloseMode = SHUT_RESTARTWPS;
                     xsd.optWPSCloseWindows = TRUE;
                     xsd.optWPSReuseStartupFolder = TRUE;
                 }
@@ -678,12 +684,15 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
             case DEBUG_MENUID_CRASH_THR1:
                 krnPostThread1ObjectMsg(XM_CRASH, 0, 0);
             break;
+
             case DEBUG_MENUID_CRASH_WORKER:
                 xthrPostWorkerMsg(XM_CRASH, 0, 0);
             break;
+
             case DEBUG_MENUID_CRASH_QUICK:
                 xthrPostBushMsg(XM_CRASH, 0, 0);
             break;
+
             case DEBUG_MENUID_CRASH_FILE:
                 xthrPostFileMsg(XM_CRASH, 0, 0);
             break;
@@ -743,7 +752,7 @@ BEGIN
 END
 */
 
-static CONTROLDEF
+static const CONTROLDEF
     MenuItemsGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_DTP_MENUITEMSGROUP,
@@ -959,7 +968,7 @@ MRESULT dtpMenuItemsItemChanged(PNOTEBOOKPAGE pnbp,
     return ((MPARAM)0);
 }
 
-static CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOBOOTLOGO__
     BootLogoGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Workplace Shell boot logo",

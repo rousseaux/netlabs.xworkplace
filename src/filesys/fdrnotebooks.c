@@ -103,7 +103,7 @@
  *
  ********************************************************************/
 
-static CONTROLDEF
+static const CONTROLDEF
     FolderViewGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // ""Folder view settings"
                             ID_XSD_FOLDERVIEWGROUP,
@@ -603,7 +603,7 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-static CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOFOLDERCONTENTS__
     FavoriteFolderCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,

@@ -61,7 +61,7 @@ INC = ..\..\include
 MYINC = $(INC)\xwpsec32.sys
 
 CC        = icc -q
-CFLAGS    = -Ge- -Gs- -Gr+ -Rn -Ss+ -O -G5
+CFLAGS    = -Ge- -Gs- -Gr+ -Rn -Ss+ -O -G5 -w2 /tn+
 
 LD        = icc
 
@@ -104,7 +104,8 @@ COBJS =   \
     $(OUTPUTDIR)\util_daemon.obj                             \
 #    $(OUTPUTDIR)\util_log.obj                                \
     $(OUTPUTDIR)\util_misc.obj                               \
-    $(OUTPUTDIR)\util_sem.obj
+    $(OUTPUTDIR)\util_sem.obj                                \
+    $(OUTPUTDIR)\tree.obj
 
 # TARGETS
 # -------
@@ -143,7 +144,7 @@ $(MODULESDIR)\$(DRIVERNAME).sys: \
         ilink @<<
 /OUT:$(MODULESDIR)\$(@B).sys
 /map:$(MODULESDIR)\$(@B).map
-/EXEPACK:2 /NOD /ALIGNMENT:4
+/EXEPACK:2 /nod /ALIGNMENT:4 /linenumbers
 $(OUTPUTDIR)\sec32_start.obj
 $(AOBJS)
 $(COBJS)
@@ -151,6 +152,7 @@ $(OUTPUTDIR)\sec32_end.obj
 $(DDKBASE)\lib\os2386p.lib
 $(DRIVERNAME).def
 <<
+# /NOD
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -164,6 +166,8 @@ $(DRIVERNAME).def
         -copy $(@:.sys=.sym) E:\os2
         -copy $@             F:\os2\boot
         -copy $(@:.sys=.sym) F:\os2\boot
+        -copy $@             I:\os2\boot
+        -copy $(@:.sys=.sym) I:\os2\boot
 
 
 # The .OBJ-from-sources dependencies are now automatically

@@ -26,9 +26,9 @@
     #define FHANDLES_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *  File-system handles interface                                   *
-     *                                                                  *
+     *
+     *  File-system handles interface
+     *
      ********************************************************************/
 
     BOOL fhdlLoadHandles(VOID);

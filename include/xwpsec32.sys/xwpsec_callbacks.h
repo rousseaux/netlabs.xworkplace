@@ -18,6 +18,8 @@ extern VOID utilWriteLogInfo(VOID); */
 #define utilWriteLog(a, b)
 #define utilWriteLogInfo() */
 
+int kernel_printf(const char *fmt, ...);
+
 extern unsigned long utilGetTaskPID(void);
 
 extern BOOL utilNeedsVerify(VOID);

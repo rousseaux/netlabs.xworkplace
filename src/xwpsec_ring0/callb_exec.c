@@ -258,7 +258,7 @@ VOID EXECPGM_POST(PSZ pszPath,
 {
     int rc = NO_ERROR;
 
-    if (G_hevCallback)
+    if (G_fDaemonReady)
     {
         // access control enabled:
         // note that this time, we don't use utilNeedsVerify()

@@ -170,6 +170,10 @@
      *
      ********************************************************************/
 
+    VOID objReady(WPObject *somSelf,
+                  ULONG ulCode,
+                  WPObject* refObject);
+
     VOID objRefreshUseItems(WPObject *somSelf,
                             PSZ pszNewTitleCopy);
 

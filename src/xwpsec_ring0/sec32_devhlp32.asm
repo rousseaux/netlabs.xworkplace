@@ -1314,6 +1314,7 @@ code32_DevHlp32_Yield:
         ret
 DevHlp32_Yield endp
 
+
 CODE32 ends
 
         end

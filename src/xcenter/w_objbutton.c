@@ -95,22 +95,22 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\contentmenus.h"        // shared menu logic
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "shared\center.h"              // public XCenter interfaces
+#include "xcenter\centerp.h"            // private XCenter implementation
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
-#pragma hdrstop                     // VAC++ keeps crashing otherwise
-#include <wpdesk.h>
+#pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpdisk.h>
 #include <wppower.h>
-// #include <wpshadow.h>
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
@@ -811,7 +811,7 @@ static VOID OwgtPaintButton(HWND hwnd)
 static VOID BuildXButtonMenu(HWND hwnd,
                              POBJBUTTONPRIVATE pPrivate)
 {
-    WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
+    WPObject *pActiveDesktop = cmnQueryActiveDesktop();
     PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     BOOL fShutdownRunning = xsdIsShutdownRunning();
@@ -863,6 +863,7 @@ static VOID BuildXButtonMenu(HWND hwnd,
         // XWPShell not running:
         // remove "logoff"
         winhRemoveMenuItem(hMenu, ID_CRMI_LOGOFF);
+        winhRemoveMenuItem(hMenu, ID_CRMI_SEP3);
     }
     else
     {
@@ -1524,7 +1525,7 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
     return (mrc);
 }
 
-#define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"
+// #define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"     this is in centerp.h
 
 /*
  *@@ OwgtDragover:
@@ -1532,6 +1533,7 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
  *@@changed V0.9.14 (2001-08-05) [lafaix]: refuses move/default for DRM_XCENTERWIDGET
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed crash/PM hang with dragover from other processes
  */
 
 static MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1589,13 +1591,15 @@ static MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         }
                     }
 
+                    // moved this up here before we free the draginfo
+                    // V0.9.19 (2002-04-02) [umoeller]
+                    if (bDragOver)
+                        mrc = _wpDragOver(pPrivate->pobjButton,
+                                          NULLHANDLE,           // cnr
+                                          pdrgInfo);
+
                     DrgFreeDraginfo(pdrgInfo);
                 }
-
-                if (bDragOver)
-                    mrc = _wpDragOver(pPrivate->pobjButton,
-                                      NULLHANDLE,           // cnr
-                                      pdrgInfo);
             }
         }
     }
@@ -1664,15 +1668,17 @@ static VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
              && (DrgAccessDraginfo(pdrgInfo))
            )
         {
+            PDRAGITEM pdrgItem;
+
             if (!pPrivate->pobjButton)
                 // object not queried yet:
                 pPrivate->pobjButton = FindObject(pPrivate);
 
-            if (pPrivate->pobjButton)
+            if (    (pPrivate->pobjButton)
+                 && (pdrgItem = DrgQueryDragitemPtr(pdrgInfo,           // added test V0.9.19 (2002-04-02) [umoeller]
+                                                    0))
+               )
             {
-                PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo,
-                                                         0);
-
                 if (pPrivate->fHasDragoverEmphasis)
                 {
                     ctrDrawWidgetEmphasis(pWidget,
@@ -1700,6 +1706,7 @@ static VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
                             pdrgInfo,
                             pdrgItem);
             }
+
 
             DrgFreeDraginfo(pdrgInfo);
         }

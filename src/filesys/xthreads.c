@@ -103,9 +103,10 @@
 #include "xtrashobj.ih"                 // XWPTrashCan
 #include "xfldr.h"
 
-// headers in /folder
+// XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -2246,14 +2247,13 @@ void _Optlink fntWimpThread(PTHREADINFO pti)
  *@@changed V0.9.18 (2002-02-23) [umoeller]: changed a few thread names for fun
  */
 
-BOOL xthrStartThreads(PVOID pLogFile)
+BOOL xthrStartThreads(VOID)
 {
     BOOL brc = FALSE;
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
 
-    doshWriteLogEntry(pLogFile,
-                      "Entering " __FUNCTION__":");
+    initLog("Entering " __FUNCTION__":");
 
     if (pKernelGlobals)
     {
@@ -2280,8 +2280,7 @@ BOOL xthrStartThreads(PVOID pLogFile)
                           THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
 
-                doshWriteLogEntry(pLogFile,
-                                  "  Started XWP Worker thread, TID: %d",
+                initLog("  Started XWP Worker thread, TID: %d",
                                   G_tiWorkerThread.tid);
 
                 thrCreate(&G_tiBushThread,
@@ -2291,8 +2290,7 @@ BOOL xthrStartThreads(PVOID pLogFile)
                           THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
 
-                doshWriteLogEntry(pLogFile,
-                                  "  Started XWP Bush thread, TID: %d",
+                initLog("  Started XWP Bush thread, TID: %d",
                                   G_tiBushThread.tid);
 
                 // start Wimp thread V0.9.18 (2002-02-23) [umoeller]
@@ -2303,8 +2301,7 @@ BOOL xthrStartThreads(PVOID pLogFile)
                           THRF_WAIT,            // no msgq
                           0);
 
-                doshWriteLogEntry(pLogFile,
-                                  "  Started XWP Wimp thread, TID: %d",
+                initLog("  Started XWP Wimp thread, TID: %d",
                                   G_tiWimpThread.tid);
             }
 
@@ -2315,8 +2312,7 @@ BOOL xthrStartThreads(PVOID pLogFile)
                       THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                       0);
 
-            doshWriteLogEntry(pLogFile,
-                              "  Started XWP File thread, TID: %d",
+            initLog("  Started XWP File thread, TID: %d",
                               G_tiFileThread.tid);
         }
 

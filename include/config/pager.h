@@ -30,9 +30,9 @@
 #ifndef __NOPAGER__
 
     /* ******************************************************************
-     *                                                                  *
-     *   XPager (XWPScreen) notebook functions (notebook.c)           *
-     *                                                                  *
+     *
+     *   XPager (XWPScreen) notebook functions (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

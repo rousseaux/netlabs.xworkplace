@@ -96,9 +96,9 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldWPS instance methods                         *
- *                                                                  *
+ *
+ *   here come the XFldWPS instance methods
+ *
  ********************************************************************/
 
 /*
@@ -513,9 +513,9 @@ SOM_Scope void  SOMLINK xfwpsM_wpclsInitData(M_XFldWPS *somSelf)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldWPS class methods                            *
- *                                                                  *
+ *
+ *   here come the XFldWPS class methods
+ *
  ********************************************************************/
 
 /*

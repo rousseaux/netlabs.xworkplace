@@ -128,7 +128,8 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "security\xwpsecty.h"          // XWorkplace Security
+#include "security\xwpsecty.h"          // XWorkplace Security base
+#include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -710,108 +711,116 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
     HWND        hwndDim = CreateDimScreenWindow();
 
+    PDLGHITEM   paNew;
+
     G_ulConfirmHelpPanel = ID_XMH_RESTARTWPS;
 
-    cmnLoadDialogStrings(dlgConfirmRestartDesktop,
-                         ARRAYITEMCOUNT(dlgConfirmRestartDesktop));
-
-    OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
-    CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
-
-    if (!dlghCreateDlg(&hwndConfirm,
-                       hwndDim,
-                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
-                       fnwpConfirm,
-                       cmnGetString(ID_SDDI_CONFIRMWPS_TITLE),
-                       dlgConfirmRestartDesktop,
-                       ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
-                       NULL,
-                       cmnQueryDefaultFont()))
+    if (!cmnLoadDialogStrings(dlgConfirmRestartDesktop,
+                              ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
+                              &paNew))
     {
-        /* hwndConfirm = WinLoadDlg(HWND_DESKTOP,
-                                 hwndDim,
-                                 fnwpConfirm,
-                                 hmodResource,
-                                 ID_SDD_CONFIRMWPS,
-                                 NULL); */
+        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
 
-        WinSendMsg(hwndConfirm,
-                   WM_SETICON,
-                   (MPARAM)hptrShutdown,
-                   NULL);
-
-        if (psdParms->ulRestartWPS == 2)
+        if (!dlghCreateDlg(&hwndConfirm,
+                           hwndDim,
+                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           fnwpConfirm,
+                           cmnGetString(ID_SDDI_CONFIRMWPS_TITLE),
+                           paNew,
+                           ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
+                           NULL,
+                           cmnQueryDefaultFont()))
         {
-            // logoff:
-            psdParms->optWPSCloseWindows = TRUE;
-            psdParms->optWPSReuseStartupFolder = TRUE;
-            winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
-#ifndef __NOXSHUTDOWN__
-            winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
-#endif
-            // replace confirmation text
-            WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
-                              cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
-        }
+            /* hwndConfirm = WinLoadDlg(HWND_DESKTOP,
+                                     hwndDim,
+                                     fnwpConfirm,
+                                     hmodResource,
+                                     ID_SDD_CONFIRMWPS,
+                                     NULL); */
 
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
-#ifndef __NOXWPSTARTUP__
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
-#endif
-#ifndef __NOXSHUTDOWN__
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
-#endif
+            WinSendMsg(hwndConfirm,
+                       WM_SETICON,
+                       (MPARAM)hptrShutdown,
+                       NULL);
 
-        xsdLoadAnimation(&G_sdAnim);
-        ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
-                            XSD_ANIM_COUNT,
-                            G_sdAnim.ahptr,
-                            150,    // delay
-                            TRUE);  // start now
-
-        // cmnSetControlsFont(hwndConfirm, 1, 5000);
-        winhCenterWindow(hwndConfirm);      // still hidden
-        WinShowWindow(hwndConfirm, TRUE);
-
-        // *** go!
-        ulReturn = WinProcessDlg(hwndConfirm);
-
-        ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
-        xsdFreeAnimation(&G_sdAnim);
-
-        if (ulReturn == DID_OK)
-        {
-#ifndef __NOXSHUTDOWN__
-            ULONG fl = cmnQuerySetting(sflXShutdown);
-#endif
-
-            psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
-                                                                ID_SDDI_WPS_CLOSEWINDOWS);
-            if (psdParms->ulRestartWPS != 2)
+            // if (psdParms->ulRestartWPS == 2)
+            if (psdParms->ulCloseMode == SHUT_LOGOFF)
             {
-                // regular restart Desktop:
-                // save close windows/startup folder settings
-#ifndef __NOXSHUTDOWN__
-                if (psdParms->optWPSCloseWindows)
-                    fl |= XSD_WPS_CLOSEWINDOWS;
-                else
-                    fl &= ~XSD_WPS_CLOSEWINDOWS;
-#endif
-#ifndef __NOXWPSTARTUP__
-                psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
-                                                                          ID_SDDI_WPS_STARTUPFOLDER);
-#endif
+                // logoff:
+                psdParms->optWPSCloseWindows = TRUE;
+                psdParms->optWPSReuseStartupFolder = TRUE;
+                winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
+    #ifndef __NOXSHUTDOWN__
+                winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
+    #endif
+                // replace confirmation text
+                WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
+                                  cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
             }
-#ifndef __NOXSHUTDOWN__
-            if (!(winhIsDlgItemChecked(hwndConfirm,
-                                       ID_SDDI_MESSAGEAGAIN)))
-                fl |= XSD_NOCONFIRM;
 
-            cmnSetSetting(sflXShutdown, fl);
-#endif
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
+    #ifndef __NOXWPSTARTUP__
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
+    #endif
+    #ifndef __NOXSHUTDOWN__
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
+    #endif
+
+            xsdLoadAnimation(&G_sdAnim);
+            ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
+                                XSD_ANIM_COUNT,
+                                G_sdAnim.ahptr,
+                                150,    // delay
+                                TRUE);  // start now
+
+            // cmnSetControlsFont(hwndConfirm, 1, 5000);
+            winhCenterWindow(hwndConfirm);      // still hidden
+            WinShowWindow(hwndConfirm, TRUE);
+
+            // *** go!
+            ulReturn = WinProcessDlg(hwndConfirm);
+
+            ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
+            xsdFreeAnimation(&G_sdAnim);
+
+            if (ulReturn == DID_OK)
+            {
+    #ifndef __NOXSHUTDOWN__
+                ULONG fl = cmnQuerySetting(sflXShutdown);
+    #endif
+
+                psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
+                                                                    ID_SDDI_WPS_CLOSEWINDOWS);
+                // if (psdParms->ulRestartWPS != 2)
+                if (psdParms->ulCloseMode != SHUT_LOGOFF)
+                {
+                    // regular restart Desktop:
+                    // save close windows/startup folder settings
+    #ifndef __NOXSHUTDOWN__
+                    if (psdParms->optWPSCloseWindows)
+                        fl |= XSD_WPS_CLOSEWINDOWS;
+                    else
+                        fl &= ~XSD_WPS_CLOSEWINDOWS;
+    #endif
+    #ifndef __NOXWPSTARTUP__
+                    psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
+                                                                              ID_SDDI_WPS_STARTUPFOLDER);
+    #endif
+                }
+    #ifndef __NOXSHUTDOWN__
+                if (!(winhIsDlgItemChecked(hwndConfirm,
+                                           ID_SDDI_MESSAGEAGAIN)))
+                    fl |= XSD_NOCONFIRM;
+
+                cmnSetSetting(sflXShutdown, fl);
+    #endif
+            }
+
+            WinDestroyWindow(hwndConfirm);
         }
 
-        WinDestroyWindow(hwndConfirm);
+        free(paNew);
     }
 
     WinDestroyWindow(hwndDim);
@@ -1928,7 +1937,8 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
     psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
     psdp->optDebug = FALSE;
 
-    psdp->ulRestartWPS = 0;         // no, do shutdown
+    // psdp->ulRestartWPS = 0;         // no, do shutdown
+    psdp->ulCloseMode = SHUT_SHUTDOWN;
 
     psdp->optWPSCloseWindows = TRUE;
     psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
@@ -2068,7 +2078,8 @@ BOOL xsdInitiateShutdown(VOID)
 
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
-        psdp->ulRestartWPS = 0;
+        // psdp->ulRestartWPS = 0;
+        psdp->ulCloseMode = SHUT_SHUTDOWN;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
         psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
@@ -2175,7 +2186,8 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
 
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot =  FALSE;
-        psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
+        // psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
+        psdp->ulCloseMode = (fLogoff) ? SHUT_LOGOFF : SHUT_RESTARTWPS;
         psdp->optWPSCloseWindows = ((flShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
         psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
@@ -2249,7 +2261,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
                 // confirmations are on: display proper
                 // confirmation dialog
                 ULONG ulReturn;
-                if (psdpNew->ulRestartWPS)
+                if (psdpNew->ulCloseMode != SHUT_SHUTDOWN)
                     ulReturn = xsdConfirmRestartWPS(psdpNew);
                 else
                     ulReturn = xsdConfirmShutdown(psdpNew);
@@ -2275,7 +2287,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 
 #ifndef __NOXSHUTDOWN__
 
-static CONTROLDEF
+static const CONTROLDEF
     ShutdownGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
                             ID_SDDI_SHUTDOWNGROUP,
@@ -3036,23 +3048,15 @@ typedef struct _SHUTDOWNDATA
                 // -- XSD_ALLDONEOK: done saving WPS too, fnwpShutdownThread is exiting
                 // -- XSD_CANCELLED: shutdown has been cancelled by user
 
-    /* BOOL            fAllWindowsClosed,
-                    fClosingApps,
-                    fShutdownBegun; */
-
     HAB             habShutdownThread;
-    // HMQ             hmqShutdownThread;       // removed V0.9.12 (2001-05-29) [umoeller]
 
     HMODULE         hmodResource;
 
     HWND            hwndProgressBar;        // progress bar in status window
 
     // flags for whether we're currently owning semaphores
-    BOOL            // fAwakeObjectsSemOwned,           // removed V0.9.9 (2001-04-04) [umoeller]
-                    fShutdownSemOwned,
+    BOOL            fShutdownSemOwned,
                     fSkippedSemOwned;
-
-    // BOOL            fPrepareSaveWPSPosted;
 
     ULONG           hPOC;
 
@@ -3107,6 +3111,8 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData);
 
 VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
 {
+    XWPLOGGEDON lo;
+
     pConsts->pKernelGlobals = krnQueryGlobals();
     pConsts->pWPDesktop = _WPDesktop;
     pConsts->pActiveDesktop = _wpclsQueryActiveDesktop(pConsts->pWPDesktop);
@@ -3138,6 +3144,17 @@ VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
             }
         }
     }
+
+    // get uid and gid of currently logged on user, if xwpshell
+    // is running V0.9.19 (2002-04-02) [umoeller]
+    if (!xsecQueryLocalLoggedOn(&lo))
+    {
+        // running:
+        // store uid
+        pConsts->uid = lo.uid;
+    }
+    else
+        pConsts->uid = -1;
 }
 
 /*
@@ -3512,19 +3529,49 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
  *      Otherwise *ppObject receives NULL.
  *
  *      This returns:
- *      -- a value < 0 if the item must not be closed;
- *      -- 0 if the item is a regular item to be closed;
- *      -- XSD_DESKTOP (1) for the Desktop;
- *      -- XSD_WARPCENTER (2) for the WarpCenter.
+ *      --  XSD_SYSTEM (-1)
+ *
+ *      --  XSD_INVISIBLE (-2)
+ *
+ *      --  XSD_DEBUGNEED (-3)
+ *
+ *      --  XSD_DESKTOP (-4) for the WPS desktop, which
+ *          needs special handling anyway since it must
+ *          be closed last;
+ *
+ *      --  XSD_WARPCENTER (-5)
+ *
+ *      --  XSD_WPSOBJECT_CLOSE (0) for any WPS object to
+ *          be closed; for those, *ppObject is set to
+ *          the SOM object pointer. These objects must
+ *          be closed with all shutdown modes.
+ *
+ *      --  XSD_OTHER_OWNED (1): the program is owned by
+ *          the current user, but is not a WPS object.
+ *          Close this with shutdown and logoff, but
+ *          with "Restart WPS", close it only if the
+ *          user wants to have all sessions closed.
+ *
+ *      --  XSD_OTHER_FOREIGN (2): the program is not a
+ *          WPS object, and it's not even owned by the
+ *          current user. Close this with shutdown only;
+ *          never close this with "restart desktop" or
+ *          "logoff".
+ *
+ *      In other words, if this returns something >= 0,
+ *      the object might have to be closed depending on
+ *      the mode.
  *
  *@@added V0.9.4 (2000-07-15) [umoeller]
  *@@changed V0.9.6 (2000-10-27) [umoeller]: fixed WarpCenter detection
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: refined detection for the different modes
  */
 
 LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
                    PSHUTDOWNCONSTS pConsts,
                    SWENTRY *pSwEntry,       // in/out: switch entry
-                   WPObject **ppObject)     // out: the WPObject*, really, or NULL if the window is no object
+                   WPObject **ppObject,     // out: the WPObject*, really, or NULL if the window is no object
+                   PULONG pulUserID)       // out: user ID on whose behalf the user is running or -1 if XWPShell is not running
 {
     LONG           lrc = 0;
     CHAR           szSwUpperTitle[100];
@@ -3591,8 +3638,8 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
         // DOS/Win-OS/2 window: get real PID/SID, because
         // the tasklist contains false data
         WinQueryWindowProcess(pSwEntry->swctl.hwnd,
-                              &(pSwEntry->swctl.idProcess),
-                              &(pSwEntry->swctl.idSession));
+                              &pSwEntry->swctl.idProcess,
+                              &pSwEntry->swctl.idSession);
 
     if (pSwEntry->swctl.idProcess == pConsts->pidWPS)
     {
@@ -3611,6 +3658,29 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
             if (*ppObject == pConsts->pActiveDesktop)
                 lrc = XSD_DESKTOP;
         }
+    }
+
+    // if this is not a WPS object, mark it so caller can decide whether to close it
+    if (!*ppObject)
+        lrc = XSD_OTHER_OWNED;
+
+    if (pConsts->uid == -1)
+        // XWPShell not running:
+        *pulUserID = -2;
+    else
+    {
+        // XWPShell running:
+        if (*ppObject)
+            // WPS object: use WPS pid (save time)
+            *pulUserID = pConsts->uid;
+        else
+            if (xsecQueryProcessOwner(pSwEntry->swctl.idProcess,
+                                      pulUserID))
+                // error:
+                *pulUserID = -2;
+            else
+                if (*pulUserID != pConsts->uid)
+                    lrc = XSD_OTHER_FOREIGN;
     }
 
     return (lrc);
@@ -3641,18 +3711,10 @@ void xsdBuildShutList(HAB hab,
 {
     PSWBLOCK        pSwBlock   = NULL;         // Pointer to information returned
     ULONG           ul;
-                    // cbItems    = 0,            // Number of items in list
-                    // ulBufSize  = 0;            // Size of buffer for information
-
-    // HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     WPObject        *pObj;
     BOOL            Append;
 
     // get all the tasklist entries into a buffer
-    /* cbItems = WinQuerySwitchList(NULLHANDLE, NULL, 0);
-    ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
-    pSwBlock = (PSWBLOCK)malloc(ulBufSize);
-    cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize); */
     pSwBlock = winhQuerySwitchList(hab);
 
     // loop through all the tasklist entries
@@ -3661,34 +3723,37 @@ void xsdBuildShutList(HAB hab,
          ul++)
     {
         // now we check which windows we add to the shutdown list
+        ULONG uid;
         LONG lrc = xsdIsClosable(hab,
                                  &pShutdownData->SDConsts,
                                  &pSwBlock->aswentry[ul],
-                                 &pObj);
+                                 &pObj,
+                                 &uid);
         if (lrc >= 0)
         {
-            // closeable -> add window:
-            Append = TRUE;
+            // generally closeable:
+            BOOL fSkip = FALSE;
 
-            // check for special objects
-            if (    (lrc == XSD_DESKTOP)
-                 || (lrc == XSD_WARPCENTER)
-               )
-                // Desktop and WarpCenter need special handling,
-                // will be closed last always;
-                // note that we NEVER append the WarpCenter to
-                // the close list
-                Append = FALSE;
-
-            if (Append)
-                // if we have (Restart Desktop) && ~(close all windows), append
-                // only open Desktop objects and not all windows
-                if (   (!(pShutdownData->sdParams.optWPSCloseWindows))
-                    && (pObj == NULL)
+            if (lrc == XSD_OTHER_OWNED)
+                // the program is owned by the current user, but is not a WPS object.
+                // Close this with shutdown and logoff, but
+                // with "Restart WPS", close it only if the
+                // user wants to have all sessions closed.
+                if (    (pShutdownData->sdParams.ulCloseMode == SHUT_RESTARTWPS)
+                     && (!pShutdownData->sdParams.optWPSCloseWindows)
                    )
-                    Append = FALSE;
+                    fSkip = TRUE;
 
-            if (Append)
+            if (lrc == XSD_OTHER_FOREIGN)
+                // the program is not a
+                // WPS object, and it's not even owned by the
+                // current user. Close this with shutdown only;
+                // never close this with "restart desktop" or
+                // "logoff".
+                if (pShutdownData->sdParams.ulCloseMode != SHUT_SHUTDOWN)
+                    fSkip = TRUE;
+
+            if (!fSkip)
                 xsdAppendShutListItem(pShutdownData,
                                       pList,
                                       &pSwBlock->aswentry[ul].swctl,
@@ -4078,8 +4143,8 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         doshWriteLogEntry(LogFile, "XWorkplace version: %s", XFOLDER_VERSION);
         doshWriteLogEntry(LogFile, "Shutdown thread started, TID: 0x%lX",
                 thrQueryID(ptiMyself));
-        doshWriteLogEntry(LogFile, "Settings: RestartWPS %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, APMPowerOff %s",
-                pShutdownData->sdParams.ulRestartWPS,
+        doshWriteLogEntry(LogFile, "Settings: CloseMode %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, APMPowerOff %s",
+                pShutdownData->sdParams.ulCloseMode,
                 (pShutdownData->sdParams.optConfirm) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optReboot) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optWPSCloseWindows) ? "ON" : "OFF",
@@ -4512,7 +4577,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // desktop", which is just an empty window w/out
             // title bar which takes up the whole screen and
             // has the color of the PM desktop
-            if (    (!(pShutdownData->sdParams.ulRestartWPS))
+            if (    (pShutdownData->sdParams.ulCloseMode == SHUT_SHUTDOWN)
                  && (!(pShutdownData->sdParams.optDebug))
                )
                 winhCreateFakeDesktop(pShutdownData->SDConsts.hwndShutdownStatus);
@@ -4579,10 +4644,9 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             winhSleep(200);
 
-            if (pShutdownData->sdParams.ulRestartWPS)
+            if (pShutdownData->sdParams.ulCloseMode != SHUT_SHUTDOWN)
             {
-                // "Restart Desktop" mode
-
+                // "Restart Desktop" mode, or "logoff":
                 WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
                                   ID_SDDI_STATUS,
                                   cmnGetString(ID_SDSI_RESTARTINGWPS)); // (cmnQueryNLSStrings())->pszSDRestartingWPS);
@@ -4729,7 +4793,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // been successfully closed and we can actually shut
         // down the system
 
-        if (pShutdownData->sdParams.ulRestartWPS) // restart Desktop (1) or logoff (2)
+        if (pShutdownData->sdParams.ulCloseMode != SHUT_SHUTDOWN) // restart Desktop (1) or logoff (2)
         {
             // here we will actually restart the WPS
             doshWriteLogEntry(LogFile, "Preparing Desktop restart...");
@@ -4743,9 +4807,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             LogFile = NULL;
 
             xsdRestartWPS(hab,
-                          (pShutdownData->sdParams.ulRestartWPS == 2)
-                                ? TRUE
-                                : FALSE);  // fLogoff
+                          (pShutdownData->sdParams.ulCloseMode == SHUT_LOGOFF));
                             // V0.9.11 (2001-04-18) [umoeller]
             // this will not return, I think
         }
@@ -4760,7 +4822,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             if (pShutdownData->sdParams.optDebug)
                 // in debug mode, restart Desktop
-                pShutdownData->sdParams.ulRestartWPS = 1;     // V0.9.0
+                pShutdownData->sdParams.ulCloseMode = SHUT_RESTARTWPS;
         }
     } // end if (fAllWindowsClosed)
 
@@ -5371,8 +5433,7 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                            "  ID_SDMI_CLOSEITEM");
 
                     // get task list item to close from linked list
-                    pItem = xsdQueryCurrentItem(pShutdownData);
-                    if (pItem)
+                    if (pItem = xsdQueryCurrentItem(pShutdownData))
                     {
                         CloseOneItem(pShutdownData,
                                      hwndListbox,
@@ -5611,9 +5672,9 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here comes the "Finish" routines                               *
- *                                                                  *
+ *
+ *   here comes the "Finish" routines
+ *
  ********************************************************************/
 
 /*
@@ -6170,9 +6231,9 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Update thread                                                  *
- *                                                                  *
+ *
+ *   Update thread
+ *
  ********************************************************************/
 
 /*

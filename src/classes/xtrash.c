@@ -545,7 +545,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
  *
  *      If something != NO_ERROR (0) is returned, it's either an
  *      OS/2 error code or one of the error codes in
- *      include\filesys\fileops.h.
+ *      include\shared\errors.h.
  *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added hwndConfirmOwner
  *@@changed V0.9.7 (2001-01-17) [umoeller]: now returning FOPSRET
@@ -1562,9 +1562,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetIcon(XWPTrashCan *somSelf,
 
 
 /* ******************************************************************
- *                                                                  *
- *   XWPTrashCan class methods                                      *
- *                                                                  *
+ *
+ *   XWPTrashCan class methods
+ *
  ********************************************************************/
 
 /*

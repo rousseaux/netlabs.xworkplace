@@ -165,6 +165,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -2033,7 +2034,7 @@ static BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *      This is a lot faster than WPFolder::wpPopulate:
  *
  *      --  For file-system objects,
- *          PopulateWithFileSystems() starts a second
+ *          fsysPopulateWithFSObjects() starts a second
  *          thread which does the actual DosFindFirst/Next
  *          processing (see fntFindFiles). This allows
  *          us to use the idle time produced by

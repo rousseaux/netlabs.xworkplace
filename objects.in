@@ -59,6 +59,7 @@ $(OUTPUTDIR)\contentmenus.obj \
 $(OUTPUTDIR)\init.obj \
 $(OUTPUTDIR)\notebook.obj \
 $(OUTPUTDIR)\kernel.obj \
+$(OUTPUTDIR)\xsecapi.obj \
 $(OUTPUTDIR)\xsetup.obj \
 $(OUTPUTDIR)\wpsh.obj
 

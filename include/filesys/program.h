@@ -154,8 +154,6 @@
      *
      ********************************************************************/
 
-    APIRET progOpenProgramThread1(PVOID pvData);
-
     #ifdef SOM_WPDataFile_h
     APIRET progOpenProgram(WPObject *pProgObject,
                            WPFileSystem *pArgDataFile,

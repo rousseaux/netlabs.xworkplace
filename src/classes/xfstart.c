@@ -106,9 +106,9 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // roots of linked lists for XStartup folders
@@ -117,9 +117,9 @@ static OBJECTLIST          G_llSavedStartupFolders = {0};
 static OBJECTLIST          G_llStartupFolders = {0};
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldStartup methods                              *
- *                                                                  *
+ *
+ *   here come the XFldStartup methods
+ *
  ********************************************************************/
 
 /*
@@ -683,9 +683,9 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
 
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldShutdown methods                             *
- *                                                                  *
+ *
+ *   here come the XFldShutdown methods
+ *
  ********************************************************************/
 
 /*

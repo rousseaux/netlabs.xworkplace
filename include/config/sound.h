@@ -27,9 +27,9 @@
     #define SOUND_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   Additional system sounds                                       *
-     *                                                                  *
+     *
+     *   Additional system sounds
+     *
      ********************************************************************/
 
 #ifndef __NOXSYSTEMSOUNDS__
@@ -40,9 +40,9 @@
 #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   XWPSound notebook callbacks (notebook.c)                       *
-     *                                                                  *
+     *
+     *   XWPSound notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

@@ -48,13 +48,21 @@
         BOOL        optReboot,
                     optConfirm,
                     optDebug;
-        ULONG       ulRestartWPS;
+        ULONG       ulCloseMode;
+            // changed V0.9.19 (2002-04-02) [umoeller]
+            // one of the following:
+              #define SHUT_SHUTDOWN               1
+              #define SHUT_RESTARTWPS             2
+              #define SHUT_LOGOFF                 3
+
+        // ULONG       ulRestartWPS;
             // changed V0.9.5 (2000-08-10) [umoeller]:
             // restart Desktop flag, meaning:
             // -- 0: no, do shutdown
             // -- 1: yes, restart Desktop
             // -- 2: yes, restart Desktop, but logoff also
             //          (only if XWPSHELL is running)
+
         BOOL        optWPSCloseWindows,
                     optAutoCloseVIO,
                     optLog,
@@ -206,12 +214,20 @@
     #ifdef KERNEL_HEADER_INCLUDED
     #ifdef SOM_WPObject_h
 
-        #define XSD_SYSTEM          -1
-        #define XSD_INVISIBLE       -2
-        #define XSD_DEBUGNEED       -3
+        #define XSD_SYSTEM              -1
+        #define XSD_INVISIBLE           -2
+        #define XSD_DEBUGNEED           -3
 
-        #define XSD_DESKTOP         1
-        #define XSD_WARPCENTER      2
+        #define XSD_DESKTOP             -4
+        #define XSD_WARPCENTER          -5
+
+        #define XSD_WPSOBJECT_CLOSE     0       // close in all modes
+
+        #define XSD_OTHER_OWNED         1       // close with shutdown and logoff,
+                                                // but do not close in restart WPS mode
+
+        #define XSD_OTHER_FOREIGN       2       // object is not owned by current user,
+                                                // do not close in logoff mode
 
         typedef struct _SHUTDOWNCONSTS
         {
@@ -225,12 +241,17 @@
                             pidPM;      // WinQueryWindowProcess(HWND_DESKTOP, &G_pidPM, NULL);
 
             HWND            hwndMain,
-                                    // dlg with listbox (visible only in debug mode)
+                                        // dlg with listbox (visible only in debug mode)
                             hwndShutdownStatus;
-                                    // status window (always visible)
+                                        // status window (always visible)
             HWND            hwndVioDlg;
-                                    // if != NULLHANDLE, currently open VIO confirmation
-                                    // window
+                                        // if != NULLHANDLE, currently open VIO confirmation
+                                        // window
+
+            ULONG           uid;        // user ID if XWPShell is running
+                                        // V0.9.19 (2002-04-02) [umoeller]
+                                        // -1 otherwise
+
         } SHUTDOWNCONSTS, *PSHUTDOWNCONSTS;
 
         VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts);
@@ -238,7 +259,8 @@
         LONG xsdIsClosable(HAB hab,
                            PSHUTDOWNCONSTS pConsts,
                            SWENTRY *pSwEntry,
-                           WPObject **ppObject);
+                           WPObject **ppObject,
+                           PULONG pulUserID);
     #endif
     #endif
     #endif

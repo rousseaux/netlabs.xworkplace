@@ -332,29 +332,6 @@ VOID Explain(const char *pcszFormat,     // in: format string (like with printf)
 }
 
 /*
- *@@ xstrprintf:
- *
- */
-
-ULONG xstrprintf(PXSTRING pxstr,
-                 const char *pcszFormat,
-                 ...)
-{
-    CHAR sz[1000];
-    ULONG ul;
-    va_list     args;
-    va_start(args, pcszFormat);
-    vsprintf(sz, pcszFormat, args);
-    va_end(args);
-
-    ul = strlen(sz);
-    xstrcat(pxstr,
-            sz,
-            ul);
-    return (ul);
-}
-
-/*
  *@@ fnCompareStrings:
  *      tree comparison func (src\helpers\tree.c).
  *
@@ -1423,7 +1400,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         = GetOrCreateArticle(pszAttrib,
                                              pFile2Process->ulHeaderLevel,
                                              pFile2Process);
-                    xstrprintf(pxstrIPF,
+                    xstrPrintf(pxstrIPF,
                                // hack in the @#!LINK@#! for now;
                                // this is later replaced with the
                                // resid in ParseFiles
@@ -1447,7 +1424,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                             p3++;
                         }
 
-                        xstrprintf(pxstrIPF,
+                        xstrPrintf(pxstrIPF,
                                    ":link reftype=launch object='view.exe' data='%s'.",
                                    pszAttrib);
                     }
@@ -1458,7 +1435,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         = GetOrCreateArticle(pszAttrib,
                                              pFile2Process->ulHeaderLevel,
                                              pFile2Process);
-                        xstrprintf(pxstrIPF,
+                        xstrPrintf(pxstrIPF,
                                    // hack in the @#!LINK@#! string for now;
                                    // this is later replaced with the
                                    // resid in ParseFiles
@@ -1528,7 +1505,7 @@ PCSZ HandleIMG(PARTICLETREENODE pFile2Process,
                   "The bitmap file \"%s\" was not found.",
                   str.psz);
 
-        xstrprintf(pxstrIPF,
+        xstrPrintf(pxstrIPF,
                    ":artwork name='%s' align=left.",
                    str.psz);
         xstrClear(&str);
@@ -1753,7 +1730,7 @@ const char* HandleTag(PARTICLETREENODE pFile2Process,
                 else
                 {
                     xstrcpy(&G_strError, "", 0);
-                    xstrprintf(&G_strError,
+                    xstrPrintf(&G_strError,
                                "Unknown tag %s (%s)",
                                pStartOfTagName,
                                pStart2);
@@ -1943,26 +1920,26 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
     if (pFile2Process->ulHeaderLevel == 1)
     {
         // root file:
-        xstrprintf(pxstrIPF,
+        xstrPrintf(pxstrIPF,
                    ":title.%s\n",
                    pFile2Process->strTitle.psz);
     }
 
-    xstrprintf(pxstrIPF,
+    xstrPrintf(pxstrIPF,
                "\n.* Source file: \"%s\"\n",
                (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
 
     xstrcpy(pstrExtras, NULL, 0);
     if (pFile2Process->lGroup)
-        xstrprintf(pstrExtras,
+        xstrPrintf(pstrExtras,
                    " group=%d",
                    pFile2Process->lGroup);
     if (pFile2Process->pszXPos)
-        xstrprintf(pstrExtras,
+        xstrPrintf(pstrExtras,
                    " x=%s",
                    pFile2Process->pszXPos);
     if (pFile2Process->pszWidth)
-        xstrprintf(pstrExtras,
+        xstrPrintf(pstrExtras,
                    " width=%s",
                    pFile2Process->pszWidth);
     if (pFile2Process->fHidden)
@@ -1975,7 +1952,7 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
         if (ulHeaderLevel > 1)
             ulHeaderLevel--;
 
-    xstrprintf(pxstrIPF,
+    xstrPrintf(pxstrIPF,
                ":h%d res=%d%s.%s\n",
                ulHeaderLevel,
                pFile2Process->ulResID,
@@ -2126,7 +2103,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
             }
 
             xstrcpy(&G_strCrashContext, "", 0);
-            xstrprintf(&G_strCrashContext,
+            xstrPrintf(&G_strCrashContext,
                        "Processing file %s",
                        (PSZ)pFile2Process->Tree.ulKey);
 
@@ -2382,11 +2359,11 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                                             "&colon."))
                         ;
 
-                    xstrprintf(pxstrIPF,
+                    xstrPrintf(pxstrIPF,
                                ":h2 res=%d group=98 x=right y=bottom width=60%% height=40%%.%s\n",
                                pFile2Process->ulResID,
                                strEncode.psz);
-                    xstrprintf(pxstrIPF,
+                    xstrPrintf(pxstrIPF,
                                ":p.:lines align=center."
                                     "\nClick below to launch Netscape with this URL&colon.\n"
                                     ":p.:link reftype=launch object='netscape.exe' data='%s'.\n"

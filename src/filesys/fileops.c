@@ -109,6 +109,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -1305,6 +1306,7 @@ static ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
  *@@changed V0.9.3 (2000-05-03) [umoeller]: extracted ProcessFileExistsDlg
  *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed "Create another" problem for good
  *@@changed V0.9.16 (2001-12-31) [umoeller]: largely rewritten to finally fix the various special-case problems
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed prompt for "Create shadow" which should never appear
  */
 
 ULONG fopsConfirmObjectTitle(WPObject *somSelf,
@@ -1316,6 +1318,10 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
 {
     ULONG   ulrc = NAMECLASH_NONE;
     ULONG   flOptions = 0;
+
+    // these flags are returned by WPShadow::wpQueryNameClashOptions;
+    // for shadows we thus do nothing at all
+    #define NOTHING_TO_DO (NO_NAMECLASH_RENAME | NO_NAMECLASH_APPEND | NO_NAMECLASH_REPLACE)
 
     TRY_LOUD(excpt1)
     {
@@ -1337,6 +1343,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
             case WPMENUID_CREATESHADOW:
                 _Pmpf(("   WPMENUID_CREATESHADOW"));
                 // return NAMECLASH_NONE always
+                flOptions = NOTHING_TO_DO;      // V0.9.19 (2002-04-02) [umoeller]
             break;
 
             case 110:           // comes in when objects are renamed
@@ -1357,9 +1364,6 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
             break;
         }
 
-        // these flags are returned by WPShadow::wpQueryNameClashOptions;
-        // for shadows we thus do nothing at all
-        #define NOTHING_TO_DO (NO_NAMECLASH_RENAME | NO_NAMECLASH_APPEND | NO_NAMECLASH_REPLACE)
         if ((flOptions & NOTHING_TO_DO) != NOTHING_TO_DO)
         {
             // first set the duplicate
@@ -1533,6 +1537,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
  *
  *@@added V0.9.2 (2000-03-04) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: "replace" destroyed pObject; fixed
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed crash with trash can
  */
 
 BOOL fopsMoveObjectConfirmed(WPObject *pObject,
@@ -1540,7 +1545,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
 {
     // check if object exists in that folder already
     // (this might call the XFldObject replacement)
-    WPObject    *pReplaceThis = NULL;
+    WPObject    *pReplaceThis = pObject; // NULL; fixed V0.9.19 (2002-04-02) [umoeller]
     CHAR        szNewTitle[CCHMAXPATH] = "";
     BOOL        fDoMove = TRUE,
                 fDidMove = FALSE;

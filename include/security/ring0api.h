@@ -564,7 +564,7 @@ extern "C" {
      *      5.  Go back to 2.
      */
 
-    typedef struct _SECIOREGISTER
+    /* typedef struct _SECIOREGISTER
     {
         HEV             hevCallback;
                 // event semaphore ring-3 is waiting on;
@@ -576,13 +576,13 @@ extern "C" {
         PSECIOSHARED    pSecIOShared;
                 // pointer to SECIOSHARED structure
 
-    } SECIOREGISTER, *PSECIOREGISTER;
+    } SECIOREGISTER, *PSECIOREGISTER; */
 
-    #define XWPSECIO_REGISTER       0x50
+    #define XWPSECIO_REGISTER           0x50
 
-    #define XWPSECIO_JOBDONE        0x51
+    #define XWPSECIO_AUTHORIZED_NEXT    0x54
 
-    #define XWPSECIO_DEREGISTER     0x52
+    #define XWPSECIO_DEREGISTER         0x55
 
     #pragma pack()
 

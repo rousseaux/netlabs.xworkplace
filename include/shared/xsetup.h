@@ -29,9 +29,9 @@
                                  BOOL fXWPObject);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XWPSetup "Status" page notebook callbacks (notebook.c)         *
-     *                                                                  *
+     *
+     *   XWPSetup "Status" page notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

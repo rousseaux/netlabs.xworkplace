@@ -89,6 +89,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // XWorkplace implementation headers
+#include "shared\init.h"                // XWorkplace initialization
 #include "media\media.h"                // XWorkplace multimedia support
 
 /* ******************************************************************
@@ -491,13 +492,12 @@ void _Optlink xmm_fntPartyThread(PTHREADINFO pti)
  *@@changed V0.9.16 (2001-10-19) [umoeller]: changed to XFILE log file
  */
 
-BOOL xmmInit(PVOID pLogFile)
+BOOL xmmInit(VOID)
 {
     HMODULE hmodMDM = NULLHANDLE,
             hmodMMIO = NULLHANDLE;
 
-    doshWriteLogEntry(pLogFile,
-                      "Entering " __FUNCTION__ ":");
+    initLog("Entering " __FUNCTION__ ":");
 
     G_ulMMPM2Working = MMSTAT_WORKING;
 
@@ -515,8 +515,7 @@ BOOL xmmInit(PVOID pLogFile)
                 != NO_ERROR)
             G_ulMMPM2Working = MMSTAT_IMPORTSFAILED;
 
-    doshWriteLogEntry(pLogFile,
-                      "  Resolved MMPM/2 imports, new XWP media status: %d",
+    initLog("  Resolved MMPM/2 imports, new XWP media status: %d",
                       G_ulMMPM2Working);
 
     if (G_ulMMPM2Working == MMSTAT_WORKING)
@@ -527,8 +526,7 @@ BOOL xmmInit(PVOID pLogFile)
                   "Party",
                   0,    // no msgq
                   0);
-        doshWriteLogEntry(pLogFile,
-                          "  Started XWP Party thread, TID: %d",
+        initLog("  Started XWP Party thread, TID: %d",
                           G_tiPartyThread.tid);
     }
 

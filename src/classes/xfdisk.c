@@ -104,9 +104,9 @@
  ********************************************************************/
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldDisk instance methods                        *
- *                                                                  *
+ *
+ *   here come the XFldDisk instance methods
+ *
  ********************************************************************/
 
 /*
@@ -542,9 +542,9 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldDisk class methods                           *
- *                                                                  *
+ *
+ *   here come the XFldDisk class methods
+ *
  ********************************************************************/
 
 /*

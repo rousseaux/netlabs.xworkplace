@@ -333,7 +333,7 @@ typedef struct _DOUBLEFILESWINDATA
  *      array of controls flags for winhAdjustControls.
  */
 
-static MPARAM ampDoubleFilesControls[] =
+static const MPARAM ampDoubleFilesControls[] =
     {
         MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH1,  XAC_MOVEY),
         MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH2,  XAC_MOVEY | XAC_SIZEX),
@@ -352,6 +352,7 @@ static MPARAM ampDoubleFilesControls[] =
  *      to have the double files collected.
  *
  *@@changed V0.9.9 (2001-02-28) [pr]: made this modal
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: localized hard-coded strings
  */
 
 static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
@@ -383,27 +384,27 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
 
             // set up cnr details view
             xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
-            xfi[i].pszColumnTitle = "File name";
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_FILENAME); // "File name";
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, pszDirName);
-            xfi[i].pszColumnTitle = "Directory";
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_DIR); // "Directory";
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, ulSize);
-            xfi[i].pszColumnTitle = "Size";
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_SIZE); // "Size";
             xfi[i].ulDataType = CFA_ULONG;
             xfi[i++].ulOrientation = CFA_RIGHT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, cDate);
-            xfi[i].pszColumnTitle = "Date";
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_DATE); // "Date";
             xfi[i].ulDataType = CFA_DATE;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, cTime);
-            xfi[i].pszColumnTitle = "Time";
+            xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_TIME); // "Time";
             xfi[i].ulDataType = CFA_TIME;
             xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -586,6 +587,8 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *      Since this callback is shared among all the CONFIG.SYS
  *      pages, inbp.ulPageID is used for telling them apart by
  *      using the SP_* identifiers.
+ *
+ *      Be warned, this code is endless spaghetti.
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
@@ -1292,6 +1295,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
  *      Since this callback is shared among all the CONFIG.SYS
  *      pages, inbp.ulPageID is used for telling them apart by
  *      using the SP_* identifiers.
+ *
+ *      Be warned, this code is endless spaghetti.
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page handling
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
@@ -2530,7 +2535,7 @@ static VOID AddOneSyslevel2Cnr(HWND hwndCnr,
  */
 
 static VOID AddSyslevelsForDir(HWND hwndCnr,
-                               PSZ pszDir)     // in: directory to search (with terminating \)
+                               PCSZ pszDir)     // in: directory to search (with terminating \)
 {
     HDIR          hdirFindHandle = HDIR_CREATE;
     FILEFINDBUF3  ffb3     = {0};      /* Returned from FindFirst/Next */
@@ -2599,6 +2604,7 @@ static VOID AddSyslevelsForDir(HWND hwndCnr,
  *@@added V0.9.2 (2000-03-08) [umoeller]
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  *@@changed V0.9.14 (2001-07-07) [umoeller]: this never found TCPIP syslevels, fixed
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: optimized, added a couple of paths, sorted dirs
  */
 
 VOID cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
@@ -2661,29 +2667,37 @@ VOID cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
     {
         HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\OS2\\INSTALL\\");
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\MMOS2\\INSTALL\\");
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\OS2\\DLL\\");
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\IBMI18N\\");
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\IBMCOM\\");
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\MPTN\\");
-        AddSyslevelsForDir(hwndCnr,
-                           // "?:\\TCPIP\\");
-                           "?:\\TCPIP\\BIN\\");     // fixed V0.9.14 (2001-07-07) [umoeller]
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\IBMINST\\");    // networking installation
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\DMISL\\");
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\IBMLAN\\");    // peer
-        AddSyslevelsForDir(hwndCnr,
-                           "?:\\MUGLIB\\");    // peer
+        // made this a loop and sorted them
+        // alphabetically
+        // V0.9.19 (2002-04-02) [umoeller]
+        static PCSZ apcszDirs[] =
+            {
+                   "?:\\CID\\LOCINSTU\\",     // added V0.9.19 (2002-04-02) [umoeller]
+                   "?:\\DMISL\\",
+                   "?:\\IBMCOM\\",
+                   "?:\\IBMGSK\\",            // added V0.9.19 (2002-04-02) [umoeller]
+                   "?:\\IBMGSK40\\",          // added V0.9.19 (2002-04-02) [umoeller]
+                   "?:\\IBMI18N\\",
+                   "?:\\IBMINST\\",    // networking installation
+                   "?:\\IBMLAN\\",    // peer
+                   "?:\\MMOS2\\INSTALL\\",
+                   "?:\\MPTN\\",
+                   "?:\\MUGLIB\\",    // peer
+                   "?:\\OS2\\DLL\\",
+                   "?:\\OS2\\INSTALL\\",
+                   // "?:\\TCPIP\\",
+                   "?:\\TCPIP\\BIN\\",     // fixed V0.9.14 (2001-07-07) [umoeller]
+
+            };
+        ULONG ul;
+
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(apcszDirs);
+             ++ul)
+        {
+            AddSyslevelsForDir(hwndCnr,
+                               apcszDirs[ul]);
+        }
     }
 }
 

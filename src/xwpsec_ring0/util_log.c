@@ -40,9 +40,9 @@
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 extern CHAR     G_szLogFile[CCHMAXPATH] = "";
@@ -174,9 +174,9 @@ extern struct InfoSegLDT *G_pLDT = 0;      // OS/2 local  infoseg
     }; */
 
 /* ******************************************************************
- *                                                                  *
- *   Log file helpers                                               *
- *                                                                  *
+ *
+ *   Log file helpers
+ *
  ********************************************************************/
 
 /*

@@ -113,9 +113,9 @@
 // #include <wpdesk.h>                 // WPDesktop
 
 /* ******************************************************************
- *                                                                  *
- *   Declarations                                                   *
- *                                                                  *
+ *
+ *   Declarations
+ *
  ********************************************************************/
 
 // client window class name
@@ -279,9 +279,9 @@ typedef struct _CLASSLISTMETHODDATA
 } CLASSLISTMETHODDATA, *PCLASSLISTMETHODDATA;
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 PSZ pszClassInfo = NULL;
@@ -335,9 +335,9 @@ static MPARAM ampMethodInfoCtls[] =
     };
 
 /* ******************************************************************
- *                                                                  *
- *   "Register new class" dlg                                       *
- *                                                                  *
+ *
+ *   "Register new class" dlg
+ *
  ********************************************************************/
 
 /*
@@ -468,9 +468,9 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPClassList Helper functions                                  *
- *                                                                  *
+ *
+ *   XWPClassList Helper functions
+ *
  ********************************************************************/
 
 /*
@@ -1100,9 +1100,9 @@ static PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pClientData)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Class list window procedures                                   *
- *                                                                  *
+ *
+ *   Class list window procedures
+ *
  ********************************************************************/
 
 MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -2903,9 +2903,9 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPClassList notebook callbacks (notebook.c)                   *
- *                                                                  *
+ *
+ *   XWPClassList notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*

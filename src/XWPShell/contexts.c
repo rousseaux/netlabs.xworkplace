@@ -69,7 +69,7 @@ typedef struct _CONTEXTTREENODE
 // subject infos
 TREE        *G_treeContexts;
     // balanced binary tree of current security contexts
-ULONG       G_cContexts = 0;
+LONG        G_cContexts = 0;
 HMTX        G_hmtxContexts = NULLHANDLE;
     // mutex semaphore protecting global data
 
@@ -96,10 +96,10 @@ APIRET scxtInit(VOID)
                                 0,          // unshared
                                 FALSE);     // unowned
         if (arc == NO_ERROR)
-            treeInit(&G_treeContexts);
+            treeInit(&G_treeContexts, &G_cContexts);
     }
     else
-        arc = XWPSEC_NO_AUTHORITY;
+        arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
     return (arc);
 }
@@ -186,8 +186,8 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
     {
         // first check if a tree item for that PID
         // exists already... this might happen
-        PCONTEXTTREENODE pContextItem = FindContextFromPID(ulPID);
-        if (pContextItem)
+        PCONTEXTTREENODE pContextItem;
+        if (pContextItem = FindContextFromPID(ulPID))
         {
             // exists:
             // replace with new values
@@ -197,8 +197,7 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
         else
         {
             // new item needed:
-            pContextItem = (PCONTEXTTREENODE)malloc(sizeof(CONTEXTTREENODE));
-            if (!pContextItem)
+            if (!(pContextItem = (PCONTEXTTREENODE)malloc(sizeof(CONTEXTTREENODE))))
                 arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
@@ -211,12 +210,11 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
                 pContextItem->Context.hsubjGroup = hsubjGroup;
 
                 if (treeInsert(&G_treeContexts,
+                               &G_cContexts,
                                (TREE*)pContextItem,
                                treeCompareKeys))
                     // shouldn't happen
                     arc = XWPSEC_INTEGRITY;
-                else
-                    G_cContexts++;
             }
         }
 
@@ -249,19 +247,19 @@ APIRET scxtDeleteSecurityContext(ULONG ulPID)
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PCONTEXTTREENODE pContextItem = FindContextFromPID(ulPID);
-        if (!pContextItem)
+        PCONTEXTTREENODE pContextItem;
+        if (!(pContextItem = FindContextFromPID(ulPID)))
             arc = XWPSEC_INVALID_PID;
         else
         {
             if (treeDelete(&G_treeContexts,
+                           &G_cContexts,
                            (TREE*)pContextItem))
                 // shouldn't happen
                 arc = XWPSEC_INTEGRITY;
             else
             {
                 free(pContextItem);
-                G_cContexts--;
             }
         }
     }
@@ -296,8 +294,8 @@ APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext)
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PCONTEXTTREENODE pContextItem = FindContextFromPID(pContext->ulPID);
-        if (!pContextItem)
+        PCONTEXTTREENODE pContextItem;
+        if (!(pContextItem = FindContextFromPID(pContext->ulPID)))
             arc = XWPSEC_INVALID_PID;
         else
         {
@@ -312,49 +310,6 @@ APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext)
 
     return (arc);
 }
-
-/*
- * ENUMCONTEXTS:
- *      data buffer for while fnEnumContexts
- *      is running.
- */
-
-/* typedef struct _ENUMCONTEXTS
-{
-    HXSUBJECT           hsubjUser;
-
-    PXWPSECURITYCONTEXT pContextThis;
-    ULONG               cCount;
-    ULONG               ulMax;
-
-    APIRET              arc;
-} ENUMCONTEXTS, *PENUMCONTEXTS; */
-
-/*
- * fnEnumContexts:
- *
- */
-
-/* void fnEnumContexts(TREE *t,
-                    void *pUser)
-{
-    PCONTEXTTREENODE pContextItem = (PCONTEXTTREENODE)t;
-    PENUMCONTEXTS pEnum = (PENUMCONTEXTS)pUser;
-
-    if (    (pEnum->hsubjUser == 0)     // enumerate all?
-         || (pEnum->hsubjUser == pContextItem->Context.hsubjUser)
-       )
-    {
-        // security check:
-        if (pEnum->cCount++ < pEnum->ulMax)
-        {
-            memcpy(pEnum->pContextThis, &pContextItem->Context, sizeof(XWPSECURITYCONTEXT));
-            pEnum->pContextThis++;
-        }
-        else
-            pEnum->arc = XWPSEC_INTEGRITY;
-    }
-} */
 
 /*
  *@@ scxtEnumSecurityContexts:
@@ -449,3 +404,28 @@ APIRET scxtFreeSecurityContexts(PXWPSECURITYCONTEXT paContexts)
     return (NO_ERROR);
 }
 
+/*
+ *@@ scxtVerifyAuthority:
+ *      returns NO_ERROR only if the specified process
+ *      has sufficient authority to perform the
+ *      given action.
+ *
+ *      Otherwise this returns XWPSEC_INSUFFICIENT_AUTHORITY.
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ */
+
+APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXT pContext,
+                           ULONG flActions)
+{
+    if (!pContext || !flActions)
+        return ERROR_INVALID_PARAMETER;
+
+    // presently, we only allow root to do anything
+    if (    (pContext->hsubjUser == 0)
+         || (pContext->hsubjGroup == 0)
+       )
+        return NO_ERROR;
+
+    return XWPSEC_INSUFFICIENT_AUTHORITY;
+}

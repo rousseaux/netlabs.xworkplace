@@ -112,6 +112,7 @@
 
 // XWorkplace implementation headers
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -606,9 +607,9 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
 }
 
 /********************************************************************
- *                                                                  *
- *   File thread processing                                         *
- *                                                                  *
+ *
+ *   File thread processing
+ *
  ********************************************************************/
 
 /*

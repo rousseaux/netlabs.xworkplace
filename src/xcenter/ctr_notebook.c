@@ -80,6 +80,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -1304,7 +1305,7 @@ static SLDCDATA
 #define STYLE_SLIDERS_HEIGHT        30
 #define STYLE_SLIDERTEXT_WIDTH      30
 
-static CONTROLDEF
+static const CONTROLDEF
     BorderWidthGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_CRDI_VIEW2_3DBORDER_GROUP,

@@ -92,9 +92,9 @@
 // #include "xfobj.h"
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XWPScreen instance methods                       *
- *                                                                  *
+ *
+ *   here come the XWPScreen instance methods
+ *
  ********************************************************************/
 
 /*
@@ -313,9 +313,9 @@ SOM_Scope BOOL  SOMLINK xwpscr_wpAddSettingsPages(XWPScreen *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XWPScreen class methods                          *
- *                                                                  *
+ *
+ *   here come the XWPScreen class methods
+ *
  ********************************************************************/
 
 /*

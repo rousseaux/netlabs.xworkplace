@@ -90,6 +90,7 @@
 #include "xwpapi.h"                     // public XWorkplace definitions
 
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -1300,7 +1301,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID AppendClassesGroup(CONTROLDEF *pOneClass,
+static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
                                CONTROLDEF **ppControlDefThis,
                                DLGHITEM **ppDlgItemThis,
                                BOOL fReplacements)
@@ -1456,68 +1457,81 @@ static VOID ShowClassesDlg(HWND hwndOwner)
                                   // plus a check box, i.e. 2 per class
                                 + 2 * ARRAYITEMCOUNT(G_aClasses);
         DLGHITEM    *paDlgItems = malloc(sizeof(DLGHITEM) * cDlgItems),
-                    *pDlgItemThis = paDlgItems;
+                    *pDlgItemThis = paDlgItems,
+                    *paNewFront,
+                    *paNewMiddle;
         ULONG       ul;
 
-        // copy front
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(dlgClassesFront);
-             ul++)
+        if (!cmnLoadDialogStrings(dlgClassesFront,
+                                  ARRAYITEMCOUNT(dlgClassesFront),
+                                  &paNewFront))
         {
-            memcpy(pDlgItemThis, &dlgClassesFront[ul], sizeof(DLGHITEM));
-            pDlgItemThis++;
-        }
+            if (!cmnLoadDialogStrings(dlgClassesMiddle,
+                                      ARRAYITEMCOUNT(dlgClassesMiddle),
+                                      &paNewMiddle))
+            {
+                OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+                CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+                HelpButton.pcszText = cmnGetString(ID_XSSI_DLG_HELP);
 
-        // now go create the items for the class replacements
-        AppendClassesGroup(&OneClass,
-                           &pControlDefThis,
-                           &pDlgItemThis,
-                           TRUE);
+                // copy front
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(dlgClassesFront);
+                     ul++)
+                {
+                    memcpy(pDlgItemThis, &paNewFront[ul], sizeof(DLGHITEM));
+                    pDlgItemThis++;
+                }
 
-        // copy separator (middle)
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(dlgClassesMiddle);
-             ul++)
-        {
-            memcpy(pDlgItemThis, &dlgClassesMiddle[ul], sizeof(DLGHITEM));
-            pDlgItemThis++;
-        }
+                // now go create the items for the class replacements
+                AppendClassesGroup(&OneClass,
+                                   &pControlDefThis,
+                                   &pDlgItemThis,
+                                   TRUE);
 
-        // and for the new classes
-        AppendClassesGroup(&OneClass,
-                           &pControlDefThis,
-                           &pDlgItemThis,
-                           FALSE);
+                // copy separator (middle)
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(dlgClassesMiddle);
+                     ul++)
+                {
+                    memcpy(pDlgItemThis, &paNewMiddle[ul], sizeof(DLGHITEM));
+                    pDlgItemThis++;
+                }
 
-        // copy tail
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(dlgClassesTail);
-             ul++)
-        {
-            memcpy(pDlgItemThis, &dlgClassesTail[ul], sizeof(DLGHITEM));
-            pDlgItemThis++;
-        }
+                // and for the new classes
+                AppendClassesGroup(&OneClass,
+                                   &pControlDefThis,
+                                   &pDlgItemThis,
+                                   FALSE);
 
-        cmnLoadDialogStrings(dlgClassesFront, ARRAYITEMCOUNT(dlgClassesFront));
-        cmnLoadDialogStrings(dlgClassesMiddle, ARRAYITEMCOUNT(dlgClassesMiddle));
+                // copy tail
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(dlgClassesTail);
+                     ul++)
+                {
+                    memcpy(pDlgItemThis, &dlgClassesTail[ul], sizeof(DLGHITEM));
+                    pDlgItemThis++;
+                }
 
-        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
-        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
-        HelpButton.pcszText = cmnGetString(ID_XSSI_DLG_HELP);
+                if (!(arc = dlghCreateDlg(&hwndDlg,
+                                          hwndOwner,
+                                          FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                          fnwpXWorkplaceClasses,
+                                          cmnGetString(ID_XCD_CLASSES_TITLE),
+                                          paDlgItems,
+                                          cDlgItems,
+                                          NULL,
+                                          cmnQueryDefaultFont())))
+                {
+                    winhCenterWindow(hwndDlg);
+                    WinProcessDlg(hwndDlg);
+                    WinDestroyWindow(hwndDlg);
+                }
 
-        if (!(arc = dlghCreateDlg(&hwndDlg,
-                                  hwndOwner,
-                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
-                                  fnwpXWorkplaceClasses,
-                                  cmnGetString(ID_XCD_CLASSES_TITLE),
-                                  paDlgItems,
-                                  cDlgItems,
-                                  NULL,
-                                  cmnQueryDefaultFont())))
-        {
-            winhCenterWindow(hwndDlg);
-            WinProcessDlg(hwndDlg);
-            WinDestroyWindow(hwndDlg);
+                free(paNewMiddle);
+            }
+
+            free(paNewFront);
         }
 
         free(paDlgItems);
@@ -3258,9 +3272,9 @@ VOID setStatusTimer(PNOTEBOOKPAGE pnbp,   // notebook info struct
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup "Objects" page notebook callbacks (notebook.c)        *
- *                                                                  *
+ *
+ *   XWPSetup "Objects" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -3316,6 +3330,8 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
  *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
  *@@changed V0.9.9 (2001-04-07) [pr]: added location field for creating objects
  *@@changed V0.9.10 (2001-04-09) [pr]: modified location handling, fixed message box location
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: added error checking for class object
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed empty titles
  */
 
 BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
@@ -3359,69 +3375,86 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
             WPObject *pObjLocation;
 
             // get class's class object
-            PSZ         pszClassName = (PSZ)*(pso2->ppcszObjectClass);
-            somId       somidThis = somIdFromString(pszClassName);
-            SOMClass    *pClassObject = _somFindClass(SOMClassMgrObject, somidThis, 0, 0);
+            PCSZ        pcszClassName = *(pso2->ppcszObjectClass);
+            somId       somidThis = somIdFromString((PSZ)pcszClassName);
+            SOMClass    *pClassObject;
 
-            sprintf(szSetupString, "%sOBJECTID=%s",
-                    pso2->pcszSetupString,       // can be empty or ";"-terminated string
-                    *(pso2->ppcszDefaultID));
-
-            if (pClassObject)
-                // get class's default title
-                apsz[0] = _wpclsQueryTitle(pClassObject);
-
-            if (apsz[0] == NULL)
-                // title not found: use class name then
-                apsz[0] = pszClassName;
-
-            pcszLocation = pso2->pcszLocation;
-            strcpy(szLocationPath, pcszLocation);
-            pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL);
-            if (!pObjLocation)
+            if (!(pClassObject = _somFindClass(SOMClassMgrObject, somidThis, 0, 0)))
             {
-                pcszLocation = WPOBJID_DESKTOP;
-                pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL);
-            }
-
-            if (pObjLocation && _somIsA(pObjLocation, _WPFileSystem))
-                _wpQueryFilename(pObjLocation,
-                                 szLocationPath,
-                                 TRUE);
-
-            if (cmnMessageBoxMsgExt(hwndOwner,
+                // class object is dead:
+                // V0.9.19 (2002-04-02) [umoeller]
+                apsz[0] = pcszClassName;
+                cmnMessageBoxMsgExt(hwndOwner,
                                     148, // "XWorkplace Setup",
                                     apsz,
-                                    3,
-                                    163,        // "create object?"
-                                    MB_YESNO)
-                         == MBID_YES)
+                                    1,
+                                    233,
+                                    MB_CANCEL);
+            }
+            else
             {
-                HOBJECT hobj = WinCreateObject(pszClassName,
-                                               (PSZ)apsz[0],                     // title
-                                               szSetupString,               // setup
-                                               (PSZ)pcszLocation,           // location
-                                               CO_FAILIFEXISTS);
+                sprintf(szSetupString, "%sOBJECTID=%s",
+                        pso2->pcszSetupString,       // can be empty or ";"-terminated string
+                        *(pso2->ppcszDefaultID));
 
-                if (hobj)
+                if (pClassObject)
+                    // get class's default title
+                    apsz[0] = _wpclsQueryTitle(pClassObject);
+
+                // some classes return empty titles, so use strhlen
+                // V0.9.19 (2002-04-02) [umoeller]
+                if (!strhlen(apsz[0]))
+                    // title not found: use class name then
+                    apsz[0] = pcszClassName;
+
+                pcszLocation = pso2->pcszLocation;
+                strcpy(szLocationPath, pcszLocation);
+
+                if (!(pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL)))
                 {
-                    // alright, got it:
-                    // store in array so the menu item will be
-                    // disabled next time
-                    pso2->pExists = _wpclsQueryObject(_WPObject,
-                                                      hobj);
-
-                    cmnMessageBoxMsg(hwndOwner,
-                                     148, // "XWorkplace Setup",
-                                     164, // "success"
-                                     MB_OK);
-                    brc = TRUE;
+                    pcszLocation = WPOBJID_DESKTOP;
+                    pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL);
                 }
-                else
-                    cmnMessageBoxMsg(hwndOwner,
-                                     148, // "XWorkplace Setup",
-                                     165, // "failed!"
-                                     MB_OK);
+
+                if (pObjLocation && _somIsA(pObjLocation, _WPFileSystem))
+                    _wpQueryFilename(pObjLocation,
+                                     szLocationPath,
+                                     TRUE);
+
+                if (cmnMessageBoxMsgExt(hwndOwner,
+                                        148, // "XWorkplace Setup",
+                                        apsz,
+                                        3,
+                                        163,        // "create object?"
+                                        MB_YESNO)
+                             == MBID_YES)
+                {
+                    HOBJECT hobj = WinCreateObject((PSZ)pcszClassName,
+                                                   (PSZ)apsz[0],                     // title
+                                                   szSetupString,               // setup
+                                                   (PSZ)pcszLocation,           // location
+                                                   CO_FAILIFEXISTS);
+
+                    if (hobj)
+                    {
+                        // alright, got it:
+                        // store in array so the menu item will be
+                        // disabled next time
+                        pso2->pExists = _wpclsQueryObject(_WPObject,
+                                                          hobj);
+
+                        cmnMessageBoxMsg(hwndOwner,
+                                         148, // "XWorkplace Setup",
+                                         164, // "success"
+                                         MB_OK);
+                        brc = TRUE;
+                    }
+                    else
+                        cmnMessageBoxMsg(hwndOwner,
+                                         148, // "XWorkplace Setup",
+                                         165, // "failed!"
+                                         MB_OK);
+                }
             }
 
             SOMFree(somidThis);
@@ -3619,9 +3652,9 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup "Paranoia" page notebook callbacks (notebook.c)       *
- *                                                                  *
+ *
+ *   XWPSetup "Paranoia" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 static const XWPSETTING G_ParanoiaBackup[] =

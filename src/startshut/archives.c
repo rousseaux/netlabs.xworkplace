@@ -155,7 +155,7 @@ static PCSZ     G_apcszPercentages[] =
         "5.000"
     };
 
-static CONTROLDEF
+static const CONTROLDEF
     ArcCriteriaGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ARC_CRITERIA_GROUP,

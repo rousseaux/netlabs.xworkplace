@@ -52,6 +52,7 @@
 
 #define INCL_WINMESSAGEMGR
 #define INCL_WINDIALOGS
+#define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
 #define INCL_WINLISTBOXES
@@ -69,6 +70,7 @@
 
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
@@ -1372,9 +1374,10 @@ typedef struct _SYNCHPOPULATETHREADS
  *      This allows us to get better CPU utilization since
  *      DosFindFirst/Next produce a lot of idle time (waiting
  *      for a disk transaction to complete), especially with
- *      JFS. We can use this idle time to do all the
- *      CPU-intensive object creation instead of doing
- *      "find file" and "create object" synchronously.
+ *      the tons of EAs we are trying to read here.
+ *      We can use this idle time to do all the CPU-intensive
+ *      object creation instead of doing "find file" and
+ *      "create object" synchronously.
  *
  *      Note that this requires a lot of evil synchronization
  *      between the two threads. A SYNCHPOPULATETHREADS structure
@@ -1921,9 +1924,260 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 
 /* ******************************************************************
  *
- *   "File" pages replacement in WPDataFile/WPFolder
+ *   "File" page 1 replacement in WPDataFile/WPFolder
  *
  ********************************************************************/
+
+#define INIT_DATE_TBR     "00.00.0000  "
+#define INIT_TIME_TBR     "00:00:00"
+
+#define LEFT_COLUMN_WIDTH         100
+
+#define DATETIMEGROUP_WIDTH     250
+#define DATETIME_ACTUAL_WIDTH   (DATETIMEGROUP_WIDTH + (2 * COMMON_SPACING))
+
+#define ATTRGROUP_WIDTH         130
+#define ATTR_ACTUAL_WIDTH       (ATTRGROUP_WIDTH + (2 * COMMON_SPACING))
+
+#define INFO_GROUP_WIDTH        (DATETIMEGROUP_WIDTH + ATTRGROUP_WIDTH + (2 * PM_GROUP_SPACING_X))
+#define INFO_TABLE_WIDTH        (INFO_GROUP_WIDTH - (2 * COMMON_SPACING))
+
+#define MLE_WIDTH               ((INFO_TABLE_WIDTH - 2 * COMMON_SPACING) / 2)
+
+static const CONTROLDEF
+    RealNameTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_REALNAME_TXT,
+                            LEFT_COLUMN_WIDTH,
+                            -1),
+    RealNameData = CONTROLDEF_TEXT(
+                            "W",
+                            ID_XSDI_FILES_REALNAME,
+                            INFO_GROUP_WIDTH - COMMON_SPACING - LEFT_COLUMN_WIDTH,
+                            -1),
+    SizeTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_FILESIZE_TXT,
+                            LEFT_COLUMN_WIDTH,
+                            -1),
+    SizeData = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_FILESIZE,
+                            -1,
+                            -1),
+    WorkAreaCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_WORKAREA,
+                            -1,
+                            -1),
+    DateTimeGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_DATETIME_GROUP,
+                            DATETIMEGROUP_WIDTH,
+                            -1),
+    CreationTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_CREATIONDATE_TXT,
+                            LEFT_COLUMN_WIDTH,
+                            -1),
+    CreationDate = CONTROLDEF_TEXT(
+                            INIT_DATE_TBR,
+                            ID_XSDI_FILES_CREATIONDATE,
+                            -1,
+                            -1),
+    CreationTime = CONTROLDEF_TEXT(
+                            INIT_TIME_TBR,
+                            ID_XSDI_FILES_CREATIONTIME,
+                            -1,
+                            -1),
+    LastWriteTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_LASTWRITEDATE_TXT,
+                            LEFT_COLUMN_WIDTH,
+                            -1),
+    LastWriteDate = CONTROLDEF_TEXT(
+                            INIT_DATE_TBR,
+                            ID_XSDI_FILES_LASTWRITEDATE,
+                            -1,
+                            -1),
+    LastWriteTime = CONTROLDEF_TEXT(
+                            INIT_TIME_TBR,
+                            ID_XSDI_FILES_LASTWRITETIME,
+                            -1,
+                            -1),
+    LastAccessTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_LASTACCESSDATE_TXT,
+                            LEFT_COLUMN_WIDTH,
+                            -1),
+    LastAccessDate = CONTROLDEF_TEXT(
+                            INIT_DATE_TBR,
+                            ID_XSDI_FILES_LASTACCESSDATE,
+                            -1,
+                            -1),
+    LastAccessTime = CONTROLDEF_TEXT(
+                            INIT_TIME_TBR,
+                            ID_XSDI_FILES_LASTACCESSTIME,
+                            -1,
+                            -1),
+    AttrGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_ATTR_GROUP,
+                            ATTRGROUP_WIDTH,
+                            -1),
+    AttrArchivedCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_ATTR_ARCHIVED,
+                            -1,
+                            -1),
+    AttrReadOnlyCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_ATTR_READONLY,
+                            -1,
+                            -1),
+    AttrSystemCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_ATTR_SYSTEM,
+                            -1,
+                            -1),
+    AttrHiddenCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_ATTR_HIDDEN,
+                            -1,
+                            -1),
+    InfoGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_INFO_GROUP,
+                            INFO_GROUP_WIDTH,
+                            -1),
+    SubjectTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_SUBJECT_TXT,
+                            LEFT_COLUMN_WIDTH,
+                            -1),
+    SubjectEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,
+                            ID_XSDI_FILES_SUBJECT,
+                            INFO_TABLE_WIDTH - LEFT_COLUMN_WIDTH - 2 * COMMON_SPACING,
+                            -1),
+    CommentsTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_COMMENTS_TXT,
+                            -1,
+                            -1),
+    CommentsMLE = CONTROLDEF_MLE(
+                            NULL,
+                            ID_XSDI_FILES_COMMENTS,
+                            MLE_WIDTH,
+                            50),
+    KeyphrasesTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_FILES_KEYPHRASES_TXT,
+                            -1,
+                            -1),
+    KeyphrasesMLE = CONTROLDEF_MLE(
+                            NULL,
+                            ID_XSDI_FILES_KEYPHRASES,
+                            MLE_WIDTH,
+                            50);
+
+static const DLGHITEM dlgFile1[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                CONTROL_DEF(&RealNameTxt),
+                CONTROL_DEF(&RealNameData),
+            START_ROW(0),
+                CONTROL_DEF(&SizeTxt),
+                CONTROL_DEF(&SizeData),
+            START_ROW(0),
+                START_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&WorkAreaCB),
+                    START_ROW(0),
+                        START_GROUP_TABLE(&DateTimeGroup),
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&CreationTxt),
+                                CONTROL_DEF(&CreationDate),
+                                CONTROL_DEF(&CreationTime),
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&LastWriteTxt),
+                                CONTROL_DEF(&LastWriteDate),
+                                CONTROL_DEF(&LastWriteTime),
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&LastAccessTxt),
+                                CONTROL_DEF(&LastAccessDate),
+                                CONTROL_DEF(&LastAccessTime),
+                        END_TABLE,
+                END_TABLE,
+                START_GROUP_TABLE(&AttrGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&AttrArchivedCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AttrReadOnlyCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AttrSystemCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&AttrHiddenCB),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&InfoGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&SubjectTxt),
+                        CONTROL_DEF(&SubjectEF),
+                    START_ROW(0),
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&CommentsTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&CommentsMLE),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&KeyphrasesTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&KeyphrasesMLE),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+static MPARAM G_ampFile1Page[] =
+    {
+        MPFROM2SHORT(ID_XSDI_FILES_REALNAME_TXT, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_REALNAME, XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_XSDI_FILES_FILESIZE_TXT, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_FILESIZE, XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_XSDI_FILES_WORKAREA, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_DATETIME_GROUP, XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_XSDI_FILES_CREATIONDATE_TXT, XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_XSDI_FILES_CREATIONDATE, XAC_MOVEY | XAC_MOVEX),
+        MPFROM2SHORT(ID_XSDI_FILES_CREATIONTIME, XAC_MOVEY | XAC_MOVEX),
+        MPFROM2SHORT(ID_XSDI_FILES_LASTWRITEDATE_TXT, XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_XSDI_FILES_LASTWRITEDATE, XAC_MOVEY | XAC_MOVEX),
+        MPFROM2SHORT(ID_XSDI_FILES_LASTWRITETIME, XAC_MOVEY | XAC_MOVEX),
+        MPFROM2SHORT(ID_XSDI_FILES_LASTACCESSDATE_TXT, XAC_MOVEY | XAC_SIZEX),
+        MPFROM2SHORT(ID_XSDI_FILES_LASTACCESSDATE, XAC_MOVEY | XAC_MOVEX),
+        MPFROM2SHORT(ID_XSDI_FILES_LASTACCESSTIME, XAC_MOVEY | XAC_MOVEX),
+        MPFROM2SHORT(ID_XSDI_FILES_ATTR_GROUP, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_ATTR_ARCHIVED, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_ATTR_READONLY, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_ATTR_SYSTEM, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_ATTR_HIDDEN, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_INFO_GROUP, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSDI_FILES_SUBJECT_TXT, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_SUBJECT, XAC_SIZEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_COMMENTS_TXT, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_COMMENTS, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSDI_FILES_KEYPHRASES_TXT, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FILES_KEYPHRASES, XAC_MOVEX | XAC_SIZEY)
+    };
+
+static ULONG G_cFile1Page = ARRAYITEMCOUNT(G_ampFile1Page);
 
 /*
  *@@ FILEPAGEDATA:
@@ -1998,6 +2252,7 @@ static VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
  *
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFileInitPage
  *@@changed V0.9.18 (2002-03-19) [umoeller]: now refreshing page when turned back to
+ *@@changed V0.9.19 (2001-04-13) [umoeller]: now using dialog formatter, made page resizeable
  */
 
 VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -2020,6 +2275,12 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
             pfpd->pszSubject = fsysQueryEASubject(pnbp->inbp.somSelf);
             pfpd->pszComments = fsysQueryEAComments(pnbp->inbp.somSelf);
             pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pnbp->inbp.somSelf);
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-09-29) [umoeller]
+            ntbFormatPage(pnbp->hwndDlgPage,
+                          dlgFile1,
+                          ARRAYITEMCOUNT(dlgFile1));
 
             if (doshIsFileOnFAT(szFilename))
             {
@@ -2179,6 +2440,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
  *      This is used by both XFolder and XFldDataFile.
  *
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFile1InitPage
+ *@@changed V0.9.19 (2001-04-13) [umoeller]: now using dialog formatter, made page resizeable
  */
 
 MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -2333,6 +2595,12 @@ MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
 
     return ((MPARAM)-1);
 }
+
+/* ******************************************************************
+ *
+ *   "File" page 2 replacement in WPDataFile/WPFolder
+ *
+ ********************************************************************/
 
 #ifndef __NOFILEPAGE2__
 
@@ -2557,7 +2825,6 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     inbp.pcszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
     inbp.fEnumerate = TRUE;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
-
     inbp.pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
     inbp.pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
 
@@ -2569,15 +2836,17 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndNotebook;
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
-    inbp.ulDlgID = ID_XSD_FILESPAGE1;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_FILESPAGE1; V0.9.19 (2001-04-13) [umoeller]
     inbp.ulPageID = SP_FILE1;
     inbp.usPageStyleFlags = BKA_MAJOR;
     inbp.pcszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
     inbp.fEnumerate = TRUE;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
-
     inbp.pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
     inbp.pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
+    // make this page sizeable V0.9.19 (2001-04-13) [umoeller]
+    inbp.pampControlFlags = G_ampFile1Page;
+    inbp.cControlFlags = G_cFile1Page;
 
     return (ntbInsertPage(&inbp));
 }

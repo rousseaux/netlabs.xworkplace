@@ -1,5 +1,5 @@
 ;
-; the following items have been changed with V0.9.16
+; the following items have been changed with V0.9.19
 ;
 
 <--XFL0140-->: XWorkplace &version; (built &date;)
@@ -7,14 +7,18 @@
 Deutsche Sprachuntersttzung: (C) 2002 Christian Hennecke.
 
 Enth„lt Teile (C) 2000-2002 Martin Lafaix, Paul Ratcliffe und andere.
-Enth„lt Teile von PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
+Enth„lt Teile von PageMage (C) 1995-1999 Carlos Ugarte.
 Enth„lt Teile der Standard Function Library (C) 1991-99 iMatix Corporation.
+Enth„lt Teile von expat 1.95.1 (C) 1998-2000 Thai Open Source Software Center Ltd.
 
-Fehlerberichte und Vorschl„ge richten Sie bitte an xworkplace-user@yahoogroups.com.
-Wenn Sie mit dem &xwp;-Code vertraut sind (oder es werden wollen), wenden Sie sich an xworkplace-dev@yahoogroups.com.
+&xwp;s Heimat im Internet ist http://www.xworkplace.org.
 
-&xwp; ist freie Software unter GNU General Public Licence (GPL), die Sie in der Datei COPYING im &xwp;-Installationsverzeichnis finden. Der komplette Sourecode ist bei http://xworkplace.netlabs.org in einem separaten Paket erh„ltlich. Sie k”nnen &xwp; unter den Bedingungen der GPL gern weitervertreiben und/oder modifizieren.
-&xwp; wird OHNE JEDWEDE GARANTIE geliefert.
+Fehlerberichte und Vorschl„ge richten Sie bitte an &contact-user;.
+Wenn Sie mit dem &xwp;-Code vertraut sind (oder es werden wollen), wenden Sie sich an &contact-dev;.
+
+&xwp; ist freie Software unter GNU General Public Licence (GPL), die Sie in der Datei COPYING im &xwp;-Installationsverzeichnis finden. Der komplette Quellcode ist bei Netlabs CVS erh„ltlich. Siehe CVS.TXT im &xwp;-Installationsverzeichnis. Sie k”nnen &xwp; unter den Bedingungen der GPL gern weitervertreiben und/oder modifizieren.
+
+Fr &xwp; wird KEINE HAFTUNG JEDWEDER ART bernommen.
 
 Details entnehmen Sie bitte der Sektion "Bemerkungen" des &xwp;-Handbuches.
 
@@ -35,7 +39,7 @@ Details finden Sie im &xwp;-Handbuch.
 <--FEATURES_6002-->: Wenn "Seite Symbol ersetzen..." aktiviert ist, ersetzt &xwp die Seite "Symbol" im Einstellungsnotizbuch eines jeden Objektes durch eine neue, erweiterte Version.
 Auf dieser Seite kann das Symbol nun auf etwas komfortablere Weise ersetzt werden. Zudem k”nnen Sie Objektinterna anschauen und ein globales Tastenkrzel fr ein Objekt setzen, wenn der &xwp;-Hook auch aktiviert ist (siehe "Maus- und Tastaturfunktionen" unten).
 Dies wurde mit &xwp; 0.9.16 eingefhrt und ersetzt die Seite "Objekt" frherer &xwp;-Versionen.
-<--FEATURES_6003-->: Wenn dies aktiviert ist, kombiniert &xwp; die drei standardm„áigen "Datei"-Seiten der Einstellungsnotizbcher der Ordner und Dateien zu einer einzigen komfortableren "Datei"-Seite.
+<--FEATURES_6003-->: Wenn dies aktiviert ist, kombiniert &xwp; die drei standardm„áigen "Datei"-Seiten der Einstellungsnotizbcher von Ordnern und Dateien zu einer einzigen, komfortableren "Datei"-Seite.
 Auáerdem wird eine zweite Seite zur Anzeige erweiterter Attribute hinzugefgt.
 Weiter wird hierdurch die Seite "Details" von Datentr„gerobjekten durch eine Anzeige mit einem Tortendiagramm ersetzt.
 Dies wurde mit &xwp; 0.9.0 eingefhrt.
@@ -52,7 +56,7 @@ Dies wurde mit &xwp; 0.9.4 eingefhrt.
 
 ; FEATURES_6005 added with V0.9.12
 
-<--FEATURES_6005-->: Ist "Klassennamen korrigieren" markiert, berschreibt &xwp; die Klassennamen der Klassen Ordner, Datei und Datentr„ger.
+<--FEATURES_6005-->: Ist "Klassennamen berschreiben" markiert, berschreibt &xwp; die Klassennamen der Klassen Ordner, Datei und Datentr„ger.
 Die Klassennamen werden in der dritten Spalte der Detailanzeige angezeigt (und auch in Statuszeilen, falls Sie dies so eingestellt haben).
 Wenn die WPS-Netzwerkklassen installiert wurden, sind diese Namen leider nicht mehr sehr aussagekr„ftig. &xwp; kann sie dann wieder auf "Ordner", "Datendatei" und "Datentr„ger" zurcksetzen.
 
@@ -62,9 +66,9 @@ Auáerdem kann fr jeden einzelnen Ordner festlegt werden, ob eine Statuszeile an
 Nachdem Sie diese Funktion eingeschaltet haben, sollten Sie also das Objekt "Workplace Shell" ”ffnen und die Seite "Statuszeile" ausw„hlen.
 Weitere Details, insbesondere dazu, wie Sie die Statuszeilen genau an Ihre Bedrfnisse anpassen, finden Sie im &xwp;-Handbuch.
 Dies wurde mit XFolder 0.70 eingefhrt.
-<--FEATURES_6012-->: Nach Auswahl von "Am Gitter ausrichten aktivieren" kann dem Kontextmen der Ordner ein Punkt "Am Gitter ausrichten" hinzugefgt werden.
+<--FEATURES_6012-->: Nach Auswahl von "Am Gitter ausrichten aktivieren" kann dem Kontextmen der Ordner ein Eintrag "Am Gitter ausrichten" hinzugefgt werden.
 Dieser Eintrag richtet alle Objekte im Ordner an den Linien eines unsichtbaren Gitters aus und vereinfacht so die Plazierung von Objekten.
-Mit dem Einschalten dieser Funktion wird dem Objekt "Workplace Shell" auch eine Seite "Gitter" hinzugefgt, auf der das zu verwendende Gitter definiert werden kann.
+Mit dem Einschalten dieser Funktion wird dem Objekt "Workplace Shell" auch eine Seite "Am Gitter ausrichten" hinzugefgt, auf der das zu verwendende Gitter definiert werden kann.
 Eine Einfhrung hierzu finden Sie im &xwp;-Handbuch.
 Dies wurde mit XFolder 0.50 eingefhrt.
 <--FEATURES_6013-->: Sind "Ordner-Tastenkrzel" aktiviert, k”nnen mehr als 30 h„ufig verwendeten Ordnerfunktionen (wie z.B. "Alles ausw„hlen") im &xwp;-Objekt "Workplace Shell" neue Tastenkrzel zugewiesen werden.

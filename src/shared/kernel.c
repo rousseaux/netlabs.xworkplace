@@ -110,6 +110,7 @@
 
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -485,7 +486,7 @@ FILE* _System krnExceptOpenLogFile(VOID)
 #define LOGFILENAME XFOLDER_CRASHLOG
         fprintf(file, "-----------------------------------------------------------\n"
                       "\nAn internal error occurred in XWorkplace (XFLDR.DLL).\n"
-                      "Please send a bug report to " CONTACT_ADDRESS "\n"
+                      "Please send a bug report to " CONTACT_ADDRESS_USER "\n"
                       "so that this error may be fixed for future XWorkplace versions.\n"
                       "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
                       "and describe as exactly as possible the conditions under which\n"
@@ -536,7 +537,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
             tid = ptib->tib_ptib2->tib2_ultid;
 
             fprintf(file,
-                    "Crashing thread:\n    TID 0x%lX (%d) ",
+                    "Thread identification:\n    TID 0x%lX (%d) ",
                     tid,        // hex
                     tid);       // dec
 
@@ -548,15 +549,16 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
                 else
                     fprintf(file, " (unknown thread)");
 
-            fprintf(file,
+            /* fprintf(file,
                     "\n    Thread priority: 0x%lX, ordinal: 0x%lX\n",
                     ulpri,
-                    ptib->tib_ordinal);
+                    ptib->tib_ordinal); */ // moved this to except.c V0.9.19 (2002-03-28) [umoeller]
         }
         else
-            fprintf(file, "Thread ID cannot be determined.\n");
-    } else
-        fprintf(file, "Thread information was not available.\n");
+            fprintf(file, __FUNCTION__ ": ptib->tib_ptib2 is NULL.\n");
+    }
+    else
+        fprintf(file, __FUNCTION__ ": ptib is NULL.\n");
 
     // running XFolder threads
     fprintf(file, "\nThe following running XWorkplace threads could be identified:\n");
@@ -718,8 +720,7 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
 
     TRY_LOUD(excpt1)
     {
-        pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
+        if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
         {
             if (pKernelGlobals->pXwpGlobalShared)
             {
@@ -782,8 +783,8 @@ HWND krnQueryDaemonObject(VOID)
     if (pKernelGlobals)
     {
         // cast PVOID
-        PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
-        if (!pXwpGlobalShared)
+        PXWPGLOBALSHARED pXwpGlobalShared;
+        if (!(pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "pXwpGlobalShared is NULL.");
         else
@@ -796,6 +797,59 @@ HWND krnQueryDaemonObject(VOID)
     }
 
     return (NULLHANDLE);
+}
+
+/*
+ *@@ krnStartDaemon:
+ *      starts or restarts the XWP daemon.
+ *
+ *@@added V0.9.19 (2002-03-28) [umoeller]
+ */
+
+HAPP krnStartDaemon(VOID)
+{
+    CHAR    szDir[CCHMAXPATH],
+            szExe[CCHMAXPATH];
+
+    // we need to specify XWorkplace's "BIN"
+    // subdir as the working dir, because otherwise
+    // the daemon won't find XWPHOOK.DLL.
+
+    // compose paths
+    if (cmnQueryXWPBasePath(szDir))
+    {
+        // path found:
+        PROGDETAILS pd;
+        // working dir: append bin
+        strcat(szDir, "\\bin");
+        // exe: append bin\xwpdaemon.exe
+        sprintf(szExe,
+                "%s\\xwpdaemn.exe",
+                szDir);
+        memset(&pd, 0, sizeof(pd));
+        pd.Length = sizeof(PROGDETAILS);
+        pd.progt.progc = PROG_PM;
+        pd.progt.fbVisible = SHE_VISIBLE;
+        pd.pszTitle = "XWorkplace Daemon";
+        pd.pszExecutable = szExe;
+        pd.pszParameters = "-D";
+        pd.pszStartupDir = szDir;
+        pd.pszEnvironment = "WORKPLACE\0\0";
+
+        G_KernelGlobals.happDaemon = WinStartApp(G_KernelGlobals.hwndThread1Object, // hwndNotify,
+                                                 &pd,
+                                                 "-D", // params; otherwise the daemon
+                                                       // displays a msg box
+                                                 NULL,
+                                                 0);// no SAF_INSTALLEDCMDLINE,
+        initLog("  WinStartApp for %s returned HAPP 0x%lX",
+                          pd.pszExecutable,
+                          G_KernelGlobals.happDaemon);
+
+        return (G_KernelGlobals.happDaemon);
+    }
+
+    return NULLHANDLE;
 }
 
 /*
@@ -888,8 +942,6 @@ VOID krnCreateObjectWindows(VOID)
 
 static VOID T1M_DaemonReady(VOID)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     // _Pmpf(("T1M_DaemonReady"));
 
     if (G_KernelGlobals.pXwpGlobalShared)
@@ -1309,8 +1361,8 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
                     // just report:
                     xstrcat(&strMsg,
                             "\n\nPlease post a bug report to "
-                            "xworkplace-user@yahoogroups.com and attach the the file "
-                            "XWPTRAP.LOG, which you will find in the root "
+                            CONTACT_ADDRESS_USER " and attach the file "
+                            LOGFILENAME ", which you will find in the root "
                             "directory of your boot drive. ", 0);
                     winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", strMsg.psz);
                 }
@@ -1729,7 +1781,7 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
         break;
 
         /*
-         *@@ T1M_PROGOPENPROGRAM:
+         * T1M_PROGOPENPROGRAM:
          *      calls progOpenProgramThread1 to make sure the
          *      application gets started from thread 1
          *      (to avoid the system hangs with Win-OS/2
@@ -1748,12 +1800,13 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          *
          *      No return code.
          *
-         *@@added V0.9.16 (2001-12-02) [umoeller]
+         *added V0.9.16 (2001-12-02) [umoeller]
+         *removed again V0.9.19 (2002-03-28) [umoeller]
          */
 
-        case T1M_PROGOPENPROGRAM:
+        /* case T1M_PROGOPENPROGRAM:
             progOpenProgramThread1(mp1);
-        break;
+        break; */
 
 #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop

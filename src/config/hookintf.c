@@ -107,17 +107,17 @@
 // #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 static PFNWP G_pfnwpEntryFieldOrig = 0;
 
 /* ******************************************************************
- *                                                                  *
- *   XWorkplace daemon/hook interface                               *
- *                                                                  *
+ *
+ *   XWorkplace daemon/hook interface
+ *
  ********************************************************************/
 
 /*
@@ -343,9 +343,9 @@ BOOL hifHookConfigChanged(PVOID pvdc)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Object hotkeys interface                                       *
- *                                                                  *
+ *
+ *   Object hotkeys interface
+ *
  ********************************************************************/
 
 #ifndef __ALWAYSOBJHOTKEYS__
@@ -486,9 +486,9 @@ BOOL hifSetObjectHotkeys(PVOID pvHotkeys,   // in: ptr to array of GLOBALHOTKEY 
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Function keys interface                                        *
- *                                                                  *
+ *
+ *   Function keys interface
+ *
  ********************************************************************/
 
 /*
@@ -682,9 +682,9 @@ BOOL hifDeleteFunctionKey(PFUNCTIONKEY paFunctionKeys,// in: array of function k
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPKeyboard notebook callbacks (notebook.c)                    *
- *                                                                  *
+ *
+ *   XWPKeyboard notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -1943,7 +1943,7 @@ SLDCDATA
                      0           // scale 2 spacing
              };
 
-static CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOSLIDINGFOCUS__
     SlidingFocusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,

@@ -37,17 +37,17 @@
 #include "bldlevel.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Prototypes                                                     *
- *                                                                  *
+ *
+ *   Prototypes
+ *
  ********************************************************************/
 
 extern int _System sec32_pre_init_base(PTR16 reqpkt);
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 extern unsigned short codeend;      // in sec32_start.asm
@@ -60,11 +60,16 @@ extern char data32_end;
 extern void begin_code32(void);     // in sec32_start.asm
 extern int  begin_data32;           // in sec32_start.asm
 
+extern int debug_port;
+
 char G_szBanner[]
 = "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
   "(C) Copyright 2000-2002 Ulrich M”ller\r\n";
 
 char G_szNoSES[] = "XWPSEC32.SYS: SES driver not found. Cannot initialize.\r\n";
+
+char G_szCom1[] = "XWPSEC32.SYS: Debugging to COM port 1.\r\n";
+char G_szCom2[] = "XWPSEC32.SYS: Debugging to COM port 2.\r\n";
 
 #pragma pack(1)
 
@@ -104,9 +109,9 @@ struct SecurityHelpers SecHlp = {0, }; */
     // SecHlp sesdd32.sys entry points
 
 /* ******************************************************************
- *                                                                  *
- *   Helper functions                                               *
- *                                                                  *
+ *
+ *   Helper functions
+ *
  ********************************************************************/
 
 /*
@@ -152,8 +157,7 @@ int FixMemory(void)
             // allocate 2 GDT selectors to communicate with the control program
             // later; we must do this at init time, but right now these
             // selectors point to nowhere until the CP calls the REGISTER IOCtl
-            rc = DevHlp32_AllocGDTSelector(G_aGDTSels, 2);
-            if (rc == NO_ERROR)
+            if (!(rc = DevHlp32_AllocGDTSelector(G_aGDTSels, 2)))
             {
                 // set the pointers to the control program communication buffer;
                 G_CPData.pOpData = NULL; // (OPDATA*)MK_FP(GDTSels[0], 0);
@@ -194,9 +198,9 @@ int InitSecurity(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Strategy INIT_BASE code                                        *
- *                                                                  *
+ *
+ *   Strategy INIT_BASE code
+ *
  ********************************************************************/
 
 /*
@@ -289,6 +293,22 @@ int sec32_init_base(PTR16 reqpkt)
                             continue;
                         }
 
+#define OUTPUT_COM1 0x3F8
+#define OUTPUT_COM2 0x2F8
+
+                        if (strncmp(tmp, "1", sizeof("1") - 1) == 0)
+                        {
+                            debug_port = OUTPUT_COM1;
+                            continue;
+                        }
+
+                        if (strncmp(tmp, "2", sizeof("2") - 1) == 0)
+                        {
+                            debug_port = OUTPUT_COM2;
+                            continue;
+                        }
+
+
                         // "-AL:logfile": audit log file specified?
                         /* else if (strncmp(tmp, "AL", sizeof("AL") - 1) == 0)
                         {
@@ -312,7 +332,7 @@ int sec32_init_base(PTR16 reqpkt)
                         if ((rc = InitSecurity()) != NO_ERROR)
                         {
                             // error interfacing SES:
-                            DevHlp32_SaveMessage(G_szNoSES, strlen(G_szNoSES) + 1);
+                            DevHlp32_SaveMessage(G_szNoSES, sizeof(G_szNoSES));
                             status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
                         }
                         else
@@ -325,7 +345,7 @@ int sec32_init_base(PTR16 reqpkt)
                             {
                                 // say hello
                                 DevHlp32_SaveMessage(G_szBanner,
-                                                     strlen(G_szBanner) + 1);
+                                                     sizeof(G_szBanner));
                                 // say log file name
                                 /* if (G_szLogFile[0])
                                 {
@@ -334,6 +354,19 @@ int sec32_init_base(PTR16 reqpkt)
                                     DevHlp32_SaveMessage(G_szScratchBuf,
                                                          strlen(G_szScratchBuf) + 1);
                                 } */
+
+                                if (debug_port == OUTPUT_COM1)
+                                {
+                                    kernel_printf(G_szCom1);
+                                    DevHlp32_SaveMessage(G_szCom1,
+                                                         sizeof(G_szCom1));
+                                }
+                                else if (debug_port == OUTPUT_COM2)
+                                {
+                                    kernel_printf(G_szCom2);
+                                    DevHlp32_SaveMessage(G_szCom2,
+                                                         sizeof(G_szCom2));
+                                }
                             }
                         }
                     }

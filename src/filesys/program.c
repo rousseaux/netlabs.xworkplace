@@ -79,6 +79,7 @@
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #define INCL_WINENTRYFIELDS
 #define INCL_WINERRORS
+#define INCL_SHLERRORS
 #include <os2.h>
 
 // C library headers
@@ -114,12 +115,16 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
+
+// headers in /hook
+#include "hook\xwphook.h"
 
 // other SOM headers
 #pragma hdrstop
@@ -1910,76 +1915,6 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 }
 
 /*
- *@@ PROGOPENDATA:
- *
- *@@added V0.9.16 (2001-12-02) [umoeller]
- */
-
-typedef struct _PROGOPENDATA
-{
-    PPROGDETAILS    pProgDetails;
-
-    HAPP            *phapp;         // out: HAPP
-
-    HWND            hwndNotify;
-
-    ULONG           cbFailingName;
-    PSZ             pszFailingName;
-
-} PROGOPENDATA, *PPROGOPENDATA;
-
-/*
- *@@ progOpenProgramThread1:
- *      actual handler for progOpenProgram, which is
- *      guaranteed to run on thread 1.
- *
- *@@added V0.9.16 (2001-12-02) [umoeller]
- *@@changed V0.9.16 (2002-01-04) [umoeller]: fixed bad startup dir if no arg data file was given
- */
-
-APIRET progOpenProgramThread1(PVOID pvData)
-{
-    APIRET          arc = NO_ERROR;
-    PSZ             pszParams = NULL;
-
-    PPROGOPENDATA   pData = (PPROGOPENDATA)pvData;
-
-    TRY_LOUD(excpt1)
-    {
-        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
-        // start the app (more hacks in appStartApp,
-        // which calls WinStartApp in turn)
-        arc = appStartApp(pKernelGlobals->hwndThread1Object, // notify window: t1 obj wnd
-                          pData->pProgDetails,
-                          0,              // APP_RUN_* flags V0.9.14
-                          pData->phapp,
-                          pData->cbFailingName,
-                          pData->pszFailingName);
-                    // V0.9.16 (2001-12-02) [umoeller]
-    }
-    CATCH(excpt1)
-    {
-        arc = ERROR_PROTECTION_VIOLATION;
-    } END_CATCH();
-
-    // handle notify window that progOpenProgram
-    // is waiting on
-    if (pData->hwndNotify)
-        WinPostMsg(pData->hwndNotify,
-                   WM_USER,
-                   (MPARAM)arc,
-                   0);
-
-    return (arc);
-}
-
-HAPP EXPENTRY ShlStartApp(WPObject *pObject,
-                          PPROGDETAILS pDetails,
-                          ULONG ulUnknown1,
-                          ULONG ulUnknown2);
-
-/*
  *@@ progOpenProgram:
  *      this opens the specified program object, which
  *      must be of the WPProgram or WPProgramFile class.
@@ -2040,6 +1975,11 @@ HAPP EXPENTRY ShlStartApp(WPObject *pObject,
  *          so we can properly remove source emphasis later.
  *          krn_fnwpThread1Object then calls progAppTerminateNotify.
  *
+ *      4)  As opposed to calling WinStartApp from within the
+ *          Workplace process, this does _not_ hang the system
+ *          any longer since we now use the XWorkplace daemon
+ *          to actually call WinStartApp.
+ *
  *      Since this calls progSetupArgs, this might display modal
  *      dialogs before returning. As a result (and because this
  *      calls winhStartApp in turn), the calling thread must
@@ -2058,6 +1998,9 @@ HAPP EXPENTRY ShlStartApp(WPObject *pObject,
  *      --  ERROR_INTERRUPT (95): user cancelled a parameters
  *          dialog.
  *
+ *      --  BASEERR_DAEMON_DEAD: XWorkplace deamon is not
+ *          running (V0.9.19).
+ *
  *      plus the many error codes from appStartApp.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
@@ -2069,6 +2012,7 @@ HAPP EXPENTRY ShlStartApp(WPObject *pObject,
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed root folder problems
  *@@changed V0.9.16 (2001-12-02) [umoeller]: moved all code to progOpenProgramThread1; added thread-1 sync
  *@@changed V0.9.18 (2002-03-27) [umoeller]: workaround for VIO hangs if not thread 1
+ *@@changed V0.9.19 (2002-03-28) [umoeller]: now using daemn for starting apps, this fixes the VIO problems too
  */
 
 APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgramFile
@@ -2122,13 +2066,9 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                 arc = ERROR_INTERRUPT;
             else
             {
-                PROGDETAILS     ProgDetails;
-                XSTRING         strExecutablePatched,
-                                strParamsPatched;
-                PSZ             pszWinOS2Env = 0;
-
-                /* PROGOPENDATA Data;
-                memset(&Data, 0, sizeof(Data)); */
+                PPROGDETAILS    pDetails;
+                HWND            hwndDaemonObject;
+                PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
                 // set the new params
                 pProgDetails->pszParameters = strParamsNew.psz;
@@ -2147,104 +2087,34 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                 // V0.9.18 (2002-03-27) [umoeller]
                 // well the thread redirection hangs the system
                 // in any case... I get tired of this bullshit and
-                // the frequent system hangs for no apparent reason,
-                // so we just use this entry point into PMWP.DLL
-                // which apparently works... I have no freaking
-                // idea why that works and my code doesn't!!!
+                // the frequent system hangs for no apparent reason
 
-                if (pszFailingName)
-                    *pszFailingName = '\0';
+                // V0.9.19 (2002-03-28) [umoeller]
+                // now sending XDM_STARTAPP to daemon, this works too
 
-                xstrInit(&strExecutablePatched, 0);
-                xstrInit(&strParamsPatched, 0);
-
-                if (!(arc = appFixProgDetails(&ProgDetails,
-                                              pProgDetails,
-                                              0,
-                                              &strExecutablePatched,
-                                              &strParamsPatched,
-                                              &pszWinOS2Env)))
+                if (!(hwndDaemonObject = krnQueryDaemonObject()))
+                    arc = BASEERR_DAEMON_DEAD;
+                                // cmnProgramErrorMsgBox will offer
+                                // to restart the daemon then, if
+                                // the caller bothers to call that
+                                // (XWPProgram and XWPDataFile do)
+                // build a buffer of shared memory with all the data
+                else if (!(arc = appBuildProgDetails(&pDetails,
+                                                     pProgDetails,
+                                                     0)))
                 {
-                    if (!(*phapp = ShlStartApp(NULL, &ProgDetails, 0, 0)))
-                        arc = ERROR_FILE_NOT_FOUND;
+                    if (!(arc = (APIRET)WinSendMsg(hwndDaemonObject,
+                                                   XDM_STARTAPP,
+                                                   (MPARAM)pKernelGlobals->hwndThread1Object, // notify window: t1 obj wnd
+                                                   (MPARAM)pDetails)))
+                        *phapp = pDetails->Length;
+
+                    DosFreeMem(pDetails);
                 } // end if (ProgDetails.pszExecutable)
-
-                xstrClear(&strParamsPatched);
-                xstrClear(&strExecutablePatched);
-
-                if (pszWinOS2Env)
-                    free(pszWinOS2Env);
 
                 #ifdef DEBUG_PROGRAMSTART
                     _Pmpf((__FUNCTION__ ": returning %d", arc));
                 #endif
-
-                // _Pmpf((__FUNCTION__ ": hacked exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
-                // _Pmpf(("  hacked params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
-                // _Pmpf(("  hacked startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
-
-                /* Data.pProgDetails = pProgDetails;
-                Data.phapp = phapp;
-                Data.cbFailingName = cbFailingName;
-                Data.pszFailingName = pszFailingName;
-
-                // if we're running on thread 1, we don't need
-                // the below overhead
-
-                if (    (doshMyTID() == 1)
-                     || (!appIsWindowsApp(pProgDetails->progt.progc))
-                   )
-                {
-                    // _Pmpf((__FUNCTION__ ": calling progOpenProgramThread1 directly"));
-                    arc = progOpenProgramThread1(&Data);
-                }
-                else
-                {
-                    // Win-OS/2 app, and not thread 1:
-
-                    HAB hab;
-                    PCKERNELGLOBALS pKernelGlobals;
-
-                    // create notify window for progOpenProgramThread1;
-                    // using WinSendMsg hangs the system (for god's sake)
-                    if (    (Data.hwndNotify = winhCreateObjectWindow(WC_STATIC, NULL))
-                         && (hab = WinQueryAnchorBlock(Data.hwndNotify))
-                         && (pKernelGlobals = krnQueryGlobals())
-                         && (WinPostMsg(pKernelGlobals->hwndThread1Object,
-                                        T1M_PROGOPENPROGRAM,
-                                        (MPARAM)&Data,
-                                        0))
-                       )
-                    {
-                        // alright, all this succeeded:
-                        // wait for thread-1 to finish all this
-                        QMSG qmsg;
-                        BOOL fQuit = FALSE;
-                        while (WinGetMsg(hab,
-                                         &qmsg, 0, 0, 0))
-                        {
-                            // current message for our object window?
-                            if (    (qmsg.hwnd == Data.hwndNotify)
-                                 && (qmsg.msg == WM_USER)
-                               )
-                            {
-                                // _Pmpf((__FUNCTION__ ": got WM_USER"));
-                                fQuit = TRUE;
-                                arc = (ULONG)qmsg.mp1;
-                            }
-
-                            WinDispatchMsg(hab, &qmsg);
-
-                            if (fQuit)
-                                break;
-                        }
-                    }
-
-                    if (Data.hwndNotify)
-                        WinDestroyWindow(Data.hwndNotify);
-
-                    // _Pmpf((__FUNCTION__ ": left message loop"));
-                } */
 
                 if (!arc)
                     // app started OK:
@@ -2638,9 +2508,7 @@ VOID progFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
     if (flFlags & CBI_INIT)
     {
         XFIELDINFO xfi[2];
-        // PFIELDINFO pfi = NULL;
         int        i = 0;
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,

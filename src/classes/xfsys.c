@@ -94,9 +94,9 @@
 // #include "xfobj.h"
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldSystem instance methods                      *
- *                                                                  *
+ *
+ *   here come the XFldSystem instance methods
+ *
  ********************************************************************/
 
 /*
@@ -349,9 +349,9 @@ SOM_Scope BOOL  SOMLINK xfsys_wpAddSettingsPages(XFldSystem *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldSystem class methods                         *
- *                                                                  *
+ *
+ *   here come the XFldSystem class methods
+ *
  ********************************************************************/
 
 /*

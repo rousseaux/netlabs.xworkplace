@@ -101,9 +101,9 @@
 // #include <wpdesk.h>                 // WPDesktop
 
 /* ******************************************************************
- *                                                                  *
- *   "Classes to container" functions                               *
- *                                                                  *
+ *
+ *   "Classes to container" functions
+ *
  ********************************************************************/
 
 /*
@@ -792,9 +792,9 @@ VOID clsCleanupWpsClasses(PWPSCLASSESINFO pwpsci) // in: struct returned by clsW
 }
 
 /* ******************************************************************
- *                                                                  *
- *   "Select class" dialog                                          *
- *                                                                  *
+ *
+ *   "Select class" dialog
+ *
  ********************************************************************/
 
 /*
@@ -1047,9 +1047,9 @@ ULONG clsSelectWpsClassDlg(HWND hwndOwner,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Method information functions                                   *
- *                                                                  *
+ *
+ *   Method information functions
+ *
  ********************************************************************/
 
 /*

@@ -1854,6 +1854,7 @@ CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
  *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting eCSClock on eCS
  *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting double-click on diskfree to open drive
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: eCSClock opened settings, fixed
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
@@ -1866,7 +1867,8 @@ VOID MwgtButton1DblClick(HWND hwnd,
         PCSZ        pcszID = NULL,
                     pcszBackupID = NULL;
         HOBJECT     hobj = NULLHANDLE;
-        ULONG       ulView = 2; // OPEN_SETTINGS,
+        ULONG       ulView = 2, // OPEN_SETTINGS,
+                    ulBackupView = 0;       // OPEN_DEFAULT
         CHAR        szTemp[50];
 
         switch (pPrivate->ulType)
@@ -1910,7 +1912,11 @@ VOID MwgtButton1DblClick(HWND hwnd,
         // if we have a backup ID, try that
         // V0.9.18 (2002-03-23) [umoeller]
         if (!hobj && pcszBackupID)
+        {
             hobj = WinQueryObject((PSZ)pcszBackupID);
+            ulView = ulBackupView;
+            _Pmpf(("%s got hobj 0x%lX", pcszBackupID, hobj));
+        }
 
         if (hobj)
         {

@@ -84,9 +84,9 @@
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
- *                                                                  *
- *   Declarations                                                   *
- *                                                                  *
+ *
+ *   Declarations
+ *
  ********************************************************************/
 
 // client window class name
@@ -128,9 +128,9 @@ typedef struct _PARTITIONCLIENTDATA
 } PARTITIONCLIENTDATA, *PPARTITIONCLIENTDATA;
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 /*

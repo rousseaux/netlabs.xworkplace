@@ -101,9 +101,9 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Declarations                                                   *
- *                                                                  *
+ *
+ *   Declarations
+ *
  ********************************************************************/
 
 #ifndef __NOXSYSTEMSOUNDS__
@@ -174,9 +174,9 @@ typedef struct _SOUNDPAGEDATA
 } SOUNDPAGEDATA, *PSOUNDPAGEDATA;
 
 /* ******************************************************************
- *                                                                  *
- *   Additional system sounds                                       *
- *                                                                  *
+ *
+ *   Additional system sounds
+ *
  ********************************************************************/
 
 #ifndef __NOXSYSTEMSOUNDS__
@@ -284,9 +284,9 @@ BOOL sndInstallAddtlSounds(HAB hab,
 #endif
 
 /* ******************************************************************
- *                                                                  *
- *   Helper funcs                                                   *
- *                                                                  *
+ *
+ *   Helper funcs
+ *
  ********************************************************************/
 
 /*
@@ -782,9 +782,9 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSound notebook callbacks (notebook.c)                       *
- *                                                                  *
+ *
+ *   XWPSound notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*

@@ -92,9 +92,9 @@ BOOL CnrFilter(PMINIRECORDCORE prec, PFILTERDATA pfilterdata);
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // global data

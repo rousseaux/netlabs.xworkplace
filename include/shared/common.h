@@ -21,7 +21,7 @@
  *@@include #define INCL_WINWINDOWMGR
  *@@include #define INCL_DOSMODULEMGR
  *@@include #include <os2.h>
- *@@include #include "helpers\xstring.h"    // only for setup sets
+ *@@include #include "helpers\xstring.h"    // only for setup sets and cmnDescribeError
  *@@include #include <wpfolder.h>           // only for some features
  *@@include #include "shared\common.h"
  */
@@ -67,82 +67,6 @@
     #else
         #define DECLARE_CMN_STRING(str, def) extern PCSZ str;
     #endif
-
-    /* ******************************************************************
-     *
-     *   Error codes
-     *
-     ********************************************************************/
-
-    #define FOPSERR_FIRST_CODE  30000
-    #define XCENTER_FIRST_CODE  31000
-    #define ICONS_FIRST_CODE    32000
-
-    #define FOPSERR_NOT_HANDLED_ABORT         (FOPSERR_FIRST_CODE + 1)
-    #define FOPSERR_INVALID_OBJECT            (FOPSERR_FIRST_CODE + 2)
-    #define FOPSERR_NO_OBJECTS_FOUND          (FOPSERR_FIRST_CODE + 3)
-            // no objects found to process
-    #define FOPSERR_INTEGRITY_ABORT           (FOPSERR_FIRST_CODE + 4)
-    #define FOPSERR_FILE_THREAD_CRASHED       (FOPSERR_FIRST_CODE + 5)
-            // fopsFileThreadProcessing crashed
-    #define FOPSERR_CANCELLEDBYUSER           (FOPSERR_FIRST_CODE + 6)
-    #define FOPSERR_NO_TRASHCAN               (FOPSERR_FIRST_CODE + 7)
-            // trash can doesn't exist, cannot delete
-            // V0.9.16 (2001-11-10) [umoeller]
-    #define FOPSERR_MOVE2TRASH_READONLY       (FOPSERR_FIRST_CODE + 8)
-            // moving WPFileSystem which has read-only:
-            // this should prompt the user
-    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  (FOPSERR_FIRST_CODE + 9)
-            // moving non-deletable to trash can: this should abort
-    #define FOPSERR_DELETE_CONFIRM_FOLDER     (FOPSERR_FIRST_CODE + 10)
-            // deleting WPFolder and "delete folder" confirmation is on:
-            // this should prompt the user (non-fatal)
-            // V0.9.16 (2001-12-06) [umoeller]
-    #define FOPSERR_DELETE_READONLY           (FOPSERR_FIRST_CODE + 11)
-            // deleting WPFileSystem which has read-only flag;
-            // this should prompt the user (non-fatal)
-    #define FOPSERR_DELETE_NOT_DELETABLE      (FOPSERR_FIRST_CODE + 12)
-            // deleting not-deletable; this should abort
-    #define FOPSERR_TRASHDRIVENOTSUPPORTED    (FOPSERR_FIRST_CODE + 13)
-    #define FOPSERR_WPFREE_FAILED             (FOPSERR_FIRST_CODE + 14)
-    #define FOPSERR_LOCK_FAILED               (FOPSERR_FIRST_CODE + 15)
-            // requesting object mutex failed
-    #define FOPSERR_START_FAILED              (FOPSERR_FIRST_CODE + 16)
-            // fopsStartTask failed
-    #define FOPSERR_POPULATE_FOLDERS_ONLY     (FOPSERR_FIRST_CODE + 17)
-            // fopsAddObjectToTask works on folders only with XFT_POPULATE
-    #define FOPSERR_POPULATE_FAILED           (FOPSERR_FIRST_CODE + 18)
-            // wpPopulate failed on folder during XFT_POPULATE
-    #define FOPSERR_WPQUERYFILENAME_FAILED    (FOPSERR_FIRST_CODE + 19)
-            // wpQueryFilename failed
-    #define FOPSERR_WPSETATTR_FAILED          (FOPSERR_FIRST_CODE + 20)
-            // wpSetAttr failed
-    #define FOPSERR_GETNOTIFYSEM_FAILED       (FOPSERR_FIRST_CODE + 21)
-            // fdrGetNotifySem failed
-    #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 22)
-            // wpshRequestFolderSem failed
-    #define FOPSERR_NOT_FONT_FILE             (FOPSERR_FIRST_CODE + 23)
-            // with XFT_INSTALLFONTS: non-XWPFontFile passed
-    #define FOPSERR_FONT_ALREADY_INSTALLED    (FOPSERR_FIRST_CODE + 24)
-            // with XFT_INSTALLFONTS: XWPFontFile is already installed
-    #define FOPSERR_NOT_FONT_OBJECT           (FOPSERR_FIRST_CODE + 25)
-            // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
-    #define FOPSERR_FONT_ALREADY_DELETED      (FOPSERR_FIRST_CODE + 26)
-            // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
-    #define FOPSERR_FONT_STILL_IN_USE         (FOPSERR_FIRST_CODE + 27)
-            // with XFT_DEINSTALLFONTS: font is still in use;
-            // this is only a warning, it will be gone after a reboot
-
-    typedef unsigned long FOPSRET;
-
-    #define XCERR_INVALID_ROOT_WIDGET_INDEX     (XCENTER_FIRST_CODE + 1)
-    #define XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY  (XCENTER_FIRST_CODE + 2)
-    #define XCERR_INVALID_TRAY_INDEX            (XCENTER_FIRST_CODE + 3)
-    #define XCERR_INVALID_SUBWIDGET_INDEX       (XCENTER_FIRST_CODE + 4)
-
-    typedef unsigned long XCRET;
-
-    #define ICONERR_BUILDPTR_FAILED             (ICONS_FIRST_CODE + 2)
 
     /********************************************************************
      *
@@ -685,7 +609,9 @@
     #define SP_FONT_SAMPLETEXT      190     // new with V0.9.9 (2001-03-27) [umoeller]
 
     // 20) XWPAdmin
-    #define SP_ADMIN_USER           200     // new with V0.9.11 (2001-04-22) [umoeller]
+    #define SP_ADMIN_LOCAL_USER     200     // new with V0.9.19 (2002-04-02) [umoeller]
+    #define SP_ADMIN_ALL_USERS      201     // new with V0.9.19 (2002-04-02) [umoeller]
+    #define SP_ADMIN_ALL_GROUPS     202     // new with V0.9.19 (2002-04-02) [umoeller]
 
     // 21) XFldObject
     #define SP_OBJECT_ICONPAGE1     220     // new with V0.9.16 (2001-10-15) [umoeller]
@@ -1133,13 +1059,15 @@
     #ifdef DIALOG_HEADER_INCLUDED
         #define LOAD_STRING     ((PCSZ)-1)
 
-        extern CONTROLDEF G_UndoButton,
+        extern const CONTROLDEF
+                          G_UndoButton,
                           G_DefaultButton,
                           G_HelpButton,
                           G_Spacing;
 
-        VOID cmnLoadDialogStrings(PCDLGHITEM paDlgItems,
-                                  ULONG cDlgItems);
+        APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,
+                                    ULONG cDlgItems,
+                                    PDLGHITEM *ppaNew);
     #endif
 
     /* ******************************************************************
@@ -1539,6 +1467,13 @@
                                      PCSZ pcszSuffix,
                                      ULONG ulFlags,
                                      BOOL fShowExplanation);
+
+    #ifdef XSTRING_HEADER_INCLUDED
+        VOID cmnDescribeError(PXSTRING pstr,
+                              APIRET arc,
+                              PSZ pszReplString,
+                              BOOL fShowExplanation);
+    #endif
 
     #ifdef SOM_WPObject_h
         ULONG cmnProgramErrorMsgBox(HWND hwndOwner,

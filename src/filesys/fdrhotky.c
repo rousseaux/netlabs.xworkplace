@@ -84,9 +84,9 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 /*
@@ -103,9 +103,9 @@
 static XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
 
 /* ******************************************************************
- *                                                                  *
- *   Folder hotkey functions                                        *
- *                                                                  *
+ *
+ *   Folder hotkey functions
+ *
  ********************************************************************/
 
 /*
@@ -445,9 +445,9 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c) for XFldWPS "Hotkeys" page     *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c) for XFldWPS "Hotkeys" page
+ *
  ********************************************************************/
 
 /*

@@ -99,6 +99,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -1115,71 +1116,20 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
  *
  *@@changed V0.9.0: adjust for XFolder::wpObjectReady override
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed _ulListNotify
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: moved impl to objReady
  */
 
 SOM_Scope void  SOMLINK xo_wpObjectReady(XFldObject *somSelf,
                                          ULONG ulCode,
                                          WPObject* refObject)
 {
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
     // XFldObjectMethodDebug("XFldObject","xo_wpObjectReady");
-
-    #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
-        _Pmpf(("xo_wpObjectReady for %s (class %s), ulCode: %s",
-                _wpQueryTitle(somSelf),
-                _somGetName(_somGetClass(somSelf)),
-                (ulCode == OR_AWAKE) ? "OR_AWAKE"
-                : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
-                : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
-                : (ulCode == OR_NEW) ? "OR_NEW"
-                : (ulCode == OR_SHADOW) ? "OR_SHADOW"
-                : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
-                : "unknown code"
-             ));
-    #endif
 
     XFldObject_parent_WPObject_wpObjectReady(somSelf, ulCode,
                                              refObject);
 
-    _flFlags |= OBJFL_INITIALIZED;
-
-    if (ulCode & OR_REFERENCE)
-    {
-        _ulListNotify = 0;
-            // V0.9.7 (2000-12-18) [umoeller]
-
-        _pvllWidgetNotifies = NULL;
-
-        #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf((__FUNCTION__ ": object \"%s\" created from source \"%s\"",
-                    _wpQueryTitle(somSelf),
-                    _wpQueryTitle(refObject)));
-
-            _Pmpf(("  source hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
-                    _wpQueryCoreRecord(refObject)->hptrIcon,
-                    _wpQueryStyle(refObject) & OBJSTYLE_NOTDEFAULTICON));
-            _Pmpf(("  new hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
-                    _wpQueryCoreRecord(somSelf)->hptrIcon,
-                    _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
-        #endif
-    }
-
-    // on my Warp 4 FP 10, this method does not get
-    // called for WPFolder instances, so we override
-    // WPFolder::wpObjectReady also; but we don't know
-    // if this is so with all Warp versions, so we
-    // better check (the worker thread checks for
-    // duplicates, so there's no problem in posting
-    // this twice)
-    if (!(_flFlags & OBJFL_WPFOLDER))
-        xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
-                         (MPARAM)somSelf,
-                         MPNULL);
-
-    // if this is a template, don't let the WPS make
-    // it go dormant
-    if (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
-        _wpLockObject(somSelf);
+    // moved implementation V0.9.19 (2002-04-02) [umoeller]
+    objReady(somSelf, ulCode, refObject);
 }
 
 /*
@@ -1376,6 +1326,16 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpUnInitData");
+
+    #ifdef __DEBUG__
+        if (!(_flFlags & OBJFL_INITIALIZED))
+        {
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Object 0x%lX (%s) was never initialized?",
+                   somSelf,
+                   STRINGORNULL(_wpQueryTitle(somSelf)));
+        }
+    #endif
 
     // have object removed from awake-objects list
     xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
@@ -2310,6 +2270,40 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
 }
 
 /*
+ *@@ wpMenuItemHelpSelected:
+ *      this instance method gets called when help is
+ *      requested for a menu item in the object's context menu.
+ *
+ *      We are finally giving decent help on the "Delete"
+ *      menu item, if the delete replacements are enabled.
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
+                                                  ULONG MenuId)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpMenuItemHelpSelected");
+
+    if (    (MenuId == WPMENUID_DELETE)
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+         && (    (cmnQuerySetting(sfReplaceTrueDelete))
+              || (cmnQuerySetting(sfTrashDelete))
+            )
+#endif
+       )
+    {
+        cmnDisplayHelp(somSelf,
+                       ID_XSH_FOPS_DELETE);
+        return TRUE;
+    }
+
+    return (XFldObject_parent_WPObject_wpMenuItemHelpSelected(somSelf,
+                                                              MenuId));
+}
+
+/*
  *@@ wpAddObjectGeneralPage:
  *      this WPObject instance method adds the "Icon"
  *      page to an object's settings notebook.
@@ -2382,15 +2376,24 @@ SOM_Scope ULONG  SOMLINK xo_wpAddObjectGeneralPage(XFldObject *somSelf,
  *      barely documented, so this is what I found out.
  *
  *      Parameters:
+ *
  *      -- *somSelf      in: the object being worked on
+ *
  *      -- *Folder       in: the folder being worked on
- *      -- **ppDuplicate out: if we return NAMECLASH_REPLACE,
- *                            we need to set this to the object to
- *                            be replaced
- *      -- pszTitle      in: title of somSelf
- *                            out: if we return NAMECLASH_RENAME,
- *                            we need to set this to somSelf's new title
+ *
+ *      -- **ppDuplicate in: somSelf (warning, this is not correct
+ *                              in the WPS docs);
+ *                       out: if we return NAMECLASH_REPLACE,
+ *                            this is set to the object to
+ *                            be replaced by the caler
+ *
+ *      -- pszTitle      in: title of somSelf;
+ *                       out: if we return NAMECLASH_RENAME,
+ *                            this is set to somSelf's new title
+ *                            to be set by the caller
+ *
  *      -- cbTitle       in: sizeof(*pszTitle)
+ *
  *      -- menuID        in: the user's operation, which is:
  *                              0x0065    create another (WPMENUID_CREATEANOTHER)
  *                              0x006B    move (WPMENUID_MOVE)

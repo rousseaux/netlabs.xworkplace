@@ -159,11 +159,6 @@ documentation:
        have time now.
 
 trash can:
-    -- When I activate "Replace true delete" (I don't use the TrashCan), I get the
-       new XWP dialog when I delete objects via popup menus, but the regular OS/2
-       one if I just press the "del" key. Of course I get it all the time if
-       "replace true delete" is not active <g>.
-
     -- When you delete an object, it probably retains its object ID, because
        if a program tries to UPDATE the object that has been deleted, it
        effectively updates the object in the TrashCan, while it should

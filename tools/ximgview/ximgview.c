@@ -53,17 +53,17 @@
 #include "ximgview.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables for all threads                               *
- *                                                                  *
+ *
+ *   Global variables for all threads
+ *
  ********************************************************************/
 
 CHAR        G_szFilename[CCHMAXPATH] = "";
 
 /* ******************************************************************
- *                                                                  *
- *   Image handling                                                 *
- *                                                                  *
+ *
+ *   Image handling
+ *
  ********************************************************************/
 
 #define LOADBMP_SUCCESS                 0
@@ -467,9 +467,9 @@ void _Optlink fntLoadBitmap(PTHREADINFO pti)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables for main thread                               *
- *                                                                  *
+ *
+ *   Global variables for main thread
+ *
  ********************************************************************/
 
 HAB         G_habMain = NULLHANDLE;
@@ -507,9 +507,9 @@ struct
 } G_GlobalSettings;
 
 /* ******************************************************************
- *                                                                  *
- *   Command handler                                                *
- *                                                                  *
+ *
+ *   Command handler
+ *
  ********************************************************************/
 
 VOID UpdateTitle(VOID)
@@ -794,9 +794,9 @@ BOOL WMClose_CanClose(HWND hwndClient)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Main window                                                    *
- *                                                                  *
+ *
+ *   Main window
+ *
  ********************************************************************/
 
 /*

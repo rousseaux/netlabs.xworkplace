@@ -22,9 +22,9 @@
     #define XWPHOOK_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   OS2.INI applications and keys                                  *
-     *                                                                  *
+     *
+     *   OS2.INI applications and keys
+     *
      ********************************************************************/
 
     #define INIAPP_XWPHOOK              "XWorkplace:Hook"   // added V0.9.0
@@ -35,9 +35,9 @@
     #define INIKEY_HOOK_FUNCTIONKEYS    "FuncKeys"          // added V0.9.3 (2000-04-19) [umoeller]
 
     /* ******************************************************************
-     *                                                                  *
-     *   Structures                                                     *
-     *                                                                  *
+     *
+     *   Structures
+     *
      ********************************************************************/
 
     // do not change the following, or this will break
@@ -405,9 +405,9 @@
     } FUNCTIONKEY, *PFUNCTIONKEY;
 
     /* ******************************************************************
-     *                                                                  *
-     *   Messages                                                       *
-     *                                                                  *
+     *
+     *   Messages
+     *
      ********************************************************************/
 
     #define XDM_HOOKINSTALL         (WM_USER + 400)
@@ -493,6 +493,8 @@
 #endif
 
     #define XDM_DISABLEHOTKEYSTEMP  (WM_USER + 423)
+
+    #define XDM_STARTAPP            (WM_USER + 424)
 
 #endif
 

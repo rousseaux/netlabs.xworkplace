@@ -1735,28 +1735,34 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
 {
     APIRET arc;
     SIZEL szlClient;
+    PDLGHITEM paNew;
 
-    cmnLoadDialogStrings(paDlgItems, cDlgItems);
-
-    // go create the controls
-    if (!(arc = dlghFormatDlg(hwndDlg,
-                              paDlgItems,
+    if (!cmnLoadDialogStrings(paDlgItems,
                               cDlgItems,
-                              cmnQueryDefaultFont(),
-                              DFFL_CREATECONTROLS,
-                              &szlClient,
-                              NULL)))
+                              &paNew))
     {
-        // resize the frame
-        dlghResizeFrame(hwndDlg,
-                        &szlClient);
+        // go create the controls
+        if (!(arc = dlghFormatDlg(hwndDlg,
+                                  paNew,
+                                  cDlgItems,
+                                  cmnQueryDefaultFont(),
+                                  DFFL_CREATECONTROLS,
+                                  &szlClient,
+                                  NULL)))
+        {
+            // resize the frame
+            dlghResizeFrame(hwndDlg,
+                            &szlClient);
 
-        // make Warp 4 notebook buttons and move controls
-        // (this was already called in PageInit on WM_INITDLG,
-        // but at that point the init callback wasn't called yet...)
-        winhAssertWarp4Notebook(hwndDlg,
-                                100,         // ID threshold
-                                14);
+            // make Warp 4 notebook buttons and move controls
+            // (this was already called in PageInit on WM_INITDLG,
+            // but at that point the init callback wasn't called yet...)
+            winhAssertWarp4Notebook(hwndDlg,
+                                    100,         // ID threshold
+                                    14);
+        }
+
+        free(paNew);
     }
 
     return (arc);

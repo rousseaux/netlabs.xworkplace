@@ -7,6 +7,7 @@
  *
  *@@include #include <os2.h>
  *@@include #include <wpobject.h>
+ *@@include #include "shared\errors.h"
  *@@include #include "filesys\fileops.h"
  *@@include #include "helpers\linklist.h" // only for some funcs
  */
@@ -29,6 +30,10 @@
 
     #ifndef SOM_WPObject_h
         #error fileops.h requires wpobject.h to be included.
+    #endif
+
+    #ifndef XWPERRORS_HEADER_INCLUDED
+        #error fileops.h requires shared\errors.h to be included.
     #endif
 
     /* ******************************************************************

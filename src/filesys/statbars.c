@@ -123,9 +123,9 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 static CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
@@ -143,9 +143,9 @@ static CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 static SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 /* ******************************************************************
- *                                                                  *
- *   Status bar mnemonics                                           *
- *                                                                  *
+ *
+ *   Status bar mnemonics
+ *
  ********************************************************************/
 
 /*
@@ -1802,9 +1802,9 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c) for "Status bars" pages        *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c) for "Status bars" pages
+ *
  ********************************************************************/
 
 #ifndef __NOCFGSTATUSBARS__

@@ -41,6 +41,9 @@
 
 int sec32_init_complete(PTR16 reqpkt)
 {
+
+    kernel_printf("Init complete\n");
+
     /*
      * no special processing yet
      */

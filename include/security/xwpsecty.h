@@ -38,39 +38,44 @@ extern "C" {
      *
      ********************************************************************/
 
-    #define XWPSEC_ERROR_FIRST          30000
+    #define ERROR_XWPSEC_FIRST          31000
 
-    #define XWPSEC_INTEGRITY            (XWPSEC_ERROR_FIRST + 1)
-    #define XWPSEC_INVALID_DATA         (XWPSEC_ERROR_FIRST + 2)
-    #define XWPSEC_CANNOT_GET_MUTEX     (XWPSEC_ERROR_FIRST + 3)
-    #define XWPSEC_CANNOT_START_DAEMON  (XWPSEC_ERROR_FIRST + 4)
+    #define XWPSEC_INTEGRITY            (ERROR_XWPSEC_FIRST + 1)
+    #define XWPSEC_INVALID_DATA         (ERROR_XWPSEC_FIRST + 2)
+    #define XWPSEC_CANNOT_GET_MUTEX     (ERROR_XWPSEC_FIRST + 3)
+    #define XWPSEC_CANNOT_START_DAEMON  (ERROR_XWPSEC_FIRST + 4)
 
-    #define XWPSEC_NO_AUTHORITY         (XWPSEC_ERROR_FIRST + 5)
+    #define XWPSEC_INSUFFICIENT_AUTHORITY  (ERROR_XWPSEC_FIRST + 5)
 
-    #define XWPSEC_HSUBJECT_EXISTS      (XWPSEC_ERROR_FIRST + 6)
-    #define XWPSEC_INVALID_HSUBJECT     (XWPSEC_ERROR_FIRST + 7)
+    #define XWPSEC_HSUBJECT_EXISTS      (ERROR_XWPSEC_FIRST + 6)
+    #define XWPSEC_INVALID_HSUBJECT     (ERROR_XWPSEC_FIRST + 7)
 
-    #define XWPSEC_INVALID_PID          (XWPSEC_ERROR_FIRST + 10)
-    #define XWPSEC_NO_CONTEXTS          (XWPSEC_ERROR_FIRST + 11)
+    #define XWPSEC_INVALID_PID          (ERROR_XWPSEC_FIRST + 10)
+    #define XWPSEC_NO_CONTEXTS          (ERROR_XWPSEC_FIRST + 11)
 
-    #define XWPSEC_USER_EXISTS          (XWPSEC_ERROR_FIRST + 20)
-    #define XWPSEC_INVALID_USERID       (XWPSEC_ERROR_FIRST + 21)
-    #define XWPSEC_INVALID_GROUPID      (XWPSEC_ERROR_FIRST + 22)
+    #define XWPSEC_USER_EXISTS          (ERROR_XWPSEC_FIRST + 20)
+    #define XWPSEC_NO_USERS             (ERROR_XWPSEC_FIRST + 21)
+    #define XWPSEC_NO_GROUPS            (ERROR_XWPSEC_FIRST + 22)
+    #define XWPSEC_INVALID_USERID       (ERROR_XWPSEC_FIRST + 23)
+    #define XWPSEC_INVALID_GROUPID      (ERROR_XWPSEC_FIRST + 24)
 
-    #define XWPSEC_NOT_AUTHENTICATED    (XWPSEC_ERROR_FIRST + 30)
-    #define XWPSEC_CANNOT_START_SHELL   (XWPSEC_ERROR_FIRST + 31)
-    #define XWPSEC_INVALID_PROFILE      (XWPSEC_ERROR_FIRST + 32)
-    #define XWPSEC_NO_LOCAL_USER        (XWPSEC_ERROR_FIRST + 33)
+    #define XWPSEC_NOT_AUTHENTICATED    (ERROR_XWPSEC_FIRST + 30)
+    #define XWPSEC_NO_USER_PROFILE      (ERROR_XWPSEC_FIRST + 31)       // V0.9.19 (2002-04-02) [umoeller]
+    #define XWPSEC_CANNOT_START_SHELL   (ERROR_XWPSEC_FIRST + 32)
+    #define XWPSEC_INVALID_PROFILE      (ERROR_XWPSEC_FIRST + 33)
+    #define XWPSEC_NO_LOCAL_USER        (ERROR_XWPSEC_FIRST + 34)
 
-    #define XWPSEC_DB_GROUP_SYNTAX      (XWPSEC_ERROR_FIRST + 34)
-    #define XWPSEC_DB_USER_SYNTAX       (XWPSEC_ERROR_FIRST + 35)
-    #define XWPSEC_DB_INVALID_GROUPID   (XWPSEC_ERROR_FIRST + 36)
+    #define XWPSEC_DB_GROUP_SYNTAX      (ERROR_XWPSEC_FIRST + 35)
+    #define XWPSEC_DB_USER_SYNTAX       (ERROR_XWPSEC_FIRST + 36)
+    #define XWPSEC_DB_INVALID_GROUPID   (ERROR_XWPSEC_FIRST + 37)
 
-    #define XWPSEC_DB_ACL_SYNTAX        (XWPSEC_ERROR_FIRST + 40)
+    #define XWPSEC_DB_ACL_SYNTAX        (ERROR_XWPSEC_FIRST + 40)
 
-    #define XWPSEC_RING0_NOT_FOUND      (XWPSEC_ERROR_FIRST + 50)
+    #define XWPSEC_RING0_NOT_FOUND      (ERROR_XWPSEC_FIRST + 50)
 
-    #define XWPSEC_QUEUE_INVALID_CMD    (XWPSEC_ERROR_FIRST + 51)
+    #define XWPSEC_QUEUE_INVALID_CMD    (ERROR_XWPSEC_FIRST + 51)
+
+    #define ERROR_XWPSEC_LAST           (ERROR_XWPSEC_FIRST + 51)
 
     /* ******************************************************************
      *
@@ -102,11 +107,12 @@ extern "C" {
 
     typedef struct _XWPUSERDBENTRY
     {
-        CHAR        szUserName[XWPSEC_NAMELEN];
-        CHAR        szPassword[XWPSEC_NAMELEN];
-
         XWPSECID    uid;        // user's ID (unique); 0 for root
+        CHAR        szUserName[XWPSEC_NAMELEN];
+        CHAR        szFullName[2*XWPSEC_NAMELEN];       // user's clear name
+        CHAR        szPassword[XWPSEC_NAMELEN];
         XWPSECID    gid;        // user's group; references an XWPGROUPDBENTRY
+        CHAR        szGroupName[XWPSEC_NAMELEN];    // group name (informational only)
     } XWPUSERDBENTRY, *PXWPUSERDBENTRY;
 
     typedef const XWPUSERDBENTRY * PCXWPUSERDBENTRY;
@@ -132,6 +138,12 @@ extern "C" {
     APIRET sudbCreateGroup(PXWPGROUPDBENTRY pGroupInfo);
 
     APIRET sudbDeleteGroup(XWPSECID gid);
+
+    APIRET sudbQueryUsers(PULONG pcUsers,
+                          PXWPUSERDBENTRY *ppaUsers);
+
+    APIRET sudbQueryGroups(PULONG pcGroups,
+                           PXWPGROUPDBENTRY *ppaGroups);
 
     /* ******************************************************************
      *
@@ -207,8 +219,12 @@ extern "C" {
     {
         ULONG           ulPID;          // process ID
 
-        HXSUBJECT       hsubjUser;      // user subject handle; 0 if root
-        HXSUBJECT       hsubjGroup;     // group subject handle; 0 if root
+        HXSUBJECT       hsubjUser;      // user subject handle;
+                                        // 0 if root;
+                                        // -1 if process was running before XWPShell started
+        HXSUBJECT       hsubjGroup;     // group subject handle;
+                                        // 0 if root;
+                                        // -1 if process was running before XWPShell started
 
         // ULONG           ulUMask;        // access rights when new file-system
                                         // objects are created
@@ -232,6 +248,14 @@ extern "C" {
                                     PULONG pulCount);
 
     APIRET scxtFreeSecurityContexts(PXWPSECURITYCONTEXT paContexts);
+
+    #define ACTION_QUERYNAME                0x0001
+    #define ACTION_QUERYID                  0x0002
+    #define ACTION_CREATEDELETEUSERGROUP    0x0004
+    #define ACTION_QUERYUSERSGROUPS         0x0008
+
+    APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXT pContext,
+                               ULONG flActions);
 
     /* ******************************************************************
      *
@@ -366,10 +390,7 @@ extern "C" {
      ********************************************************************/
 
     #define QUEUE_XWPSHELL        "\\QUEUES\\XWORKPLC\\XWPSHELL.QUE"
-            // queue name of the master XWPSHell queue
-
-    #define QUECMD_LOCALLOGGEDON                1
-    #define QUECMD_PROCESSLOGGEDON              2
+            // queue name of the master XWPShell queue
 
     /*
      *@@ QUEUEUNION:
@@ -379,15 +400,47 @@ extern "C" {
 
     typedef union _QUEUEUNION
     {
-        XWPLOGGEDON     LoggedOn;
-        // used with the following commands:
-        //
-        // -- QUECMD_LOCALLOGGEDON: return data for user that is
-        //    currently logged on locally.
-        //    Possible error codes: see slogQueryLocalUser.
-        //
-        // -- QUECMD_PROCESSLOGGEDON: return data for user on whose
-        //    behalf the caller process is running.
+        #define QUECMD_QUERYLOCALLOGGEDON           1
+            // return data for user that is
+            // currently logged on locally.
+            // Possible error codes: see slogQueryLocalUser.
+        XWPLOGGEDON     QueryLocalLoggedOn;
+
+        #define QUECMD_QUERYUSERS                   2
+            // return info for all users that
+            // are defined in the userdb.
+            // Possible error codes: see sudbQueryUsers.
+            // If NO_ERROR is returned, paUsers has been
+            // set to an array of cUsers XWPUSERDBENTRY
+            // structures as shared memory given to the
+            // caller. The caller must issue DosFreeMem.
+            // Note that the szPassword field for each
+            // user is always nulled out.
+        struct {
+            ULONG               cUsers;
+            PXWPUSERDBENTRY     paUsers;
+        }               QueryUsers;
+
+        #define QUECMD_QUERYGROUPS                  3
+            // return info for all groups that
+            // are defined in the userdb.
+            // Possible error codes: see sudbQueryGroups.
+            // If NO_ERROR is returned, paGroups has been
+            // set to an array of cGroups XWPGROUPDBENTRY
+            // structures as shared memory given to the
+            // caller. The caller must issue DosFreeMem.
+        struct {
+            ULONG               cGroups;
+            PXWPGROUPDBENTRY    paGroups;
+        }               QueryGroups;
+
+        #define QUECMD_QUERYPROCESSOWNER            4
+            // return the uid of the user who owns
+            // the given process.
+        struct {
+            ULONG               ulPID;      // in: PID to query
+            XWPSECID            uid;        // out: uid of owner, if NO_ERROR is returned
+        }               QueryProcessOwner;
 
     } QUEUEUNION, *PQUEUEUNION;
 
@@ -427,16 +480,16 @@ extern "C" {
 
     typedef struct _XWPSHELLQUEUEDATA
     {
-        ULONG       ulCommand;          // one of the QUECMD_* values
+        ULONG       ulCommand;          // in: one of the QUECMD_* values
 
-        HEV         hevData;            // event semaphore posted
+        HEV         hevData;            // in: event semaphore posted
                                         // when XWPShell has produced
                                         // the data
 
-        APIRET      arc;                // error code set by XWPShell;
+        APIRET      arc;                // out: error code set by XWPShell;
                                         // if NO_ERROR, the following is valid
 
-        QUEUEUNION  Data;               // data, format depends on ulCommand
+        QUEUEUNION  Data;               // out: data, format depends on ulCommand
 
     } XWPSHELLQUEUEDATA, *PXWPSHELLQUEUEDATA;
 

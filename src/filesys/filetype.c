@@ -3302,13 +3302,14 @@ static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
                    "XWPFileTypesDlg"))
     {
         // create XML document then
-        CHAR szErrorBuf[1000];
-        PCSZ apsz[2] = { szFilename, szErrorBuf };
-
+        PCSZ apsz[2] = { szFilename, 0 };
         HPOINTER hptrOld = winhSetWaitPointer();
-        APIRET arc = ftypImportTypes(szFilename,
-                                     szErrorBuf,
-                                     sizeof(szErrorBuf));
+        XSTRING strError;
+        APIRET arc;
+        xstrInit(&strError, 0);
+
+        arc = ftypImportTypes(szFilename, &strError);
+
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
         if (!arc)
@@ -3325,6 +3326,7 @@ static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
         }
         else
         {
+            apsz[1] = strError.psz;
             cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                 104,            // xwp: error
                                 apsz,
@@ -3332,6 +3334,8 @@ static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
                                 216,            // error %2 imported from %1
                                 MB_OK);
         }
+
+        xstrClear(&strError);
     }
 }
 
@@ -5769,8 +5773,7 @@ static APIRET ImportTypes(PDOMNODE pParentElement,
  */
 
 APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
-                       PSZ pszErrorBuf,
-                       ULONG cbErrorBuf)
+                       PXSTRING pstrError)       // out: error description, if rc != NO_ERROR
 {
     APIRET arc;
     BOOL fLocked = FALSE;
@@ -5841,37 +5844,42 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
 
                     if (arc == ERROR_DOM_PARSING)
                     {
-                        sprintf(pszErrorBuf,
-                                "Parsing error: %s (line %d, column %d)",
-                                pcszError,
-                                pDom->ulErrorLine,
-                                pDom->ulErrorColumn);
+                        xstrPrintf(pstrError,
+                                   "Parsing error: %s (line %d, column %d)",
+                                   pcszError,
+                                   pDom->ulErrorLine,
+                                   pDom->ulErrorColumn);
 
                         if (pDom->pxstrFailingNode)
-                            sprintf(pszErrorBuf + strlen(pszErrorBuf),
-                                    " (%s)",
-                                    pDom->pxstrFailingNode->psz);
+                        {
+                            xstrcat(pstrError, " (", 0);
+                            xstrcats(pstrError, pDom->pxstrFailingNode);
+                            xstrcat(pstrError, ")", 0);
+                        }
                     }
                     else if (arc == ERROR_DOM_VALIDITY)
                     {
-                        sprintf(pszErrorBuf,
+                        xstrPrintf(pstrError,
                                 "Validation error: %s (line %d, column %d)",
                                 pcszError,
                                 pDom->ulErrorLine,
                                 pDom->ulErrorColumn);
 
                         if (pDom->pxstrFailingNode)
-                            sprintf(pszErrorBuf + strlen(pszErrorBuf),
-                                    " (%s)",
-                                    pDom->pxstrFailingNode->psz);
+                        {
+                            xstrcat(pstrError, " (", 0);
+                            xstrcats(pstrError, pDom->pxstrFailingNode);
+                            xstrcat(pstrError, ")", 0);
+                        }
                     }
                 }
                 break;
 
                 default:
-                    sprintf(pszErrorBuf,
-                            "Error %d",
-                            arc);
+                    cmnDescribeError(pstrError,
+                                     arc,
+                                     NULL,
+                                     TRUE);
             }
 
             xmlFreeDOM(pDom);

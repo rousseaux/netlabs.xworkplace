@@ -109,7 +109,7 @@ APIRET slogInit(VOID)
             lstInit(&G_llLoggedOn, TRUE);
     }
     else
-        arc = XWPSEC_NO_AUTHORITY;
+        arc = XWPSEC_INSUFFICIENT_AUTHORITY;
 
     return (arc);
 }
@@ -328,25 +328,29 @@ APIRET DeregisterLoggedOn(PXWPLOGGEDON pUser)
  *
  *      Returns:
  *
- *      -- NO_ERROR: user was successfully logged on.
+ *      --  NO_ERROR: user was successfully logged on.
  *          The uid must then be passed to slogLogOff
  *          to log the user off again.
  *
- *      -- XWPSEC_NOT_AUTHENTICATED: authentication failed.
+ *      --  XWPSEC_NOT_AUTHENTICATED: authentication failed.
  *          NOTE: In that case, the function blocks for
  *          approximately three seconds before returning.
  *
- *      -- XWPSEC_USER_EXISTS: user is already logged on.
+ *      --  XWPSEC_USER_EXISTS: user is already logged on.
  */
 
-APIRET slogLogOn(PXWPLOGGEDON pNewUser,  // out: user info
-                 const char *pcszPassword,      // in: password
+APIRET slogLogOn(PXWPLOGGEDON pNewUser,     // in/out: user info
+                 const char *pcszPassword,  // in: password
                  BOOL fLocal)
 {
     APIRET arc = NO_ERROR;
 
     XWPUSERDBENTRY  uiLogon;
     XWPGROUPDBENTRY giLogon;
+
+    _Pmpf((__FUNCTION__ ": entering, user \"%s\", pwd \"%s\"",
+                pNewUser->szUserName,
+                pcszPassword));
 
     strhncpy0(uiLogon.szUserName,
               pNewUser->szUserName,
@@ -359,7 +363,9 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,  // out: user info
                                &giLogon);
 
     if (arc != NO_ERROR)
+    {
         DosSleep(3000);
+    }
     else
     {
         // create subject handles:
@@ -369,10 +375,10 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,  // out: user info
         siUser.hSubject = 0;
         siUser.id = uiLogon.uid;   // returned by sudbAuthenticateUser
         siUser.bType = SUBJ_USER;
-        arc = subjCreateSubject(&siUser);
-        if (arc != NO_ERROR)
-            _Pmpf(("slogLogOn: subjCreateSubject user returned %d", arc));
-        else
+
+        _Pmpf(("  sudbAuthenticateUser returned uid %d, gid %d", uiLogon.uid, uiLogon.gid));
+
+        if (!(arc = subjCreateSubject(&siUser)))
         {
             // OK:
             XWPSUBJECTINFO siGroup;
@@ -386,11 +392,8 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,  // out: user info
             siGroup.hSubject = 0;
             siGroup.id = uiLogon.gid;     // returned by sudbAuthenticateUser
             siGroup.bType = SUBJ_GROUP;
-            arc = subjCreateSubject(&siGroup);
 
-            if (arc != NO_ERROR)
-                _Pmpf(("slogLogOn: subjCreateSubject group returned %d", arc));
-            else
+            if (!(arc = subjCreateSubject(&siGroup)))
             {
                 // copy group subject and id
                 pNewUser->hsubjGroup = siGroup.hSubject;
@@ -398,22 +401,23 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,  // out: user info
                 strcpy(pNewUser->szGroupName, giLogon.szGroupName);
 
                 // and register this user
-                arc = RegisterLoggedOn(pNewUser,
-                                       fLocal);
-
-                if (arc != NO_ERROR)
+                if (arc = RegisterLoggedOn(pNewUser,
+                                           fLocal))
                 {
-                    // clean up
-                    _Pmpf(("slogLogOn: RegisterLoggedOn returned %d", arc));
+                    // error: clean up
                     subjDeleteSubject(siGroup.hSubject);
                 }
             }
 
-            if (arc != NO_ERROR)
+            if (!arc)
+                _Pmpf(("Logged on uid %d, gid %d", pNewUser->uid, pNewUser->gid));
+            else
                 // clean up
                 subjDeleteSubject(siUser.hSubject);
         }
     }
+
+    _Pmpf((__FUNCTION__ ": leaving, returning %d", arc));
 
     return (arc);
 }
@@ -447,12 +451,9 @@ APIRET slogLogOff(XWPSECID uid)
     XWPLOGGEDON LogOff;
     LogOff.uid = uid;
 
-    arc = DeregisterLoggedOn(&LogOff);
-
-    if (arc == NO_ERROR)
+    if (!(arc = DeregisterLoggedOn(&LogOff)))
     {
-        arc = subjDeleteSubject(LogOff.hsubjUser);
-        if (arc == NO_ERROR)
+        if (!(arc = subjDeleteSubject(LogOff.hsubjUser)))
             arc = subjDeleteSubject(LogOff.hsubjGroup);
     }
 
@@ -489,5 +490,4 @@ APIRET slogQueryLocalUser(PXWPLOGGEDON pLoggedOnLocal)
         UnlockLoggedOn();
 
     return (arc);
-
 }

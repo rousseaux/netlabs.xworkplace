@@ -26,9 +26,9 @@
     #define HOOKINTF_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   Declarations                                                   *
-     *                                                                  *
+     *
+     *   Declarations
+     *
      ********************************************************************/
 
     #ifdef XWPHOOK_HEADER_INCLUDED
@@ -94,9 +94,9 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   XWorkplace daemon/hook interface                               *
-     *                                                                  *
+     *
+     *   XWorkplace daemon/hook interface
+     *
      ********************************************************************/
 
     BOOL hifEnableHook(BOOL fEnable);
@@ -110,9 +110,9 @@
     BOOL hifHookConfigChanged(PVOID pvdc);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Object hotkeys interface                                       *
-     *                                                                  *
+     *
+     *   Object hotkeys interface
+     *
      ********************************************************************/
 
 #ifndef __ALWAYSOBJHOTKEYS__
@@ -129,9 +129,9 @@
                              ULONG cHotkeys);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Function keys interface                                        *
-     *                                                                  *
+     *
+     *   Function keys interface
+     *
      ********************************************************************/
 
     #ifdef XWPHOOK_HEADER_INCLUDED
@@ -154,9 +154,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   XWPKeyboard notebook callbacks (notebook.c)                    *
-     *                                                                  *
+     *
+     *   XWPKeyboard notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
     VOID hifCollectHotkeys(MPARAM mp1,
@@ -180,9 +180,9 @@
                                                 ULONG ulExtra);
 
         /* ******************************************************************
-         *                                                                  *
-         *   XWPMouse notebook callbacks (notebook.c)                       *
-         *                                                                  *
+         *
+         *   XWPMouse notebook callbacks (notebook.c)
+         *
          ********************************************************************/
 
         VOID XWPENTRY hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,

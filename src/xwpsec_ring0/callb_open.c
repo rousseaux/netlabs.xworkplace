@@ -43,9 +43,6 @@
  *
  *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
- *
- *      This dummy implementation prevents ANY access to files
- *      named CONFIG.SYS, in any directory.
  */
 
 ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
@@ -55,11 +52,12 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
 {
     int rc = NO_ERROR;
 
+    kernel_printf("Entering OPEN_PRE %s", pszPath);
+
     if (utilNeedsVerify())
     {
         // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
+        if (!(rc = utilSemRequest(&G_hmtxBufferLocked, -1)))
         {
             // daemon buffers locked
             // (we have exclusive access):
@@ -71,8 +69,8 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
             // utilWriteLogInfo();
 
             // prepare data for daemon notify
-            strcpy( pOpenPre->szFileName,
-                    pszPath);
+            strcpy(pOpenPre->szFileName,
+                   pszPath);
                       // sizeof(EventData.OpenPre.szFileName));
             pOpenPre->fsOpenFlags = fsOpenFlags;
             pOpenPre->fsOpenMode = fsOpenMode;
@@ -109,6 +107,8 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
         // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
+
+    kernel_printf("Exiting OPEN_PRE %s --> %d", pszPath, rc);
 
     return rc;
 }

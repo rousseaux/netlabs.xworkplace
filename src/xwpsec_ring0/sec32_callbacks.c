@@ -95,14 +95,14 @@ struct SecImp_s G_SecurityHooks =
                         //      ISS may modify values;
                         //      this way ISS may embed ACL data in the files
 
-   DELETE_PRE,          // ULONG (* CallType DELETE_PRE) (PSZ pszPath);
+   0, // DELETE_PRE,          // ULONG (* CallType DELETE_PRE) (PSZ pszPath);
                         //      lets ISS authorize DosDelete
 
    0, // DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
                         //                                ULONG RC);
                         //      notifies ISS of DosDelete completion
 
-   MOVE_PRE,            // ULONG (* CallType MOVE_PRE)  (PSZ pszNewPath,
+   0, // MOVE_PRE,            // ULONG (* CallType MOVE_PRE)  (PSZ pszNewPath,
                         //                               PSZ pszOldPath);
                         //      lets ISS authorize DosMove;
                         //      will only get called when source and dest
@@ -113,7 +113,7 @@ struct SecImp_s G_SecurityHooks =
                         //                               ULONG RC);
                         //      notifies ISS of DosMove completion
 
-   LOADEROPEN,          // ULONG (* CallType LOADEROPEN)(PSZ pszPath,
+   0, // LOADEROPEN,          // ULONG (* CallType LOADEROPEN)(PSZ pszPath,
                         //                               ULONG SFN);
                         //      lets ISS authorize kernel loader open...
                         //      is this called after OPENPRE?
@@ -123,7 +123,7 @@ struct SecImp_s G_SecurityHooks =
                         //      DLL or EXE into its address space...
                         //      is this called after OPENPRE?
 
-   EXECPGM,             // ULONG (* CallType EXECPGM)   (PSZ pszPath,
+   0, // EXECPGM,             // ULONG (* CallType EXECPGM)   (PSZ pszPath,
                         //                               PCHAR pchArgs);
                         //      lets ISS authorize DosExecPgm;
                         //      all executables boil down to this function,
@@ -131,7 +131,7 @@ struct SecImp_s G_SecurityHooks =
                         //      (including DosStartSession, WinStartApp)
                         //      (see also: EXECPGMPOST below)
 
-   FINDFIRST,           // ULONG (* CallType FINDFIRST) (PFINDPARMS pParms);
+   0, // FINDFIRST,           // ULONG (* CallType FINDFIRST) (PFINDPARMS pParms);
                         //          typedef struct {
                         //              PSZ    pszPath;      // well formed path
                         //              ULONG  ulHandle;     // search handle
@@ -164,13 +164,13 @@ struct SecImp_s G_SecurityHooks =
                         //      lets ISS authorize DosQueryFileInfo;
                         //      ISS may also modify parameters; this is a post-call!
 
-   MAKEDIR,             // ULONG (* CallType MAKEDIR)   (PSZ pszPath);
+   0, // MAKEDIR,             // ULONG (* CallType MAKEDIR)   (PSZ pszPath);
                         //      lets ISS authorize DosCreateDir
 
-   CHANGEDIR,           // ULONG (* CallType CHANGEDIR) (PSZ pszPath);
+   0, // CHANGEDIR,           // ULONG (* CallType CHANGEDIR) (PSZ pszPath);
                         //      lets ISS authorize DosSetCurrentDir
 
-   REMOVEDIR,           // ULONG (* CallType REMOVEDIR) (PSZ pszPath);
+   0, // REMOVEDIR,           // ULONG (* CallType REMOVEDIR) (PSZ pszPath);
                         //      lets ISS authorize DosDeleteDir
 
    0,                   // ULONG (* CallType FINDNEXT) (PFINDPARMS pParms);
@@ -193,7 +193,7 @@ struct SecImp_s G_SecurityHooks =
 
    0,                   // ULONG (* CallType FINDCLOSE3X) (ULONG ulSrchHandle);              //DGE02
 
-   EXECPGM_POST,        // VOID  (* CallType EXECPGM_POST) (PSZ pszPath,
+   0, // EXECPGM_POST,        // VOID  (* CallType EXECPGM_POST) (PSZ pszPath,
                         //                                  PCHAR pchArgs,
                         //                                  ULONG NewPID);
                         //      notifies ISS of DosExecPgm completion

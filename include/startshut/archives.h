@@ -89,9 +89,9 @@
     BOOL arcSaveSettings(VOID);
 
     /********************************************************************
-     *                                                                  *
-     *   Archiving Enabling                                             *
-     *                                                                  *
+     *
+     *   Archiving Enabling
+     *
      ********************************************************************/
 
     VOID arcForceNoArchiving(VOID);

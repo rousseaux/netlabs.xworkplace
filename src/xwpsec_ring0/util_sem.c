@@ -102,8 +102,7 @@ int utilSemRequest(PULONG pulMutex,
     //      all others will check the sem and block again.
 
     _disable();
-    // while (*pulMutex)
-    while (__lxchg((volatile int *)pulMutex, 1))        // V0.9.12 (2001-04-29) [umoeller]
+    while (*pulMutex)
     {
         // mutex busy: block this thread...
         // it will be unlocked by the other call to
@@ -118,12 +117,11 @@ int utilSemRequest(PULONG pulMutex,
         _disable();
     }
 
-    // if (rc == NO_ERROR) // V0.9.6 (2000-11-27) [umoeller]
-    // (*pulMutex)++;
+    if (rc == NO_ERROR) // V0.9.6 (2000-11-27) [umoeller]
+        (*pulMutex)++;
     _enable();
 
-    // return (rc);
-    return (NO_ERROR);
+    return (rc);
 }
 
 /*
@@ -133,10 +131,11 @@ int utilSemRequest(PULONG pulMutex,
 
 VOID utilSemRelease(PULONG pulMutex)
 {
-    *pulMutex = 0;
-    DevHlp32_ProcRun((ULONG)pulMutex);
-
-    // DevHlp32_SemClearRam1();
+    if (*pulMutex)
+    {
+        (*pulMutex)--;
+        DevHlp32_ProcRun((ULONG)pulMutex);
+    }
 }
 
 /*

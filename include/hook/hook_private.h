@@ -25,9 +25,9 @@
     #define HOOK_PRIVATE_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   Shared mem/semaphore IDs                                       *
-     *                                                                  *
+     *
+     *   Shared mem/semaphore IDs
+     *
      ********************************************************************/
 
     #define SHMEM_HOTKEYS         "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
@@ -56,9 +56,9 @@
 #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Structures                                                     *
-     *                                                                  *
+     *
+     *   Structures
+     *
      ********************************************************************/
 
     /*
@@ -249,9 +249,9 @@
     #define         HT_DELAYEDSLIDINGMENU   (HT_NORMAL+2)
 
     /* ******************************************************************
-     *                                                                  *
-     *   XPager definitions needed by the hook                        *
-     *                                                                  *
+     *
+     *   XPager definitions needed by the hook
+     *
      ********************************************************************/
 
 #ifndef __NOPAGER__

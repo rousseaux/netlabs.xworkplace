@@ -251,7 +251,7 @@
      *
      ********************************************************************/
 
-    BOOL xmmInit(PVOID pLogFile);
+    BOOL xmmInit(VOID);
 
     VOID xmmDisable(VOID);
 

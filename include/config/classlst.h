@@ -56,9 +56,9 @@
     #define CLASSLST_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   "Register new class" dlg                                       *
-     *                                                                  *
+     *
+     *   "Register new class" dlg
+     *
      ********************************************************************/
 
     /*
@@ -78,9 +78,9 @@
     MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /********************************************************************
-     *                                                                  *
-     *   XWPClassList implementation interface                          *
-     *                                                                  *
+     *
+     *   XWPClassList implementation interface
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

@@ -76,6 +76,42 @@
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+extern ULONG    G_blockidCmdPending,
+                G_cCmdPending;
+                    // in util_daemon.c
+
+/* ******************************************************************
+ *
+ *   IOCtl implementation
+ *
+ ********************************************************************/
+
+/*
+ *@@ BlockForCmdPending:
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ */
+
+int BlockForCmdPending(VOID)
+{
+    int rc;
+
+    G_cCmdPending++;
+    _disable();
+    rc = DevHlp32_ProcBlock((ULONG)&G_blockidCmdPending,
+                            -1,     // wait forever
+                            0);     // interruptible
+            // corresponding ProcRun is in utilDaemonRequest
+
+    return rc;
+}
+
 /*
  *@@ RegisterDaemon:
  *      prepares the stuff we need to interface with
@@ -95,128 +131,73 @@ int RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packe
            unsigned char  cat;      // category
            unsigned char  func;     // function
            PTR16          parm;     // --- not used here
-           PTR16          data;     // ptr to SECIOREGISTER structure
+           PTR16          data;     // ptr to SECIOSHARED structure
            unsigned short sfn;
            unsigned short parmlen;
            unsigned short datalen;
        }; */
 
-    if (G_hevCallback != NULLHANDLE)
+    if (G_fDaemonReady)
         // daemon already attached:
         rc = ERROR_I24_INVALID_PARAMETER;
     else
     {
-        // request buffer lock semaphore:
-        // shouldn't be a problem because access control
-        // is still disabled, but just be sure...
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
+        ULONG   pidDaemon;
+        if (!(pidDaemon = utilGetTaskPID()))
+            // error:
+            rc = 2;     // @@todo
+        else
         {
-            // buffers locked:
+            PSECIOSHARED pSecIOSharedProcess;
 
-            ULONG   pidDaemon = utilGetTaskPID();
-            if (pidDaemon == 0)
-                // error:
-                rc = 2;     // @@todo
+            // get flat pointer to data packet, which is PSECIOSHARED
+            if ((rc = DevHlp32_VirtToLin(pRequest->data,
+                                         __StackToFlat(&pSecIOSharedProcess))))
+                // could not thunk reqpkt:
+            {
+                // utilWriteLog("RegisterDaemon: DevHlp32_VirtToLin returned %d.\r\n", rc);
+                rc = ERROR_I24_INVALID_PARAMETER;
+            }
             else
             {
-                PSECIOREGISTER  pSecIORegister = NULL;
+                // OK, we got pointer to PSECIOSHARED in process memory:
 
-                // get flat pointer to data packet, which is PSECIOREGISTER
-                if (    (rc = DevHlp32_VirtToLin(pRequest->data,
-                                                 __StackToFlat(&pSecIORegister)))
-                        != NO_ERROR)
-                    // could not thunk reqpkt:
+                // access memory buffer allocated by ring-3 daemon
+                // this is in the process address space (the daemon
+                // has used DosAllocMem)
+
+                // we need to map this address from the process
+                // address space to the system arena so we can
+                // use this pointer later from any other process
+
+                if (    (rc = DevHlp32_VMProcessToGlobal(VMDHPG_WRITE,   // writeable
+                                                         pSecIOSharedProcess,
+                                                         sizeof(SECIOSHARED),
+                                                         &G_pSecIOShared))
+                               != NO_ERROR)
                 {
-                    // utilWriteLog("RegisterDaemon: DevHlp32_VirtToLin returned %d.\r\n", rc);
+                    // utilWriteLog("RegisterDaemon: DevHlp32_VMProcessToGlobal returned %d.\r\n", rc);
                     rc = ERROR_I24_INVALID_PARAMETER;
                 }
                 else
                 {
-                    // OK, we got pointer to PSECIOREGISTER:
+                    // READY!!
 
-                    // access memory buffer allocated by ring-3 daemon
-                    // this is in the process address space (the daemon
-                    // has used DosAllocMem)
-                    PSECIOSHARED pSecIOSharedProcess = pSecIORegister->pSecIOShared;
+                    G_fDaemonReady = TRUE;
 
-                    // we need to map this address from the process
-                    // address space to the system arena so we can
-                    // use this pointer later from any other process
-
-                    if (    (rc = DevHlp32_VMProcessToGlobal(VMDHPG_WRITE,   // writeable
-                                                             pSecIOSharedProcess,
-                                                             sizeof(SECIOSHARED),
-                                                             &G_pSecIOShared))
-                                   != NO_ERROR)
-                    {
-                        // utilWriteLog("RegisterDaemon: DevHlp32_VMProcessToGlobal returned %d.\r\n", rc);
-                        rc = ERROR_I24_INVALID_PARAMETER;
-                    }
-                    else
-                    {
-                        // mapped:
-
-                        // open 32-bit event semaphore given to us by
-                        // daemon (this must be shared!)
-                        if (    (pSecIORegister->hevCallback == 0)
-                             || (    (rc = DevHlp32_OpenEventSem(pSecIORegister->hevCallback))
-                                     != NO_ERROR)
-                           )
-                        {
-                            // invalid semaphore:
-                            // utilWriteLog("RegisterDaemon: DevHlp32_OpenEventSem returned %d.\r\n", rc);
-                            rc = ERROR_I24_INVALID_PARAMETER;
-                        }
-                        else
-                        {
-                            // READY!!
-
-                            // say hello to ring-3 daemon
-                            CHAR    sz[] = "Hello daeamon!\0";
-                            PSZ     pSource = sz,
-                                    pTarget = ((PSECIOSHARED)G_pSecIOShared)->EventData.ac1024.acData;
-                            while (*pSource)
-                                *pTarget++ = *pSource++;
-                            *pTarget = 0;
-
-                            // store semaphore handle given to us;
-                            // we post this every time we have
-                            // something for the daemon...
-                            hevCallback2Store = pSecIORegister->hevCallback;
-                                // G_hevCallback is set below...
-
-                            // utilWriteLog("RegisterDaemon: Access control enabled.\r\n", rc);
-
-                            // store PID of ring-3 daemon so we can
-                            // disable access control for its API calls
-                            // G_pidRing3Daemon = pidDaemon;
-                                // done by sec32_open already
-                        }
-                    }
+                    rc = BlockForCmdPending();
+                            // calls ProcBlock, waits for some app task thread
+                            // to call ProcRun; returns NO_ERROR if there's
+                            // another job to be authorized
                 }
             }
-
-            // free buffers:
-            // unblock all threads waiting on buffer
-            utilSemRelease(&G_hmtxBufferLocked);
         }
     }
 
-    if (hevCallback2Store)
-        // ENABLE ACCESS CONTROL NOW!!!
-        G_hevCallback = hevCallback2Store;
-                                // NOTE: once G_hevCallback is != NULLHANDLE,
-                                // the driver will consider access control
-                                // ENABLED! As a result, once G_hevCallback
-                                // is != NULLHANDLE, all security kernel
-                                // hooks (DosOpen etc.) are ACTIVE!
-
     return (rc);
 
-    // If NO_ERROR is returned, access control is enabled.
-    // The daemon must now block on G_hevCallback, which
-    // we post once we have an access request.
+    // if this is NO_ERROR, daemon will then authorize the job
+    // in SECIOSHARED and call XWPSECIO_AUTHORIZED_NEXT
 }
 
 /*
@@ -228,18 +209,13 @@ int DeregisterDaemon(VOID)
 {
     int rc = NO_ERROR;
 
+    G_fDaemonReady = FALSE;
+
     if (G_pSecIOShared)
     {
         // reverse global memory
         DevHlp32_VMFree(G_pSecIOShared);
         G_pSecIOShared = NULL;
-    }
-
-    if (G_hevCallback)
-    {
-        // disable access control callbacks
-        DevHlp32_CloseEventSem(G_hevCallback);
-        G_hevCallback = 0;
     }
 
     return (rc);
@@ -256,11 +232,55 @@ int DeregisterDaemon(VOID)
  *      attempt to implement a second access control mechanism
  *      (which would be a security hole).
  *
- *      See XWPSECIOREGISTER for a description of the XWPSec
- *      access control protocol.
- *
  *      This is called from sec32_strategy() since it's stored in
  *      driver_routing_table in sec32_strategy.c.
+ *
+ *      The control flow is the following:
+ *
+ +          Ring-3 daemon           Ring-0                  Ring-0
+ +                                  daemon task time        any application task time
+ +
+ +      1)  calls XWPSECIO_REGISTER,
+ +          passes SECIOSHARED to
+ +          ring 0
+ +
+ +
+ +      2)                          ProcBlock(G_blockidCmdPending)
+ +                                  for first authorization request
+ +                                  (BlockForCmdPending)
+ +
+ +      3)                                                  DosOpen ends up
+ +                                                          in OPEN_PRE;
+ +                                                          1) utilSemRequest
+ +                                                          2) utilDaemonRequest
+ +                                                             fills SECIOSHARED,
+ +                                                             ProcRun(G_blockidCmdPending)
+ +                                                             to unblock daemon,
+ +                                                             ProcBlock(G_blockidCmdComplete)
+ +                                                             until daemon is done
+ +                                                             with authorization
+ +
+ +      4)                          returns from
+ +                                  XWPSECIO_REGISTER
+ +
+ +      5)  authorizes request,
+ +          stores result in
+ +          SECIOSHARED.arc
+ +          calls XWPSECIO_AUTHORIZED_NEXT,
+ +          passes same SECIOSHARED to
+ +          ring 0
+ +
+ +      6)                          ProcRun(G_blockidCmdComplete),
+ +                                  ProcBlock(G_blockidCmdPending)
+ +                                  for next authorization request
+ +                                  (BlockForCmdPending)
+ +
+ +      7)
+ +                                                          utilDaemonRequest returns;
+ +                                                          OPEN_PRE calls utilSemRelease
+ +                                                          and returns NO_ERROR or
+ +                                                          ERROR_ACCESS_DENIED;
+ +                                                          go back to 3)
  */
 
 int sec32_ioctl(PTR16 reqpkt)
@@ -269,8 +289,7 @@ int sec32_ioctl(PTR16 reqpkt)
     int             rc = 0;
     struct reqpkt_ioctl *pRequest;
 
-    if (    (rc = DevHlp32_VirtToLin(reqpkt, __StackToFlat(&pRequest)))
-            != NO_ERROR)
+    if (rc = DevHlp32_VirtToLin(reqpkt, __StackToFlat(&pRequest)))
         // could not thunk reqpkt:
         status |= STERR + ERROR_I24_INVALID_PARAMETER;
     else
@@ -344,27 +363,38 @@ int sec32_ioctl(PTR16 reqpkt)
                  *      initializes the driver for the ring-3
                  *      daemon.
                  *
-                 *      On input, this expects a SECIOREGISTER
+                 *      On input, this expects a SECIOSHARED
                  *      structure in the data packet.
+                 *
+                 *      Blocks the daemon thread until the
+                 *      first authorization request comes in.
+                 *
+                 *      Before returning, this fills the SECIOSHARD
+                 *      with the authorization request.
                  */
 
                 case XWPSECIO_REGISTER:
-                    // utilWriteLog("sec32_ioctl XWPSECIO_REGISTER:\r\n");
-                    // utilWriteLogInfo();
-
                     status = RegisterDaemon(pRequest);
-                    // utilWriteLog("  RegisterDaemon arc: %d\r\n", status);
+                            // this calls ProcBlock
                 break;
 
                 /*
-                 *@@ XWPSECIO_JOBDONE:
-                 *      No parameters, no data.
+                 *@@ XWPSECIO_AUTHORIZED_NEXT:
+                 *      comes in
+                 *
+                 *      --  after the first XWPSECIOREGISTER
+                 *          returned with the first authorization
+                 *          request, to pass the authorization
+                 *          error code to the thread that the
+                 *          driver blocked;
+                 *
+                 *      --  after that, for each subsequent
+                 *          request.
                  */
 
-                case XWPSECIO_JOBDONE:
-                    /* utilWriteLog("sec32_ioctl XWPSECIO_JOBDONE:\r\n");
-                    utilWriteLogInfo(); */
+                case XWPSECIO_AUTHORIZED_NEXT:
                     utilDaemonDone();
+                    rc = BlockForCmdPending();
                 break;
 
                 /*

@@ -42,8 +42,10 @@
 
 ULONG           G_ulBufferLockCount = 0;
 
-extern BOOL     G_blockidCmdComplete = 0,
-                G_ulBlockCount = 0;
+extern ULONG    G_blockidCmdComplete = 0,
+                G_cCmdComplete = 0,
+                G_blockidCmdPending = 0,
+                G_cCmdPending = 0;
 
 /* ******************************************************************
  *
@@ -60,7 +62,7 @@ extern BOOL     G_blockidCmdComplete = 0,
 
 BOOL utilNeedsVerify(VOID)
 {
-    if (G_hevCallback)
+    if (G_fDaemonReady)
     {
         // access control enabled by ring-3 daemon:
         ULONG   pid;
@@ -116,8 +118,6 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
     struct InfoSegGDT *pGDT = 0;      // OS/2 global infoseg
     struct InfoSegLDT *pLDT = 0;      // OS/2 local  infoseg
 
-    // utilWriteLog("    utilDaemonRequest: Entering, ulEventCode: %d....\r\n", ulEventCode);
-
     // store event code
     ((PSECIOSHARED)G_pSecIOShared)->ulEventCode = ulEventCode;
 
@@ -125,9 +125,8 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
     // (we're running at task time of thread who
     // requested access to resource!)
 
-    if (    (rc = DevHlp32_GetInfoSegs(__StackToFlat(&pGDT),
-                                       __StackToFlat(&pLDT)))
-            == NO_ERROR)
+    if (!(rc = DevHlp32_GetInfoSegs(__StackToFlat(&pGDT),
+                                    __StackToFlat(&pLDT))))
     {
         // PID
         ((PSECIOSHARED)G_pSecIOShared)->ulCallerPID = pLDT->LIS_CurProcID;
@@ -136,53 +135,43 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
         // TID
         ((PSECIOSHARED)G_pSecIOShared)->ulCallerTID = pLDT->LIS_CurThrdID;
 
-        // post HEV that daemon is waiting on
-        if (     (rc = DevHlp32_PostEventSem(G_hevCallback))
-                == NO_ERROR)
+        // unblock the daemon
+        DevHlp32_ProcRun((ULONG)&G_blockidCmdPending);
+
+        // we now need to block until daemon is done.
+        // This isn't that trivial because we don't
+        // have a DevHlp32_WaitEventSem, unfortunately.
+        // So we need to do a ProcBlock until the
+        // driver uses DevIOCtl to signal that it's
+        // done with the request.
+
+        // For the block Id we use G_blockidCmdComplete.
+        // This is safe because only one thread on
+        // the entire system can ever block on that
+        // ID, since we are serialized by the
+        // G_rsemBuffersLocked mutex in this section.
+
+        // utilWriteLog("    Blocking... G_cCmdComplete: %d\r\n", G_cCmdComplete);
+
+        G_cCmdComplete++;
+        _disable();
+        rc = DevHlp32_ProcBlock((ULONG)&G_blockidCmdComplete,
+                                -1,     // wait forever
+                                0);     // interruptible
+               // the corresponding ProcRun() is in utilDaemonDone(),
+               // which gets called from the ioctl
+
+        if (rc == NO_ERROR)
         {
-            // daemon ready to run:
+            // daemon has returned:
+            // it has then put the result code (NO_ERROR
+            // or ERROR_ACCESS_DENID or whatever) into
+            // G_pSecIOShared->arc
 
-            // we now need to block until daemon is done.
-            // This isn't that trivial because we don't
-            // have a DevHlp32_WaitEventSem, unfortunately.
-            // So we need to do a ProcBlock until the
-            // driver uses DevIOCtl to signal that it's
-            // done with the request.
-
-            // For the block Id we use G_blockidCmdComplete.
-            // This is safe because only one thread on
-            // the entire system can ever block on that
-            // ID, since we are serialized by the
-            // G_rsemBuffersLocked mutex in this section.
-
-            // utilWriteLog("    Blocking... G_ulBlockCount: %d\r\n", G_ulBlockCount);
-
-            G_ulBlockCount++;
-            // The corresponding ProcRun() is in sec32_ioctl.c.
-            _disable();
-            rc = DevHlp32_ProcBlock((ULONG)&G_blockidCmdComplete,
-                                    -1,     // wait forever
-                                    0);     // interruptible
-            // _disable();
-            _enable();
-
-            if (rc == NO_ERROR)
-            {
-                // utilWriteLog("    Unblocked!\r\n", rc);
-                // daemon has returned:
-                // it has then put the result code (NO_ERROR
-                // or ERROR_ACCESS_DENID or whatever) into
-                // G_pSecIOShared->arc
-
-                rc = ((PSECIOSHARED)G_pSecIOShared)->arc;
-                    // this is then returned from the API call, e.g. DosOpen
-
-                // utilWriteLog("    Daemon returned access rc %d\r\n", rc);
-            }
+            rc = ((PSECIOSHARED)G_pSecIOShared)->arc;
+                // this is then returned from the API call, e.g. DosOpen
         }
     }
-
-    // utilWriteLog("    utilDaemonRequest: Leaving, rc = %d\r\n", rc);
 
     return (rc);
 }
@@ -202,11 +191,10 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
 
 VOID utilDaemonDone(VOID)
 {
-    if (G_ulBlockCount)
+    if (G_cCmdComplete)
     {
         // application thread currently blocked:
+        G_cCmdComplete--;
         DevHlp32_ProcRun((ULONG)&G_blockidCmdComplete);
-        // utilWriteLog("    DevHlp32_ProcRun rc = %d", rc);
-        G_ulBlockCount--;
     }
 }

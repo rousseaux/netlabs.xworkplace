@@ -64,8 +64,10 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
+#define INCL_WINPOINTERS
 #include <os2.h>
 
 // C library headers
@@ -88,15 +90,20 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\desktop.h"            // XFldDesktop implementation
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
+
+// headers in /hook
+#include "hook\xwphook.h"
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -104,17 +111,17 @@
 #include "xfldr.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 static BOOL    G_DesktopPopulated = FALSE;
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldDesktop instance methods                     *
- *                                                                  *
+ *
+ *   here come the XFldDesktop instance methods
+ *
  ********************************************************************/
 
 /*
@@ -128,7 +135,7 @@ static BOOL    G_DesktopPopulated = FALSE;
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *somSelf,
-                                                                 HWND hwndNotebook)
+                                                                  HWND hwndNotebook)
 {
     INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
@@ -162,7 +169,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *somSelf,
-                                                               HWND hwndNotebook)
+                                                                HWND hwndNotebook)
 {
     INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
@@ -196,7 +203,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *som
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *somSelf,
-                                                                HWND hwndNotebook)
+                                                                 HWND hwndNotebook)
 {
     INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
@@ -231,7 +238,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *so
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *somSelf,
-                                                                HWND hwndNotebook)
+                                                                 HWND hwndNotebook)
 {
     ULONG ulrc = 0;
 
@@ -295,6 +302,26 @@ SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpInitData:
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xfdesk_wpInitData(XFldDesktop *somSelf)
+{
+    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpInitData");
+
+    XFldDesktop_parent_WPDesktop_wpInitData(somSelf);
+
+    _fOpened = FALSE;
+}
+
+/*
  *@@ wpSetup:
  *      this WPObject instance method is called to allow an
  *      object to set itself up according to setup strings.
@@ -342,7 +369,6 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpFilterPopupMenu(XFldDesktop *somSelf,
 {
     // items to suppress
     ULONG   ulSuppress = CTXT_CRANOTHER;
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpFilterPopupMenu");
@@ -431,6 +457,98 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
+ *
+ *      We override this to intercept the opening of the
+ *      first desktop of the system so that we can do
+ *      pre-populate. This was done in XFolder::wpOpen
+ *      with V0.9.18 (where the feature was introduced),
+ *      but this broke the pager.
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: moved daemon notification here to fix race
+ */
+
+SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
+                                      ULONG ulView, ULONG param)
+{
+    HWND        hwndReturn;
+    static      s_fDesktopOpened = FALSE;
+    BOOL        fWasFirstOpen = FALSE;
+
+    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpOpen");
+
+    initLog("Entering " __FUNCTION__"...");
+
+    if (!s_fDesktopOpened)
+    {
+        // if this is the first desktop ever opened, it
+        // must be the default desktop...
+        // pre-populate to avoid hangs on startup
+        s_fDesktopOpened = TRUE;
+        fWasFirstOpen = TRUE;
+
+        if (cmnQuerySetting(sfPrePopulateDesktop))
+        {
+            WPObject *pobj;
+
+            HPOINTER hptrOld = winhSetWaitPointer();
+
+            initLog("  pre-populating");
+
+            fdrCheckIfPopulated(somSelf,
+                                FALSE);     // not folders only
+            for (pobj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+                 pobj;
+                 pobj = *wpshGetNextObjPointer(pobj))
+            {
+                _wpQueryIcon(pobj);
+            }
+
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+        }
+        else
+            initLog("  pre-populate disabled");
+    }
+
+    // store in instance data so wpPopulate can check
+    // for pager fix
+    _fOpened = TRUE;
+
+    hwndReturn  = XFldDesktop_parent_WPDesktop_wpOpen(somSelf, hwndCnr,
+                                               ulView, param);
+
+    initLog("Leaving " __FUNCTION__", returning HWND 0x%lX", hwndReturn);
+
+    if (fWasFirstOpen)
+    {
+        // V0.9.19 (2002-04-02) [umoeller]
+        // moved daemon notification here from
+        // startup thread to fix a race
+        krnPostDaemonMsg(XDM_DESKTOPREADY,
+                         (MPARAM)hwndReturn,
+                         (MPARAM)0);
+        initLog("  posted desktop HWND 0x%lX to daemon", hwndReturn);
+    }
+
+    return (hwndReturn);
+}
+
+/*
  *@@ wpPopulate:
  *      this instance method populates a folder, in this case, the
  *      Desktop. After the active Desktop has been populated at
@@ -438,6 +556,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
  *      initiate all the XWorkplace startup processing.
  *
  *@@changed V0.9.5 (2000-08-26) [umoeller]: this was previously done in wpOpen
+ *@@changed V0.9.19 (2002-04-02) [umoeller]: added startup logging
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
@@ -446,39 +565,51 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
                                           BOOL fFoldersOnly)
 {
     BOOL    brc = FALSE;
-    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+
+    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpPopulate");
 
     #ifdef DEBUG_STARTUP
         _Pmpf(("XFldDesktop::wpPopulate"));
     #endif
 
+    initLog("Entering " __FUNCTION__", calling parent WPDesktop::wpPopulate...");
+
     brc = XFldDesktop_parent_WPDesktop_wpPopulate(somSelf,
                                                   ulReserved,
                                                   pszPath,
                                                   fFoldersOnly);
 
+    initLog("  parent WPDesktop::wpPopulate returned %d", brc);
+
     #ifdef DEBUG_STARTUP
         _Pmpf(("XFldDesktop::wpPopulate: checking whether Worker thread needs notify"));
     #endif
 
-    if (!G_DesktopPopulated)
-        if (_wpIsCurrentDesktop(somSelf))
-        {
-            // first call:
-            G_DesktopPopulated = TRUE;
+    if (    (!G_DesktopPopulated)
+         && (_fOpened)                      // avoid the pre-populate, wait until it's open!
+                                            // V0.9.19 (2002-04-02) [umoeller]
+         && (_wpIsCurrentDesktop(somSelf))
+       )
+    {
+        // first call:
+        G_DesktopPopulated = TRUE;
 
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("  posting FIM_DESKTOPPOPULATED"));
-            #endif
-            xthrPostFileMsg(FIM_DESKTOPPOPULATED,
-                            (MPARAM)somSelf,
-                            0);
-        }
+        initLog("  first desktop populate after open, posting FIM_DESKTOPPOPULATED");
+
+        #ifdef DEBUG_STARTUP
+            _Pmpf(("  posting FIM_DESKTOPPOPULATED"));
+        #endif
+        xthrPostFileMsg(FIM_DESKTOPPOPULATED,
+                        (MPARAM)somSelf,
+                        0);
+    }
 
     #ifdef DEBUG_STARTUP
         _Pmpf(("End of XFldDesktop::wpPopulate"));
     #endif
+
+    initLog("Leaving " __FUNCTION__);
 
     return (brc);
 }
@@ -498,7 +629,6 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
 SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
                                                          HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpAddDesktopArcRest1Page");
 
@@ -540,8 +670,6 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
          && (_wpIsCurrentDesktop(somSelf))
        )
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
         // insert "Menu" page
         _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
 

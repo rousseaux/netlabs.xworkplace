@@ -1,0 +1,70 @@
+<HTML WIDTH=70% XPOS=right NOSUBLINKS="intro" NOSUBLINKS="xices" NOSUBLINKS="vers_">
+<HEAD>
+    <TITLE>
+        &xwp; 0.9.18
+    </TITLE>
+</HEAD>
+<!-- Note: This file changes almost with every XFolder version.
+     I do not recommend translating it, because I do not keep logs
+     about changes to this file.
+     Simply use the English original instead. -->
+<BODY>
+<B>&xwp; 0.9.18 (March 26, 2002)</B>
+
+<P>New features:
+
+<UL><LI>Icon page: Implemented keyboard support for editing the object ID.
+
+<P><LI>NetscapeDDE: uses default browser settings from WPUrl object now,
+if not overridden from the command line. Thanks, Yuri Dario.
+
+</UL>Miscellaneous changes:
+
+<UL><LI>Common: Added better error messages for some error codes.
+
+<P><LI>Startup: Much more detailed XWPSTART.LOG which might help debugging WPS startup
+problems.
+
+<P><LI>&os2; Kernel: Added a couple more SYSLEVEL files.
+
+</UL>Bugfixes:
+
+<UL><LI>Common: Some internal initialization code didn't get called for folders,
+which was the reason why renaming them neither refreshed their container record
+nor awake shadows properly. Fixed.
+
+<P><LI>Common: Fixed global variables which caused many dialogs to fail after
+NLS change. Also localized a few more hard-coded strings.
+
+<P><LI>Programs: Now using XWPDAEMN.EXE for starting programs, which should help
+with applications hanging the system.
+
+<P><LI>Programs: Selecting "Cancel" in parameters prompt provoked a cryptic error
+message. Fixed.
+
+<P><LI>File operations: True delete replacement never worked if trash can was
+disabled. Fixed.
+
+<P><LI>File operations: Title clash dialog no longer appears when creating shadows.
+
+<P><LI>File operations: Trash can crashed when deleting several objects with the
+same title. Fixed.
+
+<P><LI>XCenter: Object button and X-button widgets crashed bad when objects from
+other processes were dragged over them. Fixed.
+
+<P><LI>XCenter: Double-clicking on clock widget didn't quite open eCSClock correctly.
+Fixed.
+
+<P><LI>XWPSetup: "Create object" buttons produced empty titles for some classes. Fixed.
+
+<P><LI>Hook: Pre-populate caused &pgr; to no longer detect the WPS desktop. Fixed.
+
+<P><LI>Hook: Fixed a race which caused &pgr; to ignore the WPS desktop in certain
+conditions as well.
+
+
+</UL>
+</BODY>
+</HTML>
+

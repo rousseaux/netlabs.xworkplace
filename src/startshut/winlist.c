@@ -115,6 +115,11 @@ typedef struct _WINLISTRECORD
 
     CHAR        szClosable[30];
     PSZ         pszClosable;        // points to szClosable
+
+    ULONG       uid;                // V0.9.19 (2002-04-02) [umoeller]
+    CHAR        szUid[30];
+    PSZ         pszUid;             // points to szUid;
+
 } WINLISTRECORD, *PWINLISTRECORD;
 
 #define ID_WINLISTCNR       1001
@@ -135,7 +140,7 @@ ULONG winlCreateRecords(HWND hwndCnr)
     HAB             hab = WinQueryAnchorBlock(hwndCnr);
 
     PWINLISTRECORD  pFirstRec = NULL,
-                    pRecThis = NULL;
+                    precThis = NULL;
     ULONG           ulIndex = 0;
 
     SHUTDOWNCONSTS  SDConsts;
@@ -156,72 +161,76 @@ ULONG winlCreateRecords(HWND hwndCnr)
                                                      pSwBlock->cswentry);
         if (pFirstRec)
         {
-            pRecThis = pFirstRec;
+            precThis = pFirstRec;
 
             // loop through all the tasklist entries
             for (ul = 0;
-                 (ul < pSwBlock->cswentry) && (pRecThis);
+                 (ul < pSwBlock->cswentry) && (precThis);
                  ul++)
             {
                 WPObject    *pObject;
                 LONG        lClosable;
 
-                pRecThis->ulIndex = ulIndex++;
+                precThis->ulIndex = ulIndex++;
 
-                pRecThis->hSwitch = pSwBlock->aswentry[ul].hswitch;
+                precThis->hSwitch = pSwBlock->aswentry[ul].hswitch;
 
-                pRecThis->hwnd = pSwBlock->aswentry[ul].swctl.hwnd;
-                sprintf(pRecThis->szHWND, "0x%lX", pSwBlock->aswentry[ul].swctl.hwnd);
-                pRecThis->pszHWND = pRecThis->szHWND;
+                precThis->hwnd = pSwBlock->aswentry[ul].swctl.hwnd;
+                sprintf(precThis->szHWND, "0x%lX", pSwBlock->aswentry[ul].swctl.hwnd);
+                precThis->pszHWND = precThis->szHWND;
 
-                if (pRecThis->hwnd)
-                    WinQueryClassName(pRecThis->hwnd,
-                                      sizeof(pRecThis->szWinClass),
-                                      pRecThis->szWinClass);
-                pRecThis->pszWinClass = pRecThis->szWinClass;
+                if (precThis->hwnd)
+                    WinQueryClassName(precThis->hwnd,
+                                      sizeof(precThis->szWinClass),
+                                      precThis->szWinClass);
+                precThis->pszWinClass = precThis->szWinClass;
 
-                pRecThis->hPgm = pSwBlock->aswentry[ul].swctl.hprog;
-                pRecThis->pid = pSwBlock->aswentry[ul].swctl.idProcess;
-                pRecThis->sid = pSwBlock->aswentry[ul].swctl.idSession;
-                pRecThis->ulVisibility = pSwBlock->aswentry[ul].swctl.uchVisibility;
+                precThis->hPgm = pSwBlock->aswentry[ul].swctl.hprog;
+                precThis->pid = pSwBlock->aswentry[ul].swctl.idProcess;
+                precThis->sid = pSwBlock->aswentry[ul].swctl.idSession;
+                precThis->ulVisibility = pSwBlock->aswentry[ul].swctl.uchVisibility;
 
-                strhncpy0(pRecThis->szSwTitle,
+                strhncpy0(precThis->szSwTitle,
                           pSwBlock->aswentry[ul].swctl.szSwtitle,
-                          sizeof(pRecThis->szSwTitle));
-                pRecThis->pszSwTitle = pRecThis->szSwTitle;
+                          sizeof(precThis->szSwTitle));
+                precThis->pszSwTitle = precThis->szSwTitle;
 
                 WinQueryWindowText(pSwBlock->aswentry[ul].swctl.hwnd,
-                                   sizeof(pRecThis->szWinTitle),
-                                   pRecThis->szWinTitle);
-                pRecThis->pszWinTitle = pRecThis->szWinTitle;
+                                   sizeof(precThis->szWinTitle),
+                                   precThis->szWinTitle);
+                precThis->pszWinTitle = precThis->szWinTitle;
 
                 lClosable = xsdIsClosable(hab,
                                           &SDConsts,
                                           &pSwBlock->aswentry[ul],
-                                          &pObject);
-                sprintf(pRecThis->szClosable, "%d", lClosable);
-                pRecThis->pszClosable = pRecThis->szClosable;
+                                          &pObject,
+                                          &precThis->uid);
+                sprintf(precThis->szClosable, "%d", lClosable);
+                precThis->pszClosable = precThis->szClosable;
 
-                sprintf(pRecThis->szObject, "0x%lX", pObject);
-                pRecThis->pszObject = pRecThis->szObject;
+                sprintf(precThis->szObject, "0x%lX", pObject);
+                precThis->pszObject = precThis->szObject;
+
+                sprintf(precThis->szUid, "%d", precThis->uid);
+                precThis->pszUid = precThis->szUid;
 
                 if (pObject)
                 {
                     PVIEWITEM pvi;
 
-                    pRecThis->pszObjectTitle = _wpQueryTitle(pObject);
+                    precThis->pszObjectTitle = _wpQueryTitle(pObject);
 
                     if (pvi = _wpFindViewItem(pObject,
                                               VIEW_RUNNING,
                                               NULL))
                     {
-                        pRecThis->happObject = pvi->handle;
-                        sprintf(pRecThis->szHAPP, "%lX", pvi->handle);
-                        pRecThis->pszHAPP = pRecThis->szHAPP;
+                        precThis->happObject = pvi->handle;
+                        sprintf(precThis->szHAPP, "%lX", pvi->handle);
+                        precThis->pszHAPP = precThis->szHAPP;
                     }
                 }
 
-                pRecThis = (PWINLISTRECORD)pRecThis->recc.preccNextRecord;
+                precThis = (PWINLISTRECORD)precThis->recc.preccNextRecord;
             }
         }
 
@@ -268,7 +277,7 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                                           NULL, NULL);
                 if (hwndCnr)
                 {
-                    XFIELDINFO      xfi[21];
+                    XFIELDINFO      xfi[22];
                     PFIELDINFO      pfi = NULL;
                     PWINLISTRECORD  pMemRecordFirst;
                     int             i = 0;
@@ -282,7 +291,7 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
 
                     // set up cnr details view
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, ulIndex);
-                    xfi[i].pszColumnTitle = "No.";
+                    xfi[i].pszColumnTitle = "i";
                     xfi[i].ulDataType = CFA_ULONG;
                     xfi[i++].ulOrientation = CFA_RIGHT;
 
@@ -311,18 +320,18 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                     xfi[i].ulDataType = CFA_STRING;
                     xfi[i++].ulOrientation = CFA_LEFT;
 
-                    xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, hPgm);
+                    /* xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, hPgm);
                     xfi[i].pszColumnTitle = "hPgm";
                     xfi[i].ulDataType = CFA_ULONG;
-                    xfi[i++].ulOrientation = CFA_RIGHT;
+                    xfi[i++].ulOrientation = CFA_RIGHT; */
 
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pid);
-                    xfi[i].pszColumnTitle = "PID";
+                    xfi[i].pszColumnTitle = "pid";
                     xfi[i].ulDataType = CFA_ULONG;
                     xfi[i++].ulOrientation = CFA_RIGHT;
 
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, sid);
-                    xfi[i].pszColumnTitle = "SID";
+                    xfi[i].pszColumnTitle = "sid";
                     xfi[i].ulDataType = CFA_ULONG;
                     xfi[i++].ulOrientation = CFA_RIGHT;
 
@@ -343,6 +352,11 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
 
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszObjectTitle);
                     xfi[i].pszColumnTitle = "Obj Title";
+                    xfi[i].ulDataType = CFA_STRING;
+                    xfi[i++].ulOrientation = CFA_RIGHT;
+
+                    xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszUid);
+                    xfi[i].pszColumnTitle = "uid";
                     xfi[i].ulDataType = CFA_STRING;
                     xfi[i++].ulOrientation = CFA_RIGHT;
 

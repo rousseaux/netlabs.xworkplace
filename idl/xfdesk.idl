@@ -81,11 +81,15 @@ interface XFldDesktop : WPDesktop
      *
      */
 
+    BOOL        fOpened;            // for pre-populate support
+                                    // V0.9.19 (2002-04-02) [umoeller]
+
     /*
      * WPDesktop methods overridden by XFldDesktop:
      *
      */
 
+    wpInitData: override;
     wpSetup: override;
 
     wpFilterPopupMenu: override;
@@ -93,6 +97,7 @@ interface XFldDesktop : WPDesktop
 
     wpMenuItemSelected: override;
 
+    wpOpen: override;
     wpPopulate: override;
 
     wpAddDesktopArcRest1Page: override;

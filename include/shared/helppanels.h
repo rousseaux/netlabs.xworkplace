@@ -217,9 +217,7 @@
 
     #define ID_XSH_DATAFILE_TYPES           126     // V0.9.9: data file types page
 
-    #define ID_XSH_ADMIN_USER               127     // V0.9.11: XWPAdmin "Users" page
-
-    #define ID_XSH_PAGER_INTRO           128     // V0.9.11: XWPAdmin "Users" page
+    #define ID_XSH_PAGER_INTRO              128     // V0.9.11: XWPAdmin "Users" page
 
     #define ID_XSH_SORTPAGE                 129     // V0.9.12: sort page (instance or global)
 
@@ -249,6 +247,12 @@
 
     #define ID_XSH_VCARD_MAIN               146     // V0.9.16 (2002-02-02) [umoeller]
     #define ID_XSH_VCARD_PAGE               147     // V0.9.16 (2002-02-02) [umoeller]
+
+    #define ID_XSH_FOPS_DELETE              148     // V0.9.19 (2002-04-02) [umoeller]
+
+    #define ID_XSH_ADMIN_LOCAL_USER         149     // V0.9.19 (2002-04-02) [umoeller]
+    #define ID_XSH_ADMIN_ALL_USERS          150     // V0.9.19 (2002-04-02) [umoeller]
+    #define ID_XSH_ADMIN_ALL_GROUPS         151     // V0.9.19 (2002-04-02) [umoeller]
 
 #endif
 

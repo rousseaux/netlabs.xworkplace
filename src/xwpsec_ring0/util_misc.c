@@ -30,6 +30,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdarg.h>
+#include <builtin.h>
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -1240,4 +1241,43 @@ int DH32ENTRY __vsprintf(char *buf, const char *fmt, va_list args)
         return str-buf;
 }
 
+static void output_com(char *bufptr, int port)
+{
+    while (*bufptr)
+    {
+        while(!(_inp(port + 5) & 0x20)); // Waits for COM port to be ready
+        _outp(port, *bufptr++);          // Outputs our character
+    }
+    while(!(_inp(port + 5) & 0x20));     // Waits for COM port to be ready
+    _outp(port, '\r');                   // Outputs our character
+    while(!(_inp(port + 5) & 0x20));     // Waits for COM port to be ready
+    _outp(port, '\n');                   // Outputs our character
+}
+
+extern int debug_port = 0;
+
+int kernel_printf(const char *fmt, ...)
+{
+    va_list arg;
+    char  Buf[256];
+    char *buf = __StackToFlat(Buf);
+    char *tmp = buf;
+
+    /* tmp += sprintf(buf,
+                   "[%04X-%04X] ",
+                   pLocInfoSeg->LIS_CurProcID,
+                   pLocInfoSeg->LIS_CurThrdID); */
+
+    VA_START(arg, fmt);
+    __vsprintf(G_szScratchBuf, fmt, arg);
+    va_end(arg);
+
+    if (debug_port)
+    {
+        output_com(buf, debug_port);
+    }
+
+    // return fs_log(buf);
+    return 0;
+}
 

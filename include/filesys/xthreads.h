@@ -206,6 +206,6 @@
 
     BOOL xthrPostBushMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
-    BOOL xthrStartThreads(PVOID pLogFile);
+    BOOL xthrStartThreads(VOID);
 
 #endif

@@ -179,6 +179,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "shared\center.h"              // public XCenter interfaces
@@ -275,7 +276,7 @@ typedef struct _TRAYWIDGETPRIVATE
  *@@ CheckIfTrayable:
  *      checks if a given class is trayable.
  *
- *      Returns 1 if it is (or if the user whishes it is so).
+ *      Returns 1 if it is (or if the user wishes it is so).
  *
  *      This is used when subwidgets are added and when trays
  *      are switched.

@@ -1,0 +1,54 @@
+<HTML RESID=&ID_XSH_FOPS_DELETE;>
+<HEAD>
+    <TITLE>
+        &xwp;: "Delete"
+    </TITLE>
+</HEAD>
+<!-- all new with V0.9.19 -->
+<BODY>
+Use the "Delete" menu item to remove the selected objects from a folder.
+
+<P>Per default, selecting "Delete" will not instantly destroy the object yet,
+but move it into the <A HREF="objects/obj_trash.html">&xwp; trash can</A> instead.
+This allows you
+to recover the object if you accidentally selected "Delete".
+To permanently destroy all objects that have been moved into the trash can,
+select the "Empty trash can" menu item from the trash can's context menu.
+
+<P>As a shortcut, you can also press the "Delete" key on your keyboard to
+have the selected objects deleted.
+
+<P>If you want to <B>permanently destroy</B> the object immediately, without
+moving it to the trash can first, hold down the <B>"Shift" key</B> when
+selecting the "Delete" menu item or pressing the "Delete" key. Be warned
+that this operation normally cannot be undone: the selected objects are
+destroyed for good.
+
+<P>Depending on the settings on the "Confirmations" page
+in the <A HREF="objects/obj_wps.html">"Workplace Shell" object</A>,
+&xwp; will display a confirmation message before permanently deleting
+objects.
+
+<P>Note that there are ways to recover file-system objects that have been
+accidentally deleted with the use of the
+<CODE>UNDELETE</CODE> command on the
+&os2; command line. However, this requires that support for this is enabled
+first. See the
+<A HREF="cmdref.inf#undelete">documentation of the <CODE>UNDELETE</CODE> command</A>
+in the <I>&os2; Command Reference</I>.
+
+<IFNDEF __NOXWPSETUP__>
+<P>You can disable &xwp;'s delete replacements on the "Features" page
+in the
+<A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
+The above description applies to the case where you have both "Replace true delete"
+and the &xwp; trash can enabled. If you only enable the trash can, the WPS
+will still perform the permanent destruction when the "Shift" key is pressed.
+If you only enable "Replace true delete", all delete operations will be
+performed without moving the objects into the trash can first.
+</IFNDEF>
+
+<BR>
+</BODY>
+</HTML>
+

@@ -137,9 +137,9 @@ BOOL    G_fDebugDataFileInit = FALSE;
 #define ID_DOMI_DEBUGALL    WPMENUID_USER+2001
 
 /* ******************************************************************
- *                                                                  *
- *   here come the DbgDataFile instance methods                       *
- *                                                                  *
+ *
+ *   here come the DbgDataFile instance methods
+ *
  ********************************************************************/
 
 /*
@@ -2192,9 +2192,9 @@ SOM_Scope void  SOMLINK ddf_wpSetAssociatedFileIcon(DbgDataFile *somSelf)
 
 
 /* ******************************************************************
- *                                                                  *
- *   here come the DbgDataFile class methods                          *
- *                                                                  *
+ *
+ *   here come the DbgDataFile class methods
+ *
  ********************************************************************/
 
 SOM_Scope SOMObject*  SOMLINK ddfM_somNew(M_DbgDataFile *somSelf)

@@ -32,9 +32,9 @@
     #define STATBARS_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   Declarations                                                   *
-     *                                                                  *
+     *
+     *   Declarations
+     *
      ********************************************************************/
 
     // status bar styles
@@ -80,9 +80,9 @@
     #define STBM_PROHIBITBROADCASTING     (WM_USER+111)
 
     /********************************************************************
-     *                                                                  *
-     *   Prototypes                                                     *
-     *                                                                  *
+     *
+     *   Prototypes
+     *
      ********************************************************************/
 
     #ifdef SOM_WPFolder_h
@@ -105,9 +105,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for "Status bars" pages        *
-     *                                                                  *
+     *
+     *   Notebook callbacks (notebook.c) for "Status bars" pages
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
