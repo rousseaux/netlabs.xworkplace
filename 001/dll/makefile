@@ -87,7 +87,7 @@ all: $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll
 
 $(OUTPUTDIR)\xfldr$(LANGUAGE).obj: $(@B).c
 
-$(OUTPUTDIR)\xfldr$(LANGUAGE).res: $(@B).rc $$(@B).dlg *.bmp *.ico ..\..\include\dlgids.h
+$(OUTPUTDIR)\xfldr$(LANGUAGE).res: *.rc *.dlg *.bmp *.ico ..\..\include\dlgids.h r_amptr001.h
          $(RC) -r -x2 $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(OUTPUTDIR)\xfldr$(LANGUAGE).dll: $(@B).def $(OBJS) $(OUTPUTDIR)\$(@B).res ..\..\include\dlgids.h

@@ -1019,32 +1019,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER | 
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Folder view settings", -1, 5, 24, 215, 54, 
-                        DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH, 
-                        10, 57, 160, 10
-        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 20, 48, 
-                        155, 10
-        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 20, 39, 
-                        55, 8, DT_MNEMONIC | NOT WS_GROUP
-        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 75, 39, 35, 12, 
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT | 
-                        SPBS_FASTSPIN | WS_GROUP
-        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 115, 39, 75, 
-                        8, NOT WS_GROUP
-        AUTOCHECKBOX    "Auto-scroll Tree vie~ws", 
-                        ID_XSDI_TREEVIEWAUTOSCROLL, 10, 27, 190, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 155, 6, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XFD_TITLECLASH PRELOAD MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "File Conflict", ID_XFD_TITLECLASH, 12, 9, 248, 99, 
@@ -1458,45 +1432,6 @@ BEGIN
         PUSHBUTTON      "O~ptimize", DID_OPTIMIZE, 105, 6, 45, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 155, 6, 45, 12
         PUSHBUTTON      "~Help", DID_HELP, 205, 6, 45, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_MOUSEMAPPINGS2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSEMAPPINGS2, 0, 0, 224, 180, NOT FS_DLGBORDER | 
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XWorkplace Hook mouse mappings", -1, 6, 20, 172, 
-                        100, NOT WS_GROUP
-        AUTOCHECKBOX    "Allow show window list everywhere", 
-                        ID_XSDI_MOUSE_CHORDWINLIST, 10, 102, 164, 8
-        AUTOCHECKBOX    "System menu on title-bar MB2 click", 
-                        ID_XSDI_MOUSE_SYSMENUMB2, 10, 94, 158, 8
-        AUTOCHECKBOX    "MB3 window scrolling", ID_XSDI_MOUSE_MB3SCROLL, 10, 
-                        82, 102, 8
-        LTEXT           "Minimum pixels:", ID_XSDI_MOUSE_MB3PIXELS_TXT1, 20, 
-                        68, 68, 14, DT_VCENTER
-        SLIDER          ID_XSDI_MOUSE_MB3PIXELS_SLIDER, 92, 68, 66, 14, 
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 20, 0, 1, 0
-        CTEXT           "0", ID_XSDI_MOUSE_MB3PIXELS_TXT2, 160, 68, 14, 14, 
-                        DT_VCENTER
-        AUTORADIOBUTTON "~Line-wise (fixed) mode", ID_XSDI_MOUSE_MB3LINEWISE, 
-                        20, 60, 110, 8, WS_TABSTOP
-        AUTORADIOBUTTON "~Amplified mode", ID_XSDI_MOUSE_MB3AMPLIFIED, 20, 
-                        50, 80, 8, WS_TABSTOP
-        LTEXT           "Amplification:", ID_XSDI_MOUSE_MB3AMP_TXT1, 30, 36, 
-                        60, 14, DT_VCENTER
-        SLIDER          ID_XSDI_MOUSE_MB3AMP_SLIDER, 90, 36, 56, 14, 
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 20, 0, 1, 0
-        CTEXT           "0", ID_XSDI_MOUSE_MB3AMP_TXT2, 150, 36, 24, 14, 
-                        DT_VCENTER
-        AUTOCHECKBOX    "Reverse scrolling", ID_XSDI_MOUSE_MB3SCROLLREVERSE, 
-                        20, 24, 84, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 64, 4, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 124, 4, 55, 12, BS_HELP
     END
 END
 
@@ -2437,41 +2372,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_MOUSE_CORNERS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSE_CORNERS, 0, 0, 232, 180, NOT FS_DLGBORDER | 
-            WS_VISIBLE
-    BEGIN
-        CONTROL         "", -1, 20, 44, 52, 30, WC_STATIC, SS_FGNDFRAME | 
-                        WS_GROUP | WS_VISIBLE
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPLEFT, 16, 70, 8, 8, 
-                        WS_TABSTOP
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPRIGHT, 68, 70, 8, 8, 
-                        WS_TABSTOP
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMLEFT, 16, 40, 8, 8, 
-                        WS_TABSTOP
-        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT, 68, 40, 8, 8, 
-                        WS_TABSTOP
-        AUTORADIOBUTTON "I~nactive", ID_XSDI_MOUSE_INACTIVEOBJ, 104, 84, 64, 
-                        8, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~Open object:", ID_XSDI_MOUSE_OPEN_CHECK, 104, 76, 
-                        76, 8, WS_TABSTOP
-        CONTAINER       ID_XSDI_MOUSE_OPEN_CNR, 108, 52, 68, 22, 
-                        CCS_SINGLESEL
-        AUTORADIOBUTTON "S~pecial function:", ID_XSDI_MOUSE_SPECIAL_CHECK, 
-                        104, 42, 78, 8, WS_TABSTOP
-        CONTROL         "", ID_XSDI_MOUSE_SPECIAL_DROP, 108, 6, 70, 34, 
-                        WC_COMBOBOX, CBS_DROPDOWNLIST | LS_HORZSCROLL | 
-                        WS_TABSTOP | WS_VISIBLE
-        GROUPBOX        "Screen ~corner", -1, 4, 22, 84, 78, DT_MNEMONIC | 
-                        NOT WS_GROUP
-        GROUPBOX        "Action", -1, 98, 22, 98, 78
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 84, 4, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 162, 4, 70, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_XWPSTRING_PAGE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_XWPSTRING_PAGE, 0, 0, 232, 180, NOT FS_DLGBORDER | 
@@ -2493,19 +2393,6 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 8, 4, 50, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 70, 4, 50, 12
         PUSHBUTTON      "~Help", DID_HELP, 134, 4, 50, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XFD_CONTAINERPAGE LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XFD_CONTAINERPAGE, 0, 0, 275, 180, NOT FS_DLGBORDER | 
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_XFDI_CNR_CNR, 10, 27, 230, 107, CCS_SINGLESEL | 
-                        CCS_VERIFYPOINTERS
-        GROUPBOX        "to be replaced", ID_XFDI_CNR_GROUPTITLE, 5, 21, 241, 
-                        121, NOT WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 162, 6, 85, 12, BS_HELP
     END
 END
 
@@ -2654,5 +2541,132 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER | 
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Folder view settings", -1, 4, 20, 215, 72, 
+                        DT_MNEMONIC | NOT WS_GROUP
+        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH, 
+                        10, 76, 160, 8
+        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 20, 66, 
+                        155, 8
+        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 20, 54, 
+                        55, 8, DT_MNEMONIC | NOT WS_GROUP
+        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 74, 54, 35, 12, 
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT | 
+                        SPBS_FASTSPIN | WS_GROUP
+        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 114, 54, 75, 
+                        8, NOT WS_GROUP
+        AUTOCHECKBOX    "Auto-scroll Tree vie~ws", 
+                        ID_XSDI_TREEVIEWAUTOSCROLL, 10, 44, 190, 8
+        AUTOCHECKBOX    "~Enable default documents in folders", 
+                        ID_XSDI_FDRDEFAULTDOC, 10, 34, 190, 8
+        AUTOCHECKBOX    "De~fault document = default folder view", 
+                        ID_XSDI_FDRDEFAULTDOCVIEW, 20, 24, 190, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 6, 65, 12
+        PUSHBUTTON      "~Help", DID_HELP, 155, 6, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_MOUSEMAPPINGS2 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_MOUSEMAPPINGS2, 0, 0, 224, 180, NOT FS_DLGBORDER | 
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "XWorkplace Hook mouse mappings", -1, 6, 20, 172, 
+                        112, NOT WS_GROUP
+        AUTOCHECKBOX    "Allo~w show window list everywhere", 
+                        ID_XSDI_MOUSE_CHORDWINLIST, 10, 114, 164, 8
+        AUTOCHECKBOX    "~System menu on title-bar MB2 click", 
+                        ID_XSDI_MOUSE_SYSMENUMB2, 10, 106, 158, 8
+        AUTOCHECKBOX    "Co~nvert MB3 clicks to MB1 double clicks", 
+                        ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK, 10, 94, 166, 8
+        AUTOCHECKBOX    "~MB3 window scrolling", ID_XSDI_MOUSE_MB3SCROLL, 10, 
+                        82, 102, 8
+        LTEXT           "Minimum pi~xels:", ID_XSDI_MOUSE_MB3PIXELS_TXT1, 20, 
+                        68, 68, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_MB3PIXELS_SLIDER, 92, 68, 66, 14, 
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 20, 0, 1, 0
+        CTEXT           "0", ID_XSDI_MOUSE_MB3PIXELS_TXT2, 160, 68, 14, 14, 
+                        DT_VCENTER
+        AUTORADIOBUTTON "~Line-wise (fixed) mode", ID_XSDI_MOUSE_MB3LINEWISE, 
+                        20, 60, 110, 8, WS_TABSTOP
+        AUTORADIOBUTTON "~Amplified mode", ID_XSDI_MOUSE_MB3AMPLIFIED, 20, 
+                        50, 80, 8, WS_TABSTOP
+        LTEXT           "Am~plification:", ID_XSDI_MOUSE_MB3AMP_TXT1, 30, 36, 
+                        60, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_MB3AMP_SLIDER, 90, 36, 56, 14, 
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 20, 0, 1, 0
+        CTEXT           "0", ID_XSDI_MOUSE_MB3AMP_TXT2, 150, 36, 24, 14, 
+                        DT_VCENTER
+        AUTOCHECKBOX    "~Reverse scrolling", ID_XSDI_MOUSE_MB3SCROLLREVERSE, 
+                        20, 24, 84, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 64, 4, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 124, 4, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_MOUSE_CORNERS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_MOUSE_CORNERS, 0, 0, 232, 180, NOT FS_DLGBORDER | 
+            WS_VISIBLE
+    BEGIN
+        CONTROL         "", -1, 20, 46, 52, 28, WC_STATIC, SS_FGNDFRAME | 
+                        WS_GROUP | WS_VISIBLE
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPLEFT, 16, 70, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOP, 42, 70, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_TOPRIGHT, 68, 70, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_LEFT, 16, 56, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_RIGHT, 68, 56, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMLEFT, 16, 42, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOM, 42, 42, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "", ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT, 68, 42, 8, 8, 
+                        WS_TABSTOP
+        AUTORADIOBUTTON "I~nactive", ID_XSDI_MOUSE_INACTIVEOBJ, 104, 84, 64, 
+                        8, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "~Open object:", ID_XSDI_MOUSE_OPEN_CHECK, 104, 76, 
+                        76, 8, WS_TABSTOP
+        CONTAINER       ID_XSDI_MOUSE_OPEN_CNR, 108, 52, 68, 22, 
+                        CCS_SINGLESEL
+        AUTORADIOBUTTON "S~pecial function:", ID_XSDI_MOUSE_SPECIAL_CHECK, 
+                        104, 42, 78, 8, WS_TABSTOP
+        CONTROL         "", ID_XSDI_MOUSE_SPECIAL_DROP, 108, 6, 70, 34, 
+                        WC_COMBOBOX, CBS_DROPDOWNLIST | LS_HORZSCROLL | 
+                        WS_TABSTOP | WS_VISIBLE
+        GROUPBOX        "Screen ~corner/border", -1, 4, 22, 84, 78, 
+                        DT_MNEMONIC | NOT WS_GROUP
+        GROUPBOX        "Action", -1, 98, 22, 98, 78
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 84, 4, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 162, 4, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XFD_CONTAINERPAGE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XFD_CONTAINERPAGE, 0, 0, 275, 180, NOT FS_DLGBORDER | 
+            WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_XFDI_CNR_CNR, 10, 27, 230, 107, CCS_SINGLESEL | 
+                        CCS_VERIFYPOINTERS
+        GROUPBOX        "to be replaced", ID_XFDI_CNR_GROUPTITLE, 5, 21, 241, 
+                        121, DT_MNEMONIC | NOT WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 162, 6, 85, 12, BS_HELP
     END
 END

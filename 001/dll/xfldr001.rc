@@ -40,6 +40,10 @@
 /* #include <wpobject.h> */
 #include "..\..\include\dlgids.h"
 
+rcinclude "wpamptr.rc"
+rcinclude "wpamptr.dlg"
+rcinclude "amptr001.dlg"
+
 /* icons, bitmaps */
 POINTER ID_ICONDLG LOADONCALL MOVEABLE DISCARDABLE xfldrdlg.ico
 POINTER ID_SDICON LOADONCALL MOVEABLE DISCARDABLE xfldshut.ico
@@ -570,6 +574,13 @@ BEGIN
     ID_XSSI_FUNCKEY_DESCRIPTION         "Key description"
     ID_XSSI_FUNCKEY_SCANCODE            "Scan code"
     ID_XSSI_FUNCKEY_MODIFIER            "Modifier"
+
+    /* default documents V0.9.4 (2000-06-09) [umoeller] */
+    ID_XSSI_DATAFILEDEFAULTDOC          "D~efault document"
+    ID_XSSI_FDRDEFAULTDOC               "Folder's d~efault document"
+
+    /* XCenter V0.9.4 (2000-06-10) [umoeller] */
+    ID_XSSI_XCENTERPAGE1                "~Modules"
 END
 
 /* Strings for XWPSetup "Features" page
