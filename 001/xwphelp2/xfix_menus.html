@@ -1,0 +1,75 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Menu Commands Reference
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<BODY>
+This is a description of the commands in the <B>menu bar</B> of xfix
+(see the bottom of this page for the context menu on handle entries):
+
+<UL><LI><B>xfix</B> menu
+
+<BR><UL><LI><B>Re-parse buffer</B> will re-parse the handles buffer which has been
+loaded at xfix startup from <CODE>OS2SYS.INI</CODE> and refresh the handles list
+completely. This does not re-load the handles from <CODE>OS2SYS.INI</CODE> though,
+which is only done at xfix startup. This item is only useful if xfix should contain a
+bug which causes the display to be invalid. Also, this will update the indices in the
+"i" column which are not automatically refreshed when handles are deleted.
+
+<P><LI><B>Write back to OS2SYS.INI</B> writes the handles table back to the
+<CODE>OS2SYS.INI</CODE> file. All changes you make to the handles list are not
+stored unless you select this menu item. Note that this will probably have no
+effect if the WPS is currently running because the WPS holds an internal copy
+of the handles table and will probably overwrite your changes soon. This is why
+the WPS should not be running while you're writing the handles back.
+
+<P>See <LI><A HREF="xfix_delete.html">Deleting handles</A> also.
+
+<P><LI><B>Exit</B> will connect to the Internet and report all pirated software on
+your system to the FBI. Well, not really.
+
+</UL>
+
+<LI><B>Sort</B> menu
+
+<P>This allows you to sort the handles list according to the values in the various
+columns. (See <A HREF="xfix_list.html">The handles list</A> for a description of the
+columns.) If you sort by index, the display shows the the exact order in which the
+handle entries appeared in the <CODE>OS2SYS.INI</CODE> table (with ascending
+node offsets as well). "Sort by index" is the default sort order after xfix startup.
+
+<P><LI><B>Actions</B> menu
+
+<P><B>Find invalid files</B> will check all handles in the table for whether they
+point to valid files. Each item that is outdated will be marked invalid and given
+the "File not found" status. This is not done automatically because this process can
+take several minutes.
+
+<P>See <A HREF="xfix_howto.html">How can I...</A> for a typical usage of this menu
+item.
+
+<P><LI><B>Select</B> menu
+
+<P><B>Select all invalid</B> will select all handles which have been marked invalid
+for any reason (i.e. have gray emphasis). You can then right-click on any of the
+selected items and select "Delete" from the context menu.
+
+<P><LI><B>Help</B> menu
+
+<P>Displays help and the xfix product info with the current version and build date.
+
+</UL>
+
+In addition, there is a <B>context menu</B> if you click on selected entries with mouse
+button 2. This only contains the <B>Delete</B> command. This will remove the
+handle from the internal buffer which was read from <CODE>OS2SYS.INI</CODE>
+and also from the handles list display.
+
+<P>See <A HREF="xfix_delete.html">Deleting handles</A> for more on this.
+
+<BR>
+</BODY>
+</HTML>
+

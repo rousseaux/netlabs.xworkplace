@@ -1,0 +1,38 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_MODULE2;>
+<HEAD>
+    <TITLE>
+        &xwp;: "Exported functions" page
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.9 -->
+<BODY>
+The "Exported functions" page appears in the properties notebooks of all program
+files
+(WPProgramFile class) and shows you the functions exported by the module.
+
+<P>For each exported function, its ordinal value, its type, and
+possibly its name are displayed.
+
+<P>Each exported function has an ordinal value, which is unique within the module.
+The first possible ordinal value is 1, and the last 65535.  Not all
+ordinal values correspond to an exported function.
+
+<P>Each exported function has a type, being one of the following:
+
+<UL><LI><B>Entry16:</B> a 16-bit function.
+
+<P><LI><B>Entry32:</B> a 32-bit function.
+
+<P><LI><B>286 Call Gate:</B> a 16-bit function that causes a ring 2 switch.
+
+<P><LI><B>Forwarder:</B> a forwarder, that is, calling this entry point in
+turn calls another exported function (either in this module or in
+an imported module).
+
+</UL>Some exported functions also have a name.  This name, if
+defined, is case sensitive.
+
+<BR>
+</BODY>
+</HTML>
+

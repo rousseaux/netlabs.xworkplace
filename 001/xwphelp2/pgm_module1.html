@@ -1,0 +1,27 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_MODULE1;>
+<HEAD>
+    <TITLE>
+        &xwp;: "Imported modules" page
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.9 -->
+<BODY>
+The "Imported modules" page appears in the properties notebooks of all program files
+(WPProgramFile class) and shows you the modules imported by the module.
+
+<P>The page only lists the modules which are explicitly imported.
+Neither dynamically loaded modules (loaded during program execution) nor
+indirect modules required by other modules are shown.  (The former
+is usually impossible to determine statically, and the latter depends on
+the execution context -- things such as currently active <CODE>LIBPATH</CODE>,
+<CODE>BEGINLIBPATH</CODE> and <CODE>ENDLIBPATH</CODE> all determine which modules
+will be actually loaded.)
+
+<P>If you want to find out which module is really used by a given program
+file, you can use the <CODE>PSTAT /L</CODE> command while that specific program
+is running.
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,169 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: About WPS File Handles
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<BODY>
+The Workplace Shell uses file handles as an internal database to be able to
+find files no matter of their physical location.
+
+<P>In principle, these file handles are a good thing. It is file handles which
+allows for the WPS's superior features of program objects and shadows working
+even after the files they point to have been moved to a different location.
+Basically, this works because program objects and shadows never store the
+physical path of an object, but only an object handle.
+
+<P>Object handles are 32-bit integers which are supposed to be unique on the
+system. The high-word of the integer signifies the storage class of the object
+while the low-word is a unique identifier within that storage class.
+
+<UL><LI>If this handle is for an <B>abstract object,</B> this is no problem because the
+object only "exists" in the <CODE>OS2.INI</CODE> in the first place.
+
+<P>Abstract objects usually have
+a high-word of <CODE>0x0002</CODE>, and their low-word is listed in the
+<CODE>PM_Abstract:Objects</CODE> section in <CODE>OS2.INI</CODE> with the
+object's data.
+
+<P>Abstract objects <I>always</I> have a handle created for them because they have
+no file name and the handle is the only way to reference them, unless they also
+have an object ID assigned.
+
+<P>xfix does not deal with abstract objects. Use Henk Kelder's CHECKINI for that.
+
+<P><LI>By contrast, file-system objects (files and folders) only sometimes have a
+handle assigned.
+If they do, file-system objects usually have a
+high-word of <CODE>0x0003</CODE>. The low-word then comes from the file handles
+database in the <CODE>PM_Workplace:HandlesX</CODE> section of
+<CODE>OS2SYS.INI</CODE>, which xfix displays to you.
+
+<P>Note that there are two <CODE>PM_Workplace:HandlesX</CODE> sections (with X
+being 0 or 1). The WPS holds the file-system handles list in memory all the time
+and flushes it to the <CODE>OS2SYS.INI</CODE> only from time to time. When it
+does so, it checks the <CODE>PM_Workplace:ActiveHandles</CODE> key to find out
+which of the two sections is currently active, flushes the handles to the other
+section, and modifies that key to point to the other section then. This is necessary
+because entries in the &os2; INI files may not contain more than 64 KB of data and
+the WPS therefore has to use several blocks to hold the entire handles table.
+(Yes, that's pretty ugly.)
+
+</UL>To understand where all those file-system handles come from, some more
+understanding of the WPS's inner workings is required.
+
+<P>In theory, the WPS should only create a handle for a file-system object if this
+is really needed, i.e. the object was really referenced somewhere. This was
+the original design when the WPS was first created for OS/2 2.0.
+(Again, this is only a problem for file-system
+objects, since per definition, abstract objects must have a handle.)
+
+<P>For example, if you enter a path to an executable file in a program object's
+properties notebook, the program object wants a handle, so it should get a new one
+when no one exists yet. The same applies to shadows.
+
+<P>So again, in theory, object handles are a great thing.
+However, there are several problems with the <I>implementation</I> of them in the WPS:
+
+<UL><LI>There is <I>no API</I> within the WPS which returns the handle of an
+object <I>or an error</I> if none exists. Instead, there only exists
+an API which <I>always</I> returns a handle. If no handle exists yet for a file-system
+object, a new one is always created. (For WPS programmers, this API is the
+<CODE>WPObject::wpQueryHandle</CODE> method. For PM programmers, this is the
+<CODE>WinQueryObject</CODE> API, which calls the WPS method internally.)
+
+<P><LI>The WPS calls this API frequently even in cases where object handles are not
+really needed.
+
+<P><LI>Even worse, file handles are never deleted, even if an object is physically
+deleted using the WPS.
+
+<P><LI>If there are many, many file-system handles, the WPS tends to become confused
+and starts creating duplicate handles. This is very dangerous because the WPS relies
+on the handles table to find the Desktop on startup.
+
+<P>See <A HREF="xfix_howto.html">How can I...</A> for fixing duplicate handles.
+
+<P><LI>The more file handles exist, the slower the WPS becomes in general. This
+affects most WPS operations, unfortunately, including folder populating (because
+finding the default associations and icons for data files involves resolving handles).
+You will notice a dramatic speed increase of folder population if you manage to
+significantly reduce the number of file system handles.
+
+</UL>From my testing, file handles are created in the following situations
+(in which the aforementioned API is called):
+
+<UL><LI>From program objects and shadows. This is desireable.
+
+<P><LI>From other parts of the WPS (and &xwp;) to store object references.
+For example, &xwp; uses object handles to remember your favorite folders
+and quick-open folders and object buttons in the &xcenter;. This is also OK
+because this is what object handles were made for: storing references to objects
+which work no matter where the object physically resides.
+
+<P><LI>Whenever an object is given an object ID (those things in angle brackets,
+e.g. <CODE>&lt;WP_DESKTOP&gt;</CODE>). Object IDs are stored in the
+<CODE>PM_Workplace:Location</CODE> section in <CODE>OS2.INI</CODE> together with
+the object handles and can only be resolved if the handle is valid.
+
+<P>This is OK in most cases, except that
+if installation programs create a whole lot of object IDs, this creates quite a
+number of handles. (This includes the standard Warp 4 configuration, which creates
+an excessive amount of object IDs for the default URL objects.)
+
+<P>The major problem with this implementation is that if the
+file-handles table is broken, the WPS won't find the Desktop any more because
+it uses the <CODE>&lt;WP_DESKTOP&gt;</CODE> object ID to locate it at startup.
+If you get the "Cannot find Desktop" dialog, in 95% of all cases the file handles
+table is broken.
+
+<P><LI>From application programs which use the <CODE>Win*</CODE> APIs to create
+Desktop objects or work with them.
+This is normally tolerable if this affects only a few files.
+Unfortunately, some of those APIs (such as <CODE>WinMoveObject</CODE>) require
+object handles as input.
+
+<P><LI>For every folder that was ever opened. This is also tolerable because the WPS
+uses a folder's handle to store its position into <CODE>OS2.INI</CODE> so that
+the folder's position is not lost when the folder is moved.
+
+<P><LI>Automatically for every parent folder in a file's path if a new handle is
+created for the file. This is due to the handle database's implementation which
+only stores the short name of each file-system object and stores a reference to
+its parent with the short name. (See <A HREF="xfix_list.html">The handles list</A>
+for details.) This is very efficient because if a folder with many sub-objects
+is moved, only a single entry in the database has to be updated. The sub-objects
+only have a parent handle stored, which still works.
+
+<!-- V0.9.15: added this -->
+
+<P><LI>For each data file that is opened through a program object association.
+This is because the WPS sets the <CODE>WP_OBJHANDLE</CODE> environment variable
+to the handle of the data file that was opened. Some programs rely on this, but
+this also has the unfortunate effect that a handle is created every time you
+double-click on a data file even if the application doesn't need that handle.
+
+<!-- end V0.9.15 -->
+
+<P><LI>Unfortunately, the WPS also creates handles for each
+object that is refreshed during folder auto-refresh. That is, if a folder is open
+and you do something in it from a command line (or another application does something
+with files in that folder), for every file that changes in the folder, a new file
+handle is created.
+
+<P>A simple test case for this is to unzip a ZIP file into an open folder. This will
+create lots of file-system handles which are probably never used again. Quite a
+large number of file-system handles are created as a result of this behavior.
+
+<P>And again, since object handles are never removed, these unnecessary handles will
+stay on the system forever.
+
+</UL>It is very difficult to solve the problems mentioned above because no public
+APIs exist to hack the WPS's behavior with respect to file-system handles or the
+folder auto-refresh. I am working on replacements to these subsystems to &xwp;,
+but until then external tools such as CHECKINI and xfix are the only solution.
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,89 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        WPS Setup Strings
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.13 -->
+<BODY>
+In order to be able to change an object's settings from "outside" the WPS,
+the WPS supports the concept of object setup strings.
+
+<P>A WPS setup string is a sequence of <CODE>keyword=value</CODE> pairs,
+each separated with a semicolon. The keywords that are understood by
+an object depend on its <A HREF="glossary/gls_wpsclasses.html">WPS class</A>.
+
+<!-- V0.9.16: added this -->
+<P>For example, to change a folder's closed and open icons, you could
+use the following string:
+
+<P><CODE>ICONFILE=C:\closed.ico;ICONNFILE=1,C:\open.ico;</CODE>
+
+<!-- end V0.9.16 -->
+
+<P>Since the WPS classes are organized in a hierarchical tree and inherit
+from each other, an object will not only understand the setup strings
+of its own class, but also those of all its parent classes. For example,
+a folder will not only understand <CODE>WPFolder</CODE> keywords, but
+also the generic <CODE>WPObject</CODE> keywords (which are understood
+by all objects).
+
+<P>There are many, many different object strings for the various WPS
+classes.
+
+<!-- V0.9.16 Some of them are listed in the <I>&xwp; User Guide</I>. -->
+
+<!-- V0.9.16: added these links, and moved the files from inf.001 to xwphelp -->
+Select from the following list to learn about some of them:
+
+<UL><LI><A HREF="objects/string_1wpobject.html">WPObject</A> (all objects)
+<LI><A HREF="objects/string_2wpfolder.html">WPFolder</A> (WPS folders)
+<LI><A HREF="objects/string_3xfolder.html">XFolder</A> (WPS folders with &xwp; installed)
+<LI><A HREF="objects/string_4xfdesktop.html">XFldDesktop</A> (Desktop with &xwp; installed)
+<LI><A HREF="objects/string_6xwptrashcan.html">XWPTrashCan</A> (the &xwp; trash can)
+<LI><A HREF="objects/string_5wpprogram.html">WPProgram</A> (program objects)
+</UL>
+
+<!-- V0.9.16: replaced the following -->
+
+There are several ways that setup strings can be invoked upon an object:
+
+<UL><LI>XWorkplace allows you to use
+<A HREF="objects/obj_string.html">setup string objects</A>.
+
+<P><LI>From REXX, you can use the <CODE>SysSetObjectData</CODE> function or,
+if you are creating a new object, the <CODE>SysCreateObject</CODE> function.
+See the <A HREF="rexx.inf#syssetobjectdata"><I>&os2; REXX Reference</I></A> for details.
+
+<P><LI>From C code, you can use <CODE>WinSetObjectData</CODE> and
+<CODE>WinCreateObject</CODE> APIs. See the <I>PM Reference</I> from the Toolkit
+documentation for details.
+
+<P><LI>From within a WPS class, you can use the <CODE>WPObject::wpSetup</CODE> method,
+which is overridden by many subclasses and implements the actual setup string
+parsing within the WPS.
+
+</UL>
+
+<!-- end V0.9.16 -->
+
+<B>Note:</B> As opposed to a popular misconception, when a setup string is invoked on
+an object, the string itself is <I>not</I> stored anywhere. Instead, the string is
+parsed by the object's WPS class, translated into the object's binary data, and
+then discarded.
+
+<P>As a result, in order to be able to retrieve setup strings again for the
+display on the
+<!-- V0.9.16: change "Object" to "Icon" -->
+"Icon"
+page in an object's properties notebook,
+&xwp; has to evaluate an object's binary data and take a best guess
+at what the setup string would be that would create that binary setting.
+Some of the object data is completely undocumented, and unless there is
+a documented way to find out what the binary object data means, &xwp;
+will not be able to create a setup string from it.
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,36 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: "File" Pages Replacement
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.4 and contains text previously in 0962set_file.html -->
+<BODY>
+The <B>"Attributes"</B> group shows the standard file attributes, which
+are the same as under DOS and Windows. From the DOS and &os2; command lines,
+you can use the <A HREF="cmdref.inf#attrib"><CODE>ATTRIB</CODE></A> command to set these flags.
+&xwp; allows you to modify these from the object's context menu also.
+<OL><BR><LI>The <B>"Archive"</B> bit is a user
+flag which is set by the operating system any time the file is changed; this
+is reset by many backup utilities to allow for checking whether the file needs
+to be archived again, because it has changed since the last backup.
+<P><LI>The <B>"Read only"</B> flag can be set for files which must not be
+written to; write access and attempts to delete the file will then be
+rejected by DOS and &os2;.
+<P><LI>The <B>"System"</B>
+bit is usually only set for system files which are required for the operating
+system to work. DOS and &os2; will then reject write access and deletion as well,
+and the WPS will not allow moving the file either.
+<P><LI>The <B>"Hidden"</B> flag, finally, can be set in order to prevent
+a file from being displayed in directory listings and folders. That is, the file
+is not shown with the <CODE>DIR</CODE> command (unless the <CODE>/A</CODE> switch
+is specified), and it will not be shown in folders (unless the folder has been
+configured to display hidden files as well on the "Include" notebook page).
+Be warned though, if you set this flag and close the properties notebook,
+the file might be hidden from the folder, and you might only be able to unset
+this flag from the command line, using the
+<A HREF="cmdref.inf#attrib"><CODE>ATTRIB</CODE></A> command.
+</OL>
+</BODY>
+</HTML>
+

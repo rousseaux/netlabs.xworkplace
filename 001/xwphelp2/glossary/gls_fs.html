@@ -1,0 +1,114 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        File Systems
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.13 -->
+<BODY>
+A "file system" describes the format in which folders and files are
+stored on physical media.
+
+<P>With hard disks, each volume can have a different file system.
+The file system is determined when the volume is formatted. It can normally
+not be changed afterwards without reformatting the volume.
+
+<P>With today's operating systems, there are many different file systems
+available, each with its own unique weaknesses and strengths.
+&os2; understands the following file systems:
+
+<OL><LI>Historically, the <B>FAT</B> file system (for "File Allocation Table")
+is the oldest file system that was used on Personal Computers. It was
+introduced with the earliest MS-DOS versions and is neither powerful,
+nor fast, nor flexible, nor efficient. Its file names are limited to 8+3
+characters and with large volume sizes, due to the internal management
+of space allocation, lots of space is wasted. Even worse, FAT volumes
+become fragmented very easily.
+
+<P>Today the only remaining advantage of FAT is that
+it is understood by nearly all operating systems, so if you have several
+operating systems installed, you may use a FAT volume for exchanging data.
+If you care for speed though, you should not place heavily-used data
+on FAT volumes.
+
+<P>With &os2;, FAT support is built directly into the &os2; kernel. No IFS
+setting is required in &cfgsys;.
+
+<P>Microsoft has later extended the FAT file system to allow for storing
+long file names, even though this did not solve the other limitations
+of FAT. Third-party drivers exist that allow &os2; to support these extensions.
+
+<P><LI><B>HPFS,</B> by contrast, stands for "High Performance File System".
+This is the unique file system that was developed specifically for &os2;.
+It has lots of advantages over FAT.
+Its file names can be up to 254 characters in length, it supports extended
+attributes natively, it is a lot faster (hence the name), it doesn't
+waste as much space, and it is very resistant to fragmentation.
+
+<P>Compared to even more modern file systems though, HPFS has its
+limitations too. Most importantly, &os2;'s standard <CODE>HPFS.IFS</CODE>
+driver can only handle a  <A HREF="glossary/gls_caches.html">cache size</A> of 2 MB.
+Considering the memory that is built into today's computers, this isn't
+much at all.
+
+<P>For HPFS support, the <CODE>HPFS.IFS</CODE> driver must be loaded
+through an IFS statement in the &cfgsys; file.
+
+<P><LI><B>HPFS386,</B> a highly optimized version of HPFS, does not have
+that limitation. In addition, it is optimized for server tasks in that
+it can transfer data directly from the file-system driver to network
+drivers without having to go through a ring 3 transition. It also
+supports local security, quotas, and limited software fault tolerance
+support.
+
+<P>However, this file system is only available at extra cost with server
+versions of &os2;.
+If installed, HPFS386 replaces the standard HPFS. It is loaded
+through the <CODE>HPFS386.IFS</CODE> driver in &cfgsys;, but this
+won't work if you do not have the &os2; server components installed.
+
+<P><LI>For &warp; Server for e-Business (WSeB), IBM ported <B>JFS,</B>
+the Journaling File System, from AIX to &os2;. By now JFS has been ported
+to Linux too. JFS is now also available with eComStation and the IBM
+&os2; Convenience Packs.
+
+<P>JFS has the following advantages over HPFS:
+
+<BR><OL><LI>It logs all disk write operations to a special log section,
+the "journal". When the system crashes, JFS does not have to perform
+a full <CODE>CHKDSK</CODE> to restore file-system integrity, but can
+simply "replay" the journal it has maintained. As a result,
+<CODE>CHKDSK</CODE> on JFS volumes takes seconds instead of minutes
+or even hours, as with large HPFS volumes.
+
+<BR><LI>It does not have the 2 MB cache size limitation of standard
+HPFS.
+
+<BR><LI>With the help of LVM, JFS volumes can be expanded without
+having to reboot.
+
+<BR><LI>JFS takes advantage of the new 32-bit code that was introduced
+with the WSeB kernel (KEE32 and IFS32) and will thus not go through the
+16-bit compatibility layer. JFS will thus scale much better
+on multi-processor systems, but this advantage is visible even on
+single-processor systems.
+
+<BR><LI>All internal JFS structures are 64 bits wide. JFS therefore
+does not have the 2 GB limits on files (and the 64 GB limit on volumes)
+of HPFS.
+
+</OL>The disadvantage of JFS is that it is not bootable. The &os2;
+boot partition must still be placed on a FAT or HPFS volume. Besides,
+most of the HPFS386 extra features are not supported by JFS either.
+
+<P><LI>Finally, <B>CDFS</B> is the file system that data CD-ROMs use.
+CD-ROMs use their own special format to organize data on disk which is
+unlike FAT or HPFS, so another file system driver is needed.
+This is implemented through the <CODE>CDFS.IFS</CODE> driver and is
+used when data CD-ROMs are accessed. The &os2; CDFS driver supports
+long file names in Microsoft Joliet format.
+
+</OL>
+</BODY>
+</HTML>
+

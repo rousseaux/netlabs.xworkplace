@@ -1,0 +1,38 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Wildcards
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.13 -->
+<BODY>
+Wildcards are a common mechanism with all operating systems that allow
+for matching several file names with one character string. Wildcards
+are most frequently used on the DOS or &os2; command line, but are
+also used in the Workplace Shell.
+
+<P>&os2; understands two wildcard characters:
+
+<OL><LI>The <B>asterisk</B> (<CODE>*</CODE>) character matches any sequence
+of characters (no character, one character, or many characters).
+
+<P>For example, <CODE>h*e</CODE> will match <CODE>he</CODE>,
+<CODE>house</CODE>, and <CODE>home</CODE>.
+
+<P><LI>The <B>question mark</B> (<CODE>?</CODE>) matches exactly one character.
+
+<P>For example, <CODE>h??e</CODE> will match <CODE>home</CODE>, but
+not <CODE>he</CODE> or <CODE>house</CODE>.
+
+</OL>Wildcards can also be combined. For example, <CODE>h*e.?xt</CODE>
+will match <CODE>house.txt</CODE>.
+
+<P>Note that as opposed to DOS, the dot (<CODE>.</CODE>) in file names
+is not a special character, unless you are working with files on the
+<A HREF="glossary/gls_fs.html">FAT</A>
+file system.
+
+<BR>
+</BODY>
+</HTML>
+
