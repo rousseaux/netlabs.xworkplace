@@ -846,6 +846,44 @@ BEGIN
     ID_CRSI_ENTERRENAMETRAY             "Please enter a new name for this tray:"
 END
 
+/* string IDs for status bar mnemonics (all new with V0.9.14) */
+STRINGTABLE
+BEGIN
+    ID_XSSI_SBMNC_1                      "in bytes"
+    ID_XSSI_SBMNC_2                      "in kBytes"
+    ID_XSSI_SBMNC_3                      "in KBytes"
+    ID_XSSI_SBMNC_4                      "in mBytes"
+    ID_XSSI_SBMNC_5                      "in MBytes"
+    ID_XSSI_SBMNC_6                      "in bytes/kBytes/mBytes/gBytes"
+    ID_XSSI_SBMNC_7                      "in bytes/KBytes/MBytes/GBytes"
+    ID_XSSI_SBMNC_000                    "Count of selected objects"
+    ID_XSSI_SBMNC_001                    "Total count of objects in folder"
+    ID_XSSI_SBMNC_010                    "Free space on drive"
+    ID_XSSI_SBMNC_020                    "Total size of drive"
+    ID_XSSI_SBMNC_030                    "Size of selected objects"
+    ID_XSSI_SBMNC_040                    "Total size of folder content"
+    ID_XSSI_SBMNC_100                    "Object title"
+    ID_XSSI_SBMNC_110                    "WPS class default title"
+    ID_XSSI_SBMNC_120                    "WPS class name"
+    ID_XSSI_SBMNC_200                    "File system type (HPFS, FAT, CDFS, ...)"
+    ID_XSSI_SBMNC_210                    "Drive label"
+    ID_XSSI_SBMNC_220                    "Total space on drive"
+    ID_XSSI_SBMNC_300                    "Object's real name"
+    ID_XSSI_SBMNC_310                    "Object type (.TYPE EA)"
+    ID_XSSI_SBMNC_320                    "Object creation date"
+    ID_XSSI_SBMNC_330                    "Object creation time"
+    ID_XSSI_SBMNC_340                    "Object attributes"
+    ID_XSSI_SBMNC_350                    "EA size in bytes"
+    ID_XSSI_SBMNC_360                    "EA size in kBytes"
+    ID_XSSI_SBMNC_370                    "EA size in KBytes"
+    ID_XSSI_SBMNC_380                    "EA size in bytes/kBytes"
+    ID_XSSI_SBMNC_390                    "EA size in bytes/KBytes"
+    ID_XSSI_SBMNC_400                    "URL"
+    ID_XSSI_SBMNC_500                    "Executable program file"
+    ID_XSSI_SBMNC_510                    "Parameter list"
+    ID_XSSI_SBMNC_520                    "Working directory"
+END
+
 /* Treesize definitions; added V0.9.0 */
 
 POINTER ID_TS_ICON LOADONCALL MOVEABLE DISCARDABLE treesize.ico

@@ -19,6 +19,28 @@ with the ID <CODE>&lt;WP_DESKTOP&gt;</CODE>.
 <A HREF="setupstr_1wpobject.html">WPObject</A> as well.
 
 <DL>
+<!-- V0.9.14: SHOWRUNDLG added -->
+<DT><P><CITE><STRONG>SHOWRUNDLG</STRONG>=<I>startupdir</I></CITE>
+<DD>Shows the &xwp; "Run" dialog, as with the "Run" command from the XCenter
+X-Button widget.
+
+<P>If <CITE><I>startupdir</I></CITE> is set to <CITE>DEFAULT</CITE>, the
+dialog's entry field for the startup directory will be initially empty
+(which means that the
+root directory of the boot drive should be used). Any other value will be
+used as the initial value for the startup directory.
+
+<P><B>Note 1:</B> This setup string changes no settings,
+but is a rather a command to be performed immediately.
+
+<P><B>Note 2:</B> If you invoke this setup string programatically (either through
+<CODE>WinSetObjectData</CODE> or <CODE>SysSetObjectData</CODE>),
+that function will not return until the dialog has been dismissed.
+
+<P><B>Example:</B> <CITE>SHOWRUNDLG=F:\OS2</CITE> will show the "Run" dialog
+with the startup directory field set to <CITE>F:\OS2</CITE>.
+<!-- end V0.9.14 -->
+
 <DT><P><CITE><STRONG>XSHUTDOWNNOW</STRONG>=<I>settings</I></CITE>
 <DD>Starts XShutdown now with the specified <I>settings</I>, which correspond to
 the various settings on the "XShutdown" page in the desktop's settings notebook.
@@ -41,21 +63,26 @@ what is specified on the "XShutdown" page in the desktop's settings notebook.
 <P>To override the preconfigured behavior after XShutdown has completed, use one
 of the following:
 
-<UL><LI><CODE>HALT</CODE> will only show the "It is now safe..." message and then
-halt the system.
+<UL><LI><CODE>HALT</CODE> will perform a full shutdown and
+show the "It is now safe..." message and then
+halt the system after shutdown has completed.
 
-<P><LI><CODE>REBOOT</CODE> will do a standard reboot.
+<LI><CODE>REBOOT</CODE> will perform a full shutdown and then do a standard reboot.
 
-<P><LI><CODE>USERREBOOT(<I>cmd</I>)</CODE> will attempt to do a user-defined reboot
+<LI><CODE>USERREBOOT(<I>cmd</I>)</CODE> will
+perform a full shutdown and then
+attempt to do a user-defined reboot
 with the reboot action <CODE><I>cmd</I></CODE>.
 
-<P><LI><CODE>POWEROFF</CODE> will attempt an APM power-off, if this is supported on
+<LI><CODE>POWEROFF</CODE> will
+perform a full shutdown and then
+attempt an APM power-off, if this is supported on
 the system.
 
-<P><LI><CODE>RESTARTWPS</CODE> will not shut down the system, but only restart the
+<LI><CODE>RESTARTWPS</CODE> will not shut down the system, but only restart the
 WPS.
 
-<P><LI><CODE>FULLRESTARTWPS</CODE> will not shut down the system, but only restart the
+<LI><CODE>FULLRESTARTWPS</CODE> will not shut down the system, but only restart the
 WPS, but close all open sessions first and reuse the &xwp; startup folder at
 the next WPS startup.
 
@@ -85,7 +112,6 @@ settings.
 without confirmation, but enable logging this one time.
 
 </UL>
-
 </DL>
 </BODY>
 </HTML>

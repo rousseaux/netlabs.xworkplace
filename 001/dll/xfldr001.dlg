@@ -915,64 +915,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XCD_XWPINSTALLEDCLASSES LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Installed XWorkplace Classes", ID_XCD_XWPINSTALLEDCLASSES, 26,
-            12, 258, 216, , FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        GROUPBOX        "Class replacements", -1, 4, 130, 245, 85, NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "XFldObject (for all WPS objects)",
-                        ID_XCDI_XWPCLS_XFLDOBJECT, 10, 198, 170, 8,
-                        WS_DISABLED
-        AUTOCHECKBOX    "X~Folder (for all folders)", ID_XCDI_XWPCLS_XFOLDER,
-                        10, 190, 170, 8
-        AUTOCHECKBOX    "XFld~Disk (for disk objects)",
-                        ID_XCDI_XWPCLS_XFLDDISK, 20, 182, 170, 8
-        AUTOCHECKBOX    "XFldDes~ktop (Desktop)", ID_XCDI_XWPCLS_XFLDDESKTOP,
-                        10, 174, 170, 8
-        AUTOCHECKBOX    "XFldDa~taFile (all physical files)",
-                        ID_XCDI_XWPCLS_XFLDDATAFILE, 10, 166, 170, 8
-        AUTOCHECKBOX    "XFld~ProgramFile (executable files)",
-                        ID_XCDI_XWPCLS_XFLDPROGRAMFILE, 10, 158, 170, 8
-        AUTOCHECKBOX    "~XWPSound (enhanced ""Sound"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSOUND, 10, 150, 210, 8
-        AUTOCHECKBOX    "XWPMouse (e~nhanced ""Mouse"" settings object)",
-                        ID_XCDI_XWPCLS_XWPMOUSE, 10, 142, 210, 8
-        AUTOCHECKBOX    "XWPKey~board (enhanced ""Keyboard"" settings object"
-                        ")", ID_XCDI_XWPCLS_XWPKEYBOARD, 10, 134, 210, 8
-        GROUPBOX        "New classes", -1, 4, 20, 245, 108, NOT WS_GROUP
-        AUTOCHECKBOX    "XWPSetup (""XWorkplace Setup"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSETUP, 10, 112, 235, 8,
-                        WS_DISABLED
-        AUTOCHECKBOX    "XFldS~ystem (""OS/2 Kernel"" settings object)",
-                        ID_XCDI_XWPCLS_XFLDSYSTEM, 10, 104, 230, 8
-        AUTOCHECKBOX    "XFld~WPS (""Workplace Shell"" settings object)",
-                        ID_XCDI_XWPCLS_XFLDWPS, 10, 96, 230, 8
-        AUTOCHECKBOX    "XWPScr~een (""Screen"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSCREEN, 10, 88, 230, 8
-        AUTOCHECKBOX    "XWP~Media (Multimedia settings)",
-                        ID_XCDI_XWPCLS_XWPMEDIA, 10, 80, 230, 8
-        AUTOCHECKBOX    "XFldStart~up (new Startup folder)",
-                        ID_XCDI_XWPCLS_XFLDSTARTUP, 10, 72, 170, 8
-        AUTOCHECKBOX    "XFld~Shutdown (Shutdown folder)",
-                        ID_XCDI_XWPCLS_XFLDSHUTDOWN, 10, 64, 170, 8
-        AUTOCHECKBOX    "XWPClass~List (WPS Class List object)",
-                        ID_XCDI_XWPCLS_XWPCLASSLIST, 10, 56, 170, 8
-        AUTOCHECKBOX    "XWPT~rashCan/XWPTrashObject (trash can)",
-                        ID_XCDI_XWPCLS_XWPTRASHCAN, 10, 48, 235, 8
-        AUTOCHECKBOX    "XWPStr~ing (Setup-strings-as-object class)",
-                        ID_XCDI_XWPCLS_XWPSTRING, 10, 40, 230, 8
-        AUTOCHECKBOX    "XCenter (system control b~ar)",
-                        ID_XCDI_XWPCLS_XCENTER, 10, 32, 230, 8
-        AUTOCHECKBOX    "XWPFontFolder/XWPFontFile/XWPFontOb~ject (fonts)",
-                        ID_XCDI_XWPCLS_XWPFONTS, 10, 24, 230, 8
-        DEFPUSHBUTTON   "~OK...", DID_OK, 5, 4, 75, 12
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 90, 4, 75, 12
-        PUSHBUTTON      "~Help", DID_HELP, 175, 4, 75, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XFD_ARCHIVINGSTATUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XWorkplace Archive Maintenance", ID_XFD_ARCHIVINGSTATUS, 15, 54,
@@ -2005,7 +1947,7 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ENTRYFIELD      "", ID_XSDI_XRB_ITEMNAME, 12, 53, 141, 8, ES_MARGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "P~artitions", ID_XSDI_XRB_PARTITIONS, 160, 51, 70,
+        PUSHBUTTON      "P~artitions ", ID_XSDI_XRB_PARTITIONS, 160, 51, 70,
                         12
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "Action command ~line:", -1, 10, 42, 145, 8,
@@ -2048,37 +1990,6 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_SET28STATUSBARS2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET28STATUSBARS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "~No object selected", -1, 6, 102, 202, 26,
-                        DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_SBTEXTNONESEL, 22, 110, 176, 8,
-                        ES_MARGIN | WS_GROUP
-        GROUPBOX        "Single ~object selected", -1, 6, 56, 202, 44,
-                        DT_MNEMONIC | NOT WS_GROUP
-        LTEXT           "Class:", -1, 10, 82, 30, 8, NOT WS_GROUP
-        LTEXT           "WPObject", ID_XSDI_SBCURCLASS, 40, 82, 70, 8, NOT
-                        WS_GROUP
-        PUSHBUTTON      "Sele~ct class...", ID_XSDI_SBSELECTCLASS, 110, 80,
-                        90, 12
-        ENTRYFIELD      "", ID_XSDI_SBTEXT1SEL, 22, 70, 176, 8, ES_MARGIN
-        AUTOCHECKBOX    "D~ereference shadows", ID_XSDI_DEREFSHADOWS_SINGLE,
-                        20, 58, 180, 10
-        GROUPBOX        "Se~veral objects selected", -1, 6, 22, 202, 32,
-                        DT_MNEMONIC | NOT WS_GROUP
-        ENTRYFIELD      "", ID_XSDI_SBTEXTMULTISEL, 22, 36, 176, 8,
-                        ES_MARGIN
-        AUTOCHECKBOX    "D~ereference shadows",
-                        ID_XSDI_DEREFSHADOWS_MULTIPLE, 20, 24, 180, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
     END
 END
 
@@ -2974,5 +2885,43 @@ BEGIN
         PUSHBUTTON      "~Optimize", DID_OPTIMIZE, 65, 6, 55, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 125, 6, 50, 12
         PUSHBUTTON      "~Help", DID_HELP, 180, 6, 50, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_SET28STATUSBARS2 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_SET28STATUSBARS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "~No object selected", -1, 6, 108, 202, 26,
+                        DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_SBTEXTNONESEL, 22, 114, 146, 8,
+                        ES_MARGIN | WS_GROUP
+        PUSHBUTTON      "~Keys ", ID_XSDI_SBKEYSNONESEL, 172, 112, 30, 12,
+                        BS_NOPOINTERFOCUS
+        GROUPBOX        "Single ~object selected", -1, 6, 58, 202, 48,
+                        DT_MNEMONIC | NOT WS_GROUP
+        ENTRYFIELD      "", ID_XSDI_SBTEXT1SEL, 22, 74, 146, 8, ES_MARGIN
+        PUSHBUTTON      "K~eys ", ID_XSDI_SBKEYS1SEL, 172, 72, 30, 12,
+                        BS_NOPOINTERFOCUS
+        LTEXT           "Class:", -1, 10, 86, 30, 12, DT_VCENTER | NOT
+                        WS_GROUP
+        LTEXT           "WPObject", ID_XSDI_SBCURCLASS, 40, 86, 70, 12,
+                        DT_VCENTER | NOT WS_GROUP
+        PUSHBUTTON      "Sele~ct class...", ID_XSDI_SBSELECTCLASS, 110, 86,
+                        90, 12
+        AUTOCHECKBOX    "De~reference shadows", ID_XSDI_DEREFSHADOWS_SINGLE,
+                        20, 60, 180, 10
+        GROUPBOX        "Se~veral objects selected", -1, 6, 22, 202, 34,
+                        DT_MNEMONIC | NOT WS_GROUP
+        ENTRYFIELD      "", ID_XSDI_SBTEXTMULTISEL, 22, 38, 146, 8,
+                        ES_MARGIN
+        PUSHBUTTON      "Ke~ys ", ID_XSDI_SBKEYSMULTISEL, 172, 36, 30, 12,
+                        BS_NOPOINTERFOCUS
+        AUTOCHECKBOX    "Dere~ference shadows",
+                        ID_XSDI_DEREFSHADOWS_MULTIPLE, 20, 24, 180, 10
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
+        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
     END
 END
