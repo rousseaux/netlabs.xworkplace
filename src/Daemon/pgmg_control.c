@@ -38,11 +38,14 @@
 #define INCL_WIN
 #define INCL_GPI
 #include <os2.h>
+
 #include <stdio.h>
-#include <process.h>
+#include <time.h>
+#include <setjmp.h>
 
 #include "setup.h"                      // code generation and debugging options
 
+#include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 
 #include "hook\xwphook.h"
@@ -56,11 +59,43 @@
  ********************************************************************/
 
 #define WNDCLASS_PAGEMAGECLIENT         "XWPPageMageClient"
-SWP         G_swpFrameOriginal = {0};
-// FATTRS      G_FontAttrs = {0};
-// LONG        G_lcidFont = NULLHANDLE;      // font ID for window titles
+
+PFNWP       G_pfnOldFrameWndProc = 0;
 BOOL        G_ClientBitmapNeedsUpdate = FALSE;
 ULONG       G_hUpdateTimer = NULLHANDLE;
+
+/* ******************************************************************
+ *                                                                  *
+ *   Debugging                                                      *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ DumpAllWindows:
+ *
+ */
+
+VOID DumpAllWindows(VOID)
+{
+    USHORT  usIdx;
+    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+            == NO_ERROR)
+    {
+        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+        {
+            _Pmpf(("Dump %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
+                   usIdx,
+                   G_MainWindowList[usIdx].hwnd,
+                   G_MainWindowList[usIdx].szSwitchName,
+                   G_MainWindowList[usIdx].szClassName,
+                   G_MainWindowList[usIdx].pid,
+                   G_MainWindowList[usIdx].pid,
+                   G_MainWindowList[usIdx].bWindowType));
+        }
+
+        DosReleaseMutexSem(G_hmtxWindowList);
+    }
+}
 
 /* ******************************************************************
  *                                                                  *
@@ -72,7 +107,7 @@ ULONG       G_hUpdateTimer = NULLHANDLE;
  *@@ pgmcCreateMainControlWnd:
  *      creates the PageMage control window (frame
  *      and client). This gets called by dmnStartPageMage
- *      when PageMage has been enabled.
+ *      on thread 1 when PageMage has been enabled.
  *
  *      This registers the PageMage client class,
  *      using fnwpPageMageClient which does the grunt
@@ -87,78 +122,68 @@ BOOL pgmcCreateMainControlWnd(VOID)
     BOOL    brc = TRUE;
 
     G_pHookData->fDisableSwitching = TRUE;
-    /* if (NO_ERROR == DosRequestMutexSem(G_pHookData->hmtxPageMage,
-                                       10000))  // V0.9.3 (2000-05-22) [umoeller]
-    */
+
+    _Pmpf(("Entering pgmcCreateMainControlWnd"));
+    // now go for PageMage client
+    WinRegisterClass(G_habDaemon,
+                     WNDCLASS_PAGEMAGECLIENT,
+                     (PFNWP)fnwpPageMageClient,
+                     0,
+                     0);
+
+    if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
     {
-        _Pmpf(("Entering pgmcCreateMainControlWnd"));/* , G_pHookData->hwndPageMageFrame: 0x%lX",
-                G_pHookData->hwndPageMageFrame)); */
-        // now go for PageMage client
-        WinRegisterClass(G_habDaemon,
-                         WNDCLASS_PAGEMAGECLIENT,
-                         (PFNWP)fnwpPageMageClient,
-                         0,
-                         0);
+        ULONG   flFrameFlags    = FCF_TITLEBAR |
+                                  FCF_SYSMENU |
+                                  FCF_HIDEBUTTON |
+                                  FCF_NOBYTEALIGN |
+                                  FCF_SIZEBORDER;
+        _Pmpf(("Creating pagemage"));
 
-        if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
+        G_pHookData->hwndPageMageFrame
+            = WinCreateStdWindow(HWND_DESKTOP,
+                                 (ULONG)0,  // style
+                                 &flFrameFlags,
+                                 (PSZ)WNDCLASS_PAGEMAGECLIENT,
+                                 "XWorkplace PageMage",
+                                 0,
+                                 0,
+                                 1000,    // ID...
+                                 &G_pHookData->hwndPageMageClient);
+
+        if (!G_pHookData->hwndPageMageFrame)
+            _Pmpf(("PageMage window creation failed...."));
+        else
         {
-            ULONG   flFrameFlags    = FCF_TITLEBAR |
-                                      FCF_SYSMENU |
-                                      FCF_MINBUTTON |
-                                    // | FCF_TASKLIST
-                                    // | FCF_ICON
-                                      FCF_SIZEBORDER;
-            _Pmpf(("Creating pagemage"));
+            SWP     swpPager;
 
-            G_pHookData->hwndPageMageFrame
-                = WinCreateStdWindow(HWND_DESKTOP,
-                                     (ULONG)0,  // style
-                                     &flFrameFlags,
-                                     (PSZ)WNDCLASS_PAGEMAGECLIENT,
-                                     "XWorkplace PageMage",
-                                     0,
-                                     0,
-                                     1000,    // ID...
-                                     &G_pHookData->hwndPageMageClient);
+            // set frame icon
+            WinSendMsg(G_pHookData->hwndPageMageFrame,
+                       WM_SETICON,
+                       (MPARAM)G_hptrDaemon,
+                       NULL);
 
-            if (!G_pHookData->hwndPageMageFrame)
-                _Pmpf(("PageMage window creation failed...."));
-            else
-            {
-                SWP     swpPager;
+            // subclass frame
+            _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
 
-                // set frame icon
-                WinSendMsg(G_pHookData->hwndPageMageFrame,
-                           WM_SETICON,
-                           (MPARAM)G_hptrDaemon,
-                           NULL);
+            G_pfnOldFrameWndProc = WinSubclassWindow(G_pHookData->hwndPageMageFrame,
+                                                     fnwpSubclPageMageFrame);
 
-                // subclass frame
-                _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
+            pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
+            WinQueryWindowPos(G_pHookData->hwndPageMageClient, &swpPager);
+            G_ptlPgmgClientSize.x = swpPager.cx;
+            G_ptlPgmgClientSize.y = swpPager.cy;
 
-                G_pfnOldFrameWndProc = WinSubclassWindow(G_pHookData->hwndPageMageFrame,
-                                                         fnwpSubclPageMageFrame);
+            G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
+                                 / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
+            G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
+                                 / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
 
-                pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
-                WinQueryWindowPos(G_pHookData->hwndPageMageClient, &swpPager);
-                G_ptlPgmgClientSize.x = swpPager.cx;
-                G_ptlPgmgClientSize.y = swpPager.cy;
-
-                G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
-                                     / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
-                G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
-                                     / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
-
-                /* if (iConfigResult == INI_CREATED)
-                  WinPostMsg(hwndClient, WM_COMMAND,
-                             MPFROMSHORT(PGMG_CMD_NOTEBOOK), MPVOID); */
-                brc = TRUE;
-            }
+            brc = TRUE;
         }
-
-        G_pHookData->fDisableSwitching = FALSE;
-        // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
     }
+
+    G_pHookData->fDisableSwitching = FALSE;
 
     return (brc);
 }
@@ -192,30 +217,54 @@ LONG pgmcCalcNewFrameCY(LONG cx)
  *      sets the position of the PageMage window.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.4 (2000-08-08) [umoeller]: now restoring window pos properly
  */
 
 VOID pgmcSetPgmgFramePos(HWND hwnd)
 {
     RECTL   rcl;
     ULONG   flOptions;
+    ULONG   cb = sizeof(G_swpPgmgFrame);
+
+    PrfQueryProfileData(HINI_USER,
+                        INIAPP_XWPHOOK,
+                        INIKEY_HOOK_PGMGWINPOS,
+                        &G_swpPgmgFrame,
+                        &cb);
+            // might fail
 
     rcl.xLeft   = G_swpPgmgFrame.x;
     rcl.yBottom = G_swpPgmgFrame.y;
     rcl.xRight  = G_swpPgmgFrame.cx + G_swpPgmgFrame.x;
     rcl.yTop    = G_swpPgmgFrame.cy + G_swpPgmgFrame.y;
 
-    flOptions = SWP_MOVE | SWP_SIZE;
+    flOptions = SWP_MOVE | SWP_SIZE
+                    | SWP_SHOW; // V0.9.4 (2000-07-10) [umoeller]
 
-    if (!G_pHookData->PageMageConfig.fFlash)
-        flOptions |= SWP_SHOW;
-
-    /* if (G_pHookData->PageMageConfig.fStartMinimized)
-        flOptions |= SWP_MINIMIZE; */ // ###
-
-    WinSetWindowPos(hwnd, NULLHANDLE, rcl.xLeft, rcl.yBottom,
+    WinSetWindowPos(hwnd,
+                    NULLHANDLE,
+                    rcl.xLeft, rcl.yBottom,
                     (rcl.xRight - rcl.xLeft), (rcl.yTop - rcl.yBottom),
                     flOptions);
+
+    if (G_pHookData->PageMageConfig.fFlash)
+        pgmgcStartFlashTimer();
 } // pgmcSetPgmgFramePos
+
+/*
+ *@@ pgmgcStartFlashTimer:
+ *      shortcut to start the flash timer.
+ *
+ *@@added V0.9.4 (2000-07-10) [umoeller]
+ */
+
+USHORT pgmgcStartFlashTimer(VOID)
+{
+    return (WinStartTimer(G_habDaemon,
+                          G_pHookData->hwndPageMageClient,
+                          2,
+                          G_pHookData->PageMageConfig.ulFlashDelay));
+}
 
 /*
  *@@ UpdateClientBitmap:
@@ -230,6 +279,7 @@ VOID pgmcSetPgmgFramePos(HWND hwnd)
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed font problems
+ *@@changed V0.9.4 (2000-08-08) [umoeller]: added special maximized window handling
  */
 
 VOID UpdateClientBitmap(HPS hpsMem)       // in: memory PS with bitmap
@@ -340,87 +390,83 @@ VOID UpdateClientBitmap(HPS hpsMem)       // in: memory PS with bitmap
         {
             BOOL            fPaint = TRUE;
 
-            DosRequestMutexSem(G_hmtxWindowList, SEM_INDEFINITE_WAIT);
-
-            // go thru local list and find the
-            // current enumeration window
-            for (usIdx = 0;
-                 usIdx < G_usWindowCount;
-                 usIdx++)
+            if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+                    == NO_ERROR)
             {
-                if (G_MainWindowList[usIdx].hwnd == hwndThis)
+                // go thru local list and find the
+                // current enumeration window
+                for (usIdx = 0;
+                     usIdx < G_usWindowCount;
+                     usIdx++)
                 {
-                    fPaint = TRUE;
-
-                    // paint window only if it's "normal" and visible
-                    if (G_MainWindowList[usIdx].bWindowType != WINDOW_NORMAL)
-                        // window not visible or special window:
-                        // don't paint
-                        fPaint = FALSE;
-
-                    if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
+                    if (G_MainWindowList[usIdx].hwnd == hwndThis)
                     {
-                        // window is not in switchlist:
-                        // rescan
-                        if (pgmwGetWinInfo(G_MainWindowList[usIdx].hwnd,
-                                           &G_MainWindowList[usIdx]))
-                            // window still valid:
-                            fPaint = TRUE;
-                        else
-                            fNeedRescan = TRUE;
-                    }
-
-                    if (!WinIsWindowVisible(G_MainWindowList[usIdx].hwnd)) // (G_MainWindowList[usIdx].swp.fl & SWP_HIDE) //
-                        fPaint = FALSE;
-
-                    /* _Pmpf(("Checked 0x%lX, paint: %d",
-                            G_MainWindowList[usIdx].hwnd,
-                            fPaint)); */
-                    if (fPaint)
-                    {
-                        SWP             swpBox;
+                        SWP  swpBox;
                         WinQueryWindowPos(G_MainWindowList[usIdx].hwnd, &swpBox);
-                        // #define swpBox G_MainWindowList[usIdx].swp
                         // update window pos in window list
                         WinQueryWindowPos(G_MainWindowList[usIdx].hwnd,
                                           &G_MainWindowList[usIdx].swp);
 
-                        hwndPaint[usPaintCount] = G_MainWindowList[usIdx].hwnd;
+                        fPaint = TRUE;
 
-                        ptlBegin[usPaintCount].x = (swpBox.x + G_ptlCurrPos.x)
-                                                   / fScale_X;
-                        ptlBegin[usPaintCount].y = (  (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
-                                                     * G_pHookData->lCYScreen
-                                                     - G_ptlCurrPos.y + swpBox.y
-                                                    )
-                                                    / fScale_Y;
-                        ptlFin[usPaintCount].x = (swpBox.x + swpBox.cx + G_ptlCurrPos.x)
-                                                  / fScale_X - 1;
-                        ptlFin[usPaintCount].y = (    (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
-                                                      * G_pHookData->lCYScreen
-                                                      - G_ptlCurrPos.y + swpBox.y + swpBox.cy
-                                                   )
-                                                   / fScale_Y - 1;
-                        usPaintCount++;
+                        if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
+                        {
+                            // window is not in switchlist:
+                            // rescan
+                            if (!pgmwGetWinInfo(G_MainWindowList[usIdx].hwnd,
+                                                &G_MainWindowList[usIdx]))
+                                fNeedRescan = TRUE;
+                        }
+                        else
+                        {
+                            // paint window only if it's "normal" and visible
+                            if (    (G_MainWindowList[usIdx].bWindowType != WINDOW_NORMAL)
+                                 && (G_MainWindowList[usIdx].bWindowType != WINDOW_MAXIMIZE)
+                               )
+                                // window not visible or special window:
+                                // don't paint
+                                fPaint = FALSE;
+                        }
+
+                        if (G_MainWindowList[usIdx].bWindowType == WINDOW_MAX_OFF)
+                            fPaint = TRUE;
+                        else if (!WinIsWindowVisible(G_MainWindowList[usIdx].hwnd)) // (G_MainWindowList[usIdx].swp.fl & SWP_HIDE) //
+                            fPaint = FALSE;
+
+                        /* _Pmpf(("Checked 0x%lX, paint: %d",
+                                G_MainWindowList[usIdx].hwnd,
+                                fPaint)); */
+                        if (fPaint)
+                        {
+                            hwndPaint[usPaintCount] = G_MainWindowList[usIdx].hwnd;
+
+                            ptlBegin[usPaintCount].x = (swpBox.x + G_ptlCurrPos.x)
+                                                       / fScale_X;
+                            ptlBegin[usPaintCount].y = (  (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
+                                                         * G_pHookData->lCYScreen
+                                                         - G_ptlCurrPos.y + swpBox.y
+                                                        )
+                                                        / fScale_Y;
+                            ptlFin[usPaintCount].x = (swpBox.x + swpBox.cx + G_ptlCurrPos.x)
+                                                      / fScale_X - 1;
+                            ptlFin[usPaintCount].y = (    (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
+                                                          * G_pHookData->lCYScreen
+                                                          - G_ptlCurrPos.y + swpBox.y + swpBox.cy
+                                                       )
+                                                       / fScale_Y - 1;
+                            usPaintCount++;
+                        }
                     }
                 }
+
+                // done collecting windows, we can release
+                // the list now
+                DosReleaseMutexSem(G_hmtxWindowList);
             }
-
-            // done collecting windows, we can release
-            // the list now
-            DosReleaseMutexSem(G_hmtxWindowList);
-
-            // new window!  tell thread to rescan, get title, draw it anyways
-            /* if (!fFound)
-            {
-                // TODO:  hmm.  need to fix something here
-                continue;
-                bNewWindows = TRUE;
-                hwndPaint[usPaintCtr] = hwndBox;
-            } */
-
         } // end while WinGetNextWindow()
         WinEndEnumWindows(henum);
+
+        // now paint
 
         sIdx = usPaintCount - 1;
         // _Pmpf(("Painting %d windows", usPaintCount));
@@ -443,36 +489,43 @@ VOID UpdateClientBitmap(HPS hpsMem)       // in: memory PS with bitmap
             // draw window text too?
             if (G_pHookData->PageMageConfig.fShowWindowText)
             {
-                CHAR        szWindowName[TEXTLEN] = "";
-                LONG        lTextColor;
+                PSZ     pszWindowName = NULL;
+                // CHAR        szWindowName[PGMG_TEXTLEN] = "";
+                LONG    lTextColor;
 
-                // BOOL        bFound = FALSE;
-                DosRequestMutexSem(G_hmtxWindowList, SEM_INDEFINITE_WAIT);
-                for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
-                    if (G_MainWindowList[usIdx].hwnd == hwndPaint[sIdx])
-                    {
-                        if (G_MainWindowList[usIdx].szSwitchName[0] != 0)
-                            strcpy(szWindowName, G_MainWindowList[usIdx].szSwitchName);
-                        else
-                            strcpy(szWindowName, G_MainWindowList[usIdx].szWindowName);
-                        // bFound = TRUE;
-                        break;
-                    }
-                DosReleaseMutexSem(G_hmtxWindowList);
+                if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+                        == NO_ERROR)
+                {
+                    for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+                        if (G_MainWindowList[usIdx].hwnd == hwndPaint[sIdx])
+                        {
+                            if (G_MainWindowList[usIdx].szSwitchName[0] != 0)
+                                pszWindowName = G_MainWindowList[usIdx].szSwitchName;
+                                /* strcpy(szWindowName, G_MainWindowList[usIdx].szSwitchName);
+                            else
+                                strcpy(szWindowName, G_MainWindowList[usIdx].szWindowName); */
+                            // bFound = TRUE;
+                            break;
+                        }
+                    DosReleaseMutexSem(G_hmtxWindowList);
+                }
 
-                if (hwndPaint[sIdx] == hwndLocalActive)
-                    // active:
-                    lTextColor = G_pHookData->PageMageConfig.lcTxtCurrentApp;
-                else
-                    lTextColor = G_pHookData->PageMageConfig.lcTxtNormalApp;
+                if (pszWindowName)
+                {
+                    if (hwndPaint[sIdx] == hwndLocalActive)
+                        // active:
+                        lTextColor = G_pHookData->PageMageConfig.lcTxtCurrentApp;
+                    else
+                        lTextColor = G_pHookData->PageMageConfig.lcTxtNormalApp;
 
-                WinDrawText(hpsMem,
-                            strlen(szWindowName),
-                            szWindowName,
-                            &rclText,
-                            lTextColor,
-                            (LONG)0,
-                            DT_LEFT | DT_TOP /* | DT_WORDBREAK */);
+                    WinDrawText(hpsMem,
+                                strlen(pszWindowName),
+                                pszWindowName,
+                                &rclText,
+                                lTextColor,
+                                (LONG)0,
+                                DT_LEFT | DT_TOP /* | DT_WORDBREAK */);
+                }
             }
             sIdx--;
         }
@@ -551,38 +604,28 @@ VOID TrackWithinPager(HWND hwnd,
         ti.ptlMaxTrackSize.y = G_ptlPgmgClientSize.y;
         ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_ALLINBOUNDARY;
 
-        /* if (NO_ERROR == DosRequestMutexSem(G_pHookData->hmtxPageMage,
-                                           10000)) */
+        G_pHookData->fDisableSwitching = TRUE;
+        if (WinTrackRect(hwnd, NULLHANDLE, &ti))
         {
-            G_pHookData->fDisableSwitching = TRUE;
-            if (WinTrackRect(hwnd, NULLHANDLE, &ti))
-            {
-                swpTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
-                swpTracked.y = (ti.rclTrack.yBottom * fScale_Y)
-                               -  (   (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
-                                      * G_pHookData->lCYScreen
-                                      - G_ptlCurrPos.y
-                                  );
-                swpTracked.x -= swpTracked.x % 16 +
-                                WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
-    /*
-                swpTracked.y -= swpTracked.y % 16 + 4 +
-                                WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
-    */
-                WinSetWindowPos(hwndTracked, HWND_TOP, swpTracked.x, swpTracked.y,
-                                0, 0,
-                                SWP_MOVE | SWP_NOADJUST);
-                // WinInvalidateRect(hwndTracked, NULL, TRUE);
-                // WinUpdateWindow(WinWindowFromID(hwndTracked, FID_CLIENT));
+            swpTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
+            swpTracked.y = (ti.rclTrack.yBottom * fScale_Y)
+                           -  (   (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
+                                  * G_pHookData->lCYScreen
+                                  - G_ptlCurrPos.y
+                              );
+            swpTracked.x -= swpTracked.x % 16 +
+                            WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
 
-                WinPostMsg(hwnd, PGMG_INVALIDATECLIENT,
-                           (MPARAM)TRUE,        // immediately
-                           0);
-                        // V0.9.2 (2000-02-22) [umoeller]
-            }
-            G_pHookData->fDisableSwitching = FALSE;
-            // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
+            WinSetWindowPos(hwndTracked, HWND_TOP, swpTracked.x, swpTracked.y,
+                            0, 0,
+                            SWP_MOVE | SWP_NOADJUST);
+
+            WinPostMsg(hwnd, PGMG_INVALIDATECLIENT,
+                       (MPARAM)TRUE,        // immediately
+                       0);
+                    // V0.9.2 (2000-02-22) [umoeller]
         }
+        G_pHookData->fDisableSwitching = FALSE;
     }
 }
 
@@ -593,6 +636,9 @@ VOID TrackWithinPager(HWND hwnd,
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: now using RGB colors
+ *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed flashing; now using a win timer
+ *@@changed V0.9.4 (2000-07-10) [umoeller]: now suspending flashing when dragging in pager
+ *@@changed V0.9.4 (2000-08-08) [umoeller]: fixed various update/formatting problems
  */
 
 MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -604,308 +650,334 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
     static HDC                  hdcMem;
     static HPS                  hpsMem;
     static HBITMAP              hbmMem = 0;
-    static BOOL                 bGetSize = FALSE;
 
     MRESULT                     mReturn  = 0;
     BOOL                        bHandled = TRUE;
 
-    switch (msg)
+    TRY_LOUD(excpt1, NULL)
     {
-        /*
-         * WM_CREATE:
-         *
-         */
-
-        case WM_CREATE:
+        switch (msg)
         {
-            SIZEL       slMem;
-            LONG        lBitmapFormat[2];
+            /*
+             * WM_CREATE:
+             *
+             */
 
-            G_ptlCurrPos.x = (G_pHookData->PageMageConfig.ptlStartDesktop.x - 1)
-                              * G_pHookData->lCXScreen;
-            G_ptlCurrPos.y = (G_pHookData->PageMageConfig.ptlMaxDesktops.y
-                              - G_pHookData->PageMageConfig.ptlStartDesktop.y
-                             ) * G_pHookData->lCYScreen;
-
-            G_bTitlebarChange = !G_pHookData->PageMageConfig.fShowTitlebar;
-            bGetSize = TRUE;
-            WinPostMsg(hwnd, PGMG_ZAPPO, MPVOID, MPVOID);
-
-            // create memory DC and PS
-            hdcMem = DevOpenDC(G_habDaemon, OD_MEMORY, "*", (LONG) 0, NULL, (LONG) 0);
-            slMem.cx = 0;
-            slMem.cy = 0;
-            hpsMem = GpiCreatePS(G_habDaemon, hdcMem, &slMem, GPIA_ASSOC | PU_PELS);
-            gpihSwitchToRGB(hpsMem);        // V0.9.3 (2000-04-09) [umoeller]
-
-            // prepare bitmap creation
-            GpiQueryDeviceBitmapFormats(hpsMem, (LONG) 2, lBitmapFormat);
-            memset(&bmihMem, 0, sizeof(BITMAPINFOHEADER2));
-            bmihMem.cbFix = sizeof(BITMAPINFOHEADER2);
-            bmihMem.cx = G_ptlPgmgClientSize.x;
-            bmihMem.cy = G_ptlPgmgClientSize.y;
-            bmihMem.cPlanes = lBitmapFormat[0];
-            bmihMem.cBitCount = lBitmapFormat[1];
-
-            // set font; this creates a logical font in WM_PRESPARAMSCHANGED (below)
-            WinSetPresParam(hwnd, PP_FONTNAMESIZE,
-                            strlen(G_szFacename) + 1, G_szFacename);
-
-            G_ClientBitmapNeedsUpdate = TRUE;
-        break; }
-
-
-        /*
-         * WM_PAINT:
-         *
-         */
-
-        case WM_PAINT:
-        {
-            POINTL      ptlCopy[4];
-            HPS         hps = WinBeginPaint(hwnd, 0, 0);
-            gpihSwitchToRGB(hps);   // V0.9.3 (2000-04-09) [umoeller]
-            if (G_ClientBitmapNeedsUpdate)
+            case WM_CREATE:
             {
-                // bitmap has been marked as invalid:
-                UpdateClientBitmap(hpsMem);
-                G_ClientBitmapNeedsUpdate = FALSE;
-            }
+                SIZEL       slMem;
+                LONG        lBitmapFormat[2];
 
-            // now just bit-blt the bitmap
-            ptlCopy[0].x = 0;
-            ptlCopy[0].y = 0;
-            ptlCopy[1].x = G_ptlPgmgClientSize.x;
-            ptlCopy[1].y = G_ptlPgmgClientSize.y;
-            ptlCopy[2].x = 0;
-            ptlCopy[2].y = 0;
-            GpiBitBlt(hps, hpsMem, (LONG) 3, ptlCopy, ROP_SRCCOPY, BBO_IGNORE);
-            WinEndPaint(hps);
-        break; }
+                G_ptlCurrPos.x = (G_pHookData->PageMageConfig.ptlStartDesktop.x - 1)
+                                  * G_pHookData->lCXScreen;
+                G_ptlCurrPos.y = (G_pHookData->PageMageConfig.ptlMaxDesktops.y
+                                  - G_pHookData->PageMageConfig.ptlStartDesktop.y
+                                 ) * G_pHookData->lCYScreen;
 
-        /*
-         * WM_ERASEBACKGROUND:
-         *
-         */
+                WinPostMsg(hwnd,
+                           PGMG_ZAPPO,
+                           // frame initially has title bar; so if this is
+                           // disabled, we need to hide it
+                           (MPARAM)(!G_pHookData->PageMageConfig.fShowTitlebar),
+                           MPVOID);
 
-        case WM_ERASEBACKGROUND:
-            mReturn = MRFROMLONG(FALSE);
-                // pretend we've processed this;
-                // we paint the entire bitmap in WM_PAINT anyways
-            break;
+                // create memory DC and PS
+                hdcMem = DevOpenDC(G_habDaemon, OD_MEMORY, "*", (LONG) 0, NULL, (LONG) 0);
+                slMem.cx = 0;
+                slMem.cy = 0;
+                hpsMem = GpiCreatePS(G_habDaemon, hdcMem, &slMem, GPIA_ASSOC | PU_PELS);
+                gpihSwitchToRGB(hpsMem);        // V0.9.3 (2000-04-09) [umoeller]
 
-        /*
-         * WM_PRESPARAMCHANGED:
-         *
-         */
-
-        case WM_PRESPARAMCHANGED:
-            if (LONGFROMMP(mp1) == PP_FONTNAMESIZE)
-            {
-                HPS             hps;
-                FATTRS          FontAttrs = {0};
-                FONTMETRICS     fm;
-                CHAR            szLocFacename[TEXTLEN];
-
-                WinQueryPresParam(hwnd, PP_FONTNAMESIZE, 0, NULL,
-                                  sizeof(szLocFacename), &szLocFacename,
-                                  0);
-                _Pmpf(("New facename: %s", szLocFacename));
-                if (strcmp(G_szFacename, szLocFacename))
-                {
-                    G_bConfigChanged = TRUE;
-                    strcpy(G_szFacename, szLocFacename);
-                }
-
-                // get the font metrics of the current window
-                // font; if we get a cached micro PS, PM will
-                // automatically set the font
-                hps = WinGetPS(hwnd);
-                GpiQueryFontMetrics(hps, sizeof(FONTMETRICS), &fm);
-                WinReleasePS(hps);
-
-                FontAttrs.usRecordLength = sizeof(FATTRS);
-                FontAttrs.fsSelection = fm.fsSelection;
-                FontAttrs.lMatch = fm.lMatch;
-                strcpy(FontAttrs.szFacename, fm.szFacename);
-                FontAttrs.idRegistry = fm.idRegistry;
-                FontAttrs.usCodePage = fm.usCodePage;
-                FontAttrs.lMaxBaselineExt = fm.lMaxBaselineExt;
-                FontAttrs.lAveCharWidth = fm.lAveCharWidth;
-
-                // create logical font for the memory PS;
-                // this replaces the existing one if
-                // LCID_PAGEMAGE_FONT has already been used, GPIREF says
-                GpiCreateLogFont(hpsMem, NULL, LCID_PAGEMAGE_FONT, &FontAttrs);
-
-                WinPostMsg(hwnd, PGMG_INVALIDATECLIENT,
-                           (MPARAM)TRUE,        // immediately
-                           0);
-            }
-            break;
-
-        /*
-         * WM_SIZE:
-         *
-         */
-
-        case WM_SIZE:
-        {
-            SHORT cxNew = SHORT1FROMMP(mp2),
-                  cyNew = SHORT2FROMMP(mp2);
-
-            if (    (G_ptlPgmgClientSize.x != cxNew)
-                 || (G_ptlPgmgClientSize.y != cyNew)
-               )
-            {
-                G_ptlPgmgClientSize.x = cxNew;
-                G_ptlPgmgClientSize.y = cyNew;
+                // prepare bitmap creation
+                GpiQueryDeviceBitmapFormats(hpsMem, (LONG) 2, lBitmapFormat);
+                memset(&bmihMem, 0, sizeof(BITMAPINFOHEADER2));
+                bmihMem.cbFix = sizeof(BITMAPINFOHEADER2);
                 bmihMem.cx = G_ptlPgmgClientSize.x;
                 bmihMem.cy = G_ptlPgmgClientSize.y;
-                G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
-                                     / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
-                G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
-                                     / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
+                bmihMem.cPlanes = lBitmapFormat[0];
+                bmihMem.cBitCount = lBitmapFormat[1];
 
-                if (hbmMem)
-                {
-                    GpiSetBitmap(hpsMem, NULLHANDLE);
-                        // free existing; otherwise GpiDeleteBitmap fails
-                        // V0.9.2 (2000-02-22) [umoeller]
-                    GpiDeleteBitmap(hbmMem);
-                }
-                hbmMem = GpiCreateBitmap(hpsMem, &bmihMem, (LONG) 0, NULL, NULL);
-                GpiSetBitmap(hpsMem, hbmMem);
-                WinPostMsg(hwnd, PGMG_INVALIDATECLIENT,
-                           (MPARAM)TRUE,        // immediately
-                           0);
-            }
-        break; }    // WM_SIZE
+                // set font; this creates a logical font in WM_PRESPARAMSCHANGED (below)
+                WinSetPresParam(hwnd, PP_FONTNAMESIZE,
+                                strlen(G_szFacename) + 1, G_szFacename);
 
-        /*
-         * WM_COMMAND:
-         *
-         */
+                G_ClientBitmapNeedsUpdate = TRUE;
+            break; }
 
-        case WM_COMMAND:
-            break;
+            /*
+             * WM_PAINT:
+             *
+             */
 
-        /*
-         * WM_BUTTON1CLICK:
-         *      activate a specific window.
-         */
-
-        case WM_BUTTON1CLICK:
-        case WM_BUTTON2CLICK:
-        {
-            ULONG       ulRequest;
-            ULONG       ulCode = PGMGQ_CLICK2ACTIVATE;
-            LONG        lMouseX = SHORT1FROMMP(mp1),
-                        lMouseY = SHORT2FROMMP(mp1);
-
-            // make sure the hook does not try to move stuff around...
-            G_pHookData->fDisableSwitching = TRUE;
-            /* if (NO_ERROR == DosRequestMutexSem(G_pHookData->hmtxPageMage,
-                                               10000)) */
+            case WM_PAINT:
             {
-                if (msg == WM_BUTTON2CLICK)
-                    ulCode = PGMGQ_CLICK2LOWER;
+                POINTL      ptlCopy[4];
+                HPS         hps = WinBeginPaint(hwnd, 0, 0);
+                gpihSwitchToRGB(hps);   // V0.9.3 (2000-04-09) [umoeller]
+                if (G_ClientBitmapNeedsUpdate)
+                {
+                    // bitmap has been marked as invalid:
+                    UpdateClientBitmap(hpsMem);
+                    G_ClientBitmapNeedsUpdate = FALSE;
+                }
 
-                ulRequest = PGMGQENCODE(ulCode, lMouseX, lMouseY);
-                DosWriteQueue(G_hqPageMage, ulRequest, 0, NULL, 0);
+                // now just bit-blt the bitmap
+                ptlCopy[0].x = 0;
+                ptlCopy[0].y = 0;
+                ptlCopy[1].x = G_ptlPgmgClientSize.x;
+                ptlCopy[1].y = G_ptlPgmgClientSize.y;
+                ptlCopy[2].x = 0;
+                ptlCopy[2].y = 0;
+                GpiBitBlt(hps, hpsMem, (LONG) 3, ptlCopy, ROP_SRCCOPY, BBO_IGNORE);
+                WinEndPaint(hps);
+            break; }
+
+            /*
+             * WM_ERASEBACKGROUND:
+             *
+             */
+
+            case WM_ERASEBACKGROUND:
+                mReturn = MRFROMLONG(FALSE);
+                    // pretend we've processed this;
+                    // we paint the entire bitmap in WM_PAINT anyways
+                break;
+
+            /*
+             * WM_PRESPARAMCHANGED:
+             *
+             */
+
+            case WM_PRESPARAMCHANGED:
+                if (LONGFROMMP(mp1) == PP_FONTNAMESIZE)
+                {
+                    HPS             hps;
+                    FATTRS          FontAttrs = {0};
+                    FONTMETRICS     fm;
+                    CHAR            szLocFacename[PGMG_TEXTLEN];
+
+                    WinQueryPresParam(hwnd, PP_FONTNAMESIZE, 0, NULL,
+                                      sizeof(szLocFacename), &szLocFacename,
+                                      0);
+                    _Pmpf(("New facename: %s", szLocFacename));
+                    if (strcmp(G_szFacename, szLocFacename))
+                    {
+                        G_bConfigChanged = TRUE;
+                        strcpy(G_szFacename, szLocFacename);
+                    }
+
+                    // get the font metrics of the current window
+                    // font; if we get a cached micro PS, PM will
+                    // automatically set the font
+                    hps = WinGetPS(hwnd);
+                    GpiQueryFontMetrics(hps, sizeof(FONTMETRICS), &fm);
+                    WinReleasePS(hps);
+
+                    FontAttrs.usRecordLength = sizeof(FATTRS);
+                    FontAttrs.fsSelection = fm.fsSelection;
+                    FontAttrs.lMatch = fm.lMatch;
+                    strcpy(FontAttrs.szFacename, fm.szFacename);
+                    FontAttrs.idRegistry = fm.idRegistry;
+                    FontAttrs.usCodePage = fm.usCodePage;
+                    FontAttrs.lMaxBaselineExt = fm.lMaxBaselineExt;
+                    FontAttrs.lAveCharWidth = fm.lAveCharWidth;
+
+                    // create logical font for the memory PS;
+                    // this replaces the existing one if
+                    // LCID_PAGEMAGE_FONT has already been used, GPIREF says
+                    GpiCreateLogFont(hpsMem, NULL, LCID_PAGEMAGE_FONT, &FontAttrs);
+
+                    WinPostMsg(hwnd, PGMG_INVALIDATECLIENT,
+                               (MPARAM)TRUE,        // immediately
+                               0);
+                }
+                break;
+
+            /*
+             * WM_SIZE:
+             *
+             */
+
+            case WM_SIZE:
+            {
+                SHORT cxNew = SHORT1FROMMP(mp2),
+                      cyNew = SHORT2FROMMP(mp2);
+
+                if (    (G_ptlPgmgClientSize.x != cxNew)
+                     || (G_ptlPgmgClientSize.y != cyNew)
+                   )
+                {
+                    G_ptlPgmgClientSize.x = cxNew;
+                    G_ptlPgmgClientSize.y = cyNew;
+                    bmihMem.cx = G_ptlPgmgClientSize.x;
+                    bmihMem.cy = G_ptlPgmgClientSize.y;
+                    G_ptlEachDesktop.x = (G_ptlPgmgClientSize.x - G_pHookData->PageMageConfig.ptlMaxDesktops.x + 1)
+                                         / G_pHookData->PageMageConfig.ptlMaxDesktops.x;
+                    G_ptlEachDesktop.y = (G_ptlPgmgClientSize.y - G_pHookData->PageMageConfig.ptlMaxDesktops.y + 1)
+                                         / G_pHookData->PageMageConfig.ptlMaxDesktops.y;
+
+                    if (hbmMem)
+                    {
+                        GpiSetBitmap(hpsMem, NULLHANDLE);
+                            // free existing; otherwise GpiDeleteBitmap fails
+                            // V0.9.2 (2000-02-22) [umoeller]
+                        GpiDeleteBitmap(hbmMem);
+                    }
+                    hbmMem = GpiCreateBitmap(hpsMem, &bmihMem, (LONG) 0, NULL, NULL);
+                    GpiSetBitmap(hpsMem, hbmMem);
+                    WinPostMsg(hwnd, PGMG_INVALIDATECLIENT,
+                               (MPARAM)TRUE,        // immediately
+                               0);
+                }
+            break; }    // WM_SIZE
+
+            /*
+             * WM_COMMAND:
+             *
+             */
+
+            case WM_COMMAND:
+                break;
+
+            /*
+             * WM_BUTTON1CLICK:
+             *      activate a specific window.
+             */
+
+            case WM_BUTTON1CLICK:
+            case WM_BUTTON2CLICK:
+            {
+                ULONG       ulRequest;
+                ULONG       ulMsg = PGOM_CLICK2ACTIVATE;
+                LONG        lMouseX = SHORT1FROMMP(mp1),
+                            lMouseY = SHORT2FROMMP(mp1);
+
+                // make sure the hook does not try to move stuff around...
+                G_pHookData->fDisableSwitching = TRUE;
+                if (msg == WM_BUTTON2CLICK)
+                    ulMsg = PGOM_CLICK2LOWER;
+
+                WinPostMsg(G_pHookData->hwndPageMageMoveThread,
+                           ulMsg,
+                           (MPARAM)lMouseX,
+                           (MPARAM)lMouseY);
                     // this posts PGMG_CHANGEACTIVE back to us
 
                 // reset the hook to its proper value
                 G_pHookData->fDisableSwitching = FALSE;
-                // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
-            }
-        break; }
 
-        /*
-         * WM_BUTTON2MOTIONSTART:
-         *      move the windows within the pager.
-         */
+                if (G_pHookData->PageMageConfig.fFlash)
+                    pgmgcStartFlashTimer();
+            break; }
 
-        case WM_BUTTON2MOTIONSTART:
-        {
-            TrackWithinPager(hwnd, mp1);
-        break; }
-
-        /* case WM_BUTTON2MOTIONSTART:
-            WinSendMsg(G_pHookData->hwndPageMageFrame,
-                       WM_TRACKFRAME,
-                       MPFROMSHORT(TF_MOVE),
-                       0);
-            break; */
-
-        /*
-         * WM_CLOSE:
-         *      window being closed:
-         *      notify XFLDR.DLL and restore windows.
-         */
-
-        case WM_CLOSE:
-            _Pmpf(("fnwpPageMageClient: WM_CLOSE, notifying Kernel"));
-            dmnKillPageMage(TRUE);  // notify XFLDR.DLL
-            bHandled = TRUE;        // no default processing
+            case WM_BUTTON2DBLCLK:
+                DumpAllWindows();
             break;
 
-        case WM_DESTROY:
-            GpiDeleteBitmap(hbmMem);
-            GpiDestroyPS(hpsMem);
-            DevCloseDC(hdcMem);
-            bHandled = FALSE;
-            break;
+            /*
+             * WM_BUTTON2MOTIONSTART:
+             *      move the windows within the pager.
+             */
 
-        /*
-         *@@ PGMG_INVALIDATECLIENT:
-         *      posted by hookSendMsgHook when
-         *      WM_WINDOWPOSCHANGED or WM_SETFOCUS
-         *      have been detected.
-         *      We then set a flag that the bitmap
-         *      needs updating and delay invalidating
-         *      the client for a while to avoid excessive
-         *      redraw.
-         */
+            case WM_BUTTON2MOTIONSTART:
+            {
+                if (G_pHookData->PageMageConfig.fFlash)
+                    WinStopTimer(G_habDaemon,
+                                 hwnd,
+                                 2);
 
-        case PGMG_INVALIDATECLIENT:
-            G_ClientBitmapNeedsUpdate = TRUE;
-            // start timer to invalidate rectangle
+                TrackWithinPager(hwnd, mp1);
 
-            if (G_hUpdateTimer != NULLHANDLE)
+                if (G_pHookData->PageMageConfig.fFlash)
+                    pgmgcStartFlashTimer();
+            break; }
+
+            /*
+             * WM_CLOSE:
+             *      window being closed:
+             *      notify XFLDR.DLL and restore windows.
+             */
+
+            case WM_CLOSE:
+                _Pmpf(("fnwpPageMageClient: WM_CLOSE, notifying Kernel"));
+                dmnKillPageMage(TRUE);  // notify XFLDR.DLL
+                bHandled = TRUE;        // no default processing
+                break;
+
+            case WM_DESTROY:
+                GpiDeleteBitmap(hbmMem);
+                GpiDestroyPS(hpsMem);
+                DevCloseDC(hdcMem);
+                bHandled = FALSE;
+                break;
+
+            /*
+             *@@ PGMG_INVALIDATECLIENT:
+             *      posted by hookSendMsgHook when
+             *      WM_WINDOWPOSCHANGED or WM_SETFOCUS
+             *      have been detected.
+             *      We then set a flag that the bitmap
+             *      needs updating and delay invalidating
+             *      the client for a while to avoid excessive
+             *      redraw.
+             */
+
+            case PGMG_INVALIDATECLIENT:
+                G_ClientBitmapNeedsUpdate = TRUE;
+                // start timer to invalidate rectangle
+
+                if (G_hUpdateTimer != NULLHANDLE)
+                    WinStopTimer(G_habDaemon,
+                                 hwnd,
+                                 1);
+                if (mp1)
+                    // immediate update:
+                    WinInvalidateRect(hwnd, NULL, TRUE);
+                else
+                    // start delayed update
+                    G_hUpdateTimer = WinStartTimer(G_habDaemon,
+                                                   hwnd,
+                                                   1,
+                                                   200);     // milliseconds
+                break;
+
+            /*
+             * WM_TIMER:
+             *      one-shot timers for painting and flashing.
+             */
+
+            case WM_TIMER:
+            {
+                USHORT usTimerID = (USHORT)mp1;     // timer ID
                 WinStopTimer(G_habDaemon,
                              hwnd,
-                             1);
-            if (mp1)
-                // immediate update:
-                WinInvalidateRect(hwnd, NULL, TRUE);
-            else
-                // start delayed update
-                G_hUpdateTimer = WinStartTimer(G_habDaemon,
-                                               hwnd,
-                                               1,
-                                               200);     // milliseconds
-            break;
+                             usTimerID);
 
-        case WM_TIMER:
-            WinStopTimer(G_habDaemon,
-                         hwnd,
-                         1);
-            G_hUpdateTimer = NULLHANDLE;
-            // invalidate the client rectangle;
-            // since G_ClientBitmapNeedsUpdate is TRUE
-            // now, this will recreate the bitmap in WM_PAINT
-            WinInvalidateRect(hwnd, NULL, TRUE);
-        break;
+                switch (usTimerID)
+                {
+                    case 1:     // delayed paint timer
+                        G_hUpdateTimer = NULLHANDLE;
+                        // invalidate the client rectangle;
+                        // since G_ClientBitmapNeedsUpdate is TRUE
+                        // now, this will recreate the bitmap in WM_PAINT
+                        WinInvalidateRect(hwnd, NULL, TRUE);
+                    break;
 
-        /*
-         *@@ PGMG_ZAPPO:
-         *      apparently posted or sent when config has
-         *      changed.
-         */
+                    case 2:     // flash timer started by fntMoveQueueThread
+                        WinShowWindow(G_pHookData->hwndPageMageFrame, FALSE);
+                }
+            break; }
 
-        case PGMG_ZAPPO:
-            if (G_bTitlebarChange)
+            /*
+             *@@ PGMG_ZAPPO:
+             *      this needs to be posted when the titlebar etc.
+             *      settings have changed to reformat the frame
+             *      properly.
+             *
+             *      Parameters: none.
+             */
+
+            case PGMG_ZAPPO:
                 if (!G_pHookData->PageMageConfig.fShowTitlebar)
                 {
                     // titlebar disabled:
@@ -915,12 +987,13 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                                        FID_TITLEBAR);
                     hwndSaveMinButton = WinWindowFromID(G_pHookData->hwndPageMageFrame,
                                                         FID_MINMAX);
-                    WinSetParent(hwndSaveSysMenu, HWND_OBJECT, TRUE);
+                    WinSetParent(hwndSaveSysMenu, HWND_OBJECT,
+                                 TRUE);     // redraw
                     WinSetParent(hwndSaveTitlebar, HWND_OBJECT, TRUE);
                     WinSetParent(hwndSaveMinButton, HWND_OBJECT, TRUE);
                     WinSendMsg(G_pHookData->hwndPageMageFrame,
                                WM_UPDATEFRAME,
-                               MPFROMLONG(FCF_TASKLIST | FCF_ICON | FCF_SIZEBORDER),
+                               MPFROMLONG(FCF_SIZEBORDER),
                                MPVOID);
                 }
                 else
@@ -931,93 +1004,86 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                     WinSetParent(hwndSaveMinButton, G_pHookData->hwndPageMageFrame, TRUE);
                     WinSendMsg(G_pHookData->hwndPageMageFrame,
                                WM_UPDATEFRAME,
-                               MPFROMLONG(FCF_TASKLIST | FCF_ICON |
-                                          FCF_SIZEBORDER | FCF_SYSMENU |
-                                          FCF_MINBUTTON | FCF_TITLEBAR),
+                               MPFROMLONG(FCF_SIZEBORDER | FCF_SYSMENU |
+                                          FCF_HIDEBUTTON | FCF_TITLEBAR),
                                MPVOID);
                 }
-
-            G_bTitlebarChange = FALSE;
-            if (bGetSize)
-            {
-                WinQueryWindowPos(G_pHookData->hwndPageMageFrame, &G_swpFrameOriginal);
-                bGetSize = FALSE;
-            }
             break;
 
-        /*
-         *@@ PGMG_LOCKUP:
-         *      posted by hookLockupHook when the system is
-         *      locked up (with mp1 == TRUE) or by hookSendMsgHook
-         *      when the lockup window is destroyed.
-         *
-         *      HookData.hwndLockupFrame has the lockup frame window
-         *      created by PM.
-         */
+            /*
+             *@@ PGMG_LOCKUP:
+             *      posted by hookLockupHook when the system is
+             *      locked up (with mp1 == TRUE) or by hookSendMsgHook
+             *      when the lockup window is destroyed.
+             *
+             *      HookData.hwndLockupFrame has the lockup frame window
+             *      created by PM.
+             */
 
-        case PGMG_LOCKUP:
-            // G_bLockup = LONGFROMMP(mp1);
-            break;
+            case PGMG_LOCKUP:
+                // G_bLockup = LONGFROMMP(mp1);
+                break;
 
-        /*
-         *@@ PGMG_WNDCHANGE:
-         *      posted by hookSendMsgHook when
-         *      WM_CREATE or WM_DESTROY has been
-         *      detected.
-         */
+            /*
+             *@@ PGMG_WNDCHANGE:
+             *      posted by hookSendMsgHook when
+             *      WM_CREATE or WM_DESTROY has been
+             *      detected.
+             *
+             *      Parameters:
+             *      -- HWND mp1: window being created or destroyed.
+             *      -- ULONG mp2: message (WM_CREATE or WM_DESTROY).
+             */
 
-        case PGMG_WNDCHANGE:
-        {
-            HWND    hwndChanged = HWNDFROMMP(mp1);
-            switch (LONGFROMMP(mp2))
+            case PGMG_WNDCHANGE:
             {
-                case WM_CREATE:
-                    pgmwWindowListAdd(hwndChanged);
-                    break;
-                case WM_DESTROY:
-                    pgmwWindowListDelete(hwndChanged);
-                    break;
-            }
-            // _Pmpf(("PGMG_WNDCHANGE, posting PGMG_REDRAW"));
-            WinPostMsg(hwnd,
-                       PGMG_INVALIDATECLIENT,
-                       (MPARAM)FALSE,       // delayed update
-                       0);
-        break; }
-
-        /*
-         *@@ PGMG_WNDRESCAN:
-         *      posted only from UpdateClientBitmap if any
-         *      windows with the WINDOW_RESCAN flag
-         *      have been encountered. In that case,
-         *      we need to re-scan the window list.
-         */
-
-        case PGMG_WNDRESCAN:
-            if (pgmwWindowListRescan())
-                // changed:
+                HWND    hwndChanged = HWNDFROMMP(mp1);
+                switch (LONGFROMMP(mp2))
+                {
+                    case WM_CREATE:
+                        pgmwWindowListAdd(hwndChanged);
+                        break;
+                    case WM_DESTROY:
+                        pgmwWindowListDelete(hwndChanged);
+                        break;
+                }
+                // _Pmpf(("PGMG_WNDCHANGE, posting PGMG_REDRAW"));
                 WinPostMsg(hwnd,
                            PGMG_INVALIDATECLIENT,
-                           (MPARAM)FALSE,       // delayed
-                           MPVOID);
-            break;
+                           (MPARAM)FALSE,       // delayed update
+                           0);
+            break; }
 
-        /*
-         *@@ PGMG_CHANGEACTIVE:
-         *      posted only by fntMoveQueueThread when
-         *      PGMGQ_CLICK2ACTIVATE was retrieved from
-         *      the "move" queue. This happens as a
-         *      response to mb1 or mb2 clicks.
-         *
-         *      Parameters: new active HWND in mp1.
-         */
+            /*
+             *@@ PGMG_WNDRESCAN:
+             *      posted only from UpdateClientBitmap if any
+             *      windows with the WINDOW_RESCAN flag
+             *      have been encountered. In that case,
+             *      we need to re-scan the window list.
+             */
 
-        case PGMG_CHANGEACTIVE:
-        {
-            HWND    hwnd2Activate = HWNDFROMMP(mp1);
-            /* if (NO_ERROR == DosRequestMutexSem(G_pHookData->hmtxPageMage,
-                                               10000)) */
+            case PGMG_WNDRESCAN:
+                if (pgmwWindowListRescan())
+                    // changed:
+                    WinPostMsg(hwnd,
+                               PGMG_INVALIDATECLIENT,
+                               (MPARAM)FALSE,       // delayed
+                               MPVOID);
+                break;
+
+            /*
+             *@@ PGMG_CHANGEACTIVE:
+             *      posted only by fntMoveQueueThread when
+             *      PGMGQ_CLICK2ACTIVATE was retrieved from
+             *      the "move" queue. This happens as a
+             *      response to mb1 or mb2 clicks.
+             *
+             *      Parameters: new active HWND in mp1.
+             */
+
+            case PGMG_CHANGEACTIVE:
             {
+                HWND    hwnd2Activate = HWNDFROMMP(mp1);
                 G_pHookData->fDisableSwitching = TRUE;
                 if (WinIsWindowEnabled(hwnd2Activate))
                         // fixed V0.9.2 (2000-02-23) [umoeller]
@@ -1034,51 +1100,48 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                     // V0.9.2 (2000-02-22) [umoeller]
                 }
                 G_pHookData->fDisableSwitching = FALSE;
-                // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
-            }
-        break; }
+            break; }
 
-        /*
-         *@@ PGMG_LOWERWINDOW:
-         *      posted only by fntMoveQueueThread when
-         *      PGMGQ_CLICK2LOWER was retrieved from
-         *      the "move" queue.
-         *
-         *      Parameters: HWND to lower in mp1.
-         *
-         *@@added V0.9.2 (2000-02-23) [umoeller]
-         */
+            /*
+             *@@ PGMG_LOWERWINDOW:
+             *      posted only by fntMoveQueueThread when
+             *      PGMGQ_CLICK2LOWER was retrieved from
+             *      the "move" queue.
+             *
+             *      Parameters: HWND to lower in mp1.
+             *
+             *@@added V0.9.2 (2000-02-23) [umoeller]
+             */
 
-        case PGMG_LOWERWINDOW:
-        {
-            HWND hwnd2Lower = HWNDFROMMP(mp1);
-            /* if (NO_ERROR == DosRequestMutexSem(G_pHookData->hmtxPageMage,
-                                               10000)) */
+            case PGMG_LOWERWINDOW:
             {
-                G_pHookData->fDisableSwitching = TRUE;
-                WinSetWindowPos(hwnd2Lower,
-                                HWND_BOTTOM,
-                                0,0,0,0,
-                                SWP_ZORDER);
-                WinPostMsg(hwnd,
-                           PGMG_INVALIDATECLIENT,
-                           (MPARAM)TRUE,        // immediately
-                           0);
-                G_pHookData->fDisableSwitching = FALSE;
-                // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
-            }
-        break; }
+                HWND hwnd2Lower = HWNDFROMMP(mp1);
+                /* if (NO_ERROR == DosRequestMutexSem(G_pHookData->hmtxPageMage,
+                                                   10000)) */
+                {
+                    G_pHookData->fDisableSwitching = TRUE;
+                    WinSetWindowPos(hwnd2Lower,
+                                    HWND_BOTTOM,
+                                    0,0,0,0,
+                                    SWP_ZORDER);
+                    WinPostMsg(hwnd,
+                               PGMG_INVALIDATECLIENT,
+                               (MPARAM)TRUE,        // immediately
+                               0);
+                    G_pHookData->fDisableSwitching = FALSE;
+                    // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
+                }
+            break; }
 
-        case PGMG_PASSTHRU:
-        {
-            ULONG ulRequest = LONGFROMMP(mp1);
-            DosWriteQueue(G_hqPageMage, ulRequest, 0, NULL, 0);
-        break; }
-
-        default:
-            bHandled = FALSE;
-            break;
+            default:
+                bHandled = FALSE;
+                break;
+        }
     }
+    CATCH(excpt1)
+    {
+        bHandled = FALSE;
+    } END_CATCH();
 
     if (!bHandled)
         mReturn = WinDefWindowProc(hwnd, msg, mp1, mp2);
@@ -1093,11 +1156,12 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *      frame, which was subclassed by pgmcCreateMainControlWnd.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.4 (2000-08-08) [umoeller]: fixed various update/formatting problems
  */
 
 MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    PTRACKINFO  ptr;
+    MRESULT     mrc = 0;
 
     switch (msg)
     {
@@ -1105,24 +1169,72 @@ MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
         {
             PSWP pswp = (PSWP)mp1;
 
-            if (pswp->cx < 100)
-                pswp->cx = 100;
-            if (pswp->cy < 100)
-                pswp->cy = 100;
+            if (pswp->cx < 20)
+                pswp->cx = 20;
+            if (pswp->cy < 20)
+                pswp->cy = 20;
 
             if (G_pHookData->PageMageConfig.fPreserveProportions)
                 pswp->cy = pgmcCalcNewFrameCY(pswp->cx);
+
+            mrc = G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
         break; }
 
+        /*
+         * WM_TRACKFRAME:
+         *      comes in when the user attempts to resize
+         *      the PageMage window. We need to stop the
+         *      flash timer while this is going on.
+         */
+
+        case WM_TRACKFRAME:
+            // stop flash timer, if running
+            if (G_pHookData->PageMageConfig.fFlash)
+                WinStopTimer(G_habDaemon,
+                             G_pHookData->hwndPageMageClient,
+                             2);
+
+            // now track window (WC_FRAME runs a modal message loop)
+            mrc = G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
+
+            if (G_pHookData->PageMageConfig.fFlash)
+                pgmgcStartFlashTimer();
+        break;
+
+        /*
+         * WM_QUERYTRACKINFO:
+         *      the frame control generates this when
+         *      WM_TRACKFRAME comes in.
+         */
+
         case WM_QUERYTRACKINFO:
+        {
+            PTRACKINFO  ptr;
             G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
             ptr = (PTRACKINFO) PVOIDFROMMP(mp2);
-            ptr->ptlMinTrackSize.x = 100;
-            ptr->ptlMinTrackSize.y = 100;
-            return (MRFROMSHORT(TRUE));
+            ptr->ptlMinTrackSize.x = 20;
+            ptr->ptlMinTrackSize.y = 20;
+
+            mrc = MRFROMSHORT(TRUE);
+        break; }
+
+        case WM_WINDOWPOSCHANGED:
+        {
+            PSWP pswp1 = (PSWP)mp1;
+            PrfWriteProfileData(HINI_USER,
+                                INIAPP_XWPHOOK,
+                                INIKEY_HOOK_PGMGWINPOS,
+                                pswp1,
+                                sizeof(SWP));
+            mrc = G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
+        break; }
+
+        default:
+            mrc = G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
     }
 
-    return (G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2));
+    return (mrc);
+
 } // FrameWndProc
 
 

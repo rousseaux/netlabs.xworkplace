@@ -565,7 +565,9 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         if (pcnbp->ulPageID == SP_HPFS)
         {
             CHAR szHPFSDrives[30];
-            doshEnumDrives(szHPFSDrives, "HPFS");
+            doshEnumDrives(szHPFSDrives,
+                           "HPFS",
+                           TRUE); // skip removeable drives
             if (strlen(szHPFSDrives) > 0)
                 WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_FSINSTALLED, FALSE);
         }
@@ -574,7 +576,9 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             CHAR szAllDrives[30];
             PSZ p = szAllDrives;
             ULONG ul = 0;
-            doshEnumDrives(szAllDrives, NULL); // all drives
+            doshEnumDrives(szAllDrives,
+                           NULL, // all drives
+                           TRUE); // skip removeable drives
 
             while (*p)
             {
@@ -1206,7 +1210,10 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // enumerate all HPFS or FAT drives on the system
             CHAR szHPFSDrives[30];
             doshEnumDrives(szHPFSDrives,
-                    (pcnbp->ulPageID == SP_HPFS) ? "HPFS" : "FAT");
+                           (pcnbp->ulPageID == SP_HPFS)
+                                ? "HPFS"
+                                : "FAT",
+                           TRUE); // skip removeable drives
             WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_AUTOCHECK, szHPFSDrives);
         break; }
 
@@ -1880,7 +1887,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         (PVOID)aulSysInfo, sizeof(ULONG)*QSV_MAX);
                     ulInstalledMB =
                                (aulSysInfo[QSV_TOTPHYSMEM-1] + (512*1000)) / 1024 / 1024;
-                    doshEnumDrives(szHPFSDrives, "HPFS");
+                    doshEnumDrives(szHPFSDrives,
+                                   "HPFS",
+                                   TRUE); // skip removeable drives
 
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_FSINSTALLED,
                                 (strlen(szHPFSDrives) > 0));
@@ -1917,7 +1926,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         (PVOID)aulSysInfo, sizeof(ULONG)*QSV_MAX);
                     ulInstalledMB =
                                (aulSysInfo[QSV_TOTPHYSMEM-1] + (512*1000)) / 1024 / 1024;
-                    doshEnumDrives(szFATDrives, "FAT");
+                    doshEnumDrives(szFATDrives,
+                                   "FAT",
+                                   TRUE); // skip removeable drives
 
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_FSINSTALLED,
                                 (strlen(szFATDrives) > 0));
@@ -1997,7 +2008,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 case SP_HPFS:
                 {
                     CHAR szHPFSDrives[30];
-                    doshEnumDrives(szHPFSDrives, "HPFS");
+                    doshEnumDrives(szHPFSDrives,
+                                   "HPFS",
+                                   TRUE); // skip removeable drives
 
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_FSINSTALLED, TRUE);
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_CACHESIZE_AUTO, FALSE);

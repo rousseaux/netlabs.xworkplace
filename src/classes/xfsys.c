@@ -195,37 +195,21 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->ulPageID = SP_FAT;
     ntbInsertPage(pcnbp);
 
-    /* pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = "~HPFS";
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_HPFS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_HPFS;
-    // give this page a unique ID (common.h), which
-    // is passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_HPFS;
-    ntbInsertPage(pcnbp); */
-
-    // "Drivers drivers"
+    // "Drivers"
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgDriversInitPage;
-    pcnbp->pfncbItemChanged = cfgDriversItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = pNLSStrings->pszDrivers;
     pcnbp->ulDlgID = ID_OSD_SETTINGS_DRIVERS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DRIVERS;
-    // give this page a unique ID (common.h), which
-    // is passed to the common config.sys callbacks
     pcnbp->ulPageID = SP_DRIVERS;
+    pcnbp->pampControlFlags = G_pampDriversPage;
+    pcnbp->cControlFlags = G_cDriversPage;
+    pcnbp->pfncbInitPage    = cfgDriversInitPage;
+    pcnbp->pfncbItemChanged = cfgDriversItemChanged;
     ntbInsertPage(pcnbp);
 
     // "Memory"
@@ -274,15 +258,15 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgSyslevelInitPage;
-    pcnbp->pfncbItemChanged = cfgSyslevelItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = pNLSStrings->pszSyslevelPage;
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSLEVEL;
-    // give this page a unique ID (common.h), which
-    // is passed to the common config.sys callbacks
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->ulPageID = SP_SYSLEVEL;
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
+    pcnbp->pfncbInitPage    = cfgSyslevelInitPage;
+    pcnbp->pfncbItemChanged = cfgSyslevelItemChanged;
 
     return (ntbInsertPage(pcnbp));
 

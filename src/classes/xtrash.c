@@ -241,11 +241,26 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
                                                         HWND hwndDlg)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddTrashCanGeneralPage");
 
-    /* Return statement to be customized: */
-    return (TRUE);
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndDlg;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->ulDlgID = ID_XTD_ICONPAGE;
+    pcnbp->ulPageID = SP_TRASHCAN_ICON;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszIconPage;
+    pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_ICON;
+
+    pcnbp->pfncbInitPage    = trshTrashCanIconInitPage;
+    pcnbp->pfncbItemChanged = trshTrashCanIconItemChanged;
+
+    return (ntbInsertPage(pcnbp));
 }
 
 /*
@@ -256,13 +271,13 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
  *      be disabled by disabling the respective
  *      context menu items.
  *
- *      If (sBusy > 0), the trash can busy count
+ *      If (lBusy > 0), the trash can busy count
  *      is incremented by 1.
  *
- *      If (sBusy < 0), the trash can busy count
+ *      If (lBusy < 0), the trash can busy count
  *      is decremented by 1.
  *
- *      If (sBusy == 0), the trash can busy count
+ *      If (lBusy == 0), the trash can busy count
  *      is not changed. Use this for querying the
  *      busy flag only.
  *
@@ -272,7 +287,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
-                                             SHORT sBusy)
+                                             long lBusy)
 {
     BOOL    brc = FALSE,
             fTrashCanLocked = FALSE;
@@ -285,10 +300,10 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
         fTrashCanLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
         if (fTrashCanLocked)
         {
-            if (sBusy > 0)
+            if (lBusy > 0)
                 // raise busy count:
                 _ulBusyCount++;
-            else if (sBusy < 0)
+            else if (lBusy < 0)
                 // lower busy count:
                 if (_ulBusyCount > 0)
                     _ulBusyCount--;
@@ -297,6 +312,10 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
                     || (_cDrivePopulating != 0)
                   );
         }
+        else
+            // couldn't get mutex:
+            // trash can is probably busy too
+            brc = TRUE;
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -313,17 +332,31 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
  *      Gets called by XWPTrashObject::xwpSetExpandedObjectData.
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: added object mutex
  */
 
 SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
                                               ULONG ulNewSize)
 {
+    BOOL    fTrashCanLocked = FALSE;
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSize");
 
-    _dSizeOfAllObjects += ulNewSize;
-    // update all visible status bars
-    trshUpdateStatusBars(somSelf);
+    TRY_LOUD(excpt1, NULL)
+    {
+        // make this thread-safe
+        fTrashCanLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fTrashCanLocked)
+        {
+            _dSizeOfAllObjects += ulNewSize;
+            // update all visible status bars
+            trshUpdateStatusBars(somSelf);
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fTrashCanLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 }
 
 /*
@@ -354,67 +387,62 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpQueryTrashObjectsCount(XWPTrashCan *somSelf)
  *      with either the "empty" or "not empty" icon.
  *
  *@@changed V0.9.1 (2000-01-29) [umoeller]: added fForce parameter
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: now pre-loading icons; added ICONS.DLL support
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: added object mutex
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
                                                     BOOL fForce)
 {
-    HPOINTER hptr = NULLHANDLE;
-    ULONG    ulIconID = 0;
-    BOOL     brc = FALSE;
-    BOOL     fTrashFilled = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    BOOL    brc = FALSE,
+            fTrashCanLocked = FALSE;
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpSetCorrectTrashIcon");
 
-    if (_ulTrashObjectCount)
-        fTrashFilled = TRUE;
-
-    if (    (fForce)
-         || (fTrashFilled != _fFilledIconSet)
-       )
+    TRY_LOUD(excpt1, NULL)
     {
-        // icon changed:
-
-        /* if (pGlobalSettings->fReplaceIcons)
+        // make this thread-safe
+        fTrashCanLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fTrashCanLocked)
         {
-            // attempt to load user-defined replacement icon
-            // from ICONS.DLL
-            if (fTrashFilled)
-                ulIconID = 113;
-            else
-                ulIconID = 112;
+            ULONG    ulIconID = 0;
+            BOOL     fTrashFilled = FALSE;
 
-            hptr = WinLoadPointer(HWND_DESKTOP,
-                                  cmnQueryIconsDLL(),
-                                  ulIconID);
-        } */
+            if (_ulTrashObjectCount)
+                fTrashFilled = TRUE;
 
-        if (hptr == NULLHANDLE)
-        {
-            // no user icons or user icon not found:
-            // then load the icon from XFLDR.DLL
-            if (fTrashFilled)
-                ulIconID = ID_ICONXWPTRASHFILLED;
-            else
-                ulIconID = ID_ICONXWPTRASHEMPTY;
+            if (    (fForce)
+                 || (fTrashFilled != _fFilledIconSet)
+               )
+            {
+                // icon changed:
+                HPOINTER hptr = NULLHANDLE;
 
-            hptr = WinLoadPointer(HWND_DESKTOP,
-                                  cmnQueryMainModuleHandle(),
-                                  ulIconID);
+                if (fTrashFilled)
+                    hptr = _hptrFull;
+                else
+                    hptr = _hptrEmpty;
+
+                if (hptr)
+                {
+                    // do not automatically destroy icon, because
+                    // we'll need it again; if we don't set this,
+                    // the WPS will automatically destroy the old
+                    // icon, which is still needed by us...
+                    _wpSetStyle(somSelf,
+                                _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON);
+                                        // OBJSTYLE_CUSTOMICON doesn't work!!
+                    brc = _wpSetIcon(somSelf, hptr);
+                }
+                _fFilledIconSet = fTrashFilled;
+            }
         }
-
-        if (hptr)
-        {
-            brc = _wpSetIcon(somSelf, hptr);
-            if (brc)
-                _wpSetStyle(somSelf,
-                            _wpQueryStyle(somSelf) | OBJSTYLE_CUSTOMICON);
-
-        }
-        _fFilledIconSet = fTrashFilled;
     }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fTrashCanLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 
     return (brc);
 }
@@ -423,24 +451,51 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
  *@@ xwpEmptyTrashCan:
  *      this will empty the trashcan.
  *
- *      Note that this is done on the XWorkplace File
- *      thread so this function returns BEFORE the
- *      trash can is empty.
+ *      Note that this is done on the XWorkplace File thread
+ *      so this function returns BEFORE the trash can is empty.
  *
- *      If (fConfirm == TRUE), a confirmation box
- *      is displayed before processing starts.
+ *      However, if you specify the caller's anchor block in
+ *      hab, processing takes place synchronously.
+ *      See fopsStartTask for details.
  *
- *      Returns TRUE if emptying the trash can has
- *      started on the File thread.
+ *      If (hwndConfirmOwner != NULLHANDLE), a confirmation
+ *      box is displayed before processing starts. In
+ *      hwndConfirmOwner, specify the owner window for the
+ *      confirmation box, e.g. the Desktop frame window handle.
+ *
+ *      Emptying the trash can is now implemented thru creating
+ *      a list of the related objects from the trash objects
+ *      in the trash can and starting a "true delete" file task
+ *      with that list (fopsStartTaskFromList).
+ *
+ *      This function will populate the trash can if this is
+ *      not done yet. However, this can only be done if hab
+ *      is specified for synchronous mode. Otherwise this
+ *      function will fail.
+ *
+ *      Returns TRUE if emptying the trash can has started on
+ *      the File thread or (in synchronous mode) if emptying succeeded.
+ *
+ *      If (pulDeleted != NULL) and TRUE is returned, *pulDeleted
+ *      receives the no. of objects which were deleted. This works
+ *      only in synchronous mode. Note that if the trash can was
+ *      empty, TRUE is returned still, but *pulDeleted will be set
+ *      to 0.
+ *
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added hwndConfirmOwner
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
-                                              BOOL fConfirm)
+                                              ULONG hab, PULONG pulDeleted,
+                                              HWND hwndConfirmOwner)
 {
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpEmptyTrashCan");
 
-    return (trshEmptyTrashCan(somSelf, fConfirm));
+    return (trshEmptyTrashCan(somSelf,
+                              hab,   // no anchor block, asynchronously
+                              hwndConfirmOwner,
+                              pulDeleted));
 }
 
 /*
@@ -500,10 +555,13 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
  *      object is being initialized (on wake-up or creation).
  *      We initialize our additional instance data here.
  *      Always call the parent method first.
+ *
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: now pre-loading icons; added ICONS.DLL support
  */
 
 SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpInitData");
 
@@ -517,6 +575,34 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
     _cDrivePopulating = 0;
 
     _ulBusyCount = 0;
+
+    _hptrEmpty = NULLHANDLE;
+    _hptrFull = NULLHANDLE;
+
+    _fOpeningSettings = FALSE;
+
+    if (pGlobalSettings->fReplaceIcons)
+    {
+        // attempt to load user-defined replacement icon
+        // from ICONS.DLL
+        _hptrFull = WinLoadPointer(HWND_DESKTOP,
+                                   cmnQueryIconsDLL(),
+                                   113);
+        _hptrEmpty = WinLoadPointer(HWND_DESKTOP,
+                                    cmnQueryIconsDLL(),
+                                    112);
+    }
+
+    if (_hptrFull == NULLHANDLE)
+        // no user icons or user icon not found:
+        // then load the icon from XFLDR.DLL
+        _hptrFull = WinLoadPointer(HWND_DESKTOP,
+                                   cmnQueryMainModuleHandle(),
+                                   ID_ICONXWPTRASHFILLED);
+    if (_hptrEmpty == NULLHANDLE)
+        _hptrEmpty = WinLoadPointer(HWND_DESKTOP,
+                                    cmnQueryMainModuleHandle(),
+                                    ID_ICONXWPTRASHEMPTY);
 
     if (G_pDefaultTrashCan == NULL)
         // this is the first trash can to be initialized:
@@ -559,11 +645,16 @@ SOM_Scope void  SOMLINK xtrc_wpObjectReady(XWPTrashCan *somSelf,
 
 SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
 {
-    /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpUnInitData");
 
     if (G_pDefaultTrashCan == somSelf)
         G_pDefaultTrashCan = NULL;
+
+    if (_hptrFull)
+        WinDestroyPointer(_hptrFull);
+    if (_hptrEmpty)
+        WinDestroyPointer(_hptrEmpty);
 
     XWPTrashCan_parent_WPFolder_wpUnInitData(somSelf);
 }
@@ -756,8 +847,12 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
     if (ulMenuId2 == ID_XFMI_OFS_TRASHEMPTY)
     {
         _xwpEmptyTrashCan(somSelf,
-                          ((pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
-                                != 0)
+                          WinQueryAnchorBlock(hwndFrame), // synchronously
+                          NULL,
+                          (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
+                                // confirmations:
+                                ? hwndFrame
+                                : NULLHANDLE
                          );
     }
     // swallow "open tree view"
@@ -779,18 +874,27 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
  *      requested for a menu item in the object's context menu.
  *
  *      We need to display help for our new menu items here.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
                                                     ULONG MenuId)
 {
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemHelpSelected");
 
-    // ###
-
-    return (XWPTrashCan_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
-                                                               MenuId));
+    if (MenuId - pGlobalSettings->VarMenuOffset == ID_XFMI_OFS_TRASHEMPTY)
+    {
+        // now open the help panel we've set above
+        cmnDisplayHelp(somSelf,
+                       ID_XSH_SETTINGS_TRASHCAN);
+        return (TRUE);
+    }
+    else
+        return (XWPTrashCan_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
+                                                                   MenuId));
 }
 
 /*
@@ -813,10 +917,6 @@ SOM_Scope BOOL  SOMLINK xtrc_wpQueryDefaultHelp(XWPTrashCan *somSelf,
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_SETTINGS_TRASHCAN;
     return (TRUE);
-
-    /* return (XWPTrashCan_parent_WPFolder_wpQueryDefaultHelp(somSelf,
-                                                           pHelpPanelId,
-                                                           HelpLibrary)); */
 }
 
 /*
@@ -832,7 +932,7 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
                                     ULONG param)
 {
     HWND hwndFrame = NULLHANDLE;
-    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpOpen");
 
     if (    (ulView == OPEN_CONTENTS)
@@ -840,6 +940,10 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
          || (ulView == OPEN_SETTINGS)
        )
     {
+        if (ulView == OPEN_SETTINGS)
+            // prevent wpSetIcon
+            _fOpeningSettings = TRUE;
+
         hwndFrame = XWPTrashCan_parent_WPFolder_wpOpen(somSelf,
                                                        hwndCnr,
                                                        ulView,
@@ -852,6 +956,8 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
                                       somSelf,
                                       ulView);
         }
+
+        _fOpeningSettings = FALSE;
     }
 
     return (hwndFrame);
@@ -890,7 +996,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpPopulate");
 
-    // make trash can "busy)
+    // make trash can "busy"
     _xwpTrashCanBusy(somSelf,
                      +1);       // inc "busy"
 
@@ -1116,8 +1222,8 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage");
 
-    return (XWPTrashCan_parent_WPFolder_wpAddObjectGeneralPage(somSelf,
-                                                               hwndNotebook));
+    return (_xwpAddTrashCanGeneralPage(somSelf,
+                                       hwndNotebook));
 }
 
 /*
@@ -1188,7 +1294,7 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderView2Page(XWPTrashCan *somSelf,
 SOM_Scope BOOL  SOMLINK xtrc_wpAddSettingsPages(XWPTrashCan *somSelf,
                                                 HWND hwndNotebook)
 {
-    /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddSettingsPages");
 
     XWPTrashCan_parent_WPFolder_wpAddSettingsPages(somSelf, hwndNotebook);
@@ -1197,6 +1303,39 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddSettingsPages(XWPTrashCan *somSelf,
 
     return (TRUE);
 }
+
+/*
+ *@@ wpSetIcon:
+ *      this instance method sets the current icon for
+ *      an object. As opposed to with wpSetIconData,
+ *      this does not change the icon permanently.
+ *
+ *      Note: If the OBJSTYLE_NOTDEFAULTICON object style
+ *      flag has been set with wpSetStyle, the old icon
+ *      (HPOINTER) will be destroyed.
+ *      As a result, that flag needs to be unset if
+ *      icons are shared between objects, as with class
+ *      default icons. The OBJSTYLE_CUSTOMICON flag does
+ *      NOT work, even if the WPS lists it with wpQueryStyle.
+ *
+ *      Also, the WPS annoyingly resets the icon to its
+ *      default when a settings notebook is opened.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrc_wpSetIcon(XWPTrashCan *somSelf,
+                                       HPOINTER hptrNewIcon)
+{
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpSetIcon");
+
+    if (!_fOpeningSettings)
+        return (XWPTrashCan_parent_WPFolder_wpSetIcon(somSelf, hptrNewIcon));
+    else
+        return (FALSE);
+}
+
 
 /* ******************************************************************
  *                                                                  *

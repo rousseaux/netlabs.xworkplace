@@ -45,7 +45,7 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 
 HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\memdebug.h $(HLPINC)\winh.h $(HLPINC)\xstring.h
 
-ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj ..\..\bin\helpers.lib
+ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
 
 # TARGETS
 # -------
@@ -63,8 +63,8 @@ treesize.def: ..\..\include\bldlevel.h
 $(OUTPUTDIR)\treesize.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(MODULESDIR)\treesize.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
+$(MODULESDIR)\treesize.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
+          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(@B).def
           $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target

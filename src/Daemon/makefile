@@ -106,18 +106,18 @@ MYOWNINC = $(INC)\hook
 
 $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+        $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
         $(INC)\shared\kernel.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_control.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\gpih.h \
+        $(HLPINC)\except.h $(HLPINC)\gpih.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\threads.h \
+        $(HLPINC)\except.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
@@ -126,6 +126,7 @@ $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
 
 $(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
         $(INC)\setup.h \
+        $(HLPINC)\shapewin.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico $(@B).rc

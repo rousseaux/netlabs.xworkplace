@@ -137,8 +137,9 @@
 
 #include "config\drivdlgs.h"            // driver configuration dialogs
 
-#pragma hdrstop                 // VAC++ keeps crashing otherwise
+#pragma hdrstop                         // VAC++ keeps crashing otherwise
 // other SOM headers
+#include <wpfsys.h>                     // WPFileSystem
 
 /*
  *@@ drvConfigSupported:
@@ -172,6 +173,12 @@ VOID drvConfigSupported(PDRIVERSPEC pSpec)
         pSpec->hmodConfigDlg = hmodNLS;                 // module handle
         pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS;        // dialog ID
         pSpec->pfnwpConfigure = drv_fnwpConfigHPFS;     // window procedure
+    }
+    else if (stricmp(pSpec->pszFilename, "HPFS386.IFS") == 0)
+    {
+        pSpec->hmodConfigDlg = hmodNLS;                 // module handle
+        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS386;     // dialog ID
+        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS386;  // window procedure
     }
     else if (stricmp(pSpec->pszFilename, "CDFS.IFS") == 0)
     {
@@ -365,7 +372,9 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     // "Propose" button for auto-chkdsk (HPFS/FAT pages):
                     // enumerate all HPFS or FAT drives on the system
                     CHAR szHPFSDrives[30];
-                    doshEnumDrives(szHPFSDrives, "HPFS");
+                    doshEnumDrives(szHPFSDrives,
+                                   "HPFS",
+                                   TRUE); // skip removeable drives
                     WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, szHPFSDrives);
                 break; }
 
@@ -377,6 +386,164 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         case WM_HELP:
             cmnDisplayHelp(NULL,        // active Desktop
                            ID_XSH_DRIVER_HPFS);
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ drv_fnwpConfigHPFS386:
+ *      dialog procedure for the "Configure HPFS386.IFS" dialog.
+ *
+ *      This gets called automatically from cfgDriversItemChanged
+ *      (xfsys.c) when the "Configure" button is pressed.
+ *
+ *      As with all driver dialogs, this gets a DRIVERDLGDATA
+ *      structure with mp2 in WM_INITDLG.
+ *
+ *@@added V0.9.5 (2000-08-10) [umoeller]
+ */
+
+MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    PDRIVERDLGDATA pddd = WinQueryWindowPtr(hwndDlg, QWL_USER);
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+        {
+            PSZ         pszParamsCopy = 0,
+                        pszToken = 0;
+            ULONG       cParams = 0;
+            HWND        hwndCnr = WinWindowFromID(hwndDlg, ID_OSDI_HPFS386INI_CNR);
+
+            // store DRIVERDLGDATA in window words
+            pddd = (PDRIVERDLGDATA)mp2;
+            WinSetWindowPtr(hwndDlg, QWL_USER, pddd);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+
+            // set up cnr
+            BEGIN_CNRINFO()
+            {
+                cnrhSetView(CV_NAME);
+            } END_CNRINFO(hwndCnr);
+
+            // now parse the parameters
+            pszParamsCopy = strdup(pddd->szParams);
+            if (pszParamsCopy)
+            {
+                pszToken = strtok(pszParamsCopy, " ");
+                do
+                {
+                    if (cParams == 0)
+                    {
+                        WPFileSystem *pIniFile = 0;
+                        // first parameter must be HPFS386.INI location;
+                        // set group title
+                        WinSetDlgItemText(hwndDlg, ID_OSDI_HPFS386INI_GROUP, pszToken);
+
+                        pddd->pvUser = 0;
+
+                        pIniFile = _wpclsQueryObjectFromPath(_WPFileSystem, pszToken);
+                        if (pIniFile)
+                        {
+                            POINTL ptlIcon = {0, 0};
+                            // now insert that file into the container
+                            if (_wpCnrInsertObject(pIniFile,
+                                                   hwndCnr,
+                                                   &ptlIcon,
+                                                   NULL,    // parent
+                                                   NULL))    // next available position
+                                    // returns a PMINIRECORDCORE
+                            {
+                                // success: store object ptr in dlg data
+                                pddd->pvUser = pIniFile;
+                                _wpSetStyle(pIniFile,
+                                            _wpQueryStyle(pIniFile)
+                                                | OBJSTYLE_NODELETE
+                                                | OBJSTYLE_NORENAME
+                                                | OBJSTYLE_NOMOVE);
+                            }
+                        }
+                    }
+                    else if (memicmp(pszToken, "/AUTOCHECK:", 11) == 0)
+                        WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
+
+                    cParams++;
+                } while (pszToken = strtok(NULL, " "));
+
+                free(pszParamsCopy);
+            }
+
+        break; }
+
+        case WM_COMMAND:
+            switch ((USHORT)mp1)
+            {
+                case DID_OK:
+                {
+                    // recompose params string
+                    CHAR    szTemp[100];
+                    PSZ     pszTemp = NULL;
+                    pddd->szParams[0] = 0;
+
+                    // location of HPFS386.INI
+                    WinQueryWindowText(WinWindowFromID(hwndDlg, ID_OSDI_HPFS386INI_GROUP),
+                                       sizeof(pddd->szParams),
+                                       pddd->szParams);
+                    strcat(pddd->szParams, " ");
+
+                    // autocheck next
+                    pszTemp = winhQueryDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK);
+                    if (pszTemp)
+                    {
+                        strcat(pddd->szParams, "/AUTOCHECK:");
+                        strcat(pddd->szParams, pszTemp);
+                        strcat(pddd->szParams, " ");
+                        free(pszTemp);
+                    }
+
+                    // dismiss
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+                break; }
+
+                case ID_OSDI_AUTOCHECK_PROPOSE:
+                {
+                    // "Propose" button for auto-chkdsk (HPFS/FAT pages):
+                    // enumerate all HPFS or FAT drives on the system
+                    CHAR szHPFSDrives[30];
+                    doshEnumDrives(szHPFSDrives,
+                                   "HPFS",
+                                   TRUE); // skip removeable drives
+                    WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, szHPFSDrives);
+                break; }
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,        // active Desktop
+                           ID_XSH_DRIVER_HPFS386);
+        break;
+
+        case WM_DESTROY:
+            // remove HPFS386.INI WPFileSystem object from cnr
+            if (pddd->pvUser)
+            {
+                WPFileSystem *pIniFile = (WPFileSystem*)pddd->pvUser;
+                _wpCnrRemoveObject(pIniFile,
+                                   WinWindowFromID(hwndDlg,
+                                                   ID_OSDI_HPFS386INI_CNR));
+            }
+
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break;
 
         default:

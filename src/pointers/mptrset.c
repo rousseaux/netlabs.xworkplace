@@ -362,9 +362,9 @@ VOID setUseMouseSetup(BOOL fNewUseMouseSetup)
 }
 
 
-/*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
- *� Name      : Helper Funktionen                                          �
- *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
+/*
+ *@@ isnumeric:
+ *
  */
 
 BOOL isnumeric(PSZ pszString)
@@ -793,13 +793,23 @@ APIRET _Export ScanSetupString
                                     }
 
                                     // Laden !
-                                    LoadPointerAnimation(ulPointerIndex, QueryPointerlist(ulPointerIndex), pszName, fAllPointer, FALSE, FALSE);
+                                    LoadPointerAnimation(ulPointerIndex,
+                                                         QueryPointerlist(ulPointerIndex),
+                                                         pszName,
+                                                         fAllPointer,
+                                                         FALSE,
+                                                         FALSE);
 
                                 }
 
                                 // Animation an/ausstellen
-                                ToggleAnimate(hwnd, ulPointerIndex, NULL, pcnrrec, fAllPointer, FALSE, &fAnimate);
-
+                                ToggleAnimate(hwnd,
+                                              ulPointerIndex,
+                                              NULL,
+                                              pcnrrec,
+                                              fAllPointer,
+                                              FALSE,
+                                              &fAnimate);
                             }
                             break;
 

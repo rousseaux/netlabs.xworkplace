@@ -115,6 +115,12 @@
  *                                                                  *
  ********************************************************************/
 
+MPARAM G_ampFeaturesPage[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XCDI_CONTAINER, XAC_SIZEX | XAC_SIZEY)
+    };
+
 /*
  *@@ xwpAddXWPSetupPages:
  *      this actually adds the new pages into the
@@ -192,6 +198,8 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->ulDlgID = ID_XCD_FEATURES;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
     pcnbp->ulPageID = SP_SETUP_FEATURES;
+    pcnbp->pampControlFlags = G_ampFeaturesPage;
+    pcnbp->cControlFlags = sizeof(G_ampFeaturesPage) / sizeof(G_ampFeaturesPage[0]);
     pcnbp->pfncbInitPage    = setFeaturesInitPage;
     pcnbp->pfncbItemChanged = setFeaturesItemChanged;
     pcnbp->pfncbMessage = setFeaturesMessages;

@@ -492,7 +492,8 @@ MRESULT EXPENTRY _Export DialogHandlerProc
                 case IDMEN_FOLDER_HELP_GENERAL:
                 case IDMEN_ITEM_HELP_GENERAL:
                 case IDDLG_PB_HELP:
-                    WinSendMsg(hwnd, WM_USER_SERVICE, MPFROMLONG(SERVICE_HELP), MPFROMP(IDPNL_USAGE_NBPAGE));
+                    WinSendMsg(hwnd, WM_USER_SERVICE, MPFROMLONG(SERVICE_HELP),
+                                    MPFROMP(1 /* IDPNL_USAGE_NBPAGE */));
                     break;
 
                     // - - - - - - - - - - - - - - - - - - - - -
@@ -583,7 +584,10 @@ MRESULT EXPENTRY _Export DialogHandlerProc
                                    MPFROMP(phdi->precEdit), MPFROM2SHORT(FALSE, CRA_INUSE));
 
                     // Container item refreshen
-                    RefreshCnrItem(hwnd, pmyrec, phdi->pcnrrec, TRUE);
+                    RefreshCnrItem(hwnd,
+                                   (PRECORDCORE)pmyrec,
+                                   phdi->pcnrrec,
+                                   TRUE);
                 }
             }
             break;
@@ -659,7 +663,8 @@ MRESULT EXPENTRY _Export DialogHandlerProc
                         // ...............................................................
 
                     case CN_HELP:
-                        WinSendMsg(hwnd, WM_USER_SERVICE, MPFROMLONG(SERVICE_HELP), MPFROMP(IDPNL_USAGE_NBPAGE));
+                        WinSendMsg(hwnd, WM_USER_SERVICE, MPFROMLONG(SERVICE_HELP),
+                                        MPFROMP(1 /* IDPNL_USAGE_NBPAGE */));
                         break;  // case  CN_HELP
 
                         // ...............................................................

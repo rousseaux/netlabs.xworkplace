@@ -120,6 +120,8 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
         pcnbp->pszName = pNLSStrings->pszObjectHotkeysPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_KEYB_OBJHOTKEYS;
         pcnbp->ulPageID = SP_KEYB_OBJHOTKEYS;
+        pcnbp->pampControlFlags = G_pampGenericCnrPage;
+        pcnbp->cControlFlags = G_cGenericCnrPage;
         pcnbp->pfncbInitPage    = hifKeybdHotkeysInitPage;
         pcnbp->pfncbItemChanged = hifKeybdHotkeysItemChanged;
         ulrc = ntbInsertPage(pcnbp);
@@ -162,6 +164,8 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
         pcnbp->pszName = pNLSStrings->pszFunctionKeysPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FUNCTIONKEYS;
         pcnbp->ulPageID = SP_KEYB_FUNCTIONKEYS;
+        pcnbp->pampControlFlags = G_pampGenericCnrPage;
+        pcnbp->cControlFlags = G_cGenericCnrPage;
         pcnbp->pfncbInitPage    = hifKeybdFunctionKeysInitPage;
         pcnbp->pfncbItemChanged = hifKeybdFunctionKeysItemChanged;
         ulrc = ntbInsertPage(pcnbp);

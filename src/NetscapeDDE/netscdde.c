@@ -204,7 +204,7 @@ BOOL LoadNLS(VOID)
                     szNLSDLL);
             WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
                           szMessage,
-                          "Treesize: Fatal Error",
+                          "NetscapeDDE: Fatal Error",
                           0, MB_OK | MB_MOVEABLE);
             Proceed = FALSE;
         }
@@ -542,6 +542,8 @@ BOOL DDERequest(HWND hwndClient,
  *      processing DDE messages. If we're in debug mode, this
  *      routine waits for certain menu selections, otherwise
  *      the corresponding messages will be posted automatically.
+ *
+ *@@changed V0.9.4 (2000-07-10) [umoeller]: added DDE conflicts fix by Rousseau de Pantalon
  */
 
 MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -560,6 +562,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             PDDEINIT        pddeInit;
             PSZ             szInApp, szInTopic;
+            static BOOL bNetscapeAnswered = FALSE;
 
             pddeInit = (PDDEINIT) mp2;
             szInApp = pddeInit->pszAppName;
@@ -567,8 +570,31 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
             ShowMessage("!! Netscape answered.");
             hServerWnd = (HWND) mp1;
 
-            break;
-        }
+            // RDP 2000-07-07 07:24:18
+            // There was no check on which application responded.
+            // This made NETSCDDE fail when another DDE-aware application,
+            // like EPM, was running.
+            // Now the handle from mp1 is only assigned if the application
+            // responding is Netscape.
+            // If the app is not Netscape then the handle is nullified.
+            // I don't know if assigning 0 to the handle is correct but
+            // is seems to solve the problem.
+            if (!strcmp(pddeInit->pszAppName, "NETSCAPE"))
+            {
+                ShowMessage("!! Netscape answered.");
+                hServerWnd = (HWND)mp1;
+                bNetscapeAnswered = TRUE;
+            }
+            else
+            {
+                ShowMessage("!! Other application aswered.");
+                hServerWnd = (HWND)0;
+            }
+
+            // Show the application name and the topic in the debug-window.
+            ShowMessage(pddeInit->pszAppName);
+            ShowMessage(pddeInit->pszTopic);
+        break; }
 
         // all answers to DDE requests arrive here
         case WM_DDE_DATA:

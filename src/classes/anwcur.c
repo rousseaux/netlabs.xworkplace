@@ -93,7 +93,12 @@ MRESULT EXPENTRY anwcur_NotebookPageProc(HWND hwndDlg, ULONG msg, MPARAM mp1, MP
 // other SOM headers
 #pragma hdrstop
 
-SOM_Scope void SOMLINK wcur_wpRefreshFileIcon(XWPWinCursor * somSelf)
+/*
+ *@@ xwpRefreshFileIcon:
+ *
+ */
+
+SOM_Scope void SOMLINK wcur_xwpRefreshFileIcon(XWPWinCursor * somSelf)
 {
 
     APIRET rc = NO_ERROR;
@@ -117,12 +122,11 @@ SOM_Scope void SOMLINK wcur_wpRefreshFileIcon(XWPWinCursor * somSelf)
 
     XWPWinCursorData *somThis = XWPWinCursorGetData(somSelf);
 
-    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_wpRefreshFileIcon");
+    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpRefreshFileIcon");
     FUNCENTER();
 
     do
     {
-
         // Dateiname ermitteln
         _wpQueryFilename(somSelf, szFilename, TRUE);
 
@@ -214,36 +218,45 @@ SOM_Scope void SOMLINK wcur_wpRefreshFileIcon(XWPWinCursor * somSelf)
     return;
 }
 
-// ===========================================================================
+/*
+ *@@ xwpGetAnimationTimeframeValue:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK wcur_wpGetAnimationTimeframeValue(XWPWinCursor * somSelf)
+SOM_Scope ULONG SOMLINK wcur_xwpGetAnimationTimeframeValue(XWPWinCursor * somSelf)
 {
     XWPWinCursorData *somThis = XWPWinCursorGetData(somSelf);
 
-    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_wpGetAnimationTimeframeValue");
+    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpGetAnimationTimeframeValue");
     FUNCENTER();
 
     // ###
     return 0;
 }
 
-// ===========================================================================
+/*
+ *@@ xwpSetAnimationTimeframeValue:
+ *
+ */
 
-SOM_Scope BOOL SOMLINK wcur_wpSetAnimationTimeframeValue(XWPWinCursor * somSelf,
+SOM_Scope BOOL SOMLINK wcur_xwpSetAnimationTimeframeValue(XWPWinCursor * somSelf,
                                                          ULONG ulNewValue)
 {
     XWPWinCursorData *somThis = XWPWinCursorGetData(somSelf);
 
-    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_wpSetAnimationTimeframeValue");
+    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpSetAnimationTimeframeValue");
     FUNCENTER();
 
     // ###
     return TRUE;
 }
 
-// ===========================================================================
+/*
+ *@@ xwpInsertAnimationPage1:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage1(XWPWinCursor * somSelf,
+SOM_Scope ULONG SOMLINK wcur_xwpInsertAnimationPage1(XWPWinCursor * somSelf,
                                                   HWND hwndDlg)
 {
     PAGEINFO pi;
@@ -253,7 +266,7 @@ SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage1(XWPWinCursor * somSelf,
 
     XWPWinCursorData *somThis = XWPWinCursorGetData(somSelf);
 
-    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_InsertAnimationPage");
+    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpInsertAnimationPage");
     FUNCENTER();
 
     LOADSTRING(IDTAB_NBANIMATION, szTabName);
@@ -269,16 +282,19 @@ SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage1(XWPWinCursor * somSelf,
     pi.dlgid = IsWARP3()? IDDLG_DLG_ANIMATIONPAGE1_230 : IDDLG_DLG_ANIMATIONPAGE1;
     pi.pszName = szTabName;
     pi.pCreateParams = somSelf;
-    pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+    pi.idDefaultHelpPanel = 1; // IDPNL_USAGE_NBPAGE;
     pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
     return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);
 
 }
 
-// ===========================================================================
+/*
+ *@@ xwpInsertAnimationPage2:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage2(XWPWinCursor * somSelf,
+SOM_Scope ULONG SOMLINK wcur_xwpInsertAnimationPage2(XWPWinCursor * somSelf,
                                                   HWND hwndDlg)
 {
     PAGEINFO pi;
@@ -288,7 +304,7 @@ SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage2(XWPWinCursor * somSelf,
 
     XWPWinCursorData *somThis = XWPWinCursorGetData(somSelf);
 
-    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_InsertAnimationPage2");
+    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpInsertAnimationPage2");
 
     FUNCENTER();
 
@@ -305,27 +321,33 @@ SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage2(XWPWinCursor * somSelf,
     pi.dlgid = IsWARP3()? IDDLG_DLG_ANIMATIONPAGE2_230 : IDDLG_DLG_ANIMATIONPAGE2;
     pi.pszName = szTabName;
     pi.pCreateParams = somSelf;
-    pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+    pi.idDefaultHelpPanel = 1; // IDPNL_USAGE_NBPAGE;
     pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
     return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);
 
 }
 
-// ===========================================================================
+/*
+ *@@ xwpInsertAnimationPage3:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK wcur_InsertAnimationPage3(XWPWinCursor * somSelf,
+SOM_Scope ULONG SOMLINK wcur_xwpInsertAnimationPage3(XWPWinCursor * somSelf,
                                                   HWND hwndDlg)
 {
     XWPWinCursorData *somThis = XWPWinCursorGetData(somSelf);
 
-    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_InsertAnimationPage3");
+    XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpInsertAnimationPage3");
 
     /* Return statement to be customized: */
     return (0);
 }
 
-// ===========================================================================
+/*
+ *@@ wpAddFile1Page:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK wcur_wpAddFile1Page(XWPWinCursor * somSelf,
                                             HWND hwndNotebook)
@@ -335,8 +357,8 @@ SOM_Scope ULONG SOMLINK wcur_wpAddFile1Page(XWPWinCursor * somSelf,
 
     XWPWinCursorMethodDebug("XWPWinCursor", "wcur_wpAddFile1Page");
 
-    _InsertAnimationPage2(somSelf, hwndNotebook);
-    _InsertAnimationPage1(somSelf, hwndNotebook);
+    _xwpInsertAnimationPage2(somSelf, hwndNotebook);
+    _xwpInsertAnimationPage1(somSelf, hwndNotebook);
 
     ulResult = XWPWinCursor_parent_WPDataFile_wpAddFile1Page(somSelf,
                                                             hwndNotebook);
@@ -345,7 +367,10 @@ SOM_Scope ULONG SOMLINK wcur_wpAddFile1Page(XWPWinCursor * somSelf,
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpAddObjectGeneralPage:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK wcur_wpAddObjectGeneralPage(XWPWinCursor * somSelf,
                                                     HWND hwndNotebook)
@@ -373,14 +398,17 @@ SOM_Scope ULONG SOMLINK wcur_wpAddObjectGeneralPage(XWPWinCursor * somSelf,
     pi.dlgid = IsWARP3()? IDDLG_DLG_ICONPAGE_230 : IDDLG_DLG_ICONPAGE;
     pi.pszName = szTabName;
     pi.pCreateParams = somSelf;
-    pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+    pi.idDefaultHelpPanel = 1; // IDPNL_USAGE_NBPAGE;
     pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
     return _wpInsertSettingsPage(somSelf, hwndNotebook, &pi);
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpObjectReady:
+ *
+ */
 
 SOM_Scope void SOMLINK wcur_wpObjectReady(XWPWinCursor * somSelf,
                                           ULONG ulCode, WPObject * refObject)
@@ -394,10 +422,13 @@ SOM_Scope void SOMLINK wcur_wpObjectReady(XWPWinCursor * somSelf,
                                                 refObject);
 
     // fremdes Iconformat erstmalig laden
-    _wpRefreshFileIcon(somSelf);
+    _xwpRefreshFileIcon(somSelf);
 }
 
-// ===========================================================================
+/*
+ *@@ wpQueryIcon:
+ *
+ */
 
 SOM_Scope HPOINTER SOMLINK wcur_wpQueryIcon(XWPWinCursor * somSelf)
 {
@@ -407,7 +438,7 @@ SOM_Scope HPOINTER SOMLINK wcur_wpQueryIcon(XWPWinCursor * somSelf)
     FUNCENTER();
 
     // Icon erneuern
-    _wpRefreshFileIcon(somSelf);
+    _xwpRefreshFileIcon(somSelf);
 
     if (_hptr)
         return _hptr;
@@ -415,7 +446,10 @@ SOM_Scope HPOINTER SOMLINK wcur_wpQueryIcon(XWPWinCursor * somSelf)
     return (XWPWinCursor_parent_WPDataFile_wpQueryIcon(somSelf));
 }
 
-// ===========================================================================
+/*
+ *@@ wpQueryIconData:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK wcur_wpQueryIconData(XWPWinCursor * somSelf,
                                              PICONINFO pIconInfo)
@@ -441,7 +475,10 @@ SOM_Scope ULONG SOMLINK wcur_wpQueryIconData(XWPWinCursor * somSelf,
                                                           pIconInfo));
 }
 
-// ===========================================================================
+/*
+ *@@ wpSetIcon:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK wcur_wpSetIcon(XWPWinCursor * somSelf,
                                       HPOINTER hptrNewIcon)
@@ -459,7 +496,10 @@ SOM_Scope BOOL SOMLINK wcur_wpSetIcon(XWPWinCursor * somSelf,
                                                     hptrNewIcon));
 }
 
-// ===========================================================================
+/*
+ *@@ wpSetIconData:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK wcur_wpSetIconData(XWPWinCursor * somSelf,
                                           PICONINFO pIconInfo)
@@ -481,7 +521,10 @@ SOM_Scope BOOL SOMLINK wcur_wpSetIconData(XWPWinCursor * somSelf,
                                                         pIconInfo));
 }
 
-// ===========================================================================
+/*
+ *@@ wpModifyPopupMenu:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK wcur_wpModifyPopupMenu(XWPWinCursor * somSelf,
                                               HWND hwndMenu,
@@ -571,7 +614,10 @@ SOM_Scope BOOL SOMLINK wcur_wpModifyPopupMenu(XWPWinCursor * somSelf,
                                                             iPosition));
 }
 
-// ===========================================================================
+/*
+ *@@ wpFilterPopupMenu:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK wcur_wpFilterPopupMenu(XWPWinCursor * somSelf,
                                                ULONG ulFlags,
@@ -590,7 +636,10 @@ SOM_Scope ULONG SOMLINK wcur_wpFilterPopupMenu(XWPWinCursor * somSelf,
                                                             fMultiSelect));
 }
 
-// ===========================================================================
+/*
+ *@@ wpMenuItemSelected:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK wcur_wpMenuItemSelected(XWPWinCursor * somSelf,
                                                HWND hwndFrame,
@@ -641,7 +690,10 @@ SOM_Scope BOOL SOMLINK wcur_wpMenuItemSelected(XWPWinCursor * somSelf,
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpMenuItemHelpSelected:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK wcur_wpMenuItemHelpSelected(XWPWinCursor * somSelf,
                                                    ULONG MenuId)
@@ -656,7 +708,10 @@ SOM_Scope BOOL SOMLINK wcur_wpMenuItemHelpSelected(XWPWinCursor * somSelf,
                                                                  MenuId));
 }
 
-// ===========================================================================
+/*
+ *@@ wpInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK wcur_wpInitData(XWPWinCursor * somSelf)
 {
@@ -687,7 +742,10 @@ SOM_Scope void SOMLINK wcur_wpInitData(XWPWinCursor * somSelf)
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpUnInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK wcur_wpUnInitData(XWPWinCursor * somSelf)
 {
@@ -720,7 +778,10 @@ SOM_Scope void SOMLINK wcur_wpUnInitData(XWPWinCursor * somSelf)
     XWPWinCursor_parent_WPDataFile_wpUnInitData(somSelf);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryStyle:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK wcurM_wpclsQueryStyle(M_XWPWinCursor * somSelf)
 {
@@ -731,7 +792,10 @@ SOM_Scope ULONG SOMLINK wcurM_wpclsQueryStyle(M_XWPWinCursor * somSelf)
     return (M_XWPWinCursor_parent_M_WPDataFile_wpclsQueryStyle(somSelf) & CLSSTYLE_NEVERTEMPLATE);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryInstanceFilter:
+ *
+ */
 
 SOM_Scope PSZ SOMLINK wcurM_wpclsQueryInstanceFilter(M_XWPWinCursor * somSelf)
 {
@@ -742,7 +806,10 @@ SOM_Scope PSZ SOMLINK wcurM_wpclsQueryInstanceFilter(M_XWPWinCursor * somSelf)
     return (FILEFILTER_WINCURSOR);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryInstanceType:
+ *
+ */
 
 SOM_Scope PSZ SOMLINK wcurM_wpclsQueryInstanceType(M_XWPWinCursor * somSelf)
 {
@@ -753,7 +820,10 @@ SOM_Scope PSZ SOMLINK wcurM_wpclsQueryInstanceType(M_XWPWinCursor * somSelf)
     return (FILETYPE_WINCURSOR);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryTitle:
+ *
+ */
 
 SOM_Scope PSZ SOMLINK wcurM_wpclsQueryTitle(M_XWPWinCursor * somSelf)
 {
@@ -764,7 +834,10 @@ SOM_Scope PSZ SOMLINK wcurM_wpclsQueryTitle(M_XWPWinCursor * somSelf)
     return (FILETYPE_WINCURSOR);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK wcurM_wpclsInitData(M_XWPWinCursor * somSelf)
 {
@@ -788,7 +861,10 @@ SOM_Scope void SOMLINK wcurM_wpclsInitData(M_XWPWinCursor * somSelf)
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsUnInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK wcurM_wpclsUnInitData(M_XWPWinCursor * somSelf)
 {
@@ -817,10 +893,10 @@ SOM_Scope void SOMLINK wcurM_wpclsUnInitData(M_XWPWinCursor * somSelf)
     M_XWPWinCursor_parent_M_WPDataFile_wpclsUnInitData(somSelf);
 }
 
-
-// =====================================================================================
-
-// Routine nur einmal codieren !
+/*
+ *@@ WPSWINDOWDATA:
+ *
+ */
 
 typedef struct _WPSWINDOWDATA
 {
@@ -832,7 +908,10 @@ typedef struct _WPSWINDOWDATA
 WPSWINDOWDATA, *PWPSWINDOWDATA;
 
 
-// =====================================================================================
+/*
+ *@@ anwcur_NotebookPageProc:
+ *
+ */
 
 MRESULT EXPENTRY anwcur_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {

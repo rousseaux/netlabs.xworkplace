@@ -1,11 +1,11 @@
 NAME XWPDAEMN WINDOWAPI
 
-Description '@#Ulrich M”ller:0.9.4#@ XWorkplace PM Daemon'
+Description '@#Ulrich M”ller:0.9.4#@ XWorkplace PM daemon'
 
 CODE  MOVEABLE
-DATA  SINGLE SHARED
+DATA  MOVEABLE MULTIPLE
 
-STACKSIZE   24576
+STACKSIZE   65536
 HEAPSIZE    10240
 
 PROTMODE

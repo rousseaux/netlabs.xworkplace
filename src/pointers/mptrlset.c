@@ -22,13 +22,18 @@
  *      GNU General Public License for more details.
  */
 
-// C Runtime
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
+/*
+ *  Suggested #include order:
+ *  1)  os2.h
+ *  2)  C library headers
+ *  3)  setup.h (code generation and debugging options)
+ *  4)  headers in helpers\
+ *  5)  at least one SOM implementation header (*.ih)
+ *  6)  dlgids.h, headers in shared\ (as needed)
+ *  7)  headers in implementation dirs (e.g. filesys\, as needed)
+ *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
+ */
 
-// OS/2 Toolkit
 #define INCL_ERRORS
 #define INCL_PM
 #define INCL_WIN
@@ -36,9 +41,15 @@
 #define INCL_DOS
 #include <os2.h>
 
+// C library headers
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 
-// #include <somobj.h>
-// #include <som.h>
+// SOM headers which don't crash with prec. header files
+#include "classes\xfdataf.ih"
+            // for wpQueryFileName
 
 #define NEWLINE            "\n"
 
@@ -47,6 +58,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\common.h"              // the majestic XWorkplace include file
 
 #include "pointers\mptrlset.h"
 #include "pointers\mptrcnr.h"
@@ -54,13 +66,6 @@
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 
-
-#pragma hdrstop
-// f걊 wpQueryFileName
-#include <wpfsys.h>
-
-
-// data structs
 typedef struct _LOADSETDATA
 {
     M_WPObject *m_somSelf;
@@ -69,15 +74,26 @@ typedef struct _LOADSETDATA
     PSZ pszDirectory;
     CHAR szSetname[_MAX_PATH];
     BOOL fFindSet;
-}
-LOADSETDATA, *PLOADSETDATA;
+} LOADSETDATA, *PLOADSETDATA;
 
 typedef struct _FILTERDATA
 {
     HWND hwndCnr;
     ULONG ulResourceFileType;
-}
-FILTERDATA, *PFILTERDATA;
+} FILTERDATA, *PFILTERDATA;
+
+MRESULT EXPENTRY LoadSetDialogProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+ULONG InsertCnrObjects(M_WPObject *somSelf, HWND hwndCnr, PSZ pszDirectory,
+                       PSZ pszFilesToSearch, ULONG ulAttr, ULONG ulAnimationFileType);
+BOOL CnrFilter(PMINIRECORDCORE prec, PFILTERDATA pfilterdata);
+
+#pragma hdrstop
+
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
 
 // global data
 CHAR szFileTypeAll[MAX_RES_STRLEN];
@@ -86,12 +102,6 @@ CHAR szFileTypeCursor[MAX_RES_STRLEN];
 CHAR szFileTypeWinAnimation[MAX_RES_STRLEN];
 CHAR szFileTypeAnimouseSet[MAX_RES_STRLEN];
 CHAR szFileTypeAnimationSetDir[MAX_RES_STRLEN];
-
-// Prototypen
-MRESULT EXPENTRY LoadSetDialogProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-ULONG InsertCnrObjects(M_WPObject * somSelf, HWND hwndCnr, PSZ pszDirectory,
-               PSZ pszFilesToSearch, ULONG ulAttr, ULONG ulAnimationFileType);
-BOOL CnrFilter(PMINIRECORDCORE prec, PFILTERDATA pfilterdata);
 
 /*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
  *� Name      : FindSet                                                    �
@@ -185,7 +195,8 @@ APIRET _Export FindFiles
                     LOADMESSAGE(IDMSG_TITLENOTFOUND, szTitle);
                     LOADMESSAGE(IDMSG_MSGNOTFOUND, szMessage);
                     WinMessageBox(HWND_DESKTOP, hwndOwner, szMessage, szTitle,
-                      IDPNL_USAGE_NBPAGE_CNRSETTINGS, MB_OK /* | MB_HELP */ );
+                      1, // IDPNL_USAGE_NBPAGE_CNRSETTINGS,
+                      MB_OK /* | MB_HELP */ );
                 }
                 break;
 
@@ -423,9 +434,11 @@ MRESULT EXPENTRY LoadSetDialogProc
                             PLOADSETDATA ploadsetdata = WinQueryWindowPtr(hwnd, QWL_USER);
                             PVOID somSelf = ploadsetdata->somSelf;
 
+                            cmnDisplayHelp(somSelf, 1);
                             // Hilfe anfordern
-                            DisplayHelp(somSelf, IDPNL_USAGE_NBPAGE_CNRLOADSET);
-
+                            /* DisplayHelp(somSelf,
+                                        1); // IDPNL_USAGE_NBPAGE_CNRLOADSET);
+                            */
                         }
                         return (MRESULT) TRUE;
                         // break;  // case IDDLG_PB_HELP
@@ -564,7 +577,7 @@ ULONG InsertCnrObjects
 
                 // Object einf갾en
                 hobject = WinQueryObject(szObjectName);
-                if (hobject != NULL)
+                if (hobject != NULLHANDLE)
                 {
                     pwpobject = _wpclsQueryObject(m_somSelf, hobject);
                     if (pwpobject)

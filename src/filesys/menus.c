@@ -1479,18 +1479,26 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
             if (pGlobalSettings->fFdrDefaultDoc)
             {
-                if (_xwpQueryDefaultDocument(somSelf))
+                WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
+                if (pDefDoc)
                     // we have a default document for this folder:
                     if (WinSendMsg(hwndMenu,
                                    MM_QUERYITEM,
                                    MPFROM2SHORT(WPMENUID_OPEN, TRUE),
                                    (MPARAM)&mi))
                     {
+                        CHAR szDefDoc[2*CCHMAXPATH];
+                        sprintf(szDefDoc,
+                                "%s \"%s\"",
+                                pNLSStrings->pszFdrDefaultDoc,
+                                _wpQueryTitle(pDefDoc));
                         // mi.hwndSubMenu now contains "Open" submenu handle;
+                        winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
+                                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
                         // add "Default document"
                         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC),
-                                           pNLSStrings->pszFdrDefaultDoc,
+                                           szDefDoc,
                                            MIS_TEXT, 0);
                     }
             }
@@ -2606,10 +2614,9 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 case ID_XFMI_OFS_REFRESH:
-                    // _wpMenuItemSelected(somSelf, hwndFrame, WPMENUID_REFRESH);
                     xthrPostFileMsg(FIM_REFRESH,
                                     (MPARAM)somSelf,
-                                    (MPARAM)wpshQueryView(somSelf, hwndFrame));
+                                    (MPARAM)hwndFrame);
                     brc = TRUE;
                 break;
 
@@ -2737,6 +2744,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
  *           XFldDesktop items in here too.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: "View" submenu items never worked; fixed
  */
 
 BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
@@ -2744,24 +2752,54 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
     ULONG   ulFirstVarMenuId;
     ULONG   ulPanel = 0;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    if (    (MenuId == WPMENUID_SHUTDOWN)
-         && (pGlobalSettings->fXShutdown)
-       )
-        ulPanel = ID_XMH_XSHUTDOWN;
-    else if (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_RESTARTWPS)
-        ulPanel = ID_XMH_RESTARTWPS;
-    else if (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID)
-        ulPanel = ID_XMH_SNAPTOGRID;
-    else  if (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_REFRESH)
-        ulPanel = ID_XMH_REFRESH;
-    else  if (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SELECTSOME)
-        ulPanel = ID_XFH_SELECTSOME;
-    else  if (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_COPYFILENAME_MENU)
-        ulPanel = ID_XMH_COPYFILENAME;
-    else if (   (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT)
-             || (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS)
-             || (MenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST)
-             || (   (pGlobalSettings->ExtFolderSort)
+    ULONG   ulMenuId2 = MenuId - pGlobalSettings->VarMenuOffset;
+
+    // first check for variable menu item IDs
+    switch(ulMenuId2)
+    {
+        case ID_XFMI_OFS_RESTARTWPS:
+            ulPanel = ID_XMH_RESTARTWPS;
+        break;
+
+        case ID_XFMI_OFS_SNAPTOGRID:
+            ulPanel = ID_XMH_SNAPTOGRID;
+        break;
+
+        case ID_XFMI_OFS_REFRESH:
+            ulPanel = ID_XMH_REFRESH;
+        break;
+
+        case ID_XFMI_OFS_SELECTSOME:
+            ulPanel = ID_XFH_SELECTSOME;
+        break;
+
+        // items in "View" submenu
+        case ID_XFMI_OFS_SMALLICONS:
+        case ID_XFMI_OFS_FLOWED:
+        case ID_XFMI_OFS_NONFLOWED:
+        case ID_XFMI_OFS_NOGRID:
+        case ID_XFMI_OFS_WARP4MENUBAR:
+        case ID_XFMI_OFS_SHOWSTATUSBAR:
+            ulPanel = ID_XFH_VIEW_MENU_ITEMS;
+        break;
+
+        case ID_XFMI_OFS_COPYFILENAME_MENU:
+            ulPanel = ID_XMH_COPYFILENAME;
+        break;
+
+        case ID_XFMI_OFS_SORTBYEXT:
+        case ID_XFMI_OFS_SORTBYCLASS:
+        case ID_XFMI_OFS_SORTFOLDERSFIRST:
+            ulPanel = ID_XSH_SETTINGS_FLDRSORT;
+        break;
+
+        default:
+            // none of the variable item ids:
+            if (    (MenuId == WPMENUID_SHUTDOWN)
+                 && (pGlobalSettings->fXShutdown)
+               )
+                ulPanel = ID_XMH_XSHUTDOWN;
+            else if (   (pGlobalSettings->ExtFolderSort)
                  && (   (MenuId == ID_WPMI_SORTBYNAME)
                      || (MenuId == ID_WPMI_SORTBYREALNAME)
                      || (MenuId == ID_WPMI_SORTBYTYPE)
@@ -2771,41 +2809,42 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
                      || (MenuId == ID_WPMI_SORTBYCREATIONDATE)
                     )
                 )
-            )
-        ulPanel = ID_XSH_SETTINGS_FLDRSORT;
-    else
-    {
-        // if F1 was pressed over one of the variable menu items,
-        // open a help panel with generic help on XFolder */
-        ulFirstVarMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
-        if ( (MenuId >= ulFirstVarMenuId)
-                && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
-             )
-        {
-            PVARMENULISTITEM pItem = (PVARMENULISTITEM)lstItemFromIndex(
-                        &G_llVarMenuItems,
-                        (MenuId - ulFirstVarMenuId));
-
-            if (pItem)
+                ulPanel = ID_XSH_SETTINGS_FLDRSORT;
+            else
             {
-                // OK, we've found the corresponding object
-                switch (pItem->usObjType)
+                // if F1 was pressed over one of the variable menu items,
+                // open a help panel with generic help on XFolder */
+                ulFirstVarMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
+                if ( (MenuId >= ulFirstVarMenuId)
+                        && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
+                     )
                 {
-                    // this data has previously been saved by InsertObjectsFromList when
-                    // the context menu was created; it contains a flag telling us
-                    // what kind of menu item we're dealing with
+                    PVARMENULISTITEM pItem = (PVARMENULISTITEM)lstItemFromIndex(
+                                &G_llVarMenuItems,
+                                (MenuId - ulFirstVarMenuId));
 
-                    case OC_CONTENTFOLDER:
-                    case OC_CONTENT:
-                        ulPanel = ID_XMH_FOLDERCONTENT;
-                    break;
+                    if (pItem)
+                    {
+                        // OK, we've found the corresponding object
+                        switch (pItem->usObjType)
+                        {
+                            // this data has previously been saved by InsertObjectsFromList when
+                            // the context menu was created; it contains a flag telling us
+                            // what kind of menu item we're dealing with
 
-                    default:
-                        ulPanel = ID_XMH_VARIABLE;
-                    break;
+                            case OC_CONTENTFOLDER:
+                            case OC_CONTENT:
+                                ulPanel = ID_XMH_FOLDERCONTENT;
+                            break;
+
+                            default:
+                                ulPanel = ID_XMH_VARIABLE;
+                            break;
+                        }
+                    }
                 }
             }
-        }
+        break;
     }
 
     if (ulPanel)

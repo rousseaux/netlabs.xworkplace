@@ -1,5 +1,5 @@
 #
-# Makefile for TREESIZE.EXE.
+# Makefile for XSHUTDWN.EXE.
 #
 # For use with IBM NMAKE, which is part of IBM C-Set/2 and VisualAge C++.
 # This file will probably not work with other MAKE utilities, such as
@@ -68,7 +68,7 @@ $(OUTPUTDIR)\xshutdwn.obj: $(@B).c $(HLPINC)\winh.h $(INC)\shared\common.h $(INC
 
 # build targets
 xshutdwn.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace XShutdown Utility"
+          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace external shutdown utility"
 
 $(OUTPUTDIR)\xshutdwn.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

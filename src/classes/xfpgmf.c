@@ -78,12 +78,14 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfpgmf.ih"
+#include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 
@@ -234,6 +236,56 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
 }
 
 /*
+ *@@ xwpQuerySetup2:
+ *      this XFldObject method is overridden to support
+ *      setup strings for program files.
+ *
+ *      This uses code in filesys\filesys.c which is
+ *      shared for WPProgram and WPProgramFile instances.
+ *
+ *      See XFldObject::xwpQuerySetup2 for details.
+ *
+ *@@added V0.9.4 (2000-08-02) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
+                                               PSZ pszSetupString,
+                                               ULONG cbSetupString)
+{
+    ULONG ulReturn = 0;
+
+    // method pointer for parent class
+    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
+
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpQuerySetup2");
+
+    // call implementation
+    ulReturn = fsysQueryProgramFileSetup(somSelf, pszSetupString, cbSetupString);
+
+    // manually resolve parent method
+    pfn_xwpQuerySetup2
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveForParent(somSelf,
+                                                               _XFldProgramFile,
+                                                               "xwpQuerySetup2");
+    if (pfn_xwpQuerySetup2)
+    {
+        // now call XFldObject method
+        if ( (pszSetupString) && (cbSetupString) )
+            // string buffer already specified:
+            // tell XFldObject to append to that string
+            ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                           pszSetupString + ulReturn, // append to existing
+                                           cbSetupString - ulReturn); // remaining size
+        else
+            // string buffer not yet specified: return length only
+            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+    }
+
+    return (ulReturn);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -333,11 +385,20 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryStyle(XFldProgramFile *somSelf)
 
 /*
  *@@ wpSetIcon:
- *      this instance method sets the visual icon for
- *      this program file. This is not stored in the
- *      persistent data (which is only done in
- *      wpSetIconData), but only changes the visual
- *      appearance of the object.
+ *      this instance method sets the current icon for
+ *      an object. As opposed to with wpSetIconData,
+ *      this does not change the icon permanently.
+ *
+ *      Note: If the OBJSTYLE_NOTDEFAULTICON object style
+ *      flag has been set with wpSetStyle, the old icon
+ *      (HPOINTER) will be destroyed.
+ *      As a result, that flag needs to be unset if
+ *      icons are shared between objects, as with class
+ *      default icons. The OBJSTYLE_CUSTOMICON flag does
+ *      NOT work, even if the WPS lists it with wpQueryStyle.
+ *
+ *      Also, the WPS annoyingly resets the icon to its
+ *      default when a settings notebook is opened.
  */
 
 SOM_Scope BOOL  SOMLINK xfpgmf_wpSetIcon(XFldProgramFile *somSelf,

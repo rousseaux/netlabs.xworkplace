@@ -199,13 +199,13 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
         {
             CHAR    szClass[300];
 
-            _Pmpf(("fdr_SendMsgHook: checking WM_CREATE window class"));
+            // _Pmpf(("fdr_SendMsgHook: checking WM_CREATE window class"));
 
             WinQueryClassName(psmh->hwnd,
                               sizeof(szClass),
                               szClass);
 
-            _Pmpf(("    got %s", szClass));
+            // _Pmpf(("    got %s", szClass));
 
             if (strcmp(szClass, "wpFolder window") == 0)
             {
@@ -216,8 +216,8 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
                                       "wpFolder window",
                                       &G_WPFolderWinClassInfo))
                 {
-                    _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
-                    _Pmpf(("    QWL_USER is: %d", QWL_USER));
+                    // _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
+                    // _Pmpf(("    QWL_USER is: %d", QWL_USER));
 
                     // replace original window class
                     if (WinRegisterClass(hab,
@@ -226,7 +226,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
                                          G_WPFolderWinClassInfo.flClassStyle,
                                          G_WPFolderWinClassInfo.cbWindowData + 16))
                     {
-                        _Pmpf(("    WinRegisterClass OK"));
+                        // _Pmpf(("    WinRegisterClass OK"));
 
                         // OK, window class successfully re-registered:
                         // store the offset of our window word for the
@@ -236,8 +236,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
                         // and don't do all this again...
                         G_WPFolderWinClassExtended = TRUE;
                     }
-                    else
-                        _Pmpf(("    WinRegisterClass failed"));
+                    // else _Pmpf(("    WinRegisterClass failed"));
                 }
             }
         }
@@ -291,7 +290,7 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
         psliNew->pRealObject = pRealObject;
         psliNew->hwndCnr = hwndCnr;
         // psliNew->ulView = ulView;
-        psliNew->fRemoveSrcEmphasis = FALSE;
+        psliNew->fRemoveSourceEmphasis = FALSE;
         // set status bar hwnd to zero at this point;
         // this will be created elsewhere
         psliNew->hwndStatusBar = NULLHANDLE;
@@ -635,6 +634,7 @@ VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *      Returns: NULL always.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
  */
 
 VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
@@ -653,12 +653,19 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
         _Pmpf(( "  psfv->hwndCnr: 0x%lX", psfv->hwndCnr));
     #endif
 
-    // store object with source emphasis for later use;
-    // this gets lost before WM_COMMAND otherwise
-    psfv->pSourceObject = wpshQuerySourceObject(psfv->somSelf,
-                                                psfv->hwndCnr,
-                                                FALSE,      // menu mode
-                                                &psfv->ulSelection);
+    // store object with source emphasis for later use
+    // (this gets lost before WM_COMMAND otherwise),
+    // but only if the MAIN menu is being opened
+    if (sMenuIDMsg == 0x8020) // main menu ID V0.9.4 (2000-07-15) [umoeller]
+    {
+        // the WPS has a bug in that source emphasis is removed
+        // when going thru several context menus, so we must make
+        // sure that we do this only when the main menu is opened
+        psfv->pSourceObject = wpshQuerySourceObject(psfv->somSelf,
+                                                    psfv->hwndCnr,
+                                                    FALSE,      // menu mode
+                                                    &psfv->ulSelection);
+    }
 
     // store the container window handle in instance
     // data for wpModifyPopupMenu workaround;
@@ -894,13 +901,8 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
             if (hwndCnr)
             {
                 // first find out what kind of objects we have here
-                /* ULONG ulSelection = 0;
-                WPObject *pObject1 =
-                     wpshQuerySourceObject(psfv->somSelf,
-                                           hwndCnr,
-                                           &ulSelection); */
-
                 WPObject *pObject = psfv->pSourceObject;
+                                    // set with WM_INITMENU
 
                 #ifdef DEBUG_MENUS
                     _Pmpf(( "  Object selections: %d", ulSelection));
@@ -920,6 +922,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                     {
                         fHandled = mnuFileSystemSelectingMenuItem(
                                        psfv->pSourceObject,
+                                            // set in WM_INITMENU;
                                             // note that we're passing
                                             // psfv->pSourceObject instead of pObject;
                                             // psfv->pSourceObject might be a shadow!
@@ -950,9 +953,9 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                     {
                         // menu not to be dismissed: set the flag
                         // which will remove cnr source
-                        // emphasis when the menu is dismissed
+                        // emphasis when the main menu is dismissed
                         // later (WM_ENDMENU msg here)
-                        psfv->fRemoveSrcEmphasis = TRUE;
+                        psfv->fRemoveSourceEmphasis = TRUE;
                     }
                 }
             }
@@ -991,12 +994,12 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
     {
         // collect objects from cnr and start
         // moving them to trash can
-        FOPSRET frc = fopsStartDeleteFromCnr(// psfv->somSelf, // source folder
+        FOPSRET frc = fopsStartDeleteFromCnr(NULLHANDLE,   // no anchor block, ansynchronously
                                              pSelected,    // first selected object
                                              ulSelection,  // can only be SEL_SINGLESEL
                                                             // or SEL_MULTISEL
                                              psfv->hwndCnr,
-                                             FALSE);   // move to trash can
+                                             FALSE);   // fTrueDelete: no, move to trash can
         #ifdef DEBUG_TRASHCAN
             _Pmpf(("    got FOPSRET %d", frc));
         #endif
@@ -1204,6 +1207,8 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
              *      terminate. We need to remove cnr source emphasis
              *      if the user has requested a context menu from a
              *      status bar.
+             *
+             *      Note: WM_MENUEND comes in BEFORE WM_COMMAND.
              */
 
             case WM_MENUEND:
@@ -1223,20 +1228,20 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                     // added V0.9.3 (2000-03-28) [umoeller]
 
                     // menu opened from status bar?
-                    if (psfv->fRemoveSrcEmphasis)
+                    if (psfv->fRemoveSourceEmphasis)
                     {
                         // if so, remove cnr source emphasis
-                        WinSendMsg(psfv->hwndCnr,
+                        /* WinSendMsg(psfv->hwndCnr,
                                    CM_SETRECORDEMPHASIS,
                                    (MPARAM)NULL,   // undocumented: if precc == NULL,
                                                    // the whole cnr is given emphasis
                                    MPFROM2SHORT(FALSE,  // remove emphasis
-                                           CRA_SOURCE));
+                                                CRA_SOURCE)); */
                         // and make sure the container has the
                         // focus
-                        WinSetFocus(HWND_DESKTOP, psfv->hwndCnr);
+                        // WinSetFocus(HWND_DESKTOP, psfv->hwndCnr);
                         // reset flag for next context menu
-                        psfv->fRemoveSrcEmphasis = FALSE;
+                        psfv->fRemoveSourceEmphasis = FALSE;
                     }
 
                     // unset flag for WM_MENUSELECT above
@@ -1318,6 +1323,8 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
              *      called for the last object. So we do this
              *      here instead, and wpMenuItemSelected never
              *      gets called.
+             *
+             *      Note: WM_MENUEND comes in BEFORE WM_COMMAND.
              */
 
             case WM_COMMAND:
@@ -1362,16 +1369,19 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                         //    is replaced --> "true" delete
 
                         // collect objects from container and start deleting
-                        FOPSRET frc = fopsStartDeleteFromCnr(// psfv->somSelf,
-                                                               // source folder
+                        FOPSRET frc = fopsStartDeleteFromCnr(NULLHANDLE,
+                                                                // no anchor block,
+                                                                // ansynchronously
                                                              psfv->pSourceObject,
-                                                               // first source object
+                                                                // first source object
                                                              psfv->ulSelection,
                                                              psfv->hwndCnr,
                                                              fTrueDelete);
                         #ifdef DEBUG_TRASHCAN
                             _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
                         #endif
+
+                        psfv->pSourceObject = NULL;
                         break;
                     }
                 }
@@ -1729,51 +1739,6 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
 
     return (mrc);
 }
-
-/* MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
-                                               ULONG msg,
-                                               MPARAM mp1,
-                                               MPARAM mp2)
-{
-    PSUBCLASSEDFOLDERVIEW psfv = NULL;
-    PFNWP           pfnwpOriginal = NULL;
-    MRESULT         mrc = MRFALSE;
-
-    // find the original wnd proc in the
-    // global linked list, so we can pass messages
-    // on to it
-    psfv = fdrQuerySFV(hwndFrame, NULL);
-    if (psfv)
-    {
-        pfnwpOriginal = psfv->pfnwpOriginal;
-        // somSelf = psfv->somSelf;
-    }
-
-    if (pfnwpOriginal)
-    {
-        if (psfv->somSelf == NULL)
-            psfv->somSelf = _wpclsQueryObjectFromFrame(_WPFolder, hwndFrame);
-
-
-        mrc = ProcessFolderMsgs(hwndFrame,
-                                msg,
-                                mp1,
-                                mp2,
-                                psfv,
-                                pfnwpOriginal);
-
-    } // end if (pfnwpOriginal)
-    else
-    {
-        // original window procedure not found:
-        // that's an error
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Folder's pfnwpOrig not found.");
-        mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
-    }
-
-    return (mrc);
-} */
 
 /*
  *@@ fdr_fnwpSupplFolderObject:

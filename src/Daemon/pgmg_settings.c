@@ -64,7 +64,7 @@ VOID pgmsSetDefaults(VOID)
     G_pHookData->PageMageConfig.fShowTitlebar = TRUE;
     // G_pHookData->PageMageConfig.fStartMinimized = FALSE; // ###
     G_pHookData->PageMageConfig.fFlash = FALSE;
-    G_pHookData->PageMageConfig.ulFlashDelay = 500;
+    G_pHookData->PageMageConfig.ulFlashDelay = 2000;
     // G_pHookData->PageMageConfig.bFloatToTop = FALSE;
     G_pHookData->PageMageConfig.fMirrorWindows = TRUE;
     G_pHookData->PageMageConfig.fShowWindowText = TRUE;
@@ -103,20 +103,16 @@ VOID pgmsSetDefaults(VOID)
     G_pHookData->PageMageConfig.fEnableArrowHotkeys = FALSE;
     G_pHookData->PageMageConfig.ulKeyShift = KC_CTRL | KC_ALT;
 
+    // PageMage window position
     G_swpPgmgFrame.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
     G_swpPgmgFrame.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
 
     G_swpPgmgFrame.cx = G_swpPgmgFrame.x
                         + (.18 * G_pHookData->lCXScreen);
-
     G_swpPgmgFrame.cy = G_swpPgmgFrame.y
                         + pgmcCalcNewFrameCY(G_swpPgmgFrame.cx);
 
     // Other
-    G_ptlMoveDeltaPcnt.x = 100;
-    G_ptlMoveDeltaPcnt.y = 100;
-    G_ptlMoveDelta.x = G_pHookData->lCXScreen;
-    G_ptlMoveDelta.y = G_pHookData->lCYScreen;
     strcpy(G_szFacename, "2.System VIO");
     // hps = WinGetPS(HWND_DESKTOP);
 }
@@ -124,17 +120,19 @@ VOID pgmsSetDefaults(VOID)
 /*
  *@@ pgmsLoadSettings:
  *      loads the PageMage settings from OS2.INI,
- *      if present.
+ *      if present. Depending on flConfig, PageMage
+ *      will reformat and/or re-adjust itself.
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
+ *@@changed V0.9.4 (2000-07-10) [umoeller]: added PGMGCFG_STICKIES
  */
 
 BOOL pgmsLoadSettings(ULONG flConfig)
 {
-    ULONG cb = sizeof(PAGEMAGECONFIG);
-
+    ULONG   cb;
     _Pmpf(("pgmsLoadSettings"));
 
+    cb = sizeof(PAGEMAGECONFIG);
     if (PrfQueryProfileData(HINI_USER,
                             INIAPP_XWPHOOK,
                             INIKEY_HOOK_PGMGCONFIG,
@@ -147,13 +145,21 @@ BOOL pgmsLoadSettings(ULONG flConfig)
              && (G_pHookData->hwndPageMageFrame)
            )
         {
+            if (flConfig & PGMGCFG_STICKIES)
+                pgmwScanAllWindows();
+
+            if (flConfig & PGMGCFG_REFORMAT)
+                pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
+
+            if (flConfig & PGMGCFG_ZAPPO)
+                WinPostMsg(G_pHookData->hwndPageMageClient,
+                           PGMG_ZAPPO, 0, 0);
+
             if (flConfig & PGMGCFG_REPAINT)
                 WinPostMsg(G_pHookData->hwndPageMageClient,
                            PGMG_INVALIDATECLIENT,
                            (MPARAM)FALSE,        // delayed
                            0);
-            if (flConfig & PGMGCFG_REFORMAT)
-                pgmcSetPgmgFramePos(G_pHookData->hwndPageMageFrame);
         }
 
         return (TRUE);
@@ -170,6 +176,7 @@ BOOL pgmsLoadSettings(ULONG flConfig)
 
 BOOL pgmsSaveSettings(VOID)
 {
+    _Pmpf(("pgmsSaveSettings"));
     return (PrfWriteProfileData(HINI_USER,
                                 INIAPP_XWPHOOK,
                                 INIKEY_HOOK_PGMGCONFIG,

@@ -885,6 +885,7 @@ POINTL  G_ptlMousePosDesktop = {0};
  *      hookInputHook and hookSendMsgHook.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
  */
 
 VOID ProcessMsgsForPageMage(HWND hwnd,
@@ -941,36 +942,53 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                          && (mp1)
                        )
                     {
-                                    if (hwnd != G_HookData.hwndPageMageFrame)
-                                    {
-                                        ulRequest = PGMGQENCODE(PGMGQ_FOCUSCHANGE, 0, 0);
-                                        WinPostMsg(G_HookData.hwndPageMageClient,
-                                                   PGMG_PASSTHRU,
-                                                   MPFROMLONG(ulRequest),
-                                                   MPVOID);
-                                    }
+                        if (hwnd != G_HookData.hwndPageMageFrame)
+                        {
+                            WinPostMsg(G_HookData.hwndPageMageMoveThread,
+                                       PGOM_FOCUSCHANGE,
+                                       0, 0);
+                        }
                     }
                 } // end if (    (strcmp(szClass, ...
             } // end if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
         } // end if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
     }
 
-    // implement "float on top" for PageMage frame
-    if (    (G_HookData.HookConfig.fFloat)
-         && (   (msg == WM_SIZE)
-             || (msg == WM_MINMAXFRAME)
-             || (msg == WM_SETFOCUS)
-             || (msg == WM_TRACKFRAME)
-            )
-       )
+    if (G_HookData.PageMageConfig.fStayOnTop)
     {
-        HWND        hwndParent = WinQueryWindow(hwnd, QW_PARENT);
-        if (hwndParent == G_HookData.hwndPMDesktop)
-            // it's a top-level window:
-            WinSetWindowPos(G_HookData.hwndPageMageFrame,
-                            HWND_TOP,
-                            0, 0, 0, 0,
-                            SWP_ZORDER | SWP_SHOW);
+        // implement "float on top" for PageMage frame
+        BOOL        fFixFloatOnTop = FALSE;
+
+        if (msg == WM_WINDOWPOSCHANGED)
+        {
+            PSWP pswp = (PSWP)mp1;
+            if (pswp)
+            {
+                if (pswp->fl & (SWP_ACTIVATE | SWP_ZORDER))
+                    fFixFloatOnTop = TRUE;
+            }
+        }
+
+        if (    /* (G_HookData.PageMageConfig.fStayOnTop)
+             && (   (msg == WM_SIZE)
+                 || (msg == WM_MINMAXFRAME)
+                 || (msg == WM_SETFOCUS)
+                 || (msg == WM_TRACKFRAME)
+                ) */
+                (fFixFloatOnTop)
+             && (hwnd != G_HookData.hwndPageMageFrame)
+           )
+        {
+            HWND        hwndParent = WinQueryWindow(hwnd, QW_PARENT);
+            if (hwndParent == G_HookData.hwndPMDesktop)
+            {
+                // it's a top-level window:
+                WinSetWindowPos(G_HookData.hwndPageMageFrame,
+                                HWND_TOP,
+                                0, 0, 0, 0,
+                                SWP_ZORDER | SWP_SHOW);
+            }
+        }
     }
 
     if (    (msg == WM_DESTROY)
@@ -1714,132 +1732,162 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                               PSZ pszClassUnderMouse) // in: window class of hwnd (determined
                                                       // by hookInputHook)
 {
-    // get currently active window; this can only
-    // be a frame window (WC_FRAME)
-    HWND    hwndActiveNow = WinQueryActiveWindow(HWND_DESKTOP);
+    BOOL    fStopTimers = FALSE;    // setting this to TRUE will stop timers
 
-    // check 1: check if the active window is still the
-    //          the one which was activated by ourselves
-    //          previously (either by the hook during WM_BUTTON1DOWN
-    //          or by the daemon in sliding focus processing):
-    if (hwndActiveNow)
+    do      // just a do for breaking, no loop
     {
-        if (hwndActiveNow != G_HookData.hwndActivatedByUs)
+        // get currently active window; this can only
+        // be a frame window (WC_FRAME)
+        HWND    hwndActiveNow = WinQueryActiveWindow(HWND_DESKTOP);
+
+        // check 1: check if the active window is still the
+        //          the one which was activated by ourselves
+        //          previously (either by the hook during WM_BUTTON1DOWN
+        //          or by the daemon in sliding focus processing):
+        if (hwndActiveNow)
         {
-            // active window is not the one we set active:
-            // this probably means that some new
-            // window popped up which we haven't noticed
-            // and was explicitly made active either by the
-            // shell or by an application, so we use this
-            // for the below checks. Otherwise, sliding focus
-            // would be disabled after a new window has popped
-            // up until the mouse was moved over a new frame window.
-            G_hwndLastFrameUnderMouse = hwndActiveNow;
-            G_hwndLastSubframeUnderMouse = NULLHANDLE;
-            G_HookData.hwndActivatedByUs = hwndActiveNow;
-        }
-    }
+            if (hwndActiveNow != G_HookData.hwndActivatedByUs)
+            {
+                // active window is not the one we set active:
+                // this probably means that some new
+                // window popped up which we haven't noticed
+                // and was explicitly made active either by the
+                // shell or by an application, so we use this
+                // for the below checks. Otherwise, sliding focus
+                // would be disabled after a new window has popped
+                // up until the mouse was moved over a new frame window.
+                G_hwndLastFrameUnderMouse = hwndActiveNow;
+                G_hwndLastSubframeUnderMouse = NULLHANDLE;
+                G_HookData.hwndActivatedByUs = hwndActiveNow;
 
-    if (   (fMouseMoved)            // has mouse really moved?
-        && (G_HookData.HookConfig.fSlidingFocus)  // sliding focus enabled?
-       )
-    {
-        // OK:
-        // HWND    hwndFrame;
-        HWND    hwndDesktopChild = hwnd,
-                hwndTempParent = NULLHANDLE,
+                fStopTimers = TRUE;
+                        // this will be overridden if we start a new
+                        // timer below; but just in case an old timer
+                        // might still be running V0.9.4 (2000-08-03) [umoeller]
+            }
+        }
+
+        if (   (fMouseMoved)            // has mouse really moved?
+            && (G_HookData.HookConfig.fSlidingFocus)  // sliding focus enabled?
+           )
+        {
+            // OK:
+            HWND    hwndDesktopChild = hwnd,
+                    hwndTempParent = NULLHANDLE,
+                    hwndFrameInBetween = NULLHANDLE;
+            HWND    hwndFocusNow = WinQueryFocus(HWND_DESKTOP);
+            CHAR    szClassName[200],
+                    szWindowText[200];
+
+            // check 2: make sure mouse is not captured
+            if (WinQueryCapture(HWND_DESKTOP) != NULLHANDLE)
+            {
+                // stop timers and quit
+                fStopTimers = TRUE;
+                break;
+            }
+
+            // check 3: quit if menu has the focus
+            if (hwndFocusNow)
+            {
+                CHAR    szFocusClass[MAXNAMEL+4] = "";
+                WinQueryClassName(hwndFocusNow,
+                                  sizeof(szFocusClass),
+                                  szFocusClass);
+
+                if (strcmp(szFocusClass, "#4") == 0)
+                {
+                    // menu:
+                    // stop timers and quit
+                    fStopTimers = TRUE;
+                    break;
+                }
+            }
+
+            // now climb up the parent window hierarchy of the
+            // window under the mouse (first: hwndDesktopChild)
+            // until we reach the Desktop; the last window we
+            // had is then in hwndDesktopChild
+            hwndTempParent = WinQueryWindow(hwndDesktopChild, QW_PARENT);
+            while (     (hwndTempParent != G_HookData.hwndPMDesktop)
+                     && (hwndTempParent != NULLHANDLE)
+                  )
+            {
+                WinQueryClassName(hwndDesktopChild,
+                                  sizeof(szClassName), szClassName);
+                if (strcmp(szClassName, "#1") == 0)
+                    // it's a frame:
+                    hwndFrameInBetween = hwndDesktopChild;
+                hwndDesktopChild = hwndTempParent;
+                hwndTempParent = WinQueryWindow(hwndDesktopChild, QW_PARENT);
+            }
+
+            if (hwndFrameInBetween == hwndDesktopChild)
                 hwndFrameInBetween = NULLHANDLE;
-        // BOOL    fIsSeamless = FALSE;
-        // CHAR    szClassUnderMouse[MAXNAMEL+4] = "";
-        HWND    hwndFocusNow = WinQueryFocus(HWND_DESKTOP);
-        CHAR    szClassName[200],
-                szWindowText[200];
 
-        // check 2: make sure mouse is not captured
-        if (WinQueryCapture(HWND_DESKTOP) != NULLHANDLE)
-            return;
+            // hwndDesktopChild now has the window which we need to activate
+            // (the topmost parent under the desktop of the window under the mouse)
 
-        // check 3: quit if menu has the focus
-        if (hwndFocusNow)
-        {
-            CHAR    szFocusClass[MAXNAMEL+4] = "";
-            WinQueryClassName(hwndFocusNow,
-                              sizeof(szFocusClass),
-                              szFocusClass);
-
-            if (strcmp(szFocusClass, "#4") == 0)
-                return;
-        }
-
-        // now climb up the parent window hierarchy of the
-        // window under the mouse (first: hwndDesktopChild)
-        // until we reach the Desktop; the last window we
-        // had is then in hwndDesktopChild
-        hwndTempParent = WinQueryWindow(hwndDesktopChild, QW_PARENT);
-        while (     (hwndTempParent != G_HookData.hwndPMDesktop)
-                 && (hwndTempParent != NULLHANDLE)
-              )
-        {
             WinQueryClassName(hwndDesktopChild,
                               sizeof(szClassName), szClassName);
-            if (strcmp(szClassName, "#1") == 0)
-                // it's a frame:
-                hwndFrameInBetween = hwndDesktopChild;
-            hwndDesktopChild = hwndTempParent;
-            hwndTempParent = WinQueryWindow(hwndDesktopChild, QW_PARENT);
-        }
 
-        if (hwndFrameInBetween == hwndDesktopChild)
-            hwndFrameInBetween = NULLHANDLE;
+            // check 4: skip certain window classes
 
-        // hwndDesktopChild now has the window which we need to activate
-        // (the topmost parent under the desktop of the window under the mouse)
-
-        WinQueryClassName(hwndDesktopChild,
-                          sizeof(szClassName), szClassName);
-
-        // check 4: skip certain window classes
-
-        if (!strcmp(szClassName, "#4"))
-            // menu
-            return;
-
-        if (!strcmp(szClassName, "#7"))
-            // listbox: this must belong to a combo box, so
-            // this is a drop-down box which is currently open
-            return;
-
-        WinQueryWindowText(hwndDesktopChild, sizeof(szWindowText), szWindowText);
-        if (strstr(szWindowText, "Seamless"))
-            // ignore seamless Win-OS/2 menus; these are separate windows!
-            return;
-
-        // OK, enough checks.
-        // Now let's do the sliding focus if
-        // 1) the desktop window (hwndDesktopChild, highest parent) changed or
-        // 2) if hwndDesktopChild has several subframes and the subframe changed:
-
-        if (hwndDesktopChild)
-            if (    (hwndDesktopChild != G_hwndLastFrameUnderMouse)
-                 || (   (hwndFrameInBetween != NULLHANDLE)
-                     && (hwndFrameInBetween != G_hwndLastSubframeUnderMouse)
-                    )
+            if (    (!strcmp(szClassName, "#4"))
+                            // menu
+                 || (!strcmp(szClassName, "#7"))
+                         // listbox: as a desktop child, this must be a
+                         // a drop-down box which is currently open
                )
             {
-                // OK, mouse moved to a new desktop window:
-                // store that for next time
-                G_hwndLastFrameUnderMouse = hwndDesktopChild;
-                G_hwndLastSubframeUnderMouse = hwndFrameInBetween;
-
-                // notify daemon of the change;
-                // it is the daemon which does the rest
-                // (timer handling, window activation etc.)
-                WinPostMsg(G_HookData.hwndDaemonObject,
-                           XDM_SLIDINGFOCUS,
-                           (MPARAM)hwndFrameInBetween,  // can be NULLHANDLE
-                           (MPARAM)hwndDesktopChild);
+                // stop timers and quit
+                fStopTimers = TRUE;
+                break;
             }
-    }
+
+            WinQueryWindowText(hwndDesktopChild, sizeof(szWindowText), szWindowText);
+            if (strstr(szWindowText, "Seamless"))
+                // ignore seamless Win-OS/2 menus; these are separate windows!
+            {
+                // stop timers and quit
+                fStopTimers = TRUE;
+                break;
+            }
+
+            // OK, enough checks.
+            // Now let's do the sliding focus if
+            // 1) the desktop window (hwndDesktopChild, highest parent) changed or
+            // 2) if hwndDesktopChild has several subframes and the subframe changed:
+
+            if (hwndDesktopChild)
+                if (    (hwndDesktopChild != G_hwndLastFrameUnderMouse)
+                     || (   (hwndFrameInBetween != NULLHANDLE)
+                         && (hwndFrameInBetween != G_hwndLastSubframeUnderMouse)
+                        )
+                   )
+                {
+                    // OK, mouse moved to a new desktop window:
+                    // store that for next time
+                    G_hwndLastFrameUnderMouse = hwndDesktopChild;
+                    G_hwndLastSubframeUnderMouse = hwndFrameInBetween;
+
+                    // notify daemon of the change;
+                    // it is the daemon which does the rest
+                    // (timer handling, window activation etc.)
+                    WinPostMsg(G_HookData.hwndDaemonObject,
+                               XDM_SLIDINGFOCUS,
+                               (MPARAM)hwndFrameInBetween,  // can be NULLHANDLE
+                               (MPARAM)hwndDesktopChild);
+                    fStopTimers = FALSE;
+                }
+        }
+    } while (FALSE); // end do
+
+    if (fStopTimers)
+        WinPostMsg(G_HookData.hwndDaemonObject,
+                   XDM_SLIDINGFOCUS,
+                   (MPARAM)NULLHANDLE,
+                   (MPARAM)NULLHANDLE);     // stop timers
 }
 
 /*
@@ -1904,28 +1952,36 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
         HWND    hwndUnderMouse = WinWindowFromPoint(HWND_DESKTOP,
                                                     &G_ptlMousePosDesktop,
                                                     TRUE);  // enum desktop children
-        if (
-                // timer menu hwnd same as last menu under mouse?
-                (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
-                // last WM_MOUSEMOVE hwnd same as last menu under mouse?
-             && (G_hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
-                // timer menu hwnd same as current window under mouse
-             && (hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
-            )
+        CHAR    szClassUnderMouse[100];
+        if (WinQueryClassName(hwndUnderMouse, sizeof(szClassUnderMouse), szClassUnderMouse))
         {
-            // check if the menu still exists
-            // if (WinIsWindow(hwndCurrentMenu))
-            // and if it's visible; the menu
-            // might have been hidden by now because
-            // the user has already proceeded to
-            // another submenu
-            if (WinIsWindowVisible(hwndCurrentMenu))
-                // OK:
-                // select menu item under the mouse
-                SelectMenuItem(hwndCurrentMenu,
-                               G_HookData.sMenuItemUnderMouse);
-                                    // stored from last run
-                                    // when timer was started...
+            if (strcmp(szClassUnderMouse, "#4") == 0)
+            {
+                if (    // timer menu hwnd same as last menu under mouse?
+                        (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
+                        // last WM_MOUSEMOVE hwnd same as last menu under mouse?
+                     && (G_hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
+                        // timer menu hwnd same as current window under mouse?
+                     && (hwndUnderMouse == G_HookData.hwndMenuUnderMouse)
+                    )
+                {
+                    // check if the menu still exists
+                    // if (WinIsWindow(hwndCurrentMenu))
+                    // and if it's visible; the menu
+                    // might have been hidden by now because
+                    // the user has already proceeded to
+                    // another submenu
+                    if (WinIsWindowVisible(hwndCurrentMenu))
+                    {
+                        // OK:
+                        // select menu item under the mouse
+                        SelectMenuItem(hwndCurrentMenu,
+                                       G_HookData.sMenuItemUnderMouse);
+                                            // stored from last run
+                                            // when timer was started...
+                    }
+                }
+            }
         }
 
         // this is our message only,
@@ -2105,12 +2161,13 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *
  *@@added V0.9.3 (2000-04-30) [umoeller]
  *@@changed V0.9.3 (2000-04-30) [umoeller]: pointer was hidden while MB3-dragging; fixed
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed sliding menus without mouse moving
  */
 
 BOOL WMMouseMove(PQMSG pqmsg)
 {
     BOOL    brc = FALSE;        // swallow?
-    BOOL    fMouseMoved = FALSE,
+    BOOL    fGlobalMouseMoved = FALSE,
             fWinChanged = FALSE;
 
     do // allow break's
@@ -2129,13 +2186,13 @@ BOOL WMMouseMove(PQMSG pqmsg)
         {
             // store x mouse pos in Desktop coords
             G_ptlMousePosDesktop.x = pqmsg->ptl.x;
-            fMouseMoved = TRUE;
+            fGlobalMouseMoved = TRUE;
         }
         if (G_ptlMousePosDesktop.y != pqmsg->ptl.y)
         {
             // store y mouse pos in Desktop coords
             G_ptlMousePosDesktop.y = pqmsg->ptl.y;
-            fMouseMoved = TRUE;
+            fGlobalMouseMoved = TRUE;
         }
         if (pqmsg->hwnd != G_hwndUnderMouse)
         {
@@ -2148,7 +2205,7 @@ BOOL WMMouseMove(PQMSG pqmsg)
             fWinChanged = TRUE;
         }
 
-        if (    (fMouseMoved)
+        if (    (fGlobalMouseMoved)
              || (fWinChanged)
            )
         {
@@ -2180,19 +2237,19 @@ BOOL WMMouseMove(PQMSG pqmsg)
                                   sizeof(szClassUnderMouse),
                                   szClassUnderMouse);
 
-                if (fMouseMoved)
+                /*
+                 * sliding focus:
+                 *
+                 */
+
+                WMMouseMove_SlidingFocus(pqmsg->hwnd,
+                                         fGlobalMouseMoved,
+                                         szClassUnderMouse);
+
+                if (fGlobalMouseMoved)
                 {
                     // only if mouse has moved, not
                     // on window change:
-
-                    /*
-                     * sliding focus:
-                     *
-                     */
-
-                    WMMouseMove_SlidingFocus(pqmsg->hwnd,
-                                             fMouseMoved,
-                                             szClassUnderMouse);
 
                     /*
                      * hot corners:
@@ -2259,25 +2316,25 @@ BOOL WMMouseMove(PQMSG pqmsg)
                                    (MPARAM)bHotCorner,
                                    (MPARAM)NULL);
 
+                    /*
+                     * sliding menus:
+                     *    only if mouse has moved globally
+                     *    V0.9.4 (2000-08-03) [umoeller]
+                     */
+
+                    if (G_HookData.HookConfig.fSlidingMenus)
+                        if (strcmp(szClassUnderMouse, "#4") == 0)
+                            // window under mouse is a menu:
+                            WMMouseMove_SlidingMenus(pqmsg->hwnd,
+                                                     pqmsg->mp1,
+                                                     pqmsg->mp2);
                 } // end if (fMouseMoved)
-
-                /*
-                 * sliding menus:
-                 *
-                 */
-
-                if (G_HookData.HookConfig.fSlidingMenus)
-                    if (strcmp(szClassUnderMouse, "#4") == 0)
-                        // window under mouse is a menu:
-                        WMMouseMove_SlidingMenus(pqmsg->hwnd,
-                                                 pqmsg->mp1,
-                                                 pqmsg->mp2);
 
             } // if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
         } // end if (fMouseMoved)
     } while (FALSE);
 
-    if (fMouseMoved)
+    if (fGlobalMouseMoved)
     {
         /*
          * auto-hide pointer:
@@ -3199,13 +3256,13 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                                )
                             {
                                 // cursor keys:
-                                ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
+                                /* ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
                                                               ucScanCode,
-                                                              ucScanCode);
-                                WinPostMsg(G_HookData.hwndPageMageClient,
-                                           PGMG_PASSTHRU,
-                                           MPFROMLONG(ulRequest),
-                                           MPVOID);
+                                                              ucScanCode); */
+                                WinPostMsg(G_HookData.hwndPageMageMoveThread,
+                                           PGOM_HOOKKEY,
+                                           (MPARAM)ucScanCode,
+                                           0);
                                 // swallow
                                 brc = TRUE;
                             }

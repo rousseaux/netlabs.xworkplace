@@ -108,20 +108,103 @@
  ********************************************************************/
 
 /*
+ *@@ FEATURESITEM:
+ *      structure used for feature checkboxes
+ *      on the "Features" page. Each item
+ *      represents one record in the container.
+ */
+
+typedef struct _FEATURESITEM
+{
+    USHORT  usFeatureID;
+                // string ID (dlgids.h, *.rc file in NLS DLL) for feature;
+                // this also identifies the item for processing
+    USHORT  usParentID;
+                // string ID of the parent record or null if root record.
+                // If you specify a parent record, this must appear before
+                // the child record in FeaturesItemsList.
+    ULONG   ulStyle;
+                // style flags for the record; OR the following:
+                // -- WS_VISIBLE: record is visible
+                // -- BS_AUTOCHECKBOX: give the record a checkbox
+                // For parent records (without checkboxes), use 0 only.
+    PSZ     pszNLSString;
+                // resolved NLS string; this must be NULL initially.
+} FEATURESITEM, *PFEATURESITEM;
+
+/*
+ * FeatureItemsList:
+ *      array of FEATURESITEM which are inserted into
+ *      the container on the "Features" page.
+ *
+ *added V0.9.1 (99-12-19) [umoeller]
+ */
+
+FEATURESITEM G_FeatureItemsList[] =
+        {
+            // general features
+            ID_XCSI_GENERALFEATURES, 0, 0, NULL,
+            ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_XSYSTEMSOUNDS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
+            // folder features
+            ID_XCSI_FOLDERFEATURES, 0, 0, NULL,
+            ID_XCSI_ENABLESTATUSBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_ENABLESNAP2GRID, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
+            // mouse/keyboard features
+            ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
+#ifdef __ANIMATED_MOUSE_POINTERS__
+            ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+            ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifdef __PAGEMAGE__
+            ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+
+            // startup/shutdown features
+            ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
+            ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_RESTARTWPS, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_XSHUTDOWN, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
+            // file operations
+            ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
+            ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+        };
+
+PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
+
+/*
  *@@ STANDARDOBJECT:
  *      structure used for XWPSetup "Objects" page.
  *      Each of these represents an object to be
  *      created from the menu buttons.
+ *
+ *@@changed V0.9.4 (2000-07-15) [umoeller]: added pExists
  */
 
 typedef struct _STANDARDOBJECT
 {
-    PSZ     pszDefaultID;           // e.g. &lt;WP_DRIVES&gt;
-    PSZ     pszObjectClass;         // e.g. "WPDrives"
-    PSZ     pszSetupString;         // e.g. "DETAILSFONT=..."; if present, _always_
+    PSZ         pszDefaultID;       // e.g. &lt;WP_DRIVES&gt;
+    PSZ         pszObjectClass;     // e.g. "WPDrives"
+    PSZ         pszSetupString;     // e.g. "DETAILSFONT=..."; if present, _always_
                                     // put a semicolon at the end, because "OBJECTID=xxx"
                                     // will always be added
-    USHORT  usMenuID;               // corresponding menu ID in xfldr001.rc resources
+    USHORT      usMenuID;           // corresponding menu ID in xfldr001.rc resources
+
+    WPObject    *pExists;           // != NULL if object exists already
 } STANDARDOBJECT, *PSTANDARDOBJECT;
 
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
@@ -129,52 +212,52 @@ typedef struct _STANDARDOBJECT
 
 // array of objects for "Standard WPS objects" menu button
 STANDARDOBJECT  G_WPSObjects[] = {
-                                    "<WP_KEYB>", "WPKeyboard", "", 100,
-                                    "<WP_MOUSE>", "WPMouse", "", 101,
-                                    "<WP_CNTRY>", "WPCountry", "", 102,
-                                    "<WP_SOUND>", "WPSound", "", 103,
-                                    "<WP_POWER>", "WPPower", "", 104,
-                                    "<WP_WINCFG>", "WPWinConfig", "", 105,
+                                    "<WP_KEYB>", "WPKeyboard", "", 100, 0,
+                                    "<WP_MOUSE>", "WPMouse", "", 101, 0,
+                                    "<WP_CNTRY>", "WPCountry", "", 102, 0,
+                                    "<WP_SOUND>", "WPSound", "", 103, 0,
+                                    "<WP_POWER>", "WPPower", "", 104, 0,
+                                    "<WP_WINCFG>", "WPWinConfig", "", 105, 0,
 
-                                    "<WP_HIRESCLRPAL>", "WPColorPalette", "", 110,
-                                    "<WP_LORESCLRPAL>", "WPColorPalette", "", 111,
-                                    "<WP_FNTPAL>", "WPFontPalette", "", 112,
-                                    "<WP_SCHPAL96>", "WPSchemePalette", "", 113,
+                                    "<WP_HIRESCLRPAL>", "WPColorPalette", "", 110, 0,
+                                    "<WP_LORESCLRPAL>", "WPColorPalette", "", 111, 0,
+                                    "<WP_FNTPAL>", "WPFontPalette", "", 112, 0,
+                                    "<WP_SCHPAL96>", "WPSchemePalette", "", 113, 0,
 
-                                    "<WP_LAUNCHPAD>", "WPLaunchPad", "", 120,
-                                    "<WP_WARPCENTER>", "SmartCenter", "", 121,
+                                    "<WP_LAUNCHPAD>", "WPLaunchPad", "", 120, 0,
+                                    "<WP_WARPCENTER>", "SmartCenter", "", 121, 0,
 
-                                    "<WP_SPOOL>", "WPSpool", "", 130,
-                                    "<WP_VIEWER>", "WPMinWinViewer", "", 131,
-                                    "<WP_SHRED>", "WPShredder", "", 132,
-                                    "<WP_CLOCK>", "WPClock", "", 133,
+                                    "<WP_SPOOL>", "WPSpool", "", 130, 0,
+                                    "<WP_VIEWER>", "WPMinWinViewer", "", 131, 0,
+                                    "<WP_SHRED>", "WPShredder", "", 132, 0,
+                                    "<WP_CLOCK>", "WPClock", "", 133, 0,
 
-                                    "<WP_START>", "WPStartup", "", 140,
-                                    "<WP_TEMPS>", "WPTemplates", "", 141,
-                                    "<WP_DRIVES>", "WPDrives", "", 142
+                                    "<WP_START>", "WPStartup", "", 140, 0,
+                                    "<WP_TEMPS>", "WPTemplates", "", 141, 0,
+                                    "<WP_DRIVES>", "WPDrives", "", 142, 0
                                },
 
 // array of objects for "XWorkplace objects" menu button
                 G_XWPObjects[] = {
-                                    XFOLDER_WPSID, "XFldWPS", "", 200,
-                                    XFOLDER_KERNELID, "XFldSystem", "", 201,
-                                    XFOLDER_SCREENID, "XWPScreen", "", 203,
-                                    XFOLDER_CLASSLISTID, "XWPClassList", "", 202,
+                                    XFOLDER_WPSID, "XFldWPS", "", 200, 0,
+                                    XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
+                                    XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
+                                    XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
 
                                     XFOLDER_CONFIGID, "WPFolder",
                                             "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
-                                            210,
+                                            210, 0,
                                     XFOLDER_STARTUPID, "XFldStartup",
                                             "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
-                                            211,
+                                            211, 0,
                                     XFOLDER_SHUTDOWNID, "XFldShutdown",
                                             "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
-                                            212,
+                                            212, 0,
 
                                     XFOLDER_TRASHCANID, "XWPTrashCan",
                                             "DETAILSCLASS=XWPTrashObject;"
                                             "SORTCLASS=XWPTrashObject;",
-                                            213
+                                            213, 0
                                };
 
 /* ******************************************************************
@@ -182,103 +265,6 @@ STANDARDOBJECT  G_WPSObjects[] = {
  *   XWPSetup helper functions                                      *
  *                                                                  *
  ********************************************************************/
-
-/*
- *@@ setCreateStandardObject:
- *      this creates a default WPS/XWP object from the
- *      given menu item ID, after displaying a confirmation
- *      box (XWPSetup "Obejcts" page).
- *      Returns TRUE if the menu ID was found in the given array.
- *
- *@@changed V0.9.1 (2000-02-01) [umoeller]: renamed prototype; added hwndOwner
- */
-
-BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
-                             USHORT usMenuID,        // in: selected menu item
-                             BOOL fStandardObj)      // in: if FALSE, XWorkplace object;
-                                                     // if TRUE, standard WPS object
-{
-    BOOL    brc = FALSE;
-    ULONG   ul = 0;
-
-    PSTANDARDOBJECT pso2;
-    ULONG ulMax;
-
-    if (fStandardObj)
-    {
-        pso2 = G_WPSObjects;
-        ulMax = sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT);
-    }
-    else
-    {
-        pso2 = G_XWPObjects;
-        ulMax = sizeof(G_XWPObjects) / sizeof(STANDARDOBJECT);
-    }
-
-    for (ul = 0;
-         ul < ulMax;
-         ul++)
-    {
-        if (pso2->usMenuID == usMenuID)
-        {
-            CHAR    szSetupString[2000];
-            PSZ     apsz[2] = {  NULL,              // will be title
-                                 szSetupString
-                              };
-
-            // get class's class object
-            somId       somidThis = somIdFromString(pso2->pszObjectClass);
-            SOMClass    *pClassObject = _somFindClass(SOMClassMgrObject, somidThis, 0, 0);
-
-            sprintf(szSetupString, "%sOBJECTID=%s",
-                    pso2->pszSetupString,       // can be empty or ";"-terminated string
-                    pso2->pszDefaultID);
-
-            if (pClassObject)
-                // get class's default title
-                apsz[0] = _wpclsQueryTitle(pClassObject);
-
-            if (apsz[0] == NULL)
-                // title not found: use class name then
-                apsz[0] = pso2->pszObjectClass;
-
-            if (cmnMessageBoxMsgExt(hwndOwner,
-                                    148, // "XWorkplace Setup",
-                                    apsz,
-                                    2,
-                                    163,        // "create object?"
-                                    MB_YESNO)
-                         == MBID_YES)
-            {
-                HOBJECT hobj = WinCreateObject(pso2->pszObjectClass,       // class
-                                               apsz[0], // pso2->pszObjectClass,       // title
-                                               szSetupString,
-                                               "<WP_DESKTOP>",
-                                               CO_FAILIFEXISTS);
-                if (hobj)
-                {
-                    cmnMessageBoxMsg(hwndOwner,
-                                     148, // "XWorkplace Setup",
-                                     164, // "success"
-                                     MB_OK);
-                    brc = TRUE;
-                }
-                else
-                    cmnMessageBoxMsg(hwndOwner,
-                                     148, // "XWorkplace Setup",
-                                     165, // "failed!"
-                                     MB_OK);
-            }
-
-            SOMFree(somidThis);
-            break;
-        }
-        // not found: try next item
-        pso2++;
-    }
-
-    return (brc);
-}
 
 /*
  *@@ AddResourceDLLToLB:
@@ -1185,80 +1171,6 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  ********************************************************************/
 
 /*
- *@@ FEATURESITEM:
- *      structure used for feature checkboxes
- *      on the "Features" page. Each item
- *      represents one record in the container.
- */
-
-typedef struct _FEATURESITEM
-{
-    USHORT  usFeatureID;
-                // string ID (dlgids.h, *.rc file in NLS DLL) for feature;
-                // this also identifies the item for processing
-    USHORT  usParentID;
-                // string ID of the parent record or null if root record.
-                // If you specify a parent record, this must appear before
-                // the child record in FeaturesItemsList.
-    ULONG   ulStyle;
-                // style flags for the record; OR the following:
-                // -- WS_VISIBLE: record is visible
-                // -- BS_AUTOCHECKBOX: give the record a checkbox
-                // For parent records (without checkboxes), use 0 only.
-    PSZ     pszNLSString;
-                // resolved NLS string; this must be NULL initially.
-} FEATURESITEM, *PFEATURESITEM;
-
-/*
- * FeatureItemsList:
- *      array of FEATURESITEM which are inserted into
- *      the container on the "Features" page.
- *
- *added V0.9.1 (99-12-19) [umoeller]
- */
-
-FEATURESITEM FeatureItemsList[] =
-        {
-            // general features
-            ID_XCSI_GENERALFEATURES, 0, 0, NULL,
-            ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_XSYSTEMSOUNDS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-
-            // folder features
-            ID_XCSI_FOLDERFEATURES, 0, 0, NULL,
-            ID_XCSI_ENABLESTATUSBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_ENABLESNAP2GRID, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-
-            // mouse/keyboard features
-            ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
-            ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-
-            // startup/shutdown features
-            ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
-            ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_RESTARTWPS, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_XSHUTDOWN, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-
-            // file operations
-            ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
-            ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
-        };
-
-PCHECKBOXRECORDCORE pFeatureRecordsList = NULL;
-
-/*
  *@@ setFeaturesInitPage:
  *      notebook callback function (notebook.c) for the
  *      XWPSetup "File Operations" page.
@@ -1302,42 +1214,42 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                    "ctlMakeCheckboxContainer failed.");
         else
         {
-            cRecords = sizeof(FeatureItemsList) / sizeof(FEATURESITEM);
+            cRecords = sizeof(G_FeatureItemsList) / sizeof(FEATURESITEM);
 
-            pFeatureRecordsList
+            G_pFeatureRecordsList
                 = (PCHECKBOXRECORDCORE)cnrhAllocRecords(hwndFeaturesCnr,
                                                         sizeof(CHECKBOXRECORDCORE),
                                                         cRecords);
             // insert feature records:
             // start for-each-record loop
-            preccThis = pFeatureRecordsList;
+            preccThis = G_pFeatureRecordsList;
             ul = 0;
             while (preccThis)
             {
                 // load NLS string for feature
                 cmnLoadString(hab,
                               hmodNLS,
-                              FeatureItemsList[ul].usFeatureID, // in: string ID
-                              &(FeatureItemsList[ul].pszNLSString)); // out: NLS string
+                              G_FeatureItemsList[ul].usFeatureID, // in: string ID
+                              &(G_FeatureItemsList[ul].pszNLSString)); // out: NLS string
 
                 // copy FEATURESITEM to record core
-                preccThis->ulStyle = FeatureItemsList[ul].ulStyle;
-                preccThis->usItemID = FeatureItemsList[ul].usFeatureID;
+                preccThis->ulStyle = G_FeatureItemsList[ul].ulStyle;
+                preccThis->usItemID = G_FeatureItemsList[ul].usFeatureID;
                 preccThis->usCheckState = 0;        // unchecked
-                preccThis->recc.pszTree = FeatureItemsList[ul].pszNLSString;
+                preccThis->recc.pszTree = G_FeatureItemsList[ul].pszNLSString;
 
                 preccParent = NULL;
 
                 // find parent record if != 0
-                if (FeatureItemsList[ul].usParentID)
+                if (G_FeatureItemsList[ul].usParentID)
                 {
                     // parent specified:
                     // search records we have prepared so far
                     ULONG ul2 = 0;
-                    PCHECKBOXRECORDCORE preccThis2 = pFeatureRecordsList;
+                    PCHECKBOXRECORDCORE preccThis2 = G_pFeatureRecordsList;
                     for (ul2 = 0; ul2 < ul; ul2++)
                     {
-                        if (preccThis2->usItemID == FeatureItemsList[ul].usParentID)
+                        if (preccThis2->usItemID == G_FeatureItemsList[ul].usParentID)
                         {
                             preccParent = preccThis2;
                             break;
@@ -1413,6 +1325,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONS,
                 pGlobalSettings->fReplaceIcons);
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
+                pGlobalSettings->fResizeSettingsPages);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ADDOBJECTPAGE,
                 pGlobalSettings->AddObjectPage);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
@@ -1456,7 +1370,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
                 pGlobalSettings->fReplDriveNotReady);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
-                fopsTrashCanReady() && pGlobalSettings->fTrashDelete);
+                (cmnTrashCanReady() && pGlobalSettings->fTrashDelete));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
                 pGlobalSettings->fReplaceTrueDelete);
     }
@@ -1478,11 +1392,6 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (pKernelGlobals->fXFolder));
 
-        #ifndef __ANIMATED_MOUSE_POINTERS__
-            ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
-                    FALSE);     // ### not implemented yet
-            xxx
-        #endif
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pDaemonShared->hwndDaemonObject != NULLHANDLE));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
@@ -1541,12 +1450,19 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          fUpdateMouseMovementPage = FALSE;
     signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
                 cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
+
     ULONG ulUpdateFlags = 0;
+            // if set to != 0, this will run the INIT callback with
+            // the specified CBI_* flags
 
     switch (usItemID)
     {
         case ID_XCSI_REPLACEICONS:
             pGlobalSettings->fReplaceIcons = ulExtra;
+        break;
+
+        case ID_XCSI_RESIZESETTINGSPAGES:
+            pGlobalSettings->fResizeSettingsPages = ulExtra;
         break;
 
         case ID_XCSI_ADDOBJECTPAGE:
@@ -1706,6 +1622,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // and restore the settings for this page
             pGlobalSettings->fReplaceIcons = pGSBackup->fReplaceIcons;
+            pGlobalSettings->fResizeSettingsPages = pGSBackup->fResizeSettingsPages;
             pGlobalSettings->AddObjectPage = pGSBackup->AddObjectPage;
             pGlobalSettings->fReplaceFilePage = pGSBackup->fReplaceFilePage;
             pGlobalSettings->fXSystemSounds = pGSBackup->fXSystemSounds;
@@ -1804,7 +1721,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     }
     else if (cEnableTrashCan != -1)
     {
-        fopsEnableTrashCan(pcnbp->hwndFrame,
+        cmnEnableTrashCan(pcnbp->hwndFrame,
                            ulExtra);
         (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
     }
@@ -1853,6 +1770,8 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                                                                ID_XCDI_CONTAINER);
                         POINTL       ptlMouse;
 
+                        // _Pmpf(("setFeaturesMessages: got TTN_NEEDTEXT"));
+
                         // we use pUser2 for the Tooltip string
                         if (pcnbp->pUser2)
                         {
@@ -1869,6 +1788,7 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                                                             NULL,
                                                             CMA_ICON | CMA_TEXT,
                                                             FRFP_SCREENCOORDS);
+                        // _Pmpf(("    precc is 0x%lX", precc));
                         if (precc)
                         {
                             if (precc->ulStyle & WS_VISIBLE)
@@ -2223,6 +2143,7 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      variable data on the page.
  *
  *@@changed V0.9.1 (99-12-29) [umoeller]: added "WPS restarts" field
+ *@@changed V0.9.4 (2000-07-03) [umoeller]: "WPS restarts" was 1 too large; fixed
  */
 
 VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2287,7 +2208,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         {
             // WPS restarts V0.9.1 (99-12-29) [umoeller]
             WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,
-                               pDaemonShared->ulWPSStartupCount,
+                               pDaemonShared->ulWPSStartupCount - 1,
                                FALSE);  // unsigned
 
             if (pDaemonShared->fAllHooksInstalled)
@@ -2308,11 +2229,162 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  ********************************************************************/
 
 /*
+ *@@ setFindExistingObjects:
+ *      this goes thru one of the STANDARDOBJECT arrays
+ *      and checks all objects for their existence by
+ *      setting each pExists member pointer to the object
+ *      or NULL.
+ *
+ *@@added V0.9.4 (2000-07-15) [umoeller]
+ */
+
+VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace objects;
+                                                    // if TRUE, standard WPS objects
+{
+    PSTANDARDOBJECT pso2;
+    ULONG ul, ulMax;
+
+    if (fStandardObj)
+    {
+        // WPS objects:
+        pso2 = G_WPSObjects;
+        ulMax = sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT);
+    }
+    else
+    {
+        // XWorkplace objects:
+        pso2 = G_XWPObjects;
+        ulMax = sizeof(G_XWPObjects) / sizeof(STANDARDOBJECT);
+    }
+
+    // go thru array
+    for (ul = 0;
+         ul < ulMax;
+         ul++)
+    {
+        pso2->pExists = wpshQueryObjectFromID(pso2->pszDefaultID,
+                                              NULL);        // pulErrorCode
+
+        // next item
+        pso2++;
+    }
+}
+
+/*
+ *@@ setCreateStandardObject:
+ *      this creates a default WPS/XWP object from the
+ *      given menu item ID, after displaying a confirmation
+ *      box (XWPSetup "Obejcts" page).
+ *      Returns TRUE if the menu ID was found in the given array.
+ *
+ *@@changed V0.9.1 (2000-02-01) [umoeller]: renamed prototype; added hwndOwner
+ *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
+ */
+
+BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
+                             USHORT usMenuID,        // in: selected menu item
+                             BOOL fStandardObj)      // in: if FALSE, XWorkplace object;
+                                                     // if TRUE, standard WPS object
+{
+    BOOL    brc = FALSE;
+    ULONG   ul = 0;
+
+    PSTANDARDOBJECT pso2;
+    ULONG ulMax;
+
+    if (fStandardObj)
+    {
+        // WPS objects:
+        pso2 = G_WPSObjects;
+        ulMax = sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT);
+    }
+    else
+    {
+        // XWorkplace objects:
+        pso2 = G_XWPObjects;
+        ulMax = sizeof(G_XWPObjects) / sizeof(STANDARDOBJECT);
+    }
+
+    // go thru array
+    for (ul = 0;
+         ul < ulMax;
+         ul++)
+    {
+        if (pso2->usMenuID == usMenuID)
+        {
+            CHAR    szSetupString[2000];
+            PSZ     apsz[2] = {  NULL,              // will be title
+                                 szSetupString
+                              };
+
+            // get class's class object
+            somId       somidThis = somIdFromString(pso2->pszObjectClass);
+            SOMClass    *pClassObject = _somFindClass(SOMClassMgrObject, somidThis, 0, 0);
+
+            sprintf(szSetupString, "%sOBJECTID=%s",
+                    pso2->pszSetupString,       // can be empty or ";"-terminated string
+                    pso2->pszDefaultID);
+
+            if (pClassObject)
+                // get class's default title
+                apsz[0] = _wpclsQueryTitle(pClassObject);
+
+            if (apsz[0] == NULL)
+                // title not found: use class name then
+                apsz[0] = pso2->pszObjectClass;
+
+            if (cmnMessageBoxMsgExt(hwndOwner,
+                                    148, // "XWorkplace Setup",
+                                    apsz,
+                                    2,
+                                    163,        // "create object?"
+                                    MB_YESNO)
+                         == MBID_YES)
+            {
+                HOBJECT hobj = WinCreateObject(pso2->pszObjectClass,       // class
+                                               apsz[0], // pso2->pszObjectClass,       // title
+                                               szSetupString,
+                                               "<WP_DESKTOP>",
+                                               CO_FAILIFEXISTS);
+                if (hobj)
+                {
+                    // success:
+                    // store in array so the menu item will be
+                    // disabled next time
+                    pso2->pExists = _wpclsQueryObject(_WPObject,
+                                                      hobj);
+
+                    cmnMessageBoxMsg(hwndOwner,
+                                     148, // "XWorkplace Setup",
+                                     164, // "success"
+                                     MB_OK);
+                    brc = TRUE;
+                }
+                else
+                    cmnMessageBoxMsg(hwndOwner,
+                                     148, // "XWorkplace Setup",
+                                     165, // "failed!"
+                                     MB_OK);
+            }
+
+            SOMFree(somidThis);
+            break;
+        }
+        // not found: try next item
+        pso2++;
+    }
+
+    return (brc);
+}
+
+/*
  *@@ DisableObjectMenuItems:
  *      helper function for setObjectsItemChanged
  *      (XWPSetup "Objects" page) to disable items
  *      in the "Objects" menu buttons if objects
  *      exist already.
+ *
+ *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
  */
 
 VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
@@ -2326,18 +2398,19 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
          ul < ulMax;
          ul++)
     {
-        WPObject* pObject = wpshQueryObjectFromID(pso2->pszDefaultID,
+        /* WPObject* pObject = wpshQueryObjectFromID(pso2->pszDefaultID,
                                                   NULL);        // pulErrorCode
+                */
         PSZ         pszMenuItemText = winhQueryMenuItemText(hwndMenu,
                                                             pso2->usMenuID);
         xstrcat(&pszMenuItemText, " (");
         xstrcat(&pszMenuItemText, pso2->pszObjectClass);
 
-        if (pObject != NULL)
+        if (pso2->pExists)
         {
-            // object found:
+            // object found (exists already):
             // append the path to the menu item
-            WPFolder    *pFolder = _wpQueryFolder(pObject);
+            WPFolder    *pFolder = _wpQueryFolder(pso2->pExists);
             CHAR        szFolderPath[CCHMAXPATH] = "";
             _wpQueryFilename(pFolder, szFolderPath, TRUE);      // fully qualified
             xstrcat(&pszMenuItemText, ", ");
@@ -2348,7 +2421,7 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
         }
 
         xstrcat(&pszMenuItemText, ")");
-        if (pObject == NULL)
+        if (pso2->pExists == NULL)
             // append "...", because we'll have a message box then
             xstrcat(&pszMenuItemText, "...");
 
@@ -2378,6 +2451,10 @@ VOID setObjectsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
+        // collect all existing objects
+        setFindExistingObjects(FALSE);  // XWorkplace objects
+        setFindExistingObjects(TRUE);   // WPS objects
+
         ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_OBJECTS_SYSTEM),
                           0, 0);        // query for menu
 

@@ -58,6 +58,7 @@
 #define INCL_WINENTRYFIELDS
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
+#define INCL_WINSTDSLIDER
 #define INCL_WINSHELLDATA       // Prf* functions
 #include <os2.h>
 
@@ -208,7 +209,8 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_FDRDEFAULTDOC:
             pGlobalSettings->fFdrDefaultDoc = ulExtra;
-            fUpdate = TRUE;
+            // update the display by calling the INIT callback
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSDI_FDRDEFAULTDOCVIEW:
@@ -412,6 +414,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.1 (99-12-28) [umoeller]: "snap to grid" was enabled even if disabled globally; fixed
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  */
 
 VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
@@ -441,14 +444,20 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_QUICKOPEN,
                 _xwpQueryQuickOpen(pcnbp->somSelf));
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
-               (MPARAM)( (_bSnapToGridInstance == 2)
-                        ? pGlobalSettings->fAddSnapToGridDefault
-                        : _bSnapToGridInstance ));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
                (MPARAM)( (_bFullPathInstance == 2)
                         ? pGlobalSettings->FullPath
                         : _bFullPathInstance ));
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_KEEPTITLE,
+               (MPARAM)( (_bKeepTitleInstance == 2)
+                        ? pGlobalSettings->KeepTitle
+                        : _bKeepTitleInstance ));
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
+               (MPARAM)( (_bSnapToGridInstance == 2)
+                        ? pGlobalSettings->fAddSnapToGridDefault
+                        : _bSnapToGridInstance ));
+
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                (MPARAM)( (_bFolderHotkeysInstance == 2)
                         ? pGlobalSettings->fFolderHotkeysDefault
@@ -472,6 +481,12 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                          ));
 
         WinEnableControl(pcnbp->hwndDlgPage,
+                         ID_XSDI_KEEPTITLE,
+                         ( (_bFullPathInstance == 2)
+                             ? pGlobalSettings->FullPath
+                             : _bFullPathInstance ));
+
+        WinEnableControl(pcnbp->hwndDlgPage,
                          ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
                          (pGlobalSettings->fEnableSnap2Grid));
 
@@ -492,6 +507,7 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  */
 
 MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -510,6 +526,13 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_FULLPATH:
             _bFullPathInstance = ulExtra;
+            // update the display by calling the INIT callback
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
+        break;
+
+        case ID_XSDI_KEEPTITLE:
+            _bKeepTitleInstance = ulExtra;
             fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
         break;
 
@@ -537,13 +560,14 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 XFolderData *Backup = (pcnbp->pUser);
                 // "Undo" button: restore backed up instance data
                 _bFullPathInstance = Backup->bFullPathInstance;
+                _bKeepTitleInstance = Backup->bKeepTitleInstance;
                 _bSnapToGridInstance = Backup->bSnapToGridInstance;
                 _bFolderHotkeysInstance = Backup->bFolderHotkeysInstance;
                 _xwpSetStatusBarVisibility(pcnbp->somSelf,
                                            Backup->bStatusBarInstance,
                                            TRUE);  // update open folder views
-                // have the page updated by calling the callback above
-                fdrXFolderInitPage(pcnbp, CBI_SHOW | CBI_ENABLE);
+                // update the display by calling the INIT callback
+                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
                 fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
             }
         break;
@@ -551,13 +575,14 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
             // "Default" button:
             _bFullPathInstance = 2;
+            _bKeepTitleInstance = 2;
             _bSnapToGridInstance = 2;
             _bFolderHotkeysInstance = 2;
             _xwpSetStatusBarVisibility(pcnbp->somSelf,
                         STATUSBAR_DEFAULT,
                         TRUE);  // update open folder views
-            // have the page updated by calling the callback above
-            fdrXFolderInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            // update the display by calling the INIT callback
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
             fdrUpdateAllFrameWndTitles(pcnbp->somSelf);
         break;
 
@@ -776,7 +801,8 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // global sort page:
                  cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL);
             }
-            fdrSortInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            // update the display by calling the INIT callback
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case DID_DEFAULT:
@@ -786,7 +812,8 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             else
                 cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL);
 
-            fdrSortInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            // update the display by calling the INIT callback
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:
@@ -834,6 +861,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@changed V0.9.0 [umoeller]: moved this here from xfdesk.c
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: now using sliders; added initial delay
  */
 
 VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -841,13 +869,53 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
+    if (flFlags & CBI_INIT)
+    {
+        if (pcnbp->pUser == 0)
+        {
+            // first call: backup Global Settings for "Undo" button;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+        }
+
+        // set up sliders
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
+                           0,
+                           3);      // three pixels high
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
+                           MPFROM2SHORT(9, 10),
+                           6);      // six pixels high
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
+                           0,
+                           3);      // three pixels high
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
+                           MPFROM2SHORT(9, 10),
+                           6);      // six pixels high
+    }
+
     if (flFlags & CBI_SET)
     {
+        // the range of valid startup delays is
+        // 500 ms to 10,000 ms in steps of 500 ms;
+        // that gives us 20 - 1 = 19 positions
+
+        // initial delay
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
+                                 SMA_INCREMENTVALUE,
+                                 (pGlobalSettings->ulStartupInitialDelay / 500) - 1);
+        // per-object delay
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
+                                 SMA_INCREMENTVALUE,
+                                 (pGlobalSettings->ulStartupObjectDelay / 500) - 1);
+
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_SHOWSTARTUPPROGRESS,
                               pGlobalSettings->ShowStartupProgress);
-        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_SDDI_STARTUPDELAY,
+        /* winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_SDDI_STARTUPDELAY,
                                500, 10000,
-                               pGlobalSettings->ulStartupDelay);
+                               pGlobalSettings->ulStartupDelay); */
     }
 
     if (flFlags & CBI_ENABLE)
@@ -865,6 +933,7 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *
  *@@changed V0.9.0 [umoeller]: moved this here from xfdesk.c
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: now using sliders; added initial delay
  */
 
 MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -882,11 +951,35 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->ShowStartupProgress = ulExtra;
         break;
 
-        case ID_SDDI_STARTUPDELAY:
-            pGlobalSettings->ulStartupDelay = winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
-                                                                        usItemID,
-                                                                        250, usNotifyCode);
-        break;
+        case ID_SDDI_STARTUP_INITDELAY_SLID:
+        {
+            LONG lSliderIndex = winhQuerySliderArmPosition(
+                                            pcnbp->hwndControl,
+                                            SMA_INCREMENTVALUE);
+            LONG lMS = (lSliderIndex + 1) * 500;
+            CHAR szMS[30];
+            sprintf(szMS, "%d ms", lMS);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_SDDI_STARTUP_INITDELAY_TXT2,
+                              szMS);
+
+            pGlobalSettings->ulStartupInitialDelay = lMS;
+        break; }
+
+        case ID_SDDI_STARTUP_OBJDELAY_SLID:
+        {
+            LONG lSliderIndex = winhQuerySliderArmPosition(
+                                            pcnbp->hwndControl,
+                                            SMA_INCREMENTVALUE);
+            LONG lMS = (lSliderIndex + 1) * 500;
+            CHAR szMS[30];
+            sprintf(szMS, "%d ms", lMS);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_SDDI_STARTUP_OBJDELAY_TXT2,
+                              szMS);
+
+            pGlobalSettings->ulStartupObjectDelay = lMS;
+        break; }
 
         default:
             ulChange = 0;

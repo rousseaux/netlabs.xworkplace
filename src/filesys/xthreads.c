@@ -99,7 +99,6 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
-// #include "filesys\sounddll.h"           // declarations for SOUND.DLL
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "config\hookintf.h"             // daemon/hook interface
@@ -1395,10 +1394,12 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *      --  HWND mp2:           frame of Desktop just opened.
          *
          *@@added V0.9.3 (2000-04-26) [umoeller]
+         *@@changed V0.9.4 (2000-08-02) [umoeller]: initial delay now configurable
          */
 
         case FIM_DESKTOPREADY:
         {
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             HWND    hwndActiveDesktop = (HWND)mp2;
 
             #ifdef DEBUG_STARTUP
@@ -1426,7 +1427,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             #endif
 
             // sleep a little while more
-            DosSleep(1000);
+            // V0.9.4 (2000-08-02) [umoeller]
+            winhSleep(WinQueryAnchorBlock(hwndObject),
+                      pGlobalSettings->ulStartupInitialDelay);
 
             // hwndActiveDesktop = cmnQueryActiveDesktopHWND();
 
@@ -1551,11 +1554,28 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                             // FIM_STARTUP(4)... kinda sick.
                 break; }
 
-                case 4:
+                case 4: // done completely:
+                {
+                    CHAR    szDesktopDir[2*CCHMAXPATH];
+                    // stop this posting game
+                    fPostNext = FALSE;
+
                     // destroy boot logo, if present
                     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
-                    fPostNext = FALSE;
-                break;
+
+                    if (_wpQueryFilename(cmnQueryActiveDesktop(),
+                                         szDesktopDir,
+                                         TRUE))     // fully q'fied
+                    {
+                        WPFileSystem *pMarkerFile;
+                        strcat(szDesktopDir, "\\" XWORKPLACE_ARCHIVE_MARKER);
+                        pMarkerFile
+                            = _wpclsQueryObjectFromPath(_WPFileSystem, szDesktopDir);
+                        if (pMarkerFile)
+                            // exists:
+                            _wpFree(pMarkerFile);
+                    }
+                break; }
             } // end switch
 
             if (fPostNext)
@@ -1685,13 +1705,16 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *      long time.
          *
          *      Parameters:
-         *      -- mp1: HFILETASKLIST to process.
+         *      -- HFILETASKLIST mp1: file task list to process.
+         *      -- HWND mp2: temporary window for modal processing.
          *
          *@@added V0.9.1 (2000-01-29) [umoeller]
+         *@@changed V0.9.4 (2000-08-03) [umoeller]: added hwndNotify
          */
 
         case FIM_PROCESSTASKLIST:
-            fopsFileThreadProcessing((HFILETASKLIST)mp1);
+            fopsFileThreadProcessing((HFILETASKLIST)mp1,
+                                     (HWND)mp2);
         break;
 
         /*
@@ -1701,13 +1724,27 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *
          *      Parameters:
          *          WPFolder* mp1:  folder to refresh
-         *          ULONG ulView:   OPEN_* flag for which view to refresh
+         *          HWND hwndFrame:  frame of folder to refresh
+         *
+         *@@changed V0.9.4 (2000-08-02) [umoeller]: now invalidating cnr also
          */
 
         case FIM_REFRESH:
-            _wpRefresh((WPFolder*)mp1, (ULONG)mp2,
+        {
+            WPFolder *pFolder = (WPFolder*)mp1;
+            HWND hwndFrame = (HWND)mp2,
+                 hwndCnr = 0;
+            // get OPEN_* flag for view
+            ULONG ulView = wpshQueryView(pFolder, hwndFrame);
+
+            _wpRefresh(pFolder,
+                       ulView,
                        NULL);       // reserved, must be NULL
-        break;
+            // now repaint container
+            hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+            if (hwndCnr)
+                cnrhInvalidateAll(hwndCnr);
+        break; }
 
         /*
          *@@ FIM_DOUBLEFILES:

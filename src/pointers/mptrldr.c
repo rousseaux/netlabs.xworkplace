@@ -419,11 +419,11 @@ MRESULT EXPENTRY Page1DlgWindowProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 /* rc = */ GetHelpLibName(szHelpLibrary, sizeof(szHelpLibrary));
                 // create help instance
                 G_hwndHelp = CreateHelpInstance(WinQueryAnchorBlock(hwnd),
-                                              hwnd,
-                                              (HLIB) 0,
-                                              IDPNL_MAIN,
-                                              "?!?!?", // __TITLE__ " " __VERSION__,
-                                              szHelpLibrary);
+                                                hwnd,
+                                                (HLIB) 0,
+                                                1, // IDPNL_MAIN,     // was: 1
+                                                "?!?!?", // __TITLE__ " " __VERSION__,
+                                                szHelpLibrary);
 
                 // wpRestoreState Aufruf durch wpInit simulieren
                 _wpRestoreState(NULL);
@@ -847,12 +847,15 @@ HMODULE _clsQueryModuleHandle(PVOID self)
 }
 
 /* ------------------------------------------------- */
-BOOL DisplayHelp(PVOID somSelf, ULONG ulHelpPanelId)
+/* BOOL DisplayHelp(PVOID somSelf, ULONG ulHelpPanelId)
 
 {
     WinSendMsg(G_hwndHelp, HM_DISPLAY_HELP, (MPARAM) ulHelpPanelId, (MPARAM) HM_RESOURCEID);
     return FALSE;
-}
+}       this is never used, and wpamptr.c has a function of the same name
+        V0.9.4 (2000-07-22) [umoeller]
+
+*/
 
 
 /* ------------------------------------------------- */

@@ -122,6 +122,18 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
     // ULONG   ulValue = 0;
             // ulDefaultValue = 0;
 
+    /*
+
+      ### This is the complete list of all WPDesktop setup
+      strings, as documented by WPSREF. However, method
+      implementations only exist for Warp 4.
+
+      We'd need to manually decode what all the settings
+      in PM_Lockup in OS2.INI are good for.
+
+    */
+
+
     // AUTOLOCKUP=YES/NO
     /* if (_wpQueryAutoLockup(somSelf))
         xstrcat(&pszTemp, "AUTOLOCKUP=YES");
@@ -337,21 +349,28 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                            DEBUG_MENUID_CRASH_THR1,
                                            "Thread 1",
                                            MIS_TEXT, 0);
-         winhInsertMenuItem(hwndMenuInsert,
-                            MIT_END,
-                            DEBUG_MENUID_CRASH_WORKER,
-                            "Worker thread",
-                            MIS_TEXT, 0);
-         winhInsertMenuItem(hwndMenuInsert,
-                            MIT_END,
-                            DEBUG_MENUID_CRASH_QUICK,
-                            "Speedy thread",
-                            MIS_TEXT, 0);
-         winhInsertMenuItem(hwndMenuInsert,
-                            MIT_END,
-                            DEBUG_MENUID_CRASH_FILE,
-                            "File thread",
-                            MIS_TEXT, 0);
+        winhInsertMenuItem(hwndMenuInsert,
+                           MIT_END,
+                           DEBUG_MENUID_CRASH_WORKER,
+                           "Worker thread",
+                           MIS_TEXT, 0);
+        winhInsertMenuItem(hwndMenuInsert,
+                           MIT_END,
+                           DEBUG_MENUID_CRASH_QUICK,
+                           "Speedy thread",
+                           MIS_TEXT, 0);
+        winhInsertMenuItem(hwndMenuInsert,
+                           MIT_END,
+                           DEBUG_MENUID_CRASH_FILE,
+                           "File thread",
+                           MIS_TEXT, 0);
+
+        // add "Dump window list"
+        winhInsertMenuItem(hwndMenu,
+                           MIT_END,
+                           DEBUG_MENUID_DUMPWINLIST,
+                           "Dump window list",
+                           MIS_TEXT, 0);
     #endif
 
     krnUnlockGlobals();
@@ -427,13 +446,21 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
         switch (*pulMenuId)
         {
             case DEBUG_MENUID_CRASH_THR1:
-                krnPostThread1ObjectMsg(XM_CRASH, 0, 0); break;
+                krnPostThread1ObjectMsg(XM_CRASH, 0, 0);
+            break;
             case DEBUG_MENUID_CRASH_WORKER:
-                xthrPostWorkerMsg(XM_CRASH, 0, 0); break;
+                xthrPostWorkerMsg(XM_CRASH, 0, 0);
+            break;
             case DEBUG_MENUID_CRASH_QUICK:
-                xthrPostSpeedyMsg(XM_CRASH, 0, 0); break;
+                xthrPostSpeedyMsg(XM_CRASH, 0, 0);
+            break;
             case DEBUG_MENUID_CRASH_FILE:
-                xthrPostFileMsg(XM_CRASH, 0, 0); break;
+                xthrPostFileMsg(XM_CRASH, 0, 0);
+            break;
+
+            case DEBUG_MENUID_DUMPWINLIST:
+                winlCreateWinListWindow();
+            break;
         }
     #endif
 
@@ -512,9 +539,9 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID,
-                                    USHORT usNotifyCode,
-                                    ULONG ulExtra)      // for checkboxes: contains new state
+                                USHORT usItemID,
+                                USHORT usNotifyCode,
+                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
     ULONG ulChange = 1;
@@ -599,7 +626,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
-                            ULONG flFlags)        // CBI_* flags (notebook.h)
+                        ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 

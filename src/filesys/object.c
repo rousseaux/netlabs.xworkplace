@@ -51,6 +51,7 @@
 #define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
+#define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #include <os2.h>
 
 // C library headers
@@ -66,6 +67,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
@@ -85,12 +87,14 @@
 #include "hook\xwphook.h"
 
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\filesys.h"            // various file-system object implementation code
 
 #include "config\hookintf.h"            // daemon/hook interface
 
 // other SOM headers
 #pragma hdrstop
 #include <wpdesk.h>                     // WPDesktop; includes WPFolder also
+#include <wppgm.h>                      // WPProgram
 #include <wpshadow.h>
 #include "filesys\folder.h"             // XFolder implementation
 
@@ -641,28 +645,69 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
 VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
 {
-    HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DTL_SETUP_ENTRY);
-    ULONG cbSetupString = _xwpQuerySetup(somSelf,
-                                         NULL,
-                                         0);
-
-    WinSetWindowText(hwndEF, "");
-
-    if (cbSetupString)
+    TRY_LOUD(excpt1, NULL)
     {
-        PSZ pszSetupString = malloc(cbSetupString + 1);
-        if (pszSetupString)
+        HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DTL_SETUP_ENTRY);
+        ULONG cbSetupString = _xwpQuerySetup(somSelf,
+                                             NULL,
+                                             0);
+
+        WinSetWindowText(hwndEF, "");
+
+        if (cbSetupString)
         {
-            if (_xwpQuerySetup(somSelf,
-                               pszSetupString,
-                               cbSetupString + 1))
+            PSZ pszSetupString = malloc(cbSetupString + 1);
+            if (pszSetupString)
             {
-                winhSetEntryFieldLimit(hwndEF, cbSetupString + 1);
-                WinSetWindowText(hwndEF, pszSetupString);
+                if (_xwpQuerySetup(somSelf,
+                                   pszSetupString,
+                                   cbSetupString + 1))
+                {
+                    winhSetEntryFieldLimit(hwndEF, cbSetupString + 1);
+                    WinSetWindowText(hwndEF, pszSetupString);
+                }
+                free(pszSetupString);
             }
-            free(pszSetupString);
         }
     }
+    CATCH(excpt1) {} END_CATCH();
+}
+
+/*
+ *@@ cmnIsValidHotkey:
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+BOOL cmnIsValidHotkey(USHORT usFlags,
+                      USHORT usKeyCode)
+{
+    return (
+                // must be a virtual key
+                (  (  ((usFlags & KC_VIRTUALKEY) != 0)
+                // or Ctrl or Alt must be pressed
+                   || ((usFlags & KC_CTRL) != 0)
+                   || ((usFlags & KC_ALT) != 0)
+                // or one of the Win95 keys must be pressed
+                   || (   ((usFlags & KC_VIRTUALKEY) == 0)
+                       && (     (usKeyCode == 0xEC00)
+                            ||  (usKeyCode == 0xED00)
+                            ||  (usKeyCode == 0xEE00)
+                          )
+                   )
+                )
+                // OK:
+                // filter out lone modifier keys
+                && (    ((usFlags & KC_VIRTUALKEY) == 0)
+                     || (   (usKeyCode != VK_SHIFT)     // shift
+                         && (usKeyCode != VK_CTRL)     // ctrl
+                         && (usKeyCode != VK_ALT)     // alt
+                // and filter out the tab key too
+                         && (usKeyCode != VK_TAB)     // tab
+                        )
+                   )
+                )
+           );
 }
 
 /*
@@ -686,6 +731,8 @@ VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
  *@@changed V0.9.0 [umoeller]: fixed memory leak (thanks Lars Erdmann)
  *@@changed V0.9.0 [umoeller]: added hotkey support
  *@@changed V0.9.3 (2000-04-19) [umoeller]: added function key support
+ *@@changed V0.9.4 (2000-07-11) [umoeller]: CN_HELP didn't work
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: improved hotkey display
  */
 
 MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -744,8 +791,8 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
             CnrInfo.flWindowAttr = CV_TREE | CV_TEXT | CA_TREELINE;
             CnrInfo.cxTreeIndent = 30;
             WinSendMsg(pWinData->hwndCnr, CM_SETCNRINFO,
-                    &CnrInfo,
-                    (MPARAM)(CMA_PSORTRECORD | CMA_FLWINDOWATTR | CMA_CXTREEINDENT));
+                       &CnrInfo,
+                       (MPARAM)(CMA_PSORTRECORD | CMA_FLWINDOWATTR | CMA_CXTREEINDENT));
 
             WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
 
@@ -761,6 +808,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
         case XM_SETTINGS2DLG:
         {
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             HPOINTER hptrOld = winhSetWaitPointer();
 
             USHORT      usFlags,
@@ -794,6 +842,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                 WinSetWindowText(hwndEntryField, (cmnQueryNLSStrings())->pszNotDefined);
 
             // object setup string
+            // if (pGlobalSettings->fAllowQuerySetupString)
             ReportSetupString(pWinData->somSelf, hwndDlg);
 
             FillCnrWithObjectUsage(pWinData->hwndCnr, pWinData->somSelf);
@@ -938,6 +987,17 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             mrc = (MPARAM)0;
                         break;
 
+                        /*
+                         * CN_HELP:
+                         *      V0.9.4 (2000-07-11) [umoeller]
+                         */
+
+                        case CN_HELP:
+                            // always display help for the whole page, not for single items
+                            cmnDisplayHelp(pWinData->somSelf,
+                                           ID_XSH_SETTINGS_OBJINTERNALS);
+                        break;
+
                         default:
                             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                     } // end switch
@@ -953,66 +1013,55 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                 case ID_XSDI_DTL_HOTKEY:
                     if (usNotifyCode == EN_HOTKEY)
                     {
-                        PHOTKEYNOTIFY phkn = (PHOTKEYNOTIFY)mp2;
-
+                        ULONG           flReturn = 0;
+                        PHOTKEYNOTIFY   phkn = (PHOTKEYNOTIFY)mp2;
+                        BOOL            fStore = FALSE;
+                        USHORT          usFlags = phkn->usFlags;
                         // check if maybe this is a function key
                         // V0.9.3 (2000-04-19) [umoeller]
                         PFUNCTIONKEY pFuncKey = hifFindFunctionKey(pWinData->paFuncKeys,
                                                                    pWinData->cFuncKeys,
                                                                    phkn->ucScanCode);
 
-                        // now check if this thing makes up a valid
-                        // hotkey just yet: if KC_VIRTUALKEY is down,
-                        // we must filter out the sole CTRL, ALT, and
-                        // SHIFT keys, because these are valid only
-                        // when pressed with some other key. By doing
-                        // this, we do get a display in the entry field
-                        // if only, say, Ctrl is down, but we won't
-                        // store this.
-                        if  (
-                                // do we have an XWorkplace function key?
-                                (pFuncKey != NULL)
-                             ||
-                                // no function key: check if we have a valid
-                                // key combo
-                                (  (  ((phkn->usFlags & KC_VIRTUALKEY) != 0)
-                                      // Ctrl pressed?
-                                   || ((phkn->usFlags & KC_CTRL) != 0)
-                                      // Alt pressed?
-                                   || ((phkn->usFlags & KC_ALT) != 0)
-                                      // or one of the Win95 keys?
-                                   || (   ((phkn->usFlags & KC_VIRTUALKEY) == 0)
-                                       && (     (phkn->usch == 0xEC00)
-                                            ||  (phkn->usch == 0xED00)
-                                            ||  (phkn->usch == 0xEE00)
-                                          )
-                                   )
-                                )
-                                && (    ((phkn->usFlags & KC_VIRTUALKEY) == 0)
-                                     || (   (phkn->usKeyCode != 0x09)     // shift
-                                         && (phkn->usKeyCode != 0x0a)     // ctrl
-                                         && (phkn->usKeyCode != 0x0b)     // alt
-                                        )
-                                   )
-                                )
-                            )
+                        if (pFuncKey)
                         {
-                            // valid hotkey:
-                            USHORT usFlags = phkn->usFlags;
-                            if (pFuncKey)
+                            // key code is one of the XWorkplace user-defined
+                            // function keys:
+                            // add KC_INVALIDCOMP flag (used by us for
+                            // user-defined function keys)
+                            usFlags |= KC_INVALIDCOMP;
+                            sprintf(phkn->szDescription,
+                                    "\"%s\"",
+                                    pFuncKey->szDescription);
+                            flReturn = HEFL_SETTEXT;
+                            fStore = TRUE;
+                        }
+                        else
+                        {
+                            // no function key:
+                            // have this key combo checked if this thing
+                            // makes up a valid hotkey just yet:
+                            // if KC_VIRTUALKEY is down,
+                            // we must filter out the sole CTRL, ALT, and
+                            // SHIFT keys, because these are valid only
+                            // when pressed with some other key. By doing
+                            // this, we do get a display in the entry field
+                            // if only, say, Ctrl is down, but we won't
+                            // store this.
+                            if (cmnIsValidHotkey(phkn->usFlags,
+                                                 phkn->usKeyCode))
                             {
-                                // it's a function key:
-                                // add KC_INVALIDCOMP
-                                usFlags |= KC_INVALIDCOMP;
-                                sprintf(phkn->szDescription,
-                                        "\"%s\"",
-                                        pFuncKey->szDescription);
-                            }
-                            else
+                                // valid hotkey:
                                 cmnDescribeKey(phkn->szDescription,
                                                phkn->usFlags,
                                                phkn->usKeyCode);
+                                flReturn = HEFL_SETTEXT;
+                                fStore = TRUE;
+                            }
+                        }
 
+                        if (fStore)
+                        {
                             // store hotkey for object;
                             // we'll now pass the scan code, which is
                             // used by the hook
@@ -1021,7 +1070,6 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                                phkn->ucScanCode,
                                                phkn->usKeyCode);
                             // have entry field display that (comctl.c)
-                            mrc = (MPARAM)TRUE;
                         }
                         else
                         {
@@ -1029,8 +1077,12 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             // delete the object's hotkey
                             objSetObjectHotkey(pWinData->somSelf,
                                                0, 0, 0);
-                            mrc = (MPARAM)FALSE;
+                            strcpy(phkn->szDescription,
+                                   (cmnQueryNLSStrings())->pszNotDefined);
+                            flReturn = HEFL_SETTEXT;
                         }
+
+                        mrc = (MPARAM)flReturn;
                     }
                 break;
 
@@ -1049,6 +1101,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                 case DID_REFRESH:
                 {
+                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                     HPOINTER hptrOld = winhSetWaitPointer();
                     WinSendMsg(pWinData->hwndCnr,
                                CM_REMOVERECORD,
@@ -1057,6 +1110,8 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                             CMA_FREE));
                     FillCnrWithObjectUsage(pWinData->hwndCnr, pWinData->somSelf);
 
+                    // object setup string
+                    // if (pGlobalSettings->fAllowQuerySetupString)
                     ReportSetupString(pWinData->somSelf, hwndDlg);
 
                     WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -1417,6 +1472,29 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  ********************************************************************/
 
 /*
+ * CheckStyle:
+ *      called by objQuerySetup to check an instance
+ *      style against a class default style and add
+ *      a string if necessary.
+ */
+
+VOID CheckStyle(PSZ *ppsz,       // in: string for xstrcat
+                ULONG ul1,        // in: style 1
+                ULONG ul2,        // in: style 2
+                ULONG ulMask,     // in: mask for style 1/2
+                PSZ pszName)    // in: setup string prefix (e.g. "NOMOVE=")
+{
+    if ((ul1 & ulMask) != (ul2 & ulMask))
+    {
+        xstrcat(ppsz, pszName);
+        if (ul1 & ulMask)
+            xstrcat(ppsz, "YES;");
+        else
+            xstrcat(ppsz, "NO;");
+    }
+}
+
+/*
  *@@ objQuerySetup:
  *      implementation of XFldObject::xwpQuerySetup.
  *      See remarks there.
@@ -1425,6 +1503,7 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  *      setup string part only.
  *
  *@@added V0.9.1 (2000-01-16) [umoeller]
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added NOCOPY, NODELETE etc.
  */
 
 ULONG objQuerySetup(WPObject *somSelf,
@@ -1436,13 +1515,17 @@ ULONG objQuerySetup(WPObject *somSelf,
     ULONG   ulReturn = 0;
     ULONG   ulValue = 0,
             // ulDefaultValue = 0,
-            ulStyle = 0;
+            ulStyle = 0,
+            ulClassStyle = 0;
     PSZ     pszValue = 0;
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-    /* _Pmpf(("Dumping WPOBJECTDATA (%d bytes", _cbWPObjectData));
-    cmnDumpMemoryBlock((PVOID)_pWPObjectData, _cbWPObjectData, 8); */
+    if (_somIsA(somSelf, _WPProgram))
+    {
+        fsysQueryProgramSetup(somSelf,
+                              &pszTemp);
+    }
 
     // CCVIEW
     ulValue = _wpQueryConcurrentView(somSelf);
@@ -1551,18 +1634,50 @@ ULONG objQuerySetup(WPObject *somSelf,
         // ignore MINWIN_DEFAULT
     }
 
-    // NOCOPY:
-    // NODELETE:
-    // NODRAG:
-    // NODROP:
-    // NOLINK:
-    // NOMOVE:
-    // NOPRINT:
-    // NORENAME:
-    // NOSETTINGS:
-    // NOSHADOW:
-    // NOTVISIBLE: compare wpQueryStyle with clsStyle
+    // compare wpQueryStyle with clsStyle
     ulStyle = _wpQueryStyle(somSelf);
+    ulClassStyle = _wpclsQueryStyle(_somGetClass(somSelf));
+
+    // NOMOVE:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOMOVE, "NOMOVE=");
+        // OBJSTYLE_NOMOVE == CLSSTYLE_NEVERMOVE == 0x00000002; see wpobject.h
+    // NOLINK:
+    // NOSHADOW:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOLINK, "NOLINK=");
+        // OBJSTYLE_NOLINK == CLSSTYLE_NEVERLINK == 0x00000004; see wpobject.h
+    // NOCOPY:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOCOPY, "NOCOPY=");
+        // OBJSTYLE_NOCOPY == CLSSTYLE_NEVERCOPY == 0x00000008; see wpobject.h
+    // NODELETE:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NODELETE, "NODELETE=");
+        // OBJSTYLE_NODELETE == CLSSTYLE_NEVERDELETE == 0x00000040; see wpobject.h
+    // NOPRINT:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOPRINT, "NOPRINT=");
+        // OBJSTYLE_NOPRINT == CLSSTYLE_NEVERPRINT == 0x00000080; see wpobject.h
+    // NODRAG:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NODRAG, "NODRAG=");
+        // OBJSTYLE_NODRAG == CLSSTYLE_NEVERDRAG == 0x00000100; see wpobject.h
+    // NOTVISIBLE:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOTVISIBLE, "NOTVISIBLE=");
+        // OBJSTYLE_NOTVISIBLE == CLSSTYLE_NEVERVISIBLE == 0x00000200; see wpobject.h
+    // NOSETTINGS:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOSETTINGS, "NOSETTINGS=");
+        // OBJSTYLE_NOSETTINGS == CLSSTYLE_NEVERSETTINGS == 0x00000400; see wpobject.h
+    // NORENAME:
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NORENAME, "NORENAME=");
+        // OBJSTYLE_NORENAME == CLSSTYLE_NEVERRENAME == 0x00000800; see wpobject.h
+
+    // NODROP:
+    // NODROP is obscure: wpobject.h writes:
+    /*
+      #define OBJSTYLE_NODROP         0x00001000
+      #define OBJSTYLE_NODROPON       0x00002000   // Use instead of OBJSTYLE_NODROP,
+                                              because OBJSTYLE_NODROP and
+                                              CLSSTYLE_PRIVATE have the same
+                                              value (DD 86093F)  */
+    // However, according to WPSREF, the setup string is still NODROP, not NODROPON.
+    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NODROPON, "NODROP=");
+        // OBJSTYLE_NODROPON == CLSSTYLE_NEVERDROPON == 0x00002000; see wpobject.h
 
     if (ulStyle & OBJSTYLE_TEMPLATE)
         xstrcat(&pszTemp, "TEMPLATE=YES;");

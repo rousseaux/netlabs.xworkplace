@@ -1796,29 +1796,16 @@ BOOL LoadFirstPointerFromWinAnimationFile
 
 }
 
-/*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
- *³ Name      : LoadFirstAnimationFromWinAnimationFile                     ³
- *³ Kommentar : l„dt ersten Pointer aus Ani Datei                          ³
- *³ Autor     : C.Langanke                                                 ³
- *³ Datum     : 23.07.1995                                                 ³
- *³ Žnderung  : 23.07.1995                                                 ³
- *³ aufgerufen: diverse                                                    ³
- *³ ruft auf  : -                                                          ³
- *³ Eingabe   : PSZ          - Name der Datei                              ³
- *³             PHPOINTER    - Zeiger auf handle-Variable                  ³
- *³             PICONINFO    - Zeiger auf ICONINFO                         ³
- *³ Aufgaben  : - Pointer laden                                            ³
- *³ Rckgabe  : BOOL - Flag: Pointer geladen/nicht geladen                 ³
- *ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+/*
+ *@@ LoadFirstAnimationFromWinAnimationFile:
+ *      loads first pointer from an ANI file.
+ *      Returns TRUE or FALSE, signalling success.
  */
 
-BOOL LoadFirstAnimationFromWinAnimationFile
- (
-     PSZ pszAnimationFile,
-     PHPOINTER pahpointer,
-     PULONG pulTimeout,
-     PULONG pulEntries
-)
+BOOL LoadFirstAnimationFromWinAnimationFile(PSZ pszAnimationFile, // in: file name
+                                            PHPOINTER pahpointer, // ptr to handle
+                                            PULONG pulTimeout,
+                                            PULONG pulEntries)
 {
     BOOL fSuccess = FALSE;
     APIRET rc;
@@ -2969,7 +2956,9 @@ return rc;
                                     SETPSIG(psig, pszSigInfoArtist);
                                     SETPSIGSIZE(psig, ulNewInfoArtistLen);
                                     psig = (PSIG)(PBYTE) psig + sizeof(SIG);
-                                    MEMCOPY(psig, psourceinfoNew->pszInfoArtist, ulNewInfoArtistLen);
+                                    MEMCOPY(psig,
+                                            psourceinfoNew->pszInfoArtist,
+                                            ulNewInfoArtistLen);
                                     *(((PBYTE) psig) - 1) = 0;
                                 }
 

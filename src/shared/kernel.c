@@ -143,6 +143,17 @@ ULONG               G_PageMageConfigFlags = 0;
 // (see kernel.h)
 KERNELGLOBALS       G_KernelGlobals = {0};
 
+// resize information for ID_XFD_CONTAINERPAGE, which is used
+// by many settings pages
+MPARAM G_ampGenericCnrPage[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY)
+    };
+
+extern MPARAM *G_pampGenericCnrPage = G_ampGenericCnrPage;
+extern ULONG G_cGenericCnrPage = sizeof(G_ampGenericCnrPage) / sizeof(G_ampGenericCnrPage[0]);
+
 // forward declarations
 MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mpNow, MPARAM mpMax);
@@ -566,18 +577,21 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    // cast PVOID
-    PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-    if (!pDaemonShared)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "pDaemonShared is NULL.");
-    else
-        // get the handle of the daemon's object window
-        if (!pDaemonShared->hwndDaemonObject)
+    if (pKernelGlobals)
+    {
+        // cast PVOID
+        PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+        if (!pDaemonShared)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                   "pDaemonShared is NULL.");
         else
-            brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
+            // get the handle of the daemon's object window
+            if (!pDaemonShared->hwndDaemonObject)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+            else
+                brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
+    }
 
     return (brc);
 }
@@ -630,12 +644,14 @@ VOID krn_T1M_DaemonReady(VOID)
                 _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
                         pGlobalSettings->fEnablePageMage));
 
+#ifdef __PAGEMAGE__
                 if (pGlobalSettings->fEnablePageMage)
                     // PageMage is enabled too:
                     WinSendMsg(pDaemonShared->hwndDaemonObject,
                                XDM_STARTSTOPPAGEMAGE,
                                (MPARAM)TRUE,
                                0);
+#endif
             }
         }
     }
@@ -698,7 +714,9 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
                                      OPEN_DEFAULT,
                                      0);           // "optional parameter" (?!?)
 
-                _Pmpf(("krn_T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("krn_T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+                #endif
 
                 if (hwnd)
                 {
@@ -714,6 +732,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
                         // wpViewObject only returns a window handle for
                         // WPS windows. By contrast, if a program object is
                         // started, an obscure USHORT value is returned.
+                        // I suppose this is a HAPP instead.
                         // From my testing, the lower byte (0xFF) contains
                         // the session ID of the started application, while
                         // the higher byte (0xFF00) contains the application
@@ -734,15 +753,21 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
                         // loop through all the tasklist entries
                         for (ul = 0; ul < (pSwBlock->cswentry); ul++)
                         {
-                            _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
-                                    ul,
-                                    pSwBlock->aswentry[ul].swctl.hwnd,
-                                    pSwBlock->aswentry[ul].swctl.hprog,
-                                    pSwBlock->aswentry[ul].swctl.idSession));
+                            #ifdef DEBUG_KEYS
+                                _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
+                                        ul,
+                                        pSwBlock->aswentry[ul].swctl.hwnd,
+                                        pSwBlock->aswentry[ul].swctl.hprog, // always 0...
+                                        pSwBlock->aswentry[ul].swctl.idSession));
+                            #endif
+
                             if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
                             {
                                 // got it:
-                                _Pmpf(("      Found!"));
+                                #ifdef DEBUG_KEYS
+                                    _Pmpf(("      Found!"));
+                                #endif
+
                                 WinSetActiveWindow(HWND_DESKTOP,
                                                    pSwBlock->aswentry[ul].swctl.hwnd);
                             }
@@ -880,6 +905,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         if (pDaemonShared)
                             if (pDaemonShared->hwndDaemonObject)
                             {
+#ifdef __PAGEMAGE__
                                 // cross-process send msg: this
                                 // does not return until the daemon
                                 // has re-read the data
@@ -887,10 +913,12 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                                             XDM_PAGEMAGECONFIG,
                                                             (MPARAM)G_PageMageConfigFlags,
                                                             0);
+#endif
                                 // reset flags
                                 G_PageMageConfigFlags = 0;
                             }
                     break; }
+
                 }
 
                 // stop timer; this was missing!! V0.9.3 (2000-04-09) [umoeller]
@@ -941,7 +969,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     }
 
                     hPOC = _xwpBeginProcessOrderedContent(pStartupFolder,
-                                                          pGlobalSettings->ulStartupDelay,
+                                                          pGlobalSettings->ulStartupObjectDelay,
                                                           &fncbStartup,
                                                           (ULONG)hwndStartupStatus);
 
@@ -1164,18 +1192,23 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              *      malloc(), and after displaying the error,
              *      (PSZ)mp1 is freed here. If mp2 != NULL, the WPS will
              *      be restarted (this is demanded by XSHutdown traps).
+             *
+             *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed heap bug
              */
 
             case T1M_EXCEPTIONCAUGHT:
             {
                 if (mp1)
                 {
+                    PSZ pszMsg = (PSZ)mp1;
                     if (mp2)
                     {
                         // restart WPS: Yes/No box
                         if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                          (PSZ)mp1, (PSZ)"XFolder: Exception caught",
-                                          0, MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
+                                          pszMsg,
+                                          (PSZ)"XFolder: Exception caught",
+                                          0,
+                                          MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
                                  == MBID_YES)
                             // if yes: terminate the current process,
                             // which is PMSHELL.EXE. We cannot use DosExit()
@@ -1186,7 +1219,6 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     else
                     {
                         // just report:
-                        PSZ pszMsg = (PSZ)mp1;
                         xstrcat(&pszMsg,
                                 "\n\nPlease post a bug report to "
                                 "xworkplace-user@egroups.com and attach the the file "
@@ -1195,7 +1227,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         DebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
                     }
 
-                    free((PSZ)mp1);
+                    free(pszMsg);
                 }
             break; }
 
@@ -1331,6 +1363,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 krn_T1M_DaemonReady();
             break;
 
+#ifdef __PAGEMAGE__
             /*
              *@@ T1M_PAGEMAGECLOSED:
              *      this gets posted by dmnKillPageMage when
@@ -1360,7 +1393,9 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 // update "Features" page, if open
                 ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
             break; }
+#endif
 
+#ifdef __PAGEMAGE__
             /*
              *@@ T1M_PAGEMAGECONFIGDELAYED:
              *      posted by XWPScreen when any PageMage configuration
@@ -1370,10 +1405,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              *      every time.
              *
              *      Parameters:
-             *      -- ULONG mp1: any of the following flags:
-             *          -- PGMGCFG_REPAINT: repaint PageMage client
-             *          -- PGMGCFG_REFORMAT: reformat whole window (e.g.
-             *                  because Desktops have changed)
+             *      -- ULONG mp1: same flags as with XDM_PAGEMAGECONFIG
+             *              mp1.
              *
              *@@added V0.9.3 (2000-04-09) [umoeller]
              */
@@ -1389,6 +1422,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                               2,
                               500);     // half a second delay
             break; }
+#endif
 
             #ifdef __DEBUG__
             case XM_CRASH:          // posted by debugging context menu of XFldDesktop
@@ -1948,8 +1982,8 @@ VOID krnInitializeXWorkplace(VOID)
         winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
                                &G_KernelGlobals.hwndSysError);
 
-        _Pmpf(("G_KernalGlobals.hwndHardError: 0x%lX", G_KernelGlobals.hwndHardError));
-        _Pmpf(("G_KernalGlobals.hwndSysError: 0x%lX", G_KernelGlobals.hwndSysError));
+        // _Pmpf(("G_KernalGlobals.hwndHardError: 0x%lX", G_KernelGlobals.hwndHardError));
+        // _Pmpf(("G_KernalGlobals.hwndSysError: 0x%lX", G_KernelGlobals.hwndSysError));
 
         // initialize awake-objects list (which holds
         // plain WPObject* pointers)

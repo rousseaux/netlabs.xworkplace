@@ -139,9 +139,9 @@ $(OUTPUTDIR)\common.obj: \
      $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\tmsgfile.h \
             $(HLPINC)\textview.h $(HLPINC)\undoc.h $(HLPINC)\winh.h \
-     $(INC)\classes\xfldr.h \
+     $(INC)\classes\xfldr.h $(INC)\classes\xtrash.ih \
      $(INC)\bldlevel.h $(INC)\dlgids.h \
-     $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+     $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\xsetup.h \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
      $(INC)\media\media.h \

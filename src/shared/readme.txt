@@ -12,4 +12,9 @@ notebook settings pages, and more.
 
 All this code goes into XFLDR.DLL.
 
+Also, this holds the DEF files to link XFLDR.DLL
+together as well as the resources which go into
+XFLDR.DLL (and are thus independent of NLS).
+
+
 

@@ -166,25 +166,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         BOOL    fIsWarp4 = doshIsWarp4();
 
-        /* if (pszSetupString)
-        {
-            _Pmpf(("Dumping %s", _wpQueryTitle(somSelf)));
-
-            _Pmpf(("-- FldrLongArray (%d bytes)", _cbFldrLongArray));
-            cmnDumpMemoryBlock((PVOID)_pFldrLongArray,
-                               _cbFldrLongArray,
-                               8);
-
-            _Pmpf(("-- pszFdrCnrBackground"));
-            if (_pszFdrBkgndImageFile)
-                _Pmpf(("    %s", _pszFdrBkgndImageFile));
-
-            _Pmpf(("-- pFldrBackground (%d bytes)", _cbFldrBackground));
-            cmnDumpMemoryBlock((PVOID)_pFldrBackground,
-                               _cbFldrBackground,
-                               8);
-        } */
-
         // WORKAREA
         if (_wpQueryFldrFlags(somSelf) & FOI_WORKAREA)
             xstrcat(&pszTemp, "WORKAREA=YES;");
@@ -198,12 +179,12 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             else
                 xstrcat(&pszTemp, "MENUBAR=NO;");
 
-        // SORTBYATTR
-
         /*
          * folder sort settings
          *
          */
+
+        // SORTBYATTR
 
         // ALWAYSSORT
         // DEFAULTSORT
@@ -769,6 +750,7 @@ BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
  *      folder settings.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  */
 
 BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
@@ -812,7 +794,9 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
         }
 
         // now either append the full path in brackets to or replace window title
-        if (pGlobalSettings->KeepTitle)
+        if (    (_bKeepTitleInstance == 1)
+             || ((_bKeepTitleInstance == 2) && (pGlobalSettings->KeepTitle))
+           ) // V0.9.4 (2000-08-02) [umoeller]
         {
             CHAR szFullPathTitle[CCHMAXPATH*2] = "";
             sprintf(szFullPathTitle, "%s (%s)",

@@ -57,6 +57,8 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\filesys.obj \
        $(OUTPUTDIR)\filetype.obj \
        $(OUTPUTDIR)\folder.obj \
+       $(OUTPUTDIR)\fops_bottom.obj \
+       $(OUTPUTDIR)\fops_top.obj \
        $(OUTPUTDIR)\menus.obj \
        $(OUTPUTDIR)\object.obj \
        $(OUTPUTDIR)\statbars.obj \
@@ -216,6 +218,22 @@ $(OUTPUTDIR)\folder.obj: \
         $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\fops_bottom.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\filesys\trash.h $(INC)\filesys\xthreads.h \
+    $(@B).c $(MYOWNINC)\fileops.h
+
+$(OUTPUTDIR)\fops_top.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\linklist.h $(HLPINC)\winh.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(@B).c $(MYOWNINC)\fileops.h
+
 $(OUTPUTDIR)\menus.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
@@ -231,13 +249,13 @@ $(OUTPUTDIR)\menus.obj: \
 
 $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\except.h $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\stringh.h \
-        $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\hook\xwphook.h \
-    $(INC)\filesys\folder.h \
+    $(INC)\filesys\filesys.h $(INC)\filesys\folder.h \
     $(INC)\config\hookintf.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

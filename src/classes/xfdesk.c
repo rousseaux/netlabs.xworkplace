@@ -81,6 +81,7 @@
 
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -91,6 +92,7 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\desktop.h"            // XFldDesktop implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -281,37 +283,33 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
                                                ULONG cbSetupString)
 {
     ULONG ulReturn = 0;
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+
+    // method pointer for parent class
+    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
 
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpQuerySetup2");
 
-    if (pKernelGlobals->fXFolder)
+    // call XFldDesktop implementation
+    ulReturn = dtpQuerySetup(somSelf, pszSetupString, cbSetupString);
+
+    // manually resolve parent method
+    pfn_xwpQuerySetup2
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveForParent(somSelf,
+                                                               _XFldDesktop,
+                                                               "xwpQuerySetup2");
+    if (pfn_xwpQuerySetup2)
     {
-        // XFolder class installed:
-
-        // resolve method for XFolder
-        somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = SOM_Resolve(somSelf,
-                                                                        XFolder,
-                                                                        xwpQuerySetup2);
-
-        if (pfn_xwpQuerySetup2)
-        {
-            // call XFolder implementation
-            ulReturn = dtpQuerySetup(somSelf, pszSetupString, cbSetupString);
-
-            // now call XFldObject method
-            if ( (pszSetupString) && (cbSetupString) )
-                // string buffer already specified:
-                // tell XFolder to append to that string
-                ulReturn += pfn_xwpQuerySetup2(somSelf,
-                                               pszSetupString + ulReturn, // append to existing
-                                               cbSetupString + ulReturn);
-            else
-                // string buffer not yet specified:
-                // return length only
-                ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
-        }
+        // now call parent method (probably XFolder)
+        if ( (pszSetupString) && (cbSetupString) )
+            // string buffer already specified:
+            // tell XFolder to append to that string
+            ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                           pszSetupString + ulReturn, // append to existing
+                                           cbSetupString - ulReturn); // remaining size
+        else
+            // string buffer not yet specified: return length only
+            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
     }
 
     return (ulReturn);

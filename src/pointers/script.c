@@ -75,34 +75,20 @@ PSZ STRIP(PSZ pszStr)
 }
 
 
-// *************************************************************************
-
-/*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
- *³ Name      : LoadPointerFromAnimouseScriptFile                          ³
- *³ Comment   :                                                            ³
- *³ Author    : C.Langanke                                                 ³
- *³ Date      : 25.03.1998                                                 ³
- *³ Update    : 25.03.1998                                                 ³
- *³ called by : app                                                        ³
- *³ calls     : Dos*                                                       ³
- *³ Input     : ###                                                        ³
- *³ Tasks     : - read pointer animations from Animouse Script files       ³
- *³             - return values and file offsets                           ³
- *³ returns   : APIRET - OS/2 error code                                   ³
- *ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+/*
+ *@@ LoadPointerFromAnimouseScriptFile:
+ *      reads pointer animations from Animouse script files.
+ *      Returns values and file offsets.
  */
 
-BOOL _Export LoadPointerFromAnimouseScriptFile
- (
-     PSZ pszName,
-     ULONG ulPointerIndex,
-     PHPOINTER pahptr,
-     PICONINFO paiconinfo,
-     PHPOINTER phptrStatic,
-     PICONINFO piconinfoStatic,
-     PULONG paulTimeout,
-     PULONG pulEntries
-)
+BOOL LoadPointerFromAnimouseScriptFile(PSZ pszName,
+                                       ULONG ulPointerIndex,
+                                       PHPOINTER pahptr,
+                                       PICONINFO paiconinfo,
+                                       PHPOINTER phptrStatic,
+                                       PICONINFO piconinfoStatic,
+                                       PULONG paulTimeout,
+                                       PULONG pulEntries)
 {
 
     BOOL fSuccess = FALSE;

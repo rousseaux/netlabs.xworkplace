@@ -87,6 +87,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -367,10 +368,6 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
  *      This method only returns setup strings which have
  *      non-default values.
  *
- *      This method calls XFldObject::xwpQuerySetup2, using
- *      SOM name-lookup resolution, to allow for additional
- *      implementations in subclasses. See remarks there.
- *
  *@@added V0.9.1 (2000-01-16) [umoeller]
  */
 
@@ -378,24 +375,20 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
                                              PSZ pszSetupString,
                                              ULONG cbSetupString)
 {
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    ULONG ulrc = 0;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup");
 
-    TRY_LOUD(excpt1, NULL)
     {
         // obtain "xwpQuerySetup2" method pointer
-        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2 = 0;
-
-        pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(somSelf,
-                                                                               "xwpQuerySetup2");
+        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2
+            = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(somSelf,
+                                                                "xwpQuerySetup2");
         if (pfn_xwpQuerySetup2)
-            return (pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString));
+            // method resolved: call it
+            ulrc  = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
     }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
 
-    return (0);
+    return (ulrc);
 }
 
 /*
@@ -408,36 +401,68 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *      resolution to support overriding it in subclasses
  *      of XFldObject (WPObject), which xwpQuerySetup does.
  *
- *      Never call this method directly. This has only been
- *      separated to allow for easier overriding in subclasses.
- *      Instead, call XFldObject::xwpQuerySetup.
+ *      --  Call xwpQuerySetup for getting a setup string.
  *
- *      If you wish to override this method for subclasses,
- *      you must call the XFldObject implementation of this
- *      method.
+ *      --  Override xwpQuerySetup2 for adding setup-string support
+ *          to your class.
  *
- *      Note that you cannot simply use _parent_xwpQuerySetup
- *      to call the parent method, because there's no C binding
- *      for this. The SOM header files do not know that WPObject
- *      has been replaced with XFldObject and therefore have no
- *      idea that XFldObject is actually a parent class of all
- *      other WPS classes.
- *      So to call this parent method, use the following code:
+ *      Guidelines:
  *
- +          // resolve method for XFldObject
+ *      1.  You cannot simply use _parent_xwpQuerySetup
+ *          to call the parent method, because there's no C binding
+ *          for this. The SOM header files do not know that WPObject
+ *          has been replaced with XFldObject and therefore have no
+ *          idea that XFldObject is actually a parent class of all
+ *          other WPS classes. You must manually resolve the SOM
+ *          method pointer for the parent class of your class using
+ *          wpshResolveForParent.
+ *
+ *      2.  You must call the parent method _after_ your implementation
+ *          to make sure XFldObject gets called last, because the OBJECTID
+ *          setup string must be added at the very last position in the
+ *          complete setup string, and that string is implemented
+ *          by the XFldObject method.
+ *
+ *      3.  When calling the parent method, modify the buffer and size
+ *          parameters to reflect the string you have already composed.
+ *          As a result, the parent method will append its string to
+ *          the data you have composed.
+ *
+ *      4.  Always terminate your setup strings with a semicolon (";"),
+ *          even if it's the last.
+ *
+ *      So use the following code to call the parent method:
+ *
+ +          PSZ pszMySetupStringSoFar = ...;
+ +                  // setup strings for your class
+ +          ULONG cbMySetupStringSoFar = strlen(pszMySetupStringSoFar);
+ +                  // length of that setup string or 0 if none
+ +
+ +          // manually resolve method for parent class
  +          somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2
- +              = SOM_Resolve(somSelf,
- +                            XFldObject,   // "token" for introducing class
- +                            xwpQuerySetup2); // "token" for method name
- +          // now call that method
+ +              = wpshResolveForParent(somSelf,    // object
+ +                                     _YourClass, // class object; replace this with
+ +                                          // the class you're coding this method for
+ +                                     "xwpQuerySetup2"); // method name
  +          if (pfn_xwpQuerySetup2)
- +              ulReturn = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
+ +              // now call parent method
+ +              if ( (pszSetupString) && (cbSetupString) )
+ +                  // string buffer already specified:
+ +                  // tell parent class to append to that string
+ +                  cbMySetupStringSoFar += pfn_xwpQuerySetup2(somSelf,
+ +                                            pszSetupString + cbMySetupStringSoFar,
+ +                                              // append to existing string
+ +                                            cbSetupString - cbMySetupStringSoFar);
+ +                                              // remaining space in buffer
+ +              else
+ +                  // string buffer not yet specified: return length only
+ +                  ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+ +
+ +          return (cbMySetupStringSoFar);
  *
- *      Important note: You must call the XFldObject method
- *      _after_ your implementation, because the OBJECTID
- *      setup string must be added at the very last position
- *      in the complete setup string, and that string is implemented
- *      by the XFldObject method.
+ *      If all methods obey these conventions, this results in a complete
+ *      setup string for any object of any class, with the subclass's strings
+ *      first and XFldObject's strings last.
  *
  *      See XFolder::xwpQuerySetup2 for a sample implementation
  *      which adds setup strings for a subclass of XFldObject.
@@ -449,12 +474,16 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
                                               PSZ pszSetupString,
                                               ULONG cbSetupString)
 {
+    ULONG ulReturn = 0;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup2");
 
-    return (objQuerySetup(somSelf,
-                          pszSetupString,
-                          cbSetupString));
+    ulReturn += objQuerySetup(somSelf,
+                              pszSetupString,
+                              cbSetupString);
+
+    return (ulReturn);
+
 }
 
 /*
@@ -476,8 +505,6 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     XFldObject_parent_WPObject_wpInitData(somSelf);
 
     _fDeleted = FALSE;
-    _pWPObjectData = NULL;
-    _cbWPObjectData = 0;
 
     _pWPObjectData = NULL;
     _cbWPObjectData = 0;
@@ -1170,17 +1197,49 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
  *      this WPObject method deletes an object and
  *      prompts for confirmations, if necessary.
  *
+ *      Normally, this method displays confirmations,
+ *      if desired, by calling wpConfirmDelete, and
+ *      then calls wpFree.
+ *
  *      We override this to move objects into the
  *      trash can instead, if necessary.
  *
- *@@added V0.9.1 (2000-01-25) [umoeller]
+ *      Note: This method normally doesn't get called
+ *      during the regular WPS file operations once
+ *      the trash can has been enabled because XFolder
+ *      intercepts all file operations commands and
+ *      performs the required actions directly without
+ *      calling this method. However, this method still
+ *      gets called by WinDestroyObject and the REXX
+ *      counterpart, SysDestroyObject.
+ *
+ *      We also override XFolder::wpDelete to avoid
+ *      having the WPS call this method for every object
+ *      contained in a folder.
+ *
+ *      This must return:
+ *
+ *      --  NO_DELETE: Error occurred.
+ *      --  CANCEL_DELETE: User canceled the operation.
+ *      --  OK_DELETE: Object was deleted.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
                                         ULONG fConfirmations)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpDelete");
+
+    /* if (pGlobalSettings->fTrashDelete)
+    {
+        if (    cmnMove2DefTrashCan(somSelf))
+            return (OK_DELETE);
+        else
+            return (NO_DELETE);
+    } */
 
     return (XFldObject_parent_WPObject_wpDelete(somSelf, fConfirmations));
 }

@@ -293,7 +293,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
  *      Note: The return value of this function points to a _static_
  *      buffer, which must not be free()'d.
  *
- *@@changed V0.85 [umoeller]: fixed problem when WPProgram was replaced
+ *@@changed V0.8.5 [umoeller]: fixed problem when WPProgram was replaced
  *@@changed V0.9.0 [umoeller]: function prototype changed to return PSZ instead of ULONG
  *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
  */

@@ -140,7 +140,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
-#include "filesys\filesys.h"            // extended file types implementation
+#include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\menus.h"              // common XFolder context menu logic
 #include "filesys\statbars.h"           // status bar translation logic
@@ -1185,10 +1185,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *@@added V0.9.0 [umoeller]
  */
 
-/*
- * BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
- */
-
 SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
                                               HWND hwndStatusBar,
                                               HWND hwndCnr)
@@ -1251,29 +1247,31 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
 {
     ULONG ulReturn = 0;
 
-    // resolve method for XFldObject
-    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = SOM_Resolve(somSelf,
-                                                                    XFldObject,
-                                                                    xwpQuerySetup2);
+    // method pointer for parent class
+    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
 
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpQuerySetup2");
 
+    // call XFolder implementation
+    ulReturn = fdrQuerySetup(somSelf, pszSetupString, cbSetupString);
+
+    // manually resolve parent method
+    pfn_xwpQuerySetup2
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveForParent(somSelf,
+                                                               _XFolder,
+                                                               "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
-        // call XFolder implementation
-        ulReturn = fdrQuerySetup(somSelf, pszSetupString, cbSetupString);
-
         // now call XFldObject method
         if ( (pszSetupString) && (cbSetupString) )
             // string buffer already specified:
             // tell XFldObject to append to that string
             ulReturn += pfn_xwpQuerySetup2(somSelf,
                                            pszSetupString + ulReturn, // append to existing
-                                           cbSetupString + ulReturn);
+                                           cbSetupString - ulReturn); // remaining size
         else
-            // string buffer not yet specified:
-            // return length only
+            // string buffer not yet specified: return length only
             ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
     }
 
@@ -1286,6 +1284,8 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
  *      object is being initialized (on wake-up or creation).
  *      We initialize our additional instance data here.
  *      Always call the parent method first.
+ *
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  */
 
 SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
@@ -1299,6 +1299,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     // set all the instance variables to safe defaults
     _bSnapToGridInstance = 2;
     _bFullPathInstance = 2;
+    _bKeepTitleInstance = 2;
     _bFolderHotkeysInstance = 2;
     _bStatusBarInstance = STATUSBAR_DEFAULT;
     _bAlwaysSortInstance = SET_DEFAULT;
@@ -1640,11 +1641,11 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
             XFolderData *somThis = XFolderGetData(somSelf);
             if (_pszDefaultDocDeferred)
             {
-                _Pmpf(("_pszDefaultDocDeferred: %s", _pszDefaultDocDeferred));
+                // _Pmpf(("_pszDefaultDocDeferred: %s", _pszDefaultDocDeferred));
                 // this has been set by wpRestoreState
                 _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
                     // can return NULL if not found
-                _Pmpf(("  Resolved _pDefaultDocument: 0x%lX", _pDefaultDocument));
+                // _Pmpf(("  Resolved _pDefaultDocument: 0x%lX", _pDefaultDocument));
                 free(_pszDefaultDocDeferred);
                 _pszDefaultDocDeferred = NULL;
             }
@@ -1752,6 +1753,7 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
  *      All persistent instance variables should be stored here.
  *
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
@@ -1807,6 +1809,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
  *      which was stored with wpSaveState.
  *
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
+ *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
@@ -3319,6 +3322,52 @@ SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
     xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
 
     return rc;
+}
+
+/*
+ *@@ wpDelete:
+ *      this WPObject method deletes an object and
+ *      prompts for confirmations, if necessary.
+ *
+ *      Normally, this method displays confirmations,
+ *      if desired, by calling wpConfirmDelete, and
+ *      then calls wpFree.
+ *
+ *      For folders, this apparently calls wpDelete
+ *      on every contained object.
+ *
+ *      This implementation is not desirable if the
+ *      trash can has been enabled because we just
+ *      want the folder to be moved into the trash
+ *      can altogether. So in addition to XFldObject::wpDelete,
+ *      we must override this method for XFolder also.
+ *
+ *      See XFldObject::wpDelete for more remarks.
+ *
+ *      This must return:
+ *
+ *      --  NO_DELETE: Error occurred.
+ *      --  CANCEL_DELETE: User canceled the operation.
+ *      --  OK_DELETE: Object was deleted.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpDelete(XFolder *somSelf, ULONG fConfirmations)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpDelete");
+
+    /* if (pGlobalSettings->fTrashDelete)
+    {
+        if (cmnMove2DefTrashCan(somSelf))
+            return (OK_DELETE);
+        else
+            return (NO_DELETE);
+    } */
+
+    return (XFolder_parent_WPFolder_wpDelete(somSelf, fConfirmations));
 }
 
 /*

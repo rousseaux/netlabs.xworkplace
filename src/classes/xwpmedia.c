@@ -790,7 +790,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, ulIndex);
-        xfi[i].pszColumnTitle = ""; // Index"; // ###
+        xfi[i].pszColumnTitle = ""; // Index";
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_CENTER;
 
@@ -872,6 +872,8 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_CODECS;
         pcnbp->ulPageID = SP_MEDIA_CODECS;
+        pcnbp->pampControlFlags = G_pampGenericCnrPage;
+        pcnbp->cControlFlags = G_cGenericCnrPage;
         pcnbp->pfncbInitPage    = xwmmCodecsInitPage;
         ntbInsertPage(pcnbp);
 
@@ -886,6 +888,8 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_IOPROCS;
         pcnbp->ulPageID = SP_MEDIA_IOPROCS;
+        pcnbp->pampControlFlags = G_pampGenericCnrPage;
+        pcnbp->cControlFlags = G_cGenericCnrPage;
         pcnbp->pfncbInitPage    = xwmmIOProcsInitPage;
         ntbInsertPage(pcnbp);
 
@@ -900,6 +904,8 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_DEVICES;
         pcnbp->ulPageID = SP_MEDIA_DEVICES;
+        pcnbp->pampControlFlags = G_pampGenericCnrPage;
+        pcnbp->cControlFlags = G_cGenericCnrPage;
         pcnbp->pfncbInitPage    = xwmmDevicesInitPage;
         ntbInsertPage(pcnbp);
     }

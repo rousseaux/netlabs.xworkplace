@@ -1,6 +1,8 @@
 
 src\Daemon has the code for the XWorkplace Daemon
 (XWPDAEMN.EXE), which controls the XWorkplace
-PM hook. This also has the PageMage window code.
+PM hook. The hook code (XWPHOOK.DLL) is in src\hook.
+
+The daemon also has the PageMage window code.
 
 

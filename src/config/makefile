@@ -173,7 +173,7 @@ $(OUTPUTDIR)\hookintf.obj: \
 
 $(OUTPUTDIR)\pagemage.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\gpih.h $(HLPINC)\winh.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\gpih.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
     $(INC)\classes\xwpscreen.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \

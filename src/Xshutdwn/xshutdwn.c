@@ -52,15 +52,9 @@ int main(int argc, char *argv[])
         ) == 0)
     {
         // defaults
-        psdp->optReboot = FALSE;
-        psdp->optDebug = FALSE;
-        psdp->optRestartWPS = FALSE;
-        psdp->optWPSCloseWindows = FALSE;
-        psdp->optAutoCloseVIO = FALSE;
-        psdp->optLog = FALSE;
-        psdp->optAnimate = FALSE;
-        psdp->optConfirm = TRUE;
-        strcpy(psdp->szRebootCommand, "");
+        memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
+        // per default, confirm
+        psdp->optConfirm = TRUE;;
 
         // evaluate command line
         if (argc > 1)

@@ -303,16 +303,14 @@ int APIENTRY UnInitDll(void)
     return TRUE;
 }
 
-/* ------------------------------------------------- */
-BOOL DisplayHelp
- (
-     PVOID somSelf,
-     ULONG ulHelpPanelId
-)
 
+// disabled V0.9.4 (2000-07-22) [umoeller]
+
+/* BOOL DisplayHelp(PVOID somSelf,
+                 ULONG ulHelpPanelId)
 {
     PSZ pszHelpLibrary = (PSZ)cmnQueryHelpLibrary();
         // (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller] V0.9.3 (2000-05-21) [umoeller]
 
     return _wpDisplayHelp(somSelf, ulHelpPanelId, pszHelpLibrary);
-}
+} */

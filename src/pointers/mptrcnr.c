@@ -177,30 +177,17 @@ VOID _Export InitStringResources
     return;
 }
 
-/*ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
- *³ Name      : InitPtrSetContainer                                        ³
- *³ Kommentar : ermittelt Basisname                                        ³
- *³ Autor     : C.Langanke                                                 ³
- *³ Datum     : 12.06.1996                                                 ³
- *³ Žnderung  : 12.06.1996                                                 ³
- *³ aufgerufen: Window Procedure                                           ³
- *³ ruft auf  : -                                                          ³
- *³ Eingabe   : HWND   - frame window handle                               ³
- *³             PSZ    - Speicherbereich                                   ³
- *³             ULONG  - L„nge des Speicherbereichs                        ³
- *³ Aufgaben  : - Basisname ermitteln                                      ³
- *³ Rckgabe  : BOOL - Flag, ob erfolgreich                                ³
- *ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
- */
-
 #define SPLITBAR_OFFSET   150
 #define CNR_COLUMNS_COUNT 9
 
-BOOL InitPtrSetContainer
- (
-     HWND hwnd,
-     PVOID * ppvCnrData
-)
+/*
+ *@@ InitPtrSetContainer:
+ *      finds out base name. Whatever that is, Christian. ;-)
+ *      Called from window procedures.
+ */
+
+BOOL InitPtrSetContainer(HWND hwnd,             // frame window handle
+                         PVOID *ppvCnrData)
 {
     BOOL fSuccess = FALSE;
     APIRET rc;

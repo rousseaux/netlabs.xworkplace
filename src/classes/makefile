@@ -196,10 +196,10 @@ $(OUTPUTDIR)\xfdataf.obj: \
 
 $(OUTPUTDIR)\xfdesk.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\dosh.h $(HLPINC)\winh.h \
+            $(HLPINC)\dosh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
             $(INC)\classes\xfobj.h $(INC)\classes\xfldr.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\desktop.h $(INC)\filesys\xthreads.h \
             $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
@@ -225,7 +225,7 @@ $(OUTPUTDIR)\xfldr.obj: \
 
 $(OUTPUTDIR)\xfobj.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
@@ -234,8 +234,9 @@ $(OUTPUTDIR)\xfobj.obj: \
 $(OUTPUTDIR)\xfpgmf.obj: \
             $(INC)\setup.h \
             $(HLPINC)\dosh.h \
+            $(INC)\classes\xfobj.ih \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\filesys.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 

@@ -728,7 +728,11 @@ BOOL PointerlistToContainer
         }
 
         // Selektion fr erstes Element wieder l”schen
-        WinSendMsg(hwndCnr, CM_SETRECORDEMPHASIS, MPFROMP(prec), MPFROM2SHORT(FALSE, CRA_SELECTED));
+        WinSendMsg(hwndCnr,
+                   CM_SETRECORDEMPHASIS,
+                   MPFROMP(prec),
+                   MPFROM2SHORT(FALSE,
+                                CRA_SELECTED));
 
         // zus„tzliche Daten bertragen
         strcpy(pparm->szAnimationName, ppl->szAnimationName);

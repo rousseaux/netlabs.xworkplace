@@ -1935,11 +1935,11 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         // remove record "pickup" emphasis
                         WinSendMsg(pcldi->pDragInfo->hwndSource, // hwndCnr
-                                        CM_SETRECORDEMPHASIS,
-                                        // record to move
-                                        (MPARAM)(pdrgItem->ulItemID),
-                                        MPFROM2SHORT(FALSE,
-                                                CRA_PICKED));
+                                   CM_SETRECORDEMPHASIS,
+                                   // record to move
+                                   (MPARAM)(pdrgItem->ulItemID),
+                                   MPFROM2SHORT(FALSE,
+                                           CRA_PICKED));
                     }
 
                     // clean up resources

@@ -232,7 +232,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
                         : IDDLG_DLG_ANIMATEDWAITPOINTER;
         pi.pszName = szTabName;
         pi.pCreateParams = somSelf;
-        pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+        pi.idDefaultHelpPanel = 4; // IDPNL_USAGE_NBPAGE;
         pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
         return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);

@@ -710,13 +710,26 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
  *      this instance method gets called when help is
  *      requested for a menu item in the object's context menu.
  *      We need to display help for our new menu items here.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
                                                     ULONG MenuId)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemHelpSelected");
+
+    if (    (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE))
+         || (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
+       )
+    {
+        // now open the help panel we've set above
+        cmnDisplayHelp(somSelf,
+                       ID_XSH_SETTINGS_TRASHCAN);
+        return (TRUE);
+    }
 
     return (XWPTrashObject_parent_WPTransient_wpMenuItemHelpSelected(somSelf,
                                                                      MenuId));
@@ -844,6 +857,8 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDrop(XWPTrashObject *somSelf,
  *@@ wpclsInitData:
  *      this class methods allows the class to
  *      initialize itself.
+ *
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: KERNELGLOBALS flag was wrong, fixed
  */
 
 SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
@@ -860,7 +875,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
     {
         PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
-        pKernelGlobals->fXWPTrashCan = TRUE;
+        pKernelGlobals->fXWPTrashObject = TRUE;
         krnUnlockGlobals();
     }
 

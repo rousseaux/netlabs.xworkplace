@@ -44,7 +44,8 @@ OUTPUTDIR = ..\..\bin
 # These will be put into BIN\.
 OBJS =  $(OUTPUTDIR)\apm.obj \
         $(OUTPUTDIR)\archives.obj \
-        $(OUTPUTDIR)\shutdown.obj
+        $(OUTPUTDIR)\shutdown.obj \
+        $(OUTPUTDIR)\winlist.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -117,7 +118,7 @@ $(OUTPUTDIR)\apm.obj: \
 $(OUTPUTDIR)\archives.obj: \
     $(INC)\setup.h \
     $(HLPINC)\datetime.h $(HLPINC)\dosh.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
-        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+        $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfdesk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h \
@@ -126,12 +127,21 @@ $(OUTPUTDIR)\archives.obj: \
 $(OUTPUTDIR)\shutdown.obj: \
     $(INC)\setup.h \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-           $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
-    $(INC)\classes\xfldr.h \
+           $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xprf.h \
+    $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
+    $(INC)\filesys\menus.h $(INC)\filesys\xthreads.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\media\media.h \
     $(INC)\startshut\apm.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\winlist.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(INC)\classes\xfobj.h \
+    $(INC)\shared\kernel.h \
+    $(@B).c $(MYOWNINC)\shutdown.h
+
 
 

@@ -61,6 +61,7 @@
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR        // SC_CLOSE etc.
+#define INCL_WINPOINTERS
 #define INCL_WININPUT
 #define INCL_WINDIALOGS
 #define INCL_WINMENUS
@@ -94,6 +95,7 @@
 
 // SOM headers which don't crash with prec. header files
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
+#include "xtrash.ih"                    // XWPTrashCan; needed for empty trash
 #include <wpdesk.h>                     // WPDesktop
 
 // XWorkplace implementation headers
@@ -101,6 +103,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -557,7 +560,6 @@ const char* cmnQueryMessageFile(VOID)
  *      DLL. This allows for replacing the DLL using
  *      the REXX script in /ICONS.
  *
- *@@added V0.84 [umoeller]
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
  */
 
@@ -1195,6 +1197,18 @@ VOID LoadNLSData(HAB habDesktop,
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XCENTERPAGE1,
             &(pNLSStrings->pszXCenterPage1));
 
+    // file operations V0.9.4 (2000-07-27) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FOPS_MOVE2TRASHCAN,
+            &(pNLSStrings->pszFopsMove2TrashCan));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FOPS_RESTOREFROMTRASHCAN,
+            &(pNLSStrings->pszFopsRestoreFromTrashCan));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FOPS_TRUEDELETE,
+            &(pNLSStrings->pszFopsTrueDelete));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FOPS_EMPTYINGTRASHCAN,
+            &(pNLSStrings->pszFopsEmptyingTrashCan));
+
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_ICONPAGE,
+            &(pNLSStrings->pszIconPage));
 }
 
 /*
@@ -1952,6 +1966,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
         case SP_SETUP_FEATURES:   // all new with V0.9.0
             G_pGlobalSettings->fReplaceIcons = 0;
+            G_pGlobalSettings->fResizeSettingsPages = 0;
             G_pGlobalSettings->AddObjectPage = 0;
             G_pGlobalSettings->fReplaceFilePage = 0;
             G_pGlobalSettings->fXSystemSounds = 0;
@@ -1993,18 +2008,216 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
         case SP_STARTUPFOLDER:        // all new with V0.9.0
             G_pGlobalSettings->ShowStartupProgress = 1;
-            G_pGlobalSettings->ulStartupDelay = 1000;
+            G_pGlobalSettings->ulStartupInitialDelay = 1000;
+            G_pGlobalSettings->ulStartupObjectDelay = 1000;
         break;
 
         case SP_TRASHCAN_SETTINGS:             // all new with V0.9.0
             // G_pGlobalSettings->fTrashDelete = 0;  // removedV0.9.3 (2000-04-10) [umoeller]
-            G_pGlobalSettings->fTrashEmptyStartup = 0;
-            G_pGlobalSettings->fTrashEmptyShutdown = 0;
+            // G_pGlobalSettings->fTrashEmptyStartup = 0;
+            // G_pGlobalSettings->fTrashEmptyShutdown = 0;
             G_pGlobalSettings->ulTrashConfirmEmpty = TRSHCONF_DESTROYOBJ | TRSHCONF_EMPTYTRASH;
         break;
     }
 
     return (TRUE);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   Trash can setup                                                *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ cmnTrashCanReady:
+ *      returns TRUE if the trash can classes are
+ *      installed and the default trash can exists.
+ *
+ *      This does not check for whether "delete to
+ *      trash can" is enabled. Query
+ *      GLOBALSETTINGS.fTrashDelete to find out.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: moved this here from fileops.c
+ */
+
+BOOL cmnTrashCanReady(VOID)
+{
+    BOOL brc = FALSE;
+    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+    M_XWPTrashCan *pTrashCanClass = _XWPTrashCan;
+    if (pTrashCanClass)
+    {
+        if (_xwpclsQueryDefaultTrashCan(_XWPTrashCan))
+            brc = TRUE;
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ cmnEnableTrashCan:
+ *      enables or disables the XWorkplace trash can
+ *      altogether after displaying a confirmation prompt.
+ *
+ *      This does all of the following:
+ *      -- (de)register XWPTrashCan and XWPTrashObject;
+ *      -- enable "delete into trashcan" support;
+ *      -- create or destroy the default trash can.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: moved this here from fileops.c
+ */
+
+BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
+                       BOOL fEnable)
+{
+    BOOL    brc = FALSE;
+
+    if (fEnable)
+    {
+        // enable:
+        M_XWPTrashCan       *pXWPTrashCanClass = _XWPTrashCan;
+
+        BOOL    fCreateObject = FALSE;
+
+        if (    (!winhIsClassRegistered("XWPTrashCan"))
+             || (!winhIsClassRegistered("XWPTrashObject"))
+           )
+        {
+            // classes not registered yet:
+            if (cmnMessageBoxMsg(hwndOwner,
+                                 148,       // XWPSetup
+                                 170,       // "register trash can?"
+                                 MB_YESNO)
+                    == MBID_YES)
+            {
+                CHAR szRegisterError[500];
+
+                HPOINTER hptrOld = winhSetWaitPointer();
+
+                if (WinRegisterObjectClass("XWPTrashCan",
+                                           (PSZ)cmnQueryMainModuleFilename()))
+                    if (WinRegisterObjectClass("XWPTrashObject",
+                                               (PSZ)cmnQueryMainModuleFilename()))
+                    {
+                        fCreateObject = TRUE;
+                        brc = TRUE;
+                    }
+
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                if (!brc)
+                    // error:
+                    cmnMessageBoxMsg(hwndOwner,
+                                     148,
+                                     171, // "error"
+                                     MB_CANCEL);
+            }
+        }
+        else
+            fCreateObject = TRUE;
+
+        if (fCreateObject)
+        {
+            XWPTrashCan *pDefaultTrashCan = NULL;
+
+            if (NULLHANDLE == WinQueryObject(XFOLDER_TRASHCANID))
+            {
+                brc = setCreateStandardObject(hwndOwner,
+                                              213,        // XWPTrashCan
+                                              FALSE);     // XWP object
+            }
+            else
+                brc = TRUE;
+
+            if (brc)
+            {
+                GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(3000);
+                pGlobalSettings->fTrashDelete = TRUE;
+                cmnUnlockGlobalSettings();
+            }
+        }
+    } // end if (fEnable)
+    else
+    {
+        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(3000);
+        pGlobalSettings->fTrashDelete = FALSE;
+        cmnUnlockGlobalSettings();
+
+        if (krnQueryLock())
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Global lock already requested.");
+        else
+        {
+            // disable:
+            if (cmnMessageBoxMsg(hwndOwner,
+                                 148,       // XWPSetup
+                                 172,       // "deregister trash can?"
+                                 MB_YESNO | MB_DEFBUTTON2)
+                    == MBID_YES)
+            {
+                XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
+                if (pDefaultTrashCan)
+                    _wpFree(pDefaultTrashCan);
+                WinDeregisterObjectClass("XWPTrashCan");
+                WinDeregisterObjectClass("XWPTrashObject");
+
+                cmnMessageBoxMsg(hwndOwner,
+                                 148,       // XWPSetup
+                                 173,       // "done, restart WPS"
+                                 MB_OK);
+            }
+        }
+    }
+
+    cmnStoreGlobalSettings();
+
+    return (brc);
+}
+
+/*
+ *@@ cmnMove2DefTrashCan:
+ *      moves a single object to the default trash can.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+BOOL cmnMove2DefTrashCan(WPObject *pObject)
+{
+    BOOL brc = FALSE;
+    XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
+    if (pDefaultTrashCan)
+        brc = _xwpDeleteIntoTrashCan(pDefaultTrashCan,
+                                     pObject);
+    return (brc);
+}
+
+/*
+ *@@ cmnEmptyDefTrashCan:
+ *      quick interface to empty the default trash can
+ *      without having to include all the trash can headers.
+ *
+ *      See XWPTrashCan::xwpEmptyTrashCan for the description
+ *      of the parameters.
+ *
+ *@@added V0.9.4 (2000-08-03) [umoeller]
+ */
+
+BOOL cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
+                         PULONG pulDeleted, // out: if TRUE is returned, no. of deleted objects; can be 0
+                         HWND hwndConfirmOwner) // in: if != NULLHANDLE, confirm empty
+{
+    XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
+    if (pDefaultTrashCan)
+    {
+        return (_xwpEmptyTrashCan(pDefaultTrashCan,
+                                  hab,
+                                  pulDeleted,
+                                  hwndConfirmOwner));
+    }
+    return (FALSE);
 }
 
 /* ******************************************************************
@@ -2413,6 +2626,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
  *
  *@@added V0.9.3 (2000-05-05) [umoeller]
  *@@changed V0.9.3 (2000-05-05) [umoeller]: removed fnwpMessageBox
+ *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all"
  */
 
 HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
@@ -2444,36 +2658,9 @@ HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
 
     // now work on the three buttons of the dlg template:
     // give them proper titles or hide them
-    if (flButtons == MB_YESNO)
-    {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
-    }
-    else if (flButtons == MB_YESNOCANCEL)
-    {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
-        WinSetDlgItemText(hwndDlg, 3, pszButton);
-        free(pszButton);
-    }
-    else if (flButtons == MB_OK)
+    if (flButtons == MB_OK)
     {
         cmnLoadString(hab, hmod, ID_XSSI_DLG_OK, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        winhShowDlgItem(hwndDlg, 2, FALSE);
-        winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
-    }
-    else if (flButtons == MB_CANCEL)
-    {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
         WinSetDlgItemText(hwndDlg, 1, pszButton);
         winhShowDlgItem(hwndDlg, 2, FALSE);
         winhShowDlgItem(hwndDlg, 3, FALSE);
@@ -2506,6 +2693,44 @@ HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
         cmnLoadString(hab, hmod, ID_XSSI_DLG_IGNORE, &pszButton);
         WinSetDlgItemText(hwndDlg, 3, pszButton);
         free(pszButton);
+    }
+    else if (flButtons == MB_YESNO)
+    {
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
+        WinSetDlgItemText(hwndDlg, 1, pszButton);
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
+        WinSetDlgItemText(hwndDlg, 2, pszButton);
+        winhShowDlgItem(hwndDlg, 3, FALSE);
+        free(pszButton);
+    }
+    else if (flButtons == MB_YESNOCANCEL)
+    {
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
+        WinSetDlgItemText(hwndDlg, 1, pszButton);
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
+        WinSetDlgItemText(hwndDlg, 2, pszButton);
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
+        WinSetDlgItemText(hwndDlg, 3, pszButton);
+        free(pszButton);
+    }
+    else if (flButtons == MB_CANCEL)
+    {
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
+        WinSetDlgItemText(hwndDlg, 1, pszButton);
+        winhShowDlgItem(hwndDlg, 2, FALSE);
+        winhShowDlgItem(hwndDlg, 3, FALSE);
+        free(pszButton);
+    }
+    // else if (flButtons == MB_ENTER)
+    // else if (flButtons == MB_ENTERCANCEL)
+    else if (flButtons == MB_YES_YES2ALL_NO)
+    {
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
+        WinSetDlgItemText(hwndDlg, 1, pszButton);
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES2ALL, &pszButton);
+        WinSetDlgItemText(hwndDlg, 2, pszButton);
+        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
+        WinSetDlgItemText(hwndDlg, 3, pszButton);
     }
 
     // unset predefined default button
@@ -2549,6 +2774,7 @@ HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
  *      This does _not_ call WinDestroyWindow.
  *
  *@@added V0.9.3 (2000-05-05) [umoeller]
+ *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all"
  */
 
 ULONG cmnProcessMessageBox(HWND hwndDlg,        // in: message box dialog
@@ -2567,23 +2793,8 @@ ULONG cmnProcessMessageBox(HWND hwndDlg,        // in: message box dialog
     // go!!!
     ulrcDlg = WinProcessDlg(hwndDlg);
 
-    if (flButtons == MB_YESNO)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_YES; break;
-            default:    ulrc = MBID_NO;  break;
-        }
-    else if (flButtons == MB_YESNOCANCEL)
-        switch (ulrcDlg)
-        {
-            case 1:     ulrc = MBID_YES; break;
-            case 2:     ulrc = MBID_NO; break;
-            default:    ulrc = MBID_CANCEL;  break;
-        }
-    else if (flButtons == MB_OK)
+    if (flButtons == MB_OK)
         ulrc = MBID_OK;
-    else if (flButtons == MB_CANCEL)
-        ulrc = MBID_CANCEL;
     else if (flButtons == MB_OKCANCEL)
         switch (ulrcDlg)
         {
@@ -2603,6 +2814,30 @@ ULONG cmnProcessMessageBox(HWND hwndDlg,        // in: message box dialog
             case 3:     ulrc = MBID_IGNORE; break;
             default:    ulrc = MBID_ABORT; break;
         }
+    else if (flButtons == MB_YESNO)
+        switch (ulrcDlg)
+        {
+            case 1:     ulrc = MBID_YES; break;
+            default:    ulrc = MBID_NO;  break;
+        }
+    else if (flButtons == MB_YESNOCANCEL)
+        switch (ulrcDlg)
+        {
+            case 1:     ulrc = MBID_YES; break;
+            case 2:     ulrc = MBID_NO; break;
+            default:    ulrc = MBID_CANCEL;  break;
+        }
+    else if (flButtons == MB_CANCEL)
+        ulrc = MBID_CANCEL;
+    // else if (flButtons == MB_ENTER)
+    // else if (flButtons == MB_ENTERCANCEL)
+    else if (flButtons == MB_YES_YES2ALL_NO)
+        switch (ulrcDlg)
+        {
+            case 1:     ulrc = MBID_YES; break;
+            case 2:     ulrc = MBID_YES2ALL; break;
+            default:    ulrc = MBID_NO; break;
+        }
 
     return (ulrc);
 }
@@ -2620,13 +2855,19 @@ ULONG cmnProcessMessageBox(HWND hwndDlg,        // in: message box dialog
  *
  *      Currently the following flStyle's are supported:
  *
- *      -- MB_YESNO
- *      -- MB_YESNOCANCEL
- *      -- MB_OK
- *      -- MB_CANCEL
- *      -- MB_OKCANCEL
- *      -- MB_RETRYCANCEL
- *      -- MB_ABORTRETRYIGNORE
+ *      -- MB_OK                      0x0000
+ *      -- MB_OKCANCEL                0x0001
+ *      -- MB_RETRYCANCEL             0x0002
+ *      -- MB_ABORTRETRYIGNORE        0x0003
+ *      -- MB_YESNO                   0x0004
+ *      -- MB_YESNOCANCEL             0x0005
+ *      -- MB_CANCEL                  0x0006
+ *      -- MB_ENTER                   0x0007 (not implemented yet)
+ *      -- MB_ENTERCANCEL             0x0008 (not implemented yet)
+ *
+ *      -- MB_YES_YES2ALL_NO          0x0009
+ *          This is new: this has three buttons called "Yes"
+ *          (MBID_YES), "Yes to all" (MBID_YES2ALL), "No" (MBID_NO).
  *
  *      -- MB_DEFBUTTON2            (for two-button styles)
  *      -- MB_DEFBUTTON3            (for three-button styles)
@@ -2894,7 +3135,11 @@ VOID cmnSetDlgHelpPanel(ULONG ulHelpPanel)
 /*
  *@@  cmn_fnwpDlgWithHelp:
  *          this is the dlg procedure for XFolder dlg boxes;
- *          it can process WM_HELP messages.
+ *          it can process WM_HELP messages. All other messages
+ *          are passed to WinDefDlgProc.
+ *
+ *          Use cmnSetDlgHelpPanel to set the help panel before
+ *          using this dlg proc.
  *
  *@@changed V0.9.2 (2000-03-04) [umoeller]: renamed from fnwpDlgGeneric
  */

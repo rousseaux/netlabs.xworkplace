@@ -192,7 +192,8 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
                 _Pmpf(("    Selecting %s\n", pszCurrentClass));
             #endif
 
-            WinSendMsg(hwndCnr, CM_SETRECORDEMPHASIS,
+            WinSendMsg(hwndCnr,
+                       CM_SETRECORDEMPHASIS,
                        (MPARAM)preccNew,
                        MPFROM2SHORT(TRUE,
                                     (USHORT)(usAttrs & (CRA_INUSE

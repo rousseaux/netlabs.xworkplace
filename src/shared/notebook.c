@@ -2,8 +2,8 @@
 /*
  *@@sourcefile notebook.c:
  *      this file is new with V0.82 and contains very useful code for
- *      Settings notebooks pages. Most XWorkplace notebook pages are
- *      implemented using these routines.
+ *      WPS Settings notebooks pages. Most XWorkplace notebook pages
+ *      are implemented using these routines.
  *
  *      All the functions in this file have the ntb* prefix.
  *
@@ -188,6 +188,21 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
             (*(pcnbp->pfncbTimer))(pcnbp, 1);
     }
 
+    // winhAdjustControls desired?
+    if (    (pcnbp->pampControlFlags)
+         && (pGlobalSettings->fResizeSettingsPages)
+       )
+    {
+        // yes: allocate and zero
+        pcnbp->pxac = malloc(sizeof(XADJUSTCTRLS));
+        memset(pcnbp->pxac, 0, sizeof(XADJUSTCTRLS));
+        winhAdjustControls(pcnbp->hwndDlgPage,
+                           pcnbp->pampControlFlags,
+                           pcnbp->cControlFlags,
+                           NULL,    // INIT
+                           pcnbp->pxac);
+    }
+
     pcnbp->fPageInitialized = TRUE;
 }
 
@@ -227,9 +242,22 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
         if (pcnbp->pfncbInitPage)
             (*(pcnbp->pfncbInitPage))(pcnbp, CBI_DESTROY);
 
-        // window to be destroyed?
+        // tooltip to be destroyed?
         if (pcnbp->hwndTooltip)
             WinDestroyWindow(pcnbp->hwndTooltip);
+
+        // winhAdjustControls prepared?
+        if (pcnbp->pxac)
+        {
+            // yes: clean up
+            winhAdjustControls(pcnbp->hwndDlgPage,
+                               NULL,    // cleanup
+                               0,       // cleanup
+                               NULL,    // cleanup
+                               pcnbp->pxac);
+            free(pcnbp->pxac);
+            pcnbp->pxac = NULL;
+        }
 
         // remove the NOTEBOOKPAGELISTITEM from the
         // linked list of open notebook pages
@@ -273,6 +301,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
  *      thru pcnbp->hwndDlgPage.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
+ *@@changed V0.9.4 (2000-07-11) [umoeller]: added CN_HELP and fPassCnrHelp handling
  */
 
 MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
@@ -502,6 +531,21 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                     }
                                 break; }
 
+                                case CN_HELP:
+                                    // does caller want CN_HELP passed?
+                                    if (pcnbp->fPassCnrHelp)
+                                        // yes:
+                                        // call "item changed"
+                                        fCallItemChanged = TRUE;
+                                    else
+                                        // no (default), don't pass:
+                                        // same handling as with WM_HELP
+                                        ntbDisplayFocusHelp(pcnbp->somSelf,
+                                                            pcnbp->usFirstControlID,
+                                                            pcnbp->ulFirstSubpanel,
+                                                            pcnbp->ulDefaultHelpPanel);
+
+                                break;
                             } // end switch (usNotifyCode)
                         break;    // container
 
@@ -654,7 +698,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     break;
 
                     /*
-                     *@@ WM_DRAWITEM:
+                     * WM_DRAWITEM:
                      *      container owner draw
                      */
 
@@ -711,7 +755,8 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                              && (pcnbp->hwndSourceCnr)
                            )
                         {
-                            WinSendMsg(pcnbp->hwndSourceCnr, CM_SETRECORDEMPHASIS,
+                            WinSendMsg(pcnbp->hwndSourceCnr,
+                                       CM_SETRECORDEMPHASIS,
                                        (MPARAM)(pcnbp->preccSource),
                                        MPFROM2SHORT(FALSE, CRA_SOURCE));
                             // reset hwndCnr to make sure we won't
@@ -825,6 +870,21 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                 pcnbp->fPageVisible = FALSE;
                                 (*(pcnbp->pfncbInitPage))(pcnbp,
                                                           CBI_HIDE);
+                            }
+                        }
+
+                        if (pswp->fl & SWP_SIZE)
+                        {
+                            // notebook is being resized:
+                            // was winhAdjustControls prepared?
+                            if (pcnbp->pxac)
+                            {
+                                // yes:
+                                winhAdjustControls(pcnbp->hwndDlgPage,
+                                                   pcnbp->pampControlFlags,
+                                                   pcnbp->cControlFlags,
+                                                   pswp,
+                                                   pcnbp->pxac);
                             }
                         }
 

@@ -91,6 +91,79 @@
 #include "shared\wpsh.h"
 
 /*
+ *@@ wpshResolveForParent:
+ *      this resolves a method pointer for the first
+ *      parent class of somSelf's class which implements
+ *      that method.
+ *
+ *      Returns NULL if the method could not be resolved.
+ *
+ *      Use this helper to explicitly call a parent method
+ *      if you don't have access to the SOM header files of
+ *      a class.
+ *
+ *      Remarks:
+ *
+ *      1.  This returns a PVOID. You must manually cast
+ *          the return pointer to a function prototype
+ *          pointer. The SOM header files usually prototype
+ *          all functions as somTD_Classname_Methodname,
+ *          e.g. somTD_XFldObject_xwpQuerySetup for xwpQuerySetup
+ *          as implemented by XFldObject.
+ *
+ *      2.  Do not pass the underscore with the method name.
+ *
+ *      3.  This can return NULL for a number of reasons,
+ *          e.g. the parent class was not found, or no parent
+ *          class implements such a method. Make sure you
+ *          spell the method name right.
+ *
+ *      Example: Assume this class hierarchy:
+ *
+ +      WPObject
+ +        +-- XFldObject
+ +              +-- WPFileSystem
+ +                    +-- WPFolder
+ +                          +-- XFolder
+ +                                +-- DemoFolder
+ *
+ *      Let's say that both XFldObject and DemoFolder introduce
+ *      the "wpDemo" method. From your DemoFolder::wpDemo code,
+ *      call this function with the DemoFolder class object and
+ *      the instance pointer (somSelf), and you'll get a method
+ *      pointer for XFldObject's method.
+ *
+ *
+ *
+ *@@added V0.9.4 (2000-08-02) [umoeller]
+ */
+
+PVOID wpshResolveForParent(SOMObject *somSelf,  // in: instance
+                           SOMClass *pClass,    // in: class whose parent we should resolve for
+                           const char *pcszMethodName) // in: method name (e.g. "wpQueryTitle")
+{
+    PVOID pvrc = 0;
+
+    SOMClass *pMyParentClass = _somGetParent(pClass);
+    if (pMyParentClass)
+    {
+        somId somidMethod = somIdFromString((PSZ)pcszMethodName);
+        if (somidMethod)
+        {
+            somMToken tok = _somGetMethodToken(pMyParentClass,
+                                               somidMethod);
+            if (tok)
+                // finally, resolve method for parent
+                pvrc = (PVOID)somResolve(somSelf,
+                                         tok);
+            SOMFree(somidMethod);
+        }
+    }
+
+    return (pvrc);
+}
+
+/*
  *@@ wpshCheckObject:
  *      since somIsObj doesn't seem to be working right,
  *      here is a new function which checks if pObject
@@ -284,9 +357,11 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
  *@@ wpshCheckIfPopulated:
  *      this populates a folder if it's not fully populated yet.
  *      Saves you from querying the full path and all that.
- *      Returns TRUE only if the folder was successfully populated;
- *      returns FALSE if either the folder was populated already
- *      or populating failed.
+ *      Returns TRUE if the folder was successfully populated
+ *      or if the folder was already fully populated.
+ *      Returns FALSE if wpPopulate failed.
+ *
+ *@@changed V0.9.4 (2000-08-03) [umoeller]: changed return code
  */
 
 BOOL wpshCheckIfPopulated(WPFolder *somSelf)
@@ -294,15 +369,14 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf)
     BOOL        brc = FALSE;
     CHAR        szRealName[CCHMAXPATH];
 
-    _Pmpf(("wpshCheckIfPopulated"));
-
     if ((_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL) == 0)
     {
         _wpQueryFilename(somSelf, szRealName, TRUE);
         brc = _wpPopulate(somSelf, 0, szRealName, FALSE);
     }
-
-    _Pmpf(("End of wpshCheckIfPopulated"));
+    else
+        // already populated:
+        brc = TRUE;
 
     return (brc);
 }
@@ -404,7 +478,9 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
                           FIL_STANDARD);
         DosFindClose(hdirFindHandle);
         if (rc == NO_ERROR)
+        {
             prc = _wpclsQueryObjectFromPath(_WPFileSystem, szRealName);
+        }
     }
     return (prc);
 }

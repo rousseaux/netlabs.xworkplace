@@ -226,6 +226,8 @@ BOOL hifXWPHookReady(VOID)
 BOOL hifEnablePageMage(BOOL fEnable)
 {
     BOOL    brc = FALSE;
+
+#ifdef __PAGEMAGE__
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
 
@@ -254,6 +256,7 @@ BOOL hifEnablePageMage(BOOL fEnable)
             _Pmpf(("  Returning %d", brc));
         }
     }
+#endif
 
     return (brc);
 }
@@ -2138,6 +2141,8 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      "Mouse hook" page in the "Mouse" settings object.
  *      Sets the controls on the page according to the
  *      Global Settings.
+ *
+ *@@changed V0.9.4 (2000-08-08) [umoeller]: added PageMage to special functions
  */
 
 VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2178,6 +2183,7 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
             WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialWindowList);
             WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialDesktopPopup);
+            WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
         }
 
         // setup container

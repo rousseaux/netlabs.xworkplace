@@ -107,6 +107,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
     /* XWPScreenData *somThis = XWPScreenGetData(somSelf); */
     XWPScreenMethodDebug("XWPScreen","xwpscr_xwpAddXWPScreenPages");
 
+#ifdef __PAGEMAGE__
     // hook installed?
     if (hifXWPHookReady())
     {
@@ -117,43 +118,62 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
             HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
             PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-            // "PageMage" page 2
+            // "PageMage" colors
             pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
             memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
             pcnbp->somSelf = somSelf;
             pcnbp->hwndNotebook = hwndDlg;
             pcnbp->hmod = savehmod;
-            pcnbp->pfncbInitPage    = pgmiPageMage2InitPage;
-            pcnbp->pfncbItemChanged = pgmiPageMage2ItemChanged;
+            pcnbp->pfncbInitPage    = pgmiPageMageColorsInitPage;
+            pcnbp->pfncbItemChanged = pgmiPageMageColorsItemChanged;
             pcnbp->usPageStyleFlags = BKA_MINOR;
             pcnbp->fEnumerate = TRUE;
             pcnbp->pszName = "~PageMage";
-            pcnbp->ulDlgID = ID_SCD_PAGEMAGE2;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE2;
+            pcnbp->ulDlgID = ID_SCD_PAGEMAGE_COLORS;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_COLORS;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
             pcnbp->ulPageID = SP_PAGEMAGE2;
             ntbInsertPage(pcnbp);
 
-            // "PageMage" page 1
+            // "PageMage" sticky windows
             pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
             memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
             pcnbp->somSelf = somSelf;
             pcnbp->hwndNotebook = hwndDlg;
             pcnbp->hmod = savehmod;
-            pcnbp->pfncbInitPage    = pgmiPageMage1InitPage;
-            pcnbp->pfncbItemChanged = pgmiPageMage1ItemChanged;
+            pcnbp->pfncbInitPage    = pgmiPageMageStickyInitPage;
+            pcnbp->pfncbItemChanged = pgmiPageMageStickyItemChanged;
+            pcnbp->usPageStyleFlags = BKA_MINOR;
+            pcnbp->fEnumerate = TRUE;
+            pcnbp->pszName = "~PageMage";
+            pcnbp->ulDlgID = ID_SCD_PAGEMAGE_STICKY;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_STICKY;
+            // give this page a unique ID, which is
+            // passed to the common config.sys callbacks
+            pcnbp->ulPageID = SP_PAGEMAGE2;
+            ntbInsertPage(pcnbp);
+
+            // "PageMage" general settings
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndDlg;
+            pcnbp->hmod = savehmod;
+            pcnbp->pfncbInitPage    = pgmiPageMageGeneralInitPage;
+            pcnbp->pfncbItemChanged = pgmiPageMageGeneralItemChanged;
             pcnbp->usPageStyleFlags = BKA_MAJOR;
             pcnbp->fEnumerate = TRUE;
-            pcnbp->pszName = "~PageMage";       // ###
-            pcnbp->ulDlgID = ID_SCD_PAGEMAGE1;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE1;
+            pcnbp->pszName = "~PageMage";
+            pcnbp->ulDlgID = ID_SCD_PAGEMAGE_GENERAL;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_GENERAL;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
             pcnbp->ulPageID = SP_PAGEMAGE1;
             return (ntbInsertPage(pcnbp));
         }
     }
+#endif
 
     return NULLHANDLE;
 }

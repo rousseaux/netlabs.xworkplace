@@ -275,6 +275,8 @@ $(OUTPUTDIR)\mptrldr.obj: \
 $(OUTPUTDIR)\mptrlset.obj: \
     $(INC)\setup.h \
     $(INC)\dlgids.h \
+    $(INC)\shared\common.h \
+    $(INC)\classes\xfdataf.ih \
     $(MYOWNINC)\mptrlset.h \
     $(MYOWNINC)\mptrcnr.h \
     $(MYOWNINC)\mptrutil.h \

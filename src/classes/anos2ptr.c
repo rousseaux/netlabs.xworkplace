@@ -93,9 +93,12 @@ MRESULT EXPENTRY wpo2p_NotebookPageProc(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 // other SOM headers
 #pragma hdrstop
 
-// ===========================================================================
+/*
+ *@@ xwpRefreshFileIcon:
+ *
+ */
 
-SOM_Scope void SOMLINK o2p_wpRefreshFileIcon(XWPOS2Pointer * somSelf)
+SOM_Scope void SOMLINK o2p_xwpRefreshFileIcon(XWPOS2Pointer * somSelf)
 {
 
     APIRET rc = NO_ERROR;
@@ -119,7 +122,7 @@ SOM_Scope void SOMLINK o2p_wpRefreshFileIcon(XWPOS2Pointer * somSelf)
 
     XWPOS2PointerData *somThis = XWPOS2PointerGetData(somSelf);
 
-    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_wpRefreshFileIcon");
+    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpRefreshFileIcon");
     FUNCENTER();
 
     do
@@ -216,36 +219,45 @@ SOM_Scope void SOMLINK o2p_wpRefreshFileIcon(XWPOS2Pointer * somSelf)
     return;
 }
 
-// ===========================================================================
+/*
+ *@@ xwpGetAnimationTimeframeValue:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK o2p_wpGetAnimationTimeframeValue(XWPOS2Pointer * somSelf)
+SOM_Scope ULONG SOMLINK o2p_xwpGetAnimationTimeframeValue(XWPOS2Pointer * somSelf)
 {
     XWPOS2PointerData *somThis = XWPOS2PointerGetData(somSelf);
 
-    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_wpGetAnimationTimeframeValue");
+    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpGetAnimationTimeframeValue");
     FUNCENTER();
 
     // ###
     return 0;
 }
 
-// ===========================================================================
+/*
+ *@@ xwpSetAnimationTimeframeValue:
+ *
+ */
 
-SOM_Scope BOOL SOMLINK o2p_wpSetAnimationTimeframeValue(XWPOS2Pointer * somSelf,
+SOM_Scope BOOL SOMLINK o2p_xwpSetAnimationTimeframeValue(XWPOS2Pointer * somSelf,
                                                          ULONG ulNewValue)
 {
     XWPOS2PointerData *somThis = XWPOS2PointerGetData(somSelf);
 
-    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_wpSetAnimationTimeframeValue");
+    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpSetAnimationTimeframeValue");
     FUNCENTER();
 
     // ###
     return TRUE;
 }
 
-// ===========================================================================
+/*
+ *@@ xwpInsertAnimationPage1:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage1(XWPOS2Pointer * somSelf,
+SOM_Scope ULONG SOMLINK o2p_xwpInsertAnimationPage1(XWPOS2Pointer * somSelf,
                                                   HWND hwndDlg)
 {
     PAGEINFO pi;
@@ -255,7 +267,7 @@ SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage1(XWPOS2Pointer * somSelf,
 
     XWPOS2PointerData *somThis = XWPOS2PointerGetData(somSelf);
 
-    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_InsertAnimationPage");
+    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpInsertAnimationPage");
     FUNCENTER();
 
     LOADSTRING(IDTAB_NBANIMATION, szTabName);
@@ -271,16 +283,19 @@ SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage1(XWPOS2Pointer * somSelf,
     pi.dlgid = IsWARP3()? IDDLG_DLG_ANIMATIONPAGE1_230 : IDDLG_DLG_ANIMATIONPAGE1;
     pi.pszName = szTabName;
     pi.pCreateParams = somSelf;
-    pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+    pi.idDefaultHelpPanel = 1; // IDPNL_USAGE_NBPAGE;
     pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
     return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);
 
 }
 
-// ===========================================================================
+/*
+ *@@ xwpInsertAnimationPage2:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage2(XWPOS2Pointer * somSelf,
+SOM_Scope ULONG SOMLINK o2p_xwpInsertAnimationPage2(XWPOS2Pointer * somSelf,
                                                   HWND hwndDlg)
 {
     PAGEINFO pi;
@@ -290,7 +305,7 @@ SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage2(XWPOS2Pointer * somSelf,
 
     XWPOS2PointerData *somThis = XWPOS2PointerGetData(somSelf);
 
-    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_InsertAnimationPage2");
+    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpInsertAnimationPage2");
 
     FUNCENTER();
 
@@ -307,27 +322,33 @@ SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage2(XWPOS2Pointer * somSelf,
     pi.dlgid = IsWARP3()? IDDLG_DLG_ANIMATIONPAGE2_230 : IDDLG_DLG_ANIMATIONPAGE2;
     pi.pszName = szTabName;
     pi.pCreateParams = somSelf;
-    pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+    pi.idDefaultHelpPanel = 1; // IDPNL_USAGE_NBPAGE;
     pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
     return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);
 
 }
 
-// ===========================================================================
+/*
+ *@@ xwpInsertAnimationPage3:
+ *
+ */
 
-SOM_Scope ULONG SOMLINK o2p_InsertAnimationPage3(XWPOS2Pointer * somSelf,
+SOM_Scope ULONG SOMLINK o2p_xwpInsertAnimationPage3(XWPOS2Pointer * somSelf,
                                                   HWND hwndDlg)
 {
     XWPOS2PointerData *somThis = XWPOS2PointerGetData(somSelf);
 
-    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_InsertAnimationPage3");
+    XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpInsertAnimationPage3");
 
     /* Return statement to be customized: */
     return (0);
 }
 
-// ===========================================================================
+/*
+ *@@ wpAddFile1Page:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK o2p_wpAddFile1Page(XWPOS2Pointer * somSelf,
                                             HWND hwndNotebook)
@@ -337,8 +358,8 @@ SOM_Scope ULONG SOMLINK o2p_wpAddFile1Page(XWPOS2Pointer * somSelf,
 
     XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_wpAddFile1Page");
 
-    _InsertAnimationPage2(somSelf, hwndNotebook);
-    _InsertAnimationPage1(somSelf, hwndNotebook);
+    _xwpInsertAnimationPage2(somSelf, hwndNotebook);
+    _xwpInsertAnimationPage1(somSelf, hwndNotebook);
 
     ulResult = XWPOS2Pointer_parent_WPDataFile_wpAddFile1Page(somSelf,
                                                              hwndNotebook);
@@ -347,7 +368,10 @@ SOM_Scope ULONG SOMLINK o2p_wpAddFile1Page(XWPOS2Pointer * somSelf,
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpAddObjectGeneralPage:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK o2p_wpAddObjectGeneralPage(XWPOS2Pointer * somSelf,
                                                     HWND hwndNotebook)
@@ -375,14 +399,17 @@ SOM_Scope ULONG SOMLINK o2p_wpAddObjectGeneralPage(XWPOS2Pointer * somSelf,
     pi.dlgid = IsWARP3()? IDDLG_DLG_ICONPAGE_230 : IDDLG_DLG_ICONPAGE;
     pi.pszName = szTabName;
     pi.pCreateParams = somSelf;
-    pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+    pi.idDefaultHelpPanel = 1; // IDPNL_USAGE_NBPAGE;
     pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
 
     return _wpInsertSettingsPage(somSelf, hwndNotebook, &pi);
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpObjectReady:
+ *
+ */
 
 SOM_Scope void SOMLINK o2p_wpObjectReady(XWPOS2Pointer * somSelf,
                                           ULONG ulCode, WPObject * refObject)
@@ -396,10 +423,13 @@ SOM_Scope void SOMLINK o2p_wpObjectReady(XWPOS2Pointer * somSelf,
                                                  refObject);
 
     // fremdes Iconformat erstmalig laden
-    _wpRefreshFileIcon(somSelf);
+    _xwpRefreshFileIcon(somSelf);
 }
 
-// ===========================================================================
+/*
+ *@@ wpQueryIcon:
+ *
+ */
 
 SOM_Scope HPOINTER SOMLINK o2p_wpQueryIcon(XWPOS2Pointer * somSelf)
 {
@@ -409,7 +439,7 @@ SOM_Scope HPOINTER SOMLINK o2p_wpQueryIcon(XWPOS2Pointer * somSelf)
     FUNCENTER();
 
     // Icon erneuern
-    _wpRefreshFileIcon(somSelf);
+    _xwpRefreshFileIcon(somSelf);
 
     if (_hptr)
         return _hptr;
@@ -417,7 +447,10 @@ SOM_Scope HPOINTER SOMLINK o2p_wpQueryIcon(XWPOS2Pointer * somSelf)
     return (XWPOS2Pointer_parent_WPDataFile_wpQueryIcon(somSelf));
 }
 
-// ===========================================================================
+/*
+ *@@ wpQueryIconData:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK o2p_wpQueryIconData(XWPOS2Pointer * somSelf,
                                              PICONINFO pIconInfo)
@@ -443,7 +476,10 @@ SOM_Scope ULONG SOMLINK o2p_wpQueryIconData(XWPOS2Pointer * somSelf,
                                                            pIconInfo));
 }
 
-// ===========================================================================
+/*
+ *@@ wpSetIcon:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK o2p_wpSetIcon(XWPOS2Pointer * somSelf,
                                       HPOINTER hptrNewIcon)
@@ -461,7 +497,10 @@ SOM_Scope BOOL SOMLINK o2p_wpSetIcon(XWPOS2Pointer * somSelf,
                                                      hptrNewIcon));
 }
 
-// ===========================================================================
+/*
+ *@@ wpSetIconData:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK o2p_wpSetIconData(XWPOS2Pointer * somSelf,
                                           PICONINFO pIconInfo)
@@ -483,7 +522,10 @@ SOM_Scope BOOL SOMLINK o2p_wpSetIconData(XWPOS2Pointer * somSelf,
                                                          pIconInfo));
 }
 
-// ===========================================================================
+/*
+ *@@ wpModifyPopupMenu:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK o2p_wpModifyPopupMenu(XWPOS2Pointer * somSelf,
                                               HWND hwndMenu,
@@ -573,7 +615,10 @@ SOM_Scope BOOL SOMLINK o2p_wpModifyPopupMenu(XWPOS2Pointer * somSelf,
                                                              iPosition));
 }
 
-// ===========================================================================
+/*
+ *@@ wpFilterPopupMenu:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK o2p_wpFilterPopupMenu(XWPOS2Pointer * somSelf,
                                                ULONG ulFlags,
@@ -592,7 +637,10 @@ SOM_Scope ULONG SOMLINK o2p_wpFilterPopupMenu(XWPOS2Pointer * somSelf,
                                                              fMultiSelect));
 }
 
-// ===========================================================================
+/*
+ *@@ wpMenuItemSelected:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK o2p_wpMenuItemSelected(XWPOS2Pointer * somSelf,
                                                HWND hwndFrame,
@@ -643,7 +691,10 @@ SOM_Scope BOOL SOMLINK o2p_wpMenuItemSelected(XWPOS2Pointer * somSelf,
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpMenuItemHelpSelected:
+ *
+ */
 
 SOM_Scope BOOL SOMLINK o2p_wpMenuItemHelpSelected(XWPOS2Pointer * somSelf,
                                                    ULONG MenuId)
@@ -658,7 +709,10 @@ SOM_Scope BOOL SOMLINK o2p_wpMenuItemHelpSelected(XWPOS2Pointer * somSelf,
                                                                   MenuId));
 }
 
-// ===========================================================================
+/*
+ *@@ wpInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK o2p_wpInitData(XWPOS2Pointer * somSelf)
 {
@@ -689,7 +743,10 @@ SOM_Scope void SOMLINK o2p_wpInitData(XWPOS2Pointer * somSelf)
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpUnInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK o2p_wpUnInitData(XWPOS2Pointer * somSelf)
 {
@@ -722,7 +779,10 @@ SOM_Scope void SOMLINK o2p_wpUnInitData(XWPOS2Pointer * somSelf)
     XWPOS2Pointer_parent_WPDataFile_wpUnInitData(somSelf);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryStyle:
+ *
+ */
 
 SOM_Scope ULONG SOMLINK o2pM_wpclsQueryStyle(M_XWPOS2Pointer * somSelf)
 {
@@ -733,7 +793,10 @@ SOM_Scope ULONG SOMLINK o2pM_wpclsQueryStyle(M_XWPOS2Pointer * somSelf)
     return (M_XWPOS2Pointer_parent_M_WPDataFile_wpclsQueryStyle(somSelf) & CLSSTYLE_NEVERTEMPLATE);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryInstanceFilter:
+ *
+ */
 
 SOM_Scope PSZ SOMLINK o2pM_wpclsQueryInstanceFilter(M_XWPOS2Pointer * somSelf)
 {
@@ -744,7 +807,10 @@ SOM_Scope PSZ SOMLINK o2pM_wpclsQueryInstanceFilter(M_XWPOS2Pointer * somSelf)
     return (FILEFILTER_POINTER);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryInstanceType:
+ *
+ */
 
 SOM_Scope PSZ SOMLINK o2pM_wpclsQueryInstanceType(M_XWPOS2Pointer * somSelf)
 {
@@ -755,7 +821,10 @@ SOM_Scope PSZ SOMLINK o2pM_wpclsQueryInstanceType(M_XWPOS2Pointer * somSelf)
     return (FILETYPE_POINTER);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsQueryTitle:
+ *
+ */
 
 SOM_Scope PSZ SOMLINK o2pM_wpclsQueryTitle(M_XWPOS2Pointer * somSelf)
 {
@@ -766,7 +835,10 @@ SOM_Scope PSZ SOMLINK o2pM_wpclsQueryTitle(M_XWPOS2Pointer * somSelf)
     return (FILETYPE_POINTER);
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK o2pM_wpclsInitData(M_XWPOS2Pointer * somSelf)
 {
@@ -790,7 +862,10 @@ SOM_Scope void SOMLINK o2pM_wpclsInitData(M_XWPOS2Pointer * somSelf)
 
 }
 
-// ===========================================================================
+/*
+ *@@ wpclsUnInitData:
+ *
+ */
 
 SOM_Scope void SOMLINK o2pM_wpclsUnInitData(M_XWPOS2Pointer * somSelf)
 {
@@ -819,10 +894,11 @@ SOM_Scope void SOMLINK o2pM_wpclsUnInitData(M_XWPOS2Pointer * somSelf)
     M_XWPOS2Pointer_parent_M_WPDataFile_wpclsUnInitData(somSelf);
 }
 
-
-// =====================================================================================
-
-// Routine nur einmal codieren !
+/*
+ *@@ WPSWINDOWDATA:
+ *
+ *@@added V [umoeller]
+ */
 
 typedef struct _WPSWINDOWDATA
 {
@@ -834,7 +910,10 @@ typedef struct _WPSWINDOWDATA
 WPSWINDOWDATA, *PWPSWINDOWDATA;
 
 
-// =====================================================================================
+/*
+ *@@ wpo2p_NotebookPageProc:
+ *
+ */
 
 MRESULT EXPENTRY wpo2p_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {

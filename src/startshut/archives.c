@@ -88,6 +88,7 @@
 #include "helpers\prfh.h"
 #include "helpers\stringh.h"
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -478,6 +479,39 @@ BOOL arcSaveSettings(VOID)
  ********************************************************************/
 
 /*
+ * GetMarkerFilename:
+ *
+ */
+
+BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
+{
+    BOOL brc = FALSE;
+
+    ULONG ulHandle;
+    ULONG cbHandle = sizeof(ulHandle);
+    if (PrfQueryProfileData(HINI_USER,
+                            "PM_Workplace:Location",
+                            "<WP_DESKTOP>",
+                            &ulHandle,
+                            &cbHandle))
+    {
+        // ulHandle now has handle of Desktop;
+        // get its path from OS2SYS.INI
+        if (wphQueryPathFromHandle(HINI_SYSTEM,
+                                   ulHandle,
+                                   pszFilename,
+                                   2*CCHMAXPATH))
+        {
+            strcat(pszFilename, "\\" XWORKPLACE_ARCHIVE_MARKER);
+            _Pmpf(("Marker file: %s", pszFilename));
+            brc = TRUE;
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ arcCheckIfBackupNeeded:
  *      this checks the system according to the settings
  *      in WPSARCOSETTINGS (i.e. always, next bootup,
@@ -498,22 +532,27 @@ BOOL arcSaveSettings(VOID)
  *      krnInitializeXWorkplace sets this to the XWorkplace
  *      Thread-1 object window (krn_fnwpThread1Object), which in
  *      turn starts a timer to destroy the window later.
+ *
+ *@@changed V0.9.4 (2000-07-22) [umoeller]: archiving wasn't always disabled if turned off completely; fixed
  */
 
 BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                             ULONG ulMsg)            // in: msg to post to hwndNotify
 {
-    BOOL    fBackup = FALSE;
+    BOOL    fBackup = FALSE,
+            fDisableArchiving = FALSE;
 
     // force loading of settings
     arcQuerySettings();
 
     if (G_ArcSettings.ulArcFlags & ARCF_ENABLED)
     {
+        CHAR    szMarkerFilename[2*CCHMAXPATH];
         HWND    hwndStatus = NULLHANDLE;
         BOOL    fShowWindow = TRUE;
         CHAR    szTemp[100];
         PSZ     pszMsg = NULL;
+        BOOL    fWasJustRestored = FALSE;
 
         if (G_ArcSettings.fShowStatus)
         {
@@ -525,102 +564,120 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
             cmnSetControlsFont(hwndStatus, 1, 10000);
         }
 
-        if (G_ArcSettings.ulArcFlags & ARCF_ALWAYS)
+        if (GetMarkerFilename(szMarkerFilename))
         {
-            fBackup = TRUE;
+            if (access(szMarkerFilename, 0) == 0)
+                // exists:
+                // this means that this archive was just restored,
+                // so disable archiving...
+                fWasJustRestored = TRUE;
+        }
 
-            if (G_ArcSettings.fShowStatus)
-            {
-                WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                  "WPS archiving enabled\n");
-                WinShowWindow(hwndStatus, TRUE);
-            }
+        if (fWasJustRestored)
+        {
+            xstrcpy(&pszMsg, "Archive was just restored.\n");
+            fBackup = FALSE;
+            fDisableArchiving = TRUE;
         }
         else
         {
-            BOOL    fCheckINIs = (G_ArcSettings.ulArcFlags & ARCF_INI);
-
-            if (G_ArcSettings.ulArcFlags & ARCF_NEXT)
+            if (G_ArcSettings.ulArcFlags & ARCF_ALWAYS)
             {
+                fBackup = TRUE;
+
                 if (G_ArcSettings.fShowStatus)
                 {
                     WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                      "WPS archiving enabled once\n");
+                                      "WPS archiving enabled\n");
                     WinShowWindow(hwndStatus, TRUE);
                 }
-
-                fBackup = TRUE;
-                fCheckINIs = FALSE;     // not necessary
-
-                // unset this settings flag for next time
-                G_ArcSettings.ulArcFlags &= ~ARCF_NEXT;
-                arcSaveSettings();
             }
-            else if (G_ArcSettings.ulArcFlags & ARCF_DAYS)
+            else
             {
-                // days-based:
-                DATETIME    dtNow;
-                LONG        lDaysNow,
-                            lDaysLast,
-                            lDaysPassed;
+                BOOL    fCheckINIs = (G_ArcSettings.ulArcFlags & ARCF_INI);
 
-                DosGetDateTime(&dtNow);
-                lDaysNow = dtDate2Scalar(dtNow.year,
-                                         dtNow.month,
-                                         dtNow.day);
-                lDaysLast= dtDate2Scalar(G_dtLastArchived.year,
-                                         G_dtLastArchived.month,
-                                         G_dtLastArchived.day);
-                lDaysPassed = lDaysNow - lDaysLast;
-
-                if (lDaysPassed >= G_ArcSettings.ulEveryDays)
+                if (G_ArcSettings.ulArcFlags & ARCF_NEXT)
                 {
+                    if (G_ArcSettings.fShowStatus)
+                    {
+                        WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
+                                          "WPS archiving enabled once\n");
+                        WinShowWindow(hwndStatus, TRUE);
+                    }
+
                     fBackup = TRUE;
                     fCheckINIs = FALSE;     // not necessary
-                }
 
-                if (G_ArcSettings.fShowStatus)
+                    // unset this settings flag for next time
+                    G_ArcSettings.ulArcFlags &= ~ARCF_NEXT;
+                    arcSaveSettings();
+                }
+                else if (G_ArcSettings.ulArcFlags & ARCF_DAYS)
                 {
-                    sprintf(szTemp, "%d", lDaysPassed);
-                    xstrcpy(&pszMsg, szTemp);
-                    xstrcat(&pszMsg, " days passed since last backup\nLimit: ");
-                    sprintf(szTemp, "%d", G_ArcSettings.ulEveryDays);
-                    xstrcat(&pszMsg, szTemp);
-                    xstrcat(&pszMsg, " days\n");
+                    // days-based:
+                    DATETIME    dtNow;
+                    LONG        lDaysNow,
+                                lDaysLast,
+                                lDaysPassed;
+
+                    DosGetDateTime(&dtNow);
+                    lDaysNow = dtDate2Scalar(dtNow.year,
+                                             dtNow.month,
+                                             dtNow.day);
+                    lDaysLast= dtDate2Scalar(G_dtLastArchived.year,
+                                             G_dtLastArchived.month,
+                                             G_dtLastArchived.day);
+                    lDaysPassed = lDaysNow - lDaysLast;
+
+                    if (lDaysPassed >= G_ArcSettings.ulEveryDays)
+                    {
+                        fBackup = TRUE;
+                        fCheckINIs = FALSE;     // not necessary
+                    }
+
+                    if (G_ArcSettings.fShowStatus)
+                    {
+                        sprintf(szTemp, "%d", lDaysPassed);
+                        xstrcpy(&pszMsg, szTemp);
+                        xstrcat(&pszMsg, " days passed since last backup\nLimit: ");
+                        sprintf(szTemp, "%d", G_ArcSettings.ulEveryDays);
+                        xstrcat(&pszMsg, szTemp);
+                        xstrcat(&pszMsg, " days\n");
+                    }
                 }
-            }
 
-            if (fCheckINIs)
-            {
-                // INI-based:
-                double  dMaxDifferencePercent = 0;
-
-                if (G_ArcSettings.fShowStatus)
+                if (fCheckINIs)
                 {
-                    WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                      "Checking INI files for changes\n");
-                    WinShowWindow(hwndStatus, TRUE);
-                }
+                    // INI-based:
+                    double  dMaxDifferencePercent = 0;
 
-                fBackup = arcCheckINIFiles(&G_ArcSettings.dIniFilesPercent,
-                                           WPSARCO_INIAPP,  // ignore this
-                                           &G_ArcSettings.dAppsSizeLast,
-                                           &G_ArcSettings.dKeysSizeLast,
-                                           &G_ArcSettings.dDataSumLast,
-                                           &dMaxDifferencePercent);
+                    if (G_ArcSettings.fShowStatus)
+                    {
+                        WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
+                                          "Checking INI files for changes\n");
+                        WinShowWindow(hwndStatus, TRUE);
+                    }
 
-                if (G_ArcSettings.fShowStatus)
-                {
-                    sprintf(szTemp, "%f", dMaxDifferencePercent);
-                    xstrcpy(&pszMsg, "INI files checked\nChanged: ");
-                    xstrcat(&pszMsg, szTemp);
-                    xstrcat(&pszMsg, " %\nLimit: ");
-                    sprintf(szTemp, "%f", G_ArcSettings.dIniFilesPercent);
-                    xstrcat(&pszMsg, szTemp);
-                    xstrcat(&pszMsg, " %\n");
-                }
-            }
-        }
+                    fBackup = arcCheckINIFiles(&G_ArcSettings.dIniFilesPercent,
+                                               WPSARCO_INIAPP,  // ignore this
+                                               &G_ArcSettings.dAppsSizeLast,
+                                               &G_ArcSettings.dKeysSizeLast,
+                                               &G_ArcSettings.dDataSumLast,
+                                               &dMaxDifferencePercent);
+
+                    if (G_ArcSettings.fShowStatus)
+                    {
+                        sprintf(szTemp, "%f", dMaxDifferencePercent);
+                        xstrcpy(&pszMsg, "INI files checked\nChanged: ");
+                        xstrcat(&pszMsg, szTemp);
+                        xstrcat(&pszMsg, " %\nLimit: ");
+                        sprintf(szTemp, "%f", G_ArcSettings.dIniFilesPercent);
+                        xstrcat(&pszMsg, szTemp);
+                        xstrcat(&pszMsg, " %\n");
+                    }
+                } // end if (fCheckINIs)
+            } // end else if (G_ArcSettings.ulArcFlags & ARCF_ALWAYS)
+        } // else if (fWasJustRestored)
 
         if (pszMsg)
         {
@@ -643,10 +700,20 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
             free(pszMsg);
         }
 
-        arcSwitchArchivingOn(fBackup);
-
         if (G_ArcSettings.fShowStatus)
             WinPostMsg(hwndNotify, ulMsg, (MPARAM)hwndStatus, (MPARAM)NULL);
+    }
+
+    arcSwitchArchivingOn(fBackup); // moved V0.9.4 (2000-07-22) [umoeller]
+
+    if (fDisableArchiving)
+    {
+        G_ArcSettings.ulArcFlags &= ~ARCF_ENABLED;
+        arcSaveSettings();
+        cmnMessageBoxMsg(NULLHANDLE,
+                         116,
+                         188,
+                         MB_OK);
     }
 
     return (fBackup);
@@ -654,7 +721,13 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
 /*
  *@@ arcSwitchArchivingOn:
- *      depending on switchOn, this switches WPS archiving on or off.
+ *      depending on switchOn, this switches WPS archiving on or off
+ *      by manipulating the \OS2\BOOT\ARCHBASE.$$$ file.
+ *
+ *      In addition, this stores the date of the last archive in OS2.INI
+ *      and creates a file on the desktop to mark this as an archive.
+ *
+ *      This should only be called by arcCheckIfBackupNeeded.
  */
 
 int arcSwitchArchivingOn(BOOL switchOn)
@@ -678,28 +751,40 @@ int arcSwitchArchivingOn(BOOL switchOn)
         // seek to the position of the archiving flag
         if (lseek(file, ARC_FILE_OFFSET, SEEK_SET) != -1)
         {
+            // write new archive flag
+            if (write(file, byte, 1))
             {
-                // write new archive flag
-                if (write(file, byte, 1))
+                // print message to stdout
+                if (switchOn)
                 {
-                    // print message to stdout
-                    if (switchOn)
-                    {
-                        #ifdef DEBUG_STARTUP
-                            _Pmpf(("WPS Archiving activated"));
-                        #endif
-                        // store date of backup in OS2.INI
-                        DosGetDateTime(&G_dtLastArchived);
-                        PrfWriteProfileData(HINI_USER,
-                                            WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
-                                            &G_dtLastArchived,
-                                            sizeof(G_dtLastArchived));
-                    }
+                    CHAR szMarkerFilename[2*CCHMAXPATH];
                     #ifdef DEBUG_STARTUP
-                        else
-                            _Pmpf(("WPS Archiving deactivated"));
+                        _Pmpf(("WPS Archiving activated"));
                     #endif
+                    // store date of backup in OS2.INI
+                    DosGetDateTime(&G_dtLastArchived);
+                    PrfWriteProfileData(HINI_USER,
+                                        WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
+                                        &G_dtLastArchived,
+                                        sizeof(G_dtLastArchived));
+
+                    // create simple text file in desktop main directory
+                    // to mark it as a backup...
+                    if (GetMarkerFilename(szMarkerFilename))
+                    {
+                        FILE *MarkerFile;
+                        MarkerFile = fopen(szMarkerFilename, "w");
+                        if (MarkerFile)
+                        {
+                            fprintf(MarkerFile, "XWorkplace archive marker file.");
+                            fclose(MarkerFile);
+                        }
+                    }
                 }
+                #ifdef DEBUG_STARTUP
+                    else
+                        _Pmpf(("WPS Archiving deactivated"));
+                #endif
             }
         }
         // close the file

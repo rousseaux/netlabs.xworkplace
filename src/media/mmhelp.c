@@ -437,19 +437,19 @@ VOID xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
     msp.ulLevel = ulVolume;
     msp.ulAudio = MCI_SET_AUDIO_ALL;
     G_mciSendCommand(*pusDeviceID,
-                   MCI_SET,
-                   MCI_WAIT | MCI_SET_AUDIO |
-                   MCI_SET_VOLUME,
-                   &msp, 0);
+                     MCI_SET,
+                     MCI_WAIT | MCI_SET_AUDIO |
+                     MCI_SET_VOLUME,
+                     &msp, 0);
 
     // play and request MM_MCINOTIFY msg to
     // the Media thread object window
     mpp.hwndCallback = (HWND)hwndObject;
     G_mciSendCommand(*pusDeviceID,
-                   MCI_PLAY,
-                   MCI_NOTIFY,
-                   (PVOID)&mpp,
-                   0);
+                     MCI_PLAY,
+                     MCI_NOTIFY,
+                     (PVOID)&mpp,
+                     0);
 }
 
 /*

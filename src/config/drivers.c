@@ -628,6 +628,27 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
 }
 
 /*
+ *@@ G_ampDriversPage:
+ *
+ *@@added V0.9.4 (2000-08-08) [umoeller]
+ */
+
+MPARAM G_ampDriversPage[] =
+    {
+        MPFROM2SHORT(ID_OSDI_DRIVR_CNR, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_OSDI_DRIVR_GROUP1, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_OSDI_DRIVR_GROUP2, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_OSDI_DRIVR_STATICDATA, XAC_MOVEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_OSDI_DRIVR_PARAMS_TXT, XAC_MOVEX),
+        MPFROM2SHORT(ID_OSDI_DRIVR_PARAMS, XAC_MOVEX),
+        MPFROM2SHORT(ID_OSDI_DRIVR_CONFIGURE, XAC_MOVEX),
+        MPFROM2SHORT(ID_OSDI_DRIVR_APPLYTHIS, XAC_MOVEX)
+    };
+
+extern MPARAM *G_pampDriversPage = G_ampDriversPage;
+extern ULONG G_cDriversPage = sizeof(G_ampDriversPage) / sizeof(G_ampDriversPage[0]);
+
+/*
  *@@ cfgDriversInitPage:
  *      notebook callback function (notebook.c) for the
  *      "Drivers" page in the "OS/2 Kernel" object.

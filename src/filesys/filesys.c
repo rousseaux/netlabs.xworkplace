@@ -870,4 +870,249 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     }
 }
 
+/* ******************************************************************
+ *                                                                  *
+ *   WPProgram / XFldProgramFile setup strings                      *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ fsysQueryProgramSetup:
+ *      called to retrieve a setup string for programs.
+ *
+ *      -- For WPProgram, this gets called from objQuerySetup
+ *         directly because at this point we have no class
+ *         replacement for WPProgram.
+ *
+ *      -- For XFldProgramFile, this gets called by
+ *         fsysQueryProgramFileSetup.
+ *
+ *@@added V0.9.4 (2000-08-02) [umoeller]
+ */
+
+VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
+                           PSZ *ppszTemp)     // in: string to append to (xstrcat)
+{
+    PSZ pszValue = NULL;
+    ULONG ulSize = 0;
+
+    // wpQueryProgDetails: supported by both WPProgram and WPProgramFile
+    if ((_wpQueryProgDetails(somSelf, (PPROGDETAILS)NULL, &ulSize)))
+    {
+        PPROGDETAILS    pProgDetails = NULL;
+        if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
+        {
+            if ((_wpQueryProgDetails(somSelf, pProgDetails, &ulSize)))
+            {
+                PSZ pszProgString = NULL;
+
+                // EXENAME: skip for WPProgramFile
+                if (!_somIsA(somSelf, _WPProgramFile))
+                {
+                    if (pProgDetails->pszExecutable)
+                    {
+                        xstrcat(ppszTemp, "EXENAME=");
+                        xstrcat(ppszTemp, pProgDetails->pszExecutable);
+                        xstrcat(ppszTemp, ";");
+
+                        switch (pProgDetails->progt.progc)
+                        {
+                            // PROGTYPE=DOSMODE
+                            // PROGTYPE=PROG_30_STD
+                            // PROGTYPE=SEPARATEWIN
+                            // PROGTYPE=WIN
+                            // PROGTYPE=WINDOWEDWIN
+
+                            // case PROG_DEFAULT:
+                                    // Default application, no setup string
+                            case PROG_PM:
+                                    // Presentation Manager application.
+                                    // PROGTYPE=PM
+                                pszProgString = "PROGTYPE=PM;";
+                                break;
+                            case PROG_WINDOWABLEVIO:
+                                    // Text-windowed application.
+                                    // PROGTYPE=WINDOWABLEVIO
+                                pszProgString = "PROGTYPE=WINDOWABLEVIO;";
+                                break;
+                            case PROG_FULLSCREEN:
+                                    // Full-screen application.
+                                    // PROGTYPE=FULLSCREEN
+                                pszProgString = "PROGTYPE=FULLSCREEN;";
+                                break;
+                            case PROG_WINDOWEDVDM:
+                                    // PC DOS executable process (windowed).
+                                    // PROGTYPE=WINDOWEDVDM
+                                pszProgString = "PROGTYPE=WINDOWEDVDM;";
+                                break;
+                            case PROG_VDM:
+                                    // PC DOS executable process (full screen).
+                                    // PROGTYPE=VDM
+                                pszProgString = "PROGTYPE=VDM;";
+                                break;
+                            // case PROG_REAL:
+                                    // PC DOS executable process (full screen). Same as PROG_VDM.
+                            case PROG_31_STDSEAMLESSVDM:
+                                    // Windows 3.1 program that will execute in its own windowed
+                                    // WINOS2 session.
+                                    // PROGTYPE=PROG_31_STDSEAMLESSVDM
+                                pszProgString = "PROGTYPE=PROG_31_STDSEAMLESSVDM;";
+                                break;
+                            case PROG_31_STDSEAMLESSCOMMON:
+                                    // Windows 3.1 program that will execute in a common windowed
+                                    // WINOS2 session.
+                                    // PROGTYPE=PROG_31_STDSEAMLESSCOMMON
+                                pszProgString = "PROGTYPE=PROG_31_STDSEAMLESSCOMMON;";
+                                break;
+                            case PROG_31_ENHSEAMLESSVDM:
+                                    // Windows 3.1 program that will execute in enhanced compatibility
+                                    // mode in its own windowed WINOS2 session.
+                                    // PROGTYPE=PROG_31_ENHSEAMLESSVDM
+                                pszProgString = "PROGTYPE=PROG_31_ENHSEAMLESSVDM;";
+                                break;
+                            case PROG_31_ENHSEAMLESSCOMMON:
+                                    // Windows 3.1 program that will execute in enhanced compatibility
+                                    // mode in a common windowed WINOS2 session.
+                                    // PROGTYPE=PROG_31_ENHSEAMLESSCOMMON
+                                pszProgString = "PROGTYPE=PROG_31_ENHSEAMLESSCOMMON;";
+                                break;
+                            case PROG_31_ENH:
+                                    // Windows 3.1 program that will execute in enhanced compatibility
+                                    // mode in a full-screen WINOS2 session.
+                                    // PROGTYPE=PROG_31_ENH
+                                pszProgString = "PROGTYPE=PROG_31_ENH;";
+                                break;
+                            case PROG_31_STD:
+                                    // Windows 3.1 program that will execute in a full-screen WINOS2
+                                    // session.
+                                    // PROGTYPE=PROG_31_STD
+                                pszProgString = "PROGTYPE=PROG_31_STD;";
+                        }
+
+                        if (pszProgString)
+                            xstrcat(ppszTemp, pszProgString);
+                    }
+                } // end if (_somIsA(somSelf, _WPProgram)
+
+                // PARAMETERS=
+                if (pProgDetails->pszParameters)
+                    if (strlen(pProgDetails->pszParameters))
+                    {
+                        xstrcat(ppszTemp, "PARAMETERS=");
+                        xstrcat(ppszTemp, pProgDetails->pszParameters);
+                        xstrcat(ppszTemp, ";");
+                    }
+
+                // STARTUPDIR=
+                if (pProgDetails->pszStartupDir)
+                    if (strlen(pProgDetails->pszStartupDir))
+                    {
+                        xstrcat(ppszTemp, "STARTUPDIR=");
+                        xstrcat(ppszTemp, pProgDetails->pszStartupDir);
+                        xstrcat(ppszTemp, ";");
+                    }
+
+                // SET XXX=VVV
+                if (pProgDetails->pszEnvironment)
+                {
+                    // this is one of those typical OS/2 environment
+                    // arrays, so lets parse this
+                    DOSENVIRONMENT Env = {0};
+                    if (doshParseEnvironment(pProgDetails->pszEnvironment,
+                                             &Env)
+                            == NO_ERROR)
+                    {
+                        if (Env.papszVars)
+                        {
+                            // got the strings: parse them
+                            ULONG ul = 0;
+                            PSZ *ppszThis = Env.papszVars;
+                            for (ul = 0;
+                                 ul < Env.cVars;
+                                 ul++)
+                            {
+                                PSZ pszThis = *ppszThis;
+
+                                xstrcat(ppszTemp, "SET ");
+                                xstrcat(ppszTemp, pszThis);
+                                xstrcat(ppszTemp, ";");
+
+                                // next environment string
+                                ppszThis++;
+                            }
+                        }
+                        doshFreeEnvironment(&Env);
+                    }
+                }
+
+                // MAXIMIZED=YES|NO
+
+                // MINIMIZED=YES|NO
+
+                // NOAUTOCLOSE=YES|NO
+            }
+
+            free(pProgDetails);
+        }
+    } // end if _wpQueryProgDetails
+
+    // ASSOCFILTER
+    if ((pszValue = _wpQueryAssociationFilter(somSelf)))
+            // wpQueryAssociationFilter:
+            // supported by both WPProgram and WPProgramFile
+    {
+        xstrcat(ppszTemp, "ASSOCFILTER=");
+        xstrcat(ppszTemp, pszValue);
+        xstrcat(ppszTemp, ";");
+    }
+
+    // ASSOCTYPE
+    if ((pszValue = _wpQueryAssociationType(somSelf)))
+            // wpQueryAssociationType:
+            // supported by both WPProgram and WPProgramFile
+    {
+        xstrcat(ppszTemp, "ASSOCTYPE=");
+        xstrcat(ppszTemp, pszValue);
+        xstrcat(ppszTemp, ";");
+    }
+}
+
+/*
+ *@@ fsysQueryProgramFileSetup:
+ *      called by XFldProgramFile::xwpQuerySetup2.
+ *
+ *@@added V0.9.4 (2000-08-02) [umoeller]
+ */
+
+ULONG fsysQueryProgramFileSetup(WPObject *somSelf,
+                                PSZ pszSetupString,     // in: buffer for setup string or NULL
+                                ULONG cbSetupString)    // in: size of that buffer or 0
+{
+    // temporary buffer for building the setup string
+    PSZ     pszTemp = NULL;
+    ULONG   ulReturn = 0;
+
+    fsysQueryProgramSetup(somSelf,
+                          &pszTemp);
+
+    /*
+     * append string
+     *
+     */
+
+    if (pszTemp)
+    {
+        // return string if buffer is given
+        if ((pszSetupString) && (cbSetupString))
+            strhncpy0(pszSetupString,   // target
+                      pszTemp,          // source
+                      cbSetupString);   // buffer size
+
+        // always return length of string
+        ulReturn = strlen(pszTemp);
+        free(pszTemp);
+    }
+
+    return (ulReturn);
+}
 
