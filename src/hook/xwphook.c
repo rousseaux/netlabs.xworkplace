@@ -1041,12 +1041,12 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                )
             {
                 // hack this to move behind PageMage frame
-                G_HookData.fDisableSwitching = TRUE;
+                // G_HookData.fDisableSwitching = TRUE;
                 WinSetWindowPos(G_HookData.hwndPageMageFrame,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_ZORDER | SWP_SHOW);
-                G_HookData.fDisableSwitching = FALSE;
+                // G_HookData.fDisableSwitching = FALSE;
             }
         }
     }

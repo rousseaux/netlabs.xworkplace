@@ -25,6 +25,7 @@ Changes for V0.9.7
 ==================
 
     --  ID_CRD_SETTINGS_VIEW added.
+    --  ID_CRD_SETTINGS_VIEW2 added.
     --  ID_CRD_WINLISTWGT_SETTINGS added.
     --  ID_XSD_MOUSE_MOVEMENT changed.
     --  ID_XSD_DTP_SHUTDOWN changed.
@@ -33,6 +34,7 @@ Changes for V0.9.7
     --  ID_XSD_SET2REMOVEMENUS changed.
     --  ID_XCD_XWPINSTALLEDCLASSES changed.
     --  ID_XSD_DTP_MENUITEMS changed.
+    --  ID_NDD_EXPLAIN changed.
 
 
 Changes for V0.9.6

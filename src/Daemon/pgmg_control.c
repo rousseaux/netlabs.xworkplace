@@ -196,10 +196,6 @@ BOOL pgmcCreateMainControlWnd(VOID)
 {
     BOOL    brc = TRUE;
 
-    // disable message processing in the hook
-    BOOL    fOld = G_pHookData->fDisableSwitching;
-    G_pHookData->fDisableSwitching = TRUE;
-
     _Pmpf(("Entering pgmcCreateMainControlWnd"));
 
     if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
@@ -216,6 +212,9 @@ BOOL pgmcCreateMainControlWnd(VOID)
                          (PFNWP)fnwpPageMageClient,
                          0,
                          0);
+
+        // disable message processing in the hook
+        G_pHookData->fDisableSwitching = TRUE;
 
         G_pHookData->hwndPageMageFrame
             = WinCreateStdWindow(HWND_DESKTOP,
@@ -254,9 +253,9 @@ BOOL pgmcCreateMainControlWnd(VOID)
 
             brc = TRUE;
         }
-    }
 
-    G_pHookData->fDisableSwitching = fOld;
+        G_pHookData->fDisableSwitching = FALSE;
+    }
 
     return (brc);
 }
@@ -304,9 +303,10 @@ VOID pgmcSetPgmgFramePos(HWND hwnd)
 
     ULONG   cb = sizeof(G_swpPgmgFrame);
 
-    // disable message processing in the hook
-    BOOL    fOld = G_pHookData->fDisableSwitching;
-    G_pHookData->fDisableSwitching = TRUE;
+    // disable message processing in the hook;
+    // not neccessary because the hook already checks
+    // for the pagemage frame.
+    // G_pHookData->fDisableSwitching = TRUE;
 
     PrfQueryProfileData(HINI_USER,
                         INIAPP_XWPHOOK,
@@ -338,7 +338,7 @@ VOID pgmcSetPgmgFramePos(HWND hwnd)
     if (G_pHookData->PageMageConfig.fFlash)
         pgmgcStartFlashTimer();
 
-    G_pHookData->fDisableSwitching = fOld;
+    // G_pHookData->fDisableSwitching = fOld;
 
 } // pgmcSetPgmgFramePos
 
@@ -797,7 +797,6 @@ VOID TrackWithinPager(HWND hwnd,
         TRACKINFO       ti;
         float           fScale_X,
                         fScale_Y;
-        BOOL            fOld;
 
         WinQueryWindowPos(hwndTracked, &swpTracked);
         ti.cxBorder = 1;
@@ -835,10 +834,6 @@ VOID TrackWithinPager(HWND hwnd,
         ti.ptlMaxTrackSize.y = pszlClient->cy;
         ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_ALLINBOUNDARY;
 
-        // disable message processing in the hook
-        fOld = G_pHookData->fDisableSwitching;
-        G_pHookData->fDisableSwitching = TRUE;
-
         if (WinTrackRect(hwnd, NULLHANDLE, &ti))
         {
             swpTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
@@ -850,9 +845,14 @@ VOID TrackWithinPager(HWND hwnd,
             swpTracked.x -= swpTracked.x % 16 +
                             WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
 
+            // disable message processing in the hook
+            G_pHookData->fDisableSwitching = TRUE;
+
             WinSetWindowPos(hwndTracked, HWND_TOP, swpTracked.x, swpTracked.y,
                             0, 0,
                             SWP_MOVE | SWP_NOADJUST);
+
+            G_pHookData->fDisableSwitching = FALSE;
 
             WinPostMsg(hwnd,
                        PGMG_INVALIDATECLIENT,
@@ -860,8 +860,6 @@ VOID TrackWithinPager(HWND hwnd,
                        0);
                     // V0.9.2 (2000-02-22) [umoeller]
         }
-
-        G_pHookData->fDisableSwitching = fOld;
     }
 }
 
@@ -1123,8 +1121,7 @@ MRESULT ClientButtonClick(HWND hwnd,
                 lMouseY = SHORT2FROMMP(mp1);
 
     // disable message processing in the hook
-    BOOL    fOld = G_pHookData->fDisableSwitching;
-    G_pHookData->fDisableSwitching = TRUE;
+    // G_pHookData->fDisableSwitching = TRUE;
 
     if (msg == WM_BUTTON2CLICK)
         ulMsg = PGOM_CLICK2LOWER;
@@ -1136,7 +1133,7 @@ MRESULT ClientButtonClick(HWND hwnd,
         // this posts PGMG_CHANGEACTIVE back to us
 
     // reset the hook to its proper value
-    G_pHookData->fDisableSwitching = fOld;
+    // G_pHookData->fDisableSwitching = FALSE;
 
     if (G_pHookData->PageMageConfig.fFlash)
         pgmgcStartFlashTimer();
@@ -1505,8 +1502,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 HWND    hwnd2Activate = HWNDFROMMP(mp1);
 
                 // disable message processing in the hook
-                BOOL    fOld = G_pHookData->fDisableSwitching;
-                G_pHookData->fDisableSwitching = TRUE;
+                // G_pHookData->fDisableSwitching = TRUE;
 
                 if (WinIsWindowEnabled(hwnd2Activate))
                         // fixed V0.9.2 (2000-02-23) [umoeller]
@@ -1523,7 +1519,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                     // V0.9.2 (2000-02-22) [umoeller]
                 }
 
-                G_pHookData->fDisableSwitching = fOld;
+                // G_pHookData->fDisableSwitching = fOld;
             break; }
 
             /*
@@ -1544,7 +1540,6 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                                    10000)) */
                 {
                     // disable message processing in the hook
-                    BOOL    fOld = G_pHookData->fDisableSwitching;
                     G_pHookData->fDisableSwitching = TRUE;
 
                     WinSetWindowPos(hwnd2Lower,
@@ -1556,7 +1551,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                (MPARAM)TRUE,        // immediately
                                0);
 
-                    G_pHookData->fDisableSwitching = fOld;
+                    G_pHookData->fDisableSwitching = FALSE;
                     // DosReleaseMutexSem(G_pHookData->hmtxPageMage);
                 }
             break; }

@@ -112,7 +112,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, FALSE);
 
     if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
+             == NO_ERROR)
     {
         // LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
         // LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
@@ -162,7 +162,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
                         // update window pos in winlist's SWP
                         PSWP pswpThis = &pEntryThis->swp;
 
-                        if (     (strcmp(pEntryThis->szClassName, "#1")
+                        /* if (     (strcmp(pEntryThis->szClassName, "#1")
                               && (0 == WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
                                        & FS_NOMOVEWITHOWNER)
                                  )
@@ -172,7 +172,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
                             WinSetWindowBits(pEntryThis->hwnd, QWL_STYLE,
                                              FS_NOMOVEWITHOWNER,
                                              FS_NOMOVEWITHOWNER);
-                        }
+                        } */
 
                         WinQueryWindowPos(pEntryThis->hwnd, pswpThis);
 
@@ -341,49 +341,48 @@ BOOL pgmmMoveIt(LONG lXDelta,
         } // end if (    (cbSwpnew)
           //          && (paswpNew = (PSWP)malloc(cbSwpNew)))
 
+        if (paswpNew)
+        {
+            if (cSwpNewUsed)
+            {
+                // if window animations are enabled, turn them off for now.
+                        // V0.9.7 (2001-01-18) [umoeller]
+                /* BOOL fAnimation = FALSE;
+                if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
+                {
+                    fAnimation = TRUE;
+                    WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
+                } */
+
+                // disable message processing in the hook
+                G_pHookData->fDisableSwitching = TRUE;
+
+                // now set all windows at once, this saves a lot of
+                // repainting...
+                fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
+                                                     (PSWP)paswpNew,
+                                                     cSwpNewUsed);
+
+                G_pHookData->fDisableSwitching = FALSE;
+
+                /* if (fAnimation)
+                    // turn animation back on
+                    WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE); */
+            }
+
+            // clean up SWP array
+            free(paswpNew);
+        } // if (paswpNew)
+
+        // unset FS_NOMOVEWITHOWNER for the windows where we set it above
+        while(cMovePUsed)
+            WinSetWindowBits(paMoveP[--cMovePUsed],
+                             QWL_STYLE,
+                             0,
+                             FS_NOMOVEWITHOWNER);
+
         DosReleaseMutexSem(G_hmtxWindowList);
     } // end if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-
-    if (paswpNew)
-    {
-        if (cSwpNewUsed)
-        {
-            // if window animations are enabled, turn them off for now.
-                    // V0.9.7 (2001-01-18) [umoeller]
-            /* BOOL fAnimation = FALSE;
-            if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
-            {
-                fAnimation = TRUE;
-                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
-            } */
-
-            // disable message processing in the hook
-            BOOL    fOld = G_pHookData->fDisableSwitching;
-            G_pHookData->fDisableSwitching = TRUE;
-
-            // now set all windows at once, this saves a lot of
-            // repainting...
-            fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
-                                                 (PSWP)paswpNew,
-                                                 cSwpNewUsed);
-
-            G_pHookData->fDisableSwitching = fOld;
-
-            /* if (fAnimation)
-                // turn animation back on
-                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE); */
-        }
-
-        // clean up SWP array
-        free(paswpNew);
-    } // if (paswpNew)
-
-    // unset FS_NOMOVEWITHOWNER for the windows where we set it above
-    while(cMovePUsed)
-        WinSetWindowBits(paMoveP[--cMovePUsed],
-                         QWL_STYLE,
-                         0,
-                         FS_NOMOVEWITHOWNER);
 
     if (paMoveP)
         free(paMoveP);
@@ -392,6 +391,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, TRUE);
 
     return (fAnythingMoved);
+
 } // pgmmMoveIt
 
 /*
@@ -728,7 +728,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         if (lDeltaX || lDeltaY)
         {
-            // active Desktop changed:
+            // we got something to move:
 
             // move windows around to switch Desktops
             BOOL    bReturn = pgmmZMoveIt(lDeltaX, lDeltaY);

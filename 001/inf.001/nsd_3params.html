@@ -8,7 +8,10 @@
 The Netscape DDE Interface is configured by using command line parameters. This
 is not very intuitive, but flexible. Besides, it means less work for me. ;-)
 The command line syntax is (simply double-click on NETSCDDE.EXE for a summary):
-<P><CITE>netscdde [-[x|X]n]] [-p &lt;exe&gt;] [-P &lt;params&gt;] [-m[h]] &lt;URL&gt;</CITE>
+
+<!-- V0.9.7: added [-q] -->
+<P><CITE>netscdde [-q] [-[x|X]n]] [-p &lt;exe&gt;] [-P &lt;params&gt;] [-m[h]] &lt;URL&gt;</CITE>
+
 <P>As you can see, <CITE>&lt;URL&gt;</CITE> is the only required parameter.
 <P>The parameters mean the following:
 <DL>
@@ -23,6 +26,9 @@ Netscape. Example:
 </DL>
 <BR>Options:
 <DL>
+<!-- V0.9.7: added the following line -->
+<DT><CITE>-q      </CITE><DD>Don't show the status windows.
+
 <DT><CITE>-x      </CITE><DD>If Netscape is not running yet, do NOT open a new
 instance of it. NETSCDDE will then simply exit.
 <DT><CITE>-X      </CITE><DD>If Netscape is not running yet, DO open a new

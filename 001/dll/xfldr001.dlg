@@ -1356,7 +1356,7 @@ BEGIN
         LTEXT           "You must at least specify the URL you wish to open."
                         " NETSCDDE uses the following syntax:", -1, 10, 134,
                         315, 11, DT_WORDBREAK
-        LTEXT           "netscdde [-[x|X]n]] [-p <exe>] [-P <params>] [-m[h]"
+        LTEXT           "netscdde [-q] [-[x|X]n]] [-p <exe>] [-P <params>] [-m[h]"
                         "] <URL>", -1, 20, 125, 300, 8, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
         LTEXT           "dont' start Netscape if it's not yet running.", -1,

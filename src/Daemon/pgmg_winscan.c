@@ -197,11 +197,6 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
 
                     pWinInfo->bWindowType = WINDOW_NORMAL;
 
-                    if (pWinInfo->swp.fl & SWP_MINIMIZE)
-                        pWinInfo->bWindowType = WINDOW_MINIMIZE;
-                    else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
-                        pWinInfo->bWindowType = WINDOW_MAXIMIZE;
-
                     if (hswitch == NULLHANDLE)
                     {
                         // V0.9.7 (2001-01-23) [dk]
@@ -212,6 +207,10 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                            ) */
                             pWinInfo->bWindowType = WINDOW_RESCAN;
                     }
+                    else if (pWinInfo->swp.fl & SWP_MINIMIZE)
+                        pWinInfo->bWindowType = WINDOW_MINIMIZE;
+                    else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
+                        pWinInfo->bWindowType = WINDOW_MAXIMIZE;
                     else
                     {
                         SWCNTRL     swctl;
