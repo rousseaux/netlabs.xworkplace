@@ -15,7 +15,11 @@
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
 call SysLoadFuncs
 
-/* HERE COMES THE UNDO OF CROBJxxx.CMD (CONFIG FOLDER) */
+/*********************************************
+ *
+ * 1) UNDO CROBJxxx.CMD (CONFIG FOLDER)
+ *
+ *********************************************/
 
 /* items in config folder */
 rc = Destroy("<XWP_PACKTREE>");
@@ -62,9 +66,11 @@ rc = Destroy("<XWP_CFG1>");
 /* kill config folder itself */
 rc = Destroy("<XWP_CONFIG>");
 
-
-/* HERE COMES THE UNDO OF INSTLxxx.CMD (INSTALL FOLDER) */
-
+/*********************************************
+ *
+ * 2) UNDO INSTLxxx.CMD (INSTALL FOLDER)
+ *
+ *********************************************/
 
 /* the following three added with V0.9.19 */
 /* create "Lockup" setup string object */
@@ -135,12 +141,14 @@ rc = Destroy("<XWP_TRASHCAN>");
 /* finally, destroy install folder */
 rc = Destroy("<XWP_MAINFLDR>");
 
-
 exit;
 
-/* Destroy(): sneaky little subproc which first sets the NODELETE=NO style
-   to make sure we can really delete the object and then does a SysDestroyObject
-   on it. */
+/*
+ * Destroy:
+ *      sneaky little subproc which first sets the NODELETE=NO style
+ *      to make sure we can really delete the object and then does a
+ *      SysDestroyObject() on it.
+ */
 
 Destroy:
 parse arg objid

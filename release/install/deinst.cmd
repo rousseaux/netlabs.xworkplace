@@ -72,6 +72,16 @@ rc = Destroy("<XWP_CONFIG>");
  *
  *********************************************/
 
+/* the following three added with V0.9.19 */
+/* create "Lockup" setup string object */
+rc = Destroy("<XWP_LOCKUPSTR>");
+
+/* create "Find objects" setup string object */
+rc = Destroy("<XWP_FINDSTR>");
+
+/* create "Shutdown" setup string object */
+rc = Destroy("<XWP_SHUTDOWNSTR>");
+
 /* XShutdown... changed with V0.9.7 */
 rc = Destroy("<XWP_XSHUTDOWN>");
 
@@ -183,9 +193,12 @@ rc = DeRegisterClass("XWPKeyboard");
 
 exit;
 
-/* Destroy(): sneaky little subproc which first sets the NODELETE=NO style
-   to make sure we can really delete the object and then does a SysDestroyObject
-   on it. */
+/*
+ * Destroy:
+ *      sneaky little subproc which first sets the NODELETE=NO style
+ *      to make sure we can really delete the object and then does a
+ *      SysDestroyObject() on it.
+ */
 
 Destroy:
 parse arg objid
@@ -229,4 +242,3 @@ say "Undoing replacement of "oldclass" with "newclass;
 "..\bin\repclass" oldclass newclass
 
 return rc;
-
