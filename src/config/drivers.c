@@ -813,6 +813,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-17) [umoeller]: added error messages display
  *@@changed V0.9.12 (2001-04-28) [umoeller]: fixed vendor display
+ *@@changed V0.9.12 (2001-05-03) [umoeller]: removed stupid SYSxxx messages in display
  */
 
 MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -882,14 +883,21 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 xstrcat(&strText2MLE,
                                          precc->szVendor, 0);
                             }
+                            /*
+                                removed this for the release verion
+                                V0.9.12 (2001-05-03) [umoeller]
+                                this kept displaying "cannot be run in an os2 session",
+                                which wasn't very helpful.
+                            */
+                            #ifdef __DEBUG__
                             else
                             {
                                 // error:
-                                PSZ pszErr = doshQuerySysErrorMsg(precc->arc);
-                                        // will be freed
-                                xstrcat(&strText2MLE, pszErr, 0);
-                                free(pszErr);
+                                CHAR szErr[100];
+                                sprintf(szErr, "[error %u]", precc->arc);
+                                xstrcat(&strText2MLE, szErr, 0);
                             }
+                            #endif
 
                             xstrcatc(&strText2MLE, '\n'); // fixed V0.9.12 (2001-04-28) [umoeller]
 

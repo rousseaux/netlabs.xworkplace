@@ -997,6 +997,7 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *@@changed V0.9.11 (2001-04-18) [umoeller]: now opening objects on thread 1 always
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed broken standard widget menu items
  *@@changed V0.9.12 (2001-04-28) [umoeller]: moved XShutdown init to thread 1 object window
+ *@@changed V0.9.12 (2001-05-01) [umoeller]: added lockup
  */
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
@@ -1016,6 +1017,16 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 
                 switch (ulMenuId)
                 {
+                    case ID_CRMI_LOCKUPNOW:     // added V0.9.12 (2001-05-01) [umoeller]
+                        // we won't bother with the details,
+                        // just post the menu command to the desktop
+                        WinPostMsg(cmnQueryActiveDesktopHWND(),
+                                   WM_COMMAND,
+                                   MPFROMSHORT(WPMENUID_LOCKUP), // 705,
+                                   MPFROM2SHORT(CMDSRC_MENU,
+                                                FALSE));            // who cares
+                    break;
+
                     case ID_CRMI_SUSPEND:
                         // check if the "Power" object has been set up
                         // in OwgtInitMenu

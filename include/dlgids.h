@@ -275,6 +275,10 @@
 #define ID_XSDI_FDRDEFAULTDOC           508
 #define ID_XSDI_FDRDEFAULTDOCVIEW       509
 #define ID_XSDI_FDRAUTOREFRESH          501     // added V0.9.9 (2001-02-06) [umoeller]
+#define ID_XSDI_FDRVIEW_INHERIT         625     // added V0.9.12 (2001-04-30) [umoeller]
+#define ID_XSDI_FDRVIEW_ICON            626
+#define ID_XSDI_FDRVIEW_TREE            627
+#define ID_XSDI_FDRVIEW_DETAILS         628
 
 // "Remove menu items" page
 #define ID_XSD_SET2REMOVEMENUS          510
@@ -322,11 +326,11 @@
 
 // "snap to grid" page
 #define ID_XSD_SET3SNAPTOGRID           550
-#define ID_XSDI_SNAPTOGRID              511
-#define ID_XSDI_GRID_X                  512
-#define ID_XSDI_GRID_Y                  513
-#define ID_XSDI_GRID_CX                 514
-#define ID_XSDI_GRID_CY                 515
+#define ID_XSDI_SNAPTOGRID              551     // changed V0.9.12, these were duplicates
+#define ID_XSDI_GRID_X                  552     // changed V0.9.12, these were duplicates
+#define ID_XSDI_GRID_Y                  553     // changed V0.9.12, these were duplicates
+#define ID_XSDI_GRID_CX                 554     // changed V0.9.12, these were duplicates
+#define ID_XSDI_GRID_CY                 555     // changed V0.9.12, these were duplicates
 
 // "folder hotkeys" page
 #define ID_XSD_SET4ACCELS               560
@@ -389,6 +393,8 @@
 #define ID_XSD_NEWFILTER                621     // "New Filter" dlg (V0.9.0)
 #define ID_XSDI_FT_ENTRYFIELD           622
 #define ID_XSDI_FT_TITLE                623
+
+// ids 625-630 are used above in ID_XSD_FOLDERVIEWS
 
 /******************************************
  * Instance settings notebooks     >=700  *
@@ -1249,6 +1255,8 @@
 #define ID_CRMI_PROPERTIES              0x7f08
 #define ID_CRMI_HELP                    0x7f09
 #define ID_CRMI_REMOVEWGT               0x7f0a
+
+#define ID_CRMI_LOCKUPNOW               0x7f0b
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 

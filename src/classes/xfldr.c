@@ -2275,6 +2275,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *      default document exists.
  *
  *@@added V0.9.4 (2000-06-09) [umoeller]
+ *@@changed V0.9.12 (2001-04-30) [umoeller]: added global default view support
  */
 
 SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
@@ -2300,11 +2301,72 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // (same as in mnuModifyDataFilePopupMenu)
                 ulDefaultView = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC;
         }
+
+        _Pmpf((__FUNCTION__ "1: default view is %u", ulDefaultView));
+
+        if (!ulDefaultView)
+        {
+            // not queried above (no default document):
+            // if global default views are enabled (user doesn't want
+            // inherit from parent), check that value
+
+            _Pmpf((__FUNCTION__ ": global is %u", pGlobalSettings->bDefaultFolderView));
+
+            if (pGlobalSettings->bDefaultFolderView)        // 0 means default -> inherit
+            {
+                // global default views enabled:
+
+                // OK, this is complicated. WPFolder::wpQueryDefaultView goes
+                // through a lot of code apparently to check if
+                // a)  a default view was explicitly set for this folder; if
+                //     so, it is returned.
+                // b)  if not, wpQueryDefaultView is invoked on the parent folder...
+                //     so this recurses until some folder view was found.
+                //     (No comment on that other than that the WPS implementation
+                //     isn't exactly speedy.)
+
+                // So what we do here is check if a default view was explicitly
+                // set: if so, we return it, otherwise we return the default
+                // setting from the "Workplace Shell" object simply. Problem is
+                // that it isn't trivial to find out whether a default view
+                // was explicitly set for the folder... so we've added an
+                // XFldObject method for that as well.
+                ulDefaultView = _xwpQueryRealDefaultView(somSelf);
+
+                _Pmpf((__FUNCTION__ ": _xwpQueryRealDefaultView returned %d", ulDefaultView));
+
+                // 3) check...
+                switch (ulDefaultView)
+                {
+                    case OPEN_DEFAULT:  // returned by XFldObject if no explicit
+                                        // default view was set
+                    case 103:           // special code returned for "inherit from parent";
+                                        // this is what WPFolder checks for, apparently
+
+                        // call our class method override... we could
+                        // simply use
+                        //      ulDefaultView = pGlobalSettings->bDefaultFolderView
+                        // here, but I'm not sure if some WPFolder subclass
+                        // overrides M_WPFolder::wpclsQueryDefaultView, so
+                        // we should use the class method.
+                        // The XFolder implementation simply returns
+                        // pGlobalSettings->bDefaultFolderView, but a WPFolder
+                        // subclass may change that.
+                        ulDefaultView = _wpclsQueryDefaultView(_somGetClass(somSelf));
+                    break;
+
+                    // else: use explicit view set by user
+                }
+            }
+        }
     }
 
     if (!ulDefaultView)
-        // call parent:
+        // still not set: this happens if global default views are disabled
+        // --> inherit from parent (standard WPS behavior)
         ulDefaultView = XFolder_parent_WPFolder_wpQueryDefaultView(somSelf);
+
+    _Pmpf((__FUNCTION__ ": returning %d", ulDefaultView));
 
     return (ulDefaultView);
 }
@@ -3641,6 +3703,49 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
     else
         return (M_XFolder_parent_M_WPFolder_wpclsCreateDefaultTemplates(somSelf,
                                                                     Folder));
+}
+
+/*
+ *@@ wpclsQueryDefaultView:
+ *      this WPObject class method returns the default view for
+ *      objects of a class.
+ *
+ *      The way this works is that WPObject::wpQueryDefaultView
+ *      apparently checks for whether an instance default view
+ *      has been set by the user. If not, this class method gets
+ *      called.
+ *
+ *      Now, the WPFolder metaclass overrides this method to
+ *      return some undocumented value of 103. Presumably, this
+ *      causes the WPFolder::wpQueryDefaultView method override
+ *      to go thru the parent folders to find a default view
+ *      by inheritance.
+ *
+ *      To disable this stupid behavior, if the user has set a
+ *      fixed default view in "Workplace Shell", we can simply
+ *      return that here and WPFolder::wpQueryDefaultView will
+ *      return that as well.
+ *
+ *@@added V0.9.12 (2001-04-30) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryDefaultView");
+
+    if (pGlobalSettings->bDefaultFolderView)
+    {
+        // something set (0 means standard WPS inheritance behavior):
+        // return that
+        _Pmpf((__FUNCTION__ ": returning %u", pGlobalSettings->bDefaultFolderView));
+
+        return (pGlobalSettings->bDefaultFolderView);
+    }
+
+    // return the stupid 103 code
+    return (M_XFolder_parent_M_WPFolder_wpclsQueryDefaultView(somSelf));
 }
 
 /*

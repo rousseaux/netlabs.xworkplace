@@ -65,7 +65,7 @@ OBJS = $(OUTPUTDIR)\cfgsys.obj \
        $(OUTPUTDIR)\fonts.obj \
        $(OUTPUTDIR)\hookintf.obj \
        $(OUTPUTDIR)\pagemage.obj \
-       $(OUTPUTDIR)\partitions.obj \
+#       $(OUTPUTDIR)\partitions.obj \
        $(OUTPUTDIR)\sound.obj
 
 # The main target:

@@ -1825,38 +1825,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Folder view settings", -1, 6, 18, 213, 84,
-                        DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH,
-                        12, 84, 160, 8
-        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 22, 74,
-                        155, 8
-        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 22, 62,
-                        55, 8, DT_MNEMONIC | NOT WS_GROUP
-        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 76, 62, 35, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
-                        SPBS_FASTSPIN | WS_GROUP
-        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 116, 62, 75,
-                        8, NOT WS_GROUP
-        AUTOCHECKBOX    "Auto-scroll Tree vie~ws",
-                        ID_XSDI_TREEVIEWAUTOSCROLL, 12, 52, 190, 8
-        AUTOCHECKBOX    "~Enable default documents in folders",
-                        ID_XSDI_FDRDEFAULTDOC, 12, 42, 190, 8
-        AUTOCHECKBOX    "De~fault document = default folder view",
-                        ID_XSDI_FDRDEFAULTDOCVIEW, 22, 32, 190, 8
-        AUTOCHECKBOX    "Enable folder ~auto-refresh",
-                        ID_XSDI_FDRAUTOREFRESH, 12, 22, 190, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 4, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 4, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 155, 4, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_IMPORTWPS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Import WPS Filters", ID_XSD_IMPORTWPS, 12, 6, 242, 172,
@@ -2372,18 +2340,18 @@ BEGIN
                         WS_GROUP | WS_VISIBLE
         CONTROL         "", -1, 105, 91, 60, 20, WC_STATIC, SS_FGNDFRAME |
                         WS_GROUP | WS_VISIBLE
-        AUTOCHECKBOX    "~Enable", ID_XSDI_FIND, 10, 115, 156, 10
+        AUTOCHECKBOX    "~Enable", ID_XSDI_SNAPTOGRID, 10, 115, 156, 10
         LTEXT           "~X origin", -1, 23, 97, 57, 8, DT_MNEMONIC
-        SPINBUTTON      ID_XSDI_SORT, 23, 86, 43, 12, SPBS_MASTER |
+        SPINBUTTON      ID_XSDI_GRID_CX, 23, 86, 43, 12, SPBS_MASTER |
                         SPBS_JUSTRIGHT | WS_GROUP
         LTEXT           "X ~spacing", -1, 84, 97, 54, 8, DT_MNEMONIC
         SPINBUTTON      ID_XSDI_WARP4DISPLAY, 84, 86, 43, 12, SPBS_MASTER |
                         SPBS_JUSTRIGHT | WS_GROUP
         LTEXT           "~Y spacing", -1, 110, 58, 51, 8, DT_MNEMONIC
-        SPINBUTTON      ID_XSDI_ARRANGE, 110, 47, 43, 12, SPBS_MASTER |
+        SPINBUTTON      ID_XSDI_GRID_Y, 110, 47, 43, 12, SPBS_MASTER |
                         SPBS_JUSTRIGHT | WS_GROUP
         LTEXT           "Y ~origin", -1, 110, 36, 49, 8, DT_MNEMONIC
-        SPINBUTTON      ID_XSDI_SELECT, 110, 26, 43, 12, SPBS_MASTER |
+        SPINBUTTON      ID_XSDI_GRID_CY, 110, 26, 43, 12, SPBS_MASTER |
                         SPBS_JUSTRIGHT | WS_GROUP
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
@@ -2958,8 +2926,7 @@ END
 
 DLGTEMPLATE ID_AMD_USER LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "", ID_AMD_USER, 0, 0, 194, 134, NOT FS_DLGBORDER |
-            WS_VISIBLE
+    DIALOG  "", ID_AMD_USER, 0, 0, 194, 134, NOT FS_DLGBORDER | WS_VISIBLE
     BEGIN
         GROUPBOX        "Current local user", -1, 12, 22, 166, 50
         LTEXT           "User name:", -1, 16, 54, 60, 8
@@ -2971,5 +2938,43 @@ BEGIN
         LTEXT           "Group ID:", -1, 16, 26, 60, 8
         LTEXT           "", ID_AMDI_USER_GROUPID, 82, 26, 90, 8
         PUSHBUTTON      "~Help", DID_HELP, 124, 6, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Folder view settings", -1, 6, 64, 213, 78,
+                        DT_MNEMONIC | NOT WS_GROUP
+        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH,
+                        12, 126, 160, 8
+        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 22, 118,
+                        155, 8
+        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 22, 106,
+                        44, 8, DT_MNEMONIC | NOT WS_GROUP
+        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 68, 108, 35, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN | WS_GROUP
+        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 106, 106, 75,
+                        8, NOT WS_GROUP
+        AUTOCHECKBOX    "Auto-scroll Tree vie~ws",
+                        ID_XSDI_TREEVIEWAUTOSCROLL, 12, 96, 190, 8
+        AUTOCHECKBOX    "~Enable default documents in folders",
+                        ID_XSDI_FDRDEFAULTDOC, 12, 86, 190, 8
+        AUTOCHECKBOX    "De~fault document = default folder view",
+                        ID_XSDI_FDRDEFAULTDOCVIEW, 22, 78, 190, 8
+        AUTOCHECKBOX    "Enable folder ~auto-refresh",
+                        ID_XSDI_FDRAUTOREFRESH, 12, 68, 190, 8
+        GROUPBOX        "Default folder view", -1, 6, 18, 214, 44
+        AUTORADIOBUTTON "Use pare~nt folder's default view", ID_XSDI_FDRVIEW_INHERIT, 12, 46,
+                        202, 8, WS_TABSTOP
+        AUTORADIOBUTTON "~Icon", ID_XSDI_FDRVIEW_ICON, 12, 38, 202, 8, WS_TABSTOP
+        AUTORADIOBUTTON "T~ree", ID_XSDI_FDRVIEW_TREE, 12, 30, 202, 8, WS_TABSTOP
+        AUTORADIOBUTTON "Detail~s", ID_XSDI_FDRVIEW_DETAILS, 12, 22, 202, 8, WS_TABSTOP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 4, 65, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 4, 65, 12
+        PUSHBUTTON      "~Help", DID_HELP, 155, 4, 65, 12, BS_HELP
     END
 END

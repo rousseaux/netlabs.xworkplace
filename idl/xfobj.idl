@@ -69,6 +69,8 @@ interface XFldObject : WPObject
 
     ULONG xwpAddObjectInternalsPage(in HWND hwndNotebook);
 
+    ULONG xwpQueryRealDefaultView();
+
     BOOL xwpQueryDeletion(in CDATE* pcdateDeleted, in CTIME* pctimeDeleted);
     BOOL xwpSetDeletion(in BOOL fSet);
 

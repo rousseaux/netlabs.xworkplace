@@ -964,7 +964,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
              *
              */
 
-            if (_somIsA(somSelf, _WPDrives))
+            /* if (_somIsA(somSelf, _WPDrives))
             {
                 // get handle to the WPObject's "Help" submenu in the
                 // the folder's popup menu
@@ -980,7 +980,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                        cmnGetString(ID_XSSI_OPENPARTITIONS),  // pszOpenPartitions
                                        MIS_TEXT, 0);
                 }
-            }
+            } */
 
             /*
              * Default document in "Open" submenu:
@@ -1839,6 +1839,7 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed "Refresh now"
  *@@changed V0.9.9 (2001-03-27) [umoeller]: removed SOM_CREATEFROMTEMPLATE crap, now calling wpshCreateFromTemplate directly
+ *@@changed V0.9.12 (2001-05-03) [umoeller]: removed "Partitions" for WPDrives
  */
 
 BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
@@ -1882,10 +1883,10 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  *  V0.9.2 (2000-02-29) [umoeller]
                  */
 
-                case ID_XFMI_OFS_XWPVIEW:
+                /* case ID_XFMI_OFS_XWPVIEW:
                     partCreatePartitionsView(somSelf,
                                              ulMenuId);
-                break;
+                break; */ // disabled V0.9.12 (2001-05-03) [umoeller]
 
                 /*
                  * ID_XFMI_OFS_FDRDEFAULTDOC:

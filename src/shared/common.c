@@ -2186,6 +2186,8 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->fFdrDefaultDocView = 0;
 
             G_pGlobalSettings->fFdrAutoRefreshDisabled = 0;
+
+            G_pGlobalSettings->bDefaultFolderView = 0;  // V0.9.12 (2001-04-30) [umoeller]
         break;
 
         case SP_2REMOVEITEMS:

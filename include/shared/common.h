@@ -945,6 +945,13 @@
                         // "Folder auto-refresh" on "Workplace Shell" "View" page;
                         // this only has an effect if folder auto-refresh has
                         // been replaced in XWPSetup in the first place
+    /* XWOrkplace V0.9.12 */
+        BYTE        bDefaultFolderView;
+                        // "default folder view" on XFldWPS "View" page:
+                        // -- 0: inherit from parent (default, standard WPS)
+                        // -- OPEN_CONTENTS (1): icon view
+                        // -- OPEN_TREE (101): tree view
+                        // -- OPEN_DETAILS (102): details view
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;

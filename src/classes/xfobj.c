@@ -207,6 +207,49 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpQueryRealDefaultView:
+ *      this new method returns the "real default view" of
+ *      the object.
+ *
+ *      This might be the same as the return value of
+ *      WPObject::wpQueryDefaultView, but not necessarily.
+ *
+ *      Thing is, several classes override the wpQueryDefaultView
+ *      method to implement a different behavior. The most
+ *      annoying example is the WPFolder class which implements
+ *      the folder default view inheritance from the parent
+ *      folder.
+ *
+ *      The WPObject class has an instance variable which
+ *      contains the "real" default view for the object.
+ *      This is mostly set to OPEN_DEFAULT (-1), which is
+ *      never returned by WPObject::wpQueryDefaultView though,
+ *      because in that case, M_WPObject::wpclsQueryDefaultView
+ *      gets called. Since this mechanism apparently doesn't
+ *      work for folders though, we have added this method
+ *      which returns the true value of the instance variable.
+ *
+ *      This will only be != OPEN_DEFAULT if the user explicitly
+ *      changed the default view for the object.
+ *
+ *      This returns 0 if we couldn't get access to the internal
+ *      WPObject data.
+ *
+ *@@added V0.9.12 (2001-05-01) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfobj_xwpQueryRealDefaultView(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryRealDefaultView");
+
+    if (_pWPObjectData)     // WPObject data intercepted in XFldObject::wpRestoreData
+        return (_pWPObjectData->lDefaultView);
+
+    return (0);        // don't know
+}
+
+/*
  *@@ xwpQueryDeletion:
  *      this method may be called at any time to determine if and
  *      when an object has been deleted into the trash can.

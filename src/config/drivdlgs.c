@@ -212,6 +212,7 @@ VOID drvConfigSupported(PDRIVERSPEC pSpec)
  *      structure with mp2 in WM_INITDLG.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.12 (2001-05-03) [umoeller]: fixed strtok, thanks Lars Erdmann
  */
 
 MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -242,7 +243,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             if (pszParamsCopy)
             {
                 pszToken = strtok(pszParamsCopy, " ");
-                do
+                while (pszToken)        // V0.9.12 (2001-05-03) [umoeller]
                 {
                     if (memicmp(pszToken, "/C:", 3) == 0)
                         ulCache = strtoul(pszToken+3, NULL, 0);
@@ -252,7 +253,9 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                         WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
                     else if (memicmp(pszToken, "/CRECL:", 7) == 0)
                         ulCrecl = strtoul(pszToken+7, NULL, 0);
-                } while (pszToken = strtok(NULL, " "));
+
+                    pszToken = strtok(NULL, " ");       // V0.9.12 (2001-05-03) [umoeller]
+                };
 
                 free(pszParamsCopy);
             }
@@ -413,6 +416,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *      structure with mp2 in WM_INITDLG.
  *
  *@@added V0.9.5 (2000-08-10) [umoeller]
+ *@@changed V0.9.12 (2001-05-03) [umoeller]: fixed strtok, thanks Lars Erdmann
  */
 
 MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -445,7 +449,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             if (pszParamsCopy)
             {
                 pszToken = strtok(pszParamsCopy, " ");
-                do
+                while (pszToken)    // V0.9.12 (2001-05-03) [umoeller]
                 {
                     if (cParams == 0)
                     {
@@ -485,7 +489,9 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
 
                     cParams++;
-                } while (pszToken = strtok(NULL, " "));
+
+                    pszToken = strtok(NULL, " ");       // V0.9.12 (2001-05-03) [umoeller]
+                };
 
                 free(pszParamsCopy);
             }

@@ -500,6 +500,8 @@ interface M_XFolder : M_WPFolder
     wpclsInitData: override;
     wpclsCreateDefaultTemplates: override;
 
+    wpclsQueryDefaultView: override;
+
 //# wpclsQueryTitle: override;
 //# wpclsQueryTitle:
 //# removed (V0.9.0)

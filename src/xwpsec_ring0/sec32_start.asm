@@ -123,11 +123,16 @@ sec32_stub_strategy proc far
         movzx eax, byte ptr es:[bx].reqCommand
         cmp eax, 0
         jz short @@error
+
+        ; call int DRV32ENTRY sec32_strategy(PTR16 reqpkt, int index)
         push es                                 ; seg reqpkt
         push bx                                 ; ofs reqpkt
         push eax                                ; command
         mov word ptr es:[bx].reqStatus, 0       ; updates the request status
-        call far ptr FLAT:SEC32_STRATEGY        ; 32 bits strategy entry point (sec32_strategy.c)
+        call far ptr FLAT:SEC32_STRATEGY        ; 32 bits strategy entry point
+                                                ; (sec32_strategy.c)
+                                                ; _Far32 _Pascal _loadds,
+                                                ; callee cleans up stack
         mov word ptr es:[bx].reqStatus, ax      ; updates the request status
         retf
 
