@@ -41,6 +41,9 @@
 #                           specified by XWPRELEASE; this invokes "really_all"
 #                           in turn.
 #
+#       Environment:    You MUST set a number of environment variables before
+#                       compiling. See readme.txt and PROGREF.INF.
+#
 #       Output:         All XWorkplace Files code files. This calls the other
 #                       makefiles.
 #
@@ -82,8 +85,8 @@ OBJS = \
 # code from classes\
     bin\xcenter.obj bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
     bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
-    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpkeybd.obj \
-    bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
+    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpfsys.obj \
+    bin\xwpkeybd.obj bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
     bin\xwpstring.obj \
 # code from shared \
     bin\classes.obj bin\cnrsort.obj bin\common.obj bin\notebook.obj \
@@ -92,8 +95,8 @@ OBJS = \
     bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\hookintf.obj \
     bin\pagemage.obj bin\partitions.obj bin\sound.obj \
 # code from filesys\
-    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fileops.obj \
-    bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
+    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj \
+    bin\fhandles.obj bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
     bin\filetype.obj bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
     bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from media\
@@ -293,8 +296,8 @@ nls:
     @cd inf.$(XWP_LANG_CODE)
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\help.$(XWP_LANG_CODE)
-    @cd help.$(XWP_LANG_CODE)
+    @echo $(MAKEDIR)\makefile: Going for subdir xwphelp
+    @cd xwphelp
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
@@ -535,7 +538,7 @@ release: really_all
     $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
-    $(COPY) $(XWP_LANG_CODE)\help.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWP_LANG_CODE)\xwphelp\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
 # 5) icons
 !if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
 !endif

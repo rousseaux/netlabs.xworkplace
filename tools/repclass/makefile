@@ -86,6 +86,7 @@ all: repclass.exe
 .c.obj:
         @ echo Compiling $*.c:
 !ifndef PRECH
+# precompiled headers disabled:
         $(CC) $*.c
 !else
         $(CC) /fi"$(PRECH)\$*.pch" /si"$(PRECH)\$*.pch"  $*.c

@@ -31,9 +31,7 @@ This is my private bug list for FP13/14:
    is about. This doesn't happen with FP11.
 
 -- IBM has ruined the DosQProcStat and DosQuerySysState APIs.
-   These still return garbage with FP14 sometimes. Most
-   importantly, process monitors cannot show the CPU load
-   any more.
+   These still return garbage with FP14 sometimes.
 
 -- Apparently, DosPerfSysCall doesn't work any more either.
 
@@ -53,15 +51,36 @@ This is my private bug list for FP13/14:
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
+shutdown:
+    Is it possible to power off a machine with shutdwn.exe?
+
+XWPString:
+    -- d'n'd no work!
+    -- confirm no work!
+
+XWPSetup:
+    -- "Undo" and "Default" don't affect newer settings (trashcan);
+       PageMage isn't affected
+
+sounds:
+    -- disabling extended system sounds doesn't work
+      >I cannot Un- "Enable System Sounds" in my "Systemkonfiguiration"
+      >/ "Warnton" - notebook. This does neither work for the old version
+      >nor the replaced.
+
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
+    -- shadows missing if "always sort" and "folders first" are enabled
+    -- status bars: object counts not updated when items inserted/removed
 
 trash can:
     -- sorting doesn't work right
+    -- When you delete an object, it probably retains its object ID, because
+       if a program tries to UPDATE the object that has been deleted, it
+       effectively updates the object in the TrashCan, while it should
+       create a new one.
 
 other settings pages:
-    -- XWPSetup: "Undo" and "Default" don't affect newer settings (trashcan);
-       PageMage isn't affected
     -- System paths:
        -- scroll listbox to first visible
 
@@ -69,14 +88,21 @@ NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
        what to display - the '„' (german Umlaut) gets lost.
 
+PageMage:
+    -- mb2 can move desktop
+    -- window creation/destroy/activation not recognized sometimes
+
 hook:
-    -- hotkeys:
-       -- don't work on fresh install
+    -- Mouse pointer doesn't reappear when clicking buttons if hide mouse
+       pointer is enabled.
+    -- Disabling auto-hide mouse pointer doesn't work. The pointer
+       disappears permanently after the timeout.
+
+    -- sliding focus:
+       -- topmost window doesn't become active after previous wnd destroy
 
     -- MB3 scroll:
        -- VIEW.EXE TOC not fully shown
 
     -- VIO copy conflicts with WM_CHORD; check window class
-
-
 

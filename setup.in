@@ -7,7 +7,7 @@
 #
 #       Notes:
 #
-#       --  This include file is for makefile options only.
+#       --  This include file is for _makefile_ options only.
 #           There is another generic include file (include\setup.h),
 #           which is for generic _code_ includes (thru C #include).
 #
@@ -34,10 +34,6 @@
 
 !ifndef PROJECT_BASE_DIR
 !error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
-!endif
-
-!ifndef VACPATH
-VACPATH=J:\develop\IBMVAC
 !endif
 
 HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)\bin

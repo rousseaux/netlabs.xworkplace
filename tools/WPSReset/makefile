@@ -64,6 +64,7 @@ MYOWNINC = $(INC)\hook
 .c.{$(OUTPUTDIR)}.obj:
         @ echo Compiling $(@B).c:
 !ifndef PRECH
+# precompiled headers disabled:
         $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
         $(CC_EXE_ST) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INC) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c

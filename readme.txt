@@ -58,6 +58,10 @@ Last updated August 9, 2000, Ulrich M”ller
     tree. As a result, you also need to check out the WarpIN source
     code before compiling XWorkplace.
 
+
+    Getting Sources from Netlabs CVS
+    --------------------------------
+
     First, do a "cvs login" with "readonly" as your password.
 
     Then, to check out the most current XWorkplace sources, create a
@@ -81,89 +85,6 @@ Last updated August 9, 2000, Ulrich M”ller
     called ".cvsrc" and add "cvs -z9" in there to enable maximum
     compression during transfers.
 
-    Here comes a quick-start guide; for details, please refer to
-    PROGREF.INF.
-
-    1)  You will need to set up a few environment variables before
-        compilation will work. You can change the defaults in SETUP.IN
-        or define the variables externally, before calling NMAKE.
-        The latter is recommended.
-
-        The following environment variables are required:
-
-        -- XWPRUNNING must point to a valid XWorkplace installation
-           tree. The makefiles will copy all produced output files
-           to the proper locations in that tree so that you can
-           work on XWorkplace while it is installed. DLLs which
-           are in use will be unlocked.
-
-           Do one of the following:
-
-           -- Install the latest XWorkplace binary WarpIN archive.
-              Set XWPRUNNING to the same directory which you
-              specified as the target path to WarpIN.
-
-           -- Alternatively, copy the entire "release" subtree to
-              some new location and specify that location with
-              XWPRUNNING to start.
-
-              With XWPRUNNING, specify the parent directory of BIN,
-              where XFLDR.DLL shall reside, like this:
-
-                SET XWPRUNNING=J:\Tools\XWorkplace
-
-        -- PROJECT_BASE_DIR must point to the root of the
-           XWorkplace source tree. Otherwise the makefiles will
-           complain.
-
-           Specify the directory where this README.TXT file
-           resides, like this:
-
-                SET PROJECT_BASE_DIR=K:\cvs\xworkplace
-
-        -- HELPERS_BASE must point to the root of the WarpIN
-           source tree to be able to switch to the helpers code.
-           Specify the parent directory of INCLUDE\HELPERS and
-           SRC\HELPERS, like this:
-
-                SET HELPERS_BASE=K:\cvs\warpin
-
-        -- XWPRELEASE is used with "nmake release" to build a
-           separate target tree which holds all files for a
-           release version. That tree can then easily be "zipped"
-           into a WarpIN archive (.WPI).
-
-           This directory will hold a complete XWorkplace working
-           set from where XWorkplace can be installed.
-           That directory will be created by "nmake release"
-           if if doesn't exist.
-
-           Even if you don't plan to use "nmake release", you
-           must set XWPRELEASE to something, or the makefiles
-           will fail, like this:
-
-                SET XWPRELEASE=dummy
-
-        -- SET XWP_DEBUG=YES enables debug code. By contrast,
-           if XWP_DEBUG is not defined, release code is produced.
-
-    2)  Put the .EXE and .CMD files from \TOOLS somewhere on your
-        PATH. These are used by the makefiles. Or add the tools
-        directory to your path.
-
-    3)  Execute "nmake" in the main source directory (where this
-        README.TXT resides).
-
-        If you don't have XWorkplace or XFolder installed yet,
-        run "nmake release" instead. This will create a complete
-        XWorkplace working set. (See XWPRELEASE above.)
-        Run "install.cmd" in that directory to have XWorkplace
-        installed then.
-
-    Only if you want, you can replace the WPDataFile class with the DbgDataFile
-    class in BIN\XDEBUG.DLL, which is created by the makefiles also. See
-    SRC\CLASSES\XDEBUG.C for details. This is only for debugging WPS
-    objects in detail though and probably not something for everyday work.
 
 
 4. GETTING STARTED
