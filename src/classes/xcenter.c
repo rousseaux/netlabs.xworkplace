@@ -158,7 +158,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
 
 /*
  *@@ xwpQueryWidgets:
- *      returns an array of XWPWIDGETSETTING structures
+ *      returns an array of XCENTERWIDGETSETTING structures
  *      describing the widgets in this XCenter instance.
  *
  *      *pulCount receives the array item count (_not_
@@ -738,7 +738,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
  *      thread 1). However, if this results from WinOpenObject
  *      or an OPEN setup string, this will not be on thread 1.
  *
- *      We open an XCenter view here by calling ctrCreateXCenterView.
+ *      We open an XCenter view here by calling ctrpCreateXCenterView.
  */
 
 SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,

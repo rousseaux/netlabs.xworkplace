@@ -110,7 +110,27 @@
      *      XCenter widget settings dialogs basically
      *      work as follows:
      *
-     *          ###
+     *      1.  You must a function that displays a modal
+     *          dialog. This function must have the following
+     *          prototype:
+     *
+     +              VOID EXPENTRY ShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+     *
+     *      2.  Store that function in the
+     *          XCENTERWIDGETCLASS.pShowSettingsDlg field for
+     *          your widget class.
+     *
+     *          This will enable the "Properties" menu item
+     *          for the widget.
+     *
+     *      3.  Your function gets called when the user selects
+     *          "Properties". What that function does, doesn't
+     *          matter... it should however display a modal
+     *          dialog and update the widget's settings string
+     *          and call ctrSetSetupString with the "hSettings"
+     *          handle that was given to it in the
+     *          WIDGETSETTINGSDLGDATA structure. This will give
+     *          the widget the new settings.
      *
      *      If a widget class supports settings dialogs,
      *      it must specify this in its XCENTERWIDGETCLASS.
@@ -168,9 +188,9 @@
     typedef struct _XCENTERWIDGETCLASS
     {
         const char      *pcszPMClass;
-                // PM window class name of this widget (can be shared among
-                // several widgets). A plugin DLL is responsible for
-                // registering this class when it's loaded.
+                // PM window class name of this widget class (can be shared among
+                // several widget classes). A plugin DLL is responsible for
+                // registering this window class when it's loaded.
 
         ULONG           ulExtra;
                 // additional identifiers the class might need if the
@@ -190,7 +210,8 @@
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:
-                // -- WGTF_SIZEABLE: widget window can be resized.
+                // -- WGTF_SIZEABLE: widget window can be resized with
+                //    the mouse by the user.
                 // -- WGTF_NOUSERCREATE: do not show this class in
                 //    the "add widget" menu, and do not allow creating
                 //    instances of this in the XCenter settings notebook.
@@ -199,9 +220,10 @@
                 // -- WGTF_UNIQUEGLOBAL: only one widget of this class
                 //    should be created in all XCenters on the system.
                 //    This includes WGTF_UNIQUEPERXCENTER.
-                // -- WGTF_TOOLTIP: if set, the widget will receive
-                //    WM_CONTROL messages with the TTN_NEEDTEXT notification
-                //    code. The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
+                // -- WGTF_TOOLTIP: if set, the widget has a tooltip
+                //    and will receive WM_CONTROL messages with the
+                //    TTN_NEEDTEXT notification code (see helpers\comctl.h).
+                //    The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
 
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,
@@ -209,7 +231,8 @@
                 // that will show that dialog. If this is != NULL,
                 // the "Properties" menu item and the button in
                 // the widgets list of the XCenter settings notebook
-                // will be enabled.
+                // will be enabled. See WIDGETSETTINGSDLGDATA for
+                // details about how to implement widget settings dialogs.
 
     } XCENTERWIDGETCLASS, *PXCENTERWIDGETCLASS;
 
@@ -281,11 +304,12 @@
                 // widget's anchor block (copied for convenience).
 
         PFNWP       pfnwpDefWidgetProc;
-                // address of default widget window procedure. The
-                // widget's own window proc must pass all unprocessed
-                // messages (and a few more) to this instead of
-                // WinDefWindowProc. See ctrDefWidgetProc (in
-                // src/shared/center.c) for details.
+                // address of default widget window procedure. This
+                // always points to ctrDefWidgetProc (in
+                // src/shared/center.c). The widget's own window
+                // proc must pass all unprocessed messages (and a
+                // few more) to this instead of WinDefWindowProc.
+                // See ctrDefWidgetProc for details.
 
         const XCENTERGLOBALS *pGlobals;
                 // ptr to client/frame window data (do not change)
@@ -561,7 +585,13 @@
      *
      *          --  XFMF_RESURFACE: resurface XCenter to HWND_TOP.
      *
-     *      -- ULONG mp2: reserved, must be 0.
+     *          Even if you specify 0, the XCenter will be re-shown
+     *          if it is currently auto-hidden.
+     *
+     *      -- mp2: reserved, must be 0.
+     *
+     *      NOTE: This msg must be POSTED, not sent, to the XCenter
+     *      client. It causes excessive redraw.
      */
 
     #define XCM_REFORMAT                (WM_USER + 1)

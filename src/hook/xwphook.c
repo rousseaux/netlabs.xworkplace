@@ -17,10 +17,10 @@
  *      from ProgramCommander/2 and WarpEnhancer and were then
  *      extended.
  *
- *      The hooks have been designed for greatest possible clarity
- *      and lucidity with respect to interfaces and configuration --
+ *      I have tried to design the hooks for clarity and lucidity with
+ *      respect to interfaces and configuration --
  *      as if that was possible with system hooks at all, since they
- *      are messy by nature.
+ *      are so messy by nature.
  *
  *      XWorkplace implementation notes:
  *
@@ -96,7 +96,6 @@
 /*
  *      Copyright (C) 1999-2000 Ulrich Mîller.
  *      Copyright (C) 1993-1999 Roman Stangl.
- *      Copyright (C) 1996-1997 Achim HasenmÅller.
  *      Copyright (C) 1995-1999 Carlos Ugarte.
  *
  *      This program is free software; you can redistribute it and/or modify
@@ -356,7 +355,7 @@ HWND GetFrameWindow(HWND hwndTemp)
  *@@added V0.9.1 (99-12-03) [umoeller]
  *@@changed V0.9.1 (2000-02-13) [umoeller]: fixed disabled scrollbars bug
  *@@changed V0.9.3 (2000-04-30) [umoeller]: added more error checking
- *@@changed V0.9.1 (2000-04-30) [umoeller]: fixed invisible scrollbars bug
+ *@@changed V0.9.3 (2000-04-30) [umoeller]: fixed invisible scrollbars bug
  */
 
 HWND GetScrollBar(HWND hwndOwner,
@@ -1648,7 +1647,7 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
         // msg to be swallowed:
         brc = TRUE;
 
-    // process vertical scroll bar
+    // process horizontal scroll bar
     if (WMMouseMove_MB3OneScrollbar(hwnd,
                                     &G_HookData.SDXHorz,
                                     G_ptlMousePosDesktop.x,
@@ -2649,7 +2648,10 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                                     0,
                                     0,
                                     0,
-                                    SWP_ZORDER);
+                                    SWP_NOADJUST | SWP_ZORDER);
+                        // ### yoo-hoo, this doesn't really work...
+                        // this activates the frame, which is not really
+                        // what we want in every case... this breaks XCenter too
             }
         break;
 

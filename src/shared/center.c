@@ -43,7 +43,7 @@
  *      -- A "widget class" defines a widget. Basically, it's a
  *         plain C structure (XCENTERWIDGETCLASS) with a PM window
  *         procedure which is used to create the PM widget windows
- *         -- the "widget instances". Depending on the widget
+ *         (the "widget instances"). Depending on the widget
  *         class's attributes, there can be one or several
  *         instances of a widget class. If you want a different
  *         widget in the XCenter, you need to write a widget class.
@@ -92,8 +92,10 @@
  *         with its other data (for WPS programmers: this happens
  *         in XCenter::wpSaveState).
  *
- *      -- When a XCenter is opened, each widget receives an
- *         XCENTERWIDGET structure on WM_CREATE for itself.
+ *      -- When an XCenter is opened, it creates its widgets.
+ *         Each widget then receives an XCENTERWIDGET structure
+ *         on WM_CREATE for itself.
+ *
  *         This contains all kinds of data specific to the widget.
  *         Other than setting a few of these fields on WM_CREATE,
  *         the XCenter does not care much about what the widget
@@ -102,18 +104,24 @@
  *         pass all unprocessed messages to ctrDefWidgetProc
  *         instead of WinDefWindowProc to avoid resource leaks.
  *
- *         On WM_CREATE, the widget must store the pointer to
- *         its XCENTERWIDGET in its QWL_USER window word
- *         (see PMREF). There is a "pUser" pointer in that
- *         structure that the widget can use for allocating
- *         its own data.
+ *         The widget receives a function pointer to ctrDefWidgetProc
+ *         in its XCENTERWIDGET structure (on WM_CREATE). So in
+ *         order to be able to pass all unprocessed messages to
+ *         ctrDefWidgetProc, the first thing the widget must do
+ *         on WM_CREATE is to store the pointer to its XCENTERWIDGET
+ *         in its QWL_USER window word (see PMREF).
+ *
+ *         There is a "pUser" pointer in that structure that the
+ *         widget can use for allocating its own data.
  *
  *         For details, see ctrDefWidgetProc.
  *
  *      <B>Widget settings</B>
  *
  *      Again, each widget can store its own data in its window
- *      words. This is no problem while the widget is running.
+ *      words (by using the pUser field of XCENTERWIDGET).
+ *      This is OK while the widget is running...
+ *
  *      Saving the settings is a bit more tricky because there
  *      can be many widgets in many XCenters. Even though a
  *      widget programmer may choose to use a fixed location
@@ -133,9 +141,12 @@
  *      strings for the widgets, so the widget should only be
  *      able to do two things:
  *
- *      --  to parse a setup string and set up its binary data;
+ *      --  to parse a setup string and set up its binary data
+ *          in XCENTERWIDGET on WM_CREATE (and possibly later,
+ *          when a settings dialog changes the setup string);
  *
- *      --  to create a setup string from its binary data.
+ *      --  to create a new setup string from its binary data
+ *          to have that data saved.
  *
  *      XFLDR.DLL exports a few helper functions that plugins can
  *      import to aid in that (see ctrScanSetupString,
@@ -157,6 +168,22 @@
  *      is not currently open). Such settings dialogs operate
  *      on setup strings only. See WIDGETSETTINGSDLGDATA for
  *      details.
+ *
+ *      <B>Importing functions</B>
+ *
+ *      The only function that a widget is really required to
+ *      use is ctrDefWidgetProc, whose address is passed to it
+ *      on WM_CREATE in the XCENTERWIDGET structure. So there's
+ *      no need to import additional functions from XFLDR.DLL.
+ *
+ *      However, to reduce the DLL's code size, a widget plugin
+ *      DLL may import any function that is exported from XFLDR.DLL.
+ *      (See the first part of the EXPORTS section in src\shared\xwp.def
+ *      for a list of exported functions). In the "init module"
+ *      export that is required for plugin DLLs, the plugin DLL
+ *      receives the module handle of XFLDR.DLL that it can use
+ *      with DosQueryProcAddr to receive a function pointer. See
+ *      the samples in src\widgets for how this is done.
  *
  *      <B>Where is what?</B>
  *
@@ -435,10 +462,6 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
                            MPFROM2SHORT(ID_XCENTER_CLIENT,
                                         XN_SETUPCHANGED),
                            (MPARAM)pSetting->pszSetupString);
-                /* if (pWidget->pSetupStringChanged)
-                    // updating supported:
-                    pWidget->pSetupStringChanged(pWidget,
-                                                 pSetting->pszSetupString); */
             }
 
             _wpSaveDeferred(pXCenterData->somSelf);

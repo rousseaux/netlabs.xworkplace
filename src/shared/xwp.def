@@ -46,6 +46,8 @@ EXPORTS
    lstAppendItem
    lstClear
    lstCountItems
+   lstCreate
+   lstFree
    lstInit
    lstMalloc
    lstQueryFirstNode

@@ -980,11 +980,14 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                             fGo = TRUE;
 
                         if (fGo)
+                        {
+                            DosSleep(300);
                             _wpChangePowerState(pPrivate->pPower,
                                                 MAKEULONG(6,        // set power state
                                                           0),       // reserved
                                                 MAKEULONG(1,        // all devices
                                                           2));      // suspend
+                        }
                     }
                 break;
 
@@ -1185,7 +1188,7 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
         break;
 
         /*
-         *@@ WM_COMMAND:
+         * WM_COMMAND:
          *      handle command from menus.
          */
 

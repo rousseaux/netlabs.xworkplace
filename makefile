@@ -126,10 +126,16 @@ ANIOBJS =
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = bin\helpers.lib
 
+!ifdef XWP_DEBUG
+PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
+!else
+PMPRINTF_LIB =
+!endif
+
 # The following macros contains the .OBJ files for the XCenter plugins.
-WINLISTOBJS = bin\widgets\w_winlist.obj
-MONITOROBJS = bin\widgets\w_monitors.obj
-SAMPLEOBJS = bin\widgets\____sample.obj
+WINLISTOBJS = bin\widgets\w_winlist.obj $(PMPRINTF_LIB)
+MONITOROBJS = bin\widgets\w_monitors.obj $(PMPRINTF_LIB)
+SAMPLEOBJS = bin\widgets\____sample.obj $(PMPRINTF_LIB)
 
 !ifdef PAGEMAGE
 PGMGDMNOBJS = bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
@@ -161,7 +167,6 @@ DEBUG_OBJS = bin\xdebug.obj bin\xdebug_folder.obj
 #   somtk       is the SOM toolkit lib
 #   pmprintf    is for debugging
 # The other OS/2 libraries are used by default.
-PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
 LIBS = somtk.lib $(PMPRINTF_LIB)
 
 # some variable strings to pass to sub-nmakes
@@ -372,7 +377,7 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -397,7 +402,7 @@ $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
         @cd $(MODULESDIR)
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif
@@ -433,7 +438,7 @@ $(XWPRUNNING)\plugins\xcenter\winlist.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 !endif
@@ -444,11 +449,9 @@ src\widgets\winlist.def: include\bldlevel.h
 
 $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
-$(WINLISTOBJS)
-<<
+        $(LINK) /OUT:$@ src\widgets\$(@B).def $(WINLISTOBJS)
         @cd $(MODULESDIR)
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif
@@ -462,7 +465,7 @@ $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 !endif
@@ -477,7 +480,7 @@ $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
 $(MONITOROBJS)
 <<
         @cd $(MODULESDIR)
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif
@@ -491,7 +494,7 @@ $(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 !endif
@@ -506,7 +509,7 @@ $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
 $(SAMPLEOBJS)
 <<
         @cd $(MODULESDIR)
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif
@@ -517,7 +520,7 @@ $(SAMPLEOBJS)
 #
 $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
         cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -535,7 +538,7 @@ $(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
         $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
         $(RC) ..\exe_mt\$(@B).res $(@B).exe
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif
@@ -547,7 +550,7 @@ $(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
 $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 # no unlock, this is a hook        unlock $@
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -570,7 +573,7 @@ $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
-!ifndef DEBUG
+!ifndef XWP_DEBUG
 # create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
 !endif

@@ -15,7 +15,7 @@
  *      This is all new with V0.9.7.
  *
  *@@added V0.9.7 (2000-11-27) [umoeller]
- *@@header "shared\center.h"
+ *@@header "xcenter\centerp.h"
  */
 
 /*
@@ -1318,6 +1318,21 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 }
             break;
 
+            case WM_FOCUSCHANGE:
+                // do NOTHING!
+            break;
+
+            case WM_QUERYFOCUSCHAIN:
+                // do NOTHING!
+            break;
+
+            case WM_QUERYFRAMEINFO:
+                DosBeep(2000, 30);
+                // this msg never comes in... sigh
+                mrc = (MRESULT)(FI_FRAME | FI_NOMOVEWITHOWNER);
+                        // but not FI_ACTIVATEOK
+            break;
+
             /*
              * WM_ADJUSTWINDOWPOS:
              *      we never want to become active.
@@ -1328,7 +1343,12 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 PSWP pswp = (PSWP)mp1;
                 if (pswp->fl & SWP_ACTIVATE)
                     pswp->fl &= ~SWP_ACTIVATE;
+                mrc = (MRESULT)AWP_DEACTIVATE;
             break; }
+
+            case WM_ADJUSTFRAMEPOS:
+                // do NOTHING!
+            break;
 
             /*
              * WM_ACTIVATE:
@@ -3774,7 +3794,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
  *
  *      To be precise, this starts a new thread for the
  *      XCenter view, since we want to allow the user to
- *      specify the XCenter's priority.
+ *      specify the XCenter's priority. The new thread is
+ *      in ctrp_fntXCenter.
  */
 
 HWND ctrpCreateXCenterView(XCenter *somSelf,

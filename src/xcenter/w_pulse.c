@@ -992,7 +992,7 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         /*
-         *@@ WM_WINDOWPOSCHANGED:
+         * WM_WINDOWPOSCHANGED:
          *      on window resize, allocate new bitmap.
          */
 

@@ -317,6 +317,8 @@ Are you sure you want to do this?
 
 <--XFL0195-->: The XCenter failed to create the widget of the class "%1".
 
+Check if maybe the xwplog.log file in the root directory of your boot drive contains additional information.
+
 <--XFL0196-->: Error creating file type "%1". Maybe the file type already exists.
 
 <--XFL0197-->: XCenter
