@@ -1,0 +1,17 @@
+NAME XWPSHELL WINDOWAPI
+
+Description '@#Ulrich M”ller:0.9.5#@ XWorkplace Security shell starter'
+
+CODE  MOVEABLE
+DATA  MOVEABLE MULTIPLE
+
+STACKSIZE   65536
+HEAPSIZE    10240
+
+PROTMODE
+
+IMPORTS
+    DOSQPROCSTATUS = DOSCALLS.154
+    DosQuerySysState = DOSCALLS.368
+
+
