@@ -39,12 +39,77 @@
     ULONG progIsProgramOrProgramFile(WPObject *somSelf);
 
     #ifdef INCL_WINPROGRAMLIST
+
+        #pragma pack(1)                 // SOM packs structures, apparently
+
+        /*
+         *@@ WPPROGRAMPRIVATE:
+         *      WPProgram instance data structure,
+         *      as far as I have been able to
+         *      decode it. See XWPProgram::wpInitData
+         *      where we get a pointer to this.
+         *
+         *      WARNING: This is the result of the
+         *      testing done on eComStation, i.e. the
+         *      MCP1 code level of the WPS. I have not
+         *      tested whether the struct ordering is
+         *      the same on older versions of OS/2, nor
+         *      can I guarantee that the ordering will
+         *      stay the same in the future (even though
+         *      IBM isn't changing the WPS any more).
+         *
+         *@@added V0.9.18 (2002-03-16) [umoeller]
+         */
+
+        typedef struct _WPPROGRAMPRIVATE
+        {
+            PSZ     pszEnvironment;     // string array with the program's
+                                        // environment (last string is terminated
+                                        // with two null bytes); this holds
+                                        // DOS settings for VIO and Win-OS/2
+                                        // sessions as well
+
+            SWP     SWPInitial;         // SWPInitial as in PROGDETAILS
+
+            BYTE    abUnknown[10];
+            ULONG   ulUnknown1;
+            ULONG   ulUnknown2;
+
+            ULONG   ulExecutableHandle; // 16-bit file-system handle for
+                                        // executable; 0xFFFF marks "*" (cmdline);
+                                        // ignored if pszExecutable != NULL
+
+            ULONG   ulStartupDirHandle; // 16-bit file-system handle for
+                                        // startup dir
+
+            ULONG   ulUnknown3;
+
+            PROGTYPE ProgType;          // PROGTYPE as in PROGDETAILS
+
+            ULONG   ulUnknown4;
+            ULONG   ulUnknown5;
+
+            PSZ     pszExecutable;      // string executable, overrides
+                                        // ulExecutableHandle if present; this is
+                                        // set if we specify something that cannot
+                                        // be resolved to a handle, such as an
+                                        // executable on the PATH
+
+            PSZ     pszParameters;      // parameters string (always stored in full)
+
+            // there are many more fields following, whose
+            // meaning is unknown to me
+
+        } WPPROGRAMPRIVATE, *PWPPROGRAMPRIVATE;
+
+        #pragma pack()
+
         PPROGDETAILS progQueryDetails(WPObject *pProgObject);
 
         BOOL progFillProgDetails(PPROGDETAILS pProgDetails,
                                  ULONG ulProgType,
                                  ULONG fbVisible,
-                                 PSWP pswpInitial,
+                                 PSWP pSWPInitial,
                                  PCSZ pcszTitle,
                                  PCSZ pcszExecutable,
                                  USHORT usStartupDirHandle,
