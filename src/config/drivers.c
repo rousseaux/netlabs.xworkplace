@@ -742,9 +742,8 @@ VOID cfgDriversInitPage(PNOTEBOOKPAGE pnbp,
         txvRegisterTextView(WinQueryAnchorBlock(pnbp->hwndDlgPage));
         hwndTextView = txvReplaceWithTextView(pnbp->hwndDlgPage,
                                               ID_OSDI_DRIVR_STATICDATA,
-                                              WS_VISIBLE | WS_TABSTOP,
-                                              XTXF_VSCROLL | XTXF_AUTOVHIDE
-                                                | XTXF_HSCROLL | XTXF_AUTOHHIDE,
+                                              WS_VISIBLE | WS_TABSTOP
+                                                | XS_FULLSCROLL,
                                               2);
         winhSetWindowFont(hwndTextView, (PSZ)cmnQueryDefaultFont());
 

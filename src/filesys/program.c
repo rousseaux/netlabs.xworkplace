@@ -1895,7 +1895,9 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
         // 2) set WP_OBJHANDLE
 
         if (    (pFile)
+#ifndef __NEVEREXTASSOCS__
              && (cmnQuerySetting(sfDatafileOBJHANDLE))  // V0.9.20 (2002-08-04) [umoeller]
+#endif
            )
             // file as argument: use WP_OBJHANDLE=xxx,yyy with
             // the handle of the file _and_ the program
@@ -2212,9 +2214,8 @@ VOID progFileInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         txvRegisterTextView(WinQueryAnchorBlock(pnbp->hwndDlgPage));
         hwndNew = txvReplaceWithTextView(pnbp->hwndDlgPage,
                                          ID_XSDI_PROG_DESCRIPTION,
-                                         WS_VISIBLE | WS_TABSTOP,
-                                         XTXF_VSCROLL | XTXF_AUTOVHIDE
-                                            | XTXF_HSCROLL | XTXF_AUTOHHIDE,
+                                         WS_VISIBLE | WS_TABSTOP
+                                            | XS_FULLSCROLL,
                                          2);
         winhSetWindowFont(hwndNew, cmnQueryDefaultFont());
     }

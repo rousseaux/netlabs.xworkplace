@@ -199,14 +199,14 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
 
 SOM_Scope HOBJECT  SOMLINK xfs_wpQueryHandle(XWPFileSystem *somSelf)
 {
-#ifdef __DEBUG__
+#ifdef DEBUG_PROGRAMSTART
     CHAR    szFilename[CCHMAXPATH];
 #endif
 
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryHandle");
 
-#ifdef __DEBUG__
+#ifdef DEBUG_PROGRAMSTART
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
         _PmpfF(("[%s]", szFilename));
 #endif

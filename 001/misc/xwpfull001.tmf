@@ -27,27 +27,36 @@
 ;
 
 ;
-; the following items have been changed with V0.9.19
+; this item added with V0.9.20 (2002-08-10) [umoeller]
 ;
 
-<--XFL0140-->: XWorkplace &version; (built &date;)
-(C) 1997-2002 Ulrich M”ller.
-English National Language Support: (C) 1998-2002 Ulrich M”ller.
+<--PRODUCTINFO-->: XWorkplace
+Version &version;
+Built &date;
 
-Contains portions (C) 2000-2002 Martin Lafaix, Paul Ratcliffe, and others.
-Contains portions from the Standard Function Library (C) 1991-99 iMatix corporation.
-Contains portions from expat 1.95.1 (C) 1998-2000 Thai Open Source Software Center Ltd.
+;
+; the following item has changed V0.9.20 (2002-08-10) [umoeller]
+;
 
-&xwp;'s home on the Internet is http://www.xworkplace.org.
-
+<--XFL0140-->: &copy;&nbsp;1997-2002 Ulrich M”ller.
+<BR>English National Language Support: &copy;&nbsp;1998-2002 Ulrich M”ller.
+<P>
+Contains portions &copy;&nbsp;2000-2002 Martin Lafaix, Paul Ratcliffe, and others.
+<BR>Contains portions from the Standard Function Library &copy;&nbsp;1991-99 iMatix corporation.
+<BR>Contains portions from expat 1.95.1 &copy;&nbsp;1998-2000 Thai Open Source Software Center Ltd.
+<P>
+&xwp;'s home on the Internet is <A HREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<P>
 Contact &contact-user; for bug reports and suggestions.
-Contact &contact-dev; if you are (or want to become) familiar with the &xwp; source code.
+<BR>Contact &contact-dev; if you are (or want to become) familiar with the &xwp; source code.
+<P>
+&xwp; is free software under the GNU General Public Licence (GPL), which is contained in the
+<A HREF="copying">COPYING file</A> in the &xwp; installation directory. &xwp; therefore comes with absolutely <B>no warranty.</B>
 
-&xwp; is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the &xwp; installation directory. The full source code is available from Netlabs CVS. See CVS.TXT in the &xwp; installation directory for details. You are welcome to redistribute and/or modify &xwp; under the conditions of the GPL.
-
-&xwp; comes with absolutely NO WARRANTY.
-
-For details, refer to the "Notices" section of the &xwp; User Guide.
+<P>The full source code is available from Netlabs CVS. See <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> for details.
+You are welcome to redistribute and/or modify &xwp; under the conditions of the GPL.
+<P>
+For more information, refer to the "Notices" section of the <A HREF="inf">&xwp; User Guide</A>.
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -381,6 +390,7 @@ See the &xwp; User Guide for details.
 
 <--FEATURES_6042-->: If enabled, this setting replaces the "Paste" dialog that comes up when you select "Paste" from a folder popup menu (or the "Edit" pulldown from a folder menu bar).
 As opposed to the WPS version, the replacement dialog keeps a history of object titles and remembers the last format and WPS class for pasting.
+In addition, it serves as a limited clipboard viewer and is smart enough to notice that clipboard data might change while the dialog is open.
 This was added with &xwp; V0.9.20.
 
 <--FEATURES_6043-->: This replaces the "File exists" dialog which appears if you move or copy files to a folder where another object already has the same title.

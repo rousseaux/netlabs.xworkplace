@@ -465,9 +465,10 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static PTRASHDATA GetTrashData(XFldObject *somSelf,
-                               XFldObjectData *somThis)
+static PTRASHDATA GetTrashData(XFldObject *somSelf)
 {
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
     // set deletion data:
     if (!_pvTrashData)
     {
@@ -502,6 +503,7 @@ static PTRASHDATA GetTrashData(XFldObject *somSelf,
  *      calls to XFldObject::xwpQueryDeletion will return FALSE only.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: now killing object ID
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
@@ -520,7 +522,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
             {
                 PTRASHDATA p;
 
-                if (p = GetTrashData(somSelf, somThis))
+                if (p = GetTrashData(somSelf))
                 {
                     DATETIME    dt;
                     DosGetDateTime(&dt);
@@ -556,6 +558,21 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpTrashObjectID:
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
+ */
+
+SOM_Scope ULONG SOMLINK xo_xwpTrashObjectID(XFldObject *somSelf)
+{
+    ULONG ulrc = 0;
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpTrashObjectID");
+
+    return ulrc;
+}
+
+/*
  *@@ xwpSetTrashObject:
  *      sets the internal trash object field to the specified
  *      trash object (XWPTrashObject) to be able to relate a
@@ -582,7 +599,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
             PTRASHDATA p;
 
             if (    (pTrashObject)
-                 && (p = GetTrashData(somSelf, somThis))
+                 && (p = GetTrashData(somSelf))
                )
             {
                 p->pTrashObject = pTrashObject;
@@ -2143,7 +2160,7 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
                             (PBYTE)&cdate, &cbcdate))
          && (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 2,
                             (PBYTE)&ctime, &cbctime))
-         && (p = GetTrashData(somSelf, somThis))
+         && (p = GetTrashData(somSelf))
        )
     {
         // both keys successfully restored:
@@ -2399,6 +2416,37 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
 
 /*
  *@@ wpAddToObjUseList:
+ *      this WPObject instance method adds a new item to the
+ *      object's in-use list.
+ *
+ *      Every object in the system has an in-use list. The in-use list
+ *      is a linked list of USEITEM structures. The USEITEM structure
+ *      consists of an item type and a pointer to the next USEITEM
+ *      structure and is followed immediately by an item type-specific
+ *      structure:
+ *
+ *      --  USAGE_LINK: followed by LINKITEM. This specifies a shadow
+ *          that is currently awake and points to this object.
+ *
+ *      --  USAGE_MEMORY: followed by MEMORYITEM. One of this is
+ *          allocated for each wpAllocMem call on the object.
+ *
+ *      --  USAGE_NOTIFY: followed by LINKITEM. This is new with Warp 4,
+ *          and I don't really know what it does.
+ *
+ *      --  USAGE_OPENVIEW: followed by VIEWITEM. This gets added for
+ *          each view of the object.
+ *
+ *      --  USAGE_OPENFILE: followed by VIEWFILE. This gets added for
+ *          data files only when a program is opened from an association.
+ *
+ *      --  USAGE_RECORD: followed by RECORDITEM. This gets added for
+ *          every container that the object is currently inserted in.
+ *
+ *      We replace this method for the USAGE_OPENVIEW case for data
+ *      files because the WPS creates a handle for each data file
+ *      in this method here. We do this only if the user has disabled
+ *      the "handles" setting on the "File types" page.
  *
  *@@added V0.9.20 (2002-08-04) [umoeller]
  */
@@ -2408,6 +2456,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 {
     BOOL    fLocked = FALSE,
             brc = FALSE;
+#ifndef __NEVEREXTASSOCS__
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpAddToObjUseList");
@@ -2416,13 +2465,15 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
     {
         PIBMOBJECTDATA pod;
 
-        if (    (cmnQuerySetting(sfDatafileOBJHANDLE))
-             || (!(_flObject & OBJFL_WPDATAFILE))
+        if (    (!(_flObject & OBJFL_WPDATAFILE))
              || (pUseItem->type != USAGE_OPENVIEW)
+             || (cmnQuerySetting(sfDatafileOBJHANDLE))
              || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
            )
+#endif
             brc = XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
                                                                pUseItem);
+#ifndef __NEVEREXTASSOCS__
         else
         {
             // object handles for data files disabled,
@@ -2512,54 +2563,6 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 
                 brc = TRUE;
             }
-
-                /*
-                PUSEITEM    pThis,
-                            pNext;
-
-                brc = TRUE;
-
-                if (!(pThis = pod->pUseItemFirst))
-                    // this is the first useitem:
-                    pod->pUseItemFirst = pUseItem;
-                else
-                {
-                    // we have other useitems:
-                    // append to tail, but make sure
-                    // the item is not in the list yet
-                    BOOL fAlreadyAdded = FALSE;
-                    while (pNext = pThis->pNext)
-                    {
-                        if (pThis == pUseItem)
-                        {
-                            brc = FALSE;
-                            break;
-                        }
-                        pThis = pNext;
-                    }
-
-                    if (brc)
-                        pThis->pNext = pUseItem;
-                }
-
-                if (brc)
-                {
-                    // set in-use emphasis
-                    _wpCnrSetEmphasis(somSelf,
-                                      CRA_INUSE,
-                                      TRUE);
-
-                    // lock the object once
-                    _wpLockObject(somSelf);
-
-                    // the WPS then creates an event semaphore here
-                    if (!(pod->hevViewItems))
-                        DosCreateEventSem(NULL,
-                                          &pod->hevViewItems,
-                                          0,
-                                          FALSE);
-                }
-                */
         }
     }
     CATCH(excpt1)
@@ -2569,12 +2572,15 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
+#endif
 
     return brc;
 }
 
 /*
  *@@ wpDeleteFromObjUseList:
+ *      reverse to WPObject::wpAddToObjUseList, this removes
+ *      a USEITEM from the object's list again.
  *
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
@@ -2584,6 +2590,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 {
     BOOL    fLocked = FALSE,
             brc = FALSE;
+#ifndef __NEVEREXTASSOCS__
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpDeleteFromObjUseList");
@@ -2597,8 +2604,10 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
              || (pUseItem->type != USAGE_OPENVIEW)
              || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
            )
+#endif
             brc = XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
                                                                     pUseItem);
+#ifndef __NEVEREXTASSOCS__
         else
         {
             // object handles for data files disabled,
@@ -2666,6 +2675,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
+#endif
 
     return brc;
 }

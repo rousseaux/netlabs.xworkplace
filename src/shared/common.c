@@ -57,6 +57,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSMISC
+#define INCL_DOSNLS
 #define INCL_DOSERRORS
 
 #define INCL_WINSHELLDATA       // Prf* functions
@@ -1068,14 +1069,22 @@ typedef struct _XWPENTITY
 
 typedef const struct _XWPENTITY *PCXWPENTITY;
 
+static CHAR     G_szCopyright[5] = "";
+
 static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
                 G_pcszBldDate = __DATE__,
                 G_pcszNewLine = "\n",
+                G_pcszNBSP = "\xFF",      // non-breaking space
                 G_pcszContactUser = CONTACT_ADDRESS_USER,
-                G_pcszContactDev = CONTACT_ADDRESS_DEVEL;
+                G_pcszContactDev = CONTACT_ADDRESS_DEVEL,
+                G_pcszCopyChar = "\xB8",       // in codepage 850
+                G_pcszCopyright = G_szCopyright;
+
+static BOOL     G_fEntitiesHacked = FALSE;
 
 static const XWPENTITY G_aEntities[] =
     {
+        "&copy;", &G_pcszCopyright,
         "&xwp;", &ENTITY_XWORKPLACE,
         "&os2;", &ENTITY_OS2,
         "&winos2;", &ENTITY_WINOS2,
@@ -1087,9 +1096,45 @@ static const XWPENTITY G_aEntities[] =
         "&date;", &G_pcszBldDate,
         "&pgr;", &ENTITY_PAGER,
         "&nl;", &G_pcszNewLine,
+        "&nbsp;", &G_pcszNBSP,
         "&contact-user;", &G_pcszContactUser,
         "&contact-dev;", &G_pcszContactDev,
     };
+
+/*
+ *@@ cmnInitEntities:
+ *      called from initMain to initialize NLS-dependent
+ *      parts of the entities.
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
+ */
+
+VOID cmnInitEntities(VOID)
+{
+    // get the current process codepage for the WPS
+    ULONG acp[8];       // fixed V0.9.19 (2002-04-14) [umoeller], this needs an array
+    ULONG cb = 0;
+    APIRET arcCP;
+    if (arcCP = DosQueryCp(sizeof(acp),
+                           acp,
+                           &cb))
+        acp[0] = 437;
+
+    if (acp[0] == 850)
+        strcpy(G_szCopyright, G_pcszCopyChar);
+    else
+    {
+        WinCpTranslateString(G_habThread1,
+                             850,
+                             (PSZ)G_pcszCopyChar,
+                             acp[0],
+                             sizeof(G_szCopyright),
+                             G_szCopyright);
+        if (G_szCopyright[0] == '\xFF')
+            strcpy(G_szCopyright, "(C)");
+    }
+
+}
 
 /*
  *@@ ReplaceEntities:
@@ -1606,7 +1651,7 @@ PCSZ cmnQueryThemeDirectory(VOID)
                 ULONG cb = sizeof(G_szXWPThemeDir);
                 if (    (PrfQueryProfileData(HINI_USER,
                                             (PSZ)INIAPP_XWORKPLACE,
-                                            (PSZ)INIKEY_THEMESDIR,
+                                            (PSZ)INIKEY_THEMESDIR,  // "ThemesDir"
                                             G_szXWPThemeDir,
                                             &cb))
                      && (cb > 4)
@@ -4541,7 +4586,7 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
  *
  ********************************************************************/
 
-#ifndef __XWPLITE__
+#ifndef __EWORKPLACE__
 
 /*
  *@@ cmnAddProductInfoMenuItem:
@@ -4587,19 +4632,21 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
 
 #endif
 
-#define INFO_WIDTH  200
-
+#ifdef __ECSPRODUCTINFO__
+#define INFO_WIDTH  150
+#else
+#define INFO_WIDTH  250
+#endif
 
 static CONTROLDEF
     ProductInfoBitmap = CONTROLDEF_BITMAP(
                             NULLHANDLE,     // replaced with HBITMAP below
                             ID_XFD_PRODLOGO),
 
-#ifdef __XWPLITE__
     ProductInfoText1 =
         {
             WC_STATIC,
-            NULL,
+            NULL,               // XWorkplace or eCS Desktop
             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP | DT_WORDBREAK,
             -1,
             "9.WarpSans Bold",
@@ -4607,46 +4654,225 @@ static CONTROLDEF
             {INFO_WIDTH, -1},
             COMMON_SPACING
         },
+    ProductInfoSepLine1 =
+        {
+            WC_STATIC,
+            NULL,
+            WS_VISIBLE | SS_GROUPBOX,
+            9998,
+            NULL,
+            0,
+            {INFO_WIDTH, 4},
+            COMMON_SPACING
+        },
+#ifdef __ECSPRODUCTINFO__
     ProductInfoText2 = CONTROLDEF_TEXT_WORDBREAK(
-                            NULL,
+                            NULL,       // &copy;&nbsp;1992, 1996 IBM Corporation. ...
                             -1,
                             INFO_WIDTH),
 #endif
-    ProductInfoText3 = CONTROLDEF_TEXT_WORDBREAK(
+    ProductInfoText3 = /* CONTROLDEF_TEXT_WORDBREAK(
                             NULL,
                             ID_XSDI_INFO_STRING,
-                            INFO_WIDTH);
-
+                            INFO_WIDTH), */
+#if 1
+        CONTROLDEF_XTEXTVIEW_HTML(NULL, ID_XSDI_INFO_STRING, INFO_WIDTH, NULL),
+#else
+        {
+            WC_XTEXTVIEW,
+            NULL,
+            WS_VISIBLE,
+            ID_XSDI_INFO_STRING,
+            CTL_COMMON_FONT,
+            0,
+            {INFO_WIDTH, SZL_AUTOSIZE},
+            COMMON_SPACING,
+            NULL
+        },
+#endif
+    ProductInfoSepLine2 =
+        {
+            WC_STATIC,
+            NULL,
+            WS_VISIBLE | SS_GROUPBOX,
+            9999,
+            NULL,
+            0,
+            {INFO_WIDTH, 4},
+            COMMON_SPACING
+        },
+    ProductInfoInstalledMemoryTxt = LOADDEF_TEXT(ID_XSDI_INFO_MAINMEM_TXT),
+    ProductInfoInstalledMemoryValue = CONTROLDEF_TEXT_RIGHT(
+                            NULL,
+                            ID_XSDI_INFO_MAINMEM_VALUE,
+                            40,
+                            SZL_AUTOSIZE),
+    ProductInfoFreeMemoryTxt = LOADDEF_TEXT(ID_XSDI_INFO_FREEMEM_TXT),
+    ProductInfoFreeMemoryValue = CONTROLDEF_TEXT_RIGHT(
+                            NULL,
+                            ID_XSDI_INFO_FREEMEM_VALUE,
+                            40,
+                            SZL_AUTOSIZE),
+    ProductInfoSepVert = CONTROLDEF_TEXT(" ", -1, 10, 2),
+    ProductInfoInstalledKBytes = CONTROLDEF_TEXT(
+                            "KBytes",
+                            -1,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+    ProductInfoFreeKBytes = CONTROLDEF_TEXT(
+                            NULL,
+                            -1,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE);
 static const DLGHITEM dlgProductInfo[] =
     {
-        START_TABLE,            // root table, required
-            START_ROW(ROW_VALIGN_BOTTOM),
+        START_TABLE_ALIGN,            // root table, required
+            START_ROW(ROW_VALIGN_CENTER),
                 CONTROL_DEF(&ProductInfoBitmap),
                 START_TABLE,
-#ifdef __XWPLITE__
                     START_ROW(0),
                         CONTROL_DEF(&ProductInfoText1),
+                    START_ROW(0),
+                        CONTROL_DEF(&ProductInfoSepLine1),
+#ifdef __ECSPRODUCTINFO__
                     START_ROW(0),
                         CONTROL_DEF(&ProductInfoText2),
 #endif
                     START_ROW(0),
                         CONTROL_DEF(&ProductInfoText3),
                     START_ROW(0),
-                        CONTROL_DEF(&G_OKButton),
+                        CONTROL_DEF(&ProductInfoSepLine2),
+                    START_ROW(0),
+                        START_TABLE_ALIGN,
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&ProductInfoInstalledMemoryTxt),
+                                CONTROL_DEF(&ProductInfoInstalledMemoryValue),
+                                CONTROL_DEF(&ProductInfoInstalledKBytes),
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&ProductInfoFreeMemoryTxt),
+                                CONTROL_DEF(&ProductInfoFreeMemoryValue),
+                                CONTROL_DEF(&ProductInfoFreeKBytes),
+                        END_TABLE,
                 END_TABLE,
+            START_ROW(ROW_VALIGN_CENTER),
+                START_ROW(0),
+                    CONTROL_DEF(&ProductInfoSepVert),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&ProductInfoSepVert),
+                CONTROL_DEF(&G_OKButton),
         END_TABLE
     };
 
+PFNWP   G_pfnwpStatic = NULL;
+
 /*
- * PRODUCTINFODATA:
- *      small struct for QWL_USER in cmn_fnwpProductInfo.
+ *@@ fnwpSeparatorLine:
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
  */
 
-typedef struct _PRODUCTINFODATA
+static MRESULT EXPENTRY fnwpSeparatorLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    HBITMAP hbm;
-    POINTL  ptlBitmap;
-} PRODUCTINFODATA, *PPRODUCTINFODATA;
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_PAINT:
+        {
+            RECTL rcl;
+            HPS hps;
+            WinQueryWindowRect(hwnd, &rcl);
+            if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
+            {
+                POINTL ptl;
+
+                gpihSwitchToRGB(hps);
+
+                GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0));
+
+                ptl.x = rcl.xLeft;
+                ptl.y = (rcl.yTop - rcl.yBottom) / 2 - 1;
+                GpiMove(hps, &ptl);
+                ptl.x = rcl.xRight;
+                GpiLine(hps, &ptl);
+
+                GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0));
+
+                ptl.x = rcl.xLeft;
+                ++ptl.y;
+                GpiMove(hps, &ptl);
+                ptl.x = rcl.xRight;
+                GpiLine(hps, &ptl);
+
+                WinEndPaint(hps);
+            }
+        }
+        break;
+
+        default:
+            mrc = G_pfnwpStatic(hwnd, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+/*
+ *@@ fnwpProductInfo:
+ *
+ *@@added V0.9.20 (2002-08-10) [umoeller]
+ */
+
+static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc;
+
+    switch (msg)
+    {
+        case WM_CONTROL:
+            if (    (SHORT1FROMMP(mp1) == ID_XSDI_INFO_STRING)
+                 && (SHORT2FROMMP(mp1) == TXVN_LINK)
+               )
+            {
+                CHAR szTemp[CCHMAXPATH];
+
+                if (!strcmp(mp2, "inf"))
+                {
+                    cmnQueryXWPBasePath(szTemp);
+                    sprintf(szTemp + strlen(szTemp),
+                            "\\xfldr%s.inf",
+                            cmnQueryLanguageCode());
+
+                    appQuickStartApp("view.exe",
+                                     PROG_PM,
+                                     szTemp,
+                                     NULL,
+                                     NULL);         // don't wait
+                }
+                else if (!strcmp(mp2, "copying"))
+                {
+                    WPObject *pobj;
+                    cmnQueryXWPBasePath(szTemp);
+                    strcat(szTemp, "\\COPYING");
+                    if (pobj = _wpclsQueryObjectFromPath(_WPFileSystem, szTemp))
+                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                                (MPARAM)pobj,
+                                                (MPARAM)OPEN_DEFAULT);
+                }
+                else if (!strnicmp(mp2, "http://", 7))
+                {
+                    appOpenURL((PCSZ)mp2);
+                }
+            }
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 /*
  *@@ cmnShowProductInfo:
@@ -4656,6 +4882,7 @@ typedef struct _PRODUCTINFODATA
  *@@added V0.9.1 (2000-02-13) [umoeller]
  *@@changed V0.9.5 (2000-10-07) [umoeller]: now using cmn_fnwpProductInfo
  *@@changed V0.9.13 (2001-06-23) [umoeller]: added hwndOwner
+ *@@changed V0.9.20 (2002-08-10) [umoeller]: quite heavily rewritten
  */
 
 VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
@@ -4670,32 +4897,18 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                 strInfoECS2;
     PDLGHITEM   paNew;
 
+    CHAR        szPhysMem[50],
+                szFreeMem[50],
+                szFreeMemKBytes[50];
+    ULONG       ulMem, ulFreeMem;
+
 #ifndef __NOXSYSTEMSOUNDS__
     cmnPlaySystemSound(ulSound);
 #endif
 
-    // load and convert info text
-    xstrInit(&strInfo, 0);
-    cmnGetMessage(NULL, 0,
-                  &strInfo,
-                  140);
-    ProductInfoText3.pcszText = strInfo.psz;
+    txvRegisterTextView(G_habThread1);
 
-#ifdef __XWPLITE__
-    xstrInit(&strInfoECS1, 0);
-    cmnGetMessageExt(NULL, 0,
-                     &strInfoECS1,
-                     "ECSPRODINFO01");
-    ProductInfoText1.pcszText = strInfoECS1.psz;
-
-    xstrInit(&strInfoECS2, 0);
-    cmnGetMessageExt(NULL, 0,
-                     &strInfoECS2,
-                     "ECSPRODINFO02");
-    ProductInfoText2.pcszText = strInfoECS2.psz;
-#endif
-
-    // version string
+    // bitmap
     if (hps = WinGetPS(HWND_DESKTOP))
     {
         hbmLogo = GpiLoadBitmap(hps,
@@ -4707,6 +4920,42 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
         WinReleasePS(hps);
     }
 
+    xstrInit(&strInfoECS1, 0);
+    cmnGetMessageExt(NULL, 0,
+                     &strInfoECS1,
+                     "PRODUCTINFO");
+    ProductInfoText1.pcszText = strInfoECS1.psz;
+
+#ifdef __ECSPRODUCTINFO__
+    xstrInit(&strInfoECS2, 0);
+    cmnGetMessageExt(NULL, 0,
+                     &strInfoECS2,
+                     "ECSPRODINFO02");      // &copy;&nbsp;1992, 1996 IBM Corporation. ...
+    ProductInfoText2.pcszText = strInfoECS2.psz;
+#endif
+
+    xstrInit(&strInfo, 0);
+    cmnGetMessage(NULL, 0,
+                  &strInfo,
+                  140);
+    txvStripLinefeeds(&strInfo.psz, 4);
+    ProductInfoText3.pcszText = strInfo.psz;
+
+    DosQuerySysInfo(QSV_TOTPHYSMEM,
+                    QSV_TOTPHYSMEM,
+                    &ulMem, sizeof(ulMem));
+    nlsThousandsULong(szPhysMem, ulMem / 1024, cmnQueryThousandsSeparator());
+    ProductInfoInstalledMemoryValue.pcszText = szPhysMem;
+
+    Dos16MemAvail(&ulFreeMem);
+    nlsThousandsULong(szFreeMem, ulFreeMem / 1024, cmnQueryThousandsSeparator());
+    ProductInfoFreeMemoryValue.pcszText = szFreeMem;
+
+    sprintf(szFreeMemKBytes,
+            "KBytes (%u %%)",
+            (ULONG)((double)ulFreeMem * 100 / ulMem));
+    ProductInfoFreeKBytes.pcszText = szFreeMemKBytes;
+
     if (!cmnLoadDialogStrings(dlgProductInfo,
                               ARRAYITEMCOUNT(dlgProductInfo),
                               &paNew))
@@ -4714,13 +4963,16 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
         if (!dlghCreateDlg(&hwndInfo,
                            hwndOwner,
                            FCF_FIXED_DLG,
-                           WinDefDlgProc,
+                           fnwpProductInfo, // WinDefDlgProc,   V0.9.20 (2002-08-10) [umoeller]
                            cmnGetString(ID_XSDI_INFO_TITLE),
                            paNew,
                            ARRAYITEMCOUNT(dlgProductInfo),
                            NULL,
                            cmnQueryDefaultFont()))
         {
+            G_pfnwpStatic = WinSubclassWindow(WinWindowFromID(hwndInfo, 9998), fnwpSeparatorLine);
+            G_pfnwpStatic = WinSubclassWindow(WinWindowFromID(hwndInfo, 9999), fnwpSeparatorLine);
+
             winhCenterWindow(hwndInfo);
             WinProcessDlg(hwndInfo);
             WinDestroyWindow(hwndInfo);
@@ -4732,8 +4984,10 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     if (hbmLogo)
         GpiDeleteBitmap(hbmLogo);
 
-    xstrClear(&strInfo);
-#ifdef __XWPLITE__
+    if (strInfo.psz)
+        free(strInfo.psz);
+
+#ifdef __ECSPRODUCTINFO__
     xstrClear(&strInfoECS1);
     xstrClear(&strInfoECS2);
 #endif

@@ -929,6 +929,7 @@ xcenterhelp:
                                                   &Pos))
                 {
                     PCXCENTERWIDGETCLASS pClass;
+                    PCSZ pcszClassTitle;
                     // added confirmation V0.9.20 (2002-08-08) [umoeller]
                     if (    (!(pWidget->ulClassFlags & WGTF_CONFIRMREMOVE))
                             // confirm remove enabled:
@@ -936,9 +937,10 @@ xcenterhelp:
                          || (    (!ctrpFindClass(pWidget->pcszWidgetClass,
                                                  FALSE,       // fMustBeTrayable
                                                  &pClass))
+                              && (pcszClassTitle = pClass->pcszClassTitle)
                               && (DID_YES == cmnMessageBoxExt(hwnd,
                                                               243, // Remove Widget
-                                                              &pClass->pcszClassTitle,
+                                                              &pcszClassTitle,
                                                               1,
                                                               244, // Are you sure you want to remove this widget of the class %1?
                                                               MB_YESNO))

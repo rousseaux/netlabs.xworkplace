@@ -1130,6 +1130,8 @@
      *
      ********************************************************************/
 
+    VOID XWPENTRY cmnInitEntities(VOID);
+
     void XWPENTRY cmnLoadString(HAB habDesktop,
                                 HMODULE hmodResource,
                                 ULONG ulID,

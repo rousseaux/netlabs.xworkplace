@@ -172,11 +172,11 @@ VOID icomUnlockIconShares(VOID)
  *      In detail, this does the following:
  *
  *      1)  Calls wpQueryIcon(somSelf) to get the current icon of
- *          the object. This will go through the class-specific
+ *          the server. This will go through the class-specific
  *          overhead to determine somSelf's current (program) icon.
  *
  *      2)  If the client is already a client of some other server,
- *          it is removed from that server's tree first.
+ *          it is detached from that server's tree first.
  *
  *      3)  Adds pobjClient to the list of clients using this icon
  *          in somSelf's instance data, if it's not a client of
@@ -313,19 +313,19 @@ HPOINTER icomShareIcon(WPObject *somSelf,       // in: server object
         }
 
         if (    (fMakeGlobal)
-             && (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+             // && (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                 // it is sufficient to do this once
              && (!(_flObject & OBJFL_GLOBALICON))
            )
         {
-            WinSetPointerOwner(hptrIcon,
-                               (PID)0,
-                               FALSE);      // do not allow people to destroy this
             _flObject |= OBJFL_GLOBALICON;
+            // _wpReleaseObjectMutexSem(somSelf);
+
+            WinSetPointerOwner(hptrIcon,
+                               0,           // pid
+                               FALSE);      // do not allow people to destroy this
         }
 
-        if (fLocked)
-            _wpReleaseObjectMutexSem(somSelf);
     }
 
     return hptrIcon;
@@ -348,46 +348,63 @@ VOID icomUnShareIcon(WPObject *pobjServer,      // in: icon server object
                      WPObject *pobjClient)      // in: icon client object
 {
     BOOL fLocked = FALSE;
-
     XFldObjectData *somServer = XFldObjectGetData(pobjServer);
     XFldObjectData *somClient = XFldObjectGetData(pobjClient);
     XFldObjectData *somThat;
 
-    if (somServer->pFirstIconClient == pobjClient)
-        // item to be removed is first: adjust first
-        somServer->pFirstIconClient = somClient->pNextClient;     // can be NULL
-
-    if (somServer->pLastIconClient == pobjClient)
-        // item to be removed is last: adjust last
-        somServer->pLastIconClient = somClient->pPreviousClient;  // can be NULL
-
-    if (somClient->pPreviousClient)
+    if (somServer->cIconClients)
     {
-        // we have a previous object: make that point to
-        // our next object, taking us out from the middle
-        somThat = XFldObjectGetData(somClient->pPreviousClient);
-        somThat->pNextClient = somClient->pNextClient;
+        if (somServer->pFirstIconClient == pobjClient)
+            // item to be removed is first: adjust first
+            somServer->pFirstIconClient = somClient->pNextClient;     // can be NULL
+
+        if (somServer->pLastIconClient == pobjClient)
+            // item to be removed is last: adjust last
+            somServer->pLastIconClient = somClient->pPreviousClient;  // can be NULL
+
+        if (somClient->pPreviousClient)
+        {
+            // we have a previous object: make that point to
+            // our next object, taking us out from the middle
+            somThat = XFldObjectGetData(somClient->pPreviousClient);
+            somThat->pNextClient = somClient->pNextClient;
+        }
+
+        if (somClient->pNextClient)
+        {
+            // we have a next object: make that point to
+            // our previous object, taking us out from the middle
+            somThat = XFldObjectGetData(somClient->pNextClient);
+            somThat->pPreviousClient = somClient->pPreviousClient;
+        }
+
+        somClient->pobjIconServer
+            = somClient->pPreviousClient
+            = somClient->pNextClient
+            = NULL;
+
+        // decrease list count
+        (somServer->cIconClients)--;
+
+        if (    (!somServer->cIconClients)      // was this the last icon?
+             // && (fLocked = !_wpRequestObjectMutexSem(pobjServer, SEM_INDEFINITE_WAIT))
+                // it is sufficient to do this once
+             && (somServer->flObject & OBJFL_GLOBALICON)
+           )
+        {
+            somServer->flObject &= ~OBJFL_GLOBALICON;
+
+            // _wpReleaseObjectMutexSem(pobjServer);
+
+            WinSetPointerOwner(_wpQueryIcon(pobjServer),
+                               G_pidWPS,
+                               TRUE);
+        }
+
+        // unlock the server once,
+        // it was locked by us previously
+        _wpUnlockObject(pobjServer);
     }
-
-    if (somClient->pNextClient)
-    {
-        // we have a next object: make that point to
-        // our previous object, taking us out from the middle
-        somThat = XFldObjectGetData(somClient->pNextClient);
-        somThat->pPreviousClient = somClient->pPreviousClient;
-    }
-
-    somClient->pobjIconServer
-        = somClient->pPreviousClient
-        = somClient->pNextClient
-        = NULL;
-
-    // decrease list count
-    (somServer->cIconClients)--;
-
-    // unlock the server once,
-    // it was locked by us previously
-    _wpUnlockObject(pobjServer);
 }
 
 /* ******************************************************************

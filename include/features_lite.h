@@ -4,6 +4,8 @@
 #define __NOEXCEPTIONBEEPS__                    1
 #define __NOPARANOIA__                          1
 
+#define __ECSPRODUCTINFO__                      1
+
 // classes
 #define __NOOS2KERNEL__                         1
 #define __NOXWPSETUP__                          1

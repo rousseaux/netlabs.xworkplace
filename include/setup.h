@@ -336,11 +336,11 @@
             // #define DEBUG_FOPS
 
         // debug trashcan
-            #define DEBUG_TRASHCAN
+            // #define DEBUG_TRASHCAN
 
 /* program objects */
         // debug program startup data
-            #define DEBUG_PROGRAMSTART
+            // #define DEBUG_PROGRAMSTART
 
 /* daemon and hook */
 

@@ -110,6 +110,7 @@ interface XFldObject : WPObject
 
     BOOL xwpQueryDeletion(in CDATE* pcdateDeleted, in CTIME* pctimeDeleted);
     BOOL xwpSetDeletion(in BOOL fSet);
+    ULONG xwpTrashObjectID();
 
     BOOL xwpSetTrashObject(in WPObject pTrashObject);
 
@@ -135,6 +136,7 @@ interface XFldObject : WPObject
 
     releaseorder: xwpQueryDeletion,
                   xwpSetDeletion,
+                  xwpTrashObjectID,
                   xwpSetTrashObject,
                   xwpQueryObjectHotkey,
                   xwpSetObjectHotkey,

@@ -39,6 +39,12 @@
         #define OBJSTYLE_LOCKEDINPLACE  0x00020000
     #endif
 
+    /* ******************************************************************
+     *
+     *   Object internals
+     *
+     ********************************************************************/
+
     /*
      *@@ TRASHDATA:
      *      object deletion information if the object
@@ -60,13 +66,12 @@
         WPObject    *pTrashObject;  // corresponding trash object; this is set when
                                     // the trash object is created (upon deletion
                                     // or upon first trash can populate)
+        PSZ         pWszOldObjectID;
+                                    // object ID of trash object or NULL
+                                    // if the object had none
+                                    // (allocated using wpAllocMem!)
+                                    // V0.9.20 (2002-08-10) [umoeller]
     } TRASHDATA, *PTRASHDATA;
-
-    /* ******************************************************************
-     *
-     *   Object internals
-     *
-     ********************************************************************/
 
     #pragma pack(1)                 // SOM packs structures, apparently
 

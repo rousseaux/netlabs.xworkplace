@@ -179,11 +179,15 @@ Last updated August 9, 2002
 ============================
 
     This archive contains XWorkplace National Language Support
-    (NLS) for English only. XWorkplace is prepared for supporting
-    additional languages via additional NLS packages, which are
-    maintained and released by people other than me. You might
-    find information about NLS packages on the mailing lists
-    (see CONTACT below).
+    (NLS) for English only.
+
+    However, XWorkplace is prepared for supporting additional
+    languages via additional NLS packages, which are maintained
+    and released by people other than me.
+
+    Some are listed on www.xworkplace.org on the download page,
+    but you will probably find more up-to-date information about
+    NLS packages on the mailing lists (see CONTACT below).
 
 
 6. GETTING STARTED

@@ -242,9 +242,11 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
             HOBJECT hobj;
             WPObject *pobj;
 
+            #ifdef DEBUG_ICONREPLACEMENTS
             _PmpfF(("[%s] ulExecutableHandle 0x%lX",
                     _wpQueryTitle(somSelf),
                     pData->ulExecutableHandle));
+            #endif
 
             if (pData->ulExecutableHandle == 0xFFFF)
             {
@@ -595,7 +597,9 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
     BOOL        brc = FALSE;
     BOOL        fLocked = FALSE;
 
+    #ifdef DEBUG_ICONREPLACEMENTS
     _PmpfF(("entering"));
+    #endif
 
     TRY_LOUD(excpt1)
     {
@@ -610,7 +614,9 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
             CHAR    szFQExecutable[CCHMAXPATH];
             PSZ     pszExec = NULL;
 
+            #ifdef DEBUG_ICONREPLACEMENTS
             _PmpfF(("_xwpQueryExecutable returned %s", szExecutable));
+            #endif
 
             // handle icons for command lines V0.9.20 (2002-07-03) [umoeller]
             if (!strcmp(szExecutable, "*"))
@@ -640,7 +646,9 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
             else
                 pszExec = szExecutable;
 
+            #ifdef DEBUG_ICONREPLACEMENTS
             _PmpfF(("pszExec is %s", STRINGORNULL(pszExec)));
+            #endif
 
             if (pszExec)
             {

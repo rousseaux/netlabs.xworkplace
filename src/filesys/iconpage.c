@@ -604,6 +604,7 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
                         if (happ = appQuickStartApp(szIconEdit,
                                                     PROG_DEFAULT,
                                                     szTempFile,
+                                                    NULL,
                                                     &ulExitCode))
                         {
                             pcszContext = "Context: setting new icon data";

@@ -1204,6 +1204,9 @@ VOID initMain(VOID)
     */
 
     krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
+                // sets G_habThread1 as well
+
+    cmnInitEntities();
 
     initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
                       G_KernelGlobals.hwndThread1Object);
