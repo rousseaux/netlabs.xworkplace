@@ -167,10 +167,10 @@ static BOOL            G_fCountrySettingsLoaded = FALSE;
 
 static ULONG           G_ulCurHelpPanel = 0;      // holds help panel for dialog
 
-static CHAR            G_szStatusBarFont[100];
-static CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
-                       G_szSBTextMultiSel[CCHMAXMNEMONICS];
-static ULONG           G_ulStatusBarHeight;
+static CHAR            G_szStatusBarFont[100] = "";
+static CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS] = "",
+                       G_szSBTextMultiSel[CCHMAXMNEMONICS] = "";
+static ULONG           G_ulStatusBarHeight = 0;
 
 static CHAR            G_szRunDirectory[CCHMAXPATH]; // V0.9.14
 
@@ -253,7 +253,8 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
 
             if (rc = DosQueryModuleName(hModule, CCHMAXPATH, G_szDLLFile))
                 DosBeep(100, 100);
-        break; }
+        }
+        break;
 
         case 1:
             // DLL being freed: cleanup runtime
@@ -1694,6 +1695,7 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
  *      class of the selected object.
  *
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *@@changed V0.9.16 (2001-12-02) [umoeller]: now loading on demand
  */
 
 const char* cmnQueryStatusBarSetting(USHORT usSetting)
@@ -1710,14 +1712,56 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
             switch (usSetting)
             {
                 case SBS_STATUSBARFONT:
+                    if (!G_szStatusBarFont[0])
+                    {
+                        // first call:
+                        PrfQueryProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_STATUSBARFONT,
+                                              (PSZ)cmnQueryDefaultFont(),   // V0.9.16 (2001-12-02) [umoeller]
+                                              &G_szStatusBarFont,
+                                              sizeof(G_szStatusBarFont));
+                        sscanf(G_szStatusBarFont, "%d.*%s", &(G_ulStatusBarHeight));
+                        G_ulStatusBarHeight += 15;
+                    }
+
                     rc = G_szStatusBarFont;
                 break;
 
                 case SBS_TEXTNONESEL:
+                    if (!G_szSBTextNoneSel[0])
+                    {
+                        // first call:
+                        if (!PrfQueryProfileString(HINI_USERPROFILE,
+                                                   (PSZ)INIAPP_XWORKPLACE,
+                                                   (PSZ)INIKEY_SBTEXTNONESEL,
+                                                   NULL,
+                                                   &G_szSBTextNoneSel,
+                                                   sizeof(G_szSBTextNoneSel)))
+                            WinLoadString(G_habThread1,     // kernel.c
+                                          cmnQueryNLSModuleHandle(FALSE),
+                                          ID_XSSI_SBTEXTNONESEL,
+                                          sizeof(G_szSBTextNoneSel), G_szSBTextNoneSel);
+                    }
                     rc = G_szSBTextNoneSel;
                 break;
 
                 case SBS_TEXTMULTISEL:
+                    if (!G_szSBTextMultiSel[0])
+                    {
+                        // first call:
+                        if (!PrfQueryProfileString(HINI_USERPROFILE,
+                                                   (PSZ)INIAPP_XWORKPLACE,
+                                                   (PSZ)INIKEY_SBTEXTMULTISEL,
+                                                   NULL,
+                                                   &G_szSBTextMultiSel,
+                                                   sizeof(G_szSBTextMultiSel)))
+                            WinLoadString(G_habThread1,     // kernel.c
+                                          cmnQueryNLSModuleHandle(FALSE),
+                                          ID_XSSI_SBTEXTMULTISEL,
+                                          sizeof(G_szSBTextMultiSel), G_szSBTextMultiSel);
+                    }
+
                     rc = G_szSBTextMultiSel;
                 break;
             }
@@ -1731,6 +1775,8 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
     return (rc);
 }
 
+#ifndef __NOCFGSTATUSBARS__
+
 /*
  *@@ cmnSetStatusBarSetting:
  *      sets usSetting to pszSetting. If pszSetting == NULL, the
@@ -1739,6 +1785,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
  *
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
  *@@changed V0.9.16 (2001-09-29) [umoeller]: now using XWP default font for status bars instead of 8.Helv always
+ *@@changed V0.9.16 (2001-12-02) [umoeller]: fixed status bar settings problems
  */
 
 BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
@@ -1762,7 +1809,6 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                 case SBS_STATUSBARFONT:
                 {
                     CHAR szDummy[CCHMAXMNEMONICS];
-#ifndef __NOCFGSTATUSBARS__
                     if (pszSetting)
                     {
                         strcpy(G_szStatusBarFont, pszSetting);
@@ -1772,16 +1818,22 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                                               G_szStatusBarFont);
                     }
                     else
-#endif
+                    {
+                        // NULL:
                         strcpy(G_szStatusBarFont,
                                cmnQueryDefaultFont());      // V0.9.16 (2001-09-29) [umoeller]
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_STATUSBARFONT,
+                                              NULL);
+                    }
                     sscanf(G_szStatusBarFont, "%d.%s", &(G_ulStatusBarHeight), &szDummy);
                     G_ulStatusBarHeight += 15;
-                break; }
+                }
+                break;
 
                 case SBS_TEXTNONESEL:
                 {
-#ifndef __NOCFGSTATUSBARS__
                     if (pszSetting)
                     {
                         strcpy(G_szSBTextNoneSel, pszSetting);
@@ -1791,15 +1843,20 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                                               G_szSBTextNoneSel);
                     }
                     else
-#endif
+                    {
                         WinLoadString(habDesktop,
                                       hmodResource, ID_XSSI_SBTEXTNONESEL,
                                       sizeof(G_szSBTextNoneSel), G_szSBTextNoneSel);
-                break; }
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_SBTEXTNONESEL,
+                                              NULL);
+                    }
+                }
+                break;
 
                 case SBS_TEXTMULTISEL:
                 {
-#ifndef __NOCFGSTATUSBARS__
                     if (pszSetting)
                     {
                         strcpy(G_szSBTextMultiSel, pszSetting);
@@ -1809,11 +1866,17 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                                               G_szSBTextMultiSel);
                     }
                     else
-#endif
+                    {
                         WinLoadString(habDesktop,
                                       hmodResource, ID_XSSI_SBTEXTMULTISEL,
                                       sizeof(G_szSBTextMultiSel), G_szSBTextMultiSel);
-                break; }
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_SBTEXTMULTISEL,
+                                              NULL);
+                    }
+                }
+                break;
 
                 default:
                     brc = FALSE;
@@ -1828,6 +1891,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
     return (brc);
 }
+
+#endif
 
 /*
  *@@ cmnQueryStatusBarHeight:
@@ -1919,43 +1984,17 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
             {
                 // get global XFolder settings from OS2.INI
 
-                // V0.9.16 (2001-09-29) [umoeller]:
-                // now calling cmnSetStatusBarSetting, which will
-                // load the defaults... disabled the duplicate
-                // code below
-                cmnSetStatusBarSetting(SBS_STATUSBARFONT, NULL);
-                cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
-                cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
-/*
-                PrfQueryProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_STATUSBARFONT,
-                                      "8.Helv",
-                                      &(G_szStatusBarFont),
-                                      sizeof(G_szStatusBarFont));
-                sscanf(G_szStatusBarFont, "%d.*%s", &(G_ulStatusBarHeight));
-                G_ulStatusBarHeight += 15;
-
-                PrfQueryProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SBTEXTNONESEL,
-                                      NULL,
-                                      &(G_szSBTextNoneSel),
-                                      sizeof(G_szSBTextNoneSel));
-                PrfQueryProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SBTEXTMULTISEL,
-                                      NULL,
-                                      &(G_szSBTextMultiSel),
-                                      sizeof(G_szSBTextMultiSel));
-    end V0.9.16 (2001-09-29) [umoeller]
-   */
+                // V0.9.16 (2001-12-02) [umoeller]: moved this up
                 ulCopied1 = sizeof(GLOBALSETTINGS);
                 PrfQueryProfileData(HINI_USERPROFILE,
                                     (PSZ)INIAPP_XWORKPLACE,
                                     (PSZ)INIKEY_GLOBALSETTINGS,
                                     &G_GlobalSettings,
                                     &ulCopied1);
+
+                // V0.9.16 (2001-12-02) [umoeller]: removed all
+                // status bar settings here, now loading these
+                // on demand in cmnQueryStatusBarSetting
             }
         }
     }
@@ -2077,6 +2116,7 @@ BOOL cmnStoreGlobalSettings(VOID)
  *      pages in cmnLoadGlobalSettings, globally.
  *
  *@@changed V0.9.0 [umoeller]: greatly extended for all the new settings pages
+ *@@changed V0.9.16 (2001-12-02) [umoeller]: fixed status bar settings problems
  */
 
 BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
@@ -2135,8 +2175,10 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.SBForViews = SBV_ICON | SBV_DETAILS;
             G_GlobalSettings.lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
             G_GlobalSettings.lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
-            cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
-            cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
+            // removed these, these kill the settings on startup
+            // V0.9.16 (2001-12-02) [umoeller]
+            // cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
+            // cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
             G_GlobalSettings.bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
         break;
 
@@ -2225,6 +2267,8 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.fReplDriveNotReady = 0;
             G_GlobalSettings.fTrashDelete = 0;
             G_GlobalSettings.fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
+
+            G_GlobalSettings.__fNewFileDlg = 0;
         break;
 
         case SP_SETUP_PARANOIA:   // all new with V0.9.0
@@ -2332,6 +2376,10 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
         // for turbo folders, return the setting that was initially
         // copied by initMain(); we can't change this after the WPS is up
         case TurboFolders: return G_fTurboSettingsEnabled;
+
+#ifndef __NEVERNEWFILEDLG__
+        case NewFileDlg: return G_GlobalSettings.__fNewFileDlg;
+#endif
 
         default:
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -2463,7 +2511,8 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                                 *plData);
                         xstrcat(pstr, szTemp, 0);
                     }
-                break; }
+                }
+                break;
 
                 case STG_BOOL:
                 {
@@ -2478,7 +2527,8 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                                     : "NO");
                         xstrcat(pstr, szTemp, 0);
                     }
-                break; }
+                }
+                break;
 
                 case STG_BITFLAG:
                 {
@@ -2495,7 +2545,8 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                                     : "NO");
                         xstrcat(pstr, szTemp, 0);
                     }
-                break; }
+                }
+                break;
 
                 case STG_PSZ:
                 {
@@ -2518,7 +2569,8 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                         xstrcat(pstr, *ppszData, ulDataLen);
                         xstrcatc(pstr, ';');
                     }
-                break; }
+                }
+                break;
             }
         } // end if (pSettingThis->pcszSetupString)
     }
@@ -2591,7 +2643,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                         }
                         else
                             brc = FALSE;
-                    break; }
+                    }
+                    break;
 
                     case STG_BOOL:
                     {
@@ -2612,7 +2665,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                                 (*pcSuccess)++;
                             }
                         }
-                    break; }
+                    }
+                    break;
 
                     case STG_BITFLAG:
                     {
@@ -2639,7 +2693,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                                 (*pcSuccess)++;
                             }
                         }
-                    break; }
+                    }
+                    break;
 
                     case STG_PSZ:
                     {
@@ -2653,7 +2708,8 @@ BOOL cmnSetupScanString(WPObject *somSelf,
 
                         *ppszData = strdup(szValue);
                         (*pcSuccess)++;
-                    break; }
+                    }
+                    break;
                 }
             }
 
@@ -2711,7 +2767,8 @@ BOOL cmnSetupSave(WPObject *somSelf,
                         brc = FALSE;
                         break;
                     }
-                break; }
+                }
+                break;
 
                 case STG_PSZ:
                 {
@@ -2725,7 +2782,8 @@ BOOL cmnSetupSave(WPObject *somSelf,
                         brc = FALSE;
                         break;
                     }
-                break; }
+                }
+                break;
             }
         }
     }
@@ -2783,7 +2841,8 @@ BOOL cmnSetupRestore(WPObject *somSelf,
                         PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                         *pulData = ulTemp;
                     }
-                break; }
+                }
+                break;
 
                 case STG_PSZ:
                 {
@@ -2810,7 +2869,8 @@ BOOL cmnSetupRestore(WPObject *somSelf,
                                          *ppszData,
                                          &cbValue);
                     }
-                break; }
+                }
+                break;
             }
         }
     }
@@ -2887,7 +2947,8 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
                         *plData = pSettingThis->lDefault;
                         // raise return count
                         ulrc++;
-                    break; }
+                    }
+                    break;
 
                     case STG_PSZ:
                     {
@@ -2900,7 +2961,8 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
                         }
                         if (pSettingThis->lDefault)
                             *ppszData = strdup((PSZ)pSettingThis->lDefault);
-                    break; }
+                    }
+                    break;
                 }
 
                 break;
@@ -3986,7 +4048,8 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
                 break;
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
         {
@@ -4034,15 +4097,16 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
                         strcpy(G_szRunDirectory, filedlg.szFullFile);
                     }
-
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
 
                 break;
             }
-        break; }
+        }
+        break;
 
         case WM_HELP:
             cmnDisplayHelp(NULL,
@@ -4727,7 +4791,8 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
             } // end else; if ulCurHelpPanel is < 0, nothing happens
             mrc = NULL;
-        break; } // end case WM_HELP
+        }
+        break;  // end case WM_HELP
 
         default:
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -4805,9 +4870,17 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
 
     _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
 
-    if (    fdlgFileDlg(hwndOwner, // owner
-                        NULL,
-                        &fd)
+#ifndef __NEVERNEWFILEDLG__
+    if (    (    cmnIsFeatureEnabled(NewFileDlg)
+              && fdlgFileDlg(hwndOwner, // owner
+                             NULL,
+                             &fd)
+            )
+        ||
+#endif
+           (WinFileDlg(HWND_DESKTOP,
+                       hwndOwner,
+                       &fd))
         && (fd.lReturn == DID_OK)
        )
     {

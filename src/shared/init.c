@@ -1271,15 +1271,15 @@ VOID initMain(VOID)
         sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
 
         if (!(arc = doshOpen(szDumpFile,
-                             XOPEN_READWRITE_APPEND,
+                             XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
                              &cbFile,
                              &pLogFile)))
         {
             doshWrite(pLogFile,
-                      "\r\n\r\nStartup log opened, entering " __FUNCTION__ "\r\n",
+                      "\n\nStartup log opened, entering " __FUNCTION__ "\n",
                       0);
             doshWrite(pLogFile,
-                      "------------------------------------------------------\r\n\r\n",
+                      "------------------------------------------------------\n\n",
                       0);
         }
     }

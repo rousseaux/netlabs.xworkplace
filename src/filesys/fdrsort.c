@@ -106,7 +106,7 @@
  *      and store it in XWorkplace's instance data. We can therefore
  *      manipulate the "Always sort" flag in there also.
  *
- *      This was already added with the old XFolder already. So,
+ *      This was already added with the old XFolder. So,
  *      what's new with 0.9.12?
  *
  *      The old folder sort code (back from XFolder, used

@@ -49,6 +49,7 @@
 #include "setup.h"
 
 #include "xwpapi.h"
+#include "shared\helppanels.h"
 #include "netscdde.h"
 #include "dlgids.h"
 
@@ -209,8 +210,8 @@ VOID ExplainParams(VOID)
                                    PAG_READ | PAG_WRITE)))
         {
             WinPostMsg(pXwpGlobalShared->hwndAPIObject,
-                       APIM_NETSCDDEHELP,
-                       0,
+                       APIM_SHOWHELPPANEL,
+                       (MPARAM)ID_XSH_NETSCAPEDDE,
                        0);
             DosFreeMem(pXwpGlobalShared);
         }

@@ -1059,7 +1059,7 @@ VOID EditIcon(POBJICONPAGEDATA pData)
             if (!cb)
                 arc = ERROR_NO_DATA;     // @@todo this shouldn't happen!!
             else if (!(arc = doshOpen(szTempFile,
-                                      XOPEN_READWRITE_NEW,
+                                      XOPEN_READWRITE_NEW | XOPEN_BINARY,
                                       &cb,
                                       &pFile)))
             {

@@ -182,7 +182,15 @@ static LINKLIST                 G_llWorkAreaViews;
                                     // gets updated when XCenters are opened/closed
                                     // and/or their "reduce workarea" setting is
                                     // changed. Plain pointers, no auto-free.
+                                    // Maintained by UpdateDesktopWorkarea.
 static HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
+                                    // mutex protecting that list;
+
+static LINKLIST                 G_llOpenViews;
+                                    // linked list of XCENTERVIEWDATA's which are
+                                    // currently open (regarless of the workarea
+                                    // settings)
+static HMTX                     G_hmtxOpenViews = NULLHANDLE;
                                     // mutex protecting that list;
 
 static ULONG                    G_ulWidgetFromXY = 0;
@@ -350,14 +358,13 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
  */
 
 BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
-                           BOOL fForceRemove)       // in: if TRUE, item is removed.
+                           BOOL fForceRemove)       // in: if TRUE, item is removed
 {
     BOOL brc = FALSE;
 
+    // workareas supported on this system?
     if (G_fWorkAreaSupported)
     {
-        // ctrpDesktopWorkareaSupported has initialized everything, so go ahead.
-
         BOOL fLocked = FALSE;
 
         TRY_LOUD(excpt1)
@@ -366,13 +373,14 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
             {
                 XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
                 BOOL        fUpdateWorkArea = (lstCountItems(&G_llWorkAreaViews) != 0);
+                PLISTNODE   pNode;
 
                 /*
-                 *  (1)  List maintenance:
+                 *  (1)  Workarea list maintenance:
                  *
                  */
 
-                PLISTNODE pNode = lstQueryFirstNode(&G_llWorkAreaViews);
+                pNode = lstQueryFirstNode(&G_llWorkAreaViews);
 
                 if (    (_fReduceDesktopWorkarea)
                      && (!fForceRemove)
@@ -433,12 +441,12 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                  *
                  */
 
+                // workarea changed?
                 if (fUpdateWorkArea)
                 {
                     RECTL       rclCurrent,
                                 rclNew;
 
-                    // if we have any views:
                     ULONG   ulCutBottom = 0,
                             ulCutTop = 0;
 
@@ -499,10 +507,9 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
 
                         brc = TRUE;
                     }
-                } // if (cWorkAreaViews)
-            }
-        } // end if (fLocked)
-
+                } // if (fUpdateWorkArea)
+            } // end if (fLocked = LockWorkAreas())
+        }
         CATCH(excpt1)
         {
             brc = FALSE;
@@ -512,6 +519,139 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
             UnlockWorkAreas();
 
     } // end if (G_fWorkAreaSupported)
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   Open XCenter views
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockOpenViews:
+ *      locks G_hmtxWorkAreaViews. Creates the mutex on
+ *      the first call.
+ *
+ *      Returns TRUE if the mutex was obtained.
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+BOOL LockOpenViews(VOID)
+{
+    if (!G_hmtxOpenViews)
+    {
+        if (!DosCreateMutexSem(NULL,
+                               &G_hmtxOpenViews,
+                               0,
+                               TRUE))      // request!
+        {
+            lstInit(&G_llOpenViews, FALSE);
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    return (!WinRequestMutexSem(G_hmtxOpenViews, SEM_INDEFINITE_WAIT));
+        // WinRequestMutexSem works even if the thread has no message queue
+}
+
+/*
+ *@@ UnlockOpenViews:
+ *      the reverse to LockOpenViews.
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+VOID UnlockOpenViews(VOID)
+{
+    DosReleaseMutexSem(G_hmtxOpenViews);
+}
+
+/*
+ *@@ RegisterOpenView:
+ *      adds the given XCenter view to the list of
+ *      all open views, or removes it from the list.
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+VOID RegisterOpenView(PXCENTERWINDATA pXCenterData,
+                      BOOL fRemove)       // in: if TRUE, item is removed
+{
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockOpenViews())
+        {
+            PLISTNODE pNode;
+
+            if (pNode = lstNodeFromItem(&G_llOpenViews, pXCenterData))
+            {
+                // view is on list:
+                if (fRemove)
+                    // to be removed:
+                    lstRemoveNode(&G_llOpenViews, pNode);
+                // else: don't add it twice
+            }
+            else
+                // not on list:
+                if (!fRemove)
+                    // to be added:
+                    lstAppendItem(&G_llOpenViews, pXCenterData);
+        } // end if (fLocked = LockWorkAreas())
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockOpenViews();
+}
+
+/*
+ *@@ ctrIsXCenterView:
+ *      returns TRUE if the given frame window is
+ *      an XCenter frame. Used by the window list
+ *      widget.
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+BOOL ctrIsXCenterView(HWND hwndFrame)
+{
+    BOOL brc = FALSE;
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockOpenViews())
+        {
+            PLISTNODE pNode = lstQueryFirstNode(&G_llOpenViews);
+
+            while (pNode)
+            {
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)pNode->pItemData;
+                if (pXCenterData->Globals.hwndFrame == hwndFrame)
+                {
+                    brc = TRUE;
+                    break;
+                }
+
+                pNode = pNode->pNext;
+            }
+        } // end if (fLocked = LockWorkAreas())
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockOpenViews();
 
     return (brc);
 }
@@ -3265,6 +3405,11 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                0,
                0);
 
+    // remove this view from the global list
+    // V0.9.16 (2001-12-02) [umoeller]
+    RegisterOpenView(pXCenterData,
+                     TRUE);            // remove
+
     _wpFreeMem(pXCenterData->somSelf,
                (PBYTE)pXCenterData);
 
@@ -5148,6 +5293,11 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 swpFrame.y = winhQueryScreenCY() - swpFrame.cy;
             }
 
+            // register this view in the global list
+            // V0.9.16 (2001-12-02) [umoeller]
+            RegisterOpenView(pXCenterData,
+                             FALSE);            // no remove
+
             // now go create XCenter frame and client
             pGlobals->hwndFrame
                 = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
@@ -5431,11 +5581,10 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
 
             if (s_fXCenterClassRegistered)
             {
-                PXCENTERWINDATA pXCenterData =
-                    (PXCENTERWINDATA)_wpAllocMem(somSelf,
-                                                 sizeof(XCENTERWINDATA),
-                                                 NULL);
-                if (pXCenterData)
+                PXCENTERWINDATA pXCenterData;
+                if (pXCenterData = (PXCENTERWINDATA)_wpAllocMem(somSelf,
+                                                                sizeof(XCENTERWINDATA),
+                                                                NULL))
                 {
                     memset(pXCenterData, 0, sizeof(*pXCenterData));
 

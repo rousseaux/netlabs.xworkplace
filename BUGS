@@ -13,6 +13,13 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
+Editing an object's ObjectID and selecting No to the confirmation box
+causes a trap.
+
+--  TMF file ends with strange char
+
+--  ICON PAGE 2 BROKEN
+
 > * 'Confirm on (folder) delete' - I have this set, but Replace True Delete
 >   no longer honours it.  (I guess this isn't the trash, but the eWP delete
 >   option instead.)

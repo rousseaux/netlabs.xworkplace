@@ -234,12 +234,13 @@
     #define ID_XSH_MOUSE_MOVEMENT2          135     // V0.9.14 (2001-08-02) [lafaix]
 
     #define ID_XSH_NETSCAPEDDE              136     // V0.9.16 (2001-10-02) [umoeller]
+    #define ID_XSH_TREESIZE                 137
 
-    #define ID_XSH_OBJICONPAGE1             137     // V0.9.16 (2001-10-15) [umoeller]
-    #define ID_XSH_OBJICONPAGE2             138     // V0.9.16 (2001-10-15) [umoeller]
+    #define ID_XSH_OBJICONPAGE1             138     // V0.9.16 (2001-10-15) [umoeller]
+    #define ID_XSH_OBJICONPAGE2             139     // V0.9.16 (2001-10-15) [umoeller]
 
-    #define ID_XSH_XWPNETWORK_MAIN          139     // V0.9.16 (2001-10-19) [umoeller]
-    #define ID_XSH_XWPNETSERVER_MAIN        140     // V0.9.16 (2001-10-19) [umoeller]
+    #define ID_XSH_XWPNETWORK_MAIN          140     // V0.9.16 (2001-10-19) [umoeller]
+    #define ID_XSH_XWPNETSERVER_MAIN        141     // V0.9.16 (2001-10-19) [umoeller]
 
 #endif
 

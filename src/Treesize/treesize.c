@@ -45,6 +45,7 @@
 #define INCL_WINPROGRAMLIST
 #define INCL_WINPOINTERS
 #define INCL_WINTIMER
+#define INCL_WINSTATICS
 #define INCL_WINMENUS
 #define INCL_WINMLE
 #define INCL_WINSTDCNR
@@ -58,6 +59,7 @@
 #include "setup.h"
 
 #include "helpers\pmprintf.h"
+#include "helpers\comctl.h"
 #include "helpers\cnrh.h"
 #include "helpers\eah.h"
 #include "helpers\dosh.h"
@@ -72,30 +74,33 @@
 
 #include "treesize.h"
 
+#include "xwpapi.h"
+#include "shared\helppanels.h"
+
 /*
  * Global variables
  *
  */
 
 // the directory to start with
-CHAR        szRootDir[CCHMAXPATH];
-ULONG       cbRootDir = sizeof(szRootDir)-3;
+CHAR        G_szRootDir[CCHMAXPATH];
+ULONG       G_cbRootDir = sizeof(G_szRootDir)-3;
 
 // NLS Resource DLL
-HMODULE     hmodNLS = NULLHANDLE;
+HMODULE     G_hmodNLS = NULLHANDLE;
 
 // main wnd handle
-HWND        hwndMain = NULLHANDLE;
+HWND        G_hwndMain = NULLHANDLE;
 
 // Collect thread ID: always 0 if not running
-TID         tidCollect = 0;
-HAB         habCollect;
-HMQ         hmqCollect;
+TID         G_tidCollect = 0;
+HAB         G_habCollect;
+HMQ         G_hmqCollect;
 // setting this to TRUE will stop the Collect thread
-BOOL        fStopThread = FALSE;
+BOOL        G_fStopThread = FALSE;
 
 // DIRINFO struct for the directory to start with
-PDIRINFO    pdiRoot;
+PDIRINFO    G_pdiRoot;
 
 // and the settings read from/ stored to OS2.INI
 struct {
@@ -103,12 +108,38 @@ struct {
     BOOL        CollectEAs;
     ULONG       ulSizeDisplay;
     BOOL        LowPriority;
-} Settings;
+} G_Settings;
 
 TREE    *G_LargestFilesTree;
 LONG    G_cLargestFilesTree = 0;
 
 const char      *G_pcszXFldTreesize = "XFldTreesize";
+
+// shortcuts to dlg controls
+HWND        G_hwndCnr,
+            G_hwndText,
+            G_hwndIcon,
+            G_hwndClose,
+            G_hwndClear;
+
+// thousands separator from "Country" object
+CHAR        G_szThousand[10];
+
+// for container scrolling
+PRECORDCORE G_preccScrollTo = NULL;
+
+// some storage for between dragging and dropping
+BOOL        G_fDnDValid = FALSE;
+CHAR        G_szDir[CCHMAXPATH];
+CHAR        G_szFile[CCHMAXPATH];
+
+// is window minimized?
+BOOL        G_fMinimized = FALSE;
+
+// the parent tree entry of the 100 largest files
+// V0.9.15 (2001-08-25) [rbri] sort the file entries by size
+PRECORDCORE G_precParentOf100Largest = NULL;
+
 
 /********************************************************************
  *                                                                  *
@@ -167,8 +198,8 @@ VOID CollectDirectory(PDIRINFO pdiThis)
     // thread hasn't been requested to terminate. In that case,
     // the main window might just be being destroyed, so this
     // would block PM. Sigh.
-    if (!fStopThread)
-        WinSendMsg(hwndMain, TSM_BEGINDIRECTORY, (MPARAM)pdiThis, NULL);
+    if (!G_fStopThread)
+        WinSendMsg(G_hwndMain, TSM_BEGINDIRECTORY, (MPARAM)pdiThis, NULL);
 
     // now go for the first directory entry in our directory (szCurrentDir):
     strcpy(szSearchMask, szCurrentDir);
@@ -184,7 +215,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
 
     // and start looping
     while (     (rc == NO_ERROR)
-            &&  (!fStopThread)      // if our thread hasn't been stopped
+            &&  (!G_fStopThread)      // if our thread hasn't been stopped
           )
     {
         CHAR szFile[CCHMAXPATH];
@@ -194,7 +225,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
                                 ffb3.achName);
 
         // get EA size
-        if (    (Settings.CollectEAs)
+        if (    (G_Settings.CollectEAs)
              && (strlen(szCurrentDir) > 3)
            )
         {
@@ -267,7 +298,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
     // add the size of the subdirector(ies) to
     // the parent's size
 
-    if (!fStopThread)
+    if (!G_fStopThread)
     {
         PDIRINFO      pdiParent = pdiThis->pParent;
 
@@ -281,7 +312,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
         }
 
         // have record core updated with new total size
-        WinPostMsg(hwndMain, TSM_DONEDIRECTORY, (MPARAM)pdiThis, NULL);
+        WinPostMsg(G_hwndMain, TSM_DONEDIRECTORY, (MPARAM)pdiThis, NULL);
     }
 
     // end of function: if this was a recursive call,
@@ -302,40 +333,40 @@ VOID CollectDirectory(PDIRINFO pdiThis)
 void _System fntCollect(ULONG ulDummy)
 {
     // we need a msg queue for WinSendMsg
-    if (!(habCollect = WinInitialize(0)))
+    if (!(G_habCollect = WinInitialize(0)))
         return;
-    if (!(hmqCollect = WinCreateMsgQueue(habCollect, 0)))
+    if (!(G_hmqCollect = WinCreateMsgQueue(G_habCollect, 0)))
         return;
 
     // low priority?
     DosSetPriority(PRTYS_THREAD,
-                   (Settings.LowPriority)
+                   (G_Settings.LowPriority)
                         ? PRTYC_IDLETIME
                         : PRTYC_REGULAR,
                    0,       // delta
                    0);      // current thread
 
     // prepare "root" DIRINFO structure for CollectDirectory()
-    pdiRoot = (PDIRINFO)malloc(sizeof(DIRINFO));
-    if (pdiRoot)
+    G_pdiRoot = (PDIRINFO)malloc(sizeof(DIRINFO));
+    if (G_pdiRoot)
     {
-        pdiRoot->pParent = NULL;
-        pdiRoot->ulFiles = 0;
-        pdiRoot->dTotalSize0 = 0;
-        pdiRoot->dTotalEASize = 0;
-        strcpy(pdiRoot->szThis, szRootDir);
-        strcpy(pdiRoot->szFullPath, szRootDir);
-        pdiRoot->ulRecursionLevel = 1;
-        CollectDirectory(pdiRoot);
+        G_pdiRoot->pParent = NULL;
+        G_pdiRoot->ulFiles = 0;
+        G_pdiRoot->dTotalSize0 = 0;
+        G_pdiRoot->dTotalEASize = 0;
+        strcpy(G_pdiRoot->szThis, G_szRootDir);
+        strcpy(G_pdiRoot->szFullPath, G_szRootDir);
+        G_pdiRoot->ulRecursionLevel = 1;
+        CollectDirectory(G_pdiRoot);
     }
 
     // report that we're done completely
-    if (!fStopThread)
-        WinPostMsg(hwndMain, TSM_DONEWITHALL, NULL, NULL);
+    if (!G_fStopThread)
+        WinPostMsg(G_hwndMain, TSM_DONEWITHALL, NULL, NULL);
 
-    WinDestroyMsgQueue(hmqCollect);
-    WinTerminate(habCollect);
-    tidCollect = 0;
+    WinDestroyMsgQueue(G_hmqCollect);
+    WinTerminate(G_habCollect);
+    G_tidCollect = 0;
 }
 
 /********************************************************************
@@ -343,6 +374,21 @@ void _System fntCollect(ULONG ulDummy)
  *   Main thread                                                    *
  *                                                                  *
  ********************************************************************/
+
+/*
+ *@@ SaveSettings:
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+VOID SaveSettings(VOID)
+{
+    PrfWriteProfileData(HINI_USER,
+                        (PSZ)G_pcszXFldTreesize,
+                        "Settings",
+                        &G_Settings,
+                        sizeof(G_Settings));
+}
 
 /*
  * Cleanup:
@@ -353,13 +399,13 @@ void _System fntCollect(ULONG ulDummy)
  *@@changed V0.9.15 (2001-08-26) [rbri] free for file entries added
  */
 
-VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
+VOID Cleanup(PSIZERECORD preccParent)
 {
     PSIZERECORD precc2 = preccParent;
 
     do {
         precc2 =
-            (PSIZERECORD)WinSendMsg(hwndCnr,
+            (PSIZERECORD)WinSendMsg(G_hwndCnr,
                                         CM_QUERYRECORD,
                                         // the following ugly code does the following:
                                         // if this is the "root" call: get first child recc.
@@ -376,7 +422,7 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
                                         );
         if ((precc2) && ((ULONG)precc2 != -1))
         {
-            Cleanup(hwndCnr, precc2);
+            Cleanup(precc2);
             // _Pmpf(("Removing %s", precc2->pdi->szRecordText));
             if (precc2->pdi)
                 free(precc2->pdi);
@@ -384,7 +430,7 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
 /*             if (precc2->pFileEntry) {
                 free(precc2->pFileEntry);
             } */
-            WinSendMsg(hwndCnr,
+            WinSendMsg(G_hwndCnr,
                        CM_REMOVERECORD,
                        &precc2,
                        MPFROM2SHORT(1,   // remove one recc
@@ -393,7 +439,7 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
     } while ((precc2) && ((ULONG)precc2 != -1));
 
     if (preccParent == NULL)
-        WinSendMsg(hwndCnr,
+        WinSendMsg(G_hwndCnr,
                    CM_INVALIDATERECORD,
                    NULL,
                    MPFROM2SHORT(0, CMA_REPOSITION));
@@ -507,28 +553,6 @@ SHORT EXPENTRY fnCompareEASize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStor
     return (0);
 }
 
-// shortcuts to dlg controls
-HWND        hwndCnr, hwndText, hwndIcon, hwndClose, hwndClear;
-
-// thousands separator from "Country" object
-CHAR        szThousand[10];
-
-// for container scrolling
-PRECORDCORE preccScrollTo = NULL;
-
-// some storage for between dragging and dropping
-BOOL        fDnDValid = FALSE;
-CHAR        szDir[CCHMAXPATH];
-CHAR        szFile[CCHMAXPATH];
-
-// is window minimized?
-BOOL        fMinimized = FALSE;
-
-// the parent tree entry of the 100 largest files
-// V0.9.15 (2001-08-25) [rbri] sort the file entries by size
-PRECORDCORE precParentOf100Largest = NULL;
-
-
 /*
  *@@ ComposeFilename:
  *
@@ -560,7 +584,7 @@ VOID Insert100LargestFiles(VOID)
     cFiles = G_cLargestFilesTree;
     if (cFiles > 100)
         cFiles = 100;
-    if (precFirst = (PSIZERECORD)cnrhAllocRecords(hwndCnr,
+    if (precFirst = (PSIZERECORD)cnrhAllocRecords(G_hwndCnr,
                                                   sizeof(SIZERECORD),
                                                   cFiles))
     {
@@ -575,14 +599,14 @@ VOID Insert100LargestFiles(VOID)
         sprintf(szSize, "%d largest files", cFiles);
 
         // create the entry only if it is not alredy there
-        if (precParentOf100Largest == NULL)
+        if (G_precParentOf100Largest == NULL)
         {
-            precParentOf100Largest = cnrhAllocRecords(hwndCnr,
+            G_precParentOf100Largest = cnrhAllocRecords(G_hwndCnr,
                                                       sizeof(SIZERECORD),
                                                       1);
-            cnrhInsertRecords(hwndCnr,
+            cnrhInsertRecords(G_hwndCnr,
                               NULL,      // parent
-                              precParentOf100Largest,
+                              G_precParentOf100Largest,
                               TRUE,
                               strdup(szSize),
                               CRA_RECORDREADONLY | CRA_COLLAPSED,
@@ -591,22 +615,22 @@ VOID Insert100LargestFiles(VOID)
         else
         {
             // remove the #old subnodes
-            Cleanup(hwndCnr, (PSIZERECORD)precParentOf100Largest);
+            Cleanup((PSIZERECORD)G_precParentOf100Largest);
 
-            WinSendMsg(hwndCnr,
+            WinSendMsg(G_hwndCnr,
                        CM_INVALIDATERECORD,
                        NULL,
                        MPFROM2SHORT(0, CMA_REPOSITION));
 
             // rename
-            precParentOf100Largest->pszIcon
-            = precParentOf100Largest->pszName
-            = precParentOf100Largest->pszText
-            = precParentOf100Largest->pszTree
+            G_precParentOf100Largest->pszIcon
+            = G_precParentOf100Largest->pszName
+            = G_precParentOf100Largest->pszText
+            = G_precParentOf100Largest->pszTree
                 = strdup(szSize);
 
             // (ToDo) only redraw the changed record
-            WinSendMsg(hwndCnr,
+            WinSendMsg(G_hwndCnr,
                        CM_INVALIDATERECORD,
                        NULL,
                        MPFROM2SHORT(0, CMA_TEXTCHANGED));
@@ -624,16 +648,16 @@ VOID Insert100LargestFiles(VOID)
                     "%s (%s %s)",
                     ComposeFilename(szFilename, pEntry),
                     nlsThousandsDouble(szSize,
-                                        (Settings.ulSizeDisplay == SD_BYTES)
+                                        (G_Settings.ulSizeDisplay == SD_BYTES)
                                                 ? precThis->dTotalSize
-                                            : (Settings.ulSizeDisplay == SD_KBYTES)
+                                            : (G_Settings.ulSizeDisplay == SD_KBYTES)
                                                 ? ((precThis->dTotalSize + 512) / 1024)
                                             : ((precThis->dTotalSize + (512*1024)) / 1024 / 1024),
-                                        szThousand[0]),
+                                        G_szThousand[0]),
                     // "bytes" string:
-                    (Settings.ulSizeDisplay == SD_BYTES)
+                    (G_Settings.ulSizeDisplay == SD_BYTES)
                             ? "bytes"
-                        : (Settings.ulSizeDisplay == SD_KBYTES)
+                        : (G_Settings.ulSizeDisplay == SD_KBYTES)
                             ? "KBytes"
                         : "MBytes");
 
@@ -649,8 +673,8 @@ VOID Insert100LargestFiles(VOID)
             pEntry = (PFILEENTRY)treePrev((TREE*)pEntry);
         }
 
-        cnrhInsertRecords(hwndCnr,
-                          precParentOf100Largest,
+        cnrhInsertRecords(G_hwndCnr,
+                          G_precParentOf100Largest,
                           (PRECORDCORE)precFirst,
                           TRUE,
                           NULL,
@@ -691,14 +715,23 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             CNRINFO CnrInfo;
 
             // remember wnd handles for later
-            hwndIcon = WinWindowFromID(hwndDlg, ID_TSDI_ICON);
-            hwndText = WinWindowFromID(hwndDlg, ID_TSDI_TEXT1);
-            hwndCnr = WinWindowFromID(hwndDlg, ID_TSDI_CNR);
-            hwndClear = WinWindowFromID(hwndDlg, DID_CLEAR);
-            hwndClose = WinWindowFromID(hwndDlg, DID_OK);
+            G_hwndIcon = WinWindowFromID(hwndDlg, ID_TSDI_ICON);
+            G_hwndText = WinWindowFromID(hwndDlg, ID_TSDI_TEXT1);
+            G_hwndCnr = WinWindowFromID(hwndDlg, ID_TSDI_CNR);
+            G_hwndClear = WinWindowFromID(hwndDlg, DID_CLEAR);
+            G_hwndClose = WinWindowFromID(hwndDlg, DID_OK);
+
+            // set font V0.9.16 (2001-12-02) [umoeller]
+            if (doshIsWarp4())
+            {
+                winhSetWindowFont(G_hwndCnr,
+                                  "9.WarpSans");
+                winhSetWindowFont(G_hwndText,
+                                  "9.WarpSans Bold");
+            }
 
             // setup the container
-            WinSendMsg(hwndCnr, CM_QUERYCNRINFO, &CnrInfo, (MPARAM)sizeof(CnrInfo));
+            WinSendMsg(G_hwndCnr, CM_QUERYCNRINFO, &CnrInfo, (MPARAM)sizeof(CnrInfo));
             // don't sort initially, because sort-by-size doesn't
             // work until we have all the directory sizes. Instead,
             // we add all the containers to the end of the list
@@ -708,7 +741,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // switch to tree view
             CnrInfo.flWindowAttr = CV_TREE | CV_TEXT | CA_TREELINE;
             CnrInfo.cxTreeIndent = 25;
-            WinSendMsg(hwndCnr, CM_SETCNRINFO,
+            WinSendMsg(G_hwndCnr, CM_SETCNRINFO,
                        &CnrInfo,
                        (MPARAM)( /* CMA_PSORTRECORD | */ CMA_FLWINDOWATTR | CMA_CXTREEINDENT));
 
@@ -716,8 +749,12 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             // get the thousands separator for later; this
             // is what is specified in the "Country" object
-            PrfQueryProfileString(HINI_USER, "PM_Default_National", "sThousand",
-                    ",", szThousand, sizeof(szThousand)-1);
+            PrfQueryProfileString(HINI_USER,
+                                  "PM_Default_National",
+                                  "sThousand",
+                                  ",",
+                                  G_szThousand,
+                                  sizeof(G_szThousand)-1);
 
             // initiate processing (below)
             WinPostMsg(hwndDlg, TSM_START, 0, 0);
@@ -731,10 +768,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case TSM_START:
-            WinSetWindowText(hwndText, szRootDir);
-            WinEnableWindow(hwndClear, FALSE);
-            fStopThread = FALSE;
-            DosCreateThread(&tidCollect, fntCollect, 0,
+            WinSetWindowText(G_hwndText, G_szRootDir);
+            WinEnableWindow(G_hwndClear, FALSE);
+            G_fStopThread = FALSE;
+            DosCreateThread(&G_tidCollect, fntCollect, 0,
                     CREATE_READY, 4*65536);
             WinSetActiveWindow(HWND_DESKTOP, hwndDlg);
                 // needed when something has been dropped
@@ -755,7 +792,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             PDIRINFO pdi = (PDIRINFO)mp1;
 
             // allocate memory for record core
-            pdi->precc = cnrhAllocRecords(hwndCnr,
+            pdi->precc = cnrhAllocRecords(G_hwndCnr,
                                           sizeof(SIZERECORD),
                                           1);
 
@@ -781,7 +818,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     preccParent = (PSIZERECORD)pdi->pParent->precc;
 
                 // insert recc into container
-                cnrhInsertRecords(hwndCnr,
+                cnrhInsertRecords(G_hwndCnr,
                                   (PRECORDCORE)preccParent,
                                       // parent for tree view;
                                       // NULL for root level
@@ -808,7 +845,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 // in Tree view, this automatically deselects
                 // the previous selection
                 if (pdi->ulRecursionLevel == 1)
-                    WinSendMsg(hwndCnr,
+                    WinSendMsg(G_hwndCnr,
                                CM_SETRECORDEMPHASIS,
                                pdi->precc,
                                MPFROM2SHORT(
@@ -871,36 +908,36 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                         pdiThis->szThis,
                         // value:
                         nlsThousandsDouble(szSize,
-                                            (Settings.ulSizeDisplay == SD_BYTES)
+                                            (G_Settings.ulSizeDisplay == SD_BYTES)
                                                     ? pdiThis->dTotalSize0
-                                                : (Settings.ulSizeDisplay == SD_KBYTES)
+                                                : (G_Settings.ulSizeDisplay == SD_KBYTES)
                                                     ? ((pdiThis->dTotalSize0 + 512) / 1024)
                                                 : ((pdiThis->dTotalSize0 + (512*1024)) / 1024 / 1024),
-                                            szThousand[0]),
+                                            G_szThousand[0]),
                         // "bytes" string:
-                        (Settings.ulSizeDisplay == SD_BYTES)
+                        (G_Settings.ulSizeDisplay == SD_BYTES)
                                 ? "bytes"
-                            : (Settings.ulSizeDisplay == SD_KBYTES)
+                            : (G_Settings.ulSizeDisplay == SD_KBYTES)
                                 ? "KBytes"
                             : "MBytes",
                         nlsThousandsULong(szFiles,
                                            pdiThis->ulFiles,
-                                           szThousand[0]),
+                                           G_szThousand[0]),
                         "Files");
 
-                if (Settings.CollectEAs)
+                if (G_Settings.CollectEAs)
                     sprintf(pdiThis->szRecordText + strlen(pdiThis->szRecordText),
                             ", %s %s EAs",
                             nlsThousandsDouble(szSize,
-                                                (Settings.ulSizeDisplay == SD_BYTES)
+                                                (G_Settings.ulSizeDisplay == SD_BYTES)
                                                         ? pdiThis->dTotalEASize
-                                                    : (Settings.ulSizeDisplay == SD_KBYTES)
+                                                    : (G_Settings.ulSizeDisplay == SD_KBYTES)
                                                         ? ((pdiThis->dTotalEASize + 512) / 1024)
                                                     : ((pdiThis->dTotalEASize + (512*1024)) / 1024 / 1024),
-                                                szThousand[0]),
-                           (Settings.ulSizeDisplay == SD_BYTES)
+                                                G_szThousand[0]),
+                           (G_Settings.ulSizeDisplay == SD_BYTES)
                                    ? "bytes"
-                               : (Settings.ulSizeDisplay == SD_KBYTES)
+                               : (G_Settings.ulSizeDisplay == SD_KBYTES)
                                    ? "KBytes"
                                : "MBytes");
 
@@ -914,7 +951,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 if (fInvalidate)
                 {
-                    WinSendMsg(hwndCnr,
+                    WinSendMsg(G_hwndCnr,
                                CM_INVALIDATERECORD,
                                (MPARAM)&(pdiThis->precc),
                                MPFROM2SHORT(1,     // one record only
@@ -934,23 +971,23 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case TSM_DONEWITHALL:
         {
-            WinEnableWindow(hwndClear, TRUE);
+            WinEnableWindow(G_hwndClear, TRUE);
 
             // insert 100 largest files
             Insert100LargestFiles();
 
             // sort cnr; ulSort is a global var containing
             // either SV_SIZE or SV_EASIZE or SV_NAME or SV_FILESCOUNT
-            WinSendMsg(hwndCnr,
+            WinSendMsg(G_hwndCnr,
                         CM_SORTRECORD,
-                        ((Settings.ulSort == SV_SIZE) ? (MPARAM)fnCompareSize
-                        : (Settings.ulSort == SV_EASIZE) ? (MPARAM)fnCompareEASize
-                        : (Settings.ulSort == SV_FILESCOUNT) ? (MPARAM)fnCompareFilesCount
+                        ((G_Settings.ulSort == SV_SIZE) ? (MPARAM)fnCompareSize
+                        : (G_Settings.ulSort == SV_EASIZE) ? (MPARAM)fnCompareEASize
+                        : (G_Settings.ulSort == SV_FILESCOUNT) ? (MPARAM)fnCompareFilesCount
                         : (MPARAM)fnCompareName),
                         NULL);
 
             // scroll to make root record visible
-            preccScrollTo = pdiRoot->precc;
+            G_preccScrollTo = G_pdiRoot->precc;
             WinStartTimer(WinQueryAnchorBlock(hwndDlg),
                           hwndDlg,
                           2,
@@ -1014,21 +1051,21 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     PRECORDCORE precc2 = NULL;
                     BOOL fFirstRun = TRUE,
                          fWindowDisabled = FALSE;
-                    preccScrollTo = mp2;
+                    G_preccScrollTo = mp2;
 
                     // loop thru all the child records
                     // and invalidate them
                     do
                     {
                         precc2 =
-                            (PRECORDCORE)WinSendMsg(hwndCnr,
+                            (PRECORDCORE)WinSendMsg(G_hwndCnr,
                                                     CM_QUERYRECORD,
                                                     // the following gets either the
                                                     // first child recc of the recc
                                                     // that has been expanded or the
                                                     // next child for consecutive loops
                                                     (MPARAM)((fFirstRun)
-                                                            ? preccScrollTo   // first loop
+                                                            ? G_preccScrollTo   // first loop
                                                             : precc2),
                                                     MPFROM2SHORT(
                                                             ((fFirstRun)
@@ -1043,10 +1080,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                             {
                                 if (!fWindowDisabled)
                                 {
-                                    WinEnableWindowUpdate(hwndCnr, FALSE);
+                                    WinEnableWindowUpdate(G_hwndCnr, FALSE);
                                     fWindowDisabled = TRUE;
                                 }
-                                WinSendMsg(hwndCnr,
+                                WinSendMsg(G_hwndCnr,
                                            CM_INVALIDATERECORD,
                                            (MPARAM)&precc2,
                                            MPFROM2SHORT(1,     // one record only
@@ -1057,7 +1094,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     } while ((precc2) && ((ULONG)precc2 != -1));
 
                     if (fWindowDisabled)
-                        WinEnableWindowUpdate(hwndCnr, TRUE);
+                        WinEnableWindowUpdate(G_hwndCnr, TRUE);
 
                     // do cnr auto-scroll
                     WinStartTimer(WinQueryAnchorBlock(hwndDlg),
@@ -1082,7 +1119,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                              && (((PSIZERECORD)(pnre->pRecord))->pdi)
                            )
                         {
-                            WinSetWindowText(hwndText,
+                            WinSetWindowText(G_hwndText,
                                              ((PSIZERECORD)(pnre->pRecord))->pdi->szFullPath);
                         }
                 break; }
@@ -1109,7 +1146,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     {
                         // whitespace:
                         hPopupMenu = WinLoadMenu(hwndDlg,
-                                                 hmodNLS, ID_TSM_CONTEXT);
+                                                 G_hmodNLS, ID_TSM_CONTEXT);
 
                         WinQueryPointerPos(HWND_DESKTOP, &ptl);
                         WinPopupMenu(HWND_DESKTOP, hwndDlg,
@@ -1122,9 +1159,9 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                         // check current sort item
                         WinSendMsg(hPopupMenu, MM_SETITEMATTR,
-                                   MPFROM2SHORT((Settings.ulSort == SV_NAME) ? ID_TSMI_SORTBYNAME
-                                                   : (Settings.ulSort == SV_EASIZE) ? ID_TSMI_SORTBYEASIZE
-                                                   : (Settings.ulSort == SV_FILESCOUNT) ? ID_TSMI_SORTBYFILESCOUNT
+                                   MPFROM2SHORT((G_Settings.ulSort == SV_NAME) ? ID_TSMI_SORTBYNAME
+                                                   : (G_Settings.ulSort == SV_EASIZE) ? ID_TSMI_SORTBYEASIZE
+                                                   : (G_Settings.ulSort == SV_FILESCOUNT) ? ID_TSMI_SORTBYFILESCOUNT
                                                    : ID_TSMI_SORTBYSIZE
                                                 , TRUE),
                                    MPFROM2SHORT(MIA_CHECKED,
@@ -1132,21 +1169,21 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                         // check size display
                         WinSendMsg(hPopupMenu, MM_SETITEMATTR,
-                                MPFROM2SHORT((Settings.ulSizeDisplay == SD_BYTES) ? ID_TSMI_SIZE_BYTES
-                                                : (Settings.ulSizeDisplay == SD_KBYTES) ? ID_TSMI_SIZE_KBYTES
+                                MPFROM2SHORT((G_Settings.ulSizeDisplay == SD_BYTES) ? ID_TSMI_SIZE_BYTES
+                                                : (G_Settings.ulSizeDisplay == SD_KBYTES) ? ID_TSMI_SIZE_KBYTES
                                                 : ID_TSMI_SIZE_MBYTES
                                              , TRUE),
                                 MPFROM2SHORT(MIA_CHECKED,
                                              MIA_CHECKED));
 
                         // check "Collect EAs"?
-                        if (Settings.CollectEAs)
+                        if (G_Settings.CollectEAs)
                             WinSendMsg(hPopupMenu, MM_SETITEMATTR,
                                        MPFROM2SHORT(ID_TSMI_COLLECTEAS,
                                            TRUE),
                                        MPFROM2SHORT(MIA_CHECKED, MIA_CHECKED));
                         // check "Low priority"?
-                        if (Settings.LowPriority)
+                        if (G_Settings.LowPriority)
                             WinSendMsg(hPopupMenu, MM_SETITEMATTR,
                                        MPFROM2SHORT(ID_TSMI_LOWPRTY,
                                            TRUE),
@@ -1200,7 +1237,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     PDRAGITEM pdi;
 
                     // reset global variable for CN_DROP later
-                    fDnDValid = FALSE;
+                    G_fDnDValid = FALSE;
 
                     // default return value: do _not_ allow dropping.
                     // This will result in the "forbidden" pointer
@@ -1210,7 +1247,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     mrc = MRFROM2SHORT(DOR_NEVERDROP,
                                        DO_DEFAULT);
 
-                    if (tidCollect)
+                    if (G_tidCollect)
                         // accept nothing while Collect thread is working
                         break;
                     if (pcdi->pDragInfo->cditem != 1)
@@ -1290,16 +1327,16 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                             // use these strange "string handles", which we
                             // need to translate now.
                             DrgQueryStrName(pdi->hstrContainerName,
-                                        sizeof(szDir), szDir);
+                                        sizeof(G_szDir), G_szDir);
                                 // e.g. for "F:\OS2\APPS" this would be "F:\OS2\"
 
                             // this gives us the filename of the dragged folder
                             DrgQueryStrName(pdi->hstrSourceName,
-                                        sizeof(szFile), szFile);
+                                        sizeof(G_szFile), G_szFile);
                                 // e.g. for "F:\OS2\APPS" this would be "APPS"
 
                             // store flag for CN_DROP below
-                            fDnDValid = TRUE;
+                            G_fDnDValid = TRUE;
                             // return "allow drop" code
                             mrc = MRFROM2SHORT(DOR_DROP,
                                                DO_UNKNOWN);
@@ -1323,13 +1360,13 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 {
                     // check the global variable which has been set
                     // by CN_DRAGOVER above:
-                    if (fDnDValid)
+                    if (G_fDnDValid)
                     {
                         // CN_DRAGOVER above has considered this valid:
                         // restart the whole gathering process
-                        sprintf(szRootDir, "%s%s", szDir, szFile);
+                        sprintf(G_szRootDir, "%s%s", G_szDir, G_szFile);
                         WinPostMsg(hwndDlg, TSM_START, NULL, NULL);
-                        fDnDValid = FALSE;
+                        G_fDnDValid = FALSE;
                     }
                 break; }
             }
@@ -1347,13 +1384,13 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             WinStopTimer(WinQueryAnchorBlock(hwndDlg),
                     hwndDlg,
                     (ULONG)mp1);
-            if ( ( preccScrollTo->flRecordAttr & CRA_EXPANDED) != 0 )
+            if ( ( G_preccScrollTo->flRecordAttr & CRA_EXPANDED) != 0 )
             {
                 PRECORDCORE     preccLastChild;
                 // scroll the tree view properly
-                preccLastChild = WinSendMsg(hwndCnr,
+                preccLastChild = WinSendMsg(G_hwndCnr,
                                             CM_QUERYRECORD,
-                                            preccScrollTo,   // expanded PRECORDCORE from CN_EXPANDTREE
+                                            G_preccScrollTo,   // expanded PRECORDCORE from CN_EXPANDTREE
                                             MPFROM2SHORT(
                                                  ( ((ULONG)mp1 == 1)
                                                     ? CMA_LASTCHILD : CMA_FIRSTCHILD),
@@ -1361,7 +1398,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 if (preccLastChild)
                 {
                     // ULONG ulrc;
-                    cnrhScrollToRecord(hwndCnr,
+                    cnrhScrollToRecord(G_hwndCnr,
                                        (PRECORDCORE)preccLastChild,
                                        CMA_TEXT,   // record text rectangle only
                                        TRUE);      // keep parent visible
@@ -1384,7 +1421,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // only if window is not minimized, or this
             // will produce really funny minimized windows
             if (    ((pswp->fl & (SWP_SIZE | SWP_MINIMIZE)) == SWP_SIZE)
-                 && (!fMinimized)
+                 && (!G_fMinimized)
                )
             {
                 // resizing and not minimize: assert minimum cx/cy
@@ -1413,34 +1450,34 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // (from PM docs)
             PSWP pswpNew = PVOIDFROMMP(mp1);
             PSWP pswpOld = pswpNew + 1;
-            BOOL fWasMinimized = fMinimized;
+            BOOL fWasMinimized = G_fMinimized;
 
             if (pswpNew->fl & SWP_MINIMIZE)
             {
                 // minimizing: pmref says, we should
                 // hide all controls, because otherwise
                 // these get painted upon the minimized icon
-                fMinimized = TRUE;
-                WinShowWindow(hwndCnr, FALSE);
-                WinShowWindow(hwndClose, FALSE);
-                WinShowWindow(hwndIcon, FALSE);
-                WinShowWindow(hwndClear, FALSE);
-                WinShowWindow(hwndText, FALSE);
+                G_fMinimized = TRUE;
+                WinShowWindow(G_hwndCnr, FALSE);
+                WinShowWindow(G_hwndClose, FALSE);
+                WinShowWindow(G_hwndIcon, FALSE);
+                WinShowWindow(G_hwndClear, FALSE);
+                WinShowWindow(G_hwndText, FALSE);
             }
             else if (pswpNew->fl & SWP_RESTORE)
             {
                 // un-minimize: do the reverse
-                fMinimized = FALSE;
-                WinShowWindow(hwndCnr, TRUE);
-                WinShowWindow(hwndClose, TRUE);
-                WinShowWindow(hwndIcon, TRUE);
-                WinShowWindow(hwndClear, TRUE);
-                WinShowWindow(hwndText, TRUE);
+                G_fMinimized = FALSE;
+                WinShowWindow(G_hwndCnr, TRUE);
+                WinShowWindow(G_hwndClose, TRUE);
+                WinShowWindow(G_hwndIcon, TRUE);
+                WinShowWindow(G_hwndClear, TRUE);
+                WinShowWindow(G_hwndText, TRUE);
             }
 
             // resizing and not minimize?
             if (    (pswpNew->fl & SWP_SIZE)
-                &&  (!fMinimized)
+                &&  (!G_fMinimized)
                 &&  (!fWasMinimized)
                )
             {
@@ -1455,18 +1492,18 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                     // height delta
 
                 // container: adjust width and height
-                WinQueryWindowPos(hwndCnr,
-                        &swpControl);
-                WinSetWindowPos(hwndCnr,
+                WinQueryWindowPos(G_hwndCnr,
+                                  &swpControl);
+                WinSetWindowPos(G_hwndCnr,
                                 NULLHANDLE, 0, 0, // don't care
                                 swpControl.cx + ldcx,
                                 swpControl.cy + ldcy,
                                 SWP_SIZE);
 
                 // top text: adjust width and ypos
-                WinQueryWindowPos(hwndText,
+                WinQueryWindowPos(G_hwndText,
                                   &swpControl);
-                WinSetWindowPos(hwndText,
+                WinSetWindowPos(G_hwndText,
                                 NULLHANDLE,
                                 swpControl.x,
                                 swpControl.y + ldcy,
@@ -1475,9 +1512,9 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                 SWP_MOVE | SWP_SIZE);
 
                 // icon: adjust ypos only
-                WinQueryWindowPos(hwndIcon,
+                WinQueryWindowPos(G_hwndIcon,
                                   &swpControl);
-                WinSetWindowPos(hwndIcon,
+                WinSetWindowPos(G_hwndIcon,
                                 NULLHANDLE,
                                 swpControl.x,
                                 swpControl.y + ldcy,
@@ -1486,9 +1523,9 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 // "Clear" button:
                 // adjust xpos only
-                WinQueryWindowPos(hwndClear,
+                WinQueryWindowPos(G_hwndClear,
                                   &swpControl);
-                WinSetWindowPos(hwndClear,
+                WinSetWindowPos(G_hwndClear,
                                 NULLHANDLE,
                                 swpControl.x + ldcx,
                                 swpControl.y,
@@ -1508,143 +1545,98 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             switch ((ULONG)mp1)
             {
                 case DID_CLEAR:
-                    Cleanup(hwndCnr, NULL);
+                    Cleanup(NULL);
                 break;
 
                 case ID_TSMI_SORTBYNAME:
-                {
-                    WinSendMsg(hwndCnr,
+                    WinSendMsg(G_hwndCnr,
                                CM_SORTRECORD,
                                (MPARAM)fnCompareName,
                                NULL);
-                    Settings.ulSort = SV_NAME;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
+                    G_Settings.ulSort = SV_NAME;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_SORTBYSIZE:
-                {
-                    WinSendMsg(hwndCnr,
+                    WinSendMsg(G_hwndCnr,
                                 CM_SORTRECORD,
                                 (MPARAM)fnCompareSize,
                                 NULL);
-                    Settings.ulSort = SV_SIZE;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                            &Settings,
-                            sizeof(Settings));
-                break; }
+                    G_Settings.ulSort = SV_SIZE;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_SORTBYFILESCOUNT: // added V0.9.1
-                {
-                    WinSendMsg(hwndCnr,
+                    WinSendMsg(G_hwndCnr,
                                CM_SORTRECORD,
                                (MPARAM)fnCompareFilesCount,
                                NULL);
-                    Settings.ulSort = SV_FILESCOUNT;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
+                    G_Settings.ulSort = SV_FILESCOUNT;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_SORTBYEASIZE:
-                {
-                    WinSendMsg(hwndCnr,
+                    WinSendMsg(G_hwndCnr,
                                CM_SORTRECORD,
                                (MPARAM)fnCompareEASize,
                                NULL);
-                    Settings.ulSort = SV_EASIZE;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
+                    G_Settings.ulSort = SV_EASIZE;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_SIZE_BYTES:
-                {
-                    Settings.ulSizeDisplay = SD_BYTES;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
+                    G_Settings.ulSizeDisplay = SD_BYTES;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_SIZE_KBYTES:
-                {
-                    Settings.ulSizeDisplay = SD_KBYTES;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
+                    G_Settings.ulSizeDisplay = SD_KBYTES;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_SIZE_MBYTES:
-                {
-                    Settings.ulSizeDisplay = SD_MBYTES;
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
+                    G_Settings.ulSizeDisplay = SD_MBYTES;
+                    SaveSettings();
+                break;
 
                 case ID_TSMI_LOWPRTY:
-                {
-                    Settings.LowPriority = !(Settings.LowPriority);
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
+                    G_Settings.LowPriority = !(G_Settings.LowPriority);
+                    SaveSettings();
 
-                    if (tidCollect)
+                    if (G_tidCollect)
                         // collect thread running:
                         DosSetPriority(PRTYS_THREAD,
-                                       (Settings.LowPriority) ? PRTYC_IDLETIME : PRTYC_REGULAR,
-                                       0, tidCollect);
-                break; }
+                                       (G_Settings.LowPriority) ? PRTYC_IDLETIME : PRTYC_REGULAR,
+                                       0, G_tidCollect);
+                break;
 
                 case ID_TSMI_COLLECTEAS:
+                    G_Settings.CollectEAs = !(G_Settings.CollectEAs);
+                    SaveSettings();
+                break;
+
+                /*
+                 * ID_TSMI_HELP:
+                 *      contact XWP to display the help panel.
+                 *      Finally added this with V0.9.16.
+                 */
+
+                case ID_TSMI_HELP:
                 {
-                    Settings.CollectEAs = !(Settings.CollectEAs);
-                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                                        &Settings,
-                                        sizeof(Settings));
-                break; }
-
-                case ID_TSMI_PRODINFO:
-                {
-                    // advertise for myself
-                    CHAR szGPLInfo[2000];
-                    HWND hwndInfo = WinLoadDlg(HWND_DESKTOP, hwndDlg,
-                                               WinDefDlgProc,
-                                               hmodNLS,
-                                               ID_TSD_PRODINFO,
-                                               NULL);
-
-                    // load GPL info message into prodinfo MLE
-                    strcpy(szGPLInfo,
-                        "Treesize is part of the XFolder package. XFolder is free software. "
-                        "The full source code is now available. You are welcome to "
-                        "redistribute and/or modify XFolder under the conditions of the "
-                        "GNU General Public License (GPL). XFolder comes with absolutely "
-                        "NO WARRANTY. For details, refer to the \"Notices\" section of "
-                        "the XFolder Online Reference.\n\n"
-                        "Treesize will display either the contents of the directory you "
-                        "have specified on the command line (e.g. \"TREESIZE F:\\OS2\") "
-                        "or, if no dir has been specified, the current directory. "
-                        "\nAfter Treesize has finished collecting the directories, "
-                        "you may drop any additional WPS folder "
-                        "on the existing tree view to have a new tree displayed. "
-                        "\nPress the \"Clear\" button before that to have an empty window. "
-                        "\nDouble-click on any item in the tree view to have the corresponding "
-                        "WPS folder opened in its default view. "
-                        "\nTreesize saves all window parameters (position, colors, fonts) "
-                        "and the sort options you have last specified."
-                        );
-                    WinSetDlgItemText(hwndInfo, ID_TSDI_TEXT1, szGPLInfo);
-                    WinSendDlgItemMsg(hwndInfo, ID_TSDI_TEXT1,
-                                      MLM_SETFIRSTCHAR,       // scroll MLE to top
-                                      (MPARAM)0,
-                                      NULL);
-
-                    winhCenterWindow(hwndInfo);
-                    WinProcessDlg(hwndInfo);
-                    WinDestroyWindow(hwndInfo);
-                break; }
+                     // tell xwp to display the help
+                     PXWPGLOBALSHARED   pXwpGlobalShared = NULL;
+                     if (!(DosGetNamedSharedMem((PVOID*)&pXwpGlobalShared,
+                                                SHMEM_XWPGLOBAL,
+                                                PAG_READ | PAG_WRITE)))
+                     {
+                         WinPostMsg(pXwpGlobalShared->hwndAPIObject,
+                                    APIM_SHOWHELPPANEL,
+                                    (MPARAM)ID_XSH_TREESIZE,
+                                    0);
+                         DosFreeMem(pXwpGlobalShared);
+                     }
+                }
+                break;
 
                 default:
                 {
@@ -1653,9 +1645,9 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     // store window params (size, presparams, ...)
                     // Note that this function only works while the
                     // window is still visible, so we do this here.
-                    fStopThread = TRUE;
+                    G_fStopThread = TRUE;
                     WinStoreWindowPos((PSZ)G_pcszXFldTreesize, "WindowPos", hwndDlg);
-                    Cleanup(hwndCnr, NULL);
+                    Cleanup(NULL);
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break; }
 
@@ -1715,7 +1707,7 @@ BOOL LoadNLS(VOID)
         if (DosLoadModule(NULL,
                           0,
                           szNLSDLL,
-                          &hmodNLS))
+                          &G_hmodNLS))
         {
             CHAR    szMessage[2000];
             sprintf(szMessage,
@@ -1730,7 +1722,7 @@ BOOL LoadNLS(VOID)
             Proceed = FALSE;
         }
 
-        _Pmpf(("DosLoadModule: 0x%lX", hmodNLS));
+        _Pmpf(("DosLoadModule: 0x%lX", G_hmodNLS));
     }
     return (Proceed);
 }
@@ -1770,13 +1762,14 @@ int main(int argc, char *argv[])
         // use current dir then.
         ULONG ulCurrentDisk = 0, ulDriveMap = 0;
         DosQueryCurrentDisk(&ulCurrentDisk, &ulDriveMap);
-        szRootDir[0] = 'A'+ulCurrentDisk-1;
-        szRootDir[1] = ':';
-        szRootDir[2] = '\\';
-        DosQueryCurrentDir(0, szRootDir+3, &cbRootDir);
-    } else
+        G_szRootDir[0] = 'A'+ulCurrentDisk-1;
+        G_szRootDir[1] = ':';
+        G_szRootDir[2] = '\\';
+        DosQueryCurrentDir(0, G_szRootDir+3, &G_cbRootDir);
+    }
+    else
         // param given: use this
-        strcpy(szRootDir, argv[1]);
+        strcpy(G_szRootDir, argv[1]);
 
     // now attempt to find the XWorkplace NLS resource DLL,
     // which we need for all resources (new with XWP 0.9.0)
@@ -1784,22 +1777,22 @@ int main(int argc, char *argv[])
 
     if (Proceed)
     {
-        ULONG       cbSettings = sizeof(Settings);
+        ULONG       cbSettings = sizeof(G_Settings);
         SWCNTRL     swctl;
         PID         pid;
         HSWITCH     hswitch;
         HPOINTER    hIcon = WinLoadPointer(HWND_DESKTOP,
-                                           hmodNLS,
+                                           G_hmodNLS,
                                            ID_TS_ICON);
 
         // this loads the main window. All the processing
         // is done in fnwpMain.
-        hwndMain = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                              fnwpMain,
-                              hmodNLS, ID_TSD_MAIN,
-                              szRootDir);
+        G_hwndMain = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                                fnwpMain,
+                                G_hmodNLS, ID_TSD_MAIN,
+                                G_szRootDir);
 
-        if (!hwndMain)
+        if (!G_hwndMain)
             WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
                           "The main window could not be found in the XWorkplace NLS DLL. "
                           "Probably the DLL is outdated. Terminating.",
@@ -1807,60 +1800,72 @@ int main(int argc, char *argv[])
                           0, MB_OK | MB_MOVEABLE);
 
         // set clip children flag
-        WinSetWindowBits(hwndMain,
+        WinSetWindowBits(G_hwndMain,
                          QWL_STYLE,
                          WS_CLIPCHILDREN,         // unset bit
                          WS_CLIPCHILDREN);
 
         // append path to title
-        WinQueryWindowText(hwndMain, sizeof(szTitle), szTitle);
+        WinQueryWindowText(G_hwndMain, sizeof(szTitle), szTitle);
         strcat(szTitle, " V" BLDLEVEL_VERSION);
-        sprintf(szTitle+strlen(szTitle), " - %s", szRootDir);
-        WinSetWindowText(hwndMain, szTitle);
+        sprintf(szTitle+strlen(szTitle), " - %s", G_szRootDir);
+        WinSetWindowText(G_hwndMain, szTitle);
 
         // give the dlg an icon
-        WinSendMsg(hwndMain,
+        WinSendMsg(G_hwndMain,
                    WM_SETICON,
                    (MPARAM)hIcon,
                    NULL);
 
+        // fix the icon V0.9.16 (2001-12-02) [umoeller]
+        ctlPrepareStaticIcon(G_hwndIcon,
+                             1);
+        WinSendMsg(G_hwndIcon,
+                   SM_SETHANDLE,
+                   (MPARAM)hIcon,
+                   NULL);
+
         // add ourselves to the tasklist
-        swctl.hwnd = hwndMain;                 // window handle
+        swctl.hwnd = G_hwndMain;                 // window handle
         swctl.hwndIcon = hIcon;                // icon handle
         swctl.hprog = NULLHANDLE;              // program handle
-        WinQueryWindowProcess(hwndMain, &(swctl.idProcess), NULL);
+        WinQueryWindowProcess(G_hwndMain, &(swctl.idProcess), NULL);
                                                // process identifier
         swctl.idSession = 0;                   // session identifier ?
         swctl.uchVisibility = SWL_VISIBLE;     // visibility
         swctl.fbJump = SWL_JUMPABLE;           // jump indicator
-        WinQueryWindowText(hwndMain, sizeof(swctl.szSwtitle), (PSZ)&swctl.szSwtitle);
+        WinQueryWindowText(G_hwndMain, sizeof(swctl.szSwtitle), (PSZ)&swctl.szSwtitle);
         swctl.bProgType = PROG_DEFAULT;        // program type
 
         hswitch = WinAddSwitchEntry(&swctl);
 
         // get settings in OS2.INI
-        WinRestoreWindowPos((PSZ)G_pcszXFldTreesize, "WindowPos", hwndMain);
-        Settings.ulSort = SV_SIZE;
-        Settings.CollectEAs = TRUE;
-        Settings.ulSizeDisplay = SD_KBYTES;
-        Settings.LowPriority = TRUE;
-        PrfQueryProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
-                            &Settings,
+        WinRestoreWindowPos((PSZ)G_pcszXFldTreesize,
+                            "WindowPos",
+                            G_hwndMain);
+        G_Settings.ulSort = SV_SIZE;
+        G_Settings.CollectEAs = TRUE;
+        G_Settings.ulSizeDisplay = SD_KBYTES;
+        G_Settings.LowPriority = TRUE;
+        PrfQueryProfileData(HINI_USER,
+                            (PSZ)G_pcszXFldTreesize,
+                            "Settings",
+                            &G_Settings,
                             &cbSettings);
 
         // go!
-        WinShowWindow(hwndMain, TRUE);
-        WinProcessDlg(hwndMain);
-        WinDestroyWindow(hwndMain);
+        WinShowWindow(G_hwndMain, TRUE);
+        WinProcessDlg(G_hwndMain);
+        WinDestroyWindow(G_hwndMain);
     } // end if (proceed)
 
-    if (tidCollect)
+    if (G_tidCollect)
     {
         // give the Collect thread 5 seconds to exit;
         // normally, this shouldn't be a problem
-        fStopThread = TRUE;
+        G_fStopThread = TRUE;
         for (ul = 0; ul < 50; ul++)
-            if (tidCollect == 0)
+            if (G_tidCollect == 0)
                 break;
             else
                 DosSleep(100);  // 50*100 ms = 5 seconds

@@ -770,6 +770,17 @@
 
     /* ******************************************************************
      *
+     *   Open XCenter views
+     *
+     ********************************************************************/
+
+    BOOL APIENTRY ctrIsXCenterView(HWND hwndFrame);
+    typedef BOOL APIENTRY CTRISXCENTERVIEW(HWND hwndFrame);
+    typedef CTRISXCENTERVIEW *PCTRISXCENTERVIEW;
+                // this function was added with V0.9.16
+
+    /* ******************************************************************
+     *
      *   WM_CONTROL notification codes _from_ XCenter client
      *
      ********************************************************************/

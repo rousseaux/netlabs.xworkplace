@@ -128,7 +128,9 @@
 #define ID_ICONXMMCDPLAY       125
 #define ID_ICONXMMVOLUME       126
 #define ID_ICONXCENTER         127
+#ifndef __XWPLITE__
 #define ID_ICONXMINI           128
+#endif
 
 #ifndef __XWPLITE__
 #define ID_ICONXWPADMIN        129  // added V0.9.9 (2001-02-08) [umoeller]
@@ -1985,6 +1987,9 @@
 #define ID_XCSI_REPLACEDELETE           6046
 #define ID_XCSI_REPLHANDLES             6047
 #define ID_XCSI_REPLACEREFRESH          6048
+#ifndef __NEVERNEWFILEDLG__
+#define ID_XCSI_NEWFILEDLG              6049
+#endif
 
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
 #define ID_XCSI_XWPHOOK                 6051
@@ -2167,7 +2172,7 @@
 #define ID_TSDI_ICON                    10005
 #define DID_CLEAR                       10006
 
-#define ID_TSD_PRODINFO                 10007
+// #define ID_TSD_PRODINFO                 10007        removed V0.9.16 (2001-12-02) [umoeller]
 
 #define ID_TSM_CONTEXT                  10008
 #define ID_TSM_SORT                     10009
@@ -2182,7 +2187,7 @@
 #define ID_TSMI_SIZE_KBYTES             10018
 #define ID_TSMI_SIZE_MBYTES             10019
 
-#define ID_TSMI_PRODINFO                10020
+#define ID_TSMI_HELP                    10020           // changed V0.9.16 (2001-12-02) [umoeller]
 
 #define ID_TS_ICON                      10021
 

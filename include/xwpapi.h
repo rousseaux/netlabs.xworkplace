@@ -72,7 +72,7 @@
 
     #define APIM_FILEDLG            (WM_USER + 300)
 
-    #define APIM_NETSCDDEHELP       (WM_USER + 301)
+    #define APIM_SHOWHELPPANEL      (WM_USER + 301)
 
     #ifdef INCL_WINSTDFILE
 

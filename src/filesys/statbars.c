@@ -657,7 +657,8 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
             nlsThousandsDouble(pszBuf,
                                 dValue,
                                 pcs->cThousands);
-        break; }
+        }
+        break;
     }
 }
 
@@ -2097,7 +2098,8 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
             fShowStatusBars = TRUE;
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -2109,7 +2111,8 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
             fShowStatusBars = TRUE;
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -2579,7 +2582,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             else
                 pGlobalSettings->bDereferenceShadows &= ~STBF_DEREFSHADOWS_SINGLE;
             cmnUnlockGlobalSettings();
-        break; }
+        }
+        break;
 
         case ID_XSDI_SBTEXTMULTISEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
@@ -2596,7 +2600,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             else
                 pGlobalSettings->bDereferenceShadows &= ~STBF_DEREFSHADOWS_MULTIPLE;
             cmnUnlockGlobalSettings();
-        break; }
+        }
+        break;
 
         // "Select class" on "Status Bars" page:
         // set up WPS classes dialog
@@ -2658,7 +2663,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             xstrClear(&strTitle);
             xstrClear(&strIntroText);
-        break; }
+        }
+        break;
 
         // "Keys" buttons next to entry field
         // V0.9.14 (2001-07-31) [umoeller]
@@ -2694,7 +2700,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -2719,7 +2726,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         default:
         {

@@ -181,11 +181,13 @@ PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 PCMNQUERYNLSMODULEHANDLE pcmnQueryNLSModuleHandle = NULL;
 PCMNSETCONTROLSFONT pcmnSetControlsFont = NULL;
+PCMNQUERYACTIVEDESKTOPHWND pcmnQueryActiveDesktopHWND = NULL;
 
 PCTRDISPLAYHELP pctrDisplayHelp = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
+PCTRISXCENTERVIEW pctrIsXCenterView = NULL;
 
 PDOSHMYPID pdoshMyPID = NULL;
 
@@ -229,10 +231,12 @@ RESOLVEFUNCTION G_aImports[] =
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "cmnQueryNLSModuleHandle", (PFN*)&pcmnQueryNLSModuleHandle,
         "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
+        "cmnQueryActiveDesktopHWND", (PFN*)&pcmnQueryActiveDesktopHWND,
         "ctrDisplayHelp", (PFN*)&pctrDisplayHelp,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "ctrIsXCenterView", (PFN*)&pctrIsXCenterView,
         "doshMyPID", (PFN*)&pdoshMyPID,
         "drv_sprintf", (PFN*)&pdrv_sprintf,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
@@ -542,6 +546,33 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 /* ******************************************************************
  *
+ *   Helpers
+ *
+ ********************************************************************/
+
+/*
+ *@@ IsCtrlDesktopOrXCenter:
+ *      returns TRUE if the given frame is either
+ *      the desktop or an open XCenter frame.
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
+{
+    // rule out all XCenter frames
+    // V0.9.16 (2001-12-02) [umoeller]
+    if (pctrIsXCenterView(hwndFrame))
+        return TRUE;
+    // rule out active Desktop
+    else if (hwndFrame == pcmnQueryActiveDesktopHWND())
+        return TRUE;
+
+    return FALSE;
+}
+
+/* ******************************************************************
+ *
  *   Widget settings dialog
  *
  ********************************************************************/
@@ -551,8 +582,7 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  *      puts the current switch list entries into the listbox.
  */
 
-VOID DumpSwitchList(HWND hwnd,
-                    PXCENTERGLOBALS pGlobals)
+VOID DumpSwitchList(HWND hwnd)
 {
     PSWBLOCK pswBlock = pwinhQuerySwitchList(WinQueryAnchorBlock(hwnd));
                         // calls WinQuerySwitchList
@@ -565,14 +595,10 @@ VOID DumpSwitchList(HWND hwnd,
              ul++)
         {
             PSWCNTRL    pCtrlThis = &pswBlock->aswentry[ul].swctl;
-            BOOL        fIsXCenterFrame = FALSE;
-
-            if (pGlobals)
-                if (pCtrlThis->hwnd == pGlobals->hwndFrame)
-                    fIsXCenterFrame = TRUE;
 
             if (    (pCtrlThis->uchVisibility & SWL_VISIBLE)
-                 && (!fIsXCenterFrame)
+                 && (!IsCtrlDesktopOrXCenter(pCtrlThis->hwnd))
+                            // V0.9.16 (2001-12-02) [umoeller]
                )
             {
                 // visible item:
@@ -737,7 +763,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                                        ID_CRDI_FILTERS_NEWCOMBO),
                                        MAXNAMEL + 4 - 1); // null terminator!
 
-                DumpSwitchList(hwnd, pData->pGlobals);
+                DumpSwitchList(hwnd);
                 Settings2Dlg(hwnd, pSetup);
                 EnableItems(hwnd, pSetup);
             }
@@ -1028,6 +1054,7 @@ VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
  *      specified switch control is filtered.
  *
  *@@changed V0.9.12 (2001-04-28) [umoeller]: now matching first chars of filter only
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: now ruling out desktop and all XCenters always
  */
 
 BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
@@ -1039,8 +1066,8 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
     // rule out invisible tasklist entries
     if ((pCtrl->uchVisibility & SWL_VISIBLE) == 0)
         brc = TRUE;
-    // rule out the XCenter frame
-    else if (pCtrl->hwnd == hwndXCenterFrame)
+    // rule out Desktop and all XCenters
+    else if (IsCtrlDesktopOrXCenter(pCtrl->hwnd))
         brc = TRUE;
     else
     {

@@ -5,7 +5,7 @@
  *      This is built into the XCenter and not in
  *      a plugin DLL because it uses tons of WPS calls.
  *
- *      The PM window class actually implements two
+ *      This PM window class actually implements two
  *      widget classes, the "X-Button" and the "object
  *      button", which are quite similar.
  *
@@ -117,6 +117,12 @@
  *   Global variables
  *
  ********************************************************************/
+
+#ifndef __XWPLITE__
+static PCSZ G_pcszXButton =     "X Button";
+#else
+static PCSZ G_pcszXButton =     "eButton";
+#endif
 
 /* ******************************************************************
  *
@@ -424,7 +430,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                   pData->hwndOwner,
                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                   WinDefDlgProc,
-                                  "X-Button",     // @@todo localize
+                                  G_pcszXButton,
                                   DlgTemplate,
                                   ARRAYITEMCOUNT(DlgTemplate),
                                   NULL,
@@ -570,7 +576,11 @@ MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
     if (pPrivate->ulType == BTF_XBUTTON)
         pPrivate->hptrXMini = WinLoadPointer(HWND_DESKTOP,
                                              cmnQueryMainResModuleHandle(),
+#ifndef __XWPLITE__
                                              ID_ICONXMINI);
+#else
+                                             ID_ICONDLG);           // eCS logo
+#endif
 
     // enable context menu help
     pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
@@ -678,7 +688,7 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
                     if (pPrivate->ulType == BTF_XBUTTON)
-                        pttt->pszText = "X Button";
+                        pttt->pszText = (PSZ)G_pcszXButton;
                     else
                     {
                         if (!pPrivate->pobjButton)

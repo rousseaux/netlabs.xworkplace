@@ -39,6 +39,7 @@ EXPORTS
     apmhClose
     csysQuerySwapperSize
     cmnGetString
+    cmnQueryActiveDesktopHWND
     cmnQueryDefaultFont
     cmnQueryHelpLibrary
     cmnQueryNLSModuleHandle
@@ -46,6 +47,7 @@ EXPORTS
     cmnSetControlsFont
     ctrDisplayHelp
     ctrFreeSetupValue
+    ctrIsXCenterView
     ctrPaintStaticWidgetBorder
     ctrParseColorString
     ctrPlaceAndPopupMenu

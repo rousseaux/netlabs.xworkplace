@@ -319,7 +319,7 @@ BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, const char *psz)
         const char *pcszEA = ".KEYPHRASES";
         if (psz)
         {
-            PEABINDING  peab = NULL;
+            PEABINDING  peab;
             if (peab = eaCreateMVBindingFromPSZ(pcszEA,
                                                 psz,
                                                 "\r\n",     // separator

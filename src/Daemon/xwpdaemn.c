@@ -366,7 +366,8 @@ FILE* _System dmnExceptOpenLogFile(VOID)
  */
 
 VOID _System dmnExceptExplain(FILE *file,      // in: logfile from fopen()
-                              PTIB ptib)       // in: thread info block
+                              PTIB ptib,       // in: thread info block
+                              ULONG ulpri)     // in: thread priority
 {
     // nothing so far
 }
@@ -1322,6 +1323,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 // animation: prepare painting then
                 hps = WinGetScreenPS(HWND_DESKTOP);
+                // @@todo or maybe hps = WinGetClipPS(HWND_DESKTOP, 0, PSF_LOCKWINDOWUPDATE)?
 
                 GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
                 GpiSetColor(hps, 0x00FFFFFF);

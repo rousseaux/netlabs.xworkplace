@@ -226,6 +226,9 @@ static FEATURESITEM G_FeatureItemsList[] =
             // ID_XCSI_REPLACEREFRESH, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
                 // moved this up to the folders group
                 // V0.9.16 (2001-10-25) [umoeller]
+#ifndef __NEVERNEWFILEDLG__
+            , ID_XCSI_NEWFILEDLG, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+#endif
         };
 
 static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
@@ -559,7 +562,7 @@ static XWPCLASSITEM G_aClasses[] =
             1255,
         &G_pcszXWPProgram, &G_pcszWPProgram,
             NULL, 0,
-            0,      // @@todo
+            1273,           // V0.9.16 (2001-11-25) [umoeller]
         &G_pcszXFldProgramFile, &G_pcszWPProgramFile,
             NULL, 0,
             1256,
@@ -1905,6 +1908,11 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEREFRESH,
                 krnReplaceRefreshEnabled());
+
+#ifndef __NEVERNEWFILEDLG__
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_NEWFILEDLG,
+                cmnIsFeatureEnabled(NewFileDlg));
+#endif
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2223,6 +2231,12 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->fReplaceHandles = precc->usCheckState;
             break;
     #endif
+
+#ifndef __NEVERNEWFILEDLG__
+            case ID_XCSI_NEWFILEDLG:
+                pGlobalSettings->__fNewFileDlg = precc->usCheckState;
+            break;
+#endif
 
             default:            // includes "Classes" button
                 fSave = FALSE;

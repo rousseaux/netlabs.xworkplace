@@ -63,7 +63,8 @@
     FILE* _System krnExceptOpenLogFile(VOID);
 
     VOID _System krnExceptExplainXFolder(FILE *file,
-                                         PTIB ptib);
+                                         PTIB ptib,
+                                         ULONG ulpri);  // V0.9.16 (2001-12-02) [pr]
 
     VOID APIENTRY krnExceptError(const char *pcszFile,
                                  ULONG ulLine,
@@ -396,6 +397,8 @@
     #define T1M_INITIATEXSHUTDOWN       (WM_USER+290)    // V0.9.12 (2001-04-28) [umoeller]
 
     #define T1M_OPENRUNDIALOG           (WM_USER+291)    // V0.9.14 (2001-08-07) [pr]
+
+    #define T1M_PROGOPENPROGRAM         (WM_USER+292)    // V0.9.16 (2001-12-02) [umoeller]
 
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 

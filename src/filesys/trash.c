@@ -1687,11 +1687,9 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
                 // this function either creates one or gets an existing
                 // one if things have been deleted from pSourceFolder
                 // already
-                pFolderInTrash = trshGetOrCreateTrashDir(pTrashCan,
-                                                         szSourceFolder,
-                                                         &fNeedSave);
-
-                if (pFolderInTrash)
+                if (pFolderInTrash = trshGetOrCreateTrashDir(pTrashCan,
+                                                             szSourceFolder,
+                                                             &fNeedSave))
                 {
                     // close all open views
                     if (wpshCloseAllViews(pObject))
@@ -1826,6 +1824,7 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
                                         != NO_ERROR)
                                 // stop and return FALSE
                                 break;
+
                         pTargetFolder2 = _wpclsQueryFolder(_WPFolder,
                                                            pszOriginalPath,
                                                            TRUE);       // lock object

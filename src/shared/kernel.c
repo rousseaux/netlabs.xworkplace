@@ -518,11 +518,12 @@ FILE* _System krnExceptOpenLogFile(VOID)
  *@@changed V0.9.0 [umoeller]: moved this stuff here from except.c
  *@@changed V0.9.0 [umoeller]: renamed function
  *@@changed V0.9.1 (99-12-28) [umoeller]: updated written information; added File thread
- *@@changed V0.9.16 (2001-11-02) [pr]: added thread 1 identification
+ *@@changed V0.9.16 (2001-12-02) [pr]: fixed thread priority display
  */
 
 VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen()
-                                     PTIB ptib)       // in: thread info block
+                                     PTIB ptib,       // in: thread info block
+                                     ULONG ulpri)     // in: thread priority
 {
     PID         pid;
     TID         tid;
@@ -558,7 +559,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
 
             fprintf(file,
                     "\n    Thread priority: 0x%lX, ordinal: 0x%lX\n",
-                    ptib->tib_ptib2->tib2_ulpri,
+                    ulpri,
                     ptib->tib_ordinal);
         }
         else
@@ -1665,6 +1666,8 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              *@@ T1M_OPENRUNDIALOG:
              *      this gets posted from the XCenter thread
              *      to open the Run dialog.
+             *
+             *@@added V0.9.14 (2001-08-07) [pr]
              */
 
             case T1M_OPENRUNDIALOG:
@@ -1672,11 +1675,38 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                                   (const char *)mp2);
             break;
 
-            #ifdef __DEBUG__
+            /*
+             *@@ T1M_PROGOPENPROGRAM:
+             *      calls progOpenProgramThread1 to make sure the
+             *      application gets started from thread 1
+             *      (to avoid the system hangs with Win-OS/2
+             *      full-screen sessions).
+             *
+             *      This is used only by progOpenProgram and
+             *      shouldn't be used otherwise because we
+             *      use the thread-1 object window as the
+             *      WinStartApp notify window.
+             *
+             *      Parameters:
+             *
+             *      --  PPROGOPENDATA mp1: program data.
+             *
+             *      --  mp2: always null.
+             *
+             *      No return code.
+             *
+             *@@added V0.9.16 (2001-12-02) [umoeller]
+             */
+
+            case T1M_PROGOPENPROGRAM:
+                progOpenProgramThread1(mp1);
+            break;
+
+#ifdef __DEBUG__
             case XM_CRASH:          // posted by debugging context menu of XFldDesktop
                 CRASH;
             break;
-            #endif
+#endif
 
             default:
                 fCallDefault = TRUE;
@@ -1805,16 +1835,20 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
         break;
 
         /*
-         *@@ APIM_NETSCDDEHELP:
-         *      displays the help for NetscapeDDE.
+         *@@ APIM_SHOWHELPPANEL:
+         *      displays a help panel. Used by NetscapeDDE
+         *      and Treesize.
          *
-         *      No parameters.
+         *      Parameters:
+         *
+         *      --  ULONG mp1: the help panel from the XWP
+         *          online help to be displayed.
          *
          *@@added V0.9.16 (2001-10-02) [umoeller]
          */
 
-        case APIM_NETSCDDEHELP:
-            cmnDisplayHelp(NULL, ID_XSH_NETSCAPEDDE);
+        case APIM_SHOWHELPPANEL:
+            cmnDisplayHelp(NULL, (ULONG)mp1);
         break;
 
         default:

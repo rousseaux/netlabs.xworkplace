@@ -36,6 +36,7 @@
 
 // file operations
 #define __NOREPLACEFILEEXISTS__                 1
+#define __NEVERNEWFILEDLG__                     1
 
 // hook features
 #define __NOPAGEMAGE__                          1

@@ -213,6 +213,7 @@ static ULONG               G_SFVOffset = 0;
  *      class for storing our window data.
  *
  *@@added V0.9.3 (2000-04-08) [umoeller]
+ *@@changed V0.9.16 (2001-12-02) [umoeller]: now releasing hook again
  */
 
 VOID EXPENTRY fdr_SendMsgHook(HAB hab,
@@ -224,6 +225,8 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
      *
      */
 
+    CHAR    szClass[300];
+
     // re-register the WPFolder window class if we haven't
     // done this yet; this is needed because per default,
     // the WPS "wpFolder window" class apparently uses
@@ -231,51 +234,50 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
 
     if (    (psmh->msg == WM_CREATE)
          && (!G_WPFolderWinClassExtended)
-       )
-    {
-        CHAR    szClass[300];
-
-        // _Pmpf(("fdr_SendMsgHook: checking WM_CREATE window class"));
-
-        WinQueryClassName(psmh->hwnd,
-                          sizeof(szClass),
-                          szClass);
-
-        // _Pmpf(("    got %s", szClass));
-
-        if (!strcmp(szClass, "wpFolder window"))
-        {
+         && (WinQueryClassName(psmh->hwnd,
+                               sizeof(szClass),
+                               szClass))
+         && (!strcmp(szClass, WC_WPFOLDERWINDOW)) // "wpFolder window"))
             // it's a folder:
             // OK, we have the first WM_CREATE for a folder window
             // after Desktop startup now...
-            if (WinQueryClassInfo(hab,
-                                  "wpFolder window",
-                                  &G_WPFolderWinClassInfo))
-            {
-                // _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
-                // _Pmpf(("    QWL_USER is: %d", QWL_USER));
+         && (WinQueryClassInfo(hab,
+                               (PSZ)WC_WPFOLDERWINDOW, // "wpFolder window",
+                               &G_WPFolderWinClassInfo))
+        )
+    {
+        // _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
+        // _Pmpf(("    QWL_USER is: %d", QWL_USER));
 
-                // replace original window class
-                if (WinRegisterClass(hab,
-                                     "wpFolder window",
-                                     G_WPFolderWinClassInfo.pfnWindowProc, // fdr_fnwpSubclassedFolder2,
-                                     G_WPFolderWinClassInfo.flClassStyle,
-                                     G_WPFolderWinClassInfo.cbWindowData + 16))
-                {
-                    // _Pmpf(("    WinRegisterClass OK"));
+        // replace original window class
+        if (WinRegisterClass(hab,
+                             (PSZ)WC_WPFOLDERWINDOW,
+                             G_WPFolderWinClassInfo.pfnWindowProc, // fdr_fnwpSubclassedFolder2,
+                             G_WPFolderWinClassInfo.flClassStyle,
+                             G_WPFolderWinClassInfo.cbWindowData + 16))
+        {
+            // _Pmpf(("    WinRegisterClass OK"));
 
-                    // OK, window class successfully re-registered:
-                    // store the offset of our window word for the
-                    // SUBCLASSEDFOLDERVIEW's in a global variable
-                    G_SFVOffset = G_WPFolderWinClassInfo.cbWindowData + 12;
+            // OK, window class successfully re-registered:
+            // store the offset of our window word for the
+            // SUBCLASSEDFOLDERVIEW's in a global variable
+            G_SFVOffset = G_WPFolderWinClassInfo.cbWindowData + 12;
 
-                    // don't do this again
-                    G_WPFolderWinClassExtended = TRUE;
+            // don't do this again
+            G_WPFolderWinClassExtended = TRUE;
 
-                }
-                // else _Pmpf(("    WinRegisterClass failed"));
-            }
+            // we can now uninstall the hook, we've done
+            // what we had to do...
+            // V0.9.16 (2001-12-02) [umoeller]
+            if (!WinReleaseHook(WinQueryAnchorBlock(HWND_DESKTOP),
+                                HMQ_CURRENT,
+                                HK_SENDMSG,
+                                (PFN)fdr_SendMsgHook,
+                                NULLHANDLE))  // module handle, can be 0 for local hook
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "WinReleaseHook failed.");
         }
+        // else _Pmpf(("    WinRegisterClass failed"));
     }
 }
 

@@ -454,13 +454,14 @@ PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case i
 {
     PCSZ pcszClassName = NULL;
     BOOL fLocked = FALSE;
-    PSZ pszUpperType = NULL;
 
     TRY_LOUD(excpt1)
     {
         ULONG ulTypeLength;
-        if (    (ulTypeLength = strlen(pcszType))
-             && (pszUpperType = malloc(ulTypeLength + 1))
+        PSZ pszUpperType;
+        if (    (pcszType)
+             && (ulTypeLength = strlen(pcszType))
+             && (pszUpperType = _alloca(ulTypeLength + 1))
              && (fLocked = ftypLockInstances())
            )
         {
@@ -482,9 +483,6 @@ PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case i
                pcszType);
         pcszClassName = NULL;
     } END_CATCH();
-
-    if (pszUpperType)
-        free(pszUpperType);
 
     if (fLocked)
         ftypUnlockInstances();
@@ -947,8 +945,7 @@ ULONG AppendTypesFromString(const char *pcszTypes, // in: types string (e.g. "C 
     while (pTypeThis)
     {
         // get next line feed
-        pLF = strchr(pTypeThis, cSeparator);
-        if (pLF)
+        if (pLF = strchr(pTypeThis, cSeparator))
         {
             // line feed found:
             // extract type and store in list
@@ -3076,6 +3073,57 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 }
 
 /*
+ *@@ ImportNewTypes:
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
+{
+    CHAR szFilename[CCHMAXPATH];
+    sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
+    if (cmnFileDlg(pcnbp->hwndDlgPage,
+                   szFilename,
+                   WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                   HINI_USER,
+                   INIAPP_XWORKPLACE,
+                   "XWPFileTypesDlg"))
+    {
+        // create XML document then
+        CHAR szErrorBuf[1000];
+        PSZ apsz[2] = { szFilename, szErrorBuf };
+
+        HPOINTER hptrOld = winhSetWaitPointer();
+        APIRET arc = ftypImportTypes(szFilename,
+                                     szErrorBuf,
+                                     sizeof(szErrorBuf));
+        WinSetPointer(HWND_DESKTOP, hptrOld);
+
+        if (!arc)
+        {
+            // call "init" callback to reinitialize the page
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+
+            cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                121,            // xwp
+                                apsz,
+                                1,
+                                215,            // successfully imported from %1
+                                MB_OK);
+        }
+        else
+        {
+            cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                104,            // xwp: error
+                                apsz,
+                                2,
+                                216,            // error %2 imported from %1
+                                MB_OK);
+        }
+    }
+}
+
+/*
  *@@ ftypFileTypesItemChanged:
  *      notebook callback function (notebook.c) for the
  *      "File types" page in the "Workplace Shell" object.
@@ -4211,48 +4259,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSMI_FILETYPES_IMPORT:
-        {
-            CHAR szFilename[CCHMAXPATH];
-            sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
-            if (cmnFileDlg(pcnbp->hwndDlgPage,
-                           szFilename,
-                           WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
-                           HINI_USER,
-                           INIAPP_XWORKPLACE,
-                           "XWPFileTypesDlg"))
-            {
-                // create XML document then
-                CHAR szError[30];
-                PSZ apsz[2] = { szFilename, szError };
-
-                HPOINTER hptrOld = winhSetWaitPointer();
-                APIRET arc = ftypImportTypes(szFilename);
-                WinSetPointer(HWND_DESKTOP, hptrOld);
-
-                if (!arc)
-                {
-                    // call "init" callback to reinitialize the page
-                    pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-
-                    cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
-                                        121,            // xwp
-                                        apsz,
-                                        1,
-                                        215,            // successfully imported from %1
-                                        MB_OK);
-                }
-                else
-                {
-                    sprintf(szError, "%u", arc);
-                    cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
-                                        104,            // xwp: error
-                                        apsz,
-                                        2,
-                                        216,            // error %2 imported from %1
-                                        MB_OK);
-                }
-            }
-        }
+            ImportNewTypes(pcnbp);
         break;
 
         /*
@@ -5548,7 +5555,9 @@ APIRET ImportTypes(PDOMNODE pParentElement,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-APIRET ftypImportTypes(const char *pcszFilename)        // in: XML file name
+APIRET ftypImportTypes(const char *pcszFilename,        // in: XML file name
+                       PSZ pszErrorBuf,
+                       ULONG cbErrorBuf)
 {
     APIRET arc;
     BOOL fLocked = FALSE;
@@ -5598,6 +5607,57 @@ APIRET ftypImportTypes(const char *pcszFilename)        // in: XML file name
 
                 if (fLocked)
                     ftypUnlockCaches();
+            }
+
+            switch (arc)
+            {
+                case NO_ERROR:
+                break;
+
+                case ERROR_DOM_PARSING:
+                case ERROR_DOM_VALIDITY:
+                {
+                    CHAR szError2[100];
+                    PCSZ pcszError;
+                    if (!(pcszError = pDom->pcszErrorDescription))
+                    {
+                        sprintf(szError2, "Code %u", pDom->arcDOM);
+                        pcszError = szError2;
+                    }
+
+                    if (arc == ERROR_DOM_PARSING)
+                    {
+                        sprintf(pszErrorBuf,
+                                "Parsing error: %s (line %d, column %d)",
+                                pcszError,
+                                pDom->ulErrorLine,
+                                pDom->ulErrorColumn);
+
+                        if (pDom->pxstrFailingNode)
+                            sprintf(pszErrorBuf + strlen(pszErrorBuf),
+                                    " (%s)",
+                                    pDom->pxstrFailingNode->psz);
+                    }
+                    else if (arc == ERROR_DOM_VALIDITY)
+                    {
+                        sprintf(pszErrorBuf,
+                                "Validation error: %s (line %d, column %d)",
+                                pcszError,
+                                pDom->ulErrorLine,
+                                pDom->ulErrorColumn);
+
+                        if (pDom->pxstrFailingNode)
+                            sprintf(pszErrorBuf + strlen(pszErrorBuf),
+                                    " (%s)",
+                                    pDom->pxstrFailingNode->psz);
+                    }
+                }
+                break;
+
+                default:
+                    sprintf(pszErrorBuf,
+                            "Error %d",
+                            arc);
             }
 
             xmlFreeDOM(pDom);

@@ -437,6 +437,9 @@
         DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
     #endif
+
+    DECLARE_CMN_STRING(WC_WPFOLDERWINDOW, "wpFolder window");
+
     /********************************************************************
      *
      *   Thread object windows
@@ -769,6 +772,9 @@
 #endif
 #ifndef __ALWAYSREPLACEARCHIVING__
         ReplaceArchiving,
+#endif
+#ifndef __NEVERNEWFILEDLG__
+        NewFileDlg,
 #endif
         TurboFolders,            // warning: this will return the setting
                                  // that was once determined on WPS startup
@@ -1128,8 +1134,11 @@
         BYTE        fWriteXWPStartupLog;
                         // V0.9.14 (2001-08-21) [umoeller]
 
+    /* V0.9.16 */
         BYTE        __fTurboFolders;
                         // V0.9.16 (2001-10-25) [umoeller]
+        BYTE        __fNewFileDlg;
+                        // V0.9.16 (2001-12-02) [umoeller]
 
     } GLOBALSETTINGS;
 
@@ -1326,7 +1335,9 @@
 
     const char* XWPENTRY cmnQueryStatusBarSetting(USHORT usSetting);
 
+#ifndef __NOCFGSTATUSBARS__
     BOOL XWPENTRY cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting);
+#endif
 
     ULONG XWPENTRY cmnQueryStatusBarHeight(VOID);
 
@@ -1593,9 +1604,11 @@
         BOOL cmnIsADesktop(WPObject *somSelf);
 
         WPObject* XWPENTRY cmnQueryActiveDesktop(VOID);
-
-        HWND XWPENTRY cmnQueryActiveDesktopHWND(VOID);
     #endif
+
+    HWND XWPENTRY cmnQueryActiveDesktopHWND(VOID);
+    typedef HWND XWPENTRY CMNQUERYACTIVEDESKTOPHWND(VOID);
+    typedef CMNQUERYACTIVEDESKTOPHWND *PCMNQUERYACTIVEDESKTOPHWND;
 
     #define RUN_MAXITEMS 20
 

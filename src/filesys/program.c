@@ -1263,87 +1263,45 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 }
 
 /*
- *@@ progOpenProgram:
- *      this opens the specified program object, which
- *      must be of the WPProgram or WPProgramFile class.
- *      This implements workarounds to WinStartApp to
- *      mimic the typical WPS behavior on program objects.
- *      Even better, this can handle data files as arguments
- *      to program objects, with full support for the various
- *      parameter placeholders.
+ *@@ PROGOPENDATA:
  *
- *      This is a complete implementation of running
- *      programs in the WPS. Since IBM was not kind
- *      enough to export a method interface for doing
- *      this, and since there is _no way_ of starting a
- *      program object with a data file as a parameter
- *      using the standard WPS methods, I had to rewrite
- *      all this.
- *
- *      Presently, this gets called from:
- *
- *      -- XFldDataFile::wpOpen to open a program (file)
- *         object which has been associated with a data
- *         file. In that case, pArgDataFile is set to
- *         the data file whose association is to be started
- *         with the data file as an argument.
- *
- *      Features:
- *
- *      1)  This handles special executable flags as with
- *          WPProgram (e.g. "*" for a command line). See
- *          winhStartApp for details, which gets called from
- *          here to call WinStartApp in turn.
- *
- *      2)  If pArgDataFile is != NULL, this function handles
- *          data files as arguments to a program file. In that
- *          case, we also evaluate placeholders in the program
- *          object "parameters" data field (see wpQueryProgDetails).
- *          See progSetupArgs for supported placeholders, which
- *          gets called from here.
- *
- *          In addition, if the associated program does not have
- *          a startup directory, this is set to the data file's
- *          directory.
- *
- *      3)  This creates a use item to take care of "in use"
- *          emphasis on the icon exactly as the WPS does it.
- *          If pArgDataFile is specified, "in use" emphasis
- *          is added to the data file's icon. Otherwise it is
- *          added to the program object icon. See progStoreRunningApp,
- *          which gets called from here.
- *
- *          Note: The XWorkplace thread-1 object window
- *          (fnwpThread1Object) is used as the notify
- *          window to WinStartApp to receive WM_APPTERMINATENOTIFY
- *          so we can properly remove source emphasis later.
- *          fnwpThread1Object then calls progAppTerminateNotify.
- *
- *      Since this calls progSetupArgs, this might display modal
- *      dialogs before returning. As a result (and because this
- *      calls winhStartApp in turn), the calling thread must
- *      have a message queue.
- *
- *@@added V0.9.6 (2000-10-16) [umoeller]
- *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed startup dir with data files
- *@@changed V0.9.7 (2000-12-17) [umoeller]: now building environment correctly
- *@@changed V0.9.12 (2001-05-22) [umoeller]: extracted progQueryDetails
- *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed crash cleanup
- *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed prototype for APIRET
- *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed root folder problems
+ *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
-                       WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
-                       ULONG ulMenuID,            // in: with data files, menu ID that was used
-                       HAPP *phapp)             // out: HAPP
+typedef struct _PROGOPENDATA
+{
+    WPObject        *pProgObject;   // in: WPProgram or WPProgramFile
+    WPFileSystem    *pArgDataFile;  // in: data file as arg or NULL
+    ULONG           ulMenuID;       // in: with data files, menu ID that was used
+    HAPP            *phapp;         // out: HAPP
+
+    HWND            hwndNotify;
+} PROGOPENDATA, *PPROGOPENDATA;
+
+/*
+ *@@ progOpenProgramThread1:
+ *      actual handler for progOpenProgram, which is
+ *      guaranteed to run on thread 1.
+ *
+ *@@added V0.9.16 (2001-12-02) [umoeller]
+ */
+
+APIRET progOpenProgramThread1(PVOID pvData)
 {
     APIRET          arc = NO_ERROR;
     PSZ             pszParams = NULL;
     PPROGDETAILS    pProgDetails = NULL;
 
+    PPROGOPENDATA   pData = (PPROGOPENDATA)pvData;
+
     TRY_LOUD(excpt1)
     {
+        // get the params back
+        WPObject *pProgObject = pData->pProgObject;
+        WPFileSystem *pArgDataFile = pData->pArgDataFile;
+        ULONG ulMenuID = pData->ulMenuID;
+        HAPP *phapp = pData->phapp;
+
         // get program data
         // (progQueryDetails checks for whether this is a valid object)
         if (!(pProgDetails = progQueryDetails(pProgObject)))
@@ -1412,10 +1370,11 @@ APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramF
 
                 // start the app (more hacks in appStartApp,
                 // which calls WinStartApp in turn)
-                if (!(arc = appStartApp(pKernelGlobals->hwndThread1Object,
+                if (!(arc = appStartApp(pKernelGlobals->hwndThread1Object, // notify window: t1 obj wnd
                                         pProgDetails,
-                                        0, // V0.9.14
-                                        phapp)))        // V0.9.16 (2001-10-19) [umoeller]
+                                        0,              // APP_RUN_* flags V0.9.14
+                                        phapp)))
+                            // V0.9.16 (2001-12-02) [umoeller]
                 {
                     // app started OK:
                     // set in-use emphasis on either
@@ -1443,6 +1402,152 @@ APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramF
         free(pProgDetails);
     }
 
+    // handle notify window that progOpenProgram
+    // is waiting on
+    if (pData->hwndNotify)
+        WinPostMsg(pData->hwndNotify,
+                   WM_USER,
+                   (MPARAM)arc,
+                   0);
+
     return (arc);
+}
+
+/*
+ *@@ progOpenProgram:
+ *      this opens the specified program object, which
+ *      must be of the WPProgram or WPProgramFile class.
+ *      This implements workarounds to WinStartApp to
+ *      mimic the typical WPS behavior on program objects.
+ *      Even better, this can handle data files as arguments
+ *      to program objects, with full support for the various
+ *      parameter placeholders.
+ *
+ *      This is a complete implementation of running
+ *      programs in the WPS. Since IBM was not kind
+ *      enough to export a method interface for doing
+ *      this, and since there is _no way_ of starting a
+ *      program object with a data file as a parameter
+ *      using the standard WPS methods, I had to rewrite
+ *      all this.
+ *
+ *      Presently, this gets called from:
+ *
+ *      -- XFldDataFile::wpOpen to open a program (file)
+ *         object which has been associated with a data
+ *         file. In that case, pArgDataFile is set to
+ *         the data file whose association is to be started
+ *         with the data file as an argument.
+ *
+ *      Features:
+ *
+ *      1)  This handles special executable flags as with
+ *          WPProgram (e.g. "*" for a command line). See
+ *          winhStartApp for details, which gets called from
+ *          here to call WinStartApp in turn.
+ *
+ *      2)  If pArgDataFile is != NULL, this function handles
+ *          data files as arguments to a program file. In that
+ *          case, we also evaluate placeholders in the program
+ *          object "parameters" data field (see wpQueryProgDetails).
+ *          See progSetupArgs for supported placeholders, which
+ *          gets called from here.
+ *
+ *          In addition, if the associated program does not have
+ *          a startup directory, this is set to the data file's
+ *          directory.
+ *
+ *      3)  This creates a use item to take care of "in use"
+ *          emphasis on the icon exactly as the WPS does it.
+ *          If pArgDataFile is specified, "in use" emphasis
+ *          is added to the data file's icon. Otherwise it is
+ *          added to the program object icon. See progStoreRunningApp,
+ *          which gets called from here.
+ *
+ *          Note: The XWorkplace thread-1 object window
+ *          (fnwpThread1Object) is used as the notify
+ *          window to WinStartApp to receive WM_APPTERMINATENOTIFY
+ *          so we can properly remove source emphasis later.
+ *          fnwpThread1Object then calls progAppTerminateNotify.
+ *
+ *      Since this calls progSetupArgs, this might display modal
+ *      dialogs before returning. As a result (and because this
+ *      calls winhStartApp in turn), the calling thread must
+ *      have a message queue.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed startup dir with data files
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: now building environment correctly
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: extracted progQueryDetails
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed crash cleanup
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed prototype for APIRET
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed root folder problems
+ *@@changed V0.9.16 (2001-12-02) [umoeller]: moved all code to progOpenProgramThread1; added thread-1 sync
+ */
+
+APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
+                       WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
+                       ULONG ulMenuID,            // in: with data files, menu ID that was used
+                       HAPP *phapp)             // out: HAPP
+{
+    APIRET          arc = FOPSERR_NOT_HANDLED_ABORT;
+    PROGOPENDATA    Data;
+    PCKERNELGLOBALS pKernelGlobals;
+
+    Data.pProgObject = pProgObject;
+    Data.pArgDataFile = pArgDataFile;
+    Data.ulMenuID = ulMenuID;
+    Data.phapp = phapp;
+    Data.hwndNotify = NULLHANDLE;
+
+    _Pmpf((__FUNCTION__ ": entering"));
+
+    if (doshMyTID() == 1)
+        // if we're running on thread 1, we don't need
+        // the below overhead
+        arc = progOpenProgramThread1(&Data);
+    else
+    {
+        // not thread 1:
+        // create notify window for progOpenProgramThread1;
+        // using WinSendMsg hangs the system (for god's sake)
+        if (    (Data.hwndNotify = winhCreateObjectWindow(WC_STATIC, NULL))
+             && (pKernelGlobals = krnQueryGlobals())
+             && (WinPostMsg(pKernelGlobals->hwndThread1Object,
+                            T1M_PROGOPENPROGRAM,
+                            (MPARAM)&Data,
+                            0))
+           )
+        {
+            // alright, all this succeeded:
+            // wait for thread-1 to finish all this
+            HAB hab = WinQueryAnchorBlock(Data.hwndNotify);
+            QMSG qmsg;
+            BOOL fQuit = FALSE;
+            while (WinGetMsg(hab,
+                             &qmsg, 0, 0, 0))
+            {
+                // current message for our object window?
+                if (    (qmsg.hwnd == Data.hwndNotify)
+                     && (qmsg.msg == WM_USER)
+                   )
+                {
+                    fQuit = TRUE;
+                    arc = (ULONG)qmsg.mp1;
+                }
+
+                WinDispatchMsg(hab, &qmsg);
+                if (fQuit)
+                    break;
+            }
+
+            WinDestroyWindow(Data.hwndNotify);
+        }
+    }
+
+    _Pmpf((__FUNCTION__ ": leaving, rc = %d", arc));
+
+    return (arc);
+
 }
 
