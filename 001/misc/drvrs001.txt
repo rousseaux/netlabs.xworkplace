@@ -127,6 +127,10 @@ CATEGORY "Hard disk"
         DRIVER ( "BASEDEV=", "N512DASD.FLT",
                  "Large sector hard disk support",
                  DRVF_NOPARAMS)
+        DRIVER ( "BASEDEV=", "DSKSLEEP.FLT",
+                 "SCSI Disk Sleep Filter (Vitus Jensen)",
+                 0)
+
     }
 
 CATEGORY "CD-ROM"
@@ -240,6 +244,9 @@ CATEGORY "Installable File Systems"
         DRIVER ( "IFS=", "RAMFS.IFS",
                  "RAM disk file system",
                  0),
+        DRIVER ( "IFS=", "RAMFS8.IFS",
+                 "RAM disk file system (8 MB version)",
+                 0),
         DRIVER ( "IFS=", "RAMFS64.IFS",
                  "RAM disk file system (64 MB version)",
                  0),
@@ -271,7 +278,7 @@ CATEGORY "Installable File Systems"
         DRIVER ( "IFS=", "FAT32.IFS",
                  "Henk Kelder's FAT32 File System",
                  0)
-        DRIVER ( "RUN", "CACHEF32.EXE",
+        DRIVER ( "CALL=", "CACHEF32.EXE",
                  "Henk Kelder's FAT32 Cache daemon",
                  0)
         DRIVER ( "BASEDEV=", "PARTFILT.FLT",
@@ -288,6 +295,21 @@ CATEGORY "Installable File Systems"
         DRIVER ( "IFS=", "NFS200.IFS",
                  "Network File System",
                  0)
+
+        DRIVER ( "IFS=", "NDFS.IFS",
+                 "Network Drive File System",
+                 0)
+        DRIVER ( "RUN=", "NDCTL.EXE",
+                 "Network Drive File System control process",
+                 0)
+
+        DRIVER ( "IFS=", "CDWFS.IFS",
+                 "RSJ CD-Writer File System",
+                 0)
+        DRIVER ( "RUN=", "CDWFSD.EXE",
+                 "RSJ CD-Writer File System daemon process",
+                 0)
+
     }
 
 CATEGORY "Video"
@@ -345,6 +367,9 @@ CATEGORY "Other peripherals"
         DRIVER ( "DEVICE=", "MOUSE.SYS",
                  "Standard mouse",
                  DRVF_CMDREF),
+        DRIVER ( "DEVICE=", "RODENT.SYS",
+                 "Michael Lee Finney's enhanced mouse driver",
+                 0),
         DRIVER ( "DEVICE=", "USBMOUSE.SYS",
                  "USB mouse",
                  0),
@@ -360,6 +385,39 @@ CATEGORY "Other peripherals"
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "VSIO.SYS",
                  "DOS SIO enhanced serial (COM) port",
+                 0)
+        DRIVER ( "DEVICE=", "CFOS.SYS",
+                 "cFos/2 COM-Port-Emulator for CAPI 1.1",
+                 0)
+        DRIVER ( "DEVICE=", "CFOS20.SYS",
+                 "cFos/2 COM-Port-Emulator for CAPI 2.0",
+                 0)
+        DRIVER ( "RUN=", "CFOSD2.EXE",
+                 "cFos/2 daemon process",
+                 0)
+        DRIVER ( "DEVICE=", "DSS1C20X.SYS",
+                 "ELSA CAPI 2.0 DSS1 driver",
+                 0)
+        DRIVER ( "DEVICE=", "DSS1CAPX.SYS",
+                 "ELSA CAPI 1.1 DSS1 driver",
+                 0)
+        DRIVER ( "DEVICE=", "ISDNC20X.SYS",
+                 "ELSA CAPI 2.0 1TR6 driver",
+                 0)
+        DRIVER ( "DEVICE=", "ISDNCAPX.SYS",
+                 "ELSA CAPI 1.1 1TR6 driver",
+                 0)
+        DRIVER ( "DEVICE=", "VCAPI20.SYS",
+                 "ELSA Virtual DOS CAPI 2.0 driver",
+                 0)
+        DRIVER ( "DEVICE=", "VCAPI20.SYS",
+                 "ELSA Virtual DOS CAPI 2.0 driver",
+                 0)
+        DRIVER ( "DEVICE=", "VCAPI11.SYS",
+                 "ELSA Virtual DOS CAPI 1.1 driver",
+                 0)
+        DRIVER ( "DEVICE=", "VFD.OS2",
+                 "Virtual FOSSIL driver",
                  0)
 
         DRIVER ( "DEVICE=", "USBCOM.SYS",
@@ -378,12 +436,23 @@ CATEGORY "Other peripherals"
         DRIVER ( "BASEDEV=", "USBUHCD.SYS",
                  "DockStation USB driver",
                  0 ),
+
+        DRIVER ( "DEVICE=", "FTDVR.SYS",
+                 "BackMaster Floppy Tape Driver",
+                 0 ),
+        DRIVER ( "DEVICE=", "PTDVR.SYS",
+                 "BackMaster Parallel Tape Driver",
+                 0 ),
+
     }
 
 CATEGORY "Multimedia"
     {
         DRIVER ( "DEVICE=", "SB16D2.SYS",
                  "Soundblaster 16",
+                 0),
+        DRIVER ( "DEVICE=", "SBAWED2.SYS",
+                 "Soundblaster 32/AWE32/AWE64",
                  0),
         DRIVER ( "DEVICE=", "OPL3.SYS",
                  "Yamaha OPL3 sound chip",
