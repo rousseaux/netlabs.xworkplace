@@ -81,6 +81,9 @@ PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
         pNode = pNode->pNext;
     }
 
+    if (ppListNode)
+        *ppListNode = pNode;
+
     return (pReturn);
 }
 
@@ -194,9 +197,20 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
 
                     pWinInfo->bWindowType = WINDOW_NORMAL;
 
+                    if (pWinInfo->swp.fl & SWP_MINIMIZE)
+                        pWinInfo->bWindowType = WINDOW_MINIMIZE;
+                    else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
+                        pWinInfo->bWindowType = WINDOW_MAXIMIZE;
+
                     if (hswitch == NULLHANDLE)
                     {
-                        pWinInfo->bWindowType = WINDOW_RESCAN;
+                        // V0.9.7 (2001-01-23) [dk]
+                        ULONG ulQ = WinQueryWindowULong(pWinInfo->hwnd, QWL_STYLE);
+                        if (
+                                (!(ulQ & WS_VISIBLE))
+                             || (ulQ & FCF_SCREENALIGN)  // netscape dialog
+                           )
+                            pWinInfo->bWindowType = WINDOW_RESCAN;
                     }
                     else
                     {
@@ -211,12 +225,8 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                                     sizeof(pWinInfo->szSwitchName) - 1);
                         // strcpy(pWinInfo->szSwitchName, swctl.szSwtitle);
 
-                        if (pWinInfo->swp.fl & SWP_MINIMIZE)
-                            pWinInfo->bWindowType = WINDOW_MINIMIZE;
-                        else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
-                            pWinInfo->bWindowType = WINDOW_MAXIMIZE;
-                        else if (pgmwStickyCheck(swctl.szSwtitle))
-                            pWinInfo->bWindowType = WINDOW_STICKY;
+                        if (pgmwStickyCheck(swctl.szSwtitle))
+                             pWinInfo->bWindowType = WINDOW_STICKY;
                     }
                 }
             }
