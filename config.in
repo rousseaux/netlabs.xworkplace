@@ -1,0 +1,58 @@
+
+#
+# config.in:
+#       this is included from setup.in only (and thus
+#       indirectly by every makefile in this project).
+#
+#       The macros in this file replace the external
+#       environment variables which were required
+#       before V0.9.12.
+#
+#       The following variables MUST be set to match
+#       your system. After this, XWP should compile
+#       properly.
+#
+#       For details on these variables, see PROGREF.INF.
+#
+
+# CVS_WORK_ROOT: the root of your CVS tree
+# (the parent dir of "xworkplace" and "xwphelpers")
+CVS_WORK_ROOT = K:\projects\cvs
+
+# DDKBASE: your DDK "base" directory.
+# Not used by the regular makefiles, unless you
+# want to build XWorkplace Security.
+# DDKBASE = K:\libs\DDK\base
+
+# TKBASE: the main Toolkit directory. This must
+# be the parent of the "h" directory with the
+# include files.
+TKBASE = K:\libs\Toolkit45
+
+# VACBASE: the main directory of your IBM
+# VisualAge C++ installation. Only 3.0.8 has
+# been tested so far.
+VACBASE = K:\libs\IBMVAC
+
+# XWPRUNNING: directory where your XWorkplace
+# binaries are installed... all the produced
+# files will be copied there.
+XWPRUNNING = J:\Tools\WPS\XWorkplace
+
+# XWP_DEBUG: set to YES if you want debug code;
+# set to nothing if not.
+# WARNING: Enabling debug code has side effects.
+# See PROGREF.INF for details.
+XWP_DEBUG = YES
+
+# XWP_UNLOCK_MODULES: should be set to YES to
+# automatically unlock files. Set to nothing
+# to disable this.
+XWP_UNLOCK_MODULES = YES
+
+# XWP_LANG_CODE: language code of NLS resources
+# to compile. Presently only 001 for US English
+# exists.
+XWP_LANG_CODE = 001
+
+
