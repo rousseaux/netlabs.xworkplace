@@ -291,7 +291,7 @@
 
 typedef struct _ACLSUBJECTNODE
 {
-    HXWPSUBJECT     hSubject;
+    HXSUBJECT       hSubject;
                 // subject handle (either for a user or a process)
     ULONG           ulXWPAccessRights;
                 // access rights as calculated from
@@ -875,7 +875,7 @@ APIRET saclSubjectHandleCreated(PCXWPSUBJECTINFO pSubjectInfo)
  *      Preconditions: See saclSubjectHandleCreated.
  */
 
-APIRET saclSubjectHandleDeleted(HXWPSUBJECT hSubject)
+APIRET saclSubjectHandleDeleted(HXSUBJECT hSubject)
 {
     APIRET arc = NO_ERROR;
 

@@ -43,6 +43,8 @@
  *
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
+ *
+ *      Currently disabled. ###
  */
 
 VOID CallType CLOSE(ULONG SFN)

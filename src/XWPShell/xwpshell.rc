@@ -13,7 +13,7 @@
  */
 
 #include <os2.h>
-#include "security\xwpshell.h"
+#include "xwpshell.h"
 
 POINTER 1 LOADONCALL MOVEABLE DISCARDABLE xwpshell.ico
 

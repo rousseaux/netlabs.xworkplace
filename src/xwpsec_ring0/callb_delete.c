@@ -105,10 +105,13 @@ ULONG DELETE_PRE(PSZ pszPath)
  *@@ DELETE_POST:
  *      SES kernel hook for DELETE_POST.
  *      This gets called from the OS/2 kernel to notify
- *      the ISS of this event.
+ *      the ISS of this event. We need this so entries
+ *      in the ACL database can be deleted.
  *
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
+ *
+ *      Currently disabled. ###
  */
 
 VOID DELETE_POST(PSZ pszPath,

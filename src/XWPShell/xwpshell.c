@@ -1,14 +1,21 @@
 
 /*
  *@@sourcefile xwpshell.c:
- *      startup wrapper around PMSHELL.EXE which implements the
- *      following:
+ *      startup wrapper around PMSHELL.EXE. Besides functioning
+ *      as a shell starter, XWPShell also maintains users,
+ *      processes, and access control lists to interact with
+ *      the ring-0 device driver (XWPSEC32.SYS).
  *
- *      1. Logon dialog and user authentication.
+ *      When XWPShell is installed thru CONFIG.SYS (for details,
+ *      see below), it initializes PM, attempts to open
+ *      XWPSEC32.SYS, and then does the following:
  *
- *      2. It then starts the WPS with a certain user profile
- *         (replacement OS2.INI). In addition, the shell's
- *         environment is changed as follows:
+ *      1. It displays the logon dialog for user authentication.
+ *
+ *      2. If the user has been authenticated, XWPShell then
+ *         changes the user profile (replacement OS2.INI) by
+ *         calling PrfReset and starts the desired shell process
+ *         with the following environment:
  *
  *         -- USER is set to the user name;
  *         -- USERID is set to the user ID (uid);
@@ -18,13 +25,14 @@
  *         -- OS2_INI is set to the user's OS2.INI file. This
  *              does not affect the profile (which has been
  *              changed using PrfReset before), but is still
- *              changed in case any program needs it.
+ *              changed in case any program references this
+ *              variable.
  *
  *         All processes started by the WPS will inherit this
  *         environment since the WPS always copies its environment
  *         to child processes.
  *
- *      3. If the WPS terminates, go back to 1.
+ *      3. When the WPS terminates, go back to 1.
  *
  *      Note that Security Enabling Services (SES) is NOT used
  *      for user logon and authentication. In other words, this
@@ -36,7 +44,9 @@
  *      to be used by ordinary humans.
  *
  *      So instead, I have rewritten the LSS functionality for
- *      XWPShell. SES is only used for kernel interfaces (KPIs).
+ *      XWPShell. SES is only used for kernel interfaces (KPIs)
+ *      in XWPSEC32.SYS. As a result, the SECURE.SYS text file
+ *      in \OS2\SECURITY\SESDB is not used either.
  *
  *      <B>Concepts:</B>
  *
@@ -46,17 +56,17 @@
  *      security concepts which came out of this review.
  *
  *      As a summary, XWPSec follows the SES security models, with a
- *      few simplifications. To make things more sufficient, user IDs
- *      and group IDs have been added (like Linux uid and gid) to
+ *      few simplifications. To make processing more efficient, user
+ *      IDs and group IDs have been added (like Linux uid and gid) to
  *      allow looking up data based on numbers instead of names.
  *
  *      <B>Recommended reading:</B>
  *
  *      -- "SES Developer's Guide" (IBM SG244668 redbook). This
- *         sucks, but it's the only source of SES information.
+ *         sucks, but it's the only source for SES information.
  *
  *      -- "Network Administrator Tasks" (BOOKS\A3AA3MST.INF
- *         on a WSeB installation).
+ *         on a WSeB installation). A very good book.
  *
  *      -- Linux manpages for group(5) and passwd(5); Linux info
  *         page for chmod (follow the "File permissions" node).
@@ -76,8 +86,8 @@
  *            this can be rewritten for a command-line logon
  *            at system startup.
  *
- *         -- Subject handles (subjects.c). This references the
- *            user database and allows the ACL database to be
+ *         -- Subject handles. This references the user database
+ *            (UserDB) and allows the ACL database (ACLDB) to be
  *            notified of subject handle creation and deletion.
  *
  *            Responsibilities:
@@ -87,6 +97,8 @@
  *
  *            2)   Notification of the ACLDB on subject handle
  *                 creation and deletion.
+ *
+ *            See subjects.c.
  *
  *         -- Security context management. A security context
  *            is associated with each process on the system
@@ -102,9 +114,9 @@
  *
  *            2)   Returning a security context for a given PID.
  *
- *            This is not implemented yet.
+ *            See contexts.c.
  *
- *         -- Currently-logged-on users database (loggedon.c).
+ *         -- Currently-logged-on users database.
  *            This logs users on and off and keeps track of
  *            all currently logged-on users (either locally
  *            or via network).
@@ -114,9 +126,12 @@
  *            1)   Modify the calling process's security
  *                 context.
  *
+ *            See loggedon.c.
+ *
  *         -- XWPShell ring-3 daemon thread. This is in contact
- *            with the ring-0 driver and receives notification
- *            about security-related events.
+ *            with the ring-0 driver, receives notification
+ *            about security-related events, and queries the
+ *            ACLDB for each access request.
  *
  *            See fntRing3Daemon in this file.
  *
@@ -167,10 +182,8 @@
  *                 handle creation and deletion.
  *
  *            3)   Verifying access rights for access to resources
- *                 (such as DosOpen, DosExecPgm) based on subject
- *                 handles.
- *
- *            This is not implemented yet.
+ *                 (such as DosOpen, DosExecPgm) based on a security
+ *                 context. See saclVerifyAccess.
  *
  *      <B>Example:</B>
  *
@@ -1208,11 +1221,12 @@ APIRET AuthorizeFindFirst(PXWPSECURITYCONTEXT pContext,
  *
  *      Restrictions:
  *
- *      This thread must NOT start any other processes
+ *      This thread MUST NOT START ANY OTHER PROCESSES
  *      because the EXEC_PGM callouts are NOT checked for
  *      whether they are called by the daemon. The system
- *      can deadlock if this thread starts another
- *      process because ring 0 will wait forever then.
+ *      can deadlock or trap (haven't tested this) if this
+ *      thread starts another process because ring 0 will
+ *      recurse then.
  */
 
 APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
@@ -1324,7 +1338,7 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
             PXWPSECEVENTDATA_EXECPGM_POST pExecPgmPost
                 = &pSecIOShared->EventData.ExecPgmPost;
 
-            HXWPSUBJECT hsubjUser = 0,      // unauthorized
+            HXSUBJECT   hsubjUser = 0,      // unauthorized
                         hsubjGroup = 0;     // unauthorized
 
             XWPLOGGEDON LoggedOnLocal;
@@ -1422,6 +1436,15 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
  *      memory every time access needs to be authorized.
  *
  *      This thread does not have a PM message queue.
+ *
+ *      Restrictions:
+ *
+ *      This thread MUST NOT START ANY OTHER PROCESSES
+ *      because the EXEC_PGM callouts are NOT checked for
+ *      whether they are called by the daemon. The system
+ *      can deadlock or trap (haven't tested this) if this
+ *      thread starts another process because ring 0 will
+ *      recurse then.
  */
 
 void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
@@ -1522,12 +1545,16 @@ void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
 
 /*
  *@@ InitDaemon:
+ *      this gets called from main() to initialize the ring-3
+ *      daemon thread.
  *
- *      -- opens XWPSEC32.SYS
- *      -- creates G_hevCallback
- *      -- starts daemon thread
+ *      This first attempts to open XWPSEC32.SYS. If the driver
+ *      is not installed, ERROR_FILE_NOT_FOUND is returned.
  *
- *      AFTER CALLING THIS, ACCESS CONTROL IS ENABLED
+ *      Otherwise, the G_hevCallback semaphore is created (for
+ *      ring-0 communication), and the daemon thread is started.
+ *
+ *      IF THIS RETURNS "NO_ERROR", ACCESS CONTROL IS ENABLED
  *      FOR THE ENTIRE SYSTEM!
  */
 
@@ -1544,17 +1571,7 @@ APIRET InitDaemon(VOID)
                          OPEN_ACTION_OPEN_IF_EXISTS,   // do not create
                          OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE | OPEN_FLAGS_FAIL_ON_ERROR,
                          NULL);    // EAs
-    if (arc != NO_ERROR)
-    {
-       CHAR szMsg[400];
-       sprintf(szMsg,
-               "Cannot open XWPSEC32.SYS driver. DosOpen arc: %d",
-               arc);
-       winhDebugBox(0,
-                "XWPShell Warning",
-                szMsg);
-    }
-    else
+    if (arc == NO_ERROR)
     {
         // driver opened:
 
@@ -1579,7 +1596,16 @@ APIRET InitDaemon(VOID)
             {
                 Error("Cannot create ring-3 daemon thread.");
                 arc = XWPSEC_CANNOT_START_DAEMON;
+                DosCloseEventSem(G_hevCallback);
+                G_hevCallback = NULLHANDLE;
             }
+
+        if (arc != NO_ERROR)
+        {
+            // some error, but driver was opened:
+            DosClose(G_hfSec32DD);
+            G_hfSec32DD = NULLHANDLE;
+        }
     }
 
     return (arc);

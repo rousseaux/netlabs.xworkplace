@@ -174,7 +174,7 @@ $(OUTPUTDIR)\kernel.obj: \
 $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\setup.h \
      $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\procstat.h \
-        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h $(HLPINC)\xstring.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h $(HLPINC)\syssound.h $(HLPINC)\xstring.h \
      $(INC)\classes\xwpsetup.ih $(INC)\classes\xtrash.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \

@@ -37,9 +37,12 @@
 
 /*
  *@@ MOVE_PRE:
- *      SES kernel hook for MOVE_PRE.
+ *      SES kernel hook for MOVE_PRE (move or rename).
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
+ *
+ *      As with DosMove, this will only get called when
+ *      source and dest are on same volume
  *
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
@@ -114,10 +117,13 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
  *@@ MOVE_POST:
  *      SES kernel hook for MOVE_POST.
  *      This gets called from the OS/2 kernel to notify
- *      the ISS of this event.
+ *      the ISS of this event. We need this so that
+ *      entries in the ACLDB can be updated.
  *
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
+ *
+ *      Currently disabled. ###
  *
  *@@added V0.9.2 (2000-03-13) [umoeller]
  */

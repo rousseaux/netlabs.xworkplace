@@ -97,11 +97,48 @@
  ********************************************************************/
 
 /*
- *@@ ftypListTypesFromString:
+ *@@ AppendSingleTypeUnique:
+ *      appends the given type to the given list, if
+ *      it's not on the list yet. Returns TRUE if the
+ *      item either existed or was appended.
+ */
+
+BOOL AppendSingleTypeUnique(PLINKLIST pll,      // in: list to append to
+                            PSZ pszNewType)     // in: new type to append (must be free()'able)
+{
+    BOOL brc = FALSE;
+    PLISTNODE pNode = lstQueryFirstNode(pll);
+    while (pNode)
+    {
+        PSZ psz = (PSZ)pNode->pItemData;
+        if (psz)
+            if (strcmp(psz, pszNewType) == 0)
+            {
+                // matches: it's already on the list,
+                // so stop
+                brc = TRUE;
+                break;
+            }
+
+        pNode = pNode->pNext;
+    }
+
+    if (!brc)
+        brc = (lstAppendItem(pll, pszNewType) != NULL);
+
+    return (brc);
+}
+
+/*
+ *@@ AppendTypesFromString:
  *      this splits a standard WPS file types
  *      string (where several file types are
  *      separated by line feeds, \n) into
  *      a linked list of newly allocated PSZ's.
+ *
+ *      The list is not cleared, but simply appended to.
+ *      The type is only added if it doesn't exist in
+ *      the list yet.
  *
  *      The list should be in auto-free mode
  *      so that the strings are automatically
@@ -110,9 +147,9 @@
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nPlain text")
-                              PLINKLIST pllTypes) // in/out: list of newly allocated PSZ's
-                                                  // with file types (e.g. "C Code", "Plain text")
+ULONG AppendTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nPlain text")
+                            PLINKLIST pllTypes) // in/out: list of newly allocated PSZ's
+                                                // with file types (e.g. "C Code", "Plain text")
 {
     ULONG   ulrc = 0;
     // if we have several file types (which are then separated
@@ -131,9 +168,9 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
         {
             // line feed found:
             // extract type and store in list
-            lstAppendItem(pllTypes,
-                          strhSubstr(pTypeThis,
-                                     pLF));
+            AppendSingleTypeUnique(pllTypes,
+                                   strhSubstr(pTypeThis,
+                                              pLF));
             ulrc++;
             // next type (after LF)
             pTypeThis = pLF + 1;
@@ -142,8 +179,8 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
         {
             // no next line feed found:
             // store last item
-            lstAppendItem(pllTypes,
-                          strdup(pTypeThis));
+            AppendSingleTypeUnique(pllTypes,
+                                   strdup(pTypeThis));
             ulrc++;
             break;
         }
@@ -153,7 +190,7 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
 }
 
 /*
- *@@ ftypListTypesForFile:
+ *@@ AppendTypesForFile:
  *      this lists all extended file types which have
  *      a file filter assigned to them which matches
  *      the given object title.
@@ -163,6 +200,7 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
  *      assigned, this would add "C Code" to the given
  *      list.
  *
+ *      The list is not cleared, but simply appended to.
  *      The type is only added if it doesn't exist in
  *      the list yet.
  *
@@ -182,9 +220,9 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG ftypListTypesForFile(const char *pcszObjectTitle,
-                           PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
-                                                 // with file types (e.g. "C Code", "Plain text")
+ULONG AppendTypesForFile(const char *pcszObjectTitle,
+                         PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
+                                               // with file types (e.g. "C Code", "Plain text")
 {
     ULONG   ulrc = 0;
     // loop thru all extended file types which have
@@ -216,7 +254,7 @@ ULONG ftypListTypesForFile(const char *pcszObjectTitle,
                 while (*pFilterThis != 0)
                 {
 
-                    // _Pmpf(("  ftypListTypesForFile: %s against %s",
+                    // _Pmpf(("  AppendTypesForFile: %s against %s",
                        //      pFilterThis, pszObjectTitle));
 
                     // check if this matches the data file name
@@ -227,11 +265,11 @@ ULONG ftypListTypesForFile(const char *pcszObjectTitle,
                         // --  pszFilterThis e.g. "*.c"
                         // --  pTypeFilterThis e.g. "C Code"
                         // store the type (not the filter) in the output list
-                        lstAppendItem(pllTypes,
-                                      strdup(pTypeWithFilterThis));
+                        AppendSingleTypeUnique(pllTypes,
+                                               strdup(pTypeWithFilterThis));
 
                         #ifdef DEBUG_ASSOCS
-                            _Pmpf(("  ftypListTypesForFile: found %s for %s",
+                            _Pmpf(("  AppendTypesForFile: found %s for %s",
                                 pTypeWithFilterThis, pszObjectTitle));
                         #endif
 
@@ -418,14 +456,14 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf)
         {
             // yes, explicit type(s):
             // decode those
-            cTypes = ftypListTypesFromString(pszTypes,
-                                             pllTypes);
+            cTypes = AppendTypesFromString(pszTypes,
+                                           pllTypes);
         }
 
         // add automatic (extended) file types based on the
         // object file name
-        cTypes += ftypListTypesForFile(_wpQueryTitle(somSelf),
-                                       pllTypes);
+        cTypes += AppendTypesForFile(_wpQueryTitle(somSelf),
+                                     pllTypes);
 
         #ifdef DEBUG_ASSOCS
             _Pmpf(("    ftypQueryAssociatedProgram: got %d matching types", cTypes));

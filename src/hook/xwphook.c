@@ -1038,16 +1038,25 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
  *@@ hookLockupHook:
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.6 (2000-11-05) [pr]: fix for hotkeys not working after Lockup
  */
 
 VOID EXPENTRY hookLockupHook(HAB hab,
                              HWND hwndLocalLockupFrame)
 {
-    G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
+    if (G_HookData.hwndPageMageFrame)
+    {
+        G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
+        WinPostMsg(G_HookData.hwndPageMageClient,
+                   PGMG_LOCKUP,
+                   MPFROMLONG(TRUE),
+                   MPVOID);
+    }
+    /* G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
     WinPostMsg(G_HookData.hwndPageMageClient,
                PGMG_LOCKUP,
                MPFROMLONG(TRUE),
-               MPVOID);
+               MPVOID); */
 }
 
 /******************************************************************

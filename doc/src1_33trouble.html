@@ -37,7 +37,8 @@ to change the <A HREF="src1_5helpers.html">helpers</A> code from time to time.
 <P><LI>If you get really strange compilation errors, VAC might have gotten confused
 with precompiled headers. Delete all <CODE>.PCH</CODE> files in your TEMP directory,
 or comment out the <CODE>PRECH</CODE> line in <CODE>setup.in</CODE> to disable
-precompiled headers altogether.
+precompiled headers altogether. I have also found that killing <CODE>DDE4LOAD.EXE</CODE>
+(the VAC background process) helps sometimes, for whatever reason.
 
 <P><LI>If you <B>cannot install XWorkplace</B> after the build, you have probably built
 the debug version, but the PMPRINTF DLLs are not on your LIBPATH.

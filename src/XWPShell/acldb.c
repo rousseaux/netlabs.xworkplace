@@ -22,11 +22,11 @@
  *      "ls" output is as follows:
  *
  +          -rwxrwxrwx  4  ownuser owngroup  ...
- +           \o/\g/\o/
- +            w  r  t
- +            n  o  h
- +            e  u  e
- +            r  p  r
+ +           \ /\ /\ /
+ +            V  V  V
+ +            ³  ³  ÀÄ other
+ +            ³  ÀÄÄÄÄ group
+ +            ÀÄÄÄÄÄÄÄ owner
  *
  *      This ACLDB implementation uses a plain text file
  *      for speed, where each ACL entry consists of a
@@ -769,12 +769,10 @@ PACLDBENTRYNODE FindACLDBEntry(const char *pcszName)
  *
  *      Preconditions:
  *
- *      -- pcszResource is fully qualified. However, it
- *         may be in mixed case, and the case need not
- *         be the same as on the resource.
- *
  *      -- pcszResource presently will always contain a fully
  *         qualified file name or directory name.
+ *         However, this  may be in mixed case, and the case
+ *         need not be the same as on the resource.
  *
  *      -- This never gets called for processes running
  *         on behalf of root's subject handle (whose uid
@@ -859,8 +857,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
                 // now we know the user ID
                 if (pACLEntry->uid == SubjectInfo.id)
                 {
-                    // ACL entry's user is this user:
-                    // (user owns this resource):
+                    // process's user owns this resource:
                     // use these access flags
                     ulAccessFlags = pACLEntry->ulXWPUserAccessFlags;
                 }
@@ -877,8 +874,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
                         // now we know the group ID
                         if (pACLEntry->gid == SubjectInfo.id)
                         {
-                            // ACL entry's group is user's group
-                            // (user's group owns this resource):
+                            // process's group owns this resource:
                             // use these access flags
                             ulAccessFlags = pACLEntry->ulXWPGroupAccessFlags;
                         }

@@ -47,6 +47,9 @@ directory, which is created if it doesn't exist.
 
 <P>To rebuild the entire thing, one can simply delete the entire <CODE>bin\</CODE> tree.
 
+<P><LI>System-dependent configuration (directories etc.) is done via
+<A HREF="src1_32env.html">environment variables</A>.
+
 <P><LI>If the main makefile is started, it changes to the subdirectories and calls nmake
 again with <CODE>MAINMAKERUNNING=YES</CODE> defined. This way the sub-makefile knows that
 it's started from the main makefile. Otherwise the sub-makefile calls the main makefile

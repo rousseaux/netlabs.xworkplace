@@ -37,7 +37,7 @@ It's behind the "Build tools ZIP file" button (tools.zip).
 You will need to register first, but other than that, the
 thing is free.
 
-<P><LI>You need to check out the "xwphelpers" CVS archive from Netlabs also.
+<P><LI>You need to check out the <B>"xwphelpers" CVS archive</B> from Netlabs also.
 XWorkplace uses a lot
 of code which is shared between WarpIN and XWorkplace, which has been separated
 into a new CVS archive.
@@ -50,6 +50,16 @@ variable,
 you need the full <B>PMPRINTF package by Dennis Bareis.</B>
 <P>
 Check the <A HREF="src1_880debug.html">"Debugging"</A> section for details.
+
+<P><LI>Only if you want to build the ring-0 security driver (<CODE>XWPSEC32.SYS</CODE>) for
+XWorkplace Security (see src\xwpsec_ring0), you will need <B>ALP, the IBM assembler.</B>
+XWPSecurity is only built if the respective
+<A HREF="src1_32env.html">environment variable</A> is set.
+<P>ALP is in the Warp 4 toolkit and in the DDK (I think).
+From my testing, only ALP 4.00.001 was able to swallow
+the assembler files. I tested with 4.00.006, and it refused to accept
+some of the constructs in there. I am no assembler freak, so
+maybe someone else can help.
 
 </UL>Also see the <A HREF="src1_31make.html">"Making XWorkplace"</A> section for how to
 rebuild XWorkplace.

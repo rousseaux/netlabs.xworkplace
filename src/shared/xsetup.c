@@ -76,6 +76,7 @@
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\tmsgfile.h"           // "text message file" handling
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -1289,6 +1290,14 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
 
     switch (msg)
     {
+        case WM_COMMAND:
+            switch ((USHORT)mp1)
+            {
+                case DID_HELP:
+                    cmnShowProductInfo(MMSOUND_SYSTEMSTARTUP);
+            }
+        break;
+
         case WM_PAINT:
         {
             PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pcnbp->pUser;

@@ -173,6 +173,10 @@ ULONG CHANGEDIR(PSZ pszPath)
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
+ *      Um, we have a problem here. There is no POST call
+ *      for REMOVEDIR so we cannot find out whether REMOVEDIR
+ *      failed and if not, remove the ACLDB entry.
+ *
  *      This callback is stored in SecurityImports in
  *      sec32_callbacks.c to hook the kernel.
  */

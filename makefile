@@ -179,6 +179,9 @@ cpl_main: helpers helpers_exe_mt classes config filesys media \
 !ifdef ANIMATED_MOUSE_POINTERS
 pointers \
 !endif
+!ifdef XWPSECURITY
+xwpsecurity \
+!endif
 shared startshut hook treesize netscdde xshutdwn
 #animouse
 
@@ -287,6 +290,16 @@ pointers:
 xshutdwn:
     @echo $(MAKEDIR)\makefile: Going for subdir src\xshutdwn
     @cd src\xshutdwn
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..\..
+
+xwpsecurity:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\xwpsec_ring0
+    @cd src\xwpsec_ring0
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..\..
+    @echo $(MAKEDIR)\makefile: Going for subdir src\XWPShell
+    @cd src\XWPShell
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 

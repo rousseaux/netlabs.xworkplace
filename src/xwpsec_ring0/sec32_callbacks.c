@@ -50,7 +50,7 @@ struct SecImp_s SecurityImports =
                         //                              ULONG SFN);
                         //      lets ISS authorize DosOpen
 
-   OPEN_POST,           // ULONG (* CallType OPEN_POST)(PSZ pszPath,
+   0, // OPEN_POST,           // ULONG (* CallType OPEN_POST)(PSZ pszPath,
                         //                              ULONG fsOpenFlags,
                         //                              ULONG fsOpenMode,
                         //                              ULONG SFN,
@@ -83,7 +83,7 @@ struct SecImp_s SecurityImports =
                         //      notifies ISS of DosWrite completion;
                         //      ISS can restore data
 
-   CLOSE,               // VOID  (* CallType CLOSE)(ULONG SFN);
+   0, // CLOSE,               // VOID  (* CallType CLOSE)(ULONG SFN);
                         //      notifies ISS of DosClose completion
 
    0,                   // VOID  (* CallType CHGFILEPTR)(ULONG SFN,
@@ -98,7 +98,7 @@ struct SecImp_s SecurityImports =
    DELETE_PRE,          // ULONG (* CallType DELETE_PRE) (PSZ pszPath);
                         //      lets ISS authorize DosDelete
 
-   DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
+   // DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
                         //                                ULONG RC);
                         //      notifies ISS of DosDelete completion
 
@@ -108,7 +108,7 @@ struct SecImp_s SecurityImports =
                         //      will only get called when source and dest
                         //      are on same volume
 
-   MOVE_POST,           // VOID  (* CallType MOVE_POST) (PSZ pszNewPath,
+   // MOVE_POST,           // VOID  (* CallType MOVE_POST) (PSZ pszNewPath,
                         //                               PSZ pszOldPath,
                         //                               ULONG RC);
                         //      notifies ISS of DosMove completion

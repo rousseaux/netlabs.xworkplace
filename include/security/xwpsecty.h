@@ -163,7 +163,7 @@ extern "C" {
      *
      ********************************************************************/
 
-    typedef unsigned long HXWPSUBJECT;
+    typedef unsigned long HXSUBJECT;
 
     #define SUBJ_USER       1
     #define SUBJ_GROUP      2
@@ -180,9 +180,9 @@ extern "C" {
 
     typedef struct _XWPSUBJECTINFO
     {
-        HXWPSUBJECT hSubject;
+        HXSUBJECT   hSubject;
                 // handle of this subject (unique);
-                // 0 only if root user
+                // 0 only if root user / group
         XWPSECID    id;
                 // ID related to this subject;
                 // -- for a user subject: the user id (uid); 0 if root
@@ -204,7 +204,7 @@ extern "C" {
 
     APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo);
 
-    APIRET subjDeleteSubject(HXWPSUBJECT hSubject);
+    APIRET subjDeleteSubject(HXSUBJECT hSubject);
 
     APIRET subjQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo);
 
@@ -231,10 +231,10 @@ extern "C" {
     {
         ULONG           ulPID;          // process ID
 
-        HXWPSUBJECT     hsubjUser;      // user subject handle; 0 if root
-        HXWPSUBJECT     hsubjGroup;     // group subject handle
+        HXSUBJECT       hsubjUser;      // user subject handle; 0 if root
+        HXSUBJECT       hsubjGroup;     // group subject handle; 0 if root
 
-        ULONG           ulUMask;        // access rights when new file-system
+        // ULONG           ulUMask;        // access rights when new file-system
                                         // objects are created
 
     } XWPSECURITYCONTEXT, *PXWPSECURITYCONTEXT;
@@ -244,14 +244,14 @@ extern "C" {
     APIRET scxtInit(VOID);
 
     APIRET scxtCreateSecurityContext(ULONG ulPID,
-                                     HXWPSUBJECT hsubjUser,
-                                     HXWPSUBJECT hsubjGroup);
+                                     HXSUBJECT hsubjUser,
+                                     HXSUBJECT hsubjGroup);
 
     APIRET scxtDeleteSecurityContext(ULONG ulPID);
 
     APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext);
 
-    APIRET scxtEnumSecurityContexts(HXWPSUBJECT hsubjUser,
+    APIRET scxtEnumSecurityContexts(HXSUBJECT hsubjUser,
                                     PXWPSECURITYCONTEXT *ppaContexts,
                                     PULONG pulCount);
 
@@ -310,7 +310,7 @@ extern "C" {
 
     typedef APIRET (SACLSUBJECTHANDLECREATED)(PCXWPSUBJECTINFO pSubjectInfo);
 
-    typedef APIRET (SACLSUBJECTHANDLEDELETED)(HXWPSUBJECT hSubject);
+    typedef APIRET (SACLSUBJECTHANDLEDELETED)(HXSUBJECT hSubject);
 
     APIRET saclInit(VOID);
 
@@ -337,12 +337,12 @@ extern "C" {
         CHAR            szUserName[XWPSEC_NAMELEN];
         XWPSECID        uid;        // user's ID (unique);
                                     // same as in hsubjUser (cached for speed)
-        HXWPSUBJECT     hsubjUser;  // user's subject handle; 0 if root
+        HXSUBJECT       hsubjUser;  // user's subject handle; 0 if root
 
         CHAR            szGroupName[XWPSEC_NAMELEN];
         XWPSECID        gid;        // user's group ID;
                                     // same as in hsubjGroup (cached for speed)
-        HXWPSUBJECT     hsubjGroup; // user's group subject handle
+        HXSUBJECT       hsubjGroup; // user's group subject handle
     } XWPLOGGEDON, *PXWPLOGGEDON;
 
     typedef const XWPLOGGEDON * PCXWPLOGGEDON;

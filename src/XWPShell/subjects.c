@@ -3,44 +3,42 @@
  *@@sourcefile subjects.c:
  *      subject handles management for XWorkplace Security.
  *
- *      A subject is a unique handle which represents a set
- *      of access rights. A subject can either represent a
- *      user, a group, or a process. Consider a subject
- *      handle a unique number to quickly reference a set
- *      of ACL entries.
+ *      A subject represents either a user, a group, or a
+ *      special process.
  *
  *      Subjects are identified via subject handles. If
  *      a user successfully logs on (locally or via network),
  *      two subject handles are created for the user and the
  *      group he belongs to. For each user which is logged
- *      on, an XWPSUBJECTINFO is created which holds the
- *      subject handles for this user.
+ *      on, an XWPLOGGEDON is created which holds the subject
+ *      handles for this user.
  *
- *      Subject handle 0 is special and means "unauthorized".
- *      This is assigned to all processes which were running
- *      when the system started up.
+ *      Subject handle 0 is special and means "no restrictions".
+ *      Only the superuser ("root") will have user and group
+ *      subject handles of 0. All other users will have nonzero
+ *      subject handles.
  *
  *      In addition, this model supports trusted processes
  *      so that certain executables can be given additional
- *      privileges.
+ *      privileges. This is not yet implemented.
  *
- *      On subject handle creation, XWPSec can then load the
- *      ACL's associated with the user, the group, or the
- *      process associated with the subject handle. Whenever
- *      an action takes place which needs to be authorized
- *      (such as DosOpen), XWPSec can then quickly look up
- *      the access rights. This is the duty of the ACL database.
+ *      Theoretically, on subject handle creation, an ACL
+ *      database could load the ACL's associated with the user,
+ *      the group, or the process associated with the subject
+ *      handle. Whenever an action takes place which needs to be
+ *      authorized (such as DosOpen), the ACLDB can then more
+ *      quickly look up the access rights.
+ *
+ *      This feature is most useful with the LAN server model
+ *      of ACL entries, where an infinite number of entries
+ *      can be defined for each resource. This is presently
+ *      not used in XWPSec because we use the Unix model with
+ *      uid and gid statically assigned to each resource, so
+ *      we need not preload anything.
  *
  *      Reversely, on logoff, the subject handles are deleted
- *      by calling subjDeleteSubject, which in turn notifies
+ *      by calling subjDeleteSubject, which can in turn notify
  *      the ACLDB.
- *
- *      To make this clear: The ACL database itself is not
- *      based on subject handles, but on user names (IDs) and
- *      group names (IDs) instead. However, on subject handle
- *      creation (either for a user or a group or a process),
- *      the ACL database can load the access rights associated
- *      with that subject handle.
  *
  *      Comparison with other concepts:
  *
@@ -49,24 +47,24 @@
  *         complicated and not really well explained. The
  *         SES documentation sucks anyway.
  *
+ *      -- Warp (LAN) Server bases ACL entries on users and
+ *         groups also, however without calling them "subjects".
+ *         However, if I understood that right, LAN server can
+ *         define an infinite number of ACL entries for each
+ *         resource.
+ *
  *      -- Linux does not have the notion of a subject.
  *         Instead, all access rights are determined from
  *         the user id (uid) and group id (gid), apparently.
- *         Our concept is more flexible and probably faster:
- *         On subject handle creation, XWPSec will load the
- *         ACL's associated with the subject handle (i.e.
- *         it will load the ACL entries for the user or
- *         group or process associated with the subject
- *         handle) and can then quickly access that data
- *         if resource access needs to be verified.
+ *         Even though we implement the subject handles here
+ *         to allow replacing the current ACLDB implementation
+ *         with a LAN server model, we are currently using
+ *         the Unix model of ACL entries because it's simpler.
  *
  *      -- Java seems to have something similar; it bases
  *         ACL entries on "principals", where a principal
  *         can either be a user or a group. See the API
  *         docs for java.security.acl.Acl.
- *
- *      -- Warp Server bases ACL entries on users and groups
- *         also, however without calling them "subjects".
  *
  *@@added V0.9.5 [umoeller]
  *@@header "security\xwpsecty.h"
@@ -117,8 +115,8 @@
 
 typedef struct _SUBJECTTREENODE
 {
-    TREE        Tree;               // tree item (required for tree* to work)
-    XWPSUBJECTINFO SubjectInfo;
+    TREE            Tree;             // tree item (required for tree* to work)
+    XWPSUBJECTINFO  SubjectInfo;
 } SUBJECTTREENODE, *PSUBJECTTREENODE;
 
 /* ******************************************************************
@@ -240,7 +238,7 @@ int fnCompareSubjects(unsigned long id1, unsigned long id2)
  *      You must call LockSubjects() first.
  */
 
-PSUBJECTTREENODE FindSubjectInfoFromHandle(HXWPSUBJECT hSubject)
+PSUBJECTTREENODE FindSubjectInfoFromHandle(HXSUBJECT hSubject)
 {
     PSUBJECTTREENODE pTreeItem
         = (PSUBJECTTREENODE)treeFindEQID(&G_treeSubjects,
@@ -327,7 +325,7 @@ PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: SUBJ_USER, SUBJ_
  *         if a subject handle exists for that ID,
  *         NO_ERROR is returned, and the existing subject's
  *         usage count is incremented. pSubjectInfo then
- *         receives the existing HXWPSUBJECT and usage count.
+ *         receives the existing HXSUBJECT and usage count.
  *
  *      See XWPSUBJECTINFO for the definition of a subject.
  *

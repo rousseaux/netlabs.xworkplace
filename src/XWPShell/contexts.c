@@ -186,8 +186,8 @@ PCONTEXTTREENODE FindContextFromPID(ULONG ulPID)
  */
 
 APIRET scxtCreateSecurityContext(ULONG ulPID,
-                                 HXWPSUBJECT hsubjUser,
-                                 HXWPSUBJECT hsubjGroup)
+                                 HXSUBJECT hsubjUser,
+                                 HXSUBJECT hsubjGroup)
 {
     APIRET arc = NO_ERROR;
 
@@ -336,7 +336,7 @@ APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext)
 
 typedef struct _ENUMCONTEXTS
 {
-    HXWPSUBJECT         hsubjUser;
+    HXSUBJECT           hsubjUser;
 
     PXWPSECURITYCONTEXT pContextThis;
     ULONG               cCount;
@@ -393,7 +393,7 @@ void fnEnumContexts(TREE *t,
  *      -- XWPSEC_NO_CONTEXTS: no contexts found.
  */
 
-APIRET scxtEnumSecurityContexts(HXWPSUBJECT hsubjUser,
+APIRET scxtEnumSecurityContexts(HXSUBJECT hsubjUser,
                                 PXWPSECURITYCONTEXT *ppaContexts,
                                 PULONG pulCount)
 {

@@ -1,5 +1,5 @@
 
-XWorkplace 0.9.5 README
+XWorkplace 0.9.6 README
 (W) Ulrich M”ller, Feb 7, 2000
 Last updated October 29, 2000
 
@@ -65,10 +65,13 @@ Last updated October 29, 2000
 
     XWorkplace must be installed using WarpIN.
 
+    ---> In any case, before installing, MAKE A WPS BACKUP.
+
     Note: Use WarpIN V0.9.3 or higher to install this archive.
     Older versions will not be able to create the XWorkplace
     WPS objects and will probably fail when upgrading XWorkplace
-    from a previous version.
+    from a previous version. Using the latest WarpIN is strongly
+    recommended.
 
     If you are still unsure whether you should use XWorkplace at
     this point, and if you have WarpIN V0.9.6 installed, you can
@@ -82,8 +85,6 @@ Last updated October 29, 2000
     first and decide then whether to actually register
     XWorkplace's classes. To do this later, simply double-click
     on XWorkplace's WarpIN (.WPI) archive again.
-
-    ---> NOTE: In any case, before installing, MAKE A WPS BACKUP.
 
 
 3. UPGRADING

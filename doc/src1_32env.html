@@ -7,7 +7,10 @@ Makefile Environment Variables
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
 This section describes the environment variables which should be set
-externally before executing the makefiles.
+externally before executing the makefiles. These environment variables
+have been introduced to allow code sharing between several projects
+(mostly WarpIN) and to be able to update XWorkplace even while the
+WPS is running.
 
 <P>You can modify <CODE>MAKE.CMD</CODE> to set up these things, because
 <CODE>MAKE.CMD</CODE> calls the main <CODE>makefile</CODE>.
@@ -23,8 +26,8 @@ use some dumb default, which is most probably not matching your system.
 working directories. The XWorkplace makefiles now (V0.9.6) assume that all
 your projects (most importantly, XWorkplace and XWPHelpers)
 are located in subdirectories of a single directory.
-(This is useful for working with CVS in the first place, so this isn't
-much of a problem.)
+(This is useful for working with CVS in the first place, so this shouldn't
+be much of a requirement in the first place.)
 
 <P>This variable must point to the parent directory of <CODE>xworkplace</CODE>,
 <CODE>xwphelpers</CODE>, <CODE>warpin</CODE>, etc. The makefiles will set
@@ -32,6 +35,9 @@ a number of other environment variables based on that variable to locate
 the XWorkplace and XWPhelpers source tree bases.
 
 <P>Example: <CODE>SET CVS_WORK_ROOT=K:\cvs</CODE>
+
+<P>(This environment variable is required for compiling WarpIN as well, so it's
+a lifetime investment.)
 
 <P><LI><CODE>XWPRUNNING</CODE> must point to an existing XFolder/XWorkplace
 installation. Since the makefiles first create all the files in <CODE>bin\</CODE>,
@@ -88,14 +94,19 @@ expect to get an error message other than FALSE. <CODE>:-(</CODE>
 
 <P>See <A HREF="src1_880debug.html">"Debugging XWorkplace"</A> for details.
 
-<P><LI><B>Optional features.</B> By default, a "stable" version of XWP will be built.
+<P><LI><B>Optional features.</B> Per default, a "stable" version of XWP will be built.
 This excludes a number of features. If you want them to be compiled as well,
 define the following environment variables:
 <UL><LI><CODE>SET PAGEMAGE=YES</CODE>: include PageMage.
 <LI><CODE>SET ANIMATED_MOUSE_POINTERS=YES</CODE>: include Animated Mouse Pointers.
 <LI><CODE>SET EXTASSOCS=YES</CODE>: include extended file associations.
 <LI><CODE>SET REPLHANDLES=YES</CODE>: include replacement file handles management.
-</UL>These features are unstable and are known to cause problems.
+<LI><CODE>SET XWPSECURITY=YES</CODE>: build XWorkplace Security as well
+(XWPShell and the ring-0 device driver). See
+<A HREF="src2_860xwpsec.html">"XWorkplace Security"</A> for details.
+</UL>These features are unstable, but they will only cause problems if they are
+enabled in the "XWorkplace Setup" object or (in the case of XWorkplace Security)
+if the additional executables are installed thru CONFIG.SYS.
 
 <P><LI><B>Replacing in-use files.</B> You can rebuild XWorkplace even while the WPS is up
 and XWorkplace is installed. The makefiles will automatically unlock DLLs which
@@ -119,8 +130,6 @@ reboot to use the new DLL.
 So if you get an error during the build process which says "XWPDAEMN.EXE is in use",
 kill <CODE>XWPDAEMON.EXE</CODE> using some process killer, which will properly
 unload the hooks, and try building again.
-
-
 
 </OL>
 </BODY>
