@@ -1905,7 +1905,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         }
         break;
 
-        case XCM_CREATEWIDGETINTRAY:
+        case XCM_CREATESUBWIDGET:
         {
             PXCENTERWIDGET pWidget;
             PTRAYWIDGETPRIVATE pPrivate;

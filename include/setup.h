@@ -174,6 +174,9 @@
 
         // debug trashcan
             // #define DEBUG_TRASHCAN
+
+        // debug Xtimers
+            // #define DEBUG_XTIMERS
     #endif
 
     /*************************************************************

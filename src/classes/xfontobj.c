@@ -142,12 +142,12 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
         if (_pszFontFile)
         {
             free(_pszFontFile);
+            _pszFontFile = NULL;
         }
 
         if (pszFontFile)
             _pszFontFile = strdup(pszFontFile);
-        else
-            _pszFontFile = NULL;
+
 
         brc = TRUE;
     }

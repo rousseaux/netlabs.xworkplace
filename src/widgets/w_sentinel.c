@@ -94,6 +94,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "config\cfgsys.h"              // XFldSystem CONFIG.SYS pages implementation
+#include "config\drivdlgs.h"            // driver configuration dialogs
 
 // win32k.sys includes
 #include "win32k.h"
@@ -212,6 +213,8 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
+PDRV_SPRINTF pdrv_sprintf = NULL;
+
 PGPIHBOX pgpihBox = NULL;
 PGPIHCREATEBITMAP pgpihCreateBitmap = NULL;
 PGPIHCREATEMEMPS pgpihCreateMemPS = NULL;
@@ -244,6 +247,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "drv_sprintf", (PFN*)&pdrv_sprintf,
         "gpihBox", (PFN*)&pgpihBox,
         "gpihCreateBitmap", (PFN*)&pgpihCreateBitmap,
         "gpihCreateMemPS", (PFN*)&pgpihCreateMemPS,
@@ -464,22 +468,22 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "WIDTH=%d;",
+    pdrv_sprintf(szTemp, "WIDTH=%d;",
             pSetup->cx);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "BGNDCOL=%06lX;",
+    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "TEXTCOL=%06lX;",
+    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s;",
+        pdrv_sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
@@ -876,7 +880,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
             // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
             p = pPrivate->szTooltipText;
-            p += sprintf(p,
+            p += pdrv_sprintf(p,
                          "Physical memory usage"                  // @@todo localize
                          "\nFree RAM: %s KB"
                          "\nUsed RAM: %s KB"
@@ -886,7 +890,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
                          pstrhThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
 
             if (pPrivate->arcWin32K == NO_ERROR)
-                sprintf(p,
+                pdrv_sprintf(p,
                         "\nFree in swapper: %s KB ",
                         pstrhThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
 
@@ -915,7 +919,7 @@ VOID DrawNumber(HPS hps,
 {
     POINTL  ptl;
     CHAR    szPaint[30] = "";
-    sprintf(szPaint,
+    pdrv_sprintf(szPaint,
             "%lu",
             ulNumber);
     ptl.x = 2;
@@ -1576,9 +1580,9 @@ ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
                              G_aImports[ul].ppFuncAddress)
                     != NO_ERROR)
         {
-            sprintf(pszErrorMsg,
-                    "Import %s failed.",
-                    G_aImports[ul].pcszFunctionName);
+            strcpy(pszErrorMsg, "Import ");
+            strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+            strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
         }

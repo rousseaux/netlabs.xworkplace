@@ -108,6 +108,8 @@ ew */
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
+#include "config\drivdlgs.h"            // driver configuration dialogs
+
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -187,6 +189,8 @@ PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
 PDOSHMYPID pdoshMyPID = NULL;
 
+PDRV_SPRINTF pdrv_sprintf = NULL;
+
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHMANIPULATERGB pgpihManipulateRGB = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
@@ -230,6 +234,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "doshMyPID", (PFN*)&pdoshMyPID,
+        "drv_sprintf", (PFN*)&pdrv_sprintf,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihManipulateRGB", (PFN*)&pgpihManipulateRGB,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
@@ -488,18 +493,18 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "BGNDCOL=%06lX;",
+    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "TEXTCOL=%06lX;",
+    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s;",
+        pdrv_sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
@@ -2277,7 +2282,7 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     // not WPS:
                     fEnableKill = TRUE;
-                    sprintf(szKillText,
+                    pdrv_sprintf(szKillText,
                             "~Kill process (PID 0x%lX)",
                             pCtlUnderMouse->idProcess);
                 }
@@ -2764,9 +2769,9 @@ ULONG EXPENTRY WwgtInitModule(HAB hab,         // XCenter's anchor block
                              G_aImports[ul].ppFuncAddress)
                     != NO_ERROR)
         {
-            sprintf(pszErrorMsg,
-                    "Import %s failed.",
-                    G_aImports[ul].pcszFunctionName);
+            strcpy(pszErrorMsg, "Import ");
+            strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+            strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
         }

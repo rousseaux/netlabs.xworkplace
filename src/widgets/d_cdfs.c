@@ -1165,9 +1165,9 @@ ULONG EXPENTRY CheckDriverName(HMODULE hmodPlugin, // in: module handle of the w
                                  G_aImports[ul].ppFuncAddress)
                     != NO_ERROR)
             {
-                pdrv_sprintf(pszErrorMsg,
-                             "Import %s failed.",
-                             G_aImports[ul].pcszFunctionName);
+                strcpy(pszErrorMsg, "Import ");
+                strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+                strcat(pszErrorMsg, " failed.");
                 // report "error"
                 return (-1);
             }

@@ -212,6 +212,9 @@ CATEGORY "CD-ROM"
         DRIVER ( "DEVICE=", "OS2CDROM.DMD",
                  "General CD-ROM manager",
                  DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "JJSCDROM.DMD",
+                 "Enhanced CD-ROM manager",
+                 DRVF_CMDREF)
 
         DRIVER ( "DEVICE=", "VCDROM.SYS",
                  "DOS CD-ROM support",
@@ -613,14 +616,14 @@ CATEGORY "Multimedia"
                  DRVF_NOPARAMS)
 
         DRIVER ( "DEVICE=", "VCSHDD.SYS",
-                 "MMPM/2 video support driver",
+                 "MMPM/2 video recording support driver",
                  0)
 
         DRIVER ( "DEVICE=", "R0STUB.SYS",
-                 "MMPM/2 R0STUB support driver",
+                 "MMPM/2 ring-0 streaming support stub driver",
                  0),
         DRIVER ( "DEVICE=", "SSMDD.SYS",
-                 "MMPM/2 SSMDD support driver",
+                 "MMPM/2 sync/stream support driver",
                  0),
         DRIVER ( "DEVICE=", "AUDIOVDD.SYS",
                  "MMPM/2 sound sharing driver",

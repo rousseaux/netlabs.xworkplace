@@ -1595,6 +1595,7 @@ ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
  *      XMMDEVICE instance.
  *
  *@@added V0.9.13 (2001-06-14) [umoeller]
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
 ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
@@ -1785,6 +1786,8 @@ ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
             if (strTemp.ulLength)
                 pDevice->pszInfo = strTemp.psz;
                         // do not free strTemp here
+            else
+                xstrClear(&strTemp);        // V0.9.14 (2001-08-01) [umoeller]
         }
     }
 

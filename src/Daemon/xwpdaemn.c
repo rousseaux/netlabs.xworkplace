@@ -119,13 +119,14 @@
  *      3.  The PageMage window for virtual desktops. See pgmg_control.c
  *          for details.
  *
- *      4.  Removeable drives monitoring. I have put this into
- *          the daemon because we're dealing with DevIOCtl's
- *          here, which might not be a good idea to do in the
- *          PMSHELL.EXE process.
- *
- *      5.  Mouse helpers.  Sliding focus, pointer hidding and
+ *      4.  Mouse helpers.  Sliding focus, pointer hidding and
  *          MB3 (auto) scrolling use fnwpDaemonObject.
+ *
+ *      5.  Drive monitors, which are now used by the diskfree
+ *          widget that was added with V0.9.14 to avoid the
+ *          "Drive not ready" popups in PMSHELL.EXE.
+ *          This is configured by sending messages to
+ *          fnwpDaemonObject; see remarks there.
  *
  *      Both the hook and the daemon are all new with V0.9.0.
  *
@@ -831,8 +832,8 @@ VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
  *         after the timer has elapsed.
  *
  *      This was initially based on code from
- *      ProgramCommander/2, but I got a few bugs fixed
- *      now.
+ *      ProgramCommander/2, but has been extended
+ *      quite some since then.
  *
  *@@changed V0.9.3 (2000-05-23) [umoeller]: fixed MDI-subframes problem (VIEW.EXE)
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 handling, which broke with 0.9.3
@@ -1001,8 +1002,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
                 {
                     // yes, we found another frame in between:
                     // make that active as well
-                    hwndTitlebar = WinWindowFromID(hwndMDIFrame, FID_TITLEBAR);
-                    if (hwndTitlebar)
+                    if (hwndTitlebar = WinWindowFromID(hwndMDIFrame, FID_TITLEBAR))
                     {
                         WinPostMsg(hwndMDIFrame,
                                    WM_ACTIVATE,
@@ -1017,9 +1017,8 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
             {
                 // frame window has no saved focus:
                 // try if we can activate the client
-                hwndClient = WinWindowFromID(hwnd2Activate,
-                                             FID_CLIENT);
-                if (hwndClient)
+                if (hwndClient = WinWindowFromID(hwnd2Activate,
+                                                 FID_CLIENT))
                 {
                     // _Pmpf(("        giving focus 2 client"));
                     hwndNewFocus = hwndClient;
@@ -1053,8 +1052,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
                            MPFROMHWND(hwndNewFocus));
 
                 // activate new window
-                hwndTitlebar = WinWindowFromID(hwnd2Activate, FID_TITLEBAR);
-                if (hwndTitlebar)
+                if (hwndTitlebar = WinWindowFromID(hwnd2Activate, FID_TITLEBAR))
                 {
                     WinPostMsg(hwnd2Activate,
                                WM_ACTIVATE,
@@ -1086,9 +1084,40 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
  *      hotkeys, sliding focus, screen corner objects,
  *      or from XFLDR.DLL for daemon/hook configuration.
  *
+ *      This object window is created by main() on startup
+ *      and its handle is stored in the XWPGLOBALSHARED
+ *      struct in shared memory so that XFLDR.DLL can see
+ *      it.
+ *
+ *      Most of these messages are internal to the daemon
+ *      and the hook and should not be posted externally.
+ *      However, there are a couple of interface messages
+ *      for setup and configuration:
+ *
+ *      --  XDM_HOOKINSTALL (install or deinstall hook);
+ *
+ *      --  XDM_DESKTOPREADY (desktop has been opened);
+ *
+ *      --  XDM_HOOKCONFIG (update hook configuration);
+ *
+ *      --  XDM_STARTSTOPPAGEMAGE;
+ *
+ *      --  XDM_RECOVERWINDOWS;
+ *
+ *      --  XDM_PAGEMAGECONFIG;
+ *
+ *      --  XDM_HOTKEYSCHANGED;
+ *
+ *      --  XDM_ADDDISKWATCH, XDM_REMOVEDISKWATCH (add
+ *          or remove a disk watch);
+ *
+ *      --  XDM_QUERYDISKS (get info about disks on the
+ *          system).
+ *
  *@@changed V0.9.3 (2000-04-12) [umoeller]: added exception handling
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed sliding focus bug
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed trap if hook data was NULL
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: added drive monitor
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)

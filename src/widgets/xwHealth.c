@@ -97,7 +97,8 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
-// #include "xwHealth.h"
+
+#include "config\drivdlgs.h"            // driver configuration dialogs
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -173,6 +174,8 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
+PDRV_SPRINTF pdrv_sprintf = NULL;
+
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
@@ -194,29 +197,30 @@ PXSTRINIT pxstrInit = NULL;
 
 RESOLVEFUNCTION G_aImports[] =
 {
-    "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
-    "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
-    "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
-    "cmnQueryNLSModuleHandle", (PFN*)&pcmnQueryNLSModuleHandle,
-    "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
-    "ctrDisplayHelp", (PFN*)&pctrDisplayHelp,
-    "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
-    "ctrParseColorString", (PFN*)&pctrParseColorString,
-    "ctrScanSetupString", (PFN*)&pctrScanSetupString,
-    "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
-    "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
-    "strhDateTime", (PFN*)&pstrhDateTime,
-    "strhThousandsULong", (PFN*)&pstrhThousandsULong,
-    "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
-    "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
-    "winhFree", (PFN*)&pwinhFree,
-    "winhCenterWindow", (PFN*)&pwinhCenterWindow,
-    "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
-    "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
-    "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
-    "xstrcat", (PFN*)&pxstrcat,
-    "xstrClear", (PFN*)&pxstrClear,
-    "xstrInit", (PFN*)&pxstrInit
+        "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
+        "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+        "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
+        "cmnQueryNLSModuleHandle", (PFN*)&pcmnQueryNLSModuleHandle,
+        "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
+        "ctrDisplayHelp", (PFN*)&pctrDisplayHelp,
+        "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
+        "ctrParseColorString", (PFN*)&pctrParseColorString,
+        "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "drv_sprintf", (PFN*)&pdrv_sprintf,
+        "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
+        "strhDateTime", (PFN*)&pstrhDateTime,
+        "strhThousandsULong", (PFN*)&pstrhThousandsULong,
+        "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
+        "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
+        "winhFree", (PFN*)&pwinhFree,
+        "winhCenterWindow", (PFN*)&pwinhCenterWindow,
+        "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
+        "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
+        "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
+        "xstrcat", (PFN*)&pxstrcat,
+        "xstrClear", (PFN*)&pxstrClear,
+        "xstrInit", (PFN*)&pxstrInit
 };
 
 BOOL(*_System sthRegisterDaemon) (BOOL) = NULL;
@@ -421,20 +425,20 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,  // out: setup string (is cleared first)
     // PSZ psz = 0;
 
     pxstrInit(pstrSetup, 400);
-    sprintf(szTemp, "BGNDCOL=%06lX;", pSetup->lcolBackground);
+    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;", pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
-    sprintf(szTemp, "TEXTCOL=%06lX;", pSetup->lcolForeground);
+    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;", pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s;", pSetup->pszFont);
+        pdrv_sprintf(szTemp, "FONT=%s;", pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
 
     if (pSetup->pszViewString)
     {
-        sprintf(szTemp,"HEALTHVSTR=%s;", pSetup->pszViewString);
+        pdrv_sprintf(szTemp,"HEALTHVSTR=%s;", pSetup->pszViewString);
         pxstrcat(pstrSetup, szTemp, 0);
     }
 }
@@ -481,7 +485,7 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
                         strcat(szPaint,"[ERR]");
                     else
                     {
-                        sprintf(stringValue,"%.2f",((t[number]*9)/5)+32);
+                        pdrv_sprintf(stringValue,"%.2f",((t[number]*9)/5)+32);
                         strcat(szPaint,stringValue);
                     }
                     i+=3;
@@ -492,7 +496,7 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
                         strcat(szPaint,"[ERR]");
                     else
                     {
-                        sprintf(stringValue,"%.2f",t[number]);
+                        pdrv_sprintf(stringValue,"%.2f",t[number]);
                         strcat(szPaint,stringValue);
                     }
                     i+=2;
@@ -503,7 +507,7 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
                         strcat(szPaint,"[ERR]");
                     else
                     {
-                        sprintf(stringValue,"%.2f",v[number]);
+                        pdrv_sprintf(stringValue,"%.2f",v[number]);
                         strcat(szPaint,stringValue);
                     }
                     i+=2;
@@ -514,7 +518,7 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
                         strcat(szPaint,"[ERR]");
                     else
                     {
-                        sprintf(stringValue,"%.2d",f[number]);
+                        pdrv_sprintf(stringValue,"%.2d",f[number]);
                         strcat(szPaint,stringValue);
                     }
                     i+=2;
@@ -1260,7 +1264,9 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
                              G_aImports[ul].ppFuncAddress)
             != NO_ERROR)
         {
-            sprintf(pszErrorMsg, "Import %s failed.", G_aImports[ul].pcszFunctionName);
+            strcpy(pszErrorMsg, "Import ");
+            strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+            strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
         }
@@ -1294,9 +1300,9 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
         }
         else
         {
-            sprintf(pszErrorMsg,
-                    "Unable to load StHealth.DLL, failing module: \"%s\"",
-                    szFail);
+            strcpy(pszErrorMsg, "Unable to load StHealth.DLL, failing module: \"");
+            strcat(pszErrorMsg, szFail);
+            strcat(pszErrorMsg, "\"");
         }
     }
 

@@ -656,7 +656,7 @@
     #define XCM_CREATEOBJECTBUTTON      (WM_USER + 7)
 
     /*
-     *@@ XCM_CREATEWIDGETINTRAY:
+     *@@ XCM_CREATESUBWIDGET:
      *      sent to a tray widget by the engine's d'n'd
      *      code if a widget should be created in the current
      *      tray.
@@ -674,7 +674,7 @@
      *@@added V0.9.14 (2001-07-31) [lafaix]
      */
 
-    #define XCM_CREATEWIDGETINTRAY      (WM_USER + 8)
+    #define XCM_CREATESUBWIDGET      (WM_USER + 8)
 
     /* ******************************************************************
      *

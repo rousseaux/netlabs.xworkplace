@@ -2156,7 +2156,7 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                                 if (hwndTrayWidget)
                                 {
                                     WinSendMsg(hwndTrayWidget,
-                                               XCM_CREATEWIDGETINTRAY,
+                                               XCM_CREATESUBWIDGET,
                                                (MPARAM)pszBuff,
                                                (MPARAM)ulIndex);
                                 }

@@ -122,6 +122,8 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
 
+#include "config\drivdlgs.h"            // driver configuration dialogs
+
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -190,6 +192,8 @@ PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 PCTRSETSETUPSTRING pctrSetSetupString = NULL;
 
+PDRV_SPRINTF pdrv_sprintf = NULL;
+
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
@@ -211,6 +215,8 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "ctrSetSetupString", (PFN*)&pctrSetSetupString,
+
+        "drv_sprintf", (PFN*)&pdrv_sprintf,
 
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
@@ -368,18 +374,18 @@ VOID WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
     // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "BGNDCOL=%06lX;",
+    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "TEXTCOL=%06lX;",
+    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s;",
+        pdrv_sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
@@ -864,9 +870,9 @@ ULONG EXPENTRY WgtInitModule(HAB hab,         // XCenter's anchor block
                              G_aImports[ul].ppFuncAddress)
                     != NO_ERROR)
         {
-            sprintf(pszErrorMsg,
-                    "Import %s failed.",
-                    G_aImports[ul].pcszFunctionName);
+            strcpy(pszErrorMsg, "Import ");
+            strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+            strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
         }

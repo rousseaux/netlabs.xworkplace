@@ -59,6 +59,8 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
+#include "config\drivdlgs.h"            // driver configuration dialogs
+
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -133,6 +135,8 @@ PDOSHQUERYDISKSIZE pdoshQueryDiskSize = NULL;
 PDOSHQUERYDISKFREE pdoshQueryDiskFree = NULL;
 PDOSHQUERYDISKFSTYPE pdoshQueryDiskFSType = NULL;
 
+PDRV_SPRINTF pdrv_sprintf = NULL;
+
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
@@ -166,6 +170,8 @@ RESOLVEFUNCTION G_aImports[] =
         "doshQueryDiskSize", (PFN*)&pdoshQueryDiskSize,
         "doshQueryDiskFree", (PFN*)&pdoshQueryDiskFree,
         "doshQueryDiskFSType", (PFN*)&pdoshQueryDiskFSType,
+
+        "drv_sprintf", (PFN*)&pdrv_sprintf,
 
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
@@ -403,18 +409,18 @@ void WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
     // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "BGNDCOL=%06lX;",
+    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "TEXTCOL=%06lX;",
+    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s;",
+        pdrv_sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
@@ -423,12 +429,12 @@ void WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
    ////////////////////////////////////////////////////////////////
 
    // view:  *..multi-view | otherwise..single-view where setup-string is drive-letter
-   sprintf(szTemp, "VIEW=%c;",
+   pdrv_sprintf(szTemp, "VIEW=%c;",
            pSetup->chDrive);
    pxstrcat(pstrSetup, szTemp, 0);
 
    // different 'show-styles'
-   sprintf(szTemp, "SHOW=%02d;",
+   pdrv_sprintf(szTemp, "SHOW=%02d;",
            pSetup->lShow);
    pxstrcat(pstrSetup, szTemp, 0);
 }
@@ -887,12 +893,12 @@ void WgtPaint(HWND hwnd,
                 // print drive-data                             pPrivate->dAktDriveFree/1024/1024...x%
                 // V0.9.11 (2001-04-19) [pr]: Fixed show drive type
                 if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
-                  sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                  pdrv_sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
                                                                   pPrivate->szAktDriveType,
                                                                   pPrivate->dAktDriveFree/1024/1024,
                                                                   dPercentFree);
                 else
-                  sprintf(szText, "%c:  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                  pdrv_sprintf(szText, "%c:  %.fMB (%.f%%) free", pPrivate->chAktDrive,
                                                              pPrivate->dAktDriveFree/1024/1024,
                                                              dPercentFree);
 
@@ -910,11 +916,11 @@ void WgtPaint(HWND hwnd,
                                   DP_NORMAL);
 
                 if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
-                  sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
+                  pdrv_sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
                                                      pPrivate->szAktDriveType,
                                                      pPrivate->dAktDriveFree/1024/1024);
                 else
-                  sprintf(szText, "%c:  %.fMB", pPrivate->chAktDrive,
+                  pdrv_sprintf(szText, "%c:  %.fMB", pPrivate->chAktDrive,
                                                 pPrivate->dAktDriveFree/1024/1024);
 
                 bxCorr=24;
@@ -1409,9 +1415,9 @@ ULONG EXPENTRY WgtInitModule(HAB hab,         // XCenter's anchor block
                              G_aImports[ul].ppFuncAddress)
                     != NO_ERROR)
         {
-            sprintf(pszErrorMsg,
-                    "Import %s failed.",
-                    G_aImports[ul].pcszFunctionName);
+            strcpy(pszErrorMsg, "Import ");
+            strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+            strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
         }

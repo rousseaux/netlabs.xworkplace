@@ -117,6 +117,8 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
+#include "config\drivdlgs.h"            // driver configuration dialogs
+
 #include "filesys\disk.h"               // XFldDisk implementation
 
 #include "hook\xwphook.h"               // hook and daemon definitions
@@ -234,6 +236,8 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
+PDRV_SPRINTF pdrv_sprintf = NULL;
+
 PDSKQUERYINFO pdskQueryInfo = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
@@ -270,6 +274,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "drv_sprintf", (PFN*)&pdrv_sprintf,
         "dskQueryInfo", (PFN*)&pdskQueryInfo,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
@@ -295,10 +300,6 @@ RESOLVEFUNCTION G_aImports[] =
  *   Private widget instance data
  *
  ********************************************************************/
-
-#define DFFL_REPAINT            0x0001
-#define DFFL_FLASH              0x0002
-#define DFFL_BACKGROUND         0x0004
 
 /*
  *@@ MONITORSETUP:
@@ -331,6 +332,33 @@ typedef struct _MONITORSETUP
     PSZ             pszDisks;       // array of plain drive letters to monitor
 
 } MONITORSETUP, *PMONITORSETUP;
+
+#define DFFL_REPAINT            0x0001
+#define DFFL_FLASH              0x0002
+#define DFFL_BACKGROUND         0x0004
+
+#define FLASH_MAX               30
+            // count of 100 ms intervals that the flash should
+            // last; 20 means 2 seconds then
+
+/*
+ *@@ DISKDATA:
+ *
+ *@@added V0.9.14 (2001-08-03) [umoeller]
+ */
+
+typedef struct _DISKDATA
+{
+    LONG        lKB;            // currently free KBS;
+                                // if negative, this is an APIRET from xwpdaemon
+    ULONG       fl;             // DFFL_* flags
+
+    ULONG       ulFade;         // fade percentage while (fl & DFFL_FLASH);
+                                // initially set to 100 and fading to 0
+
+    LONG        lX;             // cached x position of this drive in PaintDiskfree
+
+} DISKDATA, *PDISKDATA;
 
 /*
  *@@ MONITORPRIVATE:
@@ -386,7 +414,10 @@ typedef struct _MONITORPRIVATE
      *
      */
 
-    PLONG           palKBs;          // array of 26 LONG values for the
+    PDISKDATA       paDiskDatas;    // array of 26 DISKDATA structures
+                                    // holding temporary information
+
+    /* PLONG           palKBs;          // array of 26 LONG values for the
                                      // disks being monitored; only those
                                      // values are valid for which a corresponding
                                      // drive letter exists in Setup
@@ -396,6 +427,7 @@ typedef struct _MONITORPRIVATE
 
     PLONG           palXPoses;       // array of 26 LONG values for the
                                      // X positions of each disk display (speed)
+    */
 
     BOOL            fContextMenuHacked;
 
@@ -528,29 +560,29 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
-    sprintf(szTemp, "BGNDCOL=%06lX;",
+    pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "TEXTCOL=%06lX;",
+    pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
-        sprintf(szTemp, "FONT=%s;",
+        pdrv_sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
 
     if (fIsDiskfree)
     {
-        sprintf(szTemp, "WIDTH=%d;",
+        pdrv_sprintf(szTemp, "WIDTH=%d;",
                 pSetup->cxCurrent);
         pxstrcat(pstrSetup, szTemp, 0);
 
-        sprintf(szTemp, "DISKS=%s",
+        pdrv_sprintf(szTemp, "DISKS=%s",
                 pSetup->pszDisks);
         pxstrcat(pstrSetup, szTemp, 0);
     }
@@ -773,14 +805,17 @@ MRESULT MwgtCreate(HWND hwnd,
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_DISKFREE_COND;
 
             // allocate new array of LONGs for the KB values
-            pPrivate->palKBs = malloc(sizeof(LONG) * 27);
+            pPrivate->paDiskDatas = malloc(sizeof(DISKDATA) * 27);
+            memset(pPrivate->paDiskDatas, 0, sizeof(DISKDATA) * 27);
+
+            /* pPrivate->palKBs = malloc(sizeof(LONG) * 27);
             memset(pPrivate->palKBs, 0, sizeof(LONG) * 27);
 
             pPrivate->paulFlags = malloc(sizeof(ULONG) * 27);
             memset(pPrivate->paulFlags, 0, sizeof(ULONG) * 27);
 
             pPrivate->palXPoses = malloc(sizeof(LONG) * 27);
-            memset(pPrivate->palXPoses, 0, sizeof(LONG) * 27);
+            memset(pPrivate->palXPoses, 0, sizeof(LONG) * 27); */
 
             // tell XWPDaemon about ourselves
             UpdateDiskMonitors(hwnd,
@@ -897,6 +932,10 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ PaintDiskfree:
  *      called from MwgtPaint for diskfree type only.
  *
+ *      This is another major mess because this also
+ *      handles the flashing for each drive rectangle
+ *      individually.
+ *
  *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
@@ -909,19 +948,20 @@ VOID PaintDiskfree(HWND hwnd,
 {
     FONTMETRICS fm;
 
-    LONG    lcolHatch = RGBCOL_BLACK,
-            lcolBackground = pPrivate->Setup.lcolBackground;
+    LONG    lcolBackground = pPrivate->Setup.lcolBackground;
 
-    #define GET_BLUE(lcol)  *( ((PBYTE)(&(lcol))) )
-    #define GET_GREEN(lcol) *( ((PBYTE)(&(lcol))) + 1 )
-    #define GET_RED(lcol)   *( ((PBYTE)(&(lcol))) + 2 )
-
-    #define MAKE_RGB(r, g, b) (LONG)((BYTE)(b)) + (((LONG)((BYTE)(g))) << 8) + (((LONG)((BYTE)(r))) << 16)
-
-    lcolHatch = MAKE_RGB(   255 - GET_RED(lcolBackground),
-                            255 - GET_GREEN(lcolBackground),
-                            255 - GET_BLUE(lcolBackground)
-                        );
+    // color to be used for hatch on the first flash;
+    // we'll calculate a value in between lcolHatchMax
+    // and lcolBackground for each flash that comes in...
+    // the max color is the inverse of the background
+    // color, so we get white for black and vice versa
+    // (we use LONGs to avoid overflows below)
+    LONG lBackRed = GET_RED(lcolBackground),
+         lBackGreen = GET_GREEN(lcolBackground),
+         lBackBlue = GET_BLUE(lcolBackground);
+    LONG lHatchMaxRed    = 255 - lBackRed,
+         lHatchMaxGreen  = 255 - lBackGreen,
+         lHatchMaxBlue   = 255 - lBackBlue;
 
     GpiQueryFontMetrics(hps,
                         sizeof(fm),
@@ -966,18 +1006,19 @@ VOID PaintDiskfree(HWND hwnd,
             if ((c > 'A') && (c <= 'Z'))
             {
                 ULONG ulOfs = c - 'A' + 1;
+                PDISKDATA pDataThis = &pPrivate->paDiskDatas[ulOfs];
 
                 if (    (fPaintAll)
-                     || ((pPrivate->paulFlags[ulOfs] & DFFL_REPAINT) != 0)
+                     || ((pDataThis->fl & DFFL_REPAINT) != 0)
                    )
                 {
                     ULONG ulLength;
-                    LONG l = pPrivate->palKBs[ulOfs];
+                    LONG l = pDataThis->lKB;
 
                     if (l >= 0)
                     {
                         CHAR szTemp3[50];
-                        sprintf(szTemp2,
+                        pdrv_sprintf(szTemp2,
                                 "%c:%sM ",
                                 // drive letter:
                                 c,
@@ -988,7 +1029,7 @@ VOID PaintDiskfree(HWND hwnd,
                     }
                     else
                         // error:
-                        sprintf(szTemp2,
+                        pdrv_sprintf(szTemp2,
                                 "%c: E%d ",
                                 // drive letter:
                                 c,
@@ -1000,7 +1041,7 @@ VOID PaintDiskfree(HWND hwnd,
                     if (!fPaintAll)
                         GpiSetBackMix(hps, BM_OVERPAINT);
 
-                    if (pPrivate->paulFlags[ulOfs] & (DFFL_FLASH | DFFL_BACKGROUND))
+                    if (pDataThis->fl & (DFFL_FLASH | DFFL_BACKGROUND))
                     {
                         POINTL      aptlText[TXTBOX_COUNT];
                         POINTL      ptlRect,
@@ -1015,7 +1056,7 @@ VOID PaintDiskfree(HWND hwnd,
                         if (fPaintAll)
                             ptlRect.x = ptlNow2.x - 3;
                         else
-                            ptlRect.x = pPrivate->palXPoses[ulOfs] - 3;
+                            ptlRect.x = pPrivate->paDiskDatas[ulOfs].lX - 3;
                         ptlRect.y = prclWin->yBottom;
 
                         GpiMove(hps, &ptlRect);
@@ -1023,12 +1064,35 @@ VOID PaintDiskfree(HWND hwnd,
                         ptlRect.x += aptlText[TXTBOX_TOPRIGHT].x;
                         ptlRect.y = prclWin->yTop;
 
-                        if (pPrivate->paulFlags[ulOfs] & DFFL_FLASH)
+                        if (pDataThis->fl & DFFL_FLASH)
                         {
+                            LONG    lDiffRed,
+                                    lDiffGreen,
+                                    lDiffBlue;
+
                             // flash, but not background:
-                            GpiSetPattern(hps, PATSYM_DIAG1);
+
+                            // calculate the hatch color
+                            // based on the current flash value...
+                            // if we're at FLASH_MAX, we'll use
+                            // lHatchMax, if we're at 0, we'll
+                            // use lcolBackground
+                            lDiffRed   =   (lHatchMaxRed - lBackRed)
+                                         * pDataThis->ulFade
+                                         / FLASH_MAX;
+                            lDiffGreen =   (lHatchMaxGreen - lBackGreen)
+                                         * pDataThis->ulFade
+                                         / FLASH_MAX;
+                            lDiffBlue  =   (lHatchMaxBlue - lBackBlue)
+                                         * pDataThis->ulFade
+                                         / FLASH_MAX;
+
                             GpiSetColor(hps,
-                                        lcolHatch);
+                                        MAKE_RGB(lBackRed + lDiffRed,
+                                                 lBackGreen + lDiffGreen,
+                                                 lBackBlue + lDiffBlue));
+
+                            GpiSetPattern(hps, PATSYM_DIAG1);
                         }
                         else
                             GpiSetColor(hps,
@@ -1049,23 +1113,16 @@ VOID PaintDiskfree(HWND hwnd,
                             GpiSetBackMix(hps, BM_LEAVEALONE);
 
                         // unset background flag, if this was set
-                        pPrivate->paulFlags[ulOfs] &= ~DFFL_BACKGROUND;
+                        pDataThis->fl &= ~DFFL_BACKGROUND;
 
                         GpiSetPattern(hps, PATSYM_DEFAULT);
                     }
-
-                    /*
-                    GpiSetBackColor(hps,
-                                    ((pPrivate->paulFlags[ulOfs] & DFFL_FLASH) != 0)
-                                        ? RGBCOL_RED
-                                        : pPrivate->Setup.lcolBackground);
-                       */
 
                     // if we're not painting all,
                     // we must manually set the xpos now
                     if (!fPaintAll)
                     {
-                        ptl.x = pPrivate->palXPoses[ulOfs];
+                        ptl.x = pDataThis->lX;
                                     // this was stored in a previous run
                         GpiMove(hps,
                                 &ptl);
@@ -1076,7 +1133,7 @@ VOID PaintDiskfree(HWND hwnd,
                                   szTemp2);
 
                     // unset repaint flag
-                    pPrivate->paulFlags[ulOfs] &= ~DFFL_REPAINT;
+                    pDataThis->fl &= ~DFFL_REPAINT;
 
                     {
                         CHAR c2 = pPrivate->Setup.pszDisks[ul+1];
@@ -1084,7 +1141,7 @@ VOID PaintDiskfree(HWND hwnd,
                         {
                             GpiQueryCurrentPosition(hps,
                                                     &ptlNow);
-                            pPrivate->palXPoses[c2 - 'A' + 1] = ptlNow.x;
+                            pPrivate->paDiskDatas[c2 - 'A' + 1].lX = ptlNow.x;
                         }
                     }
                 }
@@ -1195,7 +1252,7 @@ VOID MwgtPaint(HWND hwnd,
                 strcpy(szPaint, "APM 1.2 required.");
             else if (pPrivate->arcAPM)
                 // other error occured:
-                sprintf(szPaint, "E %d", pPrivate->arcAPM);
+                pdrv_sprintf(szPaint, "E %d", pPrivate->arcAPM);
             else
             {
                 // APM is OK:
@@ -1207,13 +1264,13 @@ VOID MwgtPaint(HWND hwnd,
                     case 0x02: pcsz = "Critical"; break;
                     case 0x03: pcsz = "Charging"; break;
 
-                    default: sprintf(szPaint, "No battery");
+                    default: pdrv_sprintf(szPaint, "No battery");
                 }
                 if (pcsz)
                 {
                     ULONG cxMiniIcon = pPrivate->pWidget->pGlobals->cxMiniIcon;
 
-                    sprintf(szPaint, "%d%%", pPrivate->pApm->ulBatteryLife);
+                    pdrv_sprintf(szPaint, "%d%%", pPrivate->pApm->ulBatteryLife);
 
                     WinDrawPointer(hps,
                                    0,
@@ -1232,7 +1289,9 @@ VOID MwgtPaint(HWND hwnd,
         break;
 
         case MWGT_DISKFREE:
-            _Pmpf((__FUNCTION__ ": calling PaintDiskfree"));
+            #ifdef DEBUG_XTIMERS
+                _Pmpf((__FUNCTION__ ": calling PaintDiskfree"));
+            #endif
             PaintDiskfree(hwnd,
                           pPrivate,
                           pCountrySettings,
@@ -1292,7 +1351,7 @@ VOID ForceRepaint(PMONITORPRIVATE pPrivate)
     HPS hps = WinGetPS(hwnd);
     if (hps)
     {
-        _Pmpf((__FUNCTION__ ": calling MwgtPaint"));
+        // _Pmpf((__FUNCTION__ ": calling MwgtPaint"));
         MwgtPaint(hwnd,
                   pPrivate,
                   hps,
@@ -1317,7 +1376,10 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
     {
         if (usTimerID == 1)
         {
-            _Pmpf((__FUNCTION__ ": timer 1"));
+            #ifdef DEBUG_XTIMERS
+            _Pmpf(("  " __FUNCTION__ ": timer 1"));
+            #endif
+
             if (    (pPrivate->ulType == MWGT_POWER)
                  && (pPrivate->pApm)
                  && (!pPrivate->arcAPM)
@@ -1328,14 +1390,25 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
         }
         else if ((usTimerID > 2000) && (usTimerID <= 2026))
         {
-            // diskfree flag timer:
+            // diskfree flag timer for a logical drive:
+            // timer id is 2000 + logical drive num
             ULONG ulLogicalDrive = usTimerID - 2000;
-            pPrivate->paulFlags[ulLogicalDrive] |= (DFFL_REPAINT | DFFL_BACKGROUND);
-            pPrivate->paulFlags[ulLogicalDrive] &= ~DFFL_FLASH;
+            PDISKDATA pThis = &pPrivate->paDiskDatas[ulLogicalDrive];
 
-            ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
-                           pWidget->hwndWidget,
-                           usTimerID);
+            if (pThis->ulFade)
+            {
+                // still fading:
+                (pThis->ulFade)--;
+                pThis->fl |= (DFFL_REPAINT | DFFL_BACKGROUND);
+                if (!(pThis->ulFade))
+                {
+                    // now zero:
+                    pThis->fl &= ~DFFL_FLASH;
+                    ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
+                                   pWidget->hwndWidget,
+                                   usTimerID);
+                }
+            }
 
             ForceRepaint(pPrivate);
         }
@@ -1355,26 +1428,23 @@ VOID UpdateLogicalDrive(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
     if ((ULONG)mp1 < 27)
     {
         PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+        PDISKDATA       pThis = &pPrivate->paDiskDatas[(ULONG)mp1];
 
         _Pmpf((__FUNCTION__ ": drive %d", (ULONG)mp1));
 
-        // if the item is not already flashed, flash it now
-        if (!(pPrivate->paulFlags[(ULONG)mp1] & DFFL_FLASH))
-        {
-            if (pPrivate->palKBs[(ULONG)mp1])
-                // not first call:
-                // flash the rectangle
-                pPrivate->paulFlags[(ULONG)mp1] |= (DFFL_FLASH | DFFL_REPAINT);
+        // flash the rectangle
+        pThis->fl |= (DFFL_FLASH | DFFL_REPAINT);
+        pThis->ulFade = FLASH_MAX;
 
-            pPrivate->palKBs[(ULONG)mp1] = (LONG)mp2;
+        pThis->lKB = (LONG)mp2;
 
-            ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
-                            pWidget->hwndWidget,
-                            2000 + (ULONG)mp1,
-                            1000);
+        ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+                        pWidget->hwndWidget,
+                        // timer ID: 2000 + logical drive num
+                        2000 + (ULONG)mp1,
+                        100);
 
-            ForceRepaint(pPrivate);
-        }
+        ForceRepaint(pPrivate);
     }
 }
 
@@ -1528,16 +1598,27 @@ VOID MwgtButton1DblClick(HWND hwnd,
 VOID HackContextMenu(PMONITORPRIVATE pPrivate)
 {
     XDISKINFO aDiskInfos[26];
+
+    HPOINTER hptrOld = WinQueryPointer(HWND_DESKTOP);
+    WinSetPointer(HWND_DESKTOP,
+                  WinQuerySysPointer(HWND_DESKTOP,
+                                     SPTR_WAIT,
+                                     FALSE));   // no copy
+
+    // ask xwpdaemn.exe about available drives
+    // (this call can take a while)
+
     if (pdskQueryInfo(aDiskInfos,
                       -1))           // all disks
     {
+        // insert the "Drives" submenu after "Properties"
+
         HWND hwndSubmenu;
         SHORT s = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
                                     MM_ITEMPOSITIONFROMID,
                                     MPFROM2SHORT(ID_CRMI_PROPERTIES,
                                                  FALSE),
                                     0);
-
         if (hwndSubmenu = pwinhInsertSubmenu(pPrivate->pWidget->hwndContextMenu,
                                              s + 2,
                                              1999,
@@ -1556,7 +1637,7 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
                     // fixed drive:
                     CHAR szText[10];
                     ULONG afAttr = 0;
-                    sprintf(szText, "%c:", pThis->cDriveLetter);
+                    pdrv_sprintf(szText, "%c:", pThis->cDriveLetter);
                     if (    (pPrivate->Setup.pszDisks)
                          && (strchr(pPrivate->Setup.pszDisks, pThis->cDriveLetter))
                        )
@@ -1581,6 +1662,8 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
             pPrivate->fContextMenuHacked = TRUE;
         }
     }
+
+    WinSetPointer(HWND_DESKTOP, hptrOld);
 }
 
 /*
@@ -1737,10 +1820,8 @@ VOID MwgtDestroy(PXCENTERWIDGET pWidget)
 
         MwgtFreeSetup(&pPrivate->Setup);        // V0.9.14 (2001-08-01) [umoeller]
 
-        if (pPrivate->palKBs)
-            free(pPrivate->palKBs);
-        if (pPrivate->paulFlags)
-            free(pPrivate->paulFlags);
+        if (pPrivate->paDiskDatas)
+            free(pPrivate->paDiskDatas);
 
         free(pPrivate);
     } // end if (pPrivate)
@@ -2007,9 +2088,9 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,         // XCenter's anchor block
                              G_aImports[ul].ppFuncAddress)
                     != NO_ERROR)
         {
-            sprintf(pszErrorMsg,
-                    "Import %s failed.",
-                    G_aImports[ul].pcszFunctionName);
+            strcpy(pszErrorMsg, "Import ");
+            strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
+            strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
         }
