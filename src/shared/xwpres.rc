@@ -6,8 +6,11 @@
  *      the currently selected XWorkplace language, such as icons
  *      and bitmaps. These used to be in XFLDR.DLL, but have been
  *      moved into a separate resource module with V0.9.7.
+ */
+
+/*
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
  *
- *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published

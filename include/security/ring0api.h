@@ -6,11 +6,13 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
- *      This program is free software; you can redistribute it and/or modify
- *      it under the terms of the GNU General Public License as published by
- *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XWorkplace main distribution.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -24,41 +26,13 @@ extern "C" {
 #ifndef RING0API_HEADER_INCLUDED
     #define RING0API_HEADER_INCLUDED
 
-    /* ******************************************************************
-     *
-     *   IOCtl
-     *
-     ********************************************************************/
-
     #pragma pack(1)
 
-    // category for IOCtl's to xwpsec32.sys
-    #define IOCTL_XWPSEC            0x8F
-
-    // IOCtl functions
-
-    /*
-     *@@ SECIOREGISTER:
-     *      structure to be passed with the XWPSECIO_REGISTER
-     *      DosDevIOCtl function code to XWPSEC32.SYS.
+    /* ******************************************************************
      *
-     *      With this structure, the ring-3 shell must
-     *      pass down an array of process IDs that were
-     *      running already at the time the shell was
-     *      started. These PIDs will then be treated as
-     *      trusted processes by the driver.
-     */
-
-    typedef struct _PROCESSLIST
-    {
-        ULONG       cbStruct;
-        USHORT      cTrusted;
-        USHORT      apidTrusted[1];
-    } PROCESSLIST, *PPROCESSLIST;
-
-    #define XWPSECIO_REGISTER           0x50
-
-    #define XWPSECIO_DEREGISTER         0x51
+     *   IOCtl structures
+     *
+     ********************************************************************/
 
     /*
      *@@ TIMESTAMP:
@@ -70,17 +44,17 @@ extern "C" {
 
     typedef struct _TIMESTAMP
     {
-        ULONG   SIS_BigTime;    // Time from 1-1-1970 in seconds    4
-        ULONG   SIS_MsCount;    // Freerunning milliseconds counter 8
-        UCHAR   hours;          // Hours                            9
-        UCHAR   minutes;        // Minutes                          10
-        UCHAR   seconds;        // Seconds                          11
-        UCHAR   SIS_HunTime;    // Hundredths of seconds            12
-        USHORT  SIS_TimeZone;   // Timezone in min from GMT (Set to EST)  14
-        USHORT  SIS_ClkIntrvl;  // Timer interval (units=0.0001 secs)     16
-        UCHAR   day;            // Day-of-month (1-31)                    17
-        UCHAR   month;          // Month (1-12)                           18
-        USHORT  year;           // Year (>= 1980)                         20
+        ULONG   SIS_BigTime;    // Time from 1-1-1970 in seconds            4
+        ULONG   SIS_MsCount;    // Freerunning milliseconds counter         8
+        UCHAR   hours;          // Hours                                    9
+        UCHAR   minutes;        // Minutes                                  10
+        UCHAR   seconds;        // Seconds                                  11
+        UCHAR   SIS_HunTime;    // Hundredths of seconds                    12
+        USHORT  SIS_TimeZone;   // Timezone in min from GMT (Set to EST)    14
+        USHORT  SIS_ClkIntrvl;  // Timer interval (units=0.0001 secs)       16
+        UCHAR   day;            // Day-of-month (1-31)                      17
+        UCHAR   month;          // Month (1-12)                             18
+        USHORT  year;           // Year (>= 1980)                           20
     } TIMESTAMP, *PTIMESTAMP;
 
     /*
@@ -93,16 +67,16 @@ extern "C" {
 
     typedef struct _CONTEXTINFO
     {
-        USHORT  pid;            // Current process ID
-        USHORT  ppid;           // Process ID of parent
-        USHORT  prty;           // Current thread priority
-        USHORT  tid;            // Current thread ID
-        USHORT  LIS_CurScrnGrp; // Screengroup
-        UCHAR   LIS_ProcStatus; // Process status bits
-        UCHAR   LIS_fillbyte1;  // filler byte
-        USHORT  LIS_Fgnd;       // Current process is in foreground
-        UCHAR   LIS_ProcType;   // Current process type
-        UCHAR   LIS_fillbyte2;  // filler byte
+        USHORT  pid;            // Current process ID                       2
+        USHORT  ppid;           // Process ID of parent                     4
+        USHORT  prty;           // Current thread priority                  6
+        USHORT  tid;            // Current thread ID                        8
+        USHORT  LIS_CurScrnGrp; // Screengroup                              10
+        UCHAR   LIS_ProcStatus; // Process status bits                      11
+        UCHAR   LIS_fillbyte1;  // filler byte                              12
+        USHORT  LIS_Fgnd;       // Current process is in foreground         14
+        UCHAR   LIS_ProcType;   // Current process type                     15
+        UCHAR   LIS_fillbyte2;  // filler byte                              16
     } CONTEXTINFO, *PCONTEXTINFO;
 
     /*
@@ -115,6 +89,8 @@ extern "C" {
     {
         USHORT      cbStruct;       // total size of EVENTLOGENTRY plus data that follows
         USHORT      ulEventCode;    // EVENT_* code
+
+        ULONG       idEvent;        // global event ID (continually raised with each event)
 
         CONTEXTINFO ctxt;           // 16 bytes
 
@@ -146,11 +122,91 @@ extern "C" {
     {
         ULONG           cbUsed;             // total bytes used in the buffer
         struct _LOGBUF  *pNext;             // used only at ring 0 for linking bufs
+        ULONG           idLogBuf;           // global log buf ID (continually raised)
         ULONG           cLogEntries;        // no. of EVENTLOGENTRY structs that follow
 
         // next follow cLogEntries EVENTLOGENTRY structs
 
     } LOGBUF, *PLOGBUF;
+
+    /*
+     *@@ RING0STATUS:
+     *      returns ring-0 status information via the
+     *      XWPSECIO_QUERYSTATUS ioctl.
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _RING0STATUS
+    {
+        ULONG       cbAllocated;        // fixed memory currently allocated in ring 0
+        ULONG       cAllocations,       // no. of allocations made since startup
+                    cFrees;             // no. of frees made since startup
+        USHORT      cLogBufs,           // current 64K log buffers in use
+                    cMaxLogBufs;        // max 64K log buffers that were ever in use
+        ULONG       cLogged;            // no. of syscalls that were logged
+        ULONG       cGranted,           // no. of syscalls where access was granted
+                    cDenied;            // ... and denied
+    } RING0STATUS, *PRING0STATUS;
+
+    /* ******************************************************************
+     *
+     *   IOCtl functions
+     *
+     ********************************************************************/
+
+    /*
+     *@@ IOCTL_XWPSEC:
+     *      category code for all XWPSEC32.SYS ioctl
+     *      functions.
+     */
+
+    #define IOCTL_XWPSEC            0x8F
+
+    /*
+     *@@ SECIOREGISTER:
+     *      structure to be passed with the XWPSECIO_REGISTER
+     *      DosDevIOCtl function code to XWPSEC32.SYS.
+     *
+     *      With this structure, the ring-3 shell must
+     *      pass down an array of process IDs that were
+     *      running already at the time the shell was
+     *      started. These PIDs will then be treated as
+     *      trusted processes by the driver.
+     */
+
+    typedef struct _PROCESSLIST
+    {
+        ULONG       cbStruct;
+        USHORT      cTrusted;
+        USHORT      apidTrusted[1];
+    } PROCESSLIST, *PPROCESSLIST;
+
+    /*
+     *@@ XWPSECIO_REGISTER:
+     *      IOCTL_XWPSEC function code which enables
+     *      local security.
+     *
+     *      After XWPShell has opened XWPSEC32.SYS,
+     *      it must call this ioctl function with an
+     *      array of PIDs that are currently running
+     *      in a PROCESSLIST as the data packet. If
+     *      this returns NO_ERROR, local security
+     *      is enabled for the entire system.
+     */
+
+    #define XWPSECIO_REGISTER           0x50
+
+    /*
+     *@@ XWPSECIO_DEREGISTER:
+     *      IOCTL_XWPSEC function code which disables
+     *      local security.
+     *
+     *      After this, the system behaves as before
+     *      XWPShell enabled local security.
+     */
+
+    #define XWPSECIO_DEREGISTER         0x51
 
     /*
      *@@ XWPSECIO_GETLOGBUF:
@@ -173,7 +229,8 @@ extern "C" {
      *      a ring-0 pointer and must not be followed
      *      by the thread.
      *
-     *      Ring 0 may return the following errors:
+     *      Ring 0 may return the following errors, ORed
+     *      with 0xFF00:
      *
      *      --  ERROR_I24_INVALID_PARAMETER
      *
@@ -185,24 +242,6 @@ extern "C" {
      */
 
     #define XWPSECIO_GETLOGBUF          0x52
-
-    /*
-     *@@ RING0STATUS:
-     *
-     *@@added V1.0.1 (2003-01-10) [umoeller]
-     */
-
-    typedef struct _RING0STATUS
-    {
-        ULONG       cbAllocated;        // fixed memory currently allocated in ring 0
-        ULONG       cAllocations,       // no. of allocations made since startup
-                    cFrees;             // no. of frees made since startup
-        USHORT      cLogBufs,           // current 64K log buffers in use
-                    cMaxLogBufs;        // max 64K log buffers that were ever in use
-        ULONG       cLogged;            // no. of syscalls that were logged
-        ULONG       cGranted,           // no. of syscalls where access was granted
-                    cDenied;            // ... and denied
-    } RING0STATUS, *PRING0STATUS;
 
     /*
      *@@ XWPSECIO_QUERYSTATUS:
@@ -250,7 +289,7 @@ extern "C" {
 
     /*
      *@@ EVENT_EXECPGM_PRE:
-     *      uses EVENTBUF_EXECPGM.
+     *      uses EVENTBUF_FILENAME.
      */
 
     #define EVENT_EXECPGM_PRE           5
@@ -264,7 +303,7 @@ extern "C" {
 
     /*
      *@@ EVENT_EXECPGM_PRE:
-     *      uses EVENTBUF_EXECPGM.
+     *      uses EVENTBUF_FILENAME.
      */
 
     #define EVENT_EXECPGM_POST          7
@@ -289,6 +328,27 @@ extern "C" {
      */
 
     #define EVENT_DELETE_POST           10
+
+    /*
+     *@@ EVENT_MAKEDIR:
+     *      uses EVENTBUF_FILENAME.
+     */
+
+    #define EVENT_MAKEDIR               11
+
+    /*
+     *@@ EVENT_CHANGEDIR:
+     *      uses EVENTBUF_FILENAME.
+     */
+
+    #define EVENT_CHANGEDIR             12
+
+    /*
+     *@@ EVENT_REMOVEDIR:
+     *      uses EVENTBUF_FILENAME.
+     */
+
+    #define EVENT_REMOVEDIR             13
 
     /* ******************************************************************
      *

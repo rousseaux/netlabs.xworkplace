@@ -10,7 +10,8 @@
  */
 
 /*
- *      Copyright (C) 2001-2002 Ulrich M”ller.
+ *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -230,7 +231,6 @@ PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
 PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
-PNLSDATETIME pnlsDateTime = NULL;
 PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
@@ -264,7 +264,6 @@ static const RESOLVEFUNCTION G_aImports[] =
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
-        "nlsDateTime", (PFN*)&pnlsDateTime,
         "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,

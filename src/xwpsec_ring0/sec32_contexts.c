@@ -1,11 +1,14 @@
 
 /*
- *@@sourcefile util_sem.c:
+ *@@sourcefile sec32_contexts.c:
  *      security contexts implementation.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -54,6 +57,9 @@ extern PLOGBUF  G_pLogFirst = NULL,     // ptr to first log buffer in linklist
                 G_pLogLast = NULL;      // ptr to last log buffer in linklist
 
 extern ULONG    G_cLogBufs = 0;         // no. of log buffers currently allocated
+
+extern ULONG    G_idLogBufNext = 0,     // global log buf ID (counter)
+                G_idEventNext = 0;      // global event ID (counter)
 
 extern BYTE     G_bLog = LOG_INACTIVE;
 
@@ -182,49 +188,36 @@ extern ULONG    G_idLogBlock = 0;       // if != 0, the blockid that the logging
  */
 
 /*
- *@@ CreateLogBuffer:
+ *@@ AllocLogBuffer:
+ *      allocates and initializes a new LOGBUF
+ *      as fixed kernel memory.
  *
- *@@added V1.0.1 (2003-01-10) [umoeller]
+ *      I'm not sure whether VMAlloc can block,
+ *      so I guess it's a good idea for the
+ *      caller to be reentrant.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
-PLOGBUF CreateLogBuffer(VOID)
+PLOGBUF AllocLogBuffer(VOID)
 {
-    PLOGBUF pBuf = utilAllocFixed(LOGBUFSIZE);    // 64K
+    PLOGBUF pBuf;
 
-    pBuf->cbUsed = sizeof(LOGBUF);
-    pBuf->pNext = NULL;
-    pBuf->cLogEntries = 0;
+    if (pBuf = utilAllocFixed(LOGBUFSIZE))    // 64K
+    {
+        pBuf->cbUsed = sizeof(LOGBUF);
+        pBuf->pNext = NULL;
+        pBuf->idLogBuf = G_idLogBufNext++;
+        pBuf->cLogEntries = 0;
 
-    // update global ring-0 status
-    ++(G_R0Status.cLogBufs);
+        // update global ring-0 status
+        ++(G_R0Status.cLogBufs);
 
-    if (G_R0Status.cLogBufs > G_R0Status.cMaxLogBufs)
-        G_R0Status.cMaxLogBufs = G_R0Status.cLogBufs;
+        if (G_R0Status.cLogBufs > G_R0Status.cMaxLogBufs)
+            G_R0Status.cMaxLogBufs = G_R0Status.cLogBufs;
+    }
 
     return pBuf;
-}
-
-/*
- *@@ RunLoggerThread:
- *
- *@@added V1.0.1 (2003-01-10) [umoeller]
- */
-
-VOID RunLoggerThread(VOID)
-{
-    // unblock ring-3 thread, if blocked
-    if (G_idLogBlock)
-    {
-        DevHlp32_ProcRun(G_idLogBlock);
-
-        // do this only once; we may end up with
-        // another event to log even before the
-        // logger thread gets a chance to run,
-        // but it will run eventually, and will
-        // take all the data that has piled up
-        // until then
-        // G_idLogBlock = 0;
-    }
 }
 
 /*
@@ -252,15 +245,24 @@ VOID RunLoggerThread(VOID)
  *      into the buffer. However, the cbData passed in to
  *      this function needs to be the size of the entire
  *      _variable_ data so we can reserve memory correctly
- *      in here.
+ *      already in here.
  *
  *      Preconditions:
+ *
+ *      --  Call this only if G_bLog == LOG_ACTIVE or
+ *          we'll leak memory.
  *
  *      --  DevHlp32_GetInfoSegs _must_ have been called
  *          beforehand so that the global "local infoseg"
  *          ptr is valid.
  *
- *@@added V1.0.1 (2003-01-10) [umoeller]
+ *      --  This possibly allocates a new logging buffer
+ *          via VMAlloc, so I guess this can block. As
+ *          a result, the caller must be reentrant and
+ *          not rely on static data before and after this
+ *          call.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
@@ -278,7 +280,7 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
         // set it as the first and last
         G_pLogFirst
         = G_pLogLast
-        = CreateLogBuffer();
+        = AllocLogBuffer();
     }
     else
     {
@@ -287,7 +289,7 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
         if (G_pLogLast->cbUsed + cbLogEntry >= LOGBUFSIZE)      // 64K
         {
             // no: allocate a new one
-            G_pLogLast->pNext = CreateLogBuffer();
+            G_pLogLast->pNext = AllocLogBuffer();
             // and set this as the last buffer
             G_pLogLast = G_pLogLast->pNext;
 
@@ -298,18 +300,17 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
     if (!G_pLogLast)
         // error allocating memory:
         // stop logging globally!
-        G_bLog = LOG_ERROR;
+        ctxtStopLogging();
     else
     {
         // determine target address of new EVENTLOGENTRY in LOGBUF
         PEVENTLOGENTRY pEntry = (PEVENTLOGENTRY)((PBYTE)G_pLogLast + G_pLogLast->cbUsed);
-        // event-specific data follows right after
-        PBYTE pbCopyTo = (PBYTE)pEntry + sizeof(EVENTLOGENTRY);
 
         // 1) fill fixed EVENTLOGENTRY struct
 
         pEntry->cbStruct = cbLogEntry;
         pEntry->ulEventCode = ulEventCode;
+        pEntry->idEvent = G_idEventNext++;      // global counter
 
         // copy the first 16 bytes from local infoseg
         // into log entry (these match our CONTEXTINFO
@@ -326,7 +327,7 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
                sizeof(TIMESTAMP));
 
         // 2) return ptr to event-specific data
-        pvReturn = pbCopyTo;
+        pvReturn = (PBYTE)pEntry + sizeof(EVENTLOGENTRY);
 
         // update the current LOGBUF
         G_pLogLast->cbUsed += cbLogEntry;
@@ -334,10 +335,11 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
 
         // update global ring-0 status
         ++(G_R0Status.cLogged);
-    }
 
-    // unblock ring-3 thread if necessary
-    RunLoggerThread();
+        // unblock ring-3 thread, if blocked
+        if (G_idLogBlock)
+            DevHlp32_ProcRun(G_idLogBlock);
+    }
 
     return pvReturn;
 }
@@ -349,7 +351,8 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
  *      remaining buffers, we must explicitly unblock the
  *      ring-3 thread or we'll end up with a zombie shell.
  *
- *@@added V1.0.1 (2003-01-10) [umoeller]
+ *      Context: "close" request packet from XWPShell,
+ *      or XWPShell ring-3 logging thread.
  */
 
 VOID ctxtStopLogging(VOID)
@@ -373,8 +376,12 @@ VOID ctxtStopLogging(VOID)
     G_bLog = LOG_ERROR;
 
     // force running the logger thread
-    // or we'll have a zombie
-    DevHlp32_ProcRun(G_idLogBlock);
+    // or we'll have a zombie XWPSHELL;
+    // we MUST check G_idLogBlock because
+    // we also get called from ctxtFillLogBuf()
+    // on errors, when G_idLogBlock is already null
+    if (G_idLogBlock)
+        DevHlp32_ProcRun(G_idLogBlock);
 }
 
 /*
@@ -401,7 +408,9 @@ VOID ctxtStopLogging(VOID)
  *
  *      3)  In any case, we return with logging data.
  *
- *@@added V1.0.1 (2003-01-10) [umoeller]
+ *      Context: XWPSECIO_GETLOGBUF ioctl request packet
+ *      from XWPShell only, that is, the ring-3 logging
+ *      thread.
  */
 
 IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to ring-3 mem from ioctl
@@ -451,39 +460,52 @@ IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to r
     // so reset global blockid
     G_idLogBlock = 0;
 
-    if (!rc)
+    // the logging memory _might_ have been freed
+    // if the driver was closed from XWPShell via
+    // ctxtStopLogging(), so check again if we
+    // really have memory
+    if (    (!rc)
+         && (G_pLogFirst)
+         && (G_bLog == LOG_ACTIVE)
+       )
     {
-        // the logging memory _might_ have been freed
-        // if the driver was closed from XWPShell via
-        // ctxtStopLogging(), so check again if we
-        // really have memory
-        if (    (!G_pLogFirst)
-             || (G_bLog != LOG_ACTIVE)
-           )
-            rc = ERROR_I24_CHAR_CALL_INTERRUPTED;
-        else
-        {
-            // we have logging data:
-            // backup "first" pointer
-            PLOGBUF pFirst = G_pLogFirst;
+        PLOGBUF     pFirst;
 
-            memcpy(pLogBufR3,
-                   G_pLogFirst,
-                   G_pLogFirst->cbUsed);
+        // buffer status:
+        //                                   º case 1: only one buf   º case 2: two bufs       º case 3: four bufs
+        //                                   º         G_pLogFirst    º         G_pLogFirst    º         G_pLogFirst
+        //                                   º         ³   G_pLogLast º         ³   G_pLogLast º         ³   G_pLogLast
+        //                                   º         ³   ³   pFirst º         ³   ³   pFirst º         ³   ³   pFirst
+        //                                   º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+        //                                   º         B1  B1  ?      º         B1  B2  ?      º         B1  B4  ?
+        // we have logging data:             º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+        memcpy(pLogBufR3,              //    º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+               G_pLogFirst,            //    º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+               G_pLogFirst->cbUsed);   //    º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+                                       //    º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+        // unlink this record                º         ³   ³   ³      º         ³   ³   ³      º         ³   ³   ³
+        pFirst = G_pLogFirst;          //    º         ³   ³   B1     º         ³   ³   B1     º         ³   ³   B1
+                                       //    º         ³   ³          º         ³   ³          º         ³   ³
+        if (pFirst == G_pLogLast)      //    º yes:    ³   ³          º no      ³   ³          º no      ³   ³
+            // we only had one buffer:       º         ³   ³          º         ³   ³          º         ³   ³
+            // unset last                    º         ³   ³          º         ³   ³          º         ³   ³
+            G_pLogLast = NULL;         //    º         ³   NUL        º         ³   ³          º         ³   ³
+                                       //    º         ³   ³          º         ³   ³          º         ³   ³
+        G_pLogFirst = G_pLogFirst->pNext; // º         NUL ³          º         ³   ³          º         ³   ³
+            // will be NULL if this was last º         ³   ³          º         B2  ³          º         B2  ³
+                                       //    º         ³   ³          º         ³   ³          º         ³   ³
+        utilFreeFixed(pFirst,          //    º         ³   ³          º         ³   ³          º         ³   ³
+                      LOGBUFSIZE);  // 64K   º         ³   ³          º         ³   ³          º         ³   ³
+        --(G_R0Status.cLogBufs);       //    º         ³   ³          º         ³   ³          º         ³   ³
+    }                                  // final:       NUL NUL        º         B2  B2         º         B2  B4
+    else
+    {
+        // to be safe, free all buffers
+        // if we had an error (this won't call
+        // ProcRun since the blockid is null)
+        ctxtStopLogging();
 
-            // unlink this record
-            if (G_pLogFirst == G_pLogLast)
-                // we only had one buffer: unset last
-                G_pLogLast = NULL;
-
-            G_pLogFirst = G_pLogFirst->pNext;       // will be NULL if this was last
-
-            utilFreeFixed(pFirst,
-                          LOGBUFSIZE);     // 64K
-            --(G_R0Status.cLogBufs);
-
-            G_idLogBlock = 0;
-        }
+        rc = ERROR_I24_CHAR_CALL_INTERRUPTED;
     }
 
     return rc;

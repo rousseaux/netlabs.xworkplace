@@ -42,7 +42,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1892,31 +1893,32 @@ STATIC ULONG GetDivisor(CHAR c,
  *      this call.
  *
  *@@added V0.9.11 (2001-04-22) [umoeller]
+ *@@changed V1.0.1 (2003-01-17) [umoeller]: now using PCOUNTRYSETTINGS2
  */
 
 STATIC VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
                               ULONG ulDivisor,         // in: divisor from GetDivisor()
                               double dbl,              // in: value to format
-                              PCOUNTRYSETTINGS pcs)    // in: country settings for formatting
+                              PCOUNTRYSETTINGS2 pcs)    // in: country settings for formatting
 {
     switch (ulDivisor)
     {
         case -1:
             stbVar1000Double(pszBuf,
                              dbl,
-                             pcs->cThousands);
+                             pcs->cs.cThousands);
         break;
 
         case -2:
             stbVar1024Double(pszBuf,
                              dbl,
-                             pcs->cThousands);
+                             pcs->cs.cThousands);
         break;
 
         case 1:     // no division needed, avoid the calc below
             nlsThousandsDouble(pszBuf,
                                dbl,
-                               pcs->cThousands);
+                               pcs->cs.cThousands);
         break;
 
         case 0:     // GetDivisor() has detected a syntax error,
@@ -1929,7 +1931,7 @@ STATIC VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
             double dValue = (dbl + (ulDivisor / 2)) / ulDivisor;
             nlsThousandsDouble(pszBuf,
                                 dValue,
-                                pcs->cThousands);
+                                pcs->cs.cThousands);
         }
         break;
     }
@@ -2012,11 +2014,12 @@ STATIC BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $L mnemonic for disk label
  *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed missing SOMFree
+ *@@changed V1.0.1 (2003-01-17) [umoeller]: now using PCOUNTRYSETTINGS2
  */
 
 ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                                   PXSTRING pstrText,       // in/out: status bar text
-                                  PCOUNTRYSETTINGS pcs)    // in: country settings
+                                  PCOUNTRYSETTINGS2 pcs)    // in: country settings
 {
     ULONG       ulrc = 0;
     CHAR        szTemp[300];        // must be at least CCHMAXPATH!
@@ -2310,9 +2313,8 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
             _wpQueryDateInfo(pObject, &ffbuf4);
             fBufLoaded = TRUE;
             nlsFileDate(szTemp,
-                         &(ffbuf4.fdateLastWrite),
-                         pcs->ulDateFormat,
-                         pcs->cDateSep);
+                         &ffbuf4.fdateLastWrite,
+                         pcs);
             xstrrpl(pstrText,
                     // ofs of first char to replace:
                     (p - pstrText->psz),
@@ -2330,9 +2332,8 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
             if (!fBufLoaded)
                 _wpQueryDateInfo(pObject, &ffbuf4);
             nlsFileTime(szTemp,
-                         &(ffbuf4.ftimeLastWrite),
-                         pcs->ulTimeFormat,
-                         pcs->cTimeSep);
+                         &ffbuf4.ftimeLastWrite,
+                         pcs);
             xstrrpl(pstrText,
                     // ofs of first char to replace:
                     (p - pstrText->psz),
@@ -2590,12 +2591,13 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
  *      format to use (see GetDivisor).
  *
  *@@added V0.9.19 (2002-06-02) [umoeller]
+ *@@changed V1.0.1 (2003-01-17) [umoeller]: now using PCOUNTRYSETTINGS2
  */
 
 STATIC VOID ReplaceKeyWithDouble(XSTRING *pstrText, // in/out: status bar text
                                  PCSZ pcszKey,      // in: two-character key to search for
                                  double dValue,     // in: value to replace three chars with
-                                 PCOUNTRYSETTINGS pcs)  // in: country settings for formatting
+                                 PCOUNTRYSETTINGS2 pcs)  // in: country settings for formatting
 {
     CHAR        szTemp[300];
     PSZ         p = pstrText->psz;
@@ -2745,7 +2747,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     PMINIRECORDCORE prec;
 
     // get country settings from "Country" object
-    PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
+    PCOUNTRYSETTINGS2 pcs = cmnQueryCountrySettings(FALSE);
     CHAR        szTemp[300];
 
     xstrInit(&strText, 300);

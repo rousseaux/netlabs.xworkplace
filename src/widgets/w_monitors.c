@@ -29,7 +29,8 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -270,7 +271,7 @@ PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
 PKRNQUERYDAEMONOBJECT pkrnQueryDaemonObject = NULL;
 
-PNLSDATETIME pnlsDateTime = NULL;
+PNLSDATETIME2 pnlsDateTime2 = NULL;
 PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
@@ -314,7 +315,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
         "krnQueryDaemonObject", (PFN*)&pkrnQueryDaemonObject,
-        "nlsDateTime", (PFN*)&pnlsDateTime,
+        "nlsDateTime2", (PFN*)&pnlsDateTime2,
         "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
@@ -1003,17 +1004,14 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         case MWGT_DATE:
                         case MWGT_TIME:
                         {
-                             PCOUNTRYSETTINGS pCountrySettings
-                                 = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+                             PCOUNTRYSETTINGS2 pCountrySettings
+                                 = (PCOUNTRYSETTINGS2)pWidget->pGlobals->pCountrySettings;
                              DATETIME dt;
                              DosGetDateTime(&dt);
-                             pnlsDateTime(pPrivate->szDateTime,
+                             pnlsDateTime2(pPrivate->szDateTime,
                                            NULL,
                                            &dt,
-                                           pCountrySettings->ulDateFormat,
-                                           pCountrySettings->cDateSep,
-                                           pCountrySettings->ulTimeFormat,
-                                           pCountrySettings->cTimeSep);
+                                           pCountrySettings);
 
                             pttt->pszText = pPrivate->szDateTime;
                         }
@@ -1107,7 +1105,7 @@ LONG CalcHatchCol(LONG lcolBackground,
 
 VOID RefreshDiskfreeBitmap(HWND hwnd,
                            PMONITORPRIVATE pPrivate,
-                           PCOUNTRYSETTINGS pCountrySettings,
+                           PCOUNTRYSETTINGS2 pCountrySettings,
                            PRECTL prclWin,          // exclusive!
                            HPS hpsWin,
                            BOOL fPaintAll)
@@ -1246,7 +1244,7 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
                                              // free KB:
                                              pnlsThousandsULong(szTemp3,
                                                                  (l + 512) / 1024,
-                                                                 pCountrySettings->cThousands));
+                                                                 pCountrySettings->cs.cThousands));
                             }
                             else
                                 // error:
@@ -1406,8 +1404,8 @@ VOID MwgtPaint2(HWND hwnd,
 
     // country settings from XCenter globals
     // (what a pointer)
-    PCOUNTRYSETTINGS pCountrySettings
-        = (PCOUNTRYSETTINGS)pPrivate->pWidget->pGlobals->pCountrySettings;
+    PCOUNTRYSETTINGS2 pCountrySettings
+        = (PCOUNTRYSETTINGS2)pPrivate->pWidget->pGlobals->pCountrySettings;
 
     // now paint button frame
     WinQueryWindowRect(hwnd, &rclWin);
@@ -1449,13 +1447,10 @@ VOID MwgtPaint2(HWND hwnd,
             DATETIME    DateTime;
 
             DosGetDateTime(&DateTime);
-            pnlsDateTime((pPrivate->ulType == MWGT_DATE) ? szPaint : NULL,
+            pnlsDateTime2((pPrivate->ulType == MWGT_DATE) ? szPaint : NULL,
                           (pPrivate->ulType == MWGT_TIME) ? szPaint : NULL,
                           &DateTime,
-                          pCountrySettings->ulDateFormat,
-                          pCountrySettings->cDateSep,
-                          pCountrySettings->ulTimeFormat,
-                          pCountrySettings->cTimeSep);
+                          pCountrySettings);
         }
         break;
 
@@ -1472,7 +1467,7 @@ VOID MwgtPaint2(HWND hwnd,
             {
                 pnlsThousandsULong(szPaint,
                                     ulMem / 1024,
-                                    pCountrySettings->cThousands);
+                                    pCountrySettings->cs.cThousands);
                 strcat(szPaint, " KB");
             }
             else

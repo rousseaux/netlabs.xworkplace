@@ -8,7 +8,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2002 Ulrich M”ller.
+ *      Copyright (C) 1999-2003 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
  *
  *      This program is free software; you can redistribute it and/or modify

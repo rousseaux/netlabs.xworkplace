@@ -1,11 +1,13 @@
 
 /*
- *@@sourcefile util_sem.c:
- *      semaphore utilities.
+ *@@sourcefile util_misc.c:
+ *      various utility functions.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -54,7 +56,7 @@ extern RING0STATUS  G_R0Status;     // in strat_ioctl.c
 
 /*
  *@@ utilAllocFixed:
- *      allocates a chunk of fixed memory.
+ *      allocates a chunk of fixed kernel memory.
  *
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */

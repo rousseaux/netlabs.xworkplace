@@ -2,12 +2,15 @@
 /*
  *@@sourcefile callb_delete.c:
  *      SES kernel hook code.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -51,6 +54,8 @@
  *      This is a "pre" event. Required privileges:
  *
  *      -- XWPACCESS_DELETE on the file.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG DELETE_PRE(PSZ pszPath)
@@ -94,6 +99,8 @@ ULONG DELETE_PRE(PSZ pszPath)
  *      As with all our hooks, this is stored in G_SecurityHooks
  *      (sec32_callbacks.c) force the OS/2 kernel to call us for
  *      each such event.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 VOID DELETE_POST(PSZ pszPath,

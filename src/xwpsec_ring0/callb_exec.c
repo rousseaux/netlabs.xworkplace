@@ -2,12 +2,15 @@
 /*
  *@@sourcefile callb_exec.c:
  *      SES kernel hook code.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -54,30 +57,38 @@
  *
  *      LOADEROPEN always receives a fully qualified pathname.
  *
- *      --  For EXE files, we get this sequence on the EXE file:
+ *      --  For EXE files, we get this sequence for the EXE file,
+ *          running in the context of the thread that is running
+ *          DosExecPgm:
  *
  *          1)  OPEN_PRE, OPEN_POST
  *          2)  LOADEROPEN
  *          3)  GETMODULE
- *          4) EXEC_PRE, EXEC_POST
+ *          4)  EXEC_PRE, EXEC_POST (which returns the new PID)
  *
- *      --  For unqualified DLL names that have not yet been loader,
+ *      --  For unqualified DLL names that have not yet been loaded,
  *          we get:
  *
  *          1)  GETMODULE short name
  *          2)  OPEN_PRE, OPEN_POST with the long name for every
  *              directory along the LIBPATH
- *          3)  LOADEROPEN
+ *          3)  LOADEROPEN with the long name that was found
  *
  *      --  For unqualified DLL names that are already loaded, we get:
  *
- *          1)  GETMODULE
+ *          1)  GETMODULE short name
+ *
+ *          only. @@todo How do we authenticate this? We can
+ *          presume that this module is already loaded, and we
+ *          must check the full file's permissions!
  *
  *      --  For fully qualified DLL names, we get:
  *
  *          1)  GETMODULE full name
  *          2)  OPEN_PRE, OPEN_POST with the full name
  *          3)  LOADEROPEN
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG LOADEROPEN(PSZ pszPath,
@@ -136,6 +147,8 @@ ULONG LOADEROPEN(PSZ pszPath,
  *      the current task is allowed to see the module. @@todo
  *      How do we figure out the access rights if the module
  *      name is _not_ fully qualified?
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG GETMODULE(PSZ pszPath)
@@ -185,6 +198,8 @@ ULONG GETMODULE(PSZ pszPath)
  *      Required privileges:
  *
  *      --  XWPACCESS_EXEC on the executable.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG EXECPGM(PSZ pszPath,
@@ -233,6 +248,8 @@ ULONG EXECPGM(PSZ pszPath,
  *      As with all our hooks, this is stored in G_SecurityHooks
  *      (sec32_callbacks.c) force the OS/2 kernel to call us for
  *      each such event.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 VOID EXECPGM_POST(PSZ pszPath,

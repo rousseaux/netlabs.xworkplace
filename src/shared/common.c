@@ -25,7 +25,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -194,7 +195,7 @@ static HPOINTER         G_hptrDlgIcon = NULLHANDLE;
             // XWP icon for message boxes and stuff
             // V0.9.16 (2001-11-10) [umoeller]
 
-static COUNTRYSETTINGS  G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
+static COUNTRYSETTINGS2 G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
 static BOOL             G_fCountrySettingsLoaded = FALSE;
 
 static ULONG            G_ulCurHelpPanel = 0;      // holds help panel for dialog
@@ -5080,7 +5081,7 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
  *@@added V0.9.6 (2000-11-12) [umoeller]
  */
 
-PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
+PCOUNTRYSETTINGS2 cmnQueryCountrySettings(BOOL fReload)
 {
     if ((!G_fCountrySettingsLoaded) || (fReload))
     {
@@ -5101,8 +5102,8 @@ PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
 
 CHAR cmnQueryThousandsSeparator(VOID)
 {
-    PCOUNTRYSETTINGS p = cmnQueryCountrySettings(FALSE);
-    return p->cThousands;
+    PCOUNTRYSETTINGS2 p = cmnQueryCountrySettings(FALSE);
+    return p->cs.cThousands;
 }
 
 /*

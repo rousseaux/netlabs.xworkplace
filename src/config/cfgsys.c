@@ -25,7 +25,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -2372,7 +2373,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
  */
 
 VOID cfgConfigTimer(PNOTEBOOKPAGE pnbp,
-                     ULONG ulTimer)
+                    ULONG ulTimer)
 {
     CHAR szTemp[50];
 

@@ -16,7 +16,8 @@
  */
 
 /*
- *      Copyright (C) 2001-2002 Ulrich M”ller.
+ *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -309,6 +310,8 @@
                                 // current split operation mode
                                 // (SPLIT_* flags)
 
+            HAB             habGUI;             // anchor block of GUI thread
+
             // window hierarchy
             HWND            hwndMainFrame,
                             hwndMainControl;    // child of hwndMainFrame
@@ -321,12 +324,12 @@
             HWND            hwndFilesFrame;     // child of hwndSplitWindow
             CNRVIEW         cvFiles;            // hwndCnr is child of hwndFilesFrame
 
-            HWND            hwndStatusBar,      // if present, or NULLHANDLE
-                            hwndToolBar;        // if present, or NULLHANDLE
+            XFRAMECONTROLS  xfc;                // extended frame struct (cctl_xframe.c)
 
-            HAB             habGUI;             // anchor block of GUI thread
-
-            LONG            lToolBarHeight;
+            // HWND            hwndStatusBar,      // if present, or NULLHANDLE
+            //                 hwndToolBar;        // if present, or NULLHANDLE
+            // LONG            lToolBarHeight;
+            //          these three are in XFRAMECONTROLS now
 
             // data for tree view (left)
             PSUBCLFOLDERVIEW psfvTree;
@@ -422,6 +425,7 @@
                                  WPFolder *pRootsFolder,
                                  PSPLITCONTROLLER pctl,
                                  ULONG flFrame,
+                                 PFNWP pfnwpSubclass,
                                  PCSZ pcszTitle,
                                  ULONG flSplit,
                                  PCSZ pcszFileMask,

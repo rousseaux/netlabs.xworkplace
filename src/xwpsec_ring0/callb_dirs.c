@@ -2,12 +2,15 @@
 /*
  *@@sourcefile callb_move.c:
  *      SES kernel hook code.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -45,10 +48,36 @@
  *      Required privileges:
  *
  *      --  XWPACCESS_CREATE on the directory.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG MAKEDIR(PSZ pszPath)
 {
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_MAKEDIR,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
+
     return NO_ERROR;
 }
 
@@ -63,10 +92,36 @@ ULONG MAKEDIR(PSZ pszPath)
  *      Required privileges:
  *
  *      --  XWPACCESS_EXEC on the directory.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG CHANGEDIR(PSZ pszPath)
 {
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_CHANGEDIR,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
+
     return NO_ERROR;
 }
 
@@ -81,10 +136,36 @@ ULONG CHANGEDIR(PSZ pszPath)
  *      Required privileges:
  *
  *      --  XWPACCESS_DELETE on the directory.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 ULONG REMOVEDIR(PSZ pszPath)
 {
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_REMOVEDIR,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
+
     return NO_ERROR;
 }
 

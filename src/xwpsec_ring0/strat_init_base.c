@@ -2,12 +2,80 @@
 /*
  *@@sourcefile strat_init_base.c:
  *      PDD "init_base" strategy routine.
+ *
+ *      XWPSEC32.SYS is a base (!) device driver that implements
+ *      local security together with the XWorkplace "security
+ *      shell", XWPSHELL.EXE.
+ *
+ *      Installation:
+ *
+ *      1)  Copy XWPSEC32.SYS to \OS2\BOOT.
+ *
+ *      2)  Add the following line to CONFIG.SYS:
+ *
+ +          BASEDEV=XWPSEC32.SYS
+ *
+ *      Installation of SES is _not_ required.
+ *
+ *      The way this works is that on init, this driver exports
+ *      a table of security callouts to the OS/2 kernel which
+ *      causes the kernel to call the driver for a number of
+ *      security-sensitve events, such as "open", "delete",
+ *      "execute program" and so on. This is done in sec32_init_base().
+ *
+ *      Structure of the driver:
+ *
+ *      --  sec32_strategy.c contains our strategy routing table.
+ *          This gets called from the 16-bit strategy stub in
+ *          sec32_start.asm and routes the regular OS/2 request
+ *          packets for "init", "open driver", "ioctl", and "close
+ *          driver" to our 32-bit C implementations.
+ *
+ *          See strat_ioctl.c for an introduction to the driver's
+ *          ioctl interface.
+ *
+ *      --  sec32_callbacks.c contains our security callouts
+ *          table that is passed to the OS/2 kernel on init.
+ *          There we store the various callouts we implement
+ *          in the callb_*.c files, e.g. the OPEN_PRE() callout.
+ *          These callouts are 32-bit so no thunking is required.
+ *
+ *          There are two classes of callouts:
+ *
+ *          1)  "pre" callouts allow a security driver to
+ *              authorize an event. For example, the driver
+ *              can return ERROR_ACCESS_DENIED for an OPEN_PRE
+ *              event.
+ *
+ *          2)  "post" callouts notify the driver of the
+ *              completion of an event. These usually have no
+ *              return code. For example, OPEN_POST notifies the
+ *              driver of whether an open request succeeded.
+ *              Some of those notifications are critical to the
+ *              driver's operations. For example, the driver gets
+ *              notifified of process creation via the
+ *              EXECPGM_POST call.
+ *
+ *          Note that we do nothing in these callouts unless
+ *          XWPShell has the driver currently open. See
+ *          XWPSECIO_REGISTER for details.
+ *
+ *      Contexts in which the driver runs:
+ *
+ *      --  The callb_*.c callouts get called in possibly any
+ *          task context of the system -- whenever some ring-3
+ *          thread calls a Dos* API that is hooked.
+ *
+ *      --  The open/ioctl/close request packets will only
+ *          work for a single process, which, per definition,
+ *          is the XWorkplace security shell (XWPSHELL.EXE).
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -84,7 +152,7 @@ void *G_TKSSBase;                   // in sec32_pre_init_base.asm
 
 char    G_szBanner[] =
     "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
-    "(C) Copyright 2000-2002 Ulrich M”ller\r\n";
+    "(C) Copyright 2000-2003 Ulrich M”ller\r\n";
 
 char    G_szNoSES[] = "XWPSEC32.SYS: Error initializing kernel security hooks!\r\n";
 
@@ -105,6 +173,8 @@ PTR16   DevHelp2;
  *      and code segments into physical memory.
  *
  *      Returns NO_ERROR or error code.
+ *
+ *      Context: "init" request, ring 0.
  */
 
 int FixMemory(void)
@@ -142,6 +212,8 @@ int FixMemory(void)
  *@@ InitSecurity:
  *      interfaces SES to pass our kernel hooks and
  *      get the security helpers.
+ *
+ *      Context: "init" request, ring 0.
  */
 
 int InitSecurity(VOID)
@@ -192,6 +264,8 @@ int InitSecurity(VOID)
  *
  *      3. Attach to SES's sesdd32.sys and call its IDC entry point to
  *         retrieve 32 bits sesdd32.sys's SecHlp entry points.
+ *
+ *      Context: "init" request, ring 0.
  */
 
 int sec32_init_base(PTR16 reqpkt)
@@ -202,7 +276,7 @@ int sec32_init_base(PTR16 reqpkt)
     struct reqpkt_init      *pRequest;
     struct ddd32_parm_list  *pCmd;
 
-    // run assembler init code to make DevHelp32 and __StackToFlag
+    // run assembler init code to make DevHelp32 and __StackToFlat
     // work (sec32_pre_init_base.asm)
     if (rc = sec32_pre_init_base(reqpkt))
         // error in assembler drv32_pre_init:

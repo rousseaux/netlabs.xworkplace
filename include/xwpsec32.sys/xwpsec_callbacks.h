@@ -82,10 +82,10 @@
      *
      ********************************************************************/
 
-    #define DEVHLP_SECURITY     0x44
-    #define DHSEC_GETEXPORT     0x48a78df8
-    #define DHSEC_SETIMPORT     0x73ae3627
-    #define DHSEC_GETINFO       0x33528882
+    // #define DEVHLP_SECURITY     0x44
+    // #define DHSEC_GETEXPORT     0x48a78df8
+    // #define DHSEC_SETIMPORT     0x73ae3627
+    // #define DHSEC_GETINFO       0x33528882
 
     #define SEC_EXPORT_MAJOR_VERSION 0x0001
     #define SEC_EXPORT_MINOR_VERSION 0x0000

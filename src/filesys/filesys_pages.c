@@ -15,7 +15,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -364,22 +365,20 @@ STATIC VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
                            ULONG idTime,           // in: dialog item ID for time string
                            PFDATE pfDate,          // in: file info
                            PFTIME pfTime,
-                           PCOUNTRYSETTINGS pcs)   // in: country settings
+                           PCOUNTRYSETTINGS2 pcs)   // in: country settings
 {
     CHAR    szTemp[100];
 
     nlsFileDate(szTemp,
                 pfDate,
-                pcs->ulDateFormat,
-                pcs->cDateSep);
+                pcs);
     WinSetDlgItemText(hwndDlg,
                       idDate,
                       szTemp);
 
     nlsFileTime(szTemp,
                 pfTime,
-                pcs->ulTimeFormat,
-                pcs->cTimeSep);
+                pcs);
     WinSetDlgItemText(hwndDlg,
                       idTime,
                       szTemp);
@@ -482,7 +481,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         // V0.9.19 (2002-04-24) [umoeller]
         HPOINTER hptrOld = winhSetWaitPointer();
 
-        PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
+        PCOUNTRYSETTINGS2 pcs = cmnQueryCountrySettings(FALSE);
 
         // get file-system object information
         // (we don't use the WPS method because the data
@@ -493,11 +492,12 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                         &fs3, sizeof(fs3));
 
         // real name
-        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_REALNAME,
-                        szFilename);
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_XSDI_FILES_REALNAME,
+                          szFilename);
 
         // file size
-        nlsThousandsULong(szTemp, fs3.cbFile, pcs->cThousands);
+        nlsThousandsULong(szTemp, fs3.cbFile, pcs->cs.cThousands);
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE, szTemp);
 
         // for folders: set work-area flag

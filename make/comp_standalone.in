@@ -2,7 +2,7 @@
 #   make\comp_standalone.in:
 #
 #       include file for nmake that defines the inference
-#       rule for compiling class object code from C files.
+#       rule for compiling standalone object code from C files.
 #       This has been put into this include file because
 #       I finally got tired of changing this rule in a
 #       dozen makefiles all the time.

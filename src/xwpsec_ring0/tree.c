@@ -4,8 +4,7 @@
  *      a copy of src\helpers\tree.c, with slight omissions
  *      to make up for ring 0.
  *
- *@@added V0.9.19 (2002-04-02) [umoeller]
- *@@header "helpers\tree.h"
+ *      See strat_init_base.c for an introduction.
  */
 
 /*

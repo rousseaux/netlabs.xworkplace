@@ -11,7 +11,8 @@
 
 /*
  *      Copyright (C) 2001 Stefan Milcke.
- *      Copyright (C) 2000-2002 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -183,7 +184,6 @@ PDRV_SPRINTF pdrv_sprintf = NULL;
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
-PNLSDATETIME pnlsDateTime = NULL;
 PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
@@ -213,7 +213,6 @@ static const RESOLVEFUNCTION G_aImports[] =
         "drv_sprintf", (PFN*)&pdrv_sprintf,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
-        "nlsDateTime", (PFN*)&pnlsDateTime,
         "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,

@@ -7,17 +7,20 @@
 ;       This is linked FIRST by the makefile to make sure it appears
 ;       at the start of the binary.
 ;
-; Copyright (C) 2000 Ulrich M”ller.
-; Based on the MWDD32.SYS example sources,
-; Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
-; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, in version 2 as it comes in the COPYING
-; file of the XWorkplace main distribution.
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
+
+;       Copyright (C) 2000-2003 Ulrich M”ller.
+;       Based on the MWDD32.SYS example sources,
+;       Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+;
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software; you can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the XWorkplace main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY; without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
 
         .386p
 
@@ -58,43 +61,49 @@ rpInitIn        ends
 ; *****************************************************
 
 DATA16 segment
-                extrn data16_end : byte
+        extrn data16_end : byte
+
         public device_header
 
 ; *****************************************************
 ; *      Device Driver Header
 ; *****************************************************
-device_header   dd -1                           ; Pointer to next driver
-;               dw 1100100110000000b            ; Device attributes
-                dw 1000100110000000b            ; Device attributes
-;                  ||||| +-+   ||||
-;                  ||||| | |   |||+------------------ is STDIN
-;                  ||||| | |   ||+------------------- is STDOUT
-;                  ||||| | |   |+-------------------- is NULL
-;                  ||||| | |   +--------------------- is CLOCK
-;                  ||||| | |
-;                  ||||| | +------------------------+ (001) OS/2
-;                  ||||| |                          | (010) DosDevIOCtl2 + SHUTDOWN
-;                  ||||| +--------------------------+ (011) Capability bit strip
-;                  |||||
-;                  ||||+----------------------------- OPEN/CLOSE (char) or Removable (blk)
-;                  |||+------------------------------ Sharing support
-;                  ||+------------------------------- non-IBM block format (block only)
-;                  |+-------------------------------- IDC capability
-;                  +--------------------------------- device type bit: 0 = block, 1 = 1
+device_header   dd -1                               ; far pointer to next driver
+                dw 1000100110000000b                ; device attributes
+;                  ³³³³³ ÃÄ´   ³³³³
+;                  ³³³³³ ³ ³   ³³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 0: is STDIN
+;                  ³³³³³ ³ ³   ³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 1: is STDOUT
+;                  ³³³³³ ³ ³   ³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 2: is NULL
+;                  ³³³³³ ³ ³   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 3: is CLOCK
+;                  ³³³³³ ³ ³
+;                  ³³³³³ ³ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂ 7-9: -- (001) OS/2
+;                  ³³³³³ ³                          ³      -- (010) DosDevIOCtl2 + SHUTDOWN
+;                  ³³³³³ ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁ      -- (011) level 3: capabilities bit strip (below)
+;                  ³³³³³
+;                  ³³³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 11:
+;                  ³³³³                               for char DDs: if 1, driver req's. open/close
+;                  ³³³³                               for block DDs: if 1, driver handles removeable media
+;                  ³³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 12: sharing support:
+;                  ³³³                                if 0, DD provides contention control itself
+;                  ³³³                                if 1, file-system sharing rules apply to the device
+;                  ³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 13: block-DDs only:
+;                  ³³                                 if 1, use BPB
+;                  ³³                                 if 0 = use media descriptor byte
+;                  ³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 14: IDC capability
+;                  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 15: device type bit: 1 = char, 0 = block
 
-                dw offset CODE16:sec32_stub_strategy; Strategy routine entry point
-                dw 0                                ; IDC routine entry point
+                dw offset CODE16:sec32_stub_strategy; 16-bit offset to strategy routine
+                dw 0                                ; 16-bit offset to IDC routine
 
-                db 'XWPSEC$ '                   ; Device name
-                db 8 dup (0)                    ; Reserved
-                dw 0000000000011011b            ; Level 3 device drive capabilities
-;                             |||||
-;                             ||||+------------------ DosDevIOCtl2 + Shutdown
-;                             |||+------------------- More than 16 MB support (char only)
-;                             ||+-------------------- Parallel port driver
-;                             |+--------------------- Adapter device driver
-;                             +---------------------- InitComplete
+                db 'XWPSEC$ '                       ; device driver name
+                db 8 dup (0)                        ; reserved
+                dw 0000000000011011b                ; capabilities bit strip (level 3 PDDs only)
+;                             ³³³³³
+;                             ³³³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 0: DosDevIOCtl2 + Shutdown
+;                             ³³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 1: char only: if set, DD supports mem above 16 MB
+;                             ³³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 2: DD supports parallel ports
+;                             ³ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 3: DD participates in ADD strategy (alternate INIT package)
+;                             ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ 4: DD supports InitComplete
                 dw 0000000000000000b
 DATA16 ends
 

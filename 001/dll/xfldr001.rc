@@ -47,8 +47,11 @@
  *      menu which disables a lot of menu items to allow you to
  *      only change strings. This is very helpful to avoid
  *      accidentally ruining the dialogs.
+ */
+
+/*
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
  *
- *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1731,6 +1734,10 @@ BEGIN
     ID_AMDI_USER_CONFIRMPASS_TXT        "Confirm password:"
     ID_AMDI_USER_GROUPS_TXT             "Groups:"
     ID_AMDI_USER_LOCALSEC_TXT           "Local security:"
+    ID_AMDI_USER_ALLOCBYTES_TXT         "Allocated bytes:"
+    ID_AMDI_USER_BUFALLOCS_TXT          "Allocated buffers:"
+    ID_AMDI_USER_EVENTS_TXT             "Kernel events:"
+    ID_AMDI_USER_AUTHORIZATIONS_TXT     "Permits/rejects:"
 
     ID_AMSI_LOCAL_USER                  "~My Account"
     ID_AMSI_ALL_USERS                   "All ~Users"

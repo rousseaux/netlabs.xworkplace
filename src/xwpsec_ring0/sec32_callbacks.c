@@ -10,12 +10,15 @@
  *      After that call, the OS/2 kernel calls the specified
  *      callbacks before certain API calls. This allows us to
  *      intercept API calls like DosOpen.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -162,13 +165,13 @@ struct SecImp_s G_SecurityHooks =
                         //      lets ISS authorize DosQueryFileInfo;
                         //      ISS may also modify parameters; this is a post-call!
 
-   0, // MAKEDIR,             // ULONG (* CallType MAKEDIR)   (PSZ pszPath);
+   MAKEDIR,             // ULONG (* CallType MAKEDIR)   (PSZ pszPath);
                         //      lets ISS authorize DosCreateDir
 
-   0, // CHANGEDIR,           // ULONG (* CallType CHANGEDIR) (PSZ pszPath);
+   CHANGEDIR,           // ULONG (* CallType CHANGEDIR) (PSZ pszPath);
                         //      lets ISS authorize DosSetCurrentDir
 
-   0, // REMOVEDIR,           // ULONG (* CallType REMOVEDIR) (PSZ pszPath);
+   REMOVEDIR,           // ULONG (* CallType REMOVEDIR) (PSZ pszPath);
                         //      lets ISS authorize DosDeleteDir
 
    0,                   // ULONG (* CallType FINDNEXT) (PFINDPARMS pParms);

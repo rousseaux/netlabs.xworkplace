@@ -33,7 +33,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1445,28 +1446,34 @@
  ********************************************************************/
 
 // all IDs changed V1.0.1 (2003-01-10) [umoeller]
-#define ID_AMDI_USER_LOCAL_GROUP        4000
-#define ID_AMDI_USER_USERNAME_TXT       4001
-#define ID_AMDI_USER_USERNAME_DATA      4002
-#define ID_AMDI_USER_USERID_TXT         4003
-#define ID_AMDI_USER_USERID_DATA        4004
-#define ID_AMDI_USER_FULLNAME_TXT       4005
-#define ID_AMDI_USER_FULLNAME_DATA      4006
-#define ID_AMDI_USER_PASS_TXT           4007
-#define ID_AMDI_USER_PASS_DATA          4008
-#define ID_AMDI_USER_CONFIRMPASS_TXT    4009
-#define ID_AMDI_USER_CONFIRMPASS_DATA   4010
-#define ID_AMDI_USER_GROUPS_TXT         4011
-#define ID_AMDI_USER_GROUPS_DATA        4012
-#define ID_AMDI_USER_LOCALSEC_TXT       4013
-#define ID_AMDI_USER_LOCALSEC_DATA      4014
-
-#define ID_AMSI_LOCAL_USER              4015
-#define ID_AMSI_ALL_USERS               4016
-#define ID_AMSI_ALL_GROUPS              4017
-
-#define ID_AMDI_F3_PERMISSIONS_TXT      4018
-#define ID_AMDI_F3_PERMISSIONS_DATA     4019
+#define ID_AMDI_USER_LOCAL_GROUP            4000
+#define ID_AMDI_USER_USERNAME_TXT           4001
+#define ID_AMDI_USER_USERNAME_DATA          4002
+#define ID_AMDI_USER_USERID_TXT             4003
+#define ID_AMDI_USER_USERID_DATA            4004
+#define ID_AMDI_USER_FULLNAME_TXT           4005
+#define ID_AMDI_USER_FULLNAME_DATA          4006
+#define ID_AMDI_USER_PASS_TXT               4007
+#define ID_AMDI_USER_PASS_DATA              4008
+#define ID_AMDI_USER_CONFIRMPASS_TXT        4009
+#define ID_AMDI_USER_CONFIRMPASS_DATA       4010
+#define ID_AMDI_USER_GROUPS_TXT             4011
+#define ID_AMDI_USER_GROUPS_DATA            4012
+#define ID_AMDI_USER_LOCALSEC_TXT           4013
+#define ID_AMDI_USER_LOCALSEC_DATA          4014
+#define ID_AMDI_USER_ALLOCBYTES_TXT         4015
+#define ID_AMDI_USER_ALLOCBYTES_DATA        4016
+#define ID_AMDI_USER_BUFALLOCS_TXT          4017
+#define ID_AMDI_USER_BUFALLOCS_DATA         4018
+#define ID_AMDI_USER_EVENTS_TXT             4019
+#define ID_AMDI_USER_EVENTS_DATA            4020
+#define ID_AMDI_USER_AUTHORIZATIONS_TXT     4021
+#define ID_AMDI_USER_AUTHORIZATIONS_DATA    4022
+#define ID_AMSI_LOCAL_USER                  4023
+#define ID_AMSI_ALL_USERS                   4024
+#define ID_AMSI_ALL_GROUPS                  4025
+#define ID_AMDI_F3_PERMISSIONS_TXT          4026
+#define ID_AMDI_F3_PERMISSIONS_DATA         4027
 
 /* ******************************************************************
  *

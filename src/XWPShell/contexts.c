@@ -9,11 +9,13 @@
  */
 
 /*
- *      Copyright (C) 2000-2002 Ulrich M”ller.
- *      This program is free software; you can redistribute it and/or modify
- *      it under the terms of the GNU General Public License as published by
- *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XWorkplace main distribution.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -244,7 +246,8 @@ ULONG CalcACLNodeSize(PACLDBTREENODE pNode,
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-APIRET LogEntry(PEVENTLOGENTRY pThis,
+APIRET LogEntry(ULONG idLogBuf,
+                PEVENTLOGENTRY pThis,
                 const char* pcszFormat,
                 ...)
 {
@@ -257,10 +260,12 @@ APIRET LogEntry(PEVENTLOGENTRY pThis,
         ULONG   ulLength;
 
         ulLength = sprintf(szTemp,
-                           "%04lX|%04lX %04d-%02d-%02d %02d:%02d:%02d ",
+                           "%04lX|%04lX %04d-%02d-%02d %02d:%02d:%02d %08lX|%08lX",
                            pThis->ctxt.pid, pThis->ctxt.tid,
                            pThis->stamp.year, pThis->stamp.month, pThis->stamp.day,
-                           pThis->stamp.hours, pThis->stamp.minutes, pThis->stamp.seconds);
+                           pThis->stamp.hours, pThis->stamp.minutes, pThis->stamp.seconds,
+                           idLogBuf,
+                           pThis->idEvent);
         if (!(arc = doshWrite(G_LogFile,
                               ulLength,
                               szTemp)))
@@ -312,7 +317,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_OPEN_PRE:
                     {
                         PEVENTBUF_OPEN pOpen = (PEVENTBUF_OPEN)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: OPEN PRE  %04lX=\"%s\" %08lX %08lX -> rc %d",
                                  ul,
                                  pOpen->SFN,
@@ -326,7 +332,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_OPEN_POST:
                     {
                         PEVENTBUF_OPEN pOpen = (PEVENTBUF_OPEN)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: OPEN POST %04lX=\"%s\" %08lX %08lX -> rc %d",
                                  ul,
                                  pOpen->SFN,
@@ -340,7 +347,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_LOADEROPEN:
                     {
                         PEVENTBUF_LOADEROPEN pFile = (PEVENTBUF_LOADEROPEN)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: LOADROPEN %04lX=\"%s\" -> rc %d",
                                  ul,
                                  pFile->SFN,
@@ -352,7 +360,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_GETMODULE:
                     {
                         PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: GETMODULE      \"%s\" -> rc %d",
                                  ul,
                                  pFile->szPath,
@@ -363,7 +372,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_EXECPGM_PRE:
                     {
                         PEVENTBUF_FILENAME pExec = (PEVENTBUF_FILENAME)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: EXEC PRE       \"%s\" -> rc %d",
                                  ul,
                                  pExec->szPath,
@@ -378,7 +388,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_EXECPGM_POST:
                     {
                         PEVENTBUF_FILENAME pExec = (PEVENTBUF_FILENAME)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: EXEC POST      \"%s\" -> pid %lX",
                                  ul,
                                  pExec->szPath,
@@ -389,7 +400,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_CLOSE:
                     {
                         PEVENTBUF_CLOSE pClose = (PEVENTBUF_CLOSE)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: CLOSE     %04lX",
                                  ul,
                                  pClose->SFN);
@@ -399,7 +411,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_DELETE_PRE:
                     {
                         PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: DEL  PRE       \"%s\" -> rc %d",
                                  ul,
                                  pFile->szPath,
@@ -410,7 +423,8 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     case EVENT_DELETE_POST:
                     {
                         PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
-                        LogEntry(pThis,
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
                                  "%04d: DEL  POST      \"%s\" -> rc %d",
                                  ul,
                                  pFile->szPath,

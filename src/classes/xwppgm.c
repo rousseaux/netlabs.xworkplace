@@ -16,7 +16,8 @@
  */
 
 /*
- *      Copyright (C) 2001-2002 Ulrich M”ller.
+ *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -726,7 +727,7 @@ STATIC BOOL ProgramIconHandler(XWPProgram *somSelf,
                             PMPF_ICONREPLACEMENTS(("exehOpen'd %s, progtype is %d (%s)",
                                                     pszExec,
                                                     ulProgType,
-                                                    appDescribeAppType(ulProgType)));
+                                                    exehDescribeProgType(ulProgType)));
 
                             if (!progFindIcon(pExec,
                                               ulProgType,
@@ -1158,7 +1159,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                 #ifdef __DEBUG__
                     PMPF_PROGRAMSTART(("[%s]: progc is %s",
                             pszTitle,
-                            appDescribeAppType(pData->ProgType.progc)));
+                            exehDescribeProgType(pData->ProgType.progc)));
                     PMPF_PROGRAMSTART(("pcszExecutable: \"%s\"", STRINGORNULL(pcszExecutable)));
                     PMPF_PROGRAMSTART(("startupdir 0x%lX", pData->ulStartupDirHandle));
                     PMPF_PROGRAMSTART(("params \"%s\"", STRINGORNULL(pData->pszParameters)));

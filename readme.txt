@@ -16,7 +16,7 @@ Last updated July 2, 2002, Ulrich M”ller
 1. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2002 Ulrich M”ller
+    Copyright (C) 1997-2003 Ulrich M”ller
                             and others (see the individual source files).
 
     This program is free software; you can redistribute it and/or modify

@@ -11,7 +11,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -79,6 +80,7 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
@@ -663,7 +665,7 @@ STATIC VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
                 // program type
                 // (moved code to helpers V0.9.16 (2001-10-06))
-                if (!(pcszTemp = appDescribeAppType(pDetails->progt.progc)))
+                if (!(pcszTemp = exehDescribeProgType(pDetails->progt.progc)))
                     pcszTemp = cmnGetString(ID_SDDI_APMVERSION); // "unknown";
 
                 sprintf(szTemp1,

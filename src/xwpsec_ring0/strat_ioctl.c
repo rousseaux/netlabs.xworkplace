@@ -4,12 +4,15 @@
  *      strategy routines for PDD "open", "ioctl", and "close"
  *      commands, plus the implementation for the various
  *      IOCtl commands supported by the driver.
+ *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -62,7 +65,7 @@ extern RING0STATUS  G_R0Status = {0};
  *      If this returns NO_ERROR, access control is ENABLED
  *      globally.
  *
- *@@added V1.0.1 (2003-01-10) [umoeller]
+ *      Context: XWPShell task time.
  */
 
 IOCTLRET ioctlRegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packet
@@ -106,7 +109,7 @@ IOCTLRET ioctlRegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to req
  *
  *      After this, access control is DISABLED.
  *
- *@@added V1.0.1 (2003-01-10) [umoeller]
+ *      Context: XWPShell task time.
  */
 
 VOID ioctlDeregisterDaemon(VOID)
@@ -137,22 +140,12 @@ VOID ioctlDeregisterDaemon(VOID)
  *      This is called from sec32_strategy() since it's stored in
  *      driver_routing_table in sec32_strategy.c.
  *
- *      The System File Number is a unique number associated with
- *      an open request. The physical device driver must perform
- *      the following actions:
+ *      We allow "open" only once at any given time, that is,
+ *      once XWPShell has opened the driver, nobody else can.
+ *      This way we do not have to perform PID/TID validation
+ *      for every ioctl that comes in.
  *
- *      --  Perform the requested function.
- *
- *      --  Set the status WORD in the request header.
- *
- *      Character device drivers can use Open/Close requests
- *      to correlate using their devices with application activity.
- *      For instance, the physical device driver can
- *      use the OPEN as an indicator to send an initialization
- *      string to its device. The physical device driver can then
- *      increase a reference count for every OPEN and decrease the
- *      reference count for every CLOSE.  When the count goes to 0,
- *      the physical device driver can flush its buffers.
+ *      Context: XWPShell task time.
  */
 
 int sec32_open(PTR16 reqpkt)
@@ -182,10 +175,10 @@ int sec32_open(PTR16 reqpkt)
  *      driver_routing_table in sec32_strategy.c.
  *
  *      Since only one process may open the driver, we can
- *      be sure it's the ring-3 daemon which does the IOCtl
- *      here. This makes sure that no other process can
- *      attempt to implement a second access control mechanism
- *      (which would be a security hole).
+ *      be sure it's XWPShell doing the IOCtl here. This makes
+ *      sure that no other process can attempt to implement a
+ *      second access control mechanism (which would be a
+ *      security hole).
  *
  *      The IOCtl request packet is:
  *
@@ -199,6 +192,8 @@ int sec32_open(PTR16 reqpkt)
  +             unsigned short parmlen;
  +             unsigned short datalen;
  +         };
+ *
+ *      Context: XWPShell task time.
  */
 
 int sec32_ioctl(PTR16 reqpkt)
@@ -290,6 +285,8 @@ int sec32_ioctl(PTR16 reqpkt)
  *      the interface for the ring-3 shell.
  *      Gets called from sec32_strategy() since it's stored in
  *      driver_routing_table in sec32_strategy.c.
+ *
+ *      Context: XWPShell task time.
  */
 
 int sec32_close(PTR16 reqpkt)

@@ -14,7 +14,8 @@
  */
 
 /*
- *      Copyright (C) 2001-2002 Ulrich M”ller.
+ *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -162,6 +163,21 @@ static const CONTROLDEF
     LocalSecData = CONTROLDEF_TEXT_WORDBREAK(
                             "A",
                             ID_AMDI_USER_LOCALSEC_DATA,
+                            RIGHT_COLUMN),
+    LocalBytesTxt = LOADDEF_TEXT(ID_AMDI_USER_ALLOCBYTES_TXT),
+    LocalBytesData = CONTROLDEF_TEXT_WORDBREAK(
+                            "A",
+                            ID_AMDI_USER_ALLOCBYTES_DATA,
+                            RIGHT_COLUMN),
+    LocalBufsTxt = LOADDEF_TEXT(ID_AMDI_USER_BUFALLOCS_TXT),
+    LocalBufsData = CONTROLDEF_TEXT_WORDBREAK(
+                            "A",
+                            ID_AMDI_USER_BUFALLOCS_DATA,
+                            RIGHT_COLUMN),
+    LocalEventsTxt = LOADDEF_TEXT(ID_AMDI_USER_EVENTS_TXT),
+    LocalEventsData = CONTROLDEF_TEXT_WORDBREAK(
+                            "A",
+                            ID_AMDI_USER_EVENTS_DATA,
                             RIGHT_COLUMN);
 
 static const DLGHITEM dlgLocalUser[] =
@@ -185,6 +201,15 @@ static const DLGHITEM dlgLocalUser[] =
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&LocalSecTxt),
                         CONTROL_DEF(&LocalSecData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalBytesTxt),
+                        CONTROL_DEF(&LocalBytesData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalBufsTxt),
+                        CONTROL_DEF(&LocalBufsData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalEventsTxt),
+                        CONTROL_DEF(&LocalEventsData),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_HelpButton),         // notebook.c
@@ -210,18 +235,12 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         APIRET      arc = NO_ERROR;
-        XWPSECSTATUS Status;
         PXWPUSERDBENTRY pLocalUser;
 
-        if (    (!(arc = xsecQueryStatus(&Status)))
-             && (!(arc = xsecQueryLocalUser(&pLocalUser)))
-           )
+        if (!(arc = xsecQueryLocalUser(&pLocalUser)))
         {
             ULONG   cGroups;
             PXWPGROUPDBENTRY paGroups;
-            CHAR    szTemp[200],
-                    szTemp2[100];
-            PCSZ    pcszTemp;
 
             WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_AMDI_USER_USERID_DATA,
@@ -233,24 +252,6 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_AMDI_USER_FULLNAME_DATA,
                               pLocalUser->User.szFullName);
-
-            if (!Status.fLocalSecurity)
-                pcszTemp = "Inactive";      // @@todo localize
-            else
-            {
-                sprintf(szTemp,
-                        "Active, %s bytes, %d/%d bufs",
-                        nlsThousandsULong(szTemp2,
-                                          Status.cbAllocated,
-                                          cmnQueryThousandsSeparator()),
-                        Status.cLogBufs,
-                        Status.cMaxLogBufs);
-                pcszTemp = szTemp;
-            }
-
-            WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_AMDI_USER_LOCALSEC_DATA,
-                              pcszTemp);
 
             if (!(arc = xsecQueryGroups(&cGroups,
                                         &paGroups)))
@@ -310,6 +311,53 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         }
     }
 }
+
+/*
+ *@@ LocalUserTimerPage:
+ *
+ *@@added V1.0.1 (2003-01-17) [umoeller]
+ */
+
+VOID LocalUserTimerPage(PNOTEBOOKPAGE pnbp,
+                        ULONG ulTimer)
+{
+    XWPSECSTATUS Status;
+    APIRET arc;
+    if (!(arc = xsecQueryStatus(&Status)))
+    {
+        CHAR    szTemp[100];
+
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_AMDI_USER_LOCALSEC_DATA,
+                          (Status.fLocalSecurity)
+                            ? "Active"          // @@todo localize
+                            : "Inactive");
+
+        nlsThousandsULong(szTemp,
+                          Status.cbAllocated,
+                          cmnQueryThousandsSeparator());
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_AMDI_USER_ALLOCBYTES_DATA,
+                          szTemp);
+
+        sprintf(szTemp,
+                "%d (%d max)",
+                Status.cLogBufs,
+                Status.cMaxLogBufs);
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_AMDI_USER_BUFALLOCS_DATA,
+                          szTemp);
+
+        nlsThousandsULong(szTemp,
+                          Status.cLogged,
+                          cmnQueryThousandsSeparator());
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_AMDI_USER_EVENTS_DATA,
+                          szTemp);
+
+    }
+
+};
 
 /* ******************************************************************
  *
@@ -1132,6 +1180,8 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
         inbp.cControlFlags = 0;
         inbp.pfncbInitPage    = LocalUserInitPage;
         inbp.pfncbItemChanged = NULL;
+        inbp.pfncbTimer = LocalUserTimerPage;
+        inbp.ulTimer = 1000;
         ulrc = ntbInsertPage(&inbp);
 
     }

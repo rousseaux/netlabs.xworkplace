@@ -7,7 +7,7 @@
  *            XFOLDER_VERSION in dlgids.h also needs to
  *            be changed.
  *
- *      Copyright (C) 1999-2002 Ulrich M”ller.
+ *      Copyright (C) 1999-2003 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING

@@ -39,7 +39,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1032,7 +1033,7 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
             // prepare file date/time etc. for
             // display in window
             FILESTATUS3         fs3;
-            PCOUNTRYSETTINGS    pcs = cmnQueryCountrySettings(FALSE);
+            PCOUNTRYSETTINGS2   pcs = cmnQueryCountrySettings(FALSE);
 
             // disable window updates for the following changes
             WinEnableWindowUpdate(hwndConfirm, FALSE);
@@ -1044,15 +1045,18 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                 DosQueryPathInfo(szExistingFilename,
                                  FIL_STANDARD,
                                  &fs3, sizeof(fs3));
-                nlsFileDate(szTemp, &(fs3.fdateLastWrite),
-                            pcs->ulDateFormat, pcs->cDateSep);
+                nlsFileDate(szTemp,
+                            &fs3.fdateLastWrite,
+                            pcs);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
-                nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
-                            pcs->ulTimeFormat, pcs->cTimeSep);
+                nlsFileTime(szTemp,
+                            &fs3.ftimeLastWrite,
+                            pcs);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
 
-                nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
-                                  pcs->cThousands);
+                nlsThousandsULong(szTemp,
+                                  fs3.cbFile, // )+512) / 1024 ,
+                                  pcs->cs.cThousands);
                 strcat(szTemp, pcszBytes);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
             }
@@ -1075,14 +1079,17 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                 DosQueryPathInfo(szSelfFilename,
                                  FIL_STANDARD,
                                  &fs3, sizeof(fs3));
-                nlsFileDate(szTemp, &(fs3.fdateLastWrite),
-                             pcs->ulDateFormat, pcs->cDateSep);
+                nlsFileDate(szTemp,
+                             &fs3.fdateLastWrite,
+                             pcs);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
-                nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
-                             pcs->ulTimeFormat, pcs->cTimeSep);
+                nlsFileTime(szTemp,
+                            &fs3.ftimeLastWrite,
+                            pcs);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
-                nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
-                                   pcs->cThousands);
+                nlsThousandsULong(szTemp,
+                                  fs3.cbFile, // )+512) / 1024,
+                                  pcs->cs.cThousands);
                 strcat(szTemp, pcszBytes);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
             }

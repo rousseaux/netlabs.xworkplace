@@ -25,7 +25,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -359,7 +360,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
     }
 
     PMPF_ASSOCS(("  End of xwpQueryProgType, returning: 0x%lX (%s)",
-                _ulAppType, appDescribeAppType(_ulAppType)));
+                _ulAppType, exehDescribeProgType(_ulAppType)));
 
     return _ulAppType;
 
@@ -902,7 +903,7 @@ STATIC BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                                       szProgramFile);
 
                     PMPF_ICONREPLACEMENTS(("  _xwpQueryProgType returned %d",
-                                appDescribeAppType(_ulAppType)));
+                                exehDescribeProgType(_ulAppType)));
 
                     if (!progFindIcon(pExec,
                                       _ulAppType,

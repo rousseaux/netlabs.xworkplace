@@ -35,7 +35,8 @@
  */
 
 /*
- *      Copyright (C) 2000-2002 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -186,7 +187,7 @@ BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                 // add PROGTYPE=, unless this is PROG_DEFAULT
                 // (moved code to helpers V0.9.16 (2001-10-06))
                 if (pDetails->progt.progc != PROG_DEFAULT)
-                    if (pcszProgString = appDescribeAppType(pDetails->progt.progc))
+                    if (pcszProgString = exehDescribeProgType(pDetails->progt.progc))
                     {
                         xstrcat(pstrSetup, "PROGTYPE=", 0);
                         xstrcat(pstrSetup, pcszProgString, 0);
@@ -546,12 +547,13 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
  *      --  PROG_DLL for all NE, LX, PE libraries
  *
  *@@added V0.9.16 (2002-01-01) [umoeller]
+ *@@changed V1.0.1 (2003-01-17) [umoeller]: extracted exehQueryProgType
  */
 
 ULONG progQueryProgType(PCSZ pszFullFile,
                         PVOID pvExec)
 {
-    ULONG           ulAppType = PROG_DEFAULT; // 0
+    ULONG           ulProgType = PROG_DEFAULT; // 0
 
     PEXECUTABLE     pExec = NULL;
     BOOL            fClose = FALSE;
@@ -559,13 +561,13 @@ ULONG progQueryProgType(PCSZ pszFullFile,
     BOOL            fCallQueryAppType = FALSE;
 
     PMPF_ASSOCS(("%s, before: 0x%lX (%s)",
-            pszFullFile, ulAppType, appDescribeAppType(ulAppType)));
+            pszFullFile, ulProgType, exehDescribeProgType(ulProgType)));
 
     TRY_LOUD(excpt1)
     {
         APIRET arc = NO_ERROR;
 
-        ulAppType = PROG_DEFAULT;
+        ulProgType = PROG_DEFAULT;
 
         if (pvExec)
             // caller gave us PEXECUTABLE:
@@ -578,95 +580,15 @@ ULONG progQueryProgType(PCSZ pszFullFile,
                 fClose = TRUE;
         }
 
-        if (arc)
+        if (    (arc)
+             || (arc = exehQueryProgType(pExec, &ulProgType))        // V1.0.1 (2003-01-17) [umoeller]
+           )
             // cannot handle this executable:
             fCallQueryAppType = TRUE;
-        else
-        {
-            // now we have the PEXECUTABLE:
-            // check what we found
-            if (pExec->fLibrary)
-                ulAppType = PROG_DLL;
-            else switch (pExec->ulOS)
-            {
-                case EXEOS_DOS3:
-                case EXEOS_DOS4:
-                    ulAppType = PROG_WINDOWEDVDM;
-                break;
-
-                case EXEOS_OS2:
-                    switch (pExec->ulExeFormat)
-                    {
-                        case EXEFORMAT_LX:
-                            switch (pExec->pLXHeader->ulFlags & E32APPMASK)
-                            {
-                                case E32PMAPI:
-                                    // _Pmpf(("  LX OS2 PM"));
-                                    ulAppType = PROG_PM;
-                                break;
-
-                                case E32PMW:
-                                    // _Pmpf(("  LX OS2 VIO"));
-                                    ulAppType = PROG_WINDOWABLEVIO;
-                                break;
-
-                                case E32NOPMW:
-                                default:
-                                    // _Pmpf(("  LX OS2 FULLSCREEN"));
-                                    ulAppType = PROG_FULLSCREEN;
-                                break;
-                            }
-                        break;
-
-                        case EXEFORMAT_NE:
-                            switch (pExec->pNEHeader->usFlags & NEAPPTYP)
-                            {
-                                case NEWINCOMPAT:
-                                    // _Pmpf(("  NE OS2 VIO"));
-                                    ulAppType = PROG_WINDOWABLEVIO;
-                                break;
-
-                                case NEWINAPI:
-                                    // _Pmpf(("  NE OS2 PM"));
-                                    ulAppType = PROG_PM;
-                                break;
-
-                                case NENOTWINCOMPAT:
-                                default:
-                                    // _Pmpf(("  NE OS2 FULLSCREEN"));
-                                    ulAppType = PROG_FULLSCREEN;
-                                break;
-                            }
-                        break;
-
-                        case EXEFORMAT_COM:
-                            ulAppType = PROG_WINDOWABLEVIO;
-                        break;
-
-                        default:
-                            // something else: let
-                            // OS/2 handle this
-                            fCallQueryAppType = TRUE;
-                    }
-                break;
-
-                case EXEOS_WIN16:
-                case EXEOS_WIN386:
-                    // _Pmpf(("  WIN16"));
-                    ulAppType = PROG_31_ENHSEAMLESSCOMMON;
-                break;
-
-                case EXEOS_WIN32_GUI:
-                case EXEOS_WIN32_CLI:
-                    // _Pmpf(("  WIN32"));
-                    ulAppType = PROG_WIN32;
-                break;
-            }
-        }
     }
     CATCH(excpt1)
     {
-        ulAppType = PROG_DEFAULT; // 0
+        ulProgType = PROG_DEFAULT; // 0
         fCallQueryAppType = FALSE;
     } END_CATCH();
 
@@ -679,14 +601,14 @@ ULONG progQueryProgType(PCSZ pszFullFile,
         // those flags
         appQueryAppType(pszFullFile,
                         &ulDosAppType,
-                        &ulAppType);
+                        &ulProgType);
     }
 
     if (fClose)
         // we opened the executable: free that again
         exehClose(&pExec);
 
-    return ulAppType;
+    return ulProgType;
 }
 
 /*
@@ -747,7 +669,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
  */
 
 APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen; ptr can be NULL
-                    ULONG ulAppType,            // in: PROG_* app type
+                    ULONG ulProgType,            // in: PROG_* app type
                     HPOINTER *phptr,            // out: if != NULL, icon handle
                     PULONG pcbIconInfo,         // out: if != NULL, size of ICONINFO buffer required
                     PICONINFO pIconInfo,        // out: if != NULL, icon info
@@ -763,12 +685,12 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen;
     {
         /* _Pmpf((__FUNCTION__ " %s: progtype %d (%s)",
                 (pExec && pExec->pFile) ? pExec->pFile->pszFilename : "NULL",
-                ulAppType,
-                appDescribeAppType(ulAppType))); */
+                ulProgType,
+                exehDescribeProgType(ulProgType))); */
 
 
         // examine the application type we have
-        switch (ulAppType)
+        switch (ulProgType)
         {
             // PM:
             case PROG_PM:
@@ -830,9 +752,9 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen;
                         *pcbIconInfo = cbRequired;
                 }
                 else
-                    if (ulAppType == PROG_PM)
+                    if (ulProgType == PROG_PM)
                         ulStdIcon = STDICON_PM; // default PM prog icon
-                    else if (ulAppType == PROG_WIN32)
+                    else if (ulProgType == PROG_WIN32)
                         ulStdIcon = STDICON_WIN32;
                     else
                         ulStdIcon = STDICON_WIN16; // default windoze

@@ -1,17 +1,22 @@
 ;
 ; sec32_devhlp32.asm:
+;       32-bit device helper functions. These allow the 16-bit
+;       DevHlp* calls to be used from 32-bit C code.
 ;
-; Copyright (C) 2000 Ulrich M”ller.
-; Based on the MWDD32.SYS example sources,
-; Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
-; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation, in version 2 as it comes in the COPYING
-; file of the XWorkplace main distribution.
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
+
+;       Copyright (C) 2000-2003 Ulrich M”ller.
+;       Based on the MWDD32.SYS example sources,
+;       Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
+;
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software; you can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the XWorkplace main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY; without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
 
         .386p
 
@@ -28,6 +33,12 @@
         include sec32_segdef.inc
         include r0thunk.inc
 
+;*********************************************************
+;
+;   Defines
+;
+;*********************************************************
+
 SAS_SIG   equ      "SAS "
 
 SAS struc
@@ -43,7 +54,7 @@ SAS struc
     SAS_info_data   dw ?            ; offset to infoseg section
 SAS ends
 
-;/* Information Segment section */
+; Information Segment section
 SAS_info_section struc
     SAS_info_global  dw ?           ; selector for global info seg
     SAS_info_local   dd ?           ; address of curtask local infoseg
@@ -299,9 +310,6 @@ DATA16 segment
     nr      dw 1
     msg_ofs dw 0
     msg_seg dw ?
-
-;    public ram_sem_1
-;    ram_sem_1   dd 0
 DATA16 ends
 
 ;*********************************************************

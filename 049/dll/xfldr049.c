@@ -6,8 +6,11 @@
  *      write a dumb function.
  *
  *      Do not change this file.
+ */
+
+/*
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
  *
- *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -18,7 +21,6 @@
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *      GNU General Public License for more details.
  */
-
 
 #include <os2.h>
 

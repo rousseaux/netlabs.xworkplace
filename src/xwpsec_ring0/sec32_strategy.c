@@ -1,13 +1,13 @@
 
 /*
  *@@sourcefile sec32_strategy.c:
- *      exports the PDD strategy routine entry points.
+ *      implements the PDD's strategy routing table.
  *
- *
+ *      See strat_init_base.c for an introduction.
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
  *      Based on the MWDD32.SYS example sources,
  *      Copyright (C) 1995, 1996, 1997  Matthieu Willm (willm@ibm.net).
  *      This program is free software; you can redistribute it and/or modify
@@ -31,6 +31,22 @@
 #include "xwpsec32.sys\reqpkt32.h"
 
 #include "xwpsec32.sys\xwpsec_callbacks.h"
+
+/*
+ *@@ sec32_invalid_command:
+ *      stub "bad command" routine for strategy request
+ *      packets that we don't support.
+ *
+ *      This is called from sec32_strategy() since it's
+ *      stored in driver_routing_table below.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
+ */
+
+int sec32_invalid_command (PTR16 reqpkt)
+{
+    return STDON + STERR + ERROR_I24_BAD_COMMAND;
+}
 
 /*
  *@@ driver_routing_table:
@@ -79,7 +95,14 @@ static int (*driver_routing_table[32])() =
 /*
  *@@ sec32_strategy:
  *      this is the 32-bit strategy entry point which
- *      gets called from sec32_stub_strategy() in sec32_start.asm.
+ *      gets called from the 16-bit sec32_stub_strategy()
+ *      in sec32_start.asm.
+ *
+ *      We end up here for every request packet that comes
+ *      in from the kernel and call our respective
+ *      implementation, if avaiable.
+ *
+ *      Context: Possibly any ring-3 thread on the system.
  */
 
 int DRV32ENTRY sec32_strategy(PTR16 reqpkt, int index)

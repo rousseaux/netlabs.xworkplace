@@ -28,7 +28,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1556,7 +1557,7 @@
      ********************************************************************/
 
     #ifdef NLS_HEADER_INCLUDED
-        PCOUNTRYSETTINGS XWPENTRY cmnQueryCountrySettings(BOOL fReload);
+        PCOUNTRYSETTINGS2 XWPENTRY cmnQueryCountrySettings(BOOL fReload);
     #endif
 
     CHAR XWPENTRY cmnQueryThousandsSeparator(VOID);

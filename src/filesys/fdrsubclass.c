@@ -96,7 +96,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1957,13 +1958,20 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_CALCFRAMERECT:
-                mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
-
-                if (psfv->hwndStatusBar)
-                    // we have a status bar: calculate its rectangle
-                    ctlCalcExtFrameRect(mp1,
-                                        mp2,
-                                        cmnQueryStatusBarHeight());
+            {
+                XFRAMECONTROLS  xfc =
+                {
+                    pfnwpOriginal,
+                    NULLHANDLE,
+                    psfv->hwndStatusBar,
+                    0,
+                    cmnQueryStatusBarHeight()
+                };
+                ctlCalcExtFrameRect(hwndFrame,
+                                    &xfc,
+                                    mp1,
+                                    mp2);
+            }
             break;
 
             /* *************************

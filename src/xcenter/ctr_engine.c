@@ -21,7 +21,8 @@
  */
 
 /*
- *      Copyright (C) 2000-2002 Ulrich M”ller.
+ *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -170,10 +171,10 @@ VOID ClientPaint2(HWND hwndClient, HPS hps);
 
 // static PXTIMERSET           G_pLastXTimerSet = NULL;
 
-static COUNTRYSETTINGS      G_CountrySettings = {0};
+static COUNTRYSETTINGS2         G_CountrySettings = {0};
 
 // widget being dragged
-static PPRIVATEWIDGETVIEW     G_pWidgetBeingDragged = NULL;
+static PPRIVATEWIDGETVIEW       G_pWidgetBeingDragged = NULL;
 
 static PWINSETDESKTOPWORKAREA   G_WinSetDesktopWorkArea = (PWINSETDESKTOPWORKAREA)-1;
 static PWINQUERYDESKTOPWORKAREA G_WinQueryDesktopWorkArea = (PWINQUERYDESKTOPWORKAREA)-1;

@@ -19,7 +19,8 @@
  */
 
 /*
- *      Copyright (C) 2001-2002 Ulrich M”ller.
+ *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -701,8 +702,6 @@ STATIC VOID BuildDisksList(WPFolder *pRootFolder,
  *
  ********************************************************************/
 
-static PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
-
 /*
  *@@ CreateControlFont:
  *
@@ -1265,106 +1264,103 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
     PFILEDLGDATA pWinData;
 
-    BOOL    fCallDefault = FALSE;
-
-    switch (msg)
+    if (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
     {
-        /*
-         * WM_WINDOWPOSCHANGED:
-         *      since we have set SPLIT_NOAUTOPOSITION, we
-         *      must manually position everything.
-         */
+        BOOL    fCallDefault = FALSE;
 
-        case WM_WINDOWPOSCHANGED:
-            mrc = G_pfnwpFiledlgFrameOrig(hwndFrame, msg, mp1, mp2);
+        switch (msg)
+        {
+            /*
+             * WM_WINDOWPOSCHANGED:
+             *      since we have set SPLIT_NOAUTOPOSITION, we
+             *      must manually position everything.
+             */
 
-            if (    (((PSWP)mp1)->fl & SWP_SIZE)
-                 && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
-               )
-            {
-                FrameRepositionControls(pWinData);
-            }
-        break;
+            case WM_WINDOWPOSCHANGED:
+                mrc = pWinData->ctl.xfc.pfnwpOrig(hwndFrame, msg, mp1, mp2);
 
-        /*
-         * WM_CONTROL:
-         *      controller wants to tell us something.
-         */
+                if (((PSWP)mp1)->fl & SWP_SIZE)
+                    FrameRepositionControls(pWinData);
+            break;
 
-        case WM_CONTROL:
-            if (    (SHORT1FROMMP(mp1) == FID_CLIENT)
-                 && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
-               )
-                mrc = FrameClientControl(hwndFrame, pWinData, mp1, mp2);
-        break;
+            /*
+             * WM_CONTROL:
+             *      controller wants to tell us something.
+             */
 
-        /*
-         * WM_COMMAND:
-         *      button pressed.
-         */
+            case WM_CONTROL:
+                if (SHORT1FROMMP(mp1) == FID_CLIENT)
+                    mrc = FrameClientControl(hwndFrame, pWinData, mp1, mp2);
+            break;
 
-        case WM_COMMAND:
-            if (    (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
-                 && (pWinData->ctl.fSplitViewReady)
-               )
-                switch ((ULONG)mp1)
-                {
-                    case DID_OK:
+            /*
+             * WM_COMMAND:
+             *      button pressed.
+             */
+
+            case WM_COMMAND:
+                if (    (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
+                     && (pWinData->ctl.fSplitViewReady)
+                   )
+                    switch ((ULONG)mp1)
                     {
-                        // "OK" is tricky... we first need to
-                        // get the thing from the entry field
-                        // and check if it contains a wildcard.
-                        // For some reason people have become
-                        // accustomed to this.
-                        PSZ pszFullFile;
-
-                        PMPF_SPLITVIEW(("DID_OK"));
-
-                        if (pszFullFile = winhQueryWindowText(pWinData->hwndFileEntry))
+                        case DID_OK:
                         {
-                            // simulate the case that the user entered
-                            // something into the entry field; if the
-                            // user double-clicked on a file, this will
-                            // dismiss the dialog, otherwise we'll expand
-                            // the tree to show the folder
-                            ParseAndUpdate(pWinData,
-                                           pszFullFile);
+                            // "OK" is tricky... we first need to
+                            // get the thing from the entry field
+                            // and check if it contains a wildcard.
+                            // For some reason people have become
+                            // accustomed to this.
+                            PSZ pszFullFile;
 
-                            free(pszFullFile);
+                            PMPF_SPLITVIEW(("DID_OK"));
+
+                            if (pszFullFile = winhQueryWindowText(pWinData->hwndFileEntry))
+                            {
+                                // simulate the case that the user entered
+                                // something into the entry field; if the
+                                // user double-clicked on a file, this will
+                                // dismiss the dialog, otherwise we'll expand
+                                // the tree to show the folder
+                                ParseAndUpdate(pWinData,
+                                               pszFullFile);
+
+                                free(pszFullFile);
+                            }
+
                         }
+                        break;
 
+                        case DID_CANCEL:
+
+                            PMPF_SPLITVIEW(("DID_CANCEL"));
+
+                            WinPostMsg(pWinData->ctl.hwndMainFrame,
+                                       WM_SYSCOMMAND,
+                                       (MPARAM)SC_CLOSE,
+                                       0);
+
+                            // PM frame proc then posts WM_CLOSE to
+                            // the client (the split controller),
+                            // which sends WM_CONTROL with SN_FRAMECLOSE
+                            // back to the frame; the main msg loop in
+                            // fdlgFileDlg detects that and exits
+                            // V1.0.0 (2002-09-13) [umoeller]
+                        break;
                     }
-                    break;
+            break;
 
-                    case DID_CANCEL:
+            case WM_CHAR:
+                mrc = FrameChar(hwndFrame, mp1, mp2);
+            break;
 
-                        PMPF_SPLITVIEW(("DID_CANCEL"));
+            default:
+                fCallDefault = TRUE;
+        }
 
-                        WinPostMsg(pWinData->ctl.hwndMainFrame,
-                                   WM_SYSCOMMAND,
-                                   (MPARAM)SC_CLOSE,
-                                   0);
-
-                        // PM frame proc then posts WM_CLOSE to
-                        // the client (the split controller),
-                        // which sends WM_CONTROL with SN_FRAMECLOSE
-                        // back to the frame; the main msg loop in
-                        // fdlgFileDlg detects that and exits
-                        // V1.0.0 (2002-09-13) [umoeller]
-                    break;
-                }
-        break;
-
-        case WM_CHAR:
-            mrc = FrameChar(hwndFrame, mp1, mp2);
-        break;
-
-        default:
-            fCallDefault = TRUE;
+        if (fCallDefault)
+            mrc = pWinData->ctl.xfc.pfnwpOrig(hwndFrame, msg, mp1, mp2);
     }
-
-    if (fCallDefault)
-        mrc = G_pfnwpFiledlgFrameOrig(hwndFrame, msg, mp1, mp2);
 
     return mrc;
 }
@@ -1530,6 +1526,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                           | FCF_MAXBUTTON
                                           | FCF_SIZEBORDER
                                           | FCF_AUTOICON,
+                                    fnwpFileDlgFrame,
                                     pcszDlgTitle,
                                     flSplit,     // SPLIT_* styles
                                     WinData.szFileMask,
@@ -1559,8 +1556,6 @@ HWND fdlgFileDlg(HWND hwndOwner,
                 WinSetWindowPtr(WinData.ctl.hwndMainFrame,
                                 QWL_USER,
                                 &WinData);
-                G_pfnwpFiledlgFrameOrig = WinSubclassWindow(WinData.ctl.hwndMainFrame,
-                                                            fnwpFileDlgFrame);
 
                 // set up types combo
                 if (pfd->papszITypeList)
