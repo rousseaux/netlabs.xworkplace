@@ -75,6 +75,7 @@
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
 #include <io.h>                 // access etc.
+#include <umalloc.h>            // user heaps
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -92,6 +93,7 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -124,9 +126,9 @@
 #include "filesys\trash.h"              // trash can implementation
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // thread infos: moved these here from KERNELGLOBALS
@@ -135,12 +137,24 @@ THREADINFO          G_tiWorkerThread,
                     G_tiSpeedyThread,
                     G_tiFileThread;
 
-// currently waiting messages for Worker thread;
-// if this gets too large, its priority will be raised
+// Worker thread -- awake objects
+HMTX                G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+TREE                *G_AwakeObjectsTree;
+LONG                G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
+Heap_t              G_AwakeObjectsHeap;                 // user heap for _ucreate
+                                                        // V0.9.9 (2001-04-04) [umoeller]
+char                G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
+
+// Worker thread -- other data
+HWND                G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
 HAB                 G_habWorkerThread = NULLHANDLE;
 HMQ                 G_hmqWorkerThread = NULLHANDLE;
-// flags for whether the Worker thread owns semaphores
-// BOOL                G_fWorkerAwakeObjectsSemOwned = FALSE;
+
+// currently waiting messages for Worker thread;
+// if this gets too large, its priority will be raised
+HMTX                G_hmtxWorkerThreadData = NULLHANDLE;
+ULONG               G_ulWorkerMsgCount;         // V0.9.9 (2001-04-04) [umoeller]
+BOOL                G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
 
 // Speedy thread
 HAB                 G_habSpeedyThread = NULLHANDLE;
@@ -156,10 +170,341 @@ ULONG               G_CurFileThreadMsg = 0;
             // or null if none
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFolder Worker thread functions                  *
- *                                                                  *
+ *
+ *   Awake objects list
+ *
  ********************************************************************/
+
+/*
+ *@@ WorkerExpandHeap:
+ *      this is the function _umalloc calls to get more storage.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+static void* WorkerExpandHeap(Heap_t uh,
+                              size_t *length,
+                              int *clean)
+{
+    char *p;
+
+    // DosAllocMem sets storage to 0, so it is "clean"
+    *clean = _BLOCK_CLEAN;
+
+    // round the block size to a multiple of 64K for efficiency
+    *length = (*length / 65536) * 65536 + 65536;
+
+    // get the storage from the system
+    DosAllocMem((VOID*)&p,
+                *length,
+                PAG_COMMIT | PAG_READ | PAG_WRITE);
+
+    return p;
+}
+
+/*
+ *@@ WorkerShrinkHeap:
+ *      this is the the function _heapmin and _destroy
+ *      call to return storage to the system.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+static void WorkerShrinkHeap(Heap_t uh,
+                             void *p,
+                             size_t size)
+{
+    DosFreeMem(p);
+    return;
+}
+
+/*
+ *@@ xthrLockAwakeObjectsList:
+ *      locks G_hmtxAwakeObjectsList. Creates the mutex on
+ *      the first call.
+ *
+ *      This mutex is used to protect the list of all awake
+ *      objects ONLY.
+ *
+ *      Returns TRUE if the mutex was obtained.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL xthrLockAwakeObjectsList(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxAwakeObjectsList == NULLHANDLE)
+    {
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxAwakeObjectsList,
+                                 0,
+                                 TRUE);
+        treeInit(&G_AwakeObjectsTree);
+        G_lAwakeObjectsCount = 0;
+
+        G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
+                                      _HEAP_MIN_SIZE,
+                                      !_BLOCK_CLEAN,    // memory is not set to 0
+                                      _HEAP_REGULAR,    // regular memory
+                                      WorkerExpandHeap,
+                                      WorkerShrinkHeap);
+
+        if (G_AwakeObjectsHeap == NULL)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_ucreate failed for Worker heap.");
+        else if (_uopen(G_AwakeObjectsHeap))        // open heap and check for failure
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_uopen failed for Worker heap.");
+    }
+    else
+        brc = !WinRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
+
+    return (brc);
+}
+
+/*
+ *@@ xthrUnlockAwakeObjectsList:
+ *      the reverse to xthrLockAwakeObjectsLists.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID xthrUnlockAwakeObjectsList(VOID)
+{
+    DosReleaseMutexSem(G_hmtxAwakeObjectsList);
+}
+
+/*
+ *@@ xthrQueryAwakeObjectsMutexOwner:
+ *      invokes DosQueryMutexSem on the awake
+ *      objects mutex. Needed by the exception
+ *      handlers.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+APIRET xthrQueryAwakeObjectsMutexOwner(PPID ppid,
+                                       PTID ptid,
+                                       PULONG pulCount)
+{
+    return (DosQueryMutexSem(G_hmtxAwakeObjectsList,
+                             ppid,
+                             ptid,
+                             pulCount));
+}
+
+/*
+ *@@ xthrQueryAwakeObjectsCount:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+LONG xthrQueryAwakeObjectsCount(VOID)
+{
+    LONG    l = 0;
+
+    if (xthrLockAwakeObjectsList())
+    {
+        l = G_lAwakeObjectsCount;
+        xthrUnlockAwakeObjectsList();
+    }
+
+    return (l);
+}
+
+/*
+ *@@ WorkerAddObject:
+ *      implementation for WOM_ADDAWAKEOBJECT
+ *      in fnwpWorkerObject.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID WorkerAddObject(WPObject *pObj2Store)
+{
+    BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
+
+    TRY_LOUD(excpt3)  // V0.9.7 (2000-12-13) [umoeller]
+    {
+        #ifdef DEBUG_AWAKEOBJECTS
+           // _PmpfF(("WT: Adding awake object..."));
+        #endif
+
+        // set the quiet exception handler, because
+        // sometimes we get a message for an object too
+        // late, i.e. it is not awake any more, and then
+        // we'll trap
+        TRY_QUIET(excpt2)
+        {
+            // V0.9.9 (2001-2-17) [pr]: fix object count bug
+            if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
+            {
+                // only for the WarpCenter, lock the globals
+                // V0.9.9 (2001-04-04) [umoeller]
+                PKERNELGLOBALS  pKernelGlobals = NULL;
+                if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
+                {
+                    pKernelGlobals->pAwakeWarpCenter = pObj2Store;
+                    krnUnlockGlobals();
+                }
+            }
+
+            // get the awake-objects mutex semaphore
+            if (fWorkerAwakeObjectsSemOwned = xthrLockAwakeObjectsList())
+            {
+                TREE        *pNode;
+
+                #ifdef DEBUG_AWAKEOBJECTS
+                    _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
+                #endif
+
+                // check if this object is stored already
+                pNode = (TREE*)_umalloc(G_AwakeObjectsHeap,
+                                        sizeof(TREE));
+                if (pNode)
+                {
+                    pNode->id = (ULONG)pObj2Store;
+
+                    if (TREE_OK == treeInsertID(&G_AwakeObjectsTree,
+                                                pNode,
+                                                FALSE))     // no duplicates
+                        // increment global count
+                        G_lAwakeObjectsCount++;
+                    #ifdef DEBUG_AWAKEOBJECTS
+                        else
+                            _Pmpf(("WT: Item is already on list"));
+                    #endif
+
+                    // note that we now store all objects, no matter
+                    // what class they are; we used to have only
+                    // WPAbstract and WPFolder
+                }
+            }
+        }
+        CATCH(excpt2)
+        {
+            // the thread exception handler puts us here
+            // if an exception occured:
+            #ifdef DEBUG_AWAKEOBJECTS
+                DosBeep(10000, 10);
+            #endif
+        } END_CATCH();
+    }
+    CATCH(excpt3) {} END_CATCH();
+
+    if (fWorkerAwakeObjectsSemOwned)
+    {
+        xthrUnlockAwakeObjectsList();
+        fWorkerAwakeObjectsSemOwned = FALSE;
+    }
+}
+
+/*
+ *@@ WorkerRemoveObject:
+ *      implementation for WOM_REMOVEAWAKEOBJECT
+ *      in fnwpWorkerObject.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID WorkerRemoveObject(WPObject *pObj)
+{
+    BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
+
+    #ifdef DEBUG_AWAKEOBJECTS
+        _Pmpf(("WT: Removing asleep object, mp1: 0x%lX", mp1));
+    #endif
+
+    TRY_QUIET(excpt2)
+    {
+        // get the mutex semaphore
+        if (fWorkerAwakeObjectsSemOwned = xthrLockAwakeObjectsList())
+        {
+            // remove the object from the list
+            if (pObj)
+            {
+                TREE    *pNode;
+                #ifdef DEBUG_AWAKEOBJECTS
+                    _Pmpf(("WT: Calling lstRemoveItem with poli = 0x%lX",
+                           pObj));
+                #endif
+
+                if (pNode = treeFindEQID(&G_AwakeObjectsTree,
+                                         (ULONG)pObj))
+                {
+                    treeDelete(&G_AwakeObjectsTree,
+                               pNode);
+                    free(pNode);        // works with user heap
+
+                    // decrement global count
+                    G_lAwakeObjectsCount--;
+                }
+            }
+        }
+    }
+    CATCH(excpt2) {} END_CATCH();
+
+    if (fWorkerAwakeObjectsSemOwned)
+    {
+        xthrUnlockAwakeObjectsList();
+        fWorkerAwakeObjectsSemOwned = FALSE;
+    }
+}
+
+/* ******************************************************************
+ *
+ *   XFolder Worker thread functions
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockWorkerThreadData:
+ *      locks G_hmtxWorkerThreadData. Creates the mutex on
+ *      the first call.
+ *
+ *      This mutex is used to protect the global worker
+ *      thread data such as the no. of msgs currently
+ *      posted and the current worker thread priority.
+ *      This used to be protected by the kernel mutex
+ *      before V0.9.9, but I decided that a special
+ *      mutex for this would probably help system
+ *      performance since this is requested for every
+ *      single object that gets awakened by the WPS.
+ *
+ *      Returns TRUE if the mutex was obtained.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL LockWorkerThreadData(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxWorkerThreadData == NULLHANDLE)
+    {
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxWorkerThreadData,
+                                 0,
+                                 TRUE);
+    }
+    else
+        brc = !WinRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT);
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockWorkerThreadData:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID UnlockWorkerThreadData(VOID)
+{
+    DosReleaseMutexSem(G_hmtxWorkerThreadData);
+}
 
 /*
  *@@ xthrResetWorkerThreadPriority:
@@ -175,51 +520,59 @@ ULONG               G_CurFileThreadMsg = 0;
  *      and from fncbXWCParanoiaItemChanged (xwpsetup.c).
  *
  *@@changed V0.9.0 [umoeller]: added beeping
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
  */
 
 VOID xthrResetWorkerThreadPriority(VOID)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    ULONG   ulPrty, ulDelta;
-
-    if (pKernelGlobals->WorkerThreadHighPriority)
+    if (LockWorkerThreadData())
     {
-        // high priority
-        ulPrty = PRTYC_REGULAR;
-        ulDelta = +31;
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+        ULONG   ulPrty, ulDelta;
 
-        if (pGlobalSettings->fWorkerPriorityBeep)
-            DosBeep(1200, 30);
-    }
-    else
-    {
-        // default priority
-        switch (pGlobalSettings->bDefaultWorkerThreadPriority)
+        if (G_fWorkerThreadHighPriority)
         {
-            case 0:     // 0: idle +/-0
-                ulPrty = PRTYC_IDLETIME;
-                ulDelta = 0;
-            break;
+            // high priority
+            ulPrty = PRTYC_REGULAR;
+            ulDelta = +31;
 
-            case 2:     // 2: regular +/-0
-                ulPrty = PRTYC_REGULAR;
-                ulDelta = 0;
-            break;
+            if (pGlobalSettings->fWorkerPriorityBeep)
+                DosBeep(1200, 30);
+        }
+        else
+        {
+            // default priority:
 
-            default:    // 1: idle +31
-                ulPrty = PRTYC_IDLETIME;
-                ulDelta = +31;
+            switch (pGlobalSettings->bDefaultWorkerThreadPriority)
+            {
+                case 0:     // 0: idle +/-0
+                    ulPrty = PRTYC_IDLETIME;
+                    ulDelta = 0;
                 break;
+
+                case 2:     // 2: regular +/-0
+                    ulPrty = PRTYC_REGULAR;
+                    ulDelta = 0;
+                break;
+
+                default:    // 1: idle +31
+                    ulPrty = PRTYC_IDLETIME;
+                    ulDelta = +31;
+                    break;
+            }
+
+            if (pGlobalSettings->fWorkerPriorityBeep)
+                DosBeep(1000, 30);
         }
 
-        if (pGlobalSettings->fWorkerPriorityBeep)
-            DosBeep(1000, 30);
+        DosSetPriority(PRTYS_THREAD,
+                       ulPrty,
+                       ulDelta,
+                       thrQueryID(&G_tiWorkerThread));
+
+        UnlockWorkerThreadData();
     }
-    DosSetPriority(PRTYS_THREAD,
-                   ulPrty,
-                   ulDelta,
-                   thrQueryID(&G_tiWorkerThread));
 }
 
 /*
@@ -229,43 +582,38 @@ VOID xthrResetWorkerThreadPriority(VOID)
  *
  *      This gets called automatically if too many
  *      messages have piled up for fnwpWorkerObject.
+ *      This gets called from both the thread that
+ *      xthrPostWorkerMsg runs on, as well as the
+ *      worker thread itself.
  *
  *@@changed V0.9.0 [umoeller]: avoiding duplicate sets now
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
  */
 
-BOOL RaiseWorkerThreadPriority(BOOL fRaise)
+VOID RaiseWorkerThreadPriority(BOOL fRaise)
 {
-    BOOL        brc = FALSE;
     static BOOL fFirstTime = TRUE;
 
-    PKERNELGLOBALS pKernelGlobals = NULL;
-
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    BOOL        fSem = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
+        if (fSem = LockWorkerThreadData())
         {
-            if (    (fFirstTime)
-                 || (fRaise != pKernelGlobals->WorkerThreadHighPriority)
+            if (   (fFirstTime)
+                || (fRaise != G_fWorkerThreadHighPriority)
                )
             {
-                pKernelGlobals->WorkerThreadHighPriority = fRaise;
-                xthrResetWorkerThreadPriority();
                 fFirstTime = FALSE;
+                G_fWorkerThreadHighPriority = fRaise;
+                xthrResetWorkerThreadPriority();
             }
         }
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (pKernelGlobals)
-        krnUnlockGlobals();
-
-    DosExitMustComplete(&ulNesting);
-
-    return (brc);
+    if (fSem)
+        UnlockWorkerThreadData();
 }
 
 /*
@@ -278,49 +626,60 @@ BOOL RaiseWorkerThreadPriority(BOOL fRaise)
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: changed kernel locks
  *@@changed V0.9.7 (2000-12-13) [umoeller]: fixed sync problems
+ *@@changed V0.9.9 (2001-04-01) [pr]: added log message on fail
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: fixed msgq congestion, priority raise works now
  */
 
 BOOL xthrPostWorkerMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    BOOL brc = FALSE;
+    BOOL    brc = FALSE;
 
-    PKERNELGLOBALS pKernelGlobals = NULL;
+    ULONG   tidWorker;
+    BOOL    fRaised = FALSE;
 
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
+    if (    (tidWorker = thrQueryID(&G_tiWorkerThread))
+         && (G_hwndWorkerObject)
+       )
     {
-        pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            if (thrQueryID(&G_tiWorkerThread))
-            {
-                if (pKernelGlobals->hwndWorkerObject)
-                {
-                    brc = WinPostMsg(pKernelGlobals->hwndWorkerObject, msg, mp1, mp2);
+        BOOL    fWorkerThreadDataLocked = FALSE;
 
-                    if (brc)
-                    {
-                        pKernelGlobals->ulWorkerMsgCount++;
-                        if (pKernelGlobals->ulWorkerMsgCount > 300)
-                            // if the Worker thread msg queue gets congested,
-                            // boost priority
-                            RaiseWorkerThreadPriority(TRUE);
-                    }
+        brc = WinPostMsg(G_hwndWorkerObject, msg, mp1, mp2);
+
+        TRY_LOUD(excpt1)
+        {
+            if (fWorkerThreadDataLocked = LockWorkerThreadData())
+            {
+                // message successfully posted:
+
+                G_ulWorkerMsgCount++;
+                if (G_ulWorkerMsgCount > 300)
+                {
+                    // if the Worker thread msg queue gets congested,
+                    // boost priority
+                    RaiseWorkerThreadPriority(TRUE);
+
+                    fRaised = TRUE;
                 }
             }
         }
+        CATCH(excpt1) { } END_CATCH();
+
+        if (fWorkerThreadDataLocked)
+            UnlockWorkerThreadData();
+
+        if (fRaised)
+            // if we're not running on the Worker thread,
+            // sleep a bit to give the worker time to
+            // process V0.9.9 (2001-04-04) [umoeller]
+            if (doshMyTID() != tidWorker)
+                DosSleep(10);
+
+
+        if (!brc)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
+                   msg, mp1, mp2);
     }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
-
-    if (pKernelGlobals)
-        krnUnlockGlobals();
-
-    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -361,6 +720,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.7 (2000-12-08) [umoeller]: fixed crash when kernel globals weren't returned
  *@@changed V0.9.7 (2000-12-08) [umoeller]: got rid of dtGetULongTime
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
  */
 
 MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -417,38 +777,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 break;
             }
         break; }
-
-        /*
-         * WOM_WELCOME:
-         *     display hello dlg box
-         */
-
-        /* case WOM_WELCOME:
-        {
-            BOOL fDone = FALSE;
-            if (doshIsWarp4())
-            {
-                // on Warp 4, open the SmartGuide window
-                // which was created by the install script
-                HOBJECT hobjIntro = WinQueryObject(XFOLDER_INTROID);
-                if (hobjIntro)
-                {
-                    WinOpenObject(hobjIntro, OPEN_DEFAULT, TRUE);
-                    fDone = TRUE;
-                }
-            }
-
-            if (!fDone)
-            {
-                // SmartGuide object not found (Warp 3):
-                // display simple dialog
-                winhCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
-                                   WinDefDlgProc,
-                                   cmnQueryNLSModuleHandle(FALSE),
-                                   ID_XFD_WELCOME,
-                                   0);
-            }
-        break; } */
 
         /*
          * WOM_QUICKOPEN:
@@ -684,102 +1012,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          */
 
         case WOM_ADDAWAKEOBJECT:
-        {
-            WPObject        *pObj2Store = (WPObject*)(mp1);
-            PKERNELGLOBALS  pKernelGlobals = NULL;
-            BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
-
-            ULONG           ulNesting = 0;
-            DosEnterMustComplete(&ulNesting);
-
-            TRY_LOUD(excpt3)  // V0.9.7 (2000-12-13) [umoeller]
-            {
-                if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
-                {
-                    #ifdef DEBUG_AWAKEOBJECTS
-                       // _PmpfF(("WT: Adding awake object..."));
-                    #endif
-
-                    // set the quiet exception handler, because
-                    // sometimes we get a message for an object too
-                    // late, i.e. it is not awake any more, and then
-                    // we'll trap
-                    TRY_QUIET(excpt2)
-                    {
-                        // V0.9.9 (2001-2-17) [pr]: fix object count bug
-                        if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
-                            pKernelGlobals->pAwakeWarpCenter = pObj2Store;
-
-                        // get the mutex semaphore
-                        fWorkerAwakeObjectsSemOwned
-                              = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
-                                 == NO_ERROR);
-
-                        if (fWorkerAwakeObjectsSemOwned)
-                        {
-                            PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
-
-                            #ifdef DEBUG_AWAKEOBJECTS
-                                _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
-                            #endif
-
-                            // check if this object is stored already
-                            if (lstNodeFromItem(pllAwakeObjects, pObj2Store) == NULL)
-                            {
-                                // only save awake abstract and folder objects;
-                                // if we included all WPFileSystem objects, all
-                                // of these will be saved at XShutdown, that is,
-                                // they'll all get .CLASSINFO EAs, which we don't
-                                // want
-                                if (    (_somIsA(pObj2Store, _WPAbstract))
-                                     // || (_somIsA(pObj2Store, _WPFolder))
-                                   )
-                                {
-                                    // object not stored yet: do it now
-                                    #ifdef DEBUG_AWAKEOBJECTS
-                                        _Pmpf(("WT:lstAppendItem rc: %d",
-                                               lstAppendItem(pllAwakeObjects,
-                                                             pObj2Store)));
-                                    #else
-                                        lstAppendItem(pllAwakeObjects,
-                                                      pObj2Store);
-                                    #endif
-                                }
-
-                                // increment global count
-                                pKernelGlobals->lAwakeObjectsCount++;
-                            }
-                            #ifdef DEBUG_AWAKEOBJECTS
-                                else
-                                    _Pmpf(("WT: Item is already on list"));
-                            #endif
-                        }
-                    }
-                    CATCH(excpt2)
-                    {
-                        // the thread exception handler puts us here
-                        // if an exception occured:
-                        #ifdef DEBUG_AWAKEOBJECTS
-                            DosBeep(10000, 10);
-                        #endif
-                    } END_CATCH();
-                } // end if (pKernelGlobals)
-            }
-            CATCH(excpt3) {} END_CATCH();
-
-            if (pKernelGlobals)
-            {
-                if (fWorkerAwakeObjectsSemOwned)
-                {
-                    DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                    fWorkerAwakeObjectsSemOwned = FALSE;
-                }
-
-                krnUnlockGlobals();
-            }
-
-            DosExitMustComplete(&ulNesting);
-        break; }
+            WorkerAddObject((WPObject*)mp1);
+        break;
 
         /*
          * WOM_REMOVEAWAKEOBJECT:
@@ -799,65 +1033,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          */
 
         case WOM_REMOVEAWAKEOBJECT:
-        {
-            WPObject        *pObj = (WPObject*)(mp1);
-            PKERNELGLOBALS  pKernelGlobals = NULL;
-            BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
-
-            ULONG           ulNesting = 0;
-            DosEnterMustComplete(&ulNesting);
-
-            #ifdef DEBUG_AWAKEOBJECTS
-                _Pmpf(("WT: Removing asleep object, mp1: 0x%lX", mp1));
-            #endif
-
-            TRY_QUIET(excpt2)
-            {
-                if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
-                {
-                    // get the mutex semaphore
-                    fWorkerAwakeObjectsSemOwned =
-                            (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
-                            == NO_ERROR);
-                    if (fWorkerAwakeObjectsSemOwned)
-                    {
-                        // remove the object from the list
-                        if (pObj)
-                        {
-                            #ifdef DEBUG_AWAKEOBJECTS
-                                _Pmpf(("WT: Calling lstRemoveItem with poli = 0x%lX",
-                                       pObj));
-                            #endif
-                            #ifdef DEBUG_AWAKEOBJECTS
-                                _Pmpf(("WT: lstRemoveItem rc: %d",
-                                       lstRemoveItem(pKernelGlobals->pllAwakeObjects,
-                                                     pObj)));
-                            #else
-                                lstRemoveItem(pKernelGlobals->pllAwakeObjects,
-                                              pObj);
-                            #endif
-
-                            // decrement global count
-                            pKernelGlobals->lAwakeObjectsCount--;
-                        }
-                    }
-                }
-            }
-            CATCH(excpt2) {} END_CATCH();
-
-            if (pKernelGlobals)
-            {
-                if (fWorkerAwakeObjectsSemOwned)
-                {
-                    DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                    fWorkerAwakeObjectsSemOwned = FALSE;
-                }
-
-                krnUnlockGlobals();
-            }
-
-            DosExitMustComplete(&ulNesting);
-        break; }
+            WorkerRemoveObject((WPObject*)mp1);
+        break;
 
         /*
          * WOM_REFRESHFOLDERVIEWS:
@@ -1018,6 +1195,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             DosEnterMustComplete(&ulNesting);
             TRY_LOUD(excpt1)
             {
+                // LOCK the global settings while we're writing
                 pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                 if (pGlobalSettings)
                 {
@@ -1052,17 +1230,19 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
 /*
  *@@ fntWorkerThread:
- *          this is the thread function for the XFolder
- *          "Worker" (= background) thread, to which
- *          messages for tasks are passed which are too
- *          time-consuming to be processed on the
- *          Workplace thread; it creates an object window
- *          (using fnwpWorkerObject as the window proc)
- *          and stores its handle in KERNELGLOBALS.hwndWorkerObject.
- *          This thread is created by krnInitializeXWorkplace.
+ *      this is the thread function for the XFolder
+ *      "Worker" (= background) thread, to which
+ *      messages for tasks are passed which are too
+ *      time-consuming to be processed on the
+ *      Workplace thread; it creates an object window
+ *      (using fnwpWorkerObject as the window proc)
+ *      and stores its handle in KERNELGLOBALS.hwndWorkerObject.
+ *
+ *      This thread is created by krnInitializeXWorkplace.
  *
  *@@changed V0.9.7 (2000-12-13) [umoeller]: made awake-objects mutex unnamed
  *@@changed V0.9.7 (2000-12-13) [umoeller]: fixed semaphore protection
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: cleaned up global resources, added two more granular mutexes for performance
  */
 
 void _Optlink fntWorkerThread(PTHREADINFO pti)
@@ -1070,23 +1250,6 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
     QMSG            qmsg;
     PSZ             pszErrMsg = NULL;
     BOOL            fTrapped = FALSE;
-
-    // we will now create the mutex semaphore for access to
-    // the linked list of awake objects; this is used in
-    // wpInitData and wpUnInitData
-    {
-        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            DosCreateMutexSem(NULL, // "\\sem32\\AwakeObjectsList",
-                              &(pKernelGlobals->hmtxAwakeObjects),
-                              0,        // unshared
-                              FALSE);   // unowned
-            krnUnlockGlobals();
-        }
-    }
-
-    fTrapped = FALSE;
 
     if (G_habWorkerThread = WinInitialize(0))
     {
@@ -1096,8 +1259,7 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
 
             do
             {
-                PKERNELGLOBALS pKernelGlobals = NULL;
-                HWND hwndWorkerObjectTemp = NULLHANDLE;
+                BOOL    fWorkerSem = FALSE;
 
                 WinCancelShutdown(G_hmqWorkerThread, TRUE);
 
@@ -1108,77 +1270,55 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                                  0);                 // extra window words
 
                 // create Worker object window
-                hwndWorkerObjectTemp = winhCreateObjectWindow(WNDCLASS_WORKEROBJECT, NULL);
+                G_hwndWorkerObject = winhCreateObjectWindow(WNDCLASS_WORKEROBJECT, NULL);
 
-                if (!hwndWorkerObjectTemp)
+                if (!G_hwndWorkerObject)
                     winhDebugBox(HWND_DESKTOP,
                              "XFolder: Error",
                              "XFolder failed to create the Worker thread object window.");
-
+                else
                 {
-                    ULONG ulNesting = 0;
-                    DosEnterMustComplete(&ulNesting);
+                    // set ourselves to idle-time priority; this will
+                    //   be raised to regular when the msg queue becomes congested
+                    RaiseWorkerThreadPriority(FALSE);
 
-                    if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
+                    TRY_LOUD(excpt1)
                     {
-                        pKernelGlobals->hwndWorkerObject = hwndWorkerObjectTemp;
-
-                        // set ourselves to idle-time priority; this will
-                        //   be raised to regular when the msg queue becomes congested
-                        pKernelGlobals->WorkerThreadHighPriority = TRUE;
-                                // otherwise the following func won't work right
-                        RaiseWorkerThreadPriority(FALSE);
-
-                        krnUnlockGlobals();
-                        pKernelGlobals = NULL;
-                    }
-
-                    DosExitMustComplete(&ulNesting);
-                }
-
-                TRY_LOUD(excpt1)
-                {
-                    // now enter the message loop
-                    while (WinGetMsg(G_habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
-                    {
-                        pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-                        if (pKernelGlobals)
+                        // now enter the message loop
+                        while (WinGetMsg(G_habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
                         {
-                            if (pKernelGlobals->ulWorkerMsgCount > 0)
-                                pKernelGlobals->ulWorkerMsgCount--;
+                            if (fWorkerSem = LockWorkerThreadData())
+                            {
+                                if (G_ulWorkerMsgCount > 0)
+                                    G_ulWorkerMsgCount--;
 
-                            if (pKernelGlobals->ulWorkerMsgCount < 10)
-                                RaiseWorkerThreadPriority(FALSE);
+                                if (G_ulWorkerMsgCount < 10)
+                                    RaiseWorkerThreadPriority(FALSE);
 
-                            krnUnlockGlobals();
-                            pKernelGlobals = NULL;
-                        }
+                                UnlockWorkerThreadData();
+                                fWorkerSem = FALSE;
+                            }
 
-                        // dispatch the queue msg
-                        WinDispatchMsg(G_habWorkerThread, &qmsg);
-                    } // loop until WM_QUIT
+                            // dispatch the queue msg
+                            WinDispatchMsg(G_habWorkerThread, &qmsg);
+                        } // loop until WM_QUIT
 
-                    // WM_QUIT:
-                    fExit = TRUE;
+                        // WM_QUIT:
+                        fExit = TRUE;
+                    }
+                    CATCH(excpt1)
+                    {
+                        // the exception handler puts us here if an exception occured:
+                        // set flag that exception occured
+                        fTrapped = TRUE;
+                    } END_CATCH();
+
+                    if (fWorkerSem)
+                    {
+                        UnlockWorkerThreadData();
+                        fWorkerSem = FALSE;
+                    }
                 }
-                CATCH(excpt1)
-                {
-                    // the exception handler puts us here if an exception occured:
-                    // set flag that exception occured
-                    fTrapped = TRUE;
-                } END_CATCH();
-
-                /* if (G_fWorkerAwakeObjectsSemOwned)
-                {
-                    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                    // in any case, release mutex semaphores owned by the Worker thread
-                    DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                    G_fWorkerAwakeObjectsSemOwned = FALSE;
-                    krnUnlockGlobals();
-                } */
-
-                if (pKernelGlobals)
-                    krnUnlockGlobals();
 
                 if (fTrapped)
                     if (pszErrMsg == NULL)
@@ -1204,26 +1344,19 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
     }
 
     // clean up
-    {
-        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
-        {
-            WinDestroyWindow(pKernelGlobals->hwndWorkerObject);
-            pKernelGlobals->hwndWorkerObject = NULLHANDLE;
-            krnUnlockGlobals();
-        }
+    WinDestroyWindow(G_hwndWorkerObject);
+    G_hwndWorkerObject = NULLHANDLE;
 
-        WinDestroyMsgQueue(G_hmqWorkerThread);
-        G_hmqWorkerThread = NULLHANDLE;
-        WinTerminate(G_habWorkerThread);
-        G_habWorkerThread = NULLHANDLE;
-    }
+    WinDestroyMsgQueue(G_hmqWorkerThread);
+    G_hmqWorkerThread = NULLHANDLE;
+    WinTerminate(G_habWorkerThread);
+    G_habWorkerThread = NULLHANDLE;
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the File thread functions                            *
- *                                                                  *
+ *
+ *   here come the File thread functions
+ *
  ********************************************************************/
 
 /*
@@ -1990,9 +2123,9 @@ void _Optlink fntFileThread(PTHREADINFO pti)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   here come the Speedy thread functions                           *
- *                                                                  *
+ *
+ *   here come the Speedy thread functions
+ *
  ********************************************************************/
 
 /*
@@ -2453,7 +2586,7 @@ BOOL xthrStartThreads(FILE *DumpFile)
             if (pGlobalSettings->NoWorkerThread == 0)
             {
                 // threads not disabled:
-                pKernelGlobals->ulWorkerMsgCount = 0;
+                G_ulWorkerMsgCount = 0;
                 thrCreate(&G_tiWorkerThread,
                           fntWorkerThread,
                           NULL, // running flag

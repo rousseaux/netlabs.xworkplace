@@ -353,10 +353,15 @@
                                   WPObject *pobjFind,
                                   ULONG ulOption);
 
+        #define QCAFL_FILTERINSERTED        0x0001
+
         WPObject** fdrQueryContentArray(WPFolder *pFolder,
+                                        ULONG flFilter,
                                         PULONG pulItems);
 
         BOOL fdrCnrInsertObject(WPObject *pObject);
+
+        ULONG fdrInsertAllContents(WPFolder *pFolder);
 
         BOOL fdrNukeContents(WPFolder *pFolder);
     #endif

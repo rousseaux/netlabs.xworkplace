@@ -135,7 +135,7 @@ $(OUTPUTDIR)\shutdown.obj: \
            $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xprf.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
-    $(INC)\filesys\fdrmenus.h $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\fdrmenus.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\media\media.h \
     $(INC)\startshut\apm.h $(INC)\filesys\xthreads.h \

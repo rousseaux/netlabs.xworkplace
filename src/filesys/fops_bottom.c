@@ -1061,11 +1061,22 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         // already, either from some other place or, most
                         // importantly, if it is a shadow to an object that
                         // was just deleted... we don't wanna crash here.
+                        BOOL    fObjectValid = TRUE;
 
                         TRY_QUIET(excpt2)  // V0.9.9 (2001-04-01) [umoeller]
                         {
                             // call callback for subobject
                             pfu->pszSubObject = _wpQueryTitle(pSubObjThis);
+                        }
+                        CATCH(excpt2)
+                        {
+                            fObjectValid = FALSE;
+                                    // do not attempt to delete this,
+                                    // but don't report error either
+                        } END_CATCH();
+
+                        if (fObjectValid)
+                        {
                             // calc new sub-progress: this is the value we first
                             // had before working on the subobjects (which
                             // is a multiple of 100) plus a sub-progress between
@@ -1106,12 +1117,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                             else
                                 // error:
                                 *ppObject = pSubObjThis;
-                        }
-                        CATCH(excpt2)
-                        {
-                            // if we crashed here, don't worry...
-                            // that's why we're quiet!
-                        } END_CATCH();
+                        } // end if (fObjectValid)
                     }
 
                     pNode = pNode->pNext;

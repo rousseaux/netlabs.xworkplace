@@ -17,7 +17,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1101,13 +1101,14 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@ IMPORTEDMODULERECORD:
  *
  *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: made PSZ's const
  */
 
 typedef struct _IMPORTEDMODULERECORD
 {
     RECORDCORE  recc;
 
-    PSZ   pszModuleName;
+    const char  *pcszModuleName;
 } IMPORTEDMODULERECORD, *PIMPORTEDMODULERECORD;
 
 /*
@@ -1130,7 +1131,7 @@ void _Optlink fntInsertModules(PTHREADINFO pti)
     {
         ULONG         cModules = 0,
                       ul;
-        PFSYSMODULE   paModules;
+        PFSYSMODULE   paModules = NULL;
         CHAR          szFilename[CCHMAXPATH] = "";
 
         pcnbp->fShowWaitPointer = TRUE;
@@ -1141,9 +1142,11 @@ void _Optlink fntInsertModules(PTHREADINFO pti)
 
             if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
             {
-                paModules = doshExecQueryImportedModules(pExec, &cModules);
-
-                if (paModules)
+                if (    (!doshExecQueryImportedModules(pExec,
+                                                       &paModules,
+                                                       &cModules))
+                     && (paModules)
+                   )
                 {
                     HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -1174,7 +1177,7 @@ void _Optlink fntInsertModules(PTHREADINFO pti)
                         {
                             if (preccThis)
                             {
-                                preccThis->pszModuleName = paModules[ul].achModuleName;
+                                preccThis->pcszModuleName = paModules[ul].achModuleName;
                                 preccThis = (PIMPORTEDMODULERECORD)preccThis->recc.preccNextRecord;
                                 cRecords++;
                             }
@@ -1233,8 +1236,12 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         int        i = 0;
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszModule1Page);
+
         // set up cnr details view
-        xfi[i].ulFieldOffset = FIELDOFFSET(IMPORTEDMODULERECORD, pszModuleName);
+        xfi[i].ulFieldOffset = FIELDOFFSET(IMPORTEDMODULERECORD, pcszModuleName);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnModuleName;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
@@ -1284,15 +1291,16 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@ EXPORTEDFUNCTIONRECORD:
  *
  *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: made PSZ's const
  */
 
 typedef struct _EXPORTEDFUNCTIONRECORD
 {
     RECORDCORE  recc;
 
-    ULONG ulFunctionOrdinal;
-    PSZ   pszFunctionType;
-    PSZ   pszFunctionName;
+    ULONG       ulFunctionOrdinal;
+    const char  *pcszFunctionType;
+    const char  *pcszFunctionName;
 } EXPORTEDFUNCTIONRECORD, *PEXPORTEDFUNCTIONRECORD;
 
 /*
@@ -1300,9 +1308,10 @@ typedef struct _EXPORTEDFUNCTIONRECORD
  *      returns a human-readable name from an exported function type.
  *
  *@@added V0.9.9 (2001-03-28) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: return type is const char* now
  */
 
-PSZ fsysGetExportedFunctionTypeName(ULONG ulType)
+const char* fsysGetExportedFunctionTypeName(ULONG ulType)
 {
     switch (ulType)
     {
@@ -1339,7 +1348,7 @@ void _Optlink fntInsertFunctions(PTHREADINFO pti)
     {
         ULONG         cFunctions = 0,
                       ul;
-        PFSYSFUNCTION paFunctions;
+        PFSYSFUNCTION paFunctions = NULL;
         CHAR          szFilename[CCHMAXPATH] = "";
 
         pcnbp->fShowWaitPointer = TRUE;
@@ -1350,9 +1359,9 @@ void _Optlink fntInsertFunctions(PTHREADINFO pti)
 
             if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
             {
-                paFunctions = doshExecQueryExportedFunctions(pExec, &cFunctions);
-
-                if (paFunctions)
+                if (    (!doshExecQueryExportedFunctions(pExec, &paFunctions, &cFunctions))
+                     && (paFunctions)
+                   )
                 {
                     HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -1384,9 +1393,9 @@ void _Optlink fntInsertFunctions(PTHREADINFO pti)
                             if (preccThis)
                             {
                                 preccThis->ulFunctionOrdinal = paFunctions[ul].ulOrdinal;
-                                preccThis->pszFunctionType
+                                preccThis->pcszFunctionType
                                     = fsysGetExportedFunctionTypeName(paFunctions[ul].ulType);
-                                preccThis->pszFunctionName = paFunctions[ul].achFunctionName;
+                                preccThis->pcszFunctionName = paFunctions[ul].achFunctionName;
 
                                 preccThis = (PEXPORTEDFUNCTIONRECORD)preccThis->recc.preccNextRecord;
                                 cRecords++;
@@ -1446,18 +1455,22 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         int        i = 0;
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszModule2Page);
+
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, ulFunctionOrdinal);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportOrdinal;
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
-        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pszFunctionType);
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pcszFunctionType);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
-        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pszFunctionName);
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pcszFunctionName);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnExportName;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
@@ -1507,16 +1520,18 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@ RESOURCERECORD:
  *
  *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: made PSZ's const
  */
 
 typedef struct _RESOURCERECORD
 {
     RECORDCORE  recc;
 
-    ULONG ulResourceID; // !!! Could be a string with Windows or Open32 execs
-    PSZ   pszResourceType;
-    ULONG ulResourceSize;
-    PSZ   pszResourceFlag;
+    ULONG       ulResourceID; // !!! Could be a string with Windows or Open32 execs
+    const char  *pcszResourceType;
+    ULONG       ulResourceSize;
+    const char  *pcszResourceFlag;
+
 } RESOURCERECORD, *PRESOURCERECORD;
 
 /*
@@ -1524,9 +1539,10 @@ typedef struct _RESOURCERECORD
  *      returns a human-readable name from a resource flag.
  *
  *@@added V0.9.7 (2001-01-10) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
  */
 
-PSZ fsysGetResourceFlagName(ULONG ulResourceFlag)
+const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
 {
     #define FLAG_MASK 0x1050
 
@@ -1555,9 +1571,10 @@ PSZ fsysGetResourceFlagName(ULONG ulResourceFlag)
  *      returns a human-readable name from a resource type.
  *
  *@@added V0.9.7 (2000-12-20) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
  */
 
-PSZ fsysGetResourceTypeName(ULONG ulResourceType)
+const char* fsysGetResourceTypeName(ULONG ulResourceType)
 {
     switch (ulResourceType)
     {
@@ -1612,7 +1629,7 @@ PSZ fsysGetResourceTypeName(ULONG ulResourceType)
         #endif
 
         case RT_RESNAMES:
-            return "String ID table";
+            return "String ID table (RT_RESNAMES)";
     }
 
     return "Application specific"; // !!! Should return value too
@@ -1628,6 +1645,7 @@ PSZ fsysGetResourceTypeName(ULONG ulResourceType)
  *@@added V0.9.7 (2000-12-17) [lafaix]
  *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
+ *@@changed V0.9.9 (2001-04-03) [umoeller]: fixed cnr crash introduced by 03-30 change
  */
 
 void _Optlink fntInsertResources(PTHREADINFO pti)
@@ -1636,9 +1654,6 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
 
     TRY_LOUD(excpt1)
     {
-        ULONG         cResources = 0,
-                      ul;
-        PFSYSRESOURCE paResources;
         CHAR          szFilename[CCHMAXPATH] = "";
 
         pcnbp->fShowWaitPointer = TRUE;
@@ -1649,9 +1664,15 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
 
             if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
             {
-                paResources = doshExecQueryResources(pExec, &cResources);
+                ULONG         cResources = 0;
+                PFSYSRESOURCE paResources = NULL;
 
-                if (paResources)
+                if (    (!doshExecQueryResources(pExec,
+                                                 &paResources,
+                                                 &cResources))
+                     && (cResources)
+                     && (paResources)
+                   )
                 {
                     HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -1665,7 +1686,9 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
 
                     PRESOURCERECORD preccFirst
                         = (PRESOURCERECORD)cnrhAllocRecords(hwndCnr,
-                                                            sizeof(IMPORTEDMODULERECORD),
+                                                            sizeof(RESOURCERECORD),
+                                            // duh, wrong size here V0.9.9 (2001-04-03) [umoeller];
+                                            // this was sizeof(IMPORTEDMODULERECORD)
                                                             cResources);
                                 // the container gives us a linked list of
                                 // records here, whose head we store in preccFirst
@@ -1674,7 +1697,8 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                     {
                         // start with first record and follow the linked list
                         PRESOURCERECORD preccThis = preccFirst;
-                        ULONG cRecords = 0;
+                        ULONG   cRecords = 0,
+                                ul;
 
                         for (ul = 0;
                              ul < cResources;
@@ -1683,11 +1707,11 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                             if (preccThis)
                             {
                                 preccThis->ulResourceID = paResources[ul].ulID;
-                                preccThis->pszResourceType
-                                    = fsysGetResourceTypeName(paResources[ul].ulType);
+                                preccThis->pcszResourceType
+                                       = fsysGetResourceTypeName(paResources[ul].ulType);
                                 preccThis->ulResourceSize = paResources[ul].ulSize;
-                                preccThis->pszResourceFlag
-                                    = fsysGetResourceFlagName(paResources[ul].ulFlag);
+                                preccThis->pcszResourceFlag
+                                       = fsysGetResourceFlagName(paResources[ul].ulFlag);
 
                                 preccThis = (PRESOURCERECORD)preccThis->recc.preccNextRecord;
                                 cRecords++;
@@ -1696,23 +1720,26 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                                 break;
                         }
 
-                        cnrhInsertRecords(hwndCnr,
-                                          NULL,
-                                          (PRECORDCORE)preccFirst,
-                                          TRUE, // invalidate
-                                          NULL,
-                                          CRA_RECORDREADONLY,
-                                          cRecords);
-                    }
-                }
+                        if (cRecords == cResources)
+                            cnrhInsertRecords(hwndCnr,
+                                              NULL,
+                                              (PRECORDCORE)preccFirst,
+                                              TRUE, // invalidate
+                                              NULL,
+                                              CRA_RECORDREADONLY,
+                                              cRecords);
+                    } // if (preccFirst)
 
-                // store resources
+                } // if (paResources)
+
+                // clean up existing resources, if any
                 if (pcnbp->pUser)
                     doshExecFreeResources(pcnbp->pUser);
-                pcnbp->pUser = paResources;
+                // store resources
+                pcnbp->pUser = paResources; // can be NULL
 
                 doshExecClose(pExec);
-            }
+            } // end if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
         }
     }
     CATCH(excpt1) {}  END_CATCH();
@@ -1747,6 +1774,10 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         int        i = 0;
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszResourcesPage);
+
         // set up cnr details view
 /* !!! not yet implemented [lafaix]
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszDeviceType);
@@ -1760,7 +1791,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
-        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszResourceType);
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pcszResourceType);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceType;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
@@ -1770,7 +1801,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
-        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszResourceFlag);
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pcszResourceFlag);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnResourceFlags;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
@@ -1779,7 +1810,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                 xfi,
                                 i,             // array item count
                                 TRUE,          // draw lines
-                                1);            // return first column
+                                1);            // return second column
 
         BEGIN_CNRINFO()
         {
@@ -1828,14 +1859,12 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@ fsysQueryProgramSetup:
  *      called to retrieve a setup string for programs.
  *
- *      -- For WPProgram, this gets called from objQuerySetup
- *         directly because at this point we have no class
- *         replacement for WPProgram.
- *
- *      -- For XFldProgramFile, this gets called by
- *         fsysQueryProgramFileSetup.
+ *      Both XWPProgram and XFldProgramFile call
+ *      fsysQueryProgramFileSetup, which calls this
+ *      func in turn.
  *
  *@@added V0.9.4 (2000-08-02) [umoeller]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: added a few more strings
  */
 
 VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
@@ -1844,7 +1873,10 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
     PSZ pszValue = NULL;
     ULONG ulSize = 0;
 
-    // wpQueryProgDetails: supported by both WPProgram and WPProgramFile
+    // wpQueryProgDetails:
+    // this works for both WPProgram and WPProgramFile; even though the two
+    // methods are differently implemented, they both call the same implementation
+    // in the WPS, so this is safe (famous last words)
     if ((_wpQueryProgDetails(somSelf, (PPROGDETAILS)NULL, &ulSize)))
     {
         PPROGDETAILS    pProgDetails = NULL;
@@ -1993,11 +2025,14 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                     }
                 }
 
-                // MAXIMIZED=YES|NO
+                // following added V0.9.9 (2001-04-03) [umoeller]
+                if (pProgDetails->swpInitial.fl & SWP_MAXIMIZE)
+                    xstrcat(pstrTemp, "MAXIMIZED=YES;", 0);
+                else if (pProgDetails->swpInitial.fl & SWP_MINIMIZE)
+                    xstrcat(pstrTemp, "MINIMIZED=YES;", 0);
 
-                // MINIMIZED=YES|NO
-
-                // NOAUTOCLOSE=YES|NO
+                if (pProgDetails->swpInitial.fl & SWP_NOAUTOCLOSE)
+                    xstrcat(pstrTemp, "NOAUTOCLOSE=YES;", 0);
             }
 
             free(pProgDetails);

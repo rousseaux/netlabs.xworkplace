@@ -176,6 +176,8 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
+PDOSHMYPID pdoshMyPID = NULL;
+
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
@@ -215,6 +217,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "doshMyPID", (PFN*)&pdoshMyPID,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "lstAppendItem", (PFN*)&plstAppendItem,
@@ -2291,8 +2294,7 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                       fEnableHide);
 
                     // enable "kill process" only if this is not the WPS
-                    DosGetInfoBlocks(&ptib, &ppib);
-                    if (pCtlUnderMouse->idProcess != ppib->pib_ulpid)
+                    if (pCtlUnderMouse->idProcess != pdoshMyPID())
                     {
                         // not WPS:
                         fEnableKill = TRUE;

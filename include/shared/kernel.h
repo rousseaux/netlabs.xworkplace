@@ -140,6 +140,7 @@
                                 fXWPSound,
                                 fXWPMouse,
                                 fXWPKeyboard,
+                                fXWPProgram,        // V0.9.9 (2001-04-02) [umoeller]
 
             // new classes
                                 fXWPSetup,
@@ -195,10 +196,7 @@
              *      this thread is always running.
              */
 
-            HWND                hwndWorkerObject;
-
-            ULONG               ulWorkerMsgCount;
-            BOOL                WorkerThreadHighPriority;
+            // HWND                hwndWorkerObject;
 
             // here comes the linked list to remember all objects which
             // have been awakened by the WPS; this list is maintained
@@ -207,16 +205,20 @@
             // root of this linked list; this holds plain
             // WPObject* pointers and is created in krnInitializeXWorkplace
             // with lstCreate(FALSE)
-            PVOID               pllAwakeObjects;
+            // PVOID               pllAwakeObjects;
                     // this has changed with V0.90; this is actually a PLINKLIST,
                     // but since not all source files have #include'd linklist.h,
                     // we declare this as PVOID to avoid compilation errors.
 
+                    // V0.9.9 (2001-04-04) [umoeller]: moved this to xthreads.c
+
             // mutex semaphore for access to this list
-            HMTX                hmtxAwakeObjects;
+            // HMTX                hmtxAwakeObjects;
+                    // V0.9.9 (2001-04-04) [umoeller]: moved this to xthreads.c
 
             // count of currently awake objects
-            LONG                lAwakeObjectsCount;
+            // LONG                lAwakeObjectsCount;
+                    // V0.9.9 (2001-04-04) [umoeller]: moved this to xthreads.c
 
             // address of awake WarpCenter; stored by Worker
             // thread, read by Shutdown thread

@@ -236,6 +236,7 @@ $(OUTPUTDIR)\filetype.obj: \
     $(INC)\classes\xfdataf.ih $(INC)\classes\xfwps.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \
+    $(INC)\filesys\object.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\folder.obj: \
@@ -272,8 +273,8 @@ $(OUTPUTDIR)\fops_top.obj: \
 $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
-        $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h \
-        $(HLPINC)\xstring.h $(HLPINC)\undoc.h \
+        $(HLPINC)\linklist.h $(HLPINC)\standards.h $(HLPINC)\stringh.h $(HLPINC)\tree.h \
+        $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h $(HLPINC)\undoc.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -325,7 +326,7 @@ $(OUTPUTDIR)\xthreads.obj: \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
-            $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+            $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\tree.h $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\dlgids.h \

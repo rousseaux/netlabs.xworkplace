@@ -15,8 +15,9 @@
  *      1)  Scenario 1 involves creating and destroying objects
  *          in memory ONLY without affecting the physical
  *          storage of the object. For abstract objects,
- *          this is the OS2.INI file; for FS objects, the file
- *          system. WPTransient has no physical storage at all.
+ *          "physical storage" is the OS2.INI file; for file-system
+ *          objects, the file system. WPTransients have no physical
+ *          storage at all.
  *
  *          The WPS calls this "make awake" and "make dormant".
  *          Objects are most frequently made awake when a folder
@@ -28,7 +29,7 @@
  *          single object, call M_WPObject::wpclsMakeAwake.
  *          This is a bit difficult to manage, so
  *          WPFileSystem::wpclsQueryObjectFromPath is easier
- *          for FS objects.
+ *          for waking up FS objects.
  *
  *          WPFolder::wpPopulate calls these in turn somehow.
  *
@@ -39,7 +40,7 @@
  *          I suspect this was not documented because you can
  *          never know whether some code still needs the
  *          SOM pointer to the object somehow. Anyway, the
- *          WPS does make objects dormant again e.g. when
+ *          WPS _does_ make objects dormant again, e.g. when
  *          their folders are closed and they are not referenced
  *          anywhere else. You can prevent the WPS from doing
  *          this by calling WPObject::wpLock.
@@ -47,8 +48,21 @@
  *          The interesting thing is that there is an undocumented
  *          method for destroying the SOM object.
  *          WPObject::wpMakeDormant does exactly this.
- *          It removes the object from all views and frees
- *          all associated memory.
+ *          Actually, this does a lot of things:
+ *
+ *          --  It removes the object from all containers,
+ *
+ *          --  closes all views (wpClose),
+ *
+ *          --  frees all associated memory allocated thru wpAllocMem.
+ *
+ *          --  In addition, if the object has called _wpSaveDeferred
+ *              and a _wpSaveImmediate is thus pending, _wpSaveImmediate
+ *              also gets called. (See XFldObject::wpSaveDeferred
+ *              for more about this.)
+ *
+ *          --  Finally, wpMakeDormant calls wpUnInitData, which
+ *              should clean up the object.
  *
  *      2)  Scenario 2 means that an object is physically created
  *          and destroyed through the WPS. That is, you create
@@ -93,7 +107,8 @@
  *          Unfortunately, this one has a real nasty bug... it
  *          displays a message box if deleting the object fails.
  *          This is really annoying when calling wpFree in a loop
- *          on a bunch of objects.
+ *          on a bunch of objects. That's why we have
+ *          XFldObject::xwpNukePhysical now.
  *
  *      --  WPAbstract: this probably removes the INI entries
  *          associated with the abstract object.
@@ -108,6 +123,22 @@
  *      wpFree in order to suppress calling this method. The message
  *      box bug is not acceptable for file-system objects, so we have
  *      introduced XFldObject::xwpNukePhysical instead.
+ *
+ *      The destruction call sequence thus is:
+ *
+ +          wpDelete
+ +             |
+ +             +-- wpFree
+ +                   |
+ +                   +-- wpDestroyObject
+ +                   |
+ +                   +-- wpMakeDormant
+ +                         |
+ +                         +-- (lots of cleanup: wpClose, etc.)
+ +                         |
+ +                         +-- wpSaveImmediate (if "dirty")
+ +                         |
+ +                         +-- wpUnInitData
  *
  *      Function prefix for this file:
  *      --  obj*
@@ -144,6 +175,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WININPUT
@@ -176,7 +208,9 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
 #include "helpers\xstring.h"            // extended string helpers
@@ -205,9 +239,32 @@
 #include <wppgm.h>                      // WPProgram
 #include <wppgmf.h>                     // WPProgramFile
 #include <wpshadow.h>                   // WPShadow
+#include <wptrans.h>                    // WPTransient
 #include "filesys\folder.h"             // XFolder implementation
 
 #include "helpers\undoc.h"              // some undocumented stuff
+
+/* ******************************************************************
+ *
+ *   Private declarations
+ *
+ ********************************************************************/
+
+/*
+ *@@ OBJTREENODE:
+ *      tree node structure for object handles cache.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+typedef struct _OBJTREENODE
+{
+    TREE        Tree;
+    WPObject    *pObject;
+    ULONG       ulReferenced;       // system uptime count when last referenced
+} OBJTREENODE, *POBJTREENODE;
+
+#define CACHE_ITEM_LIMIT    200
 
 /* ******************************************************************
  *
@@ -216,7 +273,17 @@
  ********************************************************************/
 
 // mutex semaphores for object lists (favorite folders, quick-open)
-HMTX                G_hmtxObjectsLists = NULLHANDLE;
+HMTX        G_hmtxObjectsLists = NULLHANDLE;
+
+// object handles cache
+TREE        *G_HandlesCache;
+HMTX        G_hmtxHandlesCache = NULLHANDLE;
+ULONG       G_ulHandlesCacheItemsCount = 0;
+
+// dirty objects list
+TREE        *G_DirtyList;
+HMTX        G_hmtxDirtyList = NULLHANDLE;
+ULONG       G_ulDirtyListItemsCount = 0;
 
 /* ******************************************************************
  *
@@ -353,12 +420,12 @@ BOOL LockObjectsList(VOID)
     BOOL brc = FALSE;
 
     if (G_hmtxObjectsLists == NULLHANDLE)
-        DosCreateMutexSem(NULL,
-                          &G_hmtxObjectsLists,
-                          0,
-                          FALSE);
-
-    brc = !(WinRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT));
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxObjectsLists,
+                                 0,
+                                 TRUE);
+    else
+        brc = !WinRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT);
 
     return (brc);
 }
@@ -702,7 +769,7 @@ BOOL objIsOnList(WPObject *somSelf,
 
 /*
  *@@ objEnumList:
- *      this enumerates object on the given list.
+ *      this enumerates objects on the given list.
  *
  *      If (pObject == NULL), the first object on the list
  *      is returned, otherwise the object which comes
@@ -783,6 +850,532 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
     }
 
     return (pObjectFound);
+}
+
+/* ******************************************************************
+ *
+ *   Object handles cache
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockHandlesCache:
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+BOOL LockHandlesCache(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxHandlesCache == NULLHANDLE)
+    {
+        // first call:
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxHandlesCache,
+                                 0,
+                                 TRUE);
+        // initialize tree
+        treeInit(&G_HandlesCache);
+        G_ulHandlesCacheItemsCount = 0;
+    }
+    else
+        brc = !WinRequestMutexSem(G_hmtxHandlesCache, SEM_INDEFINITE_WAIT);
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockHandlesCache:
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID UnlockHandlesCache(VOID)
+{
+    DosReleaseMutexSem(G_hmtxHandlesCache);
+}
+
+/*
+ *@@ CheckShrinkCache:
+ *      checks if the cache has too many objects
+ *      and shrinks it if needed. Returns the
+ *      no. of objects removed.
+ *
+ *      Since the cache maintains a reference
+ *      item per node, it can delete the oldest
+ *      objects.
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must have locked the cache.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+ULONG CheckShrinkCache(VOID)
+{
+    ULONG   ulDeleted = 0;
+    LONG    lObjectsToDelete = G_ulHandlesCacheItemsCount - CACHE_ITEM_LIMIT;
+
+    if (lObjectsToDelete > 0)
+    {
+        while (lObjectsToDelete--)
+        {
+            POBJTREENODE    pOldest = treeFirst(G_HandlesCache),
+                            pNode = pOldest;
+            while (pNode)
+            {
+                if (pNode->ulReferenced < pOldest->ulReferenced)
+                    // this node is older:
+                    pOldest = pNode;
+
+                pNode = treeNext((TREE*)pNode);
+            }
+
+            // now we know the oldest node;
+            // delete it
+            if (pOldest)
+            {
+                treeDelete(&G_HandlesCache, (TREE*)pNode);
+                G_ulHandlesCacheItemsCount--;
+                // unset list notify flag
+                _xwpModifyListNotify(pNode->pObject,
+                                     OBJLIST_HANDLESCACHE,
+                                     0);
+                free(pNode);
+            }
+        }
+    }
+
+    return (ulDeleted);
+}
+
+/*
+ *@@ objFindObjFromHandle:
+ *      fast find-object function, which implements a
+ *      cache for frequently used objects.
+ *
+ *      This is way faster than running _wpclsQueryObject
+ *      and is therefore used with the extended
+ *      file associations.
+ *
+ *      This uses a red-black balanced binary tree for
+ *      finding the object from the HOBJECT. If the object
+ *      is not found, _wpclsQueryObject is invoked, and
+ *      the object is added to the tree.
+ *
+ *      As a result, this is especially helpful if you
+ *      need the same few objects many times, as with
+ *      the extended file assocs. They query the same
+ *      maybe 20 HOBJECTs all the time, and possibly for
+ *      a thousand data files.
+ *
+ *      Since I implemented this, folder populating has
+ *      become a blitz. Extended assocs are now even
+ *      faster than the standard WPS assocs. Quite
+ *      unbelievable what 30 lines of code here and
+ *      there could do to some other WPS internals...
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+WPObject* objFindObjFromHandle(HOBJECT hobj)
+{
+    WPObject *pobjReturn = NULL;
+
+    // lock the cache
+    if (LockHandlesCache())
+    {
+        POBJTREENODE pNode = treeFindEQID(&G_HandlesCache,
+                                          hobj);
+        if (pNode)
+        {
+            // was in cache:
+            pobjReturn = pNode->pObject;
+            // store system uptime as last reference
+            DosQuerySysInfo(QSV_MS_COUNT,
+                            QSV_MS_COUNT,
+                            &pNode->ulReferenced,
+                            sizeof(pNode->ulReferenced));
+        }
+        else
+        {
+            // was not in cache:
+            // run wpclsQueryObject
+            static M_XFldObject *pObjectClass = NULL;
+
+            if (!pObjectClass)
+                pObjectClass = _WPObject;
+
+            pobjReturn = _wpclsQueryObject(pObjectClass, hobj);
+
+            if (pobjReturn)
+            {
+                // valid handle:
+
+                // check if the cache needs to be shrunk
+                CheckShrinkCache();
+
+                // add new obj to cache
+                pNode = NEW(OBJTREENODE);
+                if (pNode)
+                {
+                    pNode->Tree.id = hobj;
+                    pNode->pObject = pobjReturn;
+                    // store system uptime as last reference
+                    DosQuerySysInfo(QSV_MS_COUNT,
+                                    QSV_MS_COUNT,
+                                    &pNode->ulReferenced,
+                                    sizeof(pNode->ulReferenced));
+
+                    treeInsertID(&G_HandlesCache,
+                                 (TREE*)pNode,
+                                 FALSE);        // no duplicates
+                    G_ulHandlesCacheItemsCount++;
+
+                    // set list-notify flag so we can
+                    // kill this node, should the obj get deleted
+                    // (objRemoveFromHandlesCache)
+                    _xwpModifyListNotify(pobjReturn,
+                                         OBJLIST_HANDLESCACHE,
+                                         OBJLIST_HANDLESCACHE);
+                }
+            }
+        }
+
+        UnlockHandlesCache();
+    }
+
+    return (pobjReturn);
+}
+
+/*
+ *@@ objRemoveFromHandlesCache:
+ *      removes the specified object from the
+ *      handles cache. Called from WPObject::wpUnInitData
+ *      only when an object from the cache goes dormant.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID objRemoveFromHandlesCache(WPObject *somSelf)
+{
+    // lock the cache
+    if (LockHandlesCache())
+    {
+        // this is terminally slow, but what the heck...
+        // this rarely gets called
+        POBJTREENODE pNode = treeFirst(G_HandlesCache);
+        while (pNode)
+        {
+            if (pNode->pObject == somSelf)
+            {
+                treeDelete(&G_HandlesCache, (TREE*)pNode);
+                G_ulHandlesCacheItemsCount--;
+                free(pNode);
+                break;
+            }
+
+            pNode = treeNext((TREE*)pNode);
+        }
+
+        UnlockHandlesCache();
+    }
+}
+
+/* ******************************************************************
+ *
+ *   Dirty objects list
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockDirtyList:
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+BOOL LockDirtyList(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxDirtyList == NULLHANDLE)
+    {
+        // first call:
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxDirtyList,
+                                 0,
+                                 TRUE);
+        // initialize tree
+        treeInit(&G_DirtyList);
+        G_ulDirtyListItemsCount = 0;
+    }
+    else
+        brc = !WinRequestMutexSem(G_hmtxDirtyList, SEM_INDEFINITE_WAIT);
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockDirtyList:
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID UnlockDirtyList(VOID)
+{
+    DosReleaseMutexSem(G_hmtxDirtyList);
+}
+
+/*
+ *@@ objAddToDirtyList:
+ *      adds the given object to the "dirty" list, which
+ *      is really a binary tree for speed.
+ *
+ *      This gets called from XFldObject::wpSaveDeferred.
+ *      See remarks there.
+ *
+ *      Returns TRUE if the object was added or FALSE if
+ *      not, e.g. because the object was already on the
+ *      list.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL objAddToDirtyList(WPObject *pobj)
+{
+    BOOL    brc = FALSE;
+
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (!_somIsA(pobj, _WPTransient))
+        {
+            if (fLocked = LockDirtyList())
+            {
+                // add new obj to cache;
+                // we can use a plain TREE node (no special struct
+                // definition needed) and just use the "id" field
+                // for the pointer
+                TREE *pNode = NEW(TREE);
+                if (pNode)
+                {
+                    pNode->id = (ULONG)pobj;
+
+                    brc = (TREE_OK == treeInsertID(&G_DirtyList,
+                                                   pNode,
+                                                   FALSE));        // no duplicates
+                    if (brc)
+                    {
+                        G_ulDirtyListItemsCount++;
+                        _Pmpf((__FUNCTION__ ": added obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
+                        _Pmpf(("  now %d objs on list", G_ulDirtyListItemsCount ));
+                    }
+                    else
+                        _Pmpf((__FUNCTION__ ": DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
+
+                    // note that we do not need an object list flag
+                    // here because the WPS automatically invokes
+                    // wpSaveImmediate on "dirty" objects during
+                    // wpMakeDormant processing; as a result,
+                    // objRemoveFromDirtyList will also get called
+                    // automatically
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockDirtyList();
+
+    return (brc);
+}
+
+/*
+ *@@ objRemoveFromDirtyList:
+ *      removes the specified object from the "dirty"
+ *      list. See objAddToDirtyList.
+ *
+ *      This gets called from XFldObject::wpSaveImmediate.
+ *      See remarks there. Since that method doesn't always
+ *      get called for WPAbstracts, we have some objects
+ *      on this list which will always remain there... but
+ *      never mind, it shouldn't hurt if we save those on
+ *      shutdown. It's still better than saving all awake
+ *      objects.
+ *
+ *      Returns TRUE if the object was found and removed.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL objRemoveFromDirtyList(WPObject *pobj)
+{
+    BOOL    brc = FALSE;
+
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockDirtyList())
+        {
+            TREE *pNode = treeFindEQID(&G_DirtyList,
+                                       (ULONG)pobj);
+            if (pNode)
+            {
+                // was on list:
+                treeDelete(&G_DirtyList,
+                           pNode);
+                free(pNode);
+                G_ulDirtyListItemsCount--;
+
+                _Pmpf((__FUNCTION__ ": removed obj 0x%lX (%s), %d remaining",
+                            pobj,
+                            _wpQueryTitle(pobj),
+                            G_ulDirtyListItemsCount ));
+
+                brc = TRUE;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockDirtyList();
+
+    return (brc);
+}
+
+/*
+ *@@ objQueryDirtyObjectsCount:
+ *      returns the no. of currently dirty objects.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+ULONG objQueryDirtyObjectsCount(VOID)
+{
+    ULONG ulrc = 0;
+
+    if (LockDirtyList())
+    {
+        ulrc = G_ulDirtyListItemsCount;
+
+        UnlockDirtyList();
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ objSaveAllDirtyObjects:
+ *      invokes the specified callback on all objects on
+ *      the "dirty" list.
+ *
+ *      The callback must have the following prototype:
+ *
+ +      BOOL _Optlink fnCallback(WPObject *pobjThis,
+ +                               ULONG ulIndex,
+ +                               ULONG cObjects,
+ +                               PVOID pvUser);
+ +
+ *      It will receive:
+ *
+ *      --  pobjThis: current object.
+ *
+ *      --  ulIndex: list index of current object, starting from 0.
+ *
+ *      --  cObjects: total objects on the list.
+ *
+ +      --  pvUser: what was passed to this function.
+ *
+ *      It is safe to call wpSaveImmediate from the callback
+ *      (which will remove the object from the "dirty" list
+ *      being processed!) because we build a copy of the dirty
+ *      list internally before running the callback on the list.
+ *
+ *      WARNING: Do not play around with threads in the callback.
+ *      The "dirty" list is locked while the callback is running,
+ *      so only the callback thread may invoke wpSaveImmediate.
+ *
+ *      Returns the no. of objects for which the callback
+ *      returned TRUE.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback function
+                            PVOID pvUserForCallback)    // in: user param for callback
+{
+    ULONG   ulrc = 0;
+
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockDirtyList())
+        {
+            // since wpSaveImmediate will call objRemoveFromDirtyList
+            // from our XFldObject::wpSaveImmediate override, we cannot
+            // simply run through the "dirty" tree and go for treeNext,
+            // since the tree will be rebalanced with every save...
+            // build a linked list from the tree FIRST and then run
+            // through the list
+            TREE        *pTreeNode;
+            PLISTNODE   pListNode;
+            WPObject    *pobj;
+            // save object count first because this might change
+            // during processing
+            ULONG       cObjects = G_ulDirtyListItemsCount;
+            ULONG       ulThis = 0;
+
+            LINKLIST    ll;
+            lstInit(&ll, FALSE);
+
+            pTreeNode = treeFirst(G_DirtyList);
+            while (pTreeNode)
+            {
+                lstAppendItem(&ll,
+                              pTreeNode);
+
+                pTreeNode = treeNext(pTreeNode);
+            }
+
+            // now run thru the list
+            FOR_ALL_NODES(&ll, pListNode)
+            {
+                pTreeNode = (TREE*)pListNode->pItemData;
+                pobj = (WPObject*)pTreeNode->id;
+
+                if (pCallback(pobj,
+                              ulThis,
+                              cObjects,
+                              pvUserForCallback))
+                        // if this calls wpSaveImmediate, this might kill
+                        // the tree node thru objRemoveFromDirtyList!
+                    ulrc++;
+
+                ulThis++;
+            }
+
+            lstClear(&ll);
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        UnlockDirtyList();
+
+    return (ulrc);
 }
 
 /* ******************************************************************
@@ -2506,11 +3099,12 @@ ULONG objQuerySetup(WPObject *somSelf,
 
     xstrInit(&strTemp, 200);
 
-    if (_somIsA(somSelf, _WPProgram))
+    /* if (_somIsA(somSelf, _WPProgram))
     {
         fsysQueryProgramSetup(somSelf,
                               &strTemp);
-    }
+    } */        // removed this V0.9.9 (2001-04-02) [umoeller]
+                // because we have now a proper method in WPProgram
 
     // CCVIEW
     ulValue = _wpQueryConcurrentView(somSelf);

@@ -172,6 +172,9 @@ interface XFldObject : WPObject
     wpFree: override;
     wpUnInitData: override;
 
+    wpSaveDeferred: override;
+    wpSaveImmediate: override;
+
     wpSaveState: override;
     wpRestoreState: override;
     wpRestoreData: override;

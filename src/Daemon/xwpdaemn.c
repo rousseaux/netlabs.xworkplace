@@ -1951,10 +1951,7 @@ int main(int argc, char *argv[])
         if (G_hmqDaemon)
         {
             // get our process ID
-            PTIB    ptib;
-            PPIB    ppib;
-            if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
-                G_pidDaemon = ppib->pib_ulpid;
+            G_pidDaemon = doshMyPID();
 
             // set up exception handlers
             excRegisterHooks(dmnExceptOpenLogFile,

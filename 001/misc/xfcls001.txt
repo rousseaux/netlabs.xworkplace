@@ -461,4 +461,5 @@ VPCForm 1 (Vispro C) "C Form" class.
 VPCPForm 1 (Vispro C++ 3.0) "C++ Form" class.
 VPForm 1 (Vispro Rexx 3.01) Forms class.
 
+XWPProgram 1 This is the XWorkplace replacement class for WPProgram for additional functionality for program objects.
 

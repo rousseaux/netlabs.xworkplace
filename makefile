@@ -119,6 +119,7 @@ $(XWP_OUTPUT_ROOT)\xwpfsys.obj \
 $(XWP_OUTPUT_ROOT)\xwpkeybd.obj \
 $(XWP_OUTPUT_ROOT)\xwpmedia.obj \
 $(XWP_OUTPUT_ROOT)\xwpmouse.obj \
+$(XWP_OUTPUT_ROOT)\xwppgm.obj \
 $(XWP_OUTPUT_ROOT)\xwpsetup.obj \
 $(XWP_OUTPUT_ROOT)\xwpscreen.obj \
 $(XWP_OUTPUT_ROOT)\xwpsound.obj \
@@ -450,7 +451,7 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 src\shared\xwp.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace main WPS classes module"
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def makefile
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\shared\xwp.def @<<link.tmp
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
@@ -711,7 +712,7 @@ $(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
 src\shared\xwpfonts.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace bitmap fonts"
 
-$(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\dummyfont.obj $(XWP_OUTPUT_ROOT)\$(@B).res makefile
+$(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\dummyfont.obj $(XWP_OUTPUT_ROOT)\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).fon
         $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(XWP_OUTPUT_ROOT)\dummyfont.obj
         @cd $(MODULESDIR)
@@ -881,4 +882,30 @@ release: really_all
 !endif
     $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
     $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
+
+#
+# Special target "warpin": this is not called by "all",
+# but must be set on the NMAKE command line.
+# Will work only on my private system.
+#
+
+warpin: release
+    @echo $(MAKEDIR)\makefile: Building WPI from $(XWPRELEASE).
+    cd $(XWPRELEASE)
+    cd ..
+    warpin_001.cmd
+    cd $(CURRENT_DIR)
+
+#
+# Special target "transfer": this is not called by "all",
+# but must be set on the NMAKE command line.
+# Will work only on my private system.
+#
+
+transfer: warpin
+    @echo $(MAKEDIR)\makefile: Transferring WPI from $(XWPRELEASE).
+    cd $(XWPRELEASE)
+    cd ..
+    sendfile p75 xwp-temp.wpi C:\_wpi\xwp-transferred.wpi
+    cd $(CURRENT_DIR)
 

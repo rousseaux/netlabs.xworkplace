@@ -108,7 +108,7 @@ CATEGORY "General"
                  0)
 
         DRIVER ( "DEVICE=", "VEMM.SYS",
-                 "DOS Extended Memory support",
+                 "DOS Expanded Memory support",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "VDPMI.SYS",
                  "DOS DPMI memory support",

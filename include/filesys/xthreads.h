@@ -29,9 +29,9 @@
     // messages WM_USER+100 to WM_USER+149 are used by folder.h and statbar.h
 
     /********************************************************************
-     *                                                                  *
-     *   Worker thread messages (WOM_xxx)                               *
-     *                                                                  *
+     *
+     *   Worker thread messages (WOM_xxx)
+     *
      ********************************************************************/
 
     // #define WOM_WELCOME                 (WM_USER+150)
@@ -83,9 +83,9 @@
     #define WOM_STOREGLOBALSETTINGS     (WM_USER+165)
 
     /********************************************************************
-     *                                                                  *
-     *   Speedy thread messages (QM_xxx)                                *
-     *                                                                  *
+     *
+     *   Speedy thread messages (QM_xxx)
+     *
      ********************************************************************/
 
     #define QM_BOOTUPSTATUS             (WM_USER+180)
@@ -97,9 +97,9 @@
     #define QM_TREEVIEWAUTOSCROLL       (WM_USER+184)
 
     /********************************************************************
-     *                                                                  *
-     *   File thread messages (FIM_xxx)                                 *
-     *                                                                  *
+     *
+     *   File thread messages (FIM_xxx)
+     *
      ********************************************************************/
 
     // flags for recreating config folder (FIM_RECREATECONFIGFOLDER)
@@ -173,10 +173,20 @@
     // (include\xwpapi.h)
 
     /********************************************************************
-     *                                                                  *
-     *   Prototypes                                                     *
-     *                                                                  *
+     *
+     *   Prototypes
+     *
      ********************************************************************/
+
+    BOOL xthrLockAwakeObjectsList(VOID);
+
+    VOID xthrUnlockAwakeObjectsList(VOID);
+
+    APIRET xthrQueryAwakeObjectsMutexOwner(PPID ppid,
+                                           PTID ptid,
+                                           PULONG pulCount);
+
+    LONG xthrQueryAwakeObjectsCount(VOID);
 
     VOID xthrResetWorkerThreadPriority(VOID);
 

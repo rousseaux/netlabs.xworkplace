@@ -527,8 +527,9 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     else
         fprintf(file, "\nGlobal lock semaphore is currently not owned.\n", tid, tid);
 
-    arc = DosQueryMutexSem(pKernelGlobals->hmtxAwakeObjects,
-                           &pid, &tid, &ulCount);
+    arc = xthrQueryAwakeObjectsMutexOwner(&pid,
+                                          &tid,
+                                          &ulCount);
     if ((arc == NO_ERROR) && (tid))
         fprintf(file, "Awake-objects semaphore is currently owned by thread 0x%lX (%u) (request count: %d).\n",
                       tid, tid, ulCount);
@@ -2702,7 +2703,8 @@ VOID krnInitializeXWorkplace(VOID)
 
         // initialize awake-objects list (which holds
         // plain WPObject* pointers)
-        G_KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
+        // G_KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
+                                        // moved to xthreads.c V0.9.9 (2001-04-04) [umoeller]
 
         // register exception hooks for /helpers/except.c
         excRegisterHooks(krnExceptOpenLogFile,

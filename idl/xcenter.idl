@@ -161,6 +161,7 @@ interface XCenter : WPAbstract
 
     wpOpen: override;
     wpSwitchTo: override;
+    wpClose: override;
 
     wpAddObjectWindowPage: override;
 

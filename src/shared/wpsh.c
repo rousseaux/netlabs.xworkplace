@@ -190,7 +190,7 @@
  *      implementation). So do this:
  *
  +          DEMO_TYPEDEF pDemo = wpshResolveFor(somSelf,
- +                                              somGetParent(_DemoFolder),
+ +                                              _somGetParent(_DemoFolder),
  +                                              "wpDemo");
  +
  +          if (pDemo)      // points to XFldObject::pDemo now
@@ -2308,15 +2308,15 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
  *
  *         Guideline:
  *
- *         1)  Request the object mutex.
+ *         1)  Request the folder mutex.
  *
- *         2)  Request the folder mutex.
+ *         2)  Request the object mutex.
  *
  *         3)  Do processing.
  *
- *         4)  Release folder mutex.
+ *         4)  Release object mutex.
  *
- *         5)  Release object mutex.
+ *         5)  Release folder mutex.
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  */

@@ -179,13 +179,14 @@ HWND    G_hwndTemplateFrame = NULLHANDLE;
 POINTL  G_ptlTemplateMousePos = {0};
 
 // linked list for config folder content:
-// this holds
-PLINKLIST           G_pllConfigContent = NULL;
+HMTX        G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
+LINKLIST    G_llConfigContent;
+BOOL        G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
 /* ******************************************************************
- *                                                                  *
- *   Functions for manipulating context menus                       *
- *                                                                  *
+ *
+ *   Various helper funcs
+ *
  ********************************************************************/
 
 /*
@@ -480,6 +481,12 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     return (brc);
 }
 
+/* ******************************************************************
+ *
+ *   Config folder management/caching
+ *
+ ********************************************************************/
+
 /*
  *@@ BuildConfigItemsList:
  *      this recursive function gets called from
@@ -725,6 +732,53 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
 }
 
 /*
+ *@@ LockConfigCache:
+ *      locks the global config folder content cache.
+ *
+ *      This has only been added with V0.9.9. Sigh...
+ *      I had always thought that mutex protection
+ *      for the cache wasn't needed since there was
+ *      only ever one menu open in PM. This isn't
+ *      quite true... for one, we can't ever trust
+ *      PM for such things, secondly, the config
+ *      cache gets invalidated behind our back if
+ *      an object from the config folders gets
+ *      deleted.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL LockConfigCache(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxConfigContent == NULLHANDLE)
+    {
+        brc = !DosCreateMutexSem(NULL,
+                                 &G_hmtxConfigContent,
+                                 0,
+                                 TRUE);
+        lstInit(&G_llConfigContent, FALSE);
+        G_fConfigCacheValid = FALSE;        // rebuild
+    }
+    else
+        brc = !WinRequestMutexSem(G_hmtxConfigContent, SEM_INDEFINITE_WAIT);
+
+    return (brc);
+}
+
+/*
+ *@@ UnlockConfigCache:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID UnlockConfigCache(VOID)
+{
+    DosReleaseMutexSem(G_hmtxConfigContent);
+}
+
+/*
  *@@ mnuInvalidateConfigCache:
  *      this gets called from our override of
  *      XFolder::wpStoreIconPosData when the
@@ -734,15 +788,18 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
  *      the lists will be rebuilt.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: added mutex protection for cache
  */
 
 VOID mnuInvalidateConfigCache(VOID)
 {
-    if (G_pllConfigContent != NULL)
+    if (LockConfigCache())
     {
-        lstFree(G_pllConfigContent);
-        G_pllConfigContent = NULL;
+        lstClear(&G_llConfigContent);
+        G_fConfigCacheValid = FALSE;
             // this will enfore a rebuild in InsertConfigFolderItems
+
+        UnlockConfigCache();
     }
 }
 
@@ -767,6 +824,7 @@ VOID mnuInvalidateConfigCache(VOID)
  *      changed. This is done by several XFolder method overrides.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.9 (2001-04-04) [umoeller]: added mutex protection for cache
  */
 
 BOOL InsertConfigFolderItems(XFolder *somSelf,
@@ -784,32 +842,36 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
     else
     {
         // config folder found:
-        // have we build a list of objects yet?
-        if (G_pllConfigContent == NULL)
+        if (LockConfigCache()) // V0.9.9 (2001-04-04) [umoeller]
         {
-            // no: create one
-            G_pllConfigContent = lstCreate(TRUE);     // auto-free items
-            // fill list; this will recurse
-            BuildConfigItemsList(G_pllConfigContent,
-                                 pConfigFolder);
-        }
+            // have we built a list of objects yet?
+            if (!G_fConfigCacheValid)
+            {
+                // no: create one
+                BuildConfigItemsList(&G_llConfigContent,
+                                     pConfigFolder);
+                G_fConfigCacheValid = TRUE;
+            }
 
-        // do we have any objects?
-        if (lstCountItems(G_pllConfigContent) > 0)
-        {
-            // yes:
-            // append another separator to the menu first
-            winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+            // do we have any objects?
+            if (lstCountItems(&G_llConfigContent) > 0)
+            {
+                // yes:
+                // append another separator to the menu first
+                winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
-            // now insert items in pConfigFolder into main context menu (hwndMenu);
-            // this routine will call itself recursively if it finds subfolders.
-            // Since we have registered an exception handler, if errors occur,
-            // this will lead to a message box only.
-            InsertObjectsFromList(G_pllConfigContent,
-                                  hwndMenu,
-                                  hwndCnr,
-                                  pGlobalSettings);
+                // now insert items in pConfigFolder into main context menu (hwndMenu);
+                // this routine will call itself recursively if it finds subfolders.
+                // Since we have registered an exception handler, if errors occur,
+                // this will lead to a message box only.
+                InsertObjectsFromList(&G_llConfigContent,
+                                      hwndMenu,
+                                      hwndCnr,
+                                      pGlobalSettings);
+            }
+
+            UnlockConfigCache();        // V0.9.9 (2001-04-04) [umoeller]
         }
     }
 
@@ -824,6 +886,12 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
 
     return (brc);
 }
+
+/* ******************************************************************
+ *
+ *   "Modify menu" entry points
+ *
+ ********************************************************************/
 
 /*
  *@@ mnuModifyFolderPopupMenu:
@@ -1413,9 +1481,9 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Functions for reacting to menu selections                      *
- *                                                                  *
+ *
+ *   "Menu selected" entry points
+ *
  ********************************************************************/
 
 /*
@@ -2679,9 +2747,9 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages       *
- *                                                                  *
+ *
+ *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages
+ *
  ********************************************************************/
 
 /*

@@ -4796,6 +4796,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                            0);      // current thread
 
             pXCenterData->tidXCenter = ptiMyself->tid;
+            _tid = ptiMyself->tid;          // moved this here V0.9.9 (2001-04-04) [umoeller]
 
             ctrpLoadClasses();
                     // matching "unload" is in WM_DESTROY of the client
@@ -5077,10 +5078,10 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 }
                 CATCH(excpt1) {} END_CATCH();
             }
-
-            _tid = NULLHANDLE;
-
         } // end if (fCreated)
+
+        _tid = NULLHANDLE;          // wpClose is waiting on this!!
+
     } // if (pXCenterData)
 
     #ifdef __DEBUG__
@@ -5157,12 +5158,12 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                                   &pXCenterData->hevRunning,
                                   0,        // unshared
                                   FALSE);   // not posted
-                if (_tid = thrCreate(NULL,
-                                     ctrp_fntXCenter,
-                                     &fRunning,
-                                     "XCenter",
-                                     THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
-                                     (ULONG)pXCenterData))
+                if (thrCreate(NULL,
+                              ctrp_fntXCenter,
+                              &fRunning,
+                              "XCenter",
+                              THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
+                              (ULONG)pXCenterData))
                 {
                     // thread created:
                     // wait until it's created the XCenter frame

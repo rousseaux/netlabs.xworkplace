@@ -82,12 +82,40 @@
      ********************************************************************/
 
     #define OBJLIST_RUNNINGSTORED           0x0001
-
     #define OBJLIST_CONFIGFOLDER            0x0002
-
     #define OBJLIST_FAVORITEFOLDER          0x0004
-
     #define OBJLIST_QUICKOPENFOLDER         0x0008
+    #define OBJLIST_HANDLESCACHE            0x0010 // V0.9.9 (2001-04-02) [umoeller]
+
+    /* ******************************************************************
+     *
+     *   Object handles cache
+     *
+     ********************************************************************/
+
+    WPObject* objFindObjFromHandle(HOBJECT hobj);
+
+    VOID objRemoveFromHandlesCache(WPObject *somSelf);
+
+    /* ******************************************************************
+     *
+     *   Dirty objects list
+     *
+     ********************************************************************/
+
+    BOOL objAddToDirtyList(WPObject *pobj);
+
+    BOOL objRemoveFromDirtyList(WPObject *pobj);
+
+    ULONG objQueryDirtyObjectsCount(VOID);
+
+    typedef BOOL _Optlink FNFORALLDIRTIESCALLBACK(WPObject *pobjThis,
+                                                  ULONG ulIndex,
+                                                  ULONG cObjects,
+                                                  PVOID pvUser);
+
+    ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,
+                                PVOID pvUserForCallback);
 
     /* ******************************************************************
      *

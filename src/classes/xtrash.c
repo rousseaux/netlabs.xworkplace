@@ -128,6 +128,8 @@
 #include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"
+#include "xfldr.ih"
 #include "xtrash.ih"
 #include "xtrashobj.ih"
 
@@ -143,7 +145,6 @@
 
 // other SOM headers
 #pragma hdrstop
-#include "xfobj.h"
 
 /* ******************************************************************
  *
@@ -1108,6 +1109,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                 // very first call:
                 _ulTrashObjectCount = 0;
                 _dSizeOfAllObjects = 0;
+
+                // tell XFolder to allow wpAddToContent hacks...
+                _xwpSetDisableCnrAdd(somSelf, TRUE);
 
                 brc = trshPopulateFirstTime(somSelf, ulFldrFlags);
 

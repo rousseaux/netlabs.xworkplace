@@ -1112,12 +1112,13 @@
 #define ID_SDMI_CLOSEITEM               4400
 #define ID_SDMI_UPDATESHUTLIST          4402
 #define ID_SDMI_UPDATEPROGRESSBAR       4403
-#define ID_SDMI_FLUSHBUFFERS            4404
+// #define ID_SDMI_FLUSHBUFFERS            4404     removed V0.9.9 (2001-04-04) [umoeller]
 #define ID_SDMI_CLOSEVIO                4405
-#define ID_SDMI_PREPARESAVEWPS          4406
-#define ID_SDMI_SAVEWPSITEM             4407
+// #define ID_SDMI_PREPARESAVEWPS          4406     removed V0.9.9 (2001-04-04) [umoeller]
+// #define ID_SDMI_SAVEWPSITEM             4407     removed V0.9.9 (2001-04-04) [umoeller]
+// #define ID_SDMI_SAVEWPS                 4407     removed V0.9.9 (2001-04-04) [umoeller]
 #define ID_SDMI_BEGINCLOSINGITEMS       4408
-#define ID_SDMI_CLEANUPANDQUIT          4409
+// #define ID_SDMI_CLEANUPANDQUIT          4409     removed V0.9.9 (2001-04-04) [umoeller]
 
 /******************************************
  *          Menu IDs                      *

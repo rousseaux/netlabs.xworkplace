@@ -388,6 +388,10 @@ If you do not wish to have this done, press "Cancel" now. You should only do thi
 
 Otherwise, press "OK" to continue.
 
+<--XFL0212-->: You must restart the WPS for the XWorkplace auto-refresh threads to become active.
+
+WARNING: This feature is still slightly unstable. It will probably not hang your system, but you might get crashes in the auto-refresh background threads. Use at your own risk.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

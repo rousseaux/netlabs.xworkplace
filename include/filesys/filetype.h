@@ -34,6 +34,8 @@
      *
      ********************************************************************/
 
+    VOID ftypInvalidateCaches(VOID);
+
     #ifdef SOM_XFldDataFile_h
         PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                                       BOOL fUsePlainTextAsDefault);
@@ -92,6 +94,9 @@
          *   XWPProgram/XFldProgramFile notebook callbacks (notebook.c)
          *
          ********************************************************************/
+
+        ULONG ftypInsertAssociationsPage(WPObject *somSelf,
+                                         HWND hwndNotebook);
 
         VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG flFlags);

@@ -1656,7 +1656,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
              fShowClassesSetup = FALSE,
              fShowWarnXShutdown = FALSE,
              fUpdateMouseMovementPage = FALSE,
-             fShowMustRestartWPS = FALSE,
+             fShowRefreshEnabled = FALSE,
+             fShowRefreshDisabled = FALSE,
              fShowExtAssocsWarning = FALSE;
         signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
                     cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
@@ -1820,7 +1821,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XCSI_REPLACEREFRESH:
                 krnEnableReplaceRefresh(precc->usCheckState);
-                fShowMustRestartWPS = TRUE;
+                if (precc->usCheckState)
+                    fShowRefreshEnabled = TRUE;
+                else
+                    fShowRefreshDisabled = TRUE;
             break;
 
             /*
@@ -1942,12 +1946,14 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                precc->usCheckState);
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         }
-        else if (fShowMustRestartWPS)
-        {
+        else if (fShowRefreshEnabled)
+            // "enabled, warning, unstable" msg
+            cmnMessageBoxMsg(pcnbp->hwndFrame,
+                             148, 212, MB_OK);
+        else if (fShowRefreshDisabled)
             // "must restart wps" msg
             cmnMessageBoxMsg(pcnbp->hwndFrame,
                              148, 207, MB_OK);
-        }
         else if (fShowExtAssocsWarning)
             // "warning: assocs gone" msg
             cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -2197,9 +2203,7 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         {
             // we got thread infos:
             PQPROCSTAT16 pps = prc16GetInfo(NULL);
-            PPIB ppib;
             ULONG ul;
-            DosGetInfoBlocks(NULL, &ppib);
 
             for (ul = 0;
                  ul < cThreadInfos;
@@ -2212,7 +2216,7 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 if (prec)
                 {
                     ULONG ulpri = prc16QueryThreadPriority(pps,
-                                                           ppib->pib_ulpid,
+                                                           doshMyPID(),
                                                            pThis->tid);
                     XSTRING str;
                     prec->pszThreadName = strdup(pThis->pcszThreadName);
@@ -2573,16 +2577,17 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     CHAR            szTemp[200];
 
     // awake WPS objects
-    sprintf(szTemp, "%d", pKernelGlobals->lAwakeObjectsCount);
+
+    sprintf(szTemp, "%d", xthrQueryAwakeObjectsCount());
     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_AWAKEOBJECTS,
-                    szTemp);
+                      szTemp);
 
     if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
     {
         PQPROCSTAT16 pps = prc16GetInfo(NULL);
         PRCPROCESS       prcp;
         // WPS thread count
-        prc16QueryProcessInfo(pps, ppib->pib_ulpid, &prcp);
+        prc16QueryProcessInfo(pps, doshMyPID(), &prcp);
         WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSTHREADS,
                            prcp.usThreads,
                            FALSE);  // unsigned
@@ -3030,6 +3035,7 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.2 (2000-03-28) [umoeller]: added freaky menus setting
+ *@@changed V0.9.9 (2001-04-01) [pr]: fixed freaky menus undo
  */
 
 MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -3111,6 +3117,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // and restore the settings for this page
             pGlobalSettings->VarMenuOffset   = pGSBackup->VarMenuOffset;
+            pGlobalSettings->fNoFreakyMenus   = pGSBackup->fNoFreakyMenus;
             pGlobalSettings->fNoSubclassing   = pGSBackup->fNoSubclassing;
             pGlobalSettings->NoWorkerThread  = pGSBackup->NoWorkerThread;
             pGlobalSettings->fUse8HelvFont   = pGSBackup->fUse8HelvFont;

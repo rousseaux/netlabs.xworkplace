@@ -9,8 +9,7 @@ Even though this file might look dangerously large, this doesn't mean that
 XWorkplace is dangerously unstable. Many of the bugs below are only minor
 quirks or funny misbehaviors which will not cause your system to hang or
 crash. And even if some behavior is not acceptable, you can always disable
-XWorkplace features in the "XWorkplace Setup" object. This applies to
-PageMage especially.
+XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
@@ -34,9 +33,6 @@ NOT-SO-SERIOUS PROBLEMS
 tooltips:
     -- rewrite auto-pop
 
-fonts:
-    -- first populate doesn't work
-
 XCenter:
     -- put menus on object buttons on top of the bar, not on top of the button.
 
@@ -48,11 +44,6 @@ XCenter:
 
     -- make object buttons droppable
 
-extended assocs:
-
-    --  multiple associations with the same app (object) should not be shown
-        in the file-open menu. (if HTML is text/html as well for instance)
-
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
@@ -60,14 +51,12 @@ XWPSetup:
 sounds:
     -- "Enable system sounds" on "Sound" page has no immediate effect;
        however, this didn't work for old WPS page either
-    -- Do not use default device for WAV files. Instead, open the default
-       device and let it play the WAV files.
 
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
 
-    -- shadows missing if "always sort" and "folders first" are enabled
+    -- shadows missing if "always sort" and "folders first" are enabled (?!?)
 
 file exists dlg:
     --  Right click on a file object (program object does not cause this bug)
@@ -77,12 +66,7 @@ file exists dlg:
         >and voila pop-up appears telling user that there is a name conflict, but the
         >new name is not in that folder!
 
-    --  System hang after 9th file.
-
-    --  System hang with dot file names (.rcwhatever)
-
 trash can:
-
     -- sorting doesn't work right... i need to rewrite sorting anyway.
 
     -- When you delete an object, it probably retains its object ID, because

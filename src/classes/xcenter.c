@@ -76,6 +76,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 
@@ -670,9 +671,7 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
         if (_tid)
         {
             // XCenter is running:
-            PTIB ptib;
-            DosGetInfoBlocks(&ptib, NULL);
-            if (ptib->tib_ptib2->tib2_ultid == _tid)
+            if (doshMyTID() == _tid)
                 // we're on the XCenter thread here:
                 fRedirect = TRUE;
         }
@@ -745,6 +744,46 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
         brc = XCenter_parent_WPAbstract_wpSwitchTo(somSelf, View);
 
     return (brc);
+}
+
+/*
+ *@@ wpClose:
+ *      this WPObject method goes through the USAGE_OPENVIEW
+ *      useitems of the object and sends (!) WM_CLOSE to
+ *      each of them.
+ *
+ *      This is also used by XShutdown to close objects.
+ *
+ *      For the XCenter, we call the parent to have this
+ *      job done. Howver, in addition, we MUST wait for
+ *      the XCenter thread to terminate or otherwise we
+ *      might hang on Desktop workarea resize...
+ *
+ *      The problem is that once WM_CLOSE is received by the
+ *      XCenter frame, it will destroy all child windows
+ *      and then exit the XCenter thread a bit later. During
+ *      exit, if "resize desktop" is enabled, the desktop is
+ *      resized. If XShutdown closes the XCenter and the
+ *      desktop next, the WPS apparently cannot handle this
+ *      if this isn't properly serialized.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_wpClose(XCenter *somSelf)
+{
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_wpClose");
+
+    if (XCenter_parent_WPAbstract_wpClose(somSelf))
+    {
+        /* while (_tid)
+            winhSleep(100); */
+
+        return (TRUE);
+    }
+
+    return (FALSE);
 }
 
 /*

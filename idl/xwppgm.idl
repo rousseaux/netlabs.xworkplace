@@ -1,0 +1,140 @@
+
+/*
+ * xwppgm.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XWPProgram
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xwppgm.c for details.
+ *
+ *      Copyright (C) 2001 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wppgm.idl>         // this is SOM for WPProgram
+
+/*
+   CLASS: XWPProgram
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject = XFldObject
+               ÀÄÄ WPAbstract
+                     ÀÄÄ WPProgram
+                           ÀÄÄ XWPProgram
+*/
+
+interface M_XWPProgram;            // Forward Reference to XWPProgram metaclass
+
+interface XWPProgram : WPProgram
+{
+
+    /*
+     * New instance methods for XWPProgram:
+     *
+     */
+
+    ULONG xwpAddAssociationsPage(in HWND hwndNotebook);
+
+    ULONG xwpQuerySetup2(in PSZ pszSetupString,
+                         in ULONG cbSetupString);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: xwpAddAssociationsPage,
+                  xwpQuerySetup2;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xpgm_;
+    externalstem = xpgm;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xwppgm;           //# specifies the filestem for sc-generated files
+    metaclass = M_XWPProgram;
+    dllname = "xfldr.dll";
+    callstyle = oidl;            //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XWPProgram:
+     *
+     */
+
+    /*
+     * WPProgram methods overridden by XWPProgram:
+     *
+     */
+
+    wpSetAssociationType: override;
+
+    wpAddProgramAssociationPage: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XWPProgram : M_WPProgram
+{
+
+    /*
+     * New class methods for M_XWPProgram:
+     *
+     */
+
+#ifdef __SOMIDL__
+  implementation {
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xpgmM_;
+    externalstem = xpgmM;
+    functionprefix = xpgmM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xwppgm;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XWPProgram:
+     *
+     */
+
+    /*
+     * M_WPProgram methods overridden by M_XWPProgram:
+     *
+     */
+
+    wpclsInitData: override;
+  };
+#endif /* __SOMIDL__ */
+};
+
+

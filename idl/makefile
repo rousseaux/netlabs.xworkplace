@@ -67,6 +67,7 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmedia.h \
      $(OUTPUTDIR)\xwpmouse.h \
+     $(OUTPUTDIR)\xwppgm.h \
      $(OUTPUTDIR)\xwpsetup.h \
      $(OUTPUTDIR)\xwpscreen.h \
      $(OUTPUTDIR)\xwpshadow.h \
@@ -156,6 +157,8 @@ $(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
 $(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpmouse.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwppgm.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
 

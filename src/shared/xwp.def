@@ -31,6 +31,7 @@ DATA MULTIPLE NONSHARED LOADONCALL
 IMPORTS
     DOSQPROCSTATUS = DOSCALLS.154
     DosQuerySysState = DOSCALLS.368
+    DOS16GETINFOSEG = DOSCALLS.8
 
 EXPORTS
    cfgQuerySwapperSize
@@ -44,6 +45,8 @@ EXPORTS
    ctrParseColorString
    ctrScanSetupString
    ctrSetSetupString
+   doshMyPID
+   doshMyTID
    gpihBox
    gpihCreateBitmap
    gpihCreateMemPS
@@ -273,3 +276,12 @@ EXPORTS
    M_XWPAdminCClassData
    M_XWPAdminClassData
    M_XWPAdminNewClass
+
+   XWPProgramCClassData
+   XWPProgramClassData
+   XWPProgramNewClass
+   M_XWPProgramCClassData
+   M_XWPProgramClassData
+   M_XWPProgramNewClass
+
+

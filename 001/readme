@@ -67,10 +67,25 @@ Last updated March 31, 2001
     Upgrading from XWorkplace
     -------------------------
 
-    With a more recent WarpIN, you will get a notification message
-    that XWPDAEMN.EXE is running. Have WarpIN kill that program
-    (which is the XWorkplace Daemon), and you can overwrite your
-    existing installation.
+    IMPORTANT: If you are installing while the WPS is running
+    (which is most probably the case), WarpIN will show you
+    confirmation dialogs about various files that are currently
+    in use, most importantly, XFLDR.DLL. This is natural because
+    those modules are loaded by XWorkplace while the WPS is up.
+
+    In those dialogs, you MUST select "Unlock (DosReplaceModule"),
+    or your installation will not be fully updated.
+
+    If you get this message for a help file (.HLP extension), the
+    XWorkplace help file is currently opened by the WPS. This
+    cannot be unlocked automatically. While the dialog is showing,
+    simply have the WPS show the help panel for the desktop (or
+    any other standard WPS help panel), which will unlock the
+    XWorkplace help file.
+
+    Besides, you will probably get a notification message that
+    XWPDAEMN.EXE is running and must be killed. Have WarpIN kill
+    that program (which is the XWorkplace Daemon).
 
     If upgrading doesn't work, have WarpIN remove the installed
     XWorkplace version first, restart the WPS, and install the

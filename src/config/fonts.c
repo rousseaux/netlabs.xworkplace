@@ -626,38 +626,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
                 // now insert all objects in one flush...
                 if (_ulFontsCurrent)
                 {
-                    ULONG       cObjects = 0;
-                    WPObject    **papObjects = fdrQueryContentArray(pFolder,
-                                                                    &cObjects);
-
-                    if (papObjects)
-                    {
-                        PVIEWITEM   pViewItem;
-                        for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
-                             pViewItem;
-                             pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
-                        {
-                            switch (pViewItem->view)
-                            {
-                                case OPEN_CONTENTS:
-                                case OPEN_TREE:
-                                case OPEN_DETAILS:
-                                {
-                                    HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
-                                    POINTL ptlIcon = {0, 0};
-                                    if (hwndCnr)
-                                        _wpclsInsertMultipleObjects(_somGetClass(pFolder),
-                                                                    hwndCnr,
-                                                                    &ptlIcon,
-                                                                    (PVOID*)papObjects,
-                                                                    NULL,   // parentrecord
-                                                                    cObjects);
-                                }
-                            }
-                        }
-
-                        free(papObjects);
-                    }
+                    fdrInsertAllContents(pFolder);
                 }
 
                 _wpModifyFldrFlags(pFolder,

@@ -103,6 +103,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "filesys\filetype.h"           // extended file types implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -395,7 +396,7 @@ PLINKLIST ftypGetCachedTypesWithFilters(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-int CompareWPSTypes(TREE *t1, TREE *t2)
+int TREEENTRY CompareWPSTypes(TREE *t1, TREE *t2)
 {
     int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
                    ((PWPSTYPEASSOCTREENODE)t2)->pszType);
@@ -411,7 +412,7 @@ int CompareWPSTypes(TREE *t1, TREE *t2)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-int CompareWPSTypeData(TREE *t1, void *pData)
+int TREEENTRY CompareWPSTypeData(TREE *t1, void *pData)
 {
     int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
                    (const char*)pData);
@@ -552,8 +553,13 @@ BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; list get
  *@@ AppendTypesFromString:
  *      this splits a standard WPS file types
  *      string (where several file types are
- *      separated by line feeds, \n) into
+ *      separated by a separator char) into
  *      a linked list of newly allocated PSZ's.
+ *
+ *      For some reason, WPDataFile uses \n as
+ *      the types separator (wpQueryType), while
+ *      WPProgram(File) uses a comma (',',
+ *      wpQueryAssociationType).
  *
  *      The list is not cleared, but simply appended to.
  *      The type is only added if it doesn't exist in
@@ -566,7 +572,8 @@ BOOL AppendSingleTypeUnique(PLINKLIST pll,    // in: list to append to; list get
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG AppendTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nPlain text")
+ULONG AppendTypesFromString(const char *pcszTypes, // in: types string (e.g. "C Code\nPlain text")
+                            CHAR cSeparator, // in: separator (\n for data files, ',' for programs)
                             PLINKLIST pllTypes) // in/out: list of newly allocated PSZ's
                                                 // with file types (e.g. "C Code", "Plain text")
 {
@@ -575,14 +582,14 @@ ULONG AppendTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nPla
     // by line feeds (\n), get the one according to ulView.
     // For example, if pszType has "C Code\nPlain text" and
     // ulView is 0x1001, get "Plain text".
-    PSZ     pTypeThis = pszTypes,
-            pLF = 0;
+    const char  *pTypeThis = pcszTypes,
+                *pLF = 0;
 
     // loop thru types list
     while (pTypeThis)
     {
         // get next line feed
-        pLF = strchr(pTypeThis, '\n');
+        pLF = strchr(pTypeThis, cSeparator);
         if (pLF)
         {
             // line feed found:
@@ -714,6 +721,7 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.9 (2001-03-27) [umoeller]: now avoiding duplicate assocs
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now using objFindObjFromHandle, DRAMATICALLY faster
  */
 
 ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code")
@@ -755,7 +763,8 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
                     while (*pAssoc)
                     {
                         hobjAssoc = atoi(pAssoc);
-                        pobjAssoc = _wpclsQueryObject(_WPObject, hobjAssoc);
+                        pobjAssoc = objFindObjFromHandle(hobjAssoc);
+                                    // V0.9.9 (2001-04-02) [umoeller]
                         if (pobjAssoc)
                         {
                             // look if the object has already been added;
@@ -988,6 +997,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
             // yes, explicit type(s):
             // decode those
             cTypes = AppendTypesFromString(pszTypes,
+                                           '\n',
                                            pllTypes);
         }
 
@@ -1948,7 +1958,7 @@ VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
             while (*pAssoc)
             {
                 sscanf(pAssoc, "%d", &hobjAssoc);
-                pobjAssoc = _wpclsQueryObject(_WPObject, hobjAssoc);
+                pobjAssoc = objFindObjFromHandle(hobjAssoc);   // V0.9.9 (2001-04-02) [umoeller]
                 if (pobjAssoc)
                 {
                     #ifdef DEBUG_ASSOCS
@@ -3410,6 +3420,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                         // object, but our own record core
                                                 // store record after which to insert
                                                 pftpd->preccAfter = pcdi->pRecord;
+
+                                                // OH MY LORD...
                                             }
                                         }
                                     }
@@ -3898,8 +3910,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                         else
                         {
                             // get object from handle
-                            WPObject *pobjAssoc = _wpclsQueryObject(_WPObject,
-                                                                    preccThis->hobj);
+                            WPObject *pobjAssoc = objFindObjFromHandle(preccThis->hobj);
+                                            // V0.9.9 (2001-04-02) [umoeller]
 
                             if (pobjAssoc)
                                 // add the object to the notebook list box
@@ -3978,7 +3990,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
 /* ******************************************************************
  *
- *   XFldDataFile notebook callbacks (notebook.c)
+ *   Shared code for XFldDataFile, XFldProgramFile, XWPProgram
+ *   file-type notebook pages
  *
  ********************************************************************/
 
@@ -4001,12 +4014,15 @@ extern MPARAM *G_pampDatafileTypesPage = G_ampDatafileTypesPage;
 extern ULONG G_cDatafileTypesPage = ARRAYITEMCOUNT(G_ampDatafileTypesPage);
 
 /*
- *@@ DATAFILETYPESPAGE:
+ *@@ INSTANCEFILETYPESPAGE:
+ *      notebook page structure for all the
+ *      instance file-type pages
+ *      (XFldDataFile, XFldProgramFile, XWPProgram).
  *
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-typedef struct _DATAFILETYPESPAGE
+typedef struct _INSTANCEFILETYPESPAGE
 {
     // linked list of file types (linklist.c);
     // this contains FILETYPELISTITEM structs
@@ -4018,7 +4034,191 @@ typedef struct _DATAFILETYPESPAGE
     // backup of explicit types (for Undo)
     PSZ     pszTypesBackup;
 
-} DATAFILETYPESPAGE, *PDATAFILETYPESPAGE;
+} INSTANCEFILETYPESPAGE, *PINSTANCEFILETYPESPAGE;
+
+/*
+ *@@ InitInstanceFileTypesPage:
+ *      common code for CBI_INIT.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
+                               PINSTANCEFILETYPESPAGE *pp)  // out: new struct
+{
+    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
+    if (pdftp)
+    {
+        memset(pdftp, 0, sizeof(*pdftp));
+        pcnbp->pUser = pdftp;
+
+        lstInit(&pdftp->llAvailableTypes, TRUE);     // auto-free
+
+        pdftp->hwndTypesCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+                                              ID_XSDI_DATAF_AVAILABLE_CNR);
+
+        ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
+                                 ID_XSDI_DATAF_AVAILABLE_CNR);
+                // this switches to tree view etc., but
+                // we need to override some settings
+        BEGIN_CNRINFO()
+        {
+            cnrhSetSortFunc(fnCompareName);
+        } END_CNRINFO(pdftp->hwndTypesCnr);
+    }
+
+    *pp = pdftp;
+}
+
+/*
+ *@@ FillInstanceFileTypesPage:
+ *      common code for CBI_SET.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
+                               const char *pcszCheck,
+                               CHAR cSeparator,
+                               PLINKLIST pllDisable)
+{
+    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pcnbp->pUser;
+    if (pdftp)
+    {
+        // build list of explicit types to be passed
+        // to FillCnrWithAvailableTypes; all the types
+        // on this list will be CHECKED
+        PLINKLIST pllExplicitTypes = NULL;
+
+        if (pcszCheck)
+        {
+            pllExplicitTypes = lstCreate(TRUE);
+            AppendTypesFromString(pcszCheck,
+                                  cSeparator,
+                                  pllExplicitTypes);
+        }
+
+        // clear container and memory
+        ClearAvailableTypes(pdftp->hwndTypesCnr,
+                            &pdftp->llAvailableTypes);
+        // insert all records and check/disable them in one flush
+        FillCnrWithAvailableTypes(pdftp->hwndTypesCnr,
+                                  &pdftp->llAvailableTypes,
+                                  pllExplicitTypes,  // check list
+                                  pllDisable);        // disable list
+
+        if (pllExplicitTypes)
+            lstFree(pllExplicitTypes);
+    }
+}
+
+/*
+ *@@ DestroyInstanceFileTypesPage:
+ *      common code for CBI_DESTROY.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
+{
+    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pcnbp->pUser;
+    if (pdftp)
+    {
+        ClearAvailableTypes(pdftp->hwndTypesCnr,
+                            &pdftp->llAvailableTypes);
+
+        if (pdftp->pszTypesBackup)
+        {
+            free(pdftp->pszTypesBackup);
+            pdftp->pszTypesBackup = NULL;
+        }
+    }
+}
+
+/*
+ *@@ HandleRecordChecked:
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
+                         PXSTRING pstrTypes,
+                         const char *pcszSeparator)
+{
+    PFILETYPERECORD precc = (PFILETYPERECORD)ulExtra;
+
+    if (precc->recc.usCheckState)
+    {
+        // checked -> type added:
+        if (pstrTypes->ulLength)
+        {
+            // explicit types exist already:
+            // append a new one
+            PSZ pszNew = (PSZ)malloc(   pstrTypes->ulLength
+                                      + 1       // for \n
+                                      + strlen(precc->pliFileType->pszFileType)
+                                      + 1);     // for \0
+            if (pszNew)
+            {
+                sprintf(pszNew,
+                        "%s%s%s",
+                        pstrTypes->psz,
+                        pcszSeparator,
+                        precc->pliFileType->pszFileType);
+
+                xstrset(pstrTypes, pszNew);
+
+                // _wpSetType(pcnbp->somSelf, pszNew, 0);
+                // free(pszNew);
+            }
+        }
+        else
+            // no explicit types yet:
+            // just set this new type as the only one
+            xstrcpy(pstrTypes,
+                    precc->pliFileType->pszFileType,
+                    0);
+            // _wpSetType(pcnbp->somSelf, precc->pliFileType->pszFileType, 0);
+    }
+    else
+    {
+        // unchecked -> type removed:
+        if (pstrTypes->ulLength)
+        {
+            if (strchr(pstrTypes->psz, *pcszSeparator))
+            {
+                // we have more than one type:
+                ULONG   ulOfs = 0;
+                CHAR    szFind[3];
+                // remove this type
+                xstrFindReplaceC(pstrTypes,
+                                 &ulOfs,
+                                 precc->pliFileType->pszFileType,
+                                 "");
+                // since the types are separated with \n if there
+                // are several, we now might have a duplicate \n\n
+                // if there was more than one type
+                ulOfs = 0;
+                szFind[0] = *pcszSeparator;
+                szFind[1] = *pcszSeparator;
+                szFind[2] = '\0';
+                xstrFindReplaceC(pstrTypes,
+                                 &ulOfs,
+                                 szFind,        // duplicate
+                                 pcszSeparator);   // single
+            }
+            else
+                // we had only one type:
+                xstrClear(pstrTypes);
+        }
+    }
+}
+
+/* ******************************************************************
+ *
+ *   XFldDataFile notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
 
 /*
  *@@ ftypDatafileTypesInitPage:
@@ -4034,87 +4234,42 @@ VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
 {
     if (flFlags & CBI_INIT)
     {
-        PDATAFILETYPESPAGE pdftp = (PDATAFILETYPESPAGE)malloc(sizeof(DATAFILETYPESPAGE));
+        PINSTANCEFILETYPESPAGE pdftp = NULL;
+
+        InitInstanceFileTypesPage(pcnbp,
+                                  &pdftp);
+
         if (pdftp)
         {
             PSZ     pszTypes = _wpQueryType(pcnbp->somSelf);
-
-            memset(pdftp, 0, sizeof(*pdftp));
-            pcnbp->pUser = pdftp;
-
             // backup existing types for "Undo"
             if (pszTypes)
                 pdftp->pszTypesBackup = strdup(pszTypes);
-
-            lstInit(&pdftp->llAvailableTypes, TRUE);     // auto-free
-
-            pdftp->hwndTypesCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                                  ID_XSDI_DATAF_AVAILABLE_CNR);
-
-            ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
-                                     ID_XSDI_DATAF_AVAILABLE_CNR);
-                    // this switches to tree view etc., but
-                    // we need to override some settings
-            BEGIN_CNRINFO()
-            {
-                cnrhSetSortFunc(fnCompareName);
-            } END_CNRINFO(pdftp->hwndTypesCnr);
         }
     }
 
     if (flFlags & CBI_SET)
     {
-        PDATAFILETYPESPAGE pdftp = (PDATAFILETYPESPAGE)pcnbp->pUser;
-        if (pdftp)
-        {
-            // build list of explicit types to be passed
-            // to FillCnrWithAvailableTypes; all the types
-            // on this list will be CHECKED
-            PLINKLIST pllExplicitTypes = NULL,
-                      pllAutomaticTypes = lstCreate(TRUE);
-            PSZ pszTypes = _wpQueryType(pcnbp->somSelf);
-            if (pszTypes)
-            {
-                pllExplicitTypes = lstCreate(TRUE);
-                AppendTypesFromString(pszTypes,
-                                      pllExplicitTypes);
-            }
+        PLINKLIST pllAutomaticTypes = lstCreate(TRUE);
+        PSZ pszTypes = _wpQueryType(pcnbp->somSelf);
 
-            // build list of automatic types;
-            // all these records will be DISABLED
-            // in the container
-            AppendTypesForFile(_wpQueryTitle(pcnbp->somSelf),
-                               pllAutomaticTypes);
+        // build list of automatic types;
+        // all these records will be DISABLED
+        // in the container
+        AppendTypesForFile(_wpQueryTitle(pcnbp->somSelf),
+                           pllAutomaticTypes);
 
-            // clear container and memory
-            ClearAvailableTypes(pdftp->hwndTypesCnr,
-                                &pdftp->llAvailableTypes);
-            // insert all records and check/disable them in one flush
-            FillCnrWithAvailableTypes(pdftp->hwndTypesCnr,
-                                      &pdftp->llAvailableTypes,
-                                      pllExplicitTypes,  // check list
-                                      pllAutomaticTypes);        // disable list
+        FillInstanceFileTypesPage(pcnbp,
+                                  pszTypes,    // string with types to check
+                                  '\n',         // separator char
+                                  pllAutomaticTypes);    // items to disable
 
-            if (pllExplicitTypes)
-                lstFree(pllExplicitTypes);
-            lstFree(pllAutomaticTypes);
-        }
+        lstFree(pllAutomaticTypes);
     }
 
     if (flFlags & CBI_DESTROY)
     {
-        PDATAFILETYPESPAGE pdftp = (PDATAFILETYPESPAGE)pcnbp->pUser;
-        if (pdftp)
-        {
-            ClearAvailableTypes(pdftp->hwndTypesCnr,
-                                &pdftp->llAvailableTypes);
-
-            if (pdftp->pszTypesBackup)
-            {
-                free(pdftp->pszTypesBackup);
-                pdftp->pszTypesBackup = NULL;
-            }
-        }
+        DestroyInstanceFileTypesPage(pcnbp);
     }
 }
 
@@ -4139,77 +4294,29 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_DATAF_AVAILABLE_CNR:
             if (usNotifyCode == CN_RECORDCHECKED)
             {
-                PFILETYPERECORD precc = (PFILETYPERECORD)ulExtra;
-
                 // get existing types
                 PSZ pszTypes = _wpQueryType(pcnbp->somSelf);
+                XSTRING str;
+                xstrInitCopy(&str, pszTypes, 0);
 
-                if (precc->recc.usCheckState)
-                {
-                    // checked -> type added:
-                    if (pszTypes)
-                    {
-                        // explicit types exist already:
-                        // append a new one
-                        PSZ pszNew = (PSZ)malloc(   strlen(pszTypes)
-                                                  + 1       // for \n
-                                                  + strlen(precc->pliFileType->pszFileType)
-                                                  + 1);     // for \0
-                        if (pszNew)
-                        {
-                            sprintf(pszNew,
-                                    "%s\n%s",
-                                    pszTypes,
-                                    precc->pliFileType->pszFileType);
+                // modify the types according to record click
+                HandleRecordChecked(ulExtra,         // from "item changed" callback
+                                    &str,
+                                    "\n");      // types separator
 
-                            _wpSetType(pcnbp->somSelf, pszNew, 0);
-
-                            free(pszNew);
-                        }
-                    }
-                    else
-                        // no explicit types yet:
-                        // just set this new type as the only one
-                        _wpSetType(pcnbp->somSelf, precc->pliFileType->pszFileType, 0);
-                }
-                else
-                {
-                    // unchecked -> type removed:
-                    if (pszTypes)
-                    {
-                        if (strchr(pszTypes, '\n'))
-                        {
-                            // we have more than one type:
-                            XSTRING str;
-                            ULONG ulOfs = 0;
-                            xstrInitCopy(&str, pszTypes, 0);
-                            // remove this type
-                            xstrFindReplaceC(&str,
-                                             &ulOfs,
-                                             precc->pliFileType->pszFileType,
-                                             "");
-                            // since the types are separated with \n if there
-                            // are several, we now might have a duplicate \n\n
-                            // if there was more than one type
-                            ulOfs = 0;
-                            xstrFindReplaceC(&str,
-                                             &ulOfs,
-                                             "\n\n",
-                                             "\n");
-                            _wpSetType(pcnbp->somSelf, str.psz, 0);
-                            xstrClear(&str);
-                        }
-                        else
-                            // we had only one type:
-                            _wpSetType(pcnbp->somSelf, NULL, 0);
-                    }
-                }
+                // set new types
+                _wpSetType(pcnbp->somSelf,
+                           (str.ulLength)
+                                ? str.psz
+                                : NULL,         // remove
+                           0);
+                xstrClear(&str);
             }
         break;
 
         case DID_UNDO:
         {
-            PDATAFILETYPESPAGE pdftp = (PDATAFILETYPESPAGE)malloc(sizeof(DATAFILETYPESPAGE));
+            PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
             if (pdftp)
             {
                 // set type to what was saved on init
@@ -4238,6 +4345,38 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  ********************************************************************/
 
 /*
+ *@@ ftypInsertAssociationsPage:
+ *      inserts the "Associations" page into the
+ *      given notebook.
+ *
+ *      Shared code between XFldProgramFile and XWPProgram.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgramFile
+                                 HWND hwndNotebook)
+{
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszAssociationsPage;
+    pcnbp->ulDlgID = ID_XSD_DATAF_TYPES;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGM_ASSOCIATIONS;
+    pcnbp->ulPageID = SP_PGMFILE_ASSOCS;
+    pcnbp->pampControlFlags = G_pampDatafileTypesPage;
+    pcnbp->cControlFlags = G_cDatafileTypesPage;
+    pcnbp->pfncbInitPage    = ftypAssociationsInitPage;
+    pcnbp->pfncbItemChanged    = ftypAssociationsItemChanged;
+    return (ntbInsertPage(pcnbp));
+}
+
+/*
  *@@ ftypAssociationsInitPage:
  *      notebook callback function (notebook.c) for the
  *      "Associations" page in program settings notebooks.
@@ -4253,6 +4392,36 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
+    if (flFlags & CBI_INIT)
+    {
+        PINSTANCEFILETYPESPAGE pdftp = NULL;
+
+        InitInstanceFileTypesPage(pcnbp,
+                                  &pdftp);
+
+        if (pdftp)
+        {
+            PSZ pszTypes = _wpQueryAssociationType(pcnbp->somSelf);
+            // backup existing types for "Undo"
+            if (pszTypes)
+                pdftp->pszTypesBackup = strdup(pszTypes);
+        }
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PSZ pszTypes = _wpQueryAssociationType(pcnbp->somSelf);
+
+        FillInstanceFileTypesPage(pcnbp,
+                                  pszTypes,     // string with types to check
+                                  ',',          // separator char
+                                  NULL);        // items to disable
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        DestroyInstanceFileTypesPage(pcnbp);
+    }
 }
 
 /*
@@ -4273,6 +4442,57 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
+
+    switch (ulItemID)
+    {
+        case ID_XSDI_DATAF_AVAILABLE_CNR:
+            if (usNotifyCode == CN_RECORDCHECKED)
+            {
+                // get existing types
+                PSZ pszTypes = _wpQueryAssociationType(pcnbp->somSelf);
+                                    // this works for both WPProgram and
+                                    // WPProgramFile; even though the two
+                                    // methods are differently implemented,
+                                    // they both call the same implementation
+                                    // in the WPS, so this is safe
+                                    // (famous last words)
+                XSTRING str;
+                xstrInitCopy(&str, pszTypes, 0);
+
+                // modify the types according to record click
+                HandleRecordChecked(ulExtra,         // from "item changed" callback
+                                    &str,
+                                    ",");      // types separator
+
+                // set new types
+                _wpSetAssociationType(pcnbp->somSelf,
+                                      (str.ulLength)
+                                           ? str.psz
+                                           : NULL);         // remove
+                xstrClear(&str);
+            }
+        break;
+
+        case DID_UNDO:
+        {
+            PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
+            if (pdftp)
+            {
+                // set type to what was saved on init
+                _wpSetAssociationType(pcnbp->somSelf, pdftp->pszTypesBackup);
+                // call "init" callback to reinitialize the page
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            }
+        break; }
+
+        case DID_DEFAULT:
+            // kill all explicit types
+            _wpSetAssociationType(pcnbp->somSelf, NULL);
+            // call "init" callback to reinitialize the page
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
+
+    } // end switch (ulItemID)
 
     return (mrc);
 }

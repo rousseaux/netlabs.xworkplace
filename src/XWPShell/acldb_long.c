@@ -460,7 +460,7 @@ APIRET UnlockACLs(VOID)
  *
  */
 
-int fnCompareSubjects(unsigned long id1, unsigned long id2)
+int TREEENTRY fnCompareSubjects(unsigned long id1, unsigned long id2)
 {
     if (id1 < id2)
         return -1;
@@ -474,7 +474,7 @@ int fnCompareSubjects(unsigned long id1, unsigned long id2)
  *
  */
 
-int fnCompareACLDBNames_Nodes(TREE *t1, TREE *t2)
+int TREEENTRY fnCompareACLDBNames_Nodes(TREE *t1, TREE *t2)
 {
     int i;
     i = strcmp( ((PACLDBENTRYNODE)t1)->pszName,
@@ -489,7 +489,7 @@ int fnCompareACLDBNames_Nodes(TREE *t1, TREE *t2)
  *
  */
 
-int fnCompareACLDBNames_Data(TREE *t1, void *pName)
+int TREEENTRY fnCompareACLDBNames_Data(TREE *t1, void *pName)
 {
     int i;
     i = strcmp( ((PACLDBENTRYNODE)t1)->pszName,

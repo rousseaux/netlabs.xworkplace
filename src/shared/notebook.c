@@ -271,8 +271,6 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
         if (pcnbp->pnbli)
         {
             BOOL fSemOwned = FALSE;
-            ULONG ulNesting;
-            DosEnterMustComplete(&ulNesting);
             TRY_LOUD(excpt1)
             {
                 fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists,
@@ -291,7 +289,6 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
                            "hmtxNotebookLists request failed.");
             }
             CATCH(excpt1) {} END_CATCH();
-            DosExitMustComplete(&ulNesting);
 
             if (fSemOwned)
             {
@@ -1067,7 +1064,8 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
                     case WM_DESTROY:
                         ntbDestroyPage(pcnbp);
-                        mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+                        fProcessed = FALSE;
+                        // mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                     break;
 
                     default:
@@ -1099,7 +1097,6 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct from ntbInsertPage
 {
     BOOL        fSemOwned = FALSE;
-    ULONG       ulNesting;
 
     // create NOTEBOOKPAGELISTITEM to be stored in list
     PNOTEBOOKPAGELISTITEM pnbliNew = NULL;
@@ -1120,7 +1117,6 @@ PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct fr
         #endif
     }
 
-    DosEnterMustComplete(&ulNesting);
     TRY_LOUD(excpt1)
     {
         // store new page in linked list
@@ -1207,8 +1203,6 @@ PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct fr
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
-
     return (pnbliNew);
 }
 
@@ -1227,9 +1221,6 @@ PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 {
     PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
     BOOL fSemOwned = FALSE;
-
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1259,8 +1250,6 @@ PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
-
     return (pSubclNBLI);
 }
 
@@ -1280,9 +1269,6 @@ VOID DestroyNBLI(HWND hwndNotebook,
 {
     BOOL fSemOwned = FALSE;
 
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
-
     TRY_LOUD(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
@@ -1297,28 +1283,26 @@ VOID DestroyNBLI(HWND hwndNotebook,
             while (pPageNode)
             {
                 PNOTEBOOKPAGELISTITEM pPageLI = (PNOTEBOOKPAGELISTITEM)pPageNode->pItemData;
-                if (pPageLI)
-                    if (pPageLI->pcnbp)
-                    {
-                        if (pPageLI->pcnbp->hwndNotebook == hwndNotebook)
-                            // our page:
-                            if (!pPageLI->pcnbp->fPageInitialized)
-                                // page has NOT been initialized
-                                // (this flag is set by ntb_fnwpPageCommon):
-                                // remove it from list
-                            {
-                                 #ifdef DEBUG_NOTEBOOKS
-                                     _Pmpf(("  removed page ID %d", pPageLI->pcnbp->ulPageID));
-                                 #endif
-                                free(pPageLI->pcnbp);
-                                lstRemoveItem(G_pllOpenPages,
-                                              pPageLI);
+                if (    pPageLI
+                     && pPageLI->pcnbp
+                     && pPageLI->pcnbp->hwndNotebook == hwndNotebook // our page?
+                     && !pPageLI->pcnbp->fPageInitialized
+                            // page has NOT been initialized
+                            // (this flag is set by ntb_fnwpPageCommon):
+                   )
+                {
+                    // remove it from list
+                    PLISTNODE pNextNode = pPageNode->pNext;
+                    #ifdef DEBUG_NOTEBOOKS
+                        _Pmpf(("  removed page ID %d", pPageLI->pcnbp->ulPageID));
+                    #endif
+                    free(pPageLI->pcnbp);
+                    lstRemoveNode(G_pllOpenPages,
+                                  pPageNode);
 
-                                // restart loop with first item
-                                pPageNode = lstQueryFirstNode(G_pllOpenPages);
-                                continue;
-                            }
-                    }
+                    pPageNode = pNextNode;
+                    continue;
+                }
 
                 pPageNode = pPageNode->pNext;
             }
@@ -1338,8 +1322,6 @@ VOID DestroyNBLI(HWND hwndNotebook,
         DosReleaseMutexSem(G_hmtxNotebookLists);
         fSemOwned = FALSE;
     }
-
-    DosExitMustComplete(&ulNesting);
 
 }
 
@@ -1711,9 +1693,6 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
     PNOTEBOOKPAGELISTITEM   pItemReturn = 0;
     BOOL                fSemOwned = FALSE;
 
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
-
     TRY_QUIET(excpt1)
     {
         // list created yet?
@@ -1759,8 +1738,6 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
         DosReleaseMutexSem(G_hmtxNotebookLists);
         fSemOwned = FALSE;
     }
-
-    DosExitMustComplete(&ulNesting);
 
     if (pItemReturn)
         return (pItemReturn->pcnbp);

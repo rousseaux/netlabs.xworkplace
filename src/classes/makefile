@@ -83,6 +83,7 @@ OBJS = \
        $(OUTPUTDIR)\xwpkeybd.obj \
        $(OUTPUTDIR)\xwpmedia.obj \
        $(OUTPUTDIR)\xwpmouse.obj \
+       $(OUTPUTDIR)\xwppgm.obj \
        $(OUTPUTDIR)\xwpscreen.obj \
        $(OUTPUTDIR)\xwpsetup.obj \
        $(OUTPUTDIR)\xwpshadow.obj \
@@ -174,7 +175,7 @@ $(OUTPUTDIR)\anwcur.obj: \
 
 $(OUTPUTDIR)\xcenter.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\except.h $(HLPINC)\winh.h \
+            $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\winh.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\shared\center.h $(INC)\xcenter\centerp.h \
@@ -333,7 +334,7 @@ $(OUTPUTDIR)\xmmvolume.obj: \
 $(OUTPUTDIR)\xtrash.obj: \
             $(INC)\setup.h \
             $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\stringh.h \
-            $(INC)\classes\xfobj.h \
+            $(INC)\classes\xfobj.ih $(INC)\classes\xfldr.ih \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\folder.h $(INC)\filesys\trash.h \
@@ -394,6 +395,16 @@ $(OUTPUTDIR)\xwpmouse.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\hookintf.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\xwppgm.obj: \
+            $(INC)\setup.h \
+            $(HLPINC)\dosh.h $(HLPINC)\winh.h \
+            $(INC)\classes\xfobj.ih \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+                $(INC)\shared\wpsh.h \
+            $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpscreen.obj: \

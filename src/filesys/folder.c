@@ -1102,20 +1102,7 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
             brc = TRUE; // "OK" flag
         } // end if (hwndCnr)
     } // end if (hwndFrame)
-    /* else
-    {
-        // no open icon view: complain
-        if (fNotify)
-        {
-            cmnSetHelpPanel(-1);                   // disable F1
-            WinDlgBox(HWND_DESKTOP,
-                      HWND_DESKTOP,             // owner is desktop
-                      (PFNWP)fnwpDlgGeneric,    // common.c
-                      cmnQueryNLSModuleHandle(FALSE),               // load from resource file
-                      ID_XFD_NOICONVIEW,        // dialog resource id
-                      (PVOID)NULL);
-        }
-    } */
+
     return (brc);
 }
 
@@ -2884,19 +2871,22 @@ WPObject* fdrFindFSFromName(WPFolder *pFolder,
  *
  *      This code ONLY gets called if XFolder::xwpSetDisableCnrAdd
  *      was called.
+ *
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: fixed mutex release order
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: removed object mutex request on folder
  */
 
 BOOL fdrAddToContent(WPFolder *somSelf,
                      WPObject *pObject)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
-    BOOL fFolderLocked = FALSE,
-         fSubObjectLocked = FALSE;
 
-    if (wpshLockObject(&Lock, somSelf))
+    if (pObject)
     {
-        if (pObject)
+        BOOL fFolderLocked = FALSE,
+             fSubObjectLocked = FALSE;
+
+        TRY_LOUD(excpt1)        // V0.9.9 (2001-04-01) [umoeller]
         {
             fFolderLocked = !wpshRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
             if (fFolderLocked)
@@ -2951,12 +2941,14 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                 }
             }
         }
+        CATCH(excpt1) {} END_CATCH();
+
+        // release the mutexes in reverse order V0.9.9 (2001-04-01) [umoeller]
+        if (fSubObjectLocked)
+            _wpReleaseObjectMutexSem(pObject);
+        if (fFolderLocked)
+            wpshReleaseFolderMutexSem(somSelf);
     }
-    wpshUnlockObject(&Lock);
-    if (fSubObjectLocked)
-        _wpReleaseObjectMutexSem(pObject);
-    if (fFolderLocked)
-        wpshReleaseFolderMutexSem(somSelf);
 
     return (brc);
 }
@@ -3029,6 +3021,12 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
  *      *pulItems receives the array item count (NOT the
  *      array size).
  *
+ *      If (flFilter & QCAFL_FILTERINSERTED), this checks each
+ *      object and returns only those which have not been
+ *      inserted into any container yet. Useful for
+ *      wpclsInsertMultipleObjects, which will simply fail if
+ *      any object has already been inserted.
+ *
  *      Use free() to release the memory allocated here.
  *
  *      NOTE: The caller must lock the folder contents BEFORE
@@ -3037,9 +3035,11 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
  *      the caller's processing is also protected.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: added flFilter
  */
 
 WPObject** fdrQueryContentArray(WPFolder *pFolder,
+                                ULONG flFilter,           // in: filter flags
                                 PULONG pulItems)
 {
     WPObject** paObjects = NULL;
@@ -3070,10 +3070,19 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
                                                       QC_NEXT)
                     )
                 {
-                    *ppThis = pObject;
-
-                    ppThis++;
-                    ul++;
+                    // add object if either filter is off,
+                    // or if no RECORDITEM exists yet
+                    if (    (!(flFilter & QCAFL_FILTERINSERTED))
+                         || (!(_wpFindUseItem(pObject, USAGE_RECORD, NULL)))
+                       )
+                    {
+                        // store obj
+                        *ppThis = pObject;
+                        // advance ptr
+                        ppThis++;
+                        // raise count
+                        ul++;
+                    }
 
                     if (ul >= _cObjects)
                         // shouldn't happen, but we don't want to
@@ -3159,6 +3168,58 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
     }
 
     return (brc);
+}
+
+/*
+ *@@ fdrInsertAllContents:
+ *      inserts the contents of pFolder into all currently
+ *      open views of pFolder.
+ *
+ *      Preconditions:
+ *
+ *      --  The caller must hold the folder mutex since we're
+ *          going over the folder contents here.
+ *
+ *@@added V0.9.9 (2001-04-01) [umoeller]
+ */
+
+ULONG fdrInsertAllContents(WPFolder *pFolder)
+{
+     ULONG       cObjects = 0;
+     WPObject    **papObjects = fdrQueryContentArray(pFolder,
+                                                     QCAFL_FILTERINSERTED,
+                                                     &cObjects);
+
+     if (papObjects)
+     {
+         PVIEWITEM   pViewItem;
+         for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+              pViewItem;
+              pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+         {
+             switch (pViewItem->view)
+             {
+                 case OPEN_CONTENTS:
+                 case OPEN_TREE:
+                 case OPEN_DETAILS:
+                 {
+                     HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
+                     POINTL ptlIcon = {0, 0};
+                     if (hwndCnr)
+                         _wpclsInsertMultipleObjects(_somGetClass(pFolder),
+                                                     hwndCnr,
+                                                     &ptlIcon,
+                                                     (PVOID*)papObjects,
+                                                     NULL,   // parentrecord
+                                                     cObjects);
+                 }
+             }
+         }
+
+         free(papObjects);
+     }
+
+    return (cObjects);
 }
 
 /*

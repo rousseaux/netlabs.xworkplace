@@ -5,8 +5,11 @@
  *
  *      --  XFldProgramFile (WPProgramFile replacement)
  *
- *      XFldProgram is only responsible for changing the
- *      default icons of executable files.
+ *      XFldProgram is only responsible for
+ *
+ *      --  changing the default icons of executable files;
+ *
+ +      --  adding a few more instance settings pages (V0.9.9).
  *
  *      Installation of this class is optional.
  *
@@ -80,7 +83,6 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfpgmf.ih"
-#include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -93,8 +95,8 @@
 #include "filesys\filetype.h"           // extended file types implementation
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-
 #include <wpcmdf.h>                     // WPCommandFile
+#include "xfobj.h"
 
 /* ******************************************************************
  *
@@ -103,6 +105,12 @@
  ********************************************************************/
 
 static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
+
+/* ******************************************************************
+ *
+ *   XFldProgramFile instance methods
+ *
+ ********************************************************************/
 
 /*
  *@@ xwpAddResourcesPage:
@@ -227,33 +235,12 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddAssociationsPage(XFldProgramFile *somSelf,
                                                        HWND hwndNotebook)
 {
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-
-    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddAssociationsPage");
 
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszAssociationsPage;
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGM_ASSOCIATIONS;
-    pcnbp->ulPageID = SP_PGMFILE_ASSOCS;
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = ftypAssociationsInitPage;
-    pcnbp->pfncbItemChanged    = ftypAssociationsItemChanged;
-    return (ntbInsertPage(pcnbp));
+    return (ftypInsertAssociationsPage(somSelf,
+                                       hwndNotebook));
 }
-
-/* ******************************************************************
- *
- *   XFldProgramFile instance methods
- *
- ********************************************************************/
 
 /*
  *@@ xwpQueryProgType:
@@ -735,6 +722,33 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
 }
 
 /*
+ *@@ wpSetAssociationType:
+ *      this WPProgram(File) method sets the types
+ *      this object is associated with.
+ *
+ *      We must invalidate the caches if the WPS
+ *      messes with this.
+ *
+ *@@added V0.9.9 (2001-04-02) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfpgmf_wpSetAssociationType(XFldProgramFile *somSelf,
+                                                    PSZ pszType)
+{
+    BOOL brc = FALSE;
+
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpSetAssociationType");
+
+    brc = XFldProgramFile_parent_WPProgramFile_wpSetAssociationType(somSelf,
+                                                                    pszType);
+
+    ftypInvalidateCaches();
+
+    return (brc);
+}
+
+/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -794,7 +808,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramAssociationPage(XFldProgramFile *som
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramAssociationPage");
 
     if (pGlobalSettings->fExtAssocs)
@@ -899,8 +913,8 @@ SOM_Scope void  SOMLINK xfpgmfM_wpclsInitData(M_XFldProgramFile *somSelf)
         PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         if (pKernelGlobals)
         {
-           pKernelGlobals->fXFldProgramFile = TRUE;
-           krnUnlockGlobals();
+            pKernelGlobals->fXFldProgramFile = TRUE;
+            krnUnlockGlobals();
         }
     }
 }

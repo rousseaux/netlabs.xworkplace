@@ -439,23 +439,16 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
     }
     else
     {   // file system object
-        /* WPFileSystem    *pobjFile;
-        if (pobjFile = _wpclsQueryObject(_WPObject, hObject)) */
+        if (_wpQueryFilename(pObject, szPath, FALSE))
         {
-            if (_wpQueryFilename(pObject, szPath, FALSE))
-            {
-                sprintf(szKey,
-                        "%s:%c%s",
-                        pszClass,
-                        (_somIsA(pObject, _WPFolder) ? 'D' : 'F'),
-                        szPath);
-            }
-            else
-                return FALSE;
+            sprintf(szKey,
+                    "%s:%c%s",
+                    pszClass,
+                    (_somIsA(pObject, _WPFolder) ? 'D' : 'F'),
+                    szPath);
         }
-        /* else
-            return FALSE; */
-
+        else
+            return FALSE;
     }
 
     // now we have the key to search for within the .ICONPOS EA

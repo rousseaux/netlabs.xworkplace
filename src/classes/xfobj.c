@@ -370,6 +370,9 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
  *      -- OBJLIST_QUICKOPENFOLDER: object is a folder
  *         on the "quick-open folders" list.
  *
+ *      -- OBJLIST_HANDLESCACHE: object is in handles
+ *         cache (see objFindObjFromHandle).
+ *
  *      Note: These flags are NOT persistent across
  *      reboots, i.e. not stored with wpSaveState.
  *      They are also cleared for the copy if the
@@ -437,7 +440,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
                             // copy all unaffected
                             (_ulListNotify & ~flNotifyFlags)
                             // OR with masked new ones
-                            | (flNotifyFlags & flNotifyMask)
+                          | (flNotifyFlags & flNotifyMask)
                         );
         brc = TRUE;
     }
@@ -1053,6 +1056,12 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
                          INIKEY_QUICKOPENFOLDERS,
                          0);            // no modify flags... we're being destroyed
         }
+
+        if (_ulListNotify & OBJLIST_HANDLESCACHE)
+        {
+            _ulListNotify &= ~OBJLIST_HANDLESCACHE;
+            objRemoveFromHandlesCache(somSelf);
+        }
     }
 
     if (_pvllWidgetNotifies)
@@ -1075,6 +1084,82 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpSaveDeferred:
+ *      this WPObject method saves object instance data
+ *      asynchronously on a separate thread.
+ *
+ *      What the WPS really does here is to put the object
+ *      on an internal list. There is some separate thread
+ *      running which ages the objects on the list and,
+ *      if an object has aged enough, will invoke
+ *      WPObject::wpSaveImmediate upon the object, which
+ *      not only saves the data by invoking the object's
+ *      wpSaveState, but remove it from the ager list as
+ *      well.
+ *
+ *      Now, we need to override this method to keep track
+ *      of which objects are currently on the list. Otherwise
+ *      objects won't be properly saved during XShutdown.
+ *
+ *      This WPObject method is never overridden in the WPS.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
+{
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSaveDeferred");
+
+    // add the object to our private "dirty" list
+    objAddToDirtyList(somSelf);
+
+    // and call the parent...
+    return (XFldObject_parent_WPObject_wpSaveDeferred(somSelf));
+}
+
+/*
+ *@@ wpSaveImmediate:
+ *      this WPObject method allocates some memory and then
+ *      invokes the object's wpSaveState so that the object's
+ *      instance data will be saved synchronously.
+ *
+ *      This can get called in three situations:
+ *
+ *      --  Explicitly, if an object wants to save its state
+ *          _now_, e.g. because some critical data has changed.
+ *
+ *      --  Deferred as a result of WPObject::wpSaveDeferred,
+ *          if the object has aged enough.
+ *
+ *      --  Automatically during WPObject::wpMakeDormant if
+ *          the object has a deferred save pending.
+ *
+ *      We remove the object from our private "dirty" list
+ *      because it no longer needs to be saved on shutdown.
+ *      See XFldObject::wpSaveDeferred.
+ *
+ *      This method is overridden by the base storage classes
+ *      (WPAbstract, WPFileSystem, WPTransient), but most of
+ *      them call the WPObject parent... except WPAbstract,
+ *      apparently, which only sometimes calls the parent
+ *      for some reason. Never mind, we still know that the
+ *      object has been touched, so we have it on the list.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSaveImmediate(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSaveImmediate");
+
+    objRemoveFromDirtyList(somSelf);
+
+    return (XFldObject_parent_WPObject_wpSaveImmediate(somSelf));
 }
 
 /*

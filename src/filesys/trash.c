@@ -1145,6 +1145,7 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
  *@@changed V0.9.5 (2000-08-27) [umoeller]: fixed object counts
  *@@changed V0.9.7 (2001-01-17) [umoeller]: this returned FALSE always, which stopped shutdown... fixed
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added trash dir mappings
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now using fast populate
  */
 
 BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
@@ -1254,8 +1255,11 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
 
     _cDrivePopulating = 0;
     fdrUpdateStatusBars(somSelf);
-    ulFldrFlags &= ~FOI_POPULATEINPROGRESS;
 
+    // now insert all the trash objects in one flush V0.9.9 (2001-04-02) [umoeller]
+    fdrInsertAllContents(somSelf);
+
+    ulFldrFlags &= ~FOI_POPULATEINPROGRESS;
     _wpSetFldrFlags(somSelf, ulFldrFlags);
 
     if (fNeedSave)

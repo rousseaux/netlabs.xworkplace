@@ -34,14 +34,15 @@ plus the "toolkit" directory with the binary release.
 <P><LI>Object button widgets can display WPS context menus now... sort of.
 <P><LI>Added "Run" command to X-Button widget.
 <P><LI>Pressing "Shift+Delete" in a folder performs a "true delete" now, if enabled.
-<P><LI>Added replacement "Types" page for data files, which now displays the
-extended file types correctly.
+<P><LI>Added replacement "Types" page for data files, plus replacement "Associations"
+page for programs and program files, which now display the extended file types correctly.
 <P><LI>File types can now be renamed on "File types" page in "Workplace Shell".
 <P><LI>Added "Unknown only" checkbox to "Import WPS filters" dialog to hide known
 WPS filters.
 <P><LI>New settings for MB3 clicks on "Mouse mappings" page 2. Thanks, Martin Lafaix.
 <P><LI>MB3 drag scrolling has nice icons and pointers now. Thanks, Martin Lafaix.
 <P><LI>Added "Threads" page to XWPSetup.
+<P><LI>Martin Lafaix added more pages to the settings notebooks of program files.
 <P><LI>Paul Ratcliffe reworked the startup folders so that several of them may
 exist and you can set for each of them individually whether they should be processed
 on each WPS restart or after bootup only.
@@ -53,6 +54,10 @@ it ain't working, don't blame me.
 that this would break the code for 386 and 486 processors, but the VAC documentation
 clearly says this is not so. If this information is incorrect, please notify me,
 if you can still reach your system.
+<P><LI>Reworked WarpIN installation so that class registration and object creation
+is deferred until the WPS restarts. This should fix the various upgrade problems
+many people had. Besides, WarpIN supports de-install programs now, so the XWorkplace
+objects can now be deleted on deinstall too. XWorkplace now requires WarpIN V0.9.9 though.
 <P><LI>Worked some more on the standard XCenter widgets.
 <P><LI>Moved "Screen corners" page from XWPMouse to XWPScreen, where it seems more
 logical.
@@ -65,8 +70,10 @@ of the "\TRASH" directories on each drive. This should finally solve the problem
 with the "File exists" dialog popping up all the time. Besides, this should avoid
 the excessive creation of WPS file handles that used to occur for the "deep paths"
 that were used earlier.
-<P><LI>Added internal caches for the extended data file associations. This dramatically
-speeds up folder populating in some situations.
+<P><LI><I>Dramatically</I> sped up trash can populate on first open after WPS startup.
+<P><LI>Added several internal caches for the extended data file associations.
+This <I>dramatically</I> speeds up populating folders with many files. Looks like
+the extended file assocs are now even faster than the standard WPS assocs.
 <P><LI>Auto-hide mouse in the XWP hook now reacts to mouse clicks too.
 <P><LI>The XWP hook now allows multiple objects on the same hotkey. If you have found
 out how to do it, go ahead. Otherwise don't. Thanks, Paul Ratcliffe.
@@ -74,6 +81,11 @@ out how to do it, go ahead. Otherwise don't. Thanks, Paul Ratcliffe.
 widgets can easily know about their own HMODULE.
 <P><LI>Font settings weren't respected by "Import WPS filters" dialog.
 <P><LI>Further optimized string routines.
+<P><LI>Reworked large parts of XShutdown to get rid of several race conditions and
+improper sequencing between the two shutdown threads. Also, the saving of WPS objects
+was reworked because the old routines simply dumped all abstracts to disk... which
+excluded non-folders that had changes pending in the WPS background threads. All
+such pending changes should now be properly detected.
 
 </UL>Bugfixes:
 <UL><LI>Fixed problems if the trash can did not have the &lt;XWP_TRASHCAN&gt; ID.
@@ -82,17 +94,19 @@ Martin Lafaix. Optimized lists also to cause less INI accesses.
 <P><LI>Deleting the font folder or trash can caused hundreds of stupid WPS
 "cannot delete object" message boxes to pop up. Oh my, this infinite wisdom of the WPS.
 Fixed, the transient objects are now quietly nuked.
-<P><LI>Fixed problems with XCenter closing on shutdown and WPS restart. This was
-several problems actually... a race condition during XShutdown, and improper thread
-termination with the timers. The separate timer thread has been removed.
-<P><LI>Dragging objects on XCenter bar caused them to always appear on the left. Fixed,
-they are now properly added to the right.
 <P><LI>"Delete" from folder menu bar crashed. Fixed by Paul Ratcliffe.
 <P><LI>Global "Menu bar" setting in folder "View" submenu was sometimes queried wrong.
 Fixed.
 <P><LI>Fixed (I hope) infinitely growing swapper with XWorkplace "Create another"
 menu items from config folder (as mentioned in readme for quite a while)... I tested
 this and it appears to work now.
+<P><LI>Deleting the config folder would sometimes lead to WPS crashes. Should be
+fixed now; added another mutex for protecting the config folder cache.
+<P><LI>Fixed problems with XCenter closing on shutdown and WPS restart. This was
+several problems actually... a race condition during XShutdown, and improper thread
+termination with the timers. The separate timer thread has been removed.
+<P><LI>Dragging objects on XCenter bar caused them to always appear on the left. Fixed,
+they are now properly added to the right.
 <P><LI>XCenter settings view sometimes appeared on the XCenter view thread, which
 wasn't such a good idea. This is now redirected to thread 1.
 <P><LI>Some XCenter default values were reported wrong in its setup string. Fixed by
@@ -112,6 +126,11 @@ the menu item but only open the submenu if mouse is over the menu button.
 <P><LI>Fixed bad system hangs when "File exists" replacement was enabled. This was
 mostly caused by deadlocks between several WPS mutexes. Also the new dialog hung
 the system with certain file names.
+<P><LI>Priority change of the Worker thread never worked if the Worker message queue
+got filled with too many messages. Fixed.
+<P><LI>Completely reworked tracking of awake objects by the Worker thread. All
+awake objects are now tracked (check the "Status" page in XWPSetup), and performance
+is still much better than previously.
 <P><LI>"Shutdown" etc. menu items weren't disabled on XCenter X-button if shutdown
 was already running. Desktop "Shutdown" menu item wasn't either if submenu was disabled.
 

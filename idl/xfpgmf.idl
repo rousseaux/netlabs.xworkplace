@@ -101,6 +101,8 @@ interface XFldProgramFile : WPProgramFile
     wpSetIcon: override;
     wpSetProgIcon: override;
 
+    wpSetAssociationType: override;
+
     wpQueryDefaultView: override;
 
     wpAddProgramAssociationPage: override;
