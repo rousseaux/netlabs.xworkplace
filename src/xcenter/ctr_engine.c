@@ -1811,7 +1811,7 @@ BOOL FrameTimer(HWND hwnd,
  *      in turn resides in the frame's QWL_USER.
  *
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
- *@@changed V0.9.9 (2000-02-06) [umoeller]: fixed WM_CLOSE problems on wpClose
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: fixed WM_CLOSE problems on wpClose
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1846,7 +1846,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 {
                     case SC_CLOSE:
                         WinPostMsg(hwnd, WM_CLOSE, 0, 0);
-                                // changed V0.9.9 (2000-02-06) [umoeller]
+                                // changed V0.9.9 (2001-02-06) [umoeller]
                     break;
                 }
             break;
@@ -2946,7 +2946,7 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *      May run on any thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added fCallUnInit
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added fCallUnInit
  */
 
 APIRET ctrpFreeModule(HMODULE hmod,
@@ -2989,7 +2989,7 @@ APIRET ctrpFreeModule(HMODULE hmod,
  *
  *      May run on any thread.
  *
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added version management
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added version management
  */
 
 VOID ctrpLoadClasses(VOID)
@@ -3091,7 +3091,7 @@ VOID ctrpLoadClasses(VOID)
 
                 // OK, since we've changed the prototype for the init module,
                 // it's time to do version management.
-                // V0.9.9 (2000-02-06) [umoeller]
+                // V0.9.9 (2001-02-06) [umoeller]
 
                 // Check if the widget has the "query version" export.
                 PFNWGTQUERYVERSION pfnWgtQueryVersion = NULL;

@@ -3187,7 +3187,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
  *      moves a single object to the default trash can.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
- *@@changed V0.9.9 (2000-02-06) [umoeller]: renamed from cmnMove2DefTrashCan
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: renamed from cmnMove2DefTrashCan
  */
 
 BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject)

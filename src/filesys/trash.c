@@ -158,7 +158,7 @@ BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
  *      Not to be called manually. The caller must
  *      hold the trash can's mutex.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
@@ -324,7 +324,7 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
  *      object handles instead. The user can still drag the trash object
  *      to some other location manually.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID trshInitMappings(XWPTrashCan *somSelf,
@@ -393,7 +393,7 @@ VOID trshInitMappings(XWPTrashCan *somSelf,
  *      See trshInitMappings for an introduction to
  *      the trash can mappings.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 PTRASHMAPPINGTREENODE trshCreateMapping(XWPTrashCan *pTrashCan,
@@ -442,7 +442,7 @@ PTRASHMAPPINGTREENODE trshCreateMapping(XWPTrashCan *pTrashCan,
  *      See trshInitMappings for an introduction to
  *      the trash can mappings.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 PTRASHMAPPINGTREENODE trshGetMapping(XWPTrashCan *pTrashCan,
@@ -470,7 +470,7 @@ PTRASHMAPPINGTREENODE trshGetMapping(XWPTrashCan *pTrashCan,
  *      See trshInitMappings for an introduction to
  *      the trash can mappings.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID trshFreeMapping(XWPTrashCan *pTrashCan,
@@ -508,7 +508,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
 /*
  *@@ TRAVERSEMAPPINGSBUF:
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 typedef struct _TRAVERSEMAPPINGSBUF
@@ -523,7 +523,7 @@ typedef struct _TRAVERSEMAPPINGSBUF
  *      tree traversal function (helpers\tree.c) used
  *      in trshSaveMappings.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 void TraverseMappings(TREE *t,          // in: PTRASHMAPPINGTREENODE
@@ -561,7 +561,7 @@ void TraverseMappings(TREE *t,          // in: PTRASHMAPPINGTREENODE
  *      See trshInitMappings for an introduction to
  *      the trash can mappings.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID trshSaveMappings(XWPTrashCan *pTrashCan)
@@ -918,7 +918,7 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
  *@@changed V0.9.3 (2000-04-25) [umoeller]: deleting empty TRASH directories finally works
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.5 (2000-08-25) [umoeller]: object count was wrong
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added trash dir mappings
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added trash dir mappings
  */
 
 BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _XWPTrashObject (for speed)
@@ -1144,7 +1144,7 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
  *@@changed V0.9.5 (2000-08-25) [umoeller]: now deleting empty trash dirs
  *@@changed V0.9.5 (2000-08-27) [umoeller]: fixed object counts
  *@@changed V0.9.7 (2001-01-17) [umoeller]: this returned FALSE always, which stopped shutdown... fixed
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added trash dir mappings
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added trash dir mappings
  */
 
 BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
@@ -1365,7 +1365,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *
  *@@added V0.9.1 (2000-02-03) [umoeller]
  *@@changed V0.9.4 (2000-06-17) [umoeller]: now closing folder subviews properly
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added trash dir mappings
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added trash dir mappings
  */
 
 BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to create trash object

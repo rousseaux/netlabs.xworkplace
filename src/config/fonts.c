@@ -538,7 +538,7 @@ APIRET fonDeInstallFont(HAB hab,
  *
  *      This was moved back to the populate thread with V0.9.9.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID fonPopulateFirstTime(XWPFontFolder *pFolder)

@@ -627,7 +627,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
  *
  *      We open an XCenter view here by calling ctrpCreateXCenterView.
  *
- *@@changed V0.9.9 (2000-02-06) [umoeller]: now redirecting settings to thread-1
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: now redirecting settings to thread-1
  */
 
 SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,

@@ -759,7 +759,7 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
  *      this function internally, and this then calls trshSaveMappings
  *      in turn.
  *
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added mappings save
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added mappings save
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)

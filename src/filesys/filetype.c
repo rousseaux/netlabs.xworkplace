@@ -122,7 +122,7 @@
  *      which is built on the first call to
  *      ftypGetCachedTypesWithFilters.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 typedef struct _XWPTYPEWITHFILTERS
@@ -134,7 +134,7 @@ typedef struct _XWPTYPEWITHFILTERS
 /*
  *@@ WPSTYPEASSOCTREENODE:
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 typedef struct _WPSTYPEASSOCTREENODE
@@ -173,7 +173,7 @@ HMTX                G_hmtxAssocsCaches = NULLHANDLE;
  *@@ ftypLockCaches:
  *      locks the association caches.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 BOOL ftypLockCaches(VOID)
@@ -204,7 +204,7 @@ BOOL ftypLockCaches(VOID)
  *@@ ftypUnlockCaches:
  *      unlocks the association caches.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID ftypUnlockCaches(VOID)
@@ -218,7 +218,7 @@ VOID ftypUnlockCaches(VOID)
  *      to add all tree nodes to a linked list so
  *      we can delete all tree nodes quickly.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
@@ -241,7 +241,7 @@ void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
  *      call to ftypGetCachedTypesWithFilters or ftypFindWPSType
  *      will reinitialize the caches automatically.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID ftypInvalidateCaches(VOID)
@@ -327,7 +327,7 @@ VOID ftypInvalidateCaches(VOID)
  *
  *      -- The caller must lock the caches before calling.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 PLINKLIST ftypGetCachedTypesWithFilters(VOID)
@@ -389,7 +389,7 @@ PLINKLIST ftypGetCachedTypesWithFilters(VOID)
  *@@ CompareWPSTypes:
  *      tree node comparison func (helpers\tree.c).
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 int CompareWPSTypes(TREE *t1, TREE *t2)
@@ -405,7 +405,7 @@ int CompareWPSTypes(TREE *t1, TREE *t2)
  *@@ CompareWPSTypeData:
  *      tree node comparison func (helpers\tree.c).
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 int CompareWPSTypeData(TREE *t1, void *pData)
@@ -429,7 +429,7 @@ int CompareWPSTypeData(TREE *t1, void *pData)
  *
  *      -- The caller must lock the caches before calling.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
@@ -802,7 +802,7 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *
  *      -- ERROR_FILE_EXISTS: pcszNew is already occupied.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
@@ -1287,7 +1287,7 @@ typedef struct _FILETYPELISTITEM *PFILETYPELISTITEM;
 typedef struct _FILETYPERECORD
 {
     RECORDCORE          recc;
-    PFILETYPELISTITEM   pliFileType;        // added V0.9.9 (2000-02-06) [umoeller]
+    PFILETYPELISTITEM   pliFileType;        // added V0.9.9 (2001-02-06) [umoeller]
 } FILETYPERECORD, *PFILETYPERECORD;
 
 /*
@@ -1404,12 +1404,12 @@ PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert int
         = (PFILETYPERECORD)cnrhAllocRecords(hwndCnr, sizeof(FILETYPERECORD), 1);
     // recc attributes
     ULONG           usAttrs = CRA_COLLAPSED
-                               // | CRA_RECORDREADONLY V0.9.9 (2000-02-06) [umoeller]
+                               // | CRA_RECORDREADONLY V0.9.9 (2001-02-06) [umoeller]
                                | CRA_DROPONABLE;      // records can be dropped
 
     if (preccNew)
     {
-        // store reverse linkage V0.9.9 (2000-02-06) [umoeller]
+        // store reverse linkage V0.9.9 (2001-02-06) [umoeller]
         preccNew->pliFileType = pliAssoc;
         // insert the record
         cnrhInsertRecords(hwndCnr,
@@ -2720,7 +2720,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 case CN_REALLOCPSZ:
                 {
-                    // rename of file type has ended V0.9.9 (2000-02-06) [umoeller]:
+                    // rename of file type has ended V0.9.9 (2001-02-06) [umoeller]:
                     PCNREDITDATA pced = (PCNREDITDATA)ulExtra;
                     if (pced->pRecord)
                     {
@@ -3417,7 +3417,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      fills the "filters" listbox in the "import" dlg
  *      with the wps filters.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID FillListboxWithWPSFilters(HWND hwndDlg)
@@ -3468,7 +3468,7 @@ VOID FillListboxWithWPSFilters(HWND hwndDlg)
                 if ((fInsert) && (fUnknownOnly))
                 {
                     // b) now check XWorkplace filters
-                    // V0.9.9 (2000-02-06) [umoeller]
+                    // V0.9.9 (2001-02-06) [umoeller]
                     PLISTNODE pNode = lstQueryFirstNode(pllXWPTypesWithFilters);
                     while (pNode)
                     {
@@ -3524,7 +3524,7 @@ VOID FillListboxWithWPSFilters(HWND hwndDlg)
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.6 (2000-11-08) [umoeller]: fixed "Close" behavior
- *@@changed V0.9.9 (2000-02-06) [umoeller]: setting proper fonts now
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: setting proper fonts now
  */
 
 MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)

@@ -106,7 +106,7 @@
  *@@changed V0.9.0 [umoeller]: adjusted function prototype, renamed function
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added folder auto-refresh
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added folder auto-refresh
  */
 
 VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -174,7 +174,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added folder auto-refresh
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added folder auto-refresh
  */
 
 MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,

@@ -1455,7 +1455,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              *      Returns the return value of wpViewObject,
              *      which is either a HWND or a HAPP.
              *
-             *@@added V0.9.9 (2000-02-06) [umoeller]
+             *@@added V0.9.9 (2001-02-06) [umoeller]
              */
 
             case T1M_OPENOBJECTFROMPTR:

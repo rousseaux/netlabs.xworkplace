@@ -258,7 +258,7 @@
 #define ID_XSDI_TREEVIEWAUTOSCROLL      507
 #define ID_XSDI_FDRDEFAULTDOC           508
 #define ID_XSDI_FDRDEFAULTDOCVIEW       509
-#define ID_XSDI_FDRAUTOREFRESH          501     // added V0.9.9 (2000-02-06) [umoeller]
+#define ID_XSDI_FDRAUTOREFRESH          501     // added V0.9.9 (2001-02-06) [umoeller]
 
 // "Remove menu items" page
 #define ID_XSD_SET2REMOVEMENUS          510

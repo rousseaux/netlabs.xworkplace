@@ -318,7 +318,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added CN_HELP and fPassCnrHelp handling
- *@@changed V0.9.9 (2000-02-06) [umoeller]: added support for direct editing
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: added support for direct editing
  */
 
 MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
@@ -568,7 +568,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                 case CN_REALLOCPSZ:
                                 case CN_ENDEDIT:
                                     // support for these has been added with
-                                    // V0.9.9 (2000-02-06) [umoeller]
+                                    // V0.9.9 (2001-02-06) [umoeller]
                                     ulExtra = (ULONG)mp2;
                                                 // PCNREDITDATA
                                     fCallItemChanged = TRUE;
@@ -1534,7 +1534,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      -- Container CN_DROPNOTIFY: has the PCNRLAZYDRAGINFO (mp2).
  *
  *      -- Container CN_BEGINEDIT, CN_REALLOCPSZ, CN_ENDEDIT: has the
-                PCNREDITDATA (mp2) (added with V0.9.9 (2000-02-06) [umoeller]).
+                PCNREDITDATA (mp2) (added with V0.9.9 (2001-02-06) [umoeller]).
  *
  *      -- For circular and linear sliders (CSN_CHANGED or CSN_TRACKING),
  *                this has the new slider value.

@@ -956,6 +956,7 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *      functions in fileops.c.
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
+ *@@changed V0.9.9 (2001-02-16) [umoeller]: added "shift-delete" support; thanks [pr]
  */
 
 VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
@@ -983,7 +984,10 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
                                              ulSelection,  // can only be SEL_SINGLESEL
                                                             // or SEL_MULTISEL
                                              psfv->hwndCnr,
-                                             FALSE);   // fTrueDelete: no, move to trash can
+                                             doshQueryShiftState());
+                                                // do a true delete if shift is pressed;
+                                                // otherwise move to trash can
+                                                // V0.9.9 (2001-02-16) [umoeller]
         #ifdef DEBUG_TRASHCAN
             _Pmpf(("    got FOPSRET %d", frc));
         #endif

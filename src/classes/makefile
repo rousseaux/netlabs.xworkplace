@@ -310,6 +310,20 @@ $(OUTPUTDIR)\xfwps.obj: \
             $(INC)\filesys\filetype.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h $(INC)\filesys\statbars.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\xmmcdplay.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\media\media.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\xmmvolume.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\media\media.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\xtrash.obj: \
             $(INC)\setup.h \
             $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\stringh.h \
@@ -330,18 +344,10 @@ $(OUTPUTDIR)\xtrashobj.obj: \
             $(@B).c \
             $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
 
-$(OUTPUTDIR)\xmmcdplay.obj: \
+$(OUTPUTDIR)\xwpadmin.obj: \
             $(INC)\setup.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h \
-            $(INC)\media\media.h \
-            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
-
-$(OUTPUTDIR)\xmmvolume.obj: \
-            $(INC)\setup.h \
-            $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h \
-            $(INC)\media\media.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpsetup.obj: \

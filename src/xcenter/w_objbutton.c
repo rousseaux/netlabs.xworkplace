@@ -1062,7 +1062,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *@@ OwgtContextMenu:
  *      implementation for WM_CONTEXTMENU.
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 /* MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)

@@ -2881,7 +2881,7 @@ VOID EXPENTRY WwgtUnInitModule(VOID)
  *      assumed that the INIT export understands
  *      the new FNWGTINITMODULE_099 format (see center.h).
  *
- *@@added V0.9.9 (2000-02-06) [umoeller]
+ *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
 VOID EXPENTRY WwgtQueryVersion(PULONG pulMajor,
