@@ -860,6 +860,7 @@ PLONG GetColorPointer(HWND hwndStatic,
  *      frames representing PageMage colors.
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
+ *@@changed V0.9.7 (2001-01-17) [umoeller]: fixed inclusive rect bug
  */
 
 MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -881,14 +882,30 @@ MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARA
                                     NULLHANDLE, // HPS
                                     NULL); // PRECTL
             gpihSwitchToRGB(hps);
-            WinQueryWindowRect(hwndStatic, &rclPaint);
+            WinQueryWindowRect(hwndStatic,
+                               &rclPaint);      // exclusive
             plColor = GetColorPointer(hwndStatic, pPgmgConfig);
-            if (plColor)
+            /* if (plColor)
                 WinFillRect(hps, &rclPaint, *plColor);
             else
                 WinFillRect(hps, &rclPaint, CLR_BLACK); // shouldn't happen...
+               */
 
-            gpihBox(hps, DRO_OUTLINE, &rclPaint, CLR_BLACK);
+            // make rect inclusive
+            rclPaint.xRight--;
+            rclPaint.yTop--;
+
+            // draw interior
+            GpiSetColor(hps, *plColor);
+            gpihBox(hps,
+                    DRO_FILL,
+                    &rclPaint);
+
+            // draw frame
+            GpiSetColor(hps, RGBCOL_BLACK);
+            gpihBox(hps,
+                    DRO_OUTLINE,
+                    &rclPaint);
 
             WinEndPaint(hps);
         break; }

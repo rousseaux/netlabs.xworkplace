@@ -1433,7 +1433,8 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
                 memcpy(G_abSupportedDrives, pabSupportedDrives, CB_SUPPORTED_DRIVES);
                 // write to INI
                 PrfWriteProfileData(HINI_USER,
-                                    INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    (PSZ)INIKEY_TRASHCANDRIVES,
                                     G_abSupportedDrives,
                                     sizeof(G_abSupportedDrives));
             }
@@ -1472,7 +1473,8 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
 
                 // delete INI key
                 PrfWriteProfileString(HINI_USER,
-                                      INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_TRASHCANDRIVES,
                                       NULL);        // delete
             }
 
@@ -1525,7 +1527,8 @@ VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf)
     ULONG   cbSupportedDrives = sizeof(G_abSupportedDrives);
     memset(G_abSupportedDrives, XTRC_INVALID, cbSupportedDrives);
     if (!PrfQueryProfileData(HINI_USER,
-                             INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
+                             (PSZ)INIAPP_XWORKPLACE,
+                             (PSZ)INIKEY_TRASHCANDRIVES,
                              G_abSupportedDrives,
                              &cbSupportedDrives))
         // data not found:

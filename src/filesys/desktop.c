@@ -781,7 +781,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
                          pGlobalSettings->BootLogo);
 
-        if (WinQueryObject(XFOLDER_STARTUPID))
+        if (WinQueryObject((PSZ)XFOLDER_STARTUPID))
             WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
@@ -900,8 +900,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // query new file name from entry field
                     PrfWriteProfileString(HINI_USER,
-                                          INIAPP_XWORKPLACE,
-                                          INIKEY_BOOTLOGOFILE,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_BOOTLOGOFILE,
                                           pszNewBootLogoFile);
                     // update the display by calling the INIT callback
                     pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -952,8 +952,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ID_XSDI_DTP_LOGOFILE,
                                       fd.szFullFile);
                     PrfWriteProfileString(HINI_USER,
-                                          INIAPP_XWORKPLACE,
-                                          INIKEY_BOOTLOGOFILE,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_BOOTLOGOFILE,
                                           fd.szFullFile);
                     // update the display by calling the INIT callback
                     pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -1057,7 +1057,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     XFOLDER_STARTUPID);
                 if (hObj = WinCreateObject("XFldStartup", "XWorkplace Startup",
                                            szSetup,
-                                           "<WP_DESKTOP>",
+                                           (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))
                     WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
                 else

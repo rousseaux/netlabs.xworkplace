@@ -1354,7 +1354,6 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
 
             if (pGlobalSettings->fTrashDelete)
             {
-                DosBeep(5000, 1000);
                 cmnMove2DefTrashCan(somSelf);
                 brc = TRUE;     // processed
             }
@@ -1391,26 +1390,6 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                                                             ulMenuId);
     return (brc);
 }
-
-/*
- *@@ wpAddSettingsPages:
- *      this WPObject instance method gets called by the WPS
- *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
- *
- *      We will add the object's "Internals" page here.
- */
-
-/* SOM_Scope BOOL  SOMLINK xfobj_wpAddSettingsPages(XFldObject *somSelf,
-                                                 HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpAddSettingsPages");
-
-    return (XFldObject_parent_WPObject_wpAddSettingsPages(somSelf,
-                                                          hwndNotebook));
-} */
 
 /*
  *@@ wpAddObjectGeneralPage:

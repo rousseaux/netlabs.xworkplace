@@ -36,14 +36,18 @@
 
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WININPUT
 #define INCL_WINMENUS
 #define INCL_WINCOUNTRY
 #define INCL_WINSHELLDATA
 #define INCL_WINERRORS
 
+#define INCL_GPIREGIONS
 #define INCL_GPIPRIMITIVES
 #define INCL_GPILCIDS
 #define INCL_GPILOGCOLORTABLE
@@ -74,6 +78,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "config\fonts.h"               // font folder implementation
@@ -86,17 +91,53 @@
 
 /* ******************************************************************
  *
- *   Declarations
+ *   Global variables
  *
  ********************************************************************/
 
-const char      *G_pcszFontsApp = "PM_Fonts";
+static const char   *G_pcszFontsApp = "PM_Fonts";
 
-BOOL            G_fCreateFontObjectsThreadRunning = FALSE;
-THREADINFO      G_ptiCreateFontObjects = {0};
+static BOOL         G_fCreateFontObjectsThreadRunning = FALSE;
+static THREADINFO   G_ptiCreateFontObjects = {0};
 
 #define WC_XWPFONTOBJ_SAMPLE     "XWPFontSampleClient"
-BOOL            G_fFontSampleClassRegistered = FALSE;
+static BOOL         G_fFontSampleClassRegistered = FALSE;
+
+ULONG               G_ulFontSampleHints = 0;
+                                    /* | HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT
+                                    | HINTS_INTERNALLEADING_GRAYRECT
+                                    | HINTS_BASELINE_REDLINE
+                                    | HINTS_LOWERCASEASCENT_REDRECT; */
+                            // exported in fonts.h
+
+static const char   *G_pcszFontSampleText = "The Quick Brown Fox Jumps Over The Lazy Dog.";
+
+typedef struct _HINTMENUITEM
+{
+    const char  *pcszItemText;
+    ULONG       ulFlag;
+} HINTMENUITEM, *PHINTMENUITEM;
+
+static HINTMENUITEM G_aHintMenuItems[] =
+        {
+            "Show baseline (red line)",
+                                        HINTS_BASELINE_REDLINE,
+            "Show maximum ascender/descender (gray rectangles on left)",
+                                        HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT,
+            "Show internal leading (gray rectangle)",
+                                        HINTS_INTERNALLEADING_GRAYRECT,
+            "Show lower case ascent/descent (red rectangles)",
+                                        HINTS_LOWERCASEASCENT_REDRECT
+        };
+
+// list of open views
+static LINKLIST     G_llFontSampleViews;
+                        // list of plain HWND's with the frame windows
+                        // of all currently open sample views... this
+                        // is not auto-free, of course.
+static BOOL         G_fInitialized = FALSE;
+                        // TRUE after first call... we must initialize the
+                        // list.
 
 /* ******************************************************************
  *
@@ -896,6 +937,7 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
 VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
                             HWND hwndMenu)
 {
+    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     MENUITEM mi;
     // get handle to the "Open" submenu in the
@@ -923,11 +965,112 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FONT_DEINSTALL),
                        "~Deinstall...",        // ###
                        MIS_TEXT, 0);
+
+    if (_fShowingOpenViewMenu)
+    {
+        ULONG ul = 0;
+        // insert separator
+        winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+
+        // context menu for open view:
+        // add view hints submenu
+        for (ul = 0;
+             ul < sizeof(G_aHintMenuItems) / sizeof(G_aHintMenuItems[0]);
+             ul++)
+        {
+            winhInsertMenuItem(hwndMenu,
+                               MIT_END,
+                               WPMENUID_USER + ul,
+                               G_aHintMenuItems[ul].pcszItemText,
+                               MIS_TEXT,
+                               // set checked if flag is currently set
+                               (G_ulFontSampleHints & G_aHintMenuItems[ul].ulFlag)
+                                    ? MIA_CHECKED
+                                    : 0
+                              );
+        }
+    }
 }
 
 /*
- *@@ FONTSAMPLEDATA:
+ *@@ fonMenuItemSelected:
+ *      implementation for XWPFontObject::wpMenuItemSelected.
+ */
+
+BOOL fonMenuItemSelected(XWPFontObject *somSelf,
+                         ULONG ulMenuId)
+{
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    if (ulMenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW)
+    {
+        _wpViewObject(somSelf,
+                      NULLHANDLE,
+                      ulMenuId,
+                      0);
+        brc = TRUE;
+    }
+    else
+        if (    (ulMenuId >= WPMENUID_USER)
+             && (ulMenuId < WPMENUID_USER
+                            + sizeof(G_aHintMenuItems) / sizeof(G_aHintMenuItems[0])
+                )
+           )
+        {
+            // hint menu item selected:
+            // toggle flag
+            ULONG ulFlag = G_aHintMenuItems[ulMenuId - WPMENUID_USER].ulFlag,
+                  ulNewFlags = G_ulFontSampleHints;
+            if (G_ulFontSampleHints & ulFlag)
+                // flag currently set: unset
+                ulNewFlags &= ~ulFlag;
+            else
+                // flag currently not set: set now
+                ulNewFlags |= ulFlag;
+
+            _xwpclsSetFontSampleHints(_XWPFontObject,
+                                      ulNewFlags);
+        }
+    return (brc);
+}
+
+/*
+ *@@ fonMenuItemHelpSelected:
+ *      implementation for XWPFontObject::wpMenuItemHelpSelected.
+ */
+
+BOOL fonMenuItemHelpSelected(XWPFontObject *somSelf,
+                             ULONG ulMenuId)
+{
+    BOOL brc = FALSE;
+
+    if (    (ulMenuId >= WPMENUID_USER)
+         && (ulMenuId < WPMENUID_USER
+                        + sizeof(G_aHintMenuItems) / sizeof(G_aHintMenuItems[0])
+            )
+       )
+    {
+        _wpDisplayHelp(somSelf,
+                       ID_XSH_FONTSAMPLEHINTS,
+                       (PSZ)cmnQueryHelpLibrary());
+        brc = TRUE;
+    }
+
+    return (brc);
+}
+
+/* ******************************************************************
  *
+ *   Font object sample view
+ *
+ ********************************************************************/
+
+/*
+ *@@ FONTSAMPLEDATA:
+ *      window data for open sample view. Stored in
+ *      QWL_USER of the client.
  */
 
 typedef struct _FONTSAMPLEDATA
@@ -935,13 +1078,410 @@ typedef struct _FONTSAMPLEDATA
     XWPFontObject       *somSelf;
 
     USEITEM             UseItem;            // use item; immediately followed by view item
-    VIEWITEM            ViewItem;           // view item
+    VIEWITEM            ViewItem;           // view item; ViewItem.handle has the frame HWND
 
     HPS                 hps;                // micro PS allocated at WM_CREATE
     LONG                lcidFont;           // font LCID we're representing here
 
     FONTMETRICS         FontMetrics;
+
+    HWND                hwndContextMenu;
+
+    PFNWP               pfnwpFrameOriginal; // orig frame wnd proc before subclassing
+
+    ULONG               cxViewport,         // extensions of viewport (for scrollbars)
+                        cyViewport;
+    ULONG               xOfs,               // current ofs of win in viewport
+                        yOfs;
 } FONTSAMPLEDATA, *PFONTSAMPLEDATA;
+
+/*
+ *@@ UpdateScrollBars:
+ *      called on FontSamplePaint and WM_SIZE to update
+ *      the client's scroll bars.
+ */
+
+VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
+                      ULONG ulWinCX,
+                      ULONG ulWinCY)
+{
+    // vertical
+    winhUpdateScrollBar(WinWindowFromID(pWinData->ViewItem.handle,  // frame
+                                        FID_VERTSCROLL),
+                        ulWinCY,            // ulWinPels
+                        pWinData->cyViewport,
+                        pWinData->yOfs,     // ofs: top
+                        FALSE);             // no auto-hide
+    // horizontal
+    winhUpdateScrollBar(WinWindowFromID(pWinData->ViewItem.handle,  // frame
+                                        FID_HORZSCROLL),
+                        ulWinCX,            // ulWinPels
+                        pWinData->cxViewport,
+                        pWinData->xOfs,     // ofs: left
+                        FALSE);             // no auto-hide
+}
+
+/*
+ *@@ FontSamplePaint:
+ *      implementation for WM_PAINT.
+ */
+
+VOID FontSamplePaint(HWND hwnd,
+                     PFONTSAMPLEDATA pWinData)
+{
+    HPS  hps = NULLHANDLE;
+    HRGN hrgnUpdate,
+         hrgnOld;
+
+    hrgnUpdate = GpiCreateRegion(pWinData->hps,
+                                 0,
+                                 NULL);
+    if (hrgnUpdate)
+        if (RGN_NULL != WinQueryUpdateRegion(hwnd, hrgnUpdate))
+            hps = pWinData->hps;
+
+    // since we're not using WinBeginPaint,
+    // we must always validate the update region,
+    // or we'll get bombed with WM_PAINT msgs
+    WinValidateRect(hwnd,
+                    NULL,
+                    FALSE);
+
+    if (hps)
+    {
+        // we got something to paint:
+        RECTL       rclClient;
+        ULONG       aulSizes[] =
+                {
+                    144,
+                    72,
+                    48,
+                    36,
+                    30,
+                    24,
+                    16,
+                    12,
+                    10,
+                    8,
+                    6
+                };
+        POINTL      ptlCurrent;
+        ULONG       ul = 0;
+        CHAR        szTemp[100];
+
+        ULONG       ulMaxCX = 0,        // x extension
+                    ulMaxCY = 0;        // y extension
+
+        // set clip region to update rectangle we queried above...
+        // speeds up painting, since we're not using WinBeginPaint
+        GpiSetClipRegion(hps, hrgnUpdate, &hrgnOld);
+
+        WinQueryWindowRect(hwnd, &rclClient);
+
+        WinFillRect(hps,
+                    &rclClient,
+                    RGBCOL_WHITE);
+
+        // set charset to lcid created in WM_CREATE
+        GpiSetCharSet(hps, pWinData->lcidFont);
+
+        // start at top... this is changed below according to font size
+        ptlCurrent.y = rclClient.yTop;
+        // add y ofs from scrollbar; we paint over the top of the window
+        // if the scroller is down
+        ptlCurrent.y += pWinData->yOfs;
+
+        for (ul = 0;
+             ul < sizeof(aulSizes) / sizeof(aulSizes[0]);
+             ul++)
+        {
+            POINTL      ptl2;
+            RECTL       rcl;
+            FONTMETRICS fm;
+            // set current point size from array
+            gpihSetPointSize(hps, aulSizes[ul]);
+
+            // get font metrics...
+            GpiQueryFontMetrics(hps, sizeof(fm), &fm);
+
+/*
+        ptlCurrent.y now points to the top of the char box.
+
+           ÉÍ ________________________________________________
+           º
+           º lExternalLeading, according to font designer. Apparently, this is always 0.
+        ÉÍÍÈÍ ________________________________________________  Í»
+        º                                                        º
+        º    lInternalLeading (1)                                º
+        ÈÍ                                                       º
+       ÉÍÍÍÍ  ______________________                             º
+       º                            ##                           º
+ lLowerCaseAscent (2)                #    ##     ##              º lMaxAscender (1)
+       º   ÉÍ _______________        #    # #   # #              º
+       º   º                 ####    #    #  # #  #              º
+       º   º                #    #   #    #   #   #              º
+       º   º  lXHeight      #    #   #    #       #              º
+       º   º                #    #   #    #       #              º
+       º   º                #    #   #    #       #              º
+       º   º  _______________#####__###___#_______#___ baseline Í»
+       ÈÍÍ ÈÍ                    #                               º
+                                 #                               º lMaxDescender
+              ______________ ####______________________________ Í¼
+
+
+        Annotations:
+
+        (1) lMaxAscender is actually quite a bit larger than the highest ascender
+        that is really used by font characters. The ascender that is really used
+        should be calculated by subtracting lInternalLeading from lMaxAscender.
+
+        (2) lLowerCaseAscent is unreliable for TrueType fonts, at least with the
+        FreeType/2 engine.
+*/
+
+            // move down by external leading
+            ptlCurrent.y -= fm.lExternalLeading;
+            ulMaxCY += fm.lExternalLeading;
+                            // apparently, this is 0 always
+
+            // go to baseline now
+            ptlCurrent.y -= fm.lMaxAscender;        // max above baseline
+            ulMaxCY += fm.lMaxAscender;
+
+            if (G_ulFontSampleHints & HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT)
+            {
+                // paint gray rect for max ascender
+
+                // restore solid pattern
+                GpiSetPattern(hps,
+                              PATSYM_DEFAULT);
+
+                rcl.xLeft = 0 - pWinData->xOfs;
+                rcl.xRight = 50 - pWinData->xOfs;
+                rcl.yBottom = ptlCurrent.y;
+                rcl.yTop = rcl.yBottom + fm.lMaxAscender;
+                WinFillRect(hps,
+                            &rcl,               // exclusive
+                            0xE0E0E0);
+
+                // paint gray rect for max descender
+                rcl.yTop = rcl.yBottom;         // not included
+                rcl.yBottom = rcl.yTop - fm.lMaxDescender;
+                WinFillRect(hps,
+                            &rcl,               // exclusive
+                            0xC0C0C0);
+            }
+
+            GpiSetColor(hps, RGBCOL_RED);
+
+            if (G_ulFontSampleHints & HINTS_BASELINE_REDLINE)
+            {
+                // draw red line for baseline
+                ptl2.x = 0;                 // always use client, scroller doesn't matter
+                ptl2.y = ptlCurrent.y;
+                GpiMove(hps, &ptl2);
+                ptl2.x = rclClient.xRight;
+                GpiLine(hps, &ptl2);
+            }
+
+            if (G_ulFontSampleHints & HINTS_INTERNALLEADING_GRAYRECT)
+            {
+                // internal leading:
+                GpiSetColor(hps,
+                            0xC0C0C0);
+                GpiSetPattern(hps,
+                              PATSYM_VERT);
+                rcl.xLeft = 0;              // always use client, scroller doesn't matter
+                rcl.yBottom =   ptlCurrent.y        // baseline
+                              + fm.lMaxAscender
+                              - fm.lInternalLeading;
+                rcl.xRight = rclClient.xRight - 1;
+                rcl.yTop = rcl.yBottom + fm.lInternalLeading - 1;
+                gpihBox(hps,
+                        DRO_FILL,
+                        &rcl);                  // inclusive
+            }
+
+            if (G_ulFontSampleHints & HINTS_LOWERCASEASCENT_REDRECT)
+            {
+                GpiSetColor(hps,
+                            RGBCOL_RED);
+
+                // lower case ascent:
+                GpiSetPattern(hps,
+                              PATSYM_DIAG1);
+                rcl.xLeft = 0;              // always use client, scroller doesn't matter
+                rcl.yBottom = ptlCurrent.y;         // baseline
+                rcl.xRight = rclClient.xRight - 1;
+                rcl.yTop = rcl.yBottom + fm.lLowerCaseAscent - 1;
+                gpihBox(hps,
+                        DRO_FILL,
+                        &rcl);              // inclusive
+
+                // lower case descent:
+                GpiSetPattern(hps,
+                              PATSYM_DIAG3);
+                rcl.xLeft = 0;              // always use client, scroller doesn't matter
+                rcl.yBottom =   ptlCurrent.y         // baseline
+                              - fm.lLowerCaseDescent;
+                rcl.xRight = rclClient.xRight - 1;
+                rcl.yTop = ptlCurrent.y - 1;
+                gpihBox(hps,
+                        DRO_FILL,
+                        &rcl);              // inclusive
+            }
+
+            // draw font sample at that baseline
+            GpiSetColor(hps, RGBCOL_BLACK);
+            ptlCurrent.x = 5 - pWinData->xOfs;
+            GpiMove(hps, &ptlCurrent);
+            sprintf(szTemp,
+                    "%d pt: %s",
+                    aulSizes[ul],
+                    G_pcszFontSampleText);
+            GpiCharString(hps, strlen(szTemp), (PSZ)szTemp);
+
+            // current position is now at the right where the
+            // next character would be drawn...
+            // get that
+            GpiQueryCurrentPosition(hps, &ptl2);
+            if (ptl2.x + pWinData->xOfs > ulMaxCX)
+                ulMaxCX = ptl2.x + pWinData->xOfs;
+
+            // move down by max descender
+            ptlCurrent.y -= fm.lMaxDescender;
+            ulMaxCY += fm.lMaxDescender;
+
+            // next loop will move down by external leading of
+            // NEXT font
+        }
+
+        // print extra info in default font
+        /* GpiSetCharSet(hps, LCID_DEFAULT);
+        // move down
+        ptlCurrent.x = 10;
+        ptlCurrent.y = 10;
+        // ptlCurrent.y -= 12 * 1.3;
+        GpiMove(hps, &ptlCurrent);
+        sprintf(szTemp, "xOfs: %d, yOfs: %d", pWinData->xOfs, pWinData->yOfs);
+        GpiCharString(hps, strlen(szTemp), szTemp); */
+
+        if (    (ulMaxCY != pWinData->cyViewport)
+             || (ulMaxCX != pWinData->cxViewport)
+           )
+        {
+            pWinData->cyViewport = ulMaxCY;
+            pWinData->cxViewport = ulMaxCX;
+
+            UpdateScrollBars(pWinData,
+                             rclClient.xRight,
+                             rclClient.yTop);
+        }
+    }
+
+    if (hrgnUpdate)
+    {
+        GpiSetClipRegion(hps, NULLHANDLE, &hrgnOld);
+        GpiDestroyRegion(hps, hrgnUpdate);
+    }
+}
+
+/*
+ *@@ HandleContextMenu:
+ *      handles WM_CONTEXTMENU and WM_MENUEND for open
+ *      views of WPS objects.
+ *
+ *      On WM_CONTEXTMENU, this calls _wpDisplayMenu.
+ *      Pass this in from your client window proc
+ *      with hwnd being your client window handle.
+ *
+ *      On WM_MENUEND, this clears phwndContextMenu
+ *      again if that msg was for the context menu.
+ *      Note that WM_MENUEND will not come into
+ *      your client window proc, but only to the frame...
+ *      so you have to subclass your frame window proc
+ *      as well and call this function from there.
+ *
+ *      Returns a proper MRESULT for that message, as
+ *      defined in PMREF.
+ */
+
+MRESULT HandleContextMenu(WPObject *somSelf,            // in: object with view
+                          HWND hwndClient,              // in: client window handle of view
+                                                        // (must be FID_CLIENT)
+                          ULONG msg,                    // in: WM_CONTEXTMENU or WM_MENUEND
+                          MPARAM mp1,                   // in: message param 1 (just pass this in)
+                          MPARAM mp2,                   // in: message param 2 (just pass this in)
+                          BOOL *pfShowingOpenViewMenu,  // in/out: set to TRUE on context menu show
+                          HWND *phwndContextMenu)       // out: context menu window
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_CONTEXTMENU:
+        {
+            POINTL  ptlPopup;
+            ptlPopup.x = SHORT1FROMMP(mp1);
+            ptlPopup.y = SHORT2FROMMP(mp1);
+
+            *pfShowingOpenViewMenu = TRUE;
+            *phwndContextMenu
+                    = _wpDisplayMenu(somSelf,
+                                     // owner: must be the frame,
+                                     // or the "open view" items are not added... sigh
+                                     WinQueryWindow(hwndClient, QW_OWNER),
+                                     // client: our client
+                                     hwndClient,
+                                     &ptlPopup,
+                                     MENU_OPENVIEWPOPUP,
+                                     0);
+            mrc = (MPARAM)TRUE;     // processed
+        break; }
+
+        case WM_MENUEND:
+            if (    (*phwndContextMenu)
+                 && ( (HWND)mp2 == *phwndContextMenu)
+               )
+            {
+                // context menu ending:
+                *phwndContextMenu = NULLHANDLE;
+                *pfShowingOpenViewMenu = FALSE;
+            }
+        break;
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ fon_fnwpFontSampleFrame:
+ *      window proc for the subclassed frame.
+ */
+
+MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT             mrc = 0;
+    PFONTSAMPLEDATA     pWinData = (PFONTSAMPLEDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+
+    switch (msg)
+    {
+        case WM_MENUEND:
+        {
+            XWPFontObjectData *somThis = XWPFontObjectGetData(pWinData->somSelf);
+            mrc = HandleContextMenu(pWinData->somSelf,
+                                    hwnd,
+                                    msg, mp1, mp2,
+                                    &_fShowingOpenViewMenu,
+                                    &pWinData->hwndContextMenu);
+        break; }
+
+        default:
+            mrc = pWinData->pfnwpFrameOriginal(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
 
 /*
  *@@ fon_fnwpFontSampleClient:
@@ -981,63 +1521,106 @@ MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                                                   _wpQueryTitle(pWinData->somSelf),
                                                   0,        // no format
                                                   &pWinData->FontMetrics);
-                GpiSetCharSet(pWinData->hps, pWinData->lcidFont);
+                // GpiSetCharSet(pWinData->hps, pWinData->lcidFont);
             }
             else
                 // error:
                 mrc = (MPARAM)TRUE;
         break; }
 
+        /*
+         * WM_PAINT:
+         *
+         */
+
         case WM_PAINT:
+            FontSamplePaint(hwnd, pWinData);
+        break;
+
+        case WM_CONTEXTMENU:
+        case WM_MENUEND:
         {
-            RECTL rclClient;
-            ULONG aulSizes[] =
-                    {
-                        72,
-                        48,
-                        36,
-                        24,
-                        16,
-                        12,
-                        10,
-                        8,
-                        6
-                    };
-            POINTL ptlCurrent;
-            ULONG ul = 0;
-            const char *pcszText = "The Quick Brown Fox Jumps Over The Lazy Dog.";
-
-            // since we're not using WinBeginPaint,
-            // we must validate the update region,
-            // or we'll get bombed with WM_PAINT msgs
-            WinValidateRect(hwnd,
-                            NULL,
-                            FALSE);
-
-            WinQueryWindowRect(hwnd, &rclClient);
-
-            WinFillRect(pWinData->hps,
-                        &rclClient,
-                        RGBCOL_WHITE);
-
-            ptlCurrent.x = 5;
-            ptlCurrent.y = rclClient.yTop - (aulSizes[0] * 1.2);
-
-            for (ul = 0;
-                 ul < sizeof(aulSizes) / sizeof(aulSizes[0]);
-                 ul++)
-            {
-                gpihSetPointSize(pWinData->hps, aulSizes[ul]);
-                GpiMove(pWinData->hps, &ptlCurrent);
-                GpiCharString(pWinData->hps, strlen(pcszText), (PSZ)pcszText);
-                ptlCurrent.y -= aulSizes[ul] * 1.2;
-            }
+            XWPFontObjectData *somThis = XWPFontObjectGetData(pWinData->somSelf);
+            mrc = HandleContextMenu(pWinData->somSelf,
+                                    hwnd,
+                                    msg, mp1, mp2,
+                                    &_fShowingOpenViewMenu,
+                                    &pWinData->hwndContextMenu);
         break; }
 
+        case WM_SIZE:
+        {
+            UpdateScrollBars(pWinData,
+                             SHORT1FROMMP(mp2),  // new cx
+                             SHORT2FROMMP(mp2)   // new cy
+                             );
+        break; }
+
+        case WM_VSCROLL:
+        case WM_HSCROLL:
+        {
+            RECTL rcl;
+            ULONG id, ulExt;
+            PULONG pulOfs;
+
+            WinQueryWindowRect(hwnd, &rcl);
+
+            if (msg == WM_VSCROLL)
+            {
+                id = FID_VERTSCROLL;
+                pulOfs = &pWinData->yOfs;
+                ulExt = pWinData->cyViewport;
+            }
+            else
+            {
+                id = FID_HORZSCROLL;
+                pulOfs = &pWinData->xOfs;
+                ulExt = pWinData->cxViewport;
+            }
+
+            winhHandleScrollMsg(hwnd,               // client to scroll
+                                WinWindowFromID(pWinData->ViewItem.handle, // frame
+                                                id),
+                                pulOfs,
+                                &rcl,
+                                ulExt,
+                                8,              // line steps
+                                msg,
+                                mp2);
+        break; }
+
+        /*
+         * WM_CLOSE:
+         *
+         */
+
         case WM_CLOSE:
+        {
             // destroy the frame, which in turn destroys us
-            WinDestroyWindow(WinQueryWindow(hwnd, QW_OWNER));
+            HWND hwndFrame = WinQueryWindow(hwnd, QW_OWNER);
+            winhSaveWindowPos(hwndFrame,
+                              HINI_USER,
+                              INIAPP_XWORKPLACE,
+                              INIKEY_FONTSAMPLEWNDPOS);
+            WinDestroyWindow(hwndFrame);
+        break; }
+
+        /*
+         * WM_HELP:
+         *      display "view" help directly, instead
+         *      of the "font object" default help.
+         */
+
+        case WM_HELP:
+            _wpDisplayHelp(pWinData->somSelf,
+                           ID_XSH_FONTSAMPLEVIEW,
+                           (PSZ)cmnQueryHelpLibrary());
         break;
+
+        /*
+         * WM_DESTROY:
+         *
+         */
 
         case WM_DESTROY:
             if (pWinData)
@@ -1059,6 +1642,16 @@ MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "GpiDestroyPS failed with %d",
                                WinGetLastError(WinQueryAnchorBlock(hwnd)));
+                }
+
+                // remove ourselves from the global list
+                if (krnLock(__FILE__, __LINE__, __FUNCTION__))
+                {
+                    lstRemoveItem(&G_llFontSampleViews,
+                                  // item is the frame HWND
+                                  (PVOID)(pWinData->ViewItem.handle));
+
+                    krnUnlock();
                 }
 
                 // remove this window from the object's use list
@@ -1131,7 +1724,9 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                             | FCF_TITLEBAR
                                             | FCF_SYSMENU
                                             | FCF_MINMAX
-                                            | FCF_SIZEBORDER,
+                                            | FCF_SIZEBORDER
+                                            | FCF_VERTSCROLL
+                                            | FCF_HORZSCROLL,
                                          WS_ANIMATE,    // frame style
                                          _wpQueryTitle(somSelf),
                                          0,             // resid
@@ -1143,6 +1738,13 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                                // out: client window
                 if (hwndNewView)
                 {
+                    // store win data in QWL_USER of the frame too
+                    WinSetWindowPtr(hwndNewView, QWL_USER, pData);
+
+                    // subclass frame
+                    pData->pfnwpFrameOriginal = WinSubclassWindow(hwndNewView,
+                                                                  fon_fnwpFontSampleFrame);
+
                     // add the use list item to the object's use list;
                     // this struct has been zeroed above
                     pData->UseItem.type    = USAGE_OPENVIEW;
@@ -1157,10 +1759,26 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                     hwndNewView,
                                     "Sample"); // view title ###
 
-                    WinSetWindowPos(hwndNewView,
-                                    HWND_TOP,
-                                    10, 10, 300, 300,
-                                    SWP_SHOW | SWP_ZORDER | SWP_MOVE | SWP_SIZE | SWP_ACTIVATE);
+                    winhRestoreWindowPos(hwndNewView,
+                                         HINI_USER,
+                                         INIAPP_XWORKPLACE,
+                                         INIKEY_FONTSAMPLEWNDPOS,
+                                         SWP_SHOW | SWP_ZORDER | SWP_MOVE | SWP_SIZE | SWP_ACTIVATE);
+
+                    // add to global views list
+                    if (krnLock(__FILE__, __LINE__, __FUNCTION__))
+                    {
+                        if (!G_fInitialized)
+                        {
+                            lstInit(&G_llFontSampleViews, FALSE);
+                            G_fInitialized = TRUE;
+                        }
+
+                        lstAppendItem(&G_llFontSampleViews,
+                                      (PVOID)hwndNewView);
+
+                        krnUnlock();
+                    }
                 }
                 else
                     free(pData);
@@ -1173,4 +1791,36 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
     return (hwndNewView);
 }
 
+/*
+ *@@ fonInvalidateAllOpenSampleViews:
+ *      repaints all open sample views.
+ *
+ *      Returns the no. of samples repainted.
+ */
+
+ULONG fonInvalidateAllOpenSampleViews(VOID)
+{
+    ULONG ulrc = 0;
+
+    if (krnLock(__FILE__, __LINE__, __FUNCTION__))
+    {
+        PLISTNODE pNode = lstQueryFirstNode(&G_llFontSampleViews);
+        while (pNode)
+        {
+            HWND hwndFrame = (HWND)pNode->pItemData;
+            HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
+            if (hwndClient)
+            {
+                WinInvalidateRect(hwndClient, NULL, FALSE);
+                ulrc++;
+            }
+
+            pNode = pNode->pNext;
+        }
+
+        krnUnlock();
+    }
+
+    return (ulrc);
+}
 

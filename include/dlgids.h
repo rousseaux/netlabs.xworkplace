@@ -59,6 +59,7 @@
    -    CR   for XCenter object (V0.9.7 (2000-11-39) [umoeller])
    -    SD   for XShutdown,
    -    XT   for XWPTrashCan,
+   -    FN   for fonts,
    -    WP   for previously undocumented WPS ID's,
    -    TS   for Treesize;
    then comes an abbreviation of the ID type:
@@ -1150,6 +1151,8 @@
 #define ID_CRMI_PROPERTIES              201
 #define ID_CRMI_HELP                    202
 #define ID_CRMI_REMOVEWGT               203
+
+#define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 
 // The following menu ID's (with _OFS_ in their names)
 // are _variable_ menu ID's: XFolder will add the value

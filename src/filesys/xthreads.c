@@ -989,7 +989,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     if (memcmp(szComp, pKey2, cbComp) == 0)
                     {
                         PrfWriteProfileData(HINI_USER,
-                                            WPINIAPP_FOLDERPOS, pKey2,
+                                            (PSZ)WPINIAPP_FOLDERPOS, pKey2,
                                             NULL, 0);
                         #ifdef DEBUG_CNRCONTENT
                             _Pmpf(("  Deleted %s", pKey2));
@@ -1023,7 +1023,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 if (pGlobalSettings)
                 {
                     PrfWriteProfileData(HINI_USERPROFILE,
-                                        INIAPP_XWORKPLACE, INIKEY_GLOBALSETTINGS,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_GLOBALSETTINGS,
                                         pGlobalSettings, sizeof(GLOBALSETTINGS));
                 }
                 else
@@ -1133,7 +1134,7 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                 WinCancelShutdown(G_hmqWorkerThread, TRUE);
 
                 WinRegisterClass(G_habWorkerThread,
-                                 WNDCLASS_WORKEROBJECT,    // class name
+                                 (PSZ)WNDCLASS_WORKEROBJECT,    // class name
                                  (PFNWP)fnwpWorkerObject,    // Window procedure
                                  0,                  // class style
                                  0);                 // extra window words
@@ -1549,13 +1550,15 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     // if XFolder was just installed, check for
                     // existence of config folders and
                     // display welcome msg
-                    if (PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
-                                           INIKEY_JUSTINSTALLED,
+                    if (PrfQueryProfileInt(HINI_USER,
+                                           (PSZ)INIAPP_XWORKPLACE,
+                                           (PSZ)INIKEY_JUSTINSTALLED,
                                            0x123) != 0x123)
                     {   // XFolder was just installed:
                         // delete "just installed" INI key
-                        PrfWriteProfileString(HINI_USER, INIAPP_XWORKPLACE,
-                                              INIKEY_JUSTINSTALLED,
+                        PrfWriteProfileString(HINI_USER,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_JUSTINSTALLED,
                                               NULL);
                         // even if the installation folder exists, create a
                         // a new one
@@ -1618,7 +1621,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                          TRUE))     // fully q'fied
                     {
                         WPFileSystem *pMarkerFile;
-                        strcat(szDesktopDir, "\\" XWORKPLACE_ARCHIVE_MARKER);
+                        strcat(szDesktopDir, "\\");
+                        strcat(szDesktopDir, XWORKPLACE_ARCHIVE_MARKER);
                         pMarkerFile
                             = _wpclsQueryObjectFromPath(_WPFileSystem, szDesktopDir);
                         if (pMarkerFile)
@@ -1697,11 +1701,15 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             }
 
             if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
+            {
+                CHAR szObjectID[50];
+                sprintf(szObjectID, "OBJECTID=%s;", XFOLDER_CONFIGID);
                 WinCreateObject("WPFolder",             // now create new config folder w/ proper objID
                                 "XFolder Configuration",
-                                "OBJECTID=" XFOLDER_CONFIGID,
-                                "<WP_DESKTOP>",                 // on desktop
+                                szObjectID,
+                                (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",                 // on desktop
                                 CO_UPDATEIFEXISTS);
+            }
             else if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
                      || (ulReturn == RCF_MAININSTALLFOLDER)
                     )
@@ -1925,7 +1933,7 @@ void _Optlink fntFileThread(PTHREADINFO pti)
                     WinCancelShutdown(G_hmqFileThread, TRUE);
 
                     WinRegisterClass(G_habFileThread,
-                                     WNDCLASS_FILEOBJECT,    // class name
+                                     (PSZ)WNDCLASS_FILEOBJECT,    // class name
                                      (PFNWP)fnwpFileObject,    // Window procedure
                                      0,                  // class style
                                      0);                 // extra window words
@@ -2334,7 +2342,7 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
                     WinCancelShutdown(G_hmqSpeedyThread, TRUE);
 
                     WinRegisterClass(G_habSpeedyThread,
-                                     WNDCLASS_QUICKOBJECT,    // class name
+                                     (PSZ)WNDCLASS_QUICKOBJECT,    // class name
                                      (PFNWP)fnwpSpeedyObject,    // Window procedure
                                      0,                  // class style
                                      0);                 // extra window words

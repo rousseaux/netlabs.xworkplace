@@ -53,6 +53,8 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSERRORS
+
+#define INCL_WINSHELLDATA
 #include <os2.h>
 
 // C library headers
@@ -362,6 +364,8 @@ SOM_Scope void  SOMLINK fono_wpInitData(XWPFontObject *somSelf)
 
     _arcFontFileError = NO_ERROR;
     _pszFontFileError = NULL;
+
+    _fShowingOpenViewMenu = FALSE;
 }
 
 /*
@@ -544,7 +548,7 @@ SOM_Scope BOOL  SOMLINK fono_wpModifyPopupMenu(XWPFontObject *somSelf,
                                                ULONG iPosition)
 {
     BOOL brc = FALSE;
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpModifyPopupMenu");
 
     if (XWPFontObject_parent_WPTransient_wpModifyPopupMenu(somSelf,
@@ -573,8 +577,12 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemSelected(XWPFontObject *somSelf,
                                                 HWND hwndFrame,
                                                 ULONG ulMenuId)
 {
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemSelected");
+
+    if (fonMenuItemSelected(somSelf, ulMenuId))
+        return (TRUE);
 
     return (XWPFontObject_parent_WPTransient_wpMenuItemSelected(somSelf,
                                                                 hwndFrame,
@@ -593,6 +601,9 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemHelpSelected(XWPFontObject *somSelf,
 {
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemHelpSelected");
+
+    if (fonMenuItemHelpSelected(somSelf, MenuId))
+        return (TRUE);
 
     return (XWPFontObject_parent_WPTransient_wpMenuItemHelpSelected(somSelf,
                                                                     MenuId));
@@ -632,9 +643,9 @@ SOM_Scope BOOL  SOMLINK fono_wpQueryDefaultHelp(XWPFontObject *somSelf,
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpQueryDefaultHelp");
 
-    return (XWPFontObject_parent_WPTransient_wpQueryDefaultHelp(somSelf,
-                                                                pHelpPanelId,
-                                                                HelpLibrary));
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FONTOBJECT;
+    return (TRUE);
 }
 
 /*
@@ -681,6 +692,61 @@ SOM_Scope HWND  SOMLINK fono_wpOpen(XWPFontObject *somSelf, HWND hwndCnr,
  ********************************************************************/
 
 /*
+ *@@ xwpclsQueryFontSampleHints:
+ *      returns the display hint flags for the font sample views.
+ *
+ *      This is any combination of:
+ *
+ *      --  HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT   0x0001
+ *
+ *      --  HINTS_BASELINE_REDLINE                  0x0002
+ *
+ *      --  HINTS_LOWERCASEASCENT_REDRECT           0x0004
+ *
+ *      These flags are declared in include\config\fonts.h.
+ */
+
+SOM_Scope ULONG  SOMLINK fonoM_xwpclsQueryFontSampleHints(M_XWPFontObject *somSelf)
+{
+    /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
+    M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_xwpclsQueryFontSampleHints");
+
+    return (G_ulFontSampleHints);
+}
+
+/*
+ *@@ xwpclsSetFontSampleHints:
+ *      reversely to M_XWPFontObject::xwpclsQueryFontSampleHints,
+ *      this sets the display hint flags for the font sample views.
+ *
+ *      This affects all font sample views. All open font sample
+ *      views are updated.
+ */
+
+SOM_Scope BOOL  SOMLINK fonoM_xwpclsSetFontSampleHints(M_XWPFontObject *somSelf,
+                                                       ULONG ulHints)
+{
+    /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
+    M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_xwpclsSetFontSampleHints");
+
+    if (G_ulFontSampleHints != ulHints)
+    {
+        G_ulFontSampleHints = ulHints;
+
+        PrfWriteProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_FONTSAMPLEHINTS,
+                            &G_ulFontSampleHints,
+                            sizeof(G_ulFontSampleHints));
+
+        // repaint all sample views
+        fonInvalidateAllOpenSampleViews();
+    }
+
+    return (TRUE);
+}
+
+/*
  *@@ wpclsInitData:
  *      this class methods allows the class to
  *      initialize itself.
@@ -706,6 +772,18 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
             krnUnlockGlobals();
         }
     }
+
+    // load default hints
+    i = sizeof(G_ulFontSampleHints);
+    if (    (!PrfQueryProfileData(HINI_USER,
+                                  (PSZ)INIAPP_XWORKPLACE,
+                                  (PSZ)INIKEY_FONTSAMPLEHINTS,
+                                  &G_ulFontSampleHints,
+                                  &i))
+         || (i == 0)
+       )
+        // not loaded: use default
+        G_ulFontSampleHints = 0;
 
     // initialize the extra data file details
     // in the global variable at the top of this file

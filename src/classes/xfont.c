@@ -219,12 +219,12 @@ SOM_Scope BOOL  SOMLINK fon_wpQueryDefaultHelp(XWPFontFolder *somSelf,
                                                PULONG pHelpPanelId,
                                                PSZ HelpLibrary)
 {
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpQueryDefaultHelp");
 
-    return (XWPFontFolder_parent_WPFolder_wpQueryDefaultHelp(somSelf,
-                                                             pHelpPanelId,
-                                                             HelpLibrary));
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FONTFOLDER;
+    return (TRUE);
 }
 
 /*

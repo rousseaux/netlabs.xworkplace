@@ -720,8 +720,9 @@ MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                     // store focus
                     sprintf(szLastFocusID, "%d",
                             ulLastFocusID);
-                    PrfWriteProfileString(HINI_USER, INIAPP_XWORKPLACE,
-                                          INIKEY_NAMECLASHFOCUS,
+                    PrfWriteProfileString(HINI_USER,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_NAMECLASHFOCUS,
                                           szLastFocusID);
                     // store window pos
                     winhSaveWindowPos(hwndDlg,
@@ -1084,8 +1085,9 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
 
     // find the selection the user has made last time;
     // this INI key item is maintained by fnwpTitleClashDlg above
-    ulLastFocusID = PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
-                                       INIKEY_NAMECLASHFOCUS,
+    ulLastFocusID = PrfQueryProfileInt(HINI_USER,
+                                       (PSZ)INIAPP_XWORKPLACE,
+                                       (PSZ)INIKEY_NAMECLASHFOCUS,
                                        ID_XFDI_CLASH_RENAMENEWTXT);
                                             // default value if not set
 

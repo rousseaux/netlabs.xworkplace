@@ -28,6 +28,19 @@
 
     /* ******************************************************************
      *
+     *   Declarations
+     *
+     ********************************************************************/
+
+    #define HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT   0x0001
+    #define HINTS_INTERNALLEADING_GRAYRECT          0x0002
+    #define HINTS_BASELINE_REDLINE                  0x0004
+    #define HINTS_LOWERCASEASCENT_REDRECT           0x0008
+
+    extern ULONG G_ulFontSampleHints;
+
+    /* ******************************************************************
+     *
      *   General font management
      *
      ********************************************************************/
@@ -82,10 +95,19 @@
         VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
                                     HWND hwndMenu);
 
+        BOOL fonMenuItemSelected(XWPFontObject *somSelf,
+                                 ULONG ulMenuId);
+
+        BOOL fonMenuItemHelpSelected(XWPFontObject *somSelf,
+                                     ULONG ulMenuId);
+
         HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                      HAB hab,
                                      ULONG ulView);
     #endif
+
+    ULONG fonInvalidateAllOpenSampleViews(VOID);
+
 #endif
 
 

@@ -1023,7 +1023,7 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
         // to the hierarchy INI item: delete it,
         // since it has no further meaning
         PrfWriteProfileString(HINI_USER,
-                              INIAPP_XWPFILETYPES,    // "XWorkplace:FileTypes"
+                              (PSZ)INIAPP_XWPFILETYPES,    // "XWorkplace:FileTypes"
                               pszKey,
                               NULL);  // delete key
 
@@ -1354,7 +1354,7 @@ ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
         }
 
         PrfWriteProfileData(HINI_USER,
-                            INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                            (PSZ)INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
                             pszFileType,        // from cnr
                             (cbFilters)
                                 ? szFilters
@@ -1448,7 +1448,7 @@ BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
     ULONG cbData = 0;
     // check if WPS type exists already
     if (    (!PrfQueryProfileSize(HINI_USER,
-                                  WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                  (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
                                   pszNewType,
                                   &cbData))
          && (cbData == 0)
@@ -1458,23 +1458,26 @@ BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
         // write to WPS's file types list
         BYTE bData = 0;
         if (PrfWriteProfileData(HINI_USER,
-                                WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
                                 pszNewType,
                                 &bData,
                                 1))     // one byte
         {
-            // add parent type to XWP's types:
-            if (PrfWriteProfileString(HINI_USER,
-                                      // application: "XWorkplace:FileTypes"
-                                      INIAPP_XWPFILETYPES,
-                                      // key --> the new file type:
-                                      pszNewType,
-                                      // string --> the parent:
-                                      (pParent)
-                                          // the parent
-                                          ? pParent->recc.pszIcon
-                                          // NULL == root:
-                                          : NULL))
+            if (pParent)
+                // parent specified:
+                // add parent type to XWP's types to make
+                // it a subtype
+                brc = PrfWriteProfileString(HINI_USER,
+                                            // application: "XWorkplace:FileTypes"
+                                            (PSZ)INIAPP_XWPFILETYPES,
+                                            // key --> the new file type:
+                                            pszNewType,
+                                            // string --> the parent:
+                                            pParent->recc.pszIcon);
+            else
+                brc = TRUE;
+
+            if (brc)
             {
                 // create new list item
                 PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)malloc(sizeof(FILETYPELISTITEM));
@@ -1980,7 +1983,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             pszFileType,
                                                     // file type to search for
                                                     // (selected record core)
-                                            WPINIAPP_ASSOCTYPE,  // "PMWP_ASSOC_TYPE"
+                                            (PSZ)WPINIAPP_ASSOCTYPE,  // "PMWP_ASSOC_TYPE"
                                             fFirstLoop,   // empty container first
                                             fFirstLoop);  // enable records
                             fFirstLoop = FALSE;
@@ -2115,7 +2118,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     // update XWP type parents in OS2.INI
                                     PrfWriteProfileString(HINI_USER,
                                                           // application: "XWorkplace:FileTypes"
-                                                          INIAPP_XWPFILETYPES,
+                                                          (PSZ)INIAPP_XWPFILETYPES,
                                                           // key --> the dragged record:
                                                           precDropped->recc.pszIcon,
                                                           // string --> the parent:
@@ -2275,7 +2278,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 // delete file type from INI
                 PrfWriteProfileString(HINI_USER,
-                                      WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
+                                      (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
                                       pftrecc->recc.pszIcon,
                                       NULL);     // delete
                 // and remove record core from container
@@ -2306,6 +2309,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 winhSetEntryFieldLimit(WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD),
                                        50);
+
                 if (WinProcessDlg(hwndDlg) == DID_OK)
                 {
                     // initial data for file type: 1 null-byte,
@@ -2754,7 +2758,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
 
                         // write the new associations to INI
-                        WriteAssocs2INI(WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
+                        WriteAssocs2INI((PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
                                         pftpd->hwndTypesCnr,
                                         pftpd->hwndAssocsCnr);
                         pftpd->pobjDrop = NULL;
@@ -2841,7 +2845,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
 
             // write the new associations to INI
-            WriteAssocs2INI(WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
+            WriteAssocs2INI((PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
                             pftpd->hwndTypesCnr,
                             pftpd->hwndAssocsCnr);
         break; }
@@ -2968,7 +2972,7 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                         // a) check WPS filters
                         if (!PrfQueryProfileSize(HINI_USER,
-                                            WPINIAPP_ASSOCFILTER,  // "PMWP_ASSOC_FILTER"
+                                            (PSZ)WPINIAPP_ASSOCFILTER,  // "PMWP_ASSOC_FILTER"
                                             pKey,
                                             &ulSize))
                             fInsert = FALSE;
@@ -2978,7 +2982,7 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                         else
                             // b) now check XWorkplace filters
                             if (PrfQueryProfileSize(HINI_USER,
-                                            INIAPP_XWPFILEFILTERS,  // "XWorkplace:FileFilters"
+                                            (PSZ)INIAPP_XWPFILEFILTERS,  // "XWorkplace:FileFilters"
                                             pKey,
                                             &ulSize))
                                 if (ulSize > 1)
@@ -3063,7 +3067,7 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                                         // cnr to update
                                                 szFilterText,
                                                         // file filter to search for
-                                                WPINIAPP_ASSOCFILTER,
+                                                (PSZ)WPINIAPP_ASSOCFILTER,
                                                         // "PMWP_ASSOC_FILTER"
                                                 fFirstRun,
                                                         // empty container the first time
@@ -3170,7 +3174,7 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     cnrhInvalidateAll(pftpd->hwndAssocsCnr);
 
                     // write the new associations to INI
-                    WriteAssocs2INI(WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
+                    WriteAssocs2INI((PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
                                     pftpd->hwndTypesCnr,
                                         // for selected record core
                                     pftpd->hwndAssocsCnr);

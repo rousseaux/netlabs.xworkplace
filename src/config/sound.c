@@ -344,8 +344,8 @@ VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
 
         // delete current scheme in OS2.INI
         PrfWriteProfileString(HINI_USER,
-                              INIAPP_XWORKPLACE,
-                              INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
+                              (PSZ)INIAPP_XWORKPLACE,
+                              (PSZ)INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
                               NULL);                  // delete key
 
         pspd->sSchemeSelected = LIT_NONE;
@@ -1177,8 +1177,8 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                        sizeof(szSchemeSelected),
                                        szSchemeSelected);
                     PrfWriteProfileString(HINI_USER,
-                                          INIAPP_XWORKPLACE,
-                                          INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
                                           szSchemeSelected);
                 }
                 // _Pmpf(("End of ID_XSDI_SOUND_SCHEMES_DROPDOWN"));
@@ -1343,8 +1343,8 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
             // get initial directory for FOD from OS2.INI
             if (PrfQueryProfileString(HINI_USER,
-                                  INIAPP_XWORKPLACE,         // "XFolder"
-                                  INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
+                                  (PSZ)INIAPP_XWORKPLACE,         // "XFolder"
+                                  (PSZ)INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
                                   "",      // default string
                                   fd.szFullFile,
                                   sizeof(fd.szFullFile)-10)
@@ -1371,8 +1371,8 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                     if (pszDir)
                     {
                         PrfWriteProfileString(HINI_USER,
-                                              INIAPP_XWORKPLACE,
-                                              INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
                                               pszDir);
                         free(pszDir);
                     }

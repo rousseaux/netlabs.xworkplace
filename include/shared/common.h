@@ -43,113 +43,108 @@
 
     /********************************************************************
      *
-     *   INI keys
+     *   Constants
      *
      ********************************************************************/
 
     /*
-     * XWorkplace application:
+     *  All these constants have been made "const char*" pointers
+     *  with V0.9.7 (they used to be #define's before). The actual
+     *  character constants are now on top of common.c.
+     */
+
+    extern const char *INIAPP_XWORKPLACE;
+    extern const char *INIAPP_OLDXFOLDER;
+    extern const char *INIKEY_GLOBALSETTINGS;
+    extern const char *INIKEY_ACCELERATORS;
+    extern const char *INIKEY_LANGUAGECODE;
+    extern const char *INIKEY_JUSTINSTALLED;
+    extern const char *INIKEY_FAVORITEFOLDERS;
+    extern const char *INIKEY_QUICKOPENFOLDERS;
+
+    extern const char *INIKEY_WNDPOSSTARTUP;
+    extern const char *INIKEY_WNDPOSNAMECLASH;
+    extern const char *INIKEY_NAMECLASHFOCUS;
+
+    extern const char *INIKEY_STATUSBARFONT;
+    extern const char *INIKEY_SBTEXTNONESEL;
+    extern const char *INIKEY_SBTEXT_WPOBJECT;
+    extern const char *INIKEY_SBTEXT_WPPROGRAM;
+    extern const char *INIKEY_SBTEXT_WPFILESYSTEM;
+    extern const char *INIKEY_SBTEXT_WPURL;
+    extern const char *INIKEY_SBTEXT_WPDISK;
+    extern const char *INIKEY_SBTEXT_WPFOLDER;
+    extern const char *INIKEY_SBTEXTMULTISEL;
+    extern const char *INIKEY_SB_LASTCLASS;
+    extern const char *INIKEY_DLGFONT;
+
+    extern const char *INIKEY_BOOTMGR;
+    extern const char *INIKEY_AUTOCLOSE;
+
+    extern const char *DEFAULT_LANGUAGECODE;
+
+    extern const char *INIKEY_WNDPOSCLASSINFO;
+
+    extern const char *INIKEY_XWPSOUNDLASTDIR;
+    extern const char *INIKEY_XWPSOUNDSCHEME;
+
+    extern const char *INIKEY_BOOTLOGOFILE;
+
+    extern const char *INIKEY_LAST10SELECTSOME;
+
+    extern const char *INIKEY_TRASHCANDRIVES;
+
+    extern const char *INIKEY_FILEOPSPOS;
+
+    extern const char *INIKEY_WNDPOSPARTITIONS;
+
+    extern const char *INIKEY_WNDPOSXMMVOLUME;
+
+    extern const char *INIKEY_WNDPOSXMMCDPLAY;
+
+    extern const char *INIKEY_FONTSAMPLEWNDPOS;
+    extern const char *INIKEY_FONTSAMPLESTRING;
+    extern const char *INIKEY_FONTSAMPLEHINTS;
+
+    extern const char *INIAPP_XWPFILETYPES;   // added V0.9.0
+    extern const char *INIAPP_XWPFILEFILTERS; // added V0.9.0
+
+    extern const char *WPINIAPP_LOCATION;
+    extern const char *WPINIAPP_FOLDERPOS;
+    extern const char *WPINIAPP_ASSOCTYPE;
+    extern const char *WPINIAPP_ASSOCFILTER;
+
+    /********************************************************************
      *
-     */
-
-    // INI key used with V0.9.1 and above
-    #define INIAPP_XWORKPLACE       "XWorkplace"
-
-    // INI key used by XFolder and XWorkplace 0.9.0;
-    // this is checked for if INIAPP_XWORKPLACE is not
-    // found and converted
-    #define INIAPP_OLDXFOLDER       "XFolder"
-
-    /*
-     * XWorkplace keys:
-     *      Add the keys you are using for storing your data here.
-     *      Note: If anything has been marked as "removed" here,
-     *      do not use that string, because it might still exist
-     *      in a user's OS2.INI file.
-     */
-
-    // #define INIKEY_DEFAULTTITLE     "DefaultTitle"       removed V0.9.0
-    #define INIKEY_GLOBALSETTINGS   "GlobalSettings"
-    // #define INIKEY_XFOLDERPATH      "XFolderPath"        removed V0.81 (I think)
-    #define INIKEY_ACCELERATORS     "Accelerators"
-    #define INIKEY_LANGUAGECODE     "Language"
-    #define INIKEY_JUSTINSTALLED    "JustInstalled"
-    // #define INIKEY_DONTDOSTARTUP    "DontDoStartup"      removed V0.84 (I think)
-    // #define INIKEY_LASTPID          "LastPID"            removed V0.84 (I think)
-    #define INIKEY_FAVORITEFOLDERS  "FavoriteFolders"
-    #define INIKEY_QUICKOPENFOLDERS "QuickOpenFolders"
-
-    #define INIKEY_WNDPOSSTARTUP    "WndPosStartup"
-    #define INIKEY_WNDPOSNAMECLASH  "WndPosNameClash"
-    #define INIKEY_NAMECLASHFOCUS   "NameClashLastFocus"
-
-    #define INIKEY_STATUSBARFONT    "SB_Font"
-    #define INIKEY_SBTEXTNONESEL    "SB_NoneSelected"
-    #define INIKEY_SBTEXT_WPOBJECT  "SB_WPObject"
-    #define INIKEY_SBTEXT_WPPROGRAM "SB_WPProgram"
-    #define INIKEY_SBTEXT_WPFILESYSTEM "SB_WPDataFile"
-    #define INIKEY_SBTEXT_WPURL        "SB_WPUrl"
-    #define INIKEY_SBTEXT_WPDISK    "SB_WPDisk"
-    #define INIKEY_SBTEXT_WPFOLDER  "SB_WPFolder"
-    #define INIKEY_SBTEXTMULTISEL   "SB_MultiSelected"
-    #define INIKEY_SB_LASTCLASS     "SB_LastClass"
-    #define INIKEY_DLGFONT          "DialogFont"
-
-    #define INIKEY_BOOTMGR          "RebootTo"
-    #define INIKEY_AUTOCLOSE        "AutoClose"
-
-    #define DEFAULT_LANGUAGECODE    "001"
-
-    // window position of "WPS Class list" window (V0.9.0)
-    #define INIKEY_WNDPOSCLASSINFO  "WndPosClassInfo"
-
-    // last directory used on "Sound" replacement page (V0.9.0)
-    #define INIKEY_XWPSOUNDLASTDIR  "XWPSound:LastDir"
-    // last sound scheme selected (V0.9.0)
-    #define INIKEY_XWPSOUNDSCHEME   "XWPSound:Scheme"
-
-    // boot logo .BMP file (V0.9.0)
-    #define INIKEY_BOOTLOGOFILE     "BootLogoFile"
-
-    // last ten selections in "Select some" (V0.9.0)
-    #define INIKEY_LAST10SELECTSOME "SelectSome"
-
-    // supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
-    #define INIKEY_TRASHCANDRIVES   "TrashCan::Drives"
-
-    // window pos of file operations status window V0.9.1 (2000-01-30) [umoeller]
-    #define INIKEY_FILEOPSPOS       "WndPosFileOpsStatus"
-
-    // window pos of "Partitions" view V0.9.2 (2000-02-29) [umoeller]
-    #define INIKEY_WNDPOSPARTITIONS "WndPosPartitions"
-
-    // window position of XMMVolume control V0.9.6 (2000-11-09) [umoeller]
-    #define INIKEY_WNDPOSXMMVOLUME  "WndPosXMMVolume"
-
-    // window position of XMMCDPlayer V0.9.7 (2000-12-20) [umoeller]
-    #define INIKEY_WNDPOSXMMCDPLAY  "WndPosXMMCDPlayer::"
-                    // object handle appended
-
-    /*
-     * file type hierarchies:
+     *   Standard WPS object IDs
      *
-     */
+     ********************************************************************/
 
-    // application for file type hierarchies
-    #define INIAPP_XWPFILETYPES     "XWorkplace:FileTypes"   // added V0.9.0
-    #define INIAPP_XWPFILEFILTERS   "XWorkplace:FileFilters" // added V0.9.0
+    extern const char *WPOBJID_DESKTOP;
 
-    /*
-     * some default WPS INI keys:
-     *
-     */
+    extern const char *WPOBJID_KEYB;
+    extern const char *WPOBJID_MOUSE;
+    extern const char *WPOBJID_CNTRY;
+    extern const char *WPOBJID_SOUND;
+    extern const char *WPOBJID_POWER;
+    extern const char *WPOBJID_WINCFG;
 
-    #define WPINIAPP_LOCATION       "PM_Workplace:Location"
-    #define WPINIAPP_FOLDERPOS      "PM_Workplace:FolderPos"
-    // #define WPINIAPP_TASKLISTPOS    "PM_Workplace:WindowListPos"
-    #define WPINIAPP_ASSOCTYPE      "PMWP_ASSOC_TYPE"
-    #define WPINIAPP_ASSOCFILTER    "PMWP_ASSOC_FILTER"
-    // #define WPINIKEY_TASKLISTPOS    "SavePos"
+    extern const char *WPOBJID_HIRESCLRPAL;
+    extern const char *WPOBJID_LORESCLRPAL;
+    extern const char *WPOBJID_FNTPAL;
+    extern const char *WPOBJID_SCHPAL96;
+
+    extern const char *WPOBJID_LAUNCHPAD;
+    extern const char *WPOBJID_WARPCENTER;
+
+    extern const char *WPOBJID_SPOOL;
+    extern const char *WPOBJID_VIEWER;
+    extern const char *WPOBJID_SHRED;
+    extern const char *WPOBJID_CLOCK;
+
+    extern const char *WPOBJID_START;
+    extern const char *WPOBJID_TEMPS;
+    extern const char *WPOBJID_DRIVES;
 
     /********************************************************************
      *
@@ -160,26 +155,25 @@
     // all of these have been redone with V0.9.2
 
     // folders
-    #define XFOLDER_MAINID          "<XWP_MAINFLDR>"
-    #define XFOLDER_CONFIGID        "<XWP_CONFIG>"
+    extern const char *XFOLDER_MAINID;
+    extern const char *XFOLDER_CONFIGID;
 
-    #define XFOLDER_STARTUPID       "<XWP_STARTUP>"
-    #define XFOLDER_SHUTDOWNID      "<XWP_SHUTDOWN>"
+    extern const char *XFOLDER_STARTUPID;
+    extern const char *XFOLDER_SHUTDOWNID;
 
-    #define XFOLDER_WPSID           "<XWP_WPS>"
-    #define XFOLDER_KERNELID        "<XWP_KERNEL>"
-    #define XFOLDER_SCREENID        "<XWP_SCREEN>"
-    #define XFOLDER_MEDIAID         "<XWP_MEDIA>"
+    extern const char *XFOLDER_WPSID;
+    extern const char *XFOLDER_KERNELID;
+    extern const char *XFOLDER_SCREENID;
+    extern const char *XFOLDER_MEDIAID;
 
-    #define XFOLDER_CLASSLISTID     "<XWP_CLASSLIST>"
-    #define XFOLDER_TRASHCANID      "<XWP_TRASHCAN>"
-    #define XFOLDER_XCENTERID       "<XWP_XCENTER>"
+    extern const char *XFOLDER_CLASSLISTID;
+    extern const char *XFOLDER_TRASHCANID;
+    extern const char *XFOLDER_XCENTERID;
 
-    #define XFOLDER_INTROID         "<XWP_INTRO>"
-    #define XFOLDER_USERGUIDE       "<XWP_REF>"
+    extern const char *XFOLDER_INTROID;
+    extern const char *XFOLDER_USERGUIDE;
 
-    #define XWORKPLACE_ARCHIVE_MARKER   "xwparchv.tmp"
-                // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
+    extern const char *XWORKPLACE_ARCHIVE_MARKER;
 
     /********************************************************************
      *
@@ -194,12 +188,12 @@
     #define ID_FILEOBJECT           0x1237
 
     // object window class names (added V0.9.0)
-    #define WNDCLASS_WORKEROBJECT         "XWPWorkerObject"
-    #define WNDCLASS_QUICKOBJECT          "XWPQuickObject"
-    #define WNDCLASS_FILEOBJECT           "XWPFileObject"
+    extern const char *WNDCLASS_WORKEROBJECT;
+    extern const char *WNDCLASS_QUICKOBJECT;
+    extern const char *WNDCLASS_FILEOBJECT;
 
-    #define WNDCLASS_THREAD1OBJECT        "XWPThread1Object"
-    #define WNDCLASS_SUPPLOBJECT          "XWPSupplFolderObject"
+    extern const char *WNDCLASS_THREAD1OBJECT;
+    extern const char *WNDCLASS_SUPPLOBJECT;
 
     /********************************************************************
      *
@@ -320,8 +314,14 @@
     #define ID_XSH_WIDGET_PULSE_MAIN        103     // V0.9.7: Pulse widget main help
     #define ID_XSH_WIDGET_SWAP_MAIN         104     // V0.9.7: Swapper widget main help
     #define ID_XSH_WIDGET_WINLIST_MAIN      105     // V0.9.7: Winlist widget main help
-    #define ID_XSD_WIDGET_WINLIST_SETTINGS  106     // V0.9.7: Winlist widget properties
+    #define ID_XSH_WIDGET_WINLIST_SETTINGS  106     // V0.9.7: Winlist widget properties
     #define ID_XSH_WIDGET_XBUTTON_MAIN      107     // V0.9.7: X-Button widget main help
+
+    #define ID_XSH_FONTFOLDER               108
+    #define ID_XSH_FONTFILE                 109
+    #define ID_XSH_FONTOBJECT               110
+    #define ID_XSH_FONTSAMPLEVIEW           111
+    #define ID_XSH_FONTSAMPLEHINTS          112
 
     /********************************************************************
      *

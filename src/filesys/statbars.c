@@ -286,7 +286,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
             // and stbQueryClassMnemonics will use
             // the default value
             return (PrfWriteProfileString(HINI_USERPROFILE,
-                                          INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_SBTEXT_WPURL,
                                           pszText));
         }
     }
@@ -306,7 +307,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPDISK,
                                       pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPFileSystem))
@@ -320,7 +322,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPFILESYSTEM,
                                       pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPProgram))
@@ -334,7 +337,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPPROGRAM,
                                       pszText));
     }
     else if (_somDescendedFrom(pClassObject, _XFldObject))
@@ -348,7 +352,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPOBJECT,
                                       pszText));
     }
 
@@ -396,7 +401,8 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
             if (G_szWPUrlStatusBarMnemonics[0] == '\0')
                 // load string if this is the first time
                 if (PrfQueryProfileString(HINI_USERPROFILE,
-                                          INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_SBTEXT_WPURL,
                                           NULL,
                                           &(G_szWPUrlStatusBarMnemonics),
                                           sizeof(G_szWPUrlStatusBarMnemonics))
@@ -417,7 +423,8 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (G_szWPDiskStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPDISK,
                                       NULL,
                                       &(G_szWPDiskStatusBarMnemonics),
                                       sizeof(G_szWPDiskStatusBarMnemonics))
@@ -436,7 +443,8 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (G_szWPFileSystemStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
+                        (PSZ)INIAPP_XWORKPLACE,
+                        (PSZ)INIKEY_SBTEXT_WPFILESYSTEM,
                         NULL, &(G_szWPFileSystemStatusBarMnemonics),
                         sizeof(G_szWPFileSystemStatusBarMnemonics))
                     == 0)
@@ -455,7 +463,8 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (G_szWPProgramStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPPROGRAM,
                                       NULL,
                                       &(G_szWPProgramStatusBarMnemonics),
                                       sizeof(G_szWPProgramStatusBarMnemonics))
@@ -476,7 +485,8 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (G_szXFldObjectStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXT_WPOBJECT,
                                       NULL,
                                       &(G_szXFldObjectStatusBarMnemonics),
                                       sizeof(G_szXFldObjectStatusBarMnemonics))
@@ -1875,8 +1885,9 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // status bar settings page: get last selected
         // class from INIs (for single-object mode)
         // and query the SOM class object from this string
-        PrfQueryProfileString(HINI_USER, INIAPP_XWORKPLACE,
-                              INIKEY_SB_LASTCLASS,
+        PrfQueryProfileString(HINI_USER,
+                              (PSZ)INIAPP_XWORKPLACE,
+                              (PSZ)INIKEY_SB_LASTCLASS,
                               "XFldObject",     // default
                               szSBClassSelected, sizeof(szSBClassSelected));
         if (pSBClassObjectSelected == NULL)
@@ -2080,7 +2091,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 strcpy(szSBClassSelected, scd.szClassSelected);
                 WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
                 PrfWriteProfileString(HINI_USER,
-                                      INIAPP_XWORKPLACE, INIKEY_SB_LASTCLASS,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SB_LASTCLASS,
                                       szSBClassSelected);
                 if (pSBClassObjectSelected)
                 {

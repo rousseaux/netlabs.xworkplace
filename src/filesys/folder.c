@@ -1530,7 +1530,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
 
                 cbIni = sizeof(ulIni);
                 if (PrfQueryProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,
+                                        (PSZ)WPINIAPP_FOLDERPOS,
                                         szFolderPosKey,
                                         &ulIni,
                                         &cbIni) == FALSE)
@@ -1572,7 +1572,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                                : VIEW_DETAILS
                              );
                     PrfWriteProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,
+                                        (PSZ)WPINIAPP_FOLDERPOS,
                                         szFolderPosKey,
                                         &ulIni,
                                         sizeof(ulIni));
@@ -1616,7 +1616,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                         _wpQueryHandle(psli2->pRealObject));
                 cbIni = sizeof(ulIni);
                 if (PrfQueryProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
+                                        (PSZ)WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
                                         szFolderPosKey,
                                         &ulIni,
                                         &cbIni) == FALSE)
@@ -1644,7 +1644,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                                 : VIEW_DETAILS
                               );
                     PrfWriteProfileData(HINI_USER,
-                                        WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
+                                        (PSZ)WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
                                         szFolderPosKey,
                                         &ulIni,
                                         sizeof(ulIni));
@@ -1985,14 +1985,14 @@ BOOL fdrAddToList(WPFolder *somSelf,
                     }
 
                     PrfWriteProfileString(HINI_USERPROFILE,
-                                          INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                          (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
                                           szFavoriteFolders);
                 }
                 else
                 {
                     // list is empty: remove
                     PrfWriteProfileData(HINI_USERPROFILE,
-                                        INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                        (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
                                         NULL, 0);
                 }
             }
@@ -2133,7 +2133,7 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
                 PSZ         pszFavorites;
 
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                      (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
                                       "", &szFavorites, sizeof(szFavorites));
                 pszFavorites = szFavorites;
 
@@ -2998,8 +2998,8 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
         if (cbToSave)
             PrfWriteProfileData(HINI_USER,
-                                INIAPP_XWORKPLACE,
-                                INIKEY_LAST10SELECTSOME, // "SelectSome"
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_LAST10SELECTSOME, // "SelectSome"
                                 pszToSave,
                                 cbToSave);
 

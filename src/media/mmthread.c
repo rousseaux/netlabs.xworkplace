@@ -430,7 +430,7 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
 
                 // create object window
                 G_hwndMediaObject
-                    = winhCreateObjectWindow((PSZ)WNDCLASS_MEDIAOBJECT, NULL);
+                    = winhCreateObjectWindow(WNDCLASS_MEDIAOBJECT, NULL);
 
                 if (!G_hwndMediaObject)
                     winhDebugBox(HWND_DESKTOP,

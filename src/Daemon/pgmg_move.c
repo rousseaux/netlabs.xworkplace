@@ -35,7 +35,7 @@
 
 #include "helpers\except.h"
 #include "helpers\threads.h"
-#include "helpers\winh.h"               // PM helper routines
+// #include "helpers\winh.h"               // PM helper routines
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
@@ -548,7 +548,17 @@ VOID _Optlink fntMoveQueueThread(PTHREADINFO pti)
                      fnwpMoveThread,
                      0, 0);
 
-    G_pHookData->hwndPageMageMoveThread = winhCreateObjectWindow(WC_MOVETHREAD, NULL);
+    G_pHookData->hwndPageMageMoveThread
+            = WinCreateWindow(HWND_OBJECT,
+                              WC_MOVETHREAD,
+                              (PSZ)"",
+                              0,
+                              0,0,0,0,
+                              0,
+                              HWND_BOTTOM,
+                              0,
+                              NULL,
+                              NULL);
 
     _Pmpf(("Move thread object window is 0x%lX", G_pHookData->hwndPageMageMoveThread));
 

@@ -220,7 +220,7 @@ void fdrLoadFolderHotkeys(VOID)
 {
     ULONG ulCopied2 = sizeof(G_FolderHotkeys);
     if (!PrfQueryProfileData(HINI_USERPROFILE,
-                             INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
+                             (PSZ)INIAPP_XWORKPLACE, (PSZ)INIKEY_ACCELERATORS,
                              &G_FolderHotkeys,
                              &ulCopied2))
         fdrLoadDefaultFldrHotkeys();
@@ -243,7 +243,7 @@ void fdrStoreFldrHotkeys(VOID)
         i2++;
 
     PrfWriteProfileData(HINI_USERPROFILE,
-                        INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
+                        (PSZ)INIAPP_XWORKPLACE, (PSZ)INIKEY_ACCELERATORS,
                         &G_FolderHotkeys,
                         (i2+1) * sizeof(XFLDHOTKEY));
 }

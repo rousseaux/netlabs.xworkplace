@@ -59,7 +59,7 @@
 
     BOOL wpshCheckObject(WPObject *pObject);
 
-    WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
+    WPObject* wpshQueryObjectFromID(const char *pcszObjectID,
                                     PULONG pulErrorCode);
 
     ULONG wpshQueryView(WPObject* somSelf,
@@ -107,7 +107,7 @@
 
         BOOL wpshResidesBelow(WPObject *pChild, WPFolder *pFolder);
 
-        WPFileSystem*  wpshContainsFile(WPFolder *pFolder, PSZ pszRealName);
+        WPFileSystem*  wpshContainsFile(WPFolder *pFolder, const char *pcszRealName);
 
         WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                     WPFolder* pFolder,
@@ -143,7 +143,7 @@
                                   ULONG ulKey);
 
         VOID wpshDumpTaskRec(WPObject *somSelf,
-                             PSZ pszMethodName,
+                             const char *pcszMethodName,
                              PTASKREC pTaskRec);
     #else
         #define wpshIdentifyRestoreID(psz, ul) ""

@@ -112,7 +112,7 @@ MYOWNINC = $(INC)\hook
 
 $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+        $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\threads.h \
         $(INC)\shared\kernel.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
@@ -123,7 +123,7 @@ $(EXE_OUTPUTDIR)\pgmg_control.obj: \
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+        $(HLPINC)\except.h $(HLPINC)\threads.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \

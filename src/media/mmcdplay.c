@@ -1006,7 +1006,8 @@ VOID CDClose(HWND hwnd)
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     CHAR szIniKey[100];
     sprintf(szIniKey,
-            INIKEY_WNDPOSXMMCDPLAY "%lX",
+            "%s%lX",
+            INIKEY_WNDPOSXMMCDPLAY,
             _wpQueryHandle(pWinData->somSelf));
     winhSaveWindowPos(WinQueryWindow(hwnd, QW_OWNER),   // the frame
                       HINI_USER,
@@ -1289,7 +1290,8 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                     // this does not move if we don't have a pos saved yet,
                     // but still shows the window
                     sprintf(szIniKey,
-                            INIKEY_WNDPOSXMMCDPLAY "%lX",
+                            "%s%lX",
+                            INIKEY_WNDPOSXMMCDPLAY,
                             _wpQueryHandle(somSelf));
                     winhRestoreWindowPos(hwndFrame,
                                          HINI_USER,

@@ -172,7 +172,7 @@ $(OUTPUTDIR)\fonts.obj: \
         $(HLPINC)\prfh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfont.ih $(INC)\classes\xfontobj.ih $(INC)\classes\xfontfile.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\wpsh.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\filesys\fileops.h $(INC)\filesys\folder.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

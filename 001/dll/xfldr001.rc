@@ -228,6 +228,7 @@ BEGIN
     MENUITEM "Shut~down...", ID_CRMI_SHUTDOWN
 END
 
+/* XCenter standard widget context menu V0.9.7 (2000-11-30) [umoeller] */
 MENU ID_CRM_WIDGET LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Propertie~s", ID_CRMI_PROPERTIES

@@ -492,8 +492,8 @@ BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
     ULONG ulHandle;
     ULONG cbHandle = sizeof(ulHandle);
     if (PrfQueryProfileData(HINI_USER,
-                            "PM_Workplace:Location",
-                            "<WP_DESKTOP>",
+                            (PSZ)WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                             &ulHandle,
                             &cbHandle))
     {
@@ -504,7 +504,8 @@ BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
                                    pszFilename,
                                    2*CCHMAXPATH))
         {
-            strcat(pszFilename, "\\" XWORKPLACE_ARCHIVE_MARKER);
+            strcat(pszFilename, "\\");
+            strcat(pszFilename, XWORKPLACE_ARCHIVE_MARKER);
             _Pmpf(("Marker file: %s", pszFilename));
             brc = TRUE;
         }

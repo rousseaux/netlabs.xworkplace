@@ -186,9 +186,9 @@ SOM_Scope BOOL  SOMLINK fonf_wpQueryDefaultHelp(XWPFontFile *somSelf,
     /* XWPFontFileData *somThis = XWPFontFileGetData(somSelf); */
     XWPFontFileMethodDebug("XWPFontFile","fonf_wpQueryDefaultHelp");
 
-    return (XWPFontFile_parent_WPDataFile_wpQueryDefaultHelp(somSelf,
-                                                             pHelpPanelId,
-                                                             HelpLibrary));
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FONTFILE;
+    return (TRUE);
 }
 
 /* ******************************************************************

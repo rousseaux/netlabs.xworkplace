@@ -497,7 +497,7 @@ BOOL wpshCheckObject(WPObject *pObject)
  *@@added V0.9.0 [umoeller]
  */
 
-WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
+WPObject* wpshQueryObjectFromID(const char *pcszObjectID,
                                 PULONG pulErrorCode)
 {
     ULONG       ulHandle,
@@ -508,8 +508,8 @@ WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
     // (four bytes)
     cbHandle = sizeof(ulHandle);
     if (PrfQueryProfileData(HINI_USER,
-                            "PM_Workplace:Location",
-                            pszObjectID,                  // key
+                            (PSZ)WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                            (PSZ)pcszObjectID,                  // key
                             &ulHandle,
                             &cbHandle))
     {
@@ -1393,7 +1393,7 @@ BOOL wpshResidesBelow(WPObject *pChild,
  */
 
 WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
-                               PSZ pszRealName)     // in: file-name (w/out path)
+                               const char *pcszRealName)     // in: file-name (w/out path)
 {
     CHAR        szRealName[2*CCHMAXPATH];
     ULONG       cbRealName = sizeof(szRealName);
@@ -1408,7 +1408,7 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
         APIRET        rc             = NO_ERROR; // Return code
 
         szRealName[cbRealName] =  '\\';
-        strcpy(szRealName+cbRealName+1, pszRealName);
+        strcpy(szRealName+cbRealName+1, pcszRealName);
 
         rc = DosFindFirst(szRealName,
                           &hdirFindHandle,

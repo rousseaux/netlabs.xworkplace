@@ -488,10 +488,11 @@ VOID PwgtUpdateGraph(HWND hwnd,
     }
 
     // fill the bitmap rectangle
+    GpiSetColor(pPrivate->hpsMem,
+                pPrivate->Setup.lcolBackground);
     gpihBox(pPrivate->hpsMem,
             DRO_FILL,
-            &rclBmp,
-            pPrivate->Setup.lcolBackground);
+            &rclBmp);
 
     if (pPrivate->palLoads)
     {

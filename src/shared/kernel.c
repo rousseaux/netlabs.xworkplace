@@ -1020,7 +1020,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 #endif
 
                 // no: find startup folder
-                if (pStartupFolder = _wpclsQueryFolder(_WPFolder, XFOLDER_STARTUPID, TRUE))
+                if (pStartupFolder = _wpclsQueryFolder(_WPFolder, (PSZ)XFOLDER_STARTUPID, TRUE))
                 {
                     // startup folder exists: create status window w/ progress bar,
                     // start folder content processing in worker thread
@@ -1806,28 +1806,28 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
  *      from XFolder to XWorkplace.
  */
 
-PSZ G_apszXFolderKeys[]
+const char **G_appszXFolderKeys[]
         = {
-                INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
-                INIKEY_ACCELERATORS    , // "Accelerators"
-                INIKEY_FAVORITEFOLDERS , // "FavoriteFolders"
-                INIKEY_QUICKOPENFOLDERS, // "QuickOpenFolders"
-                INIKEY_WNDPOSSTARTUP   , // "WndPosStartup"
-                INIKEY_WNDPOSNAMECLASH , // "WndPosNameClash"
-                INIKEY_NAMECLASHFOCUS  , // "NameClashLastFocus"
-                INIKEY_STATUSBARFONT   , // "SB_Font"
-                INIKEY_SBTEXTNONESEL   , // "SB_NoneSelected"
-                INIKEY_SBTEXT_WPOBJECT , // "SB_WPObject"
-                INIKEY_SBTEXT_WPPROGRAM, // "SB_WPProgram"
-                INIKEY_SBTEXT_WPFILESYSTEM, // "SB_WPDataFile"
-                INIKEY_SBTEXT_WPURL       , // "SB_WPUrl"
-                INIKEY_SBTEXT_WPDISK   , // "SB_WPDisk"
-                INIKEY_SBTEXT_WPFOLDER , // "SB_WPFolder"
-                INIKEY_SBTEXTMULTISEL  , // "SB_MultiSelected"
-                INIKEY_SB_LASTCLASS    , // "SB_LastClass"
-                INIKEY_DLGFONT         , // "DialogFont"
-                INIKEY_BOOTMGR         , // "RebootTo"
-                INIKEY_AUTOCLOSE        // "AutoClose"
+                &INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
+                &INIKEY_ACCELERATORS    , // "Accelerators"
+                &INIKEY_FAVORITEFOLDERS , // "FavoriteFolders"
+                &INIKEY_QUICKOPENFOLDERS, // "QuickOpenFolders"
+                &INIKEY_WNDPOSSTARTUP   , // "WndPosStartup"
+                &INIKEY_WNDPOSNAMECLASH , // "WndPosNameClash"
+                &INIKEY_NAMECLASHFOCUS  , // "NameClashLastFocus"
+                &INIKEY_STATUSBARFONT   , // "SB_Font"
+                &INIKEY_SBTEXTNONESEL   , // "SB_NoneSelected"
+                &INIKEY_SBTEXT_WPOBJECT , // "SB_WPObject"
+                &INIKEY_SBTEXT_WPPROGRAM, // "SB_WPProgram"
+                &INIKEY_SBTEXT_WPFILESYSTEM, // "SB_WPDataFile"
+                &INIKEY_SBTEXT_WPURL       , // "SB_WPUrl"
+                &INIKEY_SBTEXT_WPDISK   , // "SB_WPDisk"
+                &INIKEY_SBTEXT_WPFOLDER , // "SB_WPFolder"
+                &INIKEY_SBTEXTMULTISEL  , // "SB_MultiSelected"
+                &INIKEY_SB_LASTCLASS    , // "SB_LastClass"
+                &INIKEY_DLGFONT         , // "DialogFont"
+                &INIKEY_BOOTMGR         , // "RebootTo"
+                &INIKEY_AUTOCLOSE        // "AutoClose"
           };
 
 /*
@@ -1854,8 +1854,9 @@ VOID krnShowStartupDlgs(VOID)
     ULONG   cbData = 0;
 
     // check if XWorkplace was just installed
-    if (PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
-                           INIKEY_JUSTINSTALLED,
+    if (PrfQueryProfileInt(HINI_USER,
+                           (PSZ)INIAPP_XWORKPLACE,
+                           (PSZ)INIKEY_JUSTINSTALLED,
                            0x123) != 0x123)
     {
         // yes: explain the "Panic" feature
@@ -1871,14 +1872,16 @@ VOID krnShowStartupDlgs(VOID)
      */
 
     if (PrfQueryProfileSize(HINI_USER,
-                            INIAPP_XWORKPLACE, INIKEY_GLOBALSETTINGS,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_GLOBALSETTINGS,
                             &cbData)
             == FALSE)
     {
         // XWorkplace keys do _not_ exist:
         // check if we have old XFolder settings
         if (PrfQueryProfileSize(HINI_USER,
-                                INIAPP_OLDXFOLDER, INIKEY_GLOBALSETTINGS,
+                                (PSZ)INIAPP_OLDXFOLDER,
+                                (PSZ)INIKEY_GLOBALSETTINGS,
                                 &cbData))
         {
             if (cmnMessageBoxMsg(HWND_DESKTOP,
@@ -1891,12 +1894,12 @@ VOID krnShowStartupDlgs(VOID)
                 // copy keys from "XFolder" to "XWorkplace"
                 ULONG   ul;
                 for (ul = 0;
-                     ul < sizeof(G_apszXFolderKeys) / sizeof(PSZ);
+                     ul < sizeof(G_appszXFolderKeys) / sizeof(G_appszXFolderKeys[0]);
                      ul++)
                 {
                     prfhCopyKey(HINI_USER,
                                 INIAPP_OLDXFOLDER,      // source
-                                G_apszXFolderKeys[ul],
+                                *G_appszXFolderKeys[ul],
                                 HINI_USER,
                                 INIAPP_XWORKPLACE);
                 }
@@ -2125,21 +2128,13 @@ VOID krnInitializeXWorkplace(VOID)
 
         // create thread-1 object window
         WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                         WNDCLASS_THREAD1OBJECT,    // class name
+                         (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
                          (PFNWP)krn_fnwpThread1Object,    // Window procedure
                          0,                  // class style
                          0);                 // extra window words
         G_KernelGlobals.hwndThread1Object
-            = WinCreateWindow(HWND_OBJECT,
-                              WNDCLASS_THREAD1OBJECT, // class name
-                              (PSZ)"",     // title
-                              0,           // style
-                              0,0,0,0,     // position
-                              0,           // owner
-                              HWND_BOTTOM, // z-order
-                              ID_THREAD1OBJECT, // window id
-                              NULL,        // create params
-                              NULL);       // pres params
+            = winhCreateObjectWindow(WNDCLASS_THREAD1OBJECT, // class name
+                                     NULL);        // create params
 
         if (G_KernelGlobals.hwndThread1Object == NULLHANDLE)
             winhDebugBox(HWND_DESKTOP, "XFolder: Error",

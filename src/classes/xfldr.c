@@ -3766,7 +3766,7 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
                 // windows, which are created for each folder view
                 // which is opened
                 WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                                 WNDCLASS_SUPPLOBJECT,    // class name
+                                 (PSZ)WNDCLASS_SUPPLOBJECT,    // class name
                                  (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
                                  0,       // class style
                                  4);      // extra window words for SUBCLASSEDFOLDERVIEW

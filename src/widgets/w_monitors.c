@@ -744,7 +744,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
 
             case MWGT_SWAPPER:
             case MWGT_MEMORY:
-                pcszID = XFOLDER_KERNELID; // "<XWP_KERNEL>";
+                pcszID = "<XWP_KERNEL>"; // XFOLDER_KERNELID; // "<XWP_KERNEL>";
             break;
         }
 

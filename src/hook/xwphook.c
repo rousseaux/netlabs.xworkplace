@@ -865,7 +865,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
          || (msg == WM_DESTROY)
          || (msg == WM_ACTIVATE)
          || (msg == WM_WINDOWPOSCHANGED)
-         || (msg == WM_SETWINDOWPARAMS)
+         // || (msg == WM_SETWINDOWPARAMS)
        )
     {
         if (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
@@ -881,7 +881,8 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
 
                     if (    (msg == WM_CREATE)
                          || (msg == WM_DESTROY)
-                         || (msg == WM_SETWINDOWPARAMS)                       )
+                         // || (msg == WM_SETWINDOWPARAMS)                       )
+                       )
                     {
                         WinPostMsg(G_HookData.hwndPageMageClient,
                                    PGMG_WNDCHANGE,

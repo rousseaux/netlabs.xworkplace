@@ -95,6 +95,8 @@ interface XWPFontObject : WPTransient
 
     PSZ     pszFontFileError;   // error description or NULL.
 
+    BOOL    fShowingOpenViewMenu;  // TRUE if context menu on XCenter client
+
     /*
      * WPTransient methods overridden by XWPFontObject:
      *
@@ -139,11 +141,15 @@ interface M_XWPFontObject : M_WPTransient
      *
      */
 
+    ULONG xwpclsQueryFontSampleHints();
+    BOOL xwpclsSetFontSampleHints(in ULONG ulHints);
+
 #ifdef __SOMIDL__
   implementation {
 
-    /* releaseorder:
-            xwpclsCreateTrashObject; */
+    releaseorder:
+            xwpclsQueryFontSampleHints,
+            xwpclsSetFontSampleHints;
 
     /*
      * Class Modifiers:

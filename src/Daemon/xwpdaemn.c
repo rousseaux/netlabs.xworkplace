@@ -174,7 +174,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\threads.h"
-#include "helpers\winh.h"               // PM helper routines
+// #include "helpers\winh.h"               // PM helper routines
 
 #include "hook\xwphook.h"               // hook and daemon definitions
 #include "hook\hook_private.h"          // private hook and daemon definitions
@@ -1434,9 +1434,9 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_PGMGWINLISTFULL:
-                winhDebugBox(NULLHANDLE,
-                         "XWorkplace Daemon",
-                         "The PageMage window list is full.");
+                /* winhDebugBox(NULLHANDLE,
+                             "XWorkplace Daemon",
+                             "The PageMage window list is full."); */
             break;
 
             /*
@@ -1656,7 +1656,16 @@ int main(int argc, char *argv[])
                                              0,                  // class style
                                              0);                 // extra window words
                             G_pDaemonShared->hwndDaemonObject
-                                = winhCreateObjectWindow((PSZ)WNDCLASS_DAEMONOBJECT, NULL);
+                                = WinCreateWindow(HWND_OBJECT,
+                                                  (PSZ)WNDCLASS_DAEMONOBJECT,
+                                                  (PSZ)"",
+                                                  0,
+                                                  0,0,0,0,
+                                                  0,
+                                                  HWND_BOTTOM,
+                                                  0,
+                                                  NULL,
+                                                  NULL);
 
                             // _Pmpf(("hwndDaemonObject: 0x%lX", G_pDaemonShared->hwndDaemonObject));
 

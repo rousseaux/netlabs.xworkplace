@@ -206,9 +206,9 @@ static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
 
 typedef struct _STANDARDOBJECT
 {
-    PSZ         pszDefaultID;       // e.g. &lt;WP_DRIVES&gt;
-    PSZ         pszObjectClass;     // e.g. "WPDrives"
-    PSZ         pszSetupString;     // e.g. "DETAILSFONT=..."; if present, _always_
+    const char  **ppcszDefaultID;   // e.g. <WP_DRIVES>;
+    const char  *pcszObjectClass;   // e.g. "WPDrives"
+    const char  *pcszSetupString;   // e.g. "DETAILSFONT=..."; if present, _always_
                                     // put a semicolon at the end, because "OBJECTID=xxx"
                                     // will always be added
     USHORT      usMenuID;           // corresponding menu ID in xfldr001.rc resources
@@ -220,55 +220,56 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDLAST  214      // last object menu ID, inclusive
 
 // array of objects for "Standard WPS objects" menu button
-static STANDARDOBJECT  G_WPSObjects[] = {
-                                    "<WP_KEYB>", "WPKeyboard", "", 100, 0,
-                                    "<WP_MOUSE>", "WPMouse", "", 101, 0,
-                                    "<WP_CNTRY>", "WPCountry", "", 102, 0,
-                                    "<WP_SOUND>", "WPSound", "", 103, 0,
-                                    "<WP_POWER>", "WPPower", "", 104, 0,
-                                    "<WP_WINCFG>", "WPWinConfig", "", 105, 0,
+static STANDARDOBJECT  G_WPSObjects[] =
+                                {
+                                    &WPOBJID_KEYB, "WPKeyboard", "", 100, 0,
+                                    &WPOBJID_MOUSE, "WPMouse", "", 101, 0,
+                                    &WPOBJID_CNTRY, "WPCountry", "", 102, 0,
+                                    &WPOBJID_SOUND, "WPSound", "", 103, 0,
+                                    &WPOBJID_POWER, "WPPower", "", 104, 0,
+                                    &WPOBJID_WINCFG, "WPWinConfig", "", 105, 0,
 
-                                    "<WP_HIRESCLRPAL>", "WPColorPalette", "", 110, 0,
-                                    "<WP_LORESCLRPAL>", "WPColorPalette", "", 111, 0,
-                                    "<WP_FNTPAL>", "WPFontPalette", "", 112, 0,
-                                    "<WP_SCHPAL96>", "WPSchemePalette", "", 113, 0,
+                                    &WPOBJID_HIRESCLRPAL, "WPColorPalette", "", 110, 0,
+                                    &WPOBJID_LORESCLRPAL, "WPColorPalette", "", 111, 0,
+                                    &WPOBJID_FNTPAL, "WPFontPalette", "", 112, 0,
+                                    &WPOBJID_SCHPAL96, "WPSchemePalette", "", 113, 0,
 
-                                    "<WP_LAUNCHPAD>", "WPLaunchPad", "", 120, 0,
-                                    "<WP_WARPCENTER>", "SmartCenter", "", 121, 0,
+                                    &WPOBJID_LAUNCHPAD, "WPLaunchPad", "", 120, 0,
+                                    &WPOBJID_WARPCENTER, "SmartCenter", "", 121, 0,
 
-                                    "<WP_SPOOL>", "WPSpool", "", 130, 0,
-                                    "<WP_VIEWER>", "WPMinWinViewer", "", 131, 0,
-                                    "<WP_SHRED>", "WPShredder", "", 132, 0,
-                                    "<WP_CLOCK>", "WPClock", "", 133, 0,
+                                    &WPOBJID_SPOOL, "WPSpool", "", 130, 0,
+                                    &WPOBJID_VIEWER, "WPMinWinViewer", "", 131, 0,
+                                    &WPOBJID_SHRED, "WPShredder", "", 132, 0,
+                                    &WPOBJID_CLOCK, "WPClock", "", 133, 0,
 
-                                    "<WP_START>", "WPStartup", "", 140, 0,
-                                    "<WP_TEMPS>", "WPTemplates", "", 141, 0,
-                                    "<WP_DRIVES>", "WPDrives", "", 142, 0
+                                    &WPOBJID_START, "WPStartup", "", 140, 0,
+                                    &WPOBJID_TEMPS, "WPTemplates", "", 141, 0,
+                                    &WPOBJID_DRIVES, "WPDrives", "", 142, 0
                                },
 
 // array of objects for "XWorkplace objects" menu button
                 G_XWPObjects[] = {
-                                    XFOLDER_WPSID, "XFldWPS", "", 200, 0,
-                                    XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
-                                    XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
-                                    XFOLDER_MEDIAID, "XWPMedia", "", 204, 0,
-                                    XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
+                                    &XFOLDER_WPSID, "XFldWPS", "", 200, 0,
+                                    &XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
+                                    &XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
+                                    &XFOLDER_MEDIAID, "XWPMedia", "", 204, 0,
+                                    &XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
 
-                                    XFOLDER_CONFIGID, "WPFolder",
+                                    &XFOLDER_CONFIGID, "WPFolder",
                                             "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                                             210, 0,
-                                    XFOLDER_STARTUPID, "XFldStartup",
+                                    &XFOLDER_STARTUPID, "XFldStartup",
                                             "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                                             211, 0,
-                                    XFOLDER_SHUTDOWNID, "XFldShutdown",
+                                    &XFOLDER_SHUTDOWNID, "XFldShutdown",
                                             "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                                             212, 0,
 
-                                    XFOLDER_TRASHCANID, "XWPTrashCan",
+                                    &XFOLDER_TRASHCANID, "XWPTrashCan",
                                             "DETAILSCLASS=XWPTrashObject;"
                                             "SORTCLASS=XWPTrashObject;",
                                             213, 0,
-                                    XFOLDER_XCENTERID, "XCenter",
+                                    &XFOLDER_XCENTERID, "XCenter",
                                             "",
                                             214, 0
                                };
@@ -2467,7 +2468,7 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
          ul < ulMax;
          ul++)
     {
-        pso2->pExists = wpshQueryObjectFromID(pso2->pszDefaultID,
+        pso2->pExists = wpshQueryObjectFromID(*(pso2->ppcszDefaultID),
                                               NULL);        // pulErrorCode
 
         // next item
@@ -2523,12 +2524,12 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                               };
 
             // get class's class object
-            somId       somidThis = somIdFromString(pso2->pszObjectClass);
+            somId       somidThis = somIdFromString((PSZ)pso2->pcszObjectClass);
             SOMClass    *pClassObject = _somFindClass(SOMClassMgrObject, somidThis, 0, 0);
 
             sprintf(szSetupString, "%sOBJECTID=%s",
-                    pso2->pszSetupString,       // can be empty or ";"-terminated string
-                    pso2->pszDefaultID);
+                    pso2->pcszSetupString,       // can be empty or ";"-terminated string
+                    *(pso2->ppcszDefaultID));
 
             if (pClassObject)
                 // get class's default title
@@ -2536,7 +2537,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
             if (apsz[0] == NULL)
                 // title not found: use class name then
-                apsz[0] = pso2->pszObjectClass;
+                apsz[0] = (PSZ)(*(pso2->pcszObjectClass));
 
             if (cmnMessageBoxMsgExt(hwndOwner,
                                     148, // "XWorkplace Setup",
@@ -2546,10 +2547,10 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                                     MB_YESNO)
                          == MBID_YES)
             {
-                HOBJECT hobj = WinCreateObject(pso2->pszObjectClass,       // class
+                HOBJECT hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,       // class
                                                apsz[0], // pso2->pszObjectClass,       // title
                                                szSetupString,
-                                               "<WP_DESKTOP>",
+                                               (PSZ)WPOBJID_DESKTOP,
                                                CO_FAILIFEXISTS);
                 if (hobj)
                 {
@@ -2611,7 +2612,7 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
         xstrset(&strMenuItemText, winhQueryMenuItemText(hwndMenu,
                                                         pso2->usMenuID));
         xstrcat(&strMenuItemText, " (", 0);
-        xstrcat(&strMenuItemText, pso2->pszObjectClass, 0);
+        xstrcat(&strMenuItemText, pso2->pcszObjectClass, 0);
 
         if (pso2->pExists)
         {
@@ -2634,7 +2635,7 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
 
         // on Warp 3, disable WarpCenter also
         if (   (!doshIsWarp4())
-            && (strcmp(pso2->pszDefaultID, "<WP_WARPCENTER>") == 0)
+            && (strcmp(*(pso2->ppcszDefaultID), WPOBJID_WARPCENTER) == 0)
            )
             WinEnableMenuItem(hwndMenu, pso2->usMenuID, FALSE);
 

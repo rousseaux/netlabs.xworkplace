@@ -2196,7 +2196,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                     WinCreateObject(pscd->preccSource->pwps->pszClassName,
                                                     _wpclsQueryTitle(pscd->preccSource->pwps->pClassObject),
                                                     "",        // setup string
-                                                    "<WP_DESKTOP>", // location
+                                                    (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>", // location
                                                     CO_FAILIFEXISTS);
                                 }
 

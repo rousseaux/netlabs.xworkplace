@@ -149,7 +149,7 @@ static CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
                        G_szSBTextMultiSel[CCHMAXMNEMONICS];
 static ULONG           G_ulStatusBarHeight;
 
-// Declare runtime prototypes, because there are no headers
+// Declare C runtime prototypes, because there are no headers
 // for these:
 
 // _CRT_init is the C run-time environment initialization function.
@@ -160,6 +160,207 @@ int _CRT_init(void);
 // It only needs to be called when the C run-time functions are statically
 // linked, as is the case with XFolder.
 void _CRT_term(void);
+
+/********************************************************************
+ *
+ *   INI keys
+ *
+ ********************************************************************/
+
+/*
+ *  All these constants are declared as "extern" in
+ *  common.h. They all used to be #define's in common.h,
+ *  which put a lot of duplicates of them into the .obj
+ *  files (and also stress on the compiler, since it had
+ *  to do comparisons on them... and didn't even know that
+ *  they were really constant).
+ *
+ *  These have been moved here with V0.9.7 (2001-01-17) [umoeller]
+ */
+
+/*
+ * XWorkplace application:
+ *
+ */
+
+// INI key used with V0.9.1 and above
+const char      *INIAPP_XWORKPLACE       = "XWorkplace";
+
+// INI key used by XFolder and XWorkplace 0.9.0;
+// this is checked for if INIAPP_XWORKPLACE is not
+// found and converted
+// const char      *INIAPP_OLDXFOLDER       = "XFolder";
+const char      *INIAPP_OLDXFOLDER       = "XFolder";
+
+/*
+ * XWorkplace keys:
+ *      Add the keys you are using for storing your data here.
+ *      Note: If anything has been marked as "removed" here,
+ *      do not use that string, because it might still exist
+ *      in a user's OS2.INI file.
+ */
+
+// const char      *INIKEY_DEFAULTTITLE     = "DefaultTitle";       removed V0.9.0
+const char      *INIKEY_GLOBALSETTINGS   = "GlobalSettings";
+// const char      *INIKEY_XFOLDERPATH      = "XFolderPath";        removed V0.81 (I think)
+const char      *INIKEY_ACCELERATORS     = "Accelerators";
+const char      *INIKEY_LANGUAGECODE     = "Language";
+const char      *INIKEY_JUSTINSTALLED    = "JustInstalled";
+// const char      *INIKEY_DONTDOSTARTUP    = "DontDoStartup";      removed V0.84 (I think)
+// const char      *INIKEY_LASTPID          = "LastPID";            removed V0.84 (I think)
+const char      *INIKEY_FAVORITEFOLDERS  = "FavoriteFolders";
+const char      *INIKEY_QUICKOPENFOLDERS = "QuickOpenFolders";
+
+const char      *INIKEY_WNDPOSSTARTUP    = "WndPosStartup";
+const char      *INIKEY_WNDPOSNAMECLASH  = "WndPosNameClash";
+const char      *INIKEY_NAMECLASHFOCUS   = "NameClashLastFocus";
+
+const char      *INIKEY_STATUSBARFONT    = "SB_Font";
+const char      *INIKEY_SBTEXTNONESEL    = "SB_NoneSelected";
+const char      *INIKEY_SBTEXT_WPOBJECT  = "SB_WPObject";
+const char      *INIKEY_SBTEXT_WPPROGRAM = "SB_WPProgram";
+const char      *INIKEY_SBTEXT_WPFILESYSTEM = "SB_WPDataFile";
+const char      *INIKEY_SBTEXT_WPURL        = "SB_WPUrl";
+const char      *INIKEY_SBTEXT_WPDISK    = "SB_WPDisk";
+const char      *INIKEY_SBTEXT_WPFOLDER  = "SB_WPFolder";
+const char      *INIKEY_SBTEXTMULTISEL   = "SB_MultiSelected";
+const char      *INIKEY_SB_LASTCLASS     = "SB_LastClass";
+const char      *INIKEY_DLGFONT          = "DialogFont";
+
+const char      *INIKEY_BOOTMGR          = "RebootTo";
+const char      *INIKEY_AUTOCLOSE        = "AutoClose";
+
+const char      *DEFAULT_LANGUAGECODE    = "001";
+
+// window position of "WPS Class list" window (V0.9.0)
+const char      *INIKEY_WNDPOSCLASSINFO  = "WndPosClassInfo";
+
+// last directory used on "Sound" replacement page (V0.9.0)
+const char      *INIKEY_XWPSOUNDLASTDIR  = "XWPSound:LastDir";
+// last sound scheme selected (V0.9.0)
+const char      *INIKEY_XWPSOUNDSCHEME   = "XWPSound:Scheme";
+
+// boot logo .BMP file (V0.9.0)
+const char      *INIKEY_BOOTLOGOFILE     = "BootLogoFile";
+
+// last ten selections in "Select some" (V0.9.0)
+const char      *INIKEY_LAST10SELECTSOME = "SelectSome";
+
+// supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
+const char      *INIKEY_TRASHCANDRIVES   = "TrashCan::Drives";
+
+// window pos of file operations status window V0.9.1 (2000-01-30) [umoeller]
+const char      *INIKEY_FILEOPSPOS       = "WndPosFileOpsStatus";
+
+// window pos of "Partitions" view V0.9.2 (2000-02-29) [umoeller]
+const char      *INIKEY_WNDPOSPARTITIONS = "WndPosPartitions";
+
+// window position of XMMVolume control V0.9.6 (2000-11-09) [umoeller]
+const char      *INIKEY_WNDPOSXMMVOLUME  = "WndPosXMMVolume";
+
+// window position of XMMCDPlayer V0.9.7 (2000-12-20) [umoeller]
+const char      *INIKEY_WNDPOSXMMCDPLAY  = "WndPosXMMCDPlayer::";
+                // object handle appended
+
+// font samples (XWPFontObject) V0.9.7 (2001-01-17) [umoeller]
+const char      *INIKEY_FONTSAMPLEWNDPOS = "WndPosFontSample";
+const char      *INIKEY_FONTSAMPLESTRING = "FontSampleString";
+const char      *INIKEY_FONTSAMPLEHINTS  = "FontSampleHints";
+
+/*
+ * file type hierarchies:
+ *
+ */
+
+// application for file type hierarchies
+const char      *INIAPP_XWPFILETYPES     = "XWorkplace:FileTypes";   // added V0.9.0
+const char      *INIAPP_XWPFILEFILTERS   = "XWorkplace:FileFilters"; // added V0.9.0
+
+/*
+ * some default WPS INI keys:
+ *
+ */
+
+const char      *WPINIAPP_LOCATION       = "PM_Workplace:Location";
+const char      *WPINIAPP_FOLDERPOS      = "PM_Workplace:FolderPos";
+const char      *WPINIAPP_ASSOCTYPE      = "PMWP_ASSOC_TYPE";
+const char      *WPINIAPP_ASSOCFILTER    = "PMWP_ASSOC_FILTER";
+
+/********************************************************************
+ *
+ *   Standard WPS object IDs
+ *
+ ********************************************************************/
+
+const char *WPOBJID_DESKTOP = "<WP_DESKTOP>";
+
+const char *WPOBJID_KEYB = "<WP_KEYB>";
+const char *WPOBJID_MOUSE = "<WP_MOUSE>";
+const char *WPOBJID_CNTRY = "<WP_CNTRY>";
+const char *WPOBJID_SOUND = "<WP_SOUND>";
+const char *WPOBJID_POWER = "<WP_POWER>";
+const char *WPOBJID_WINCFG = "<WP_WINCFG>";
+
+const char *WPOBJID_HIRESCLRPAL = "<WP_HIRESCLRPAL>";
+const char *WPOBJID_LORESCLRPAL = "<WP_LORESCLRPAL>";
+const char *WPOBJID_FNTPAL = "<WP_FNTPAL>";
+const char *WPOBJID_SCHPAL96 = "<WP_SCHPAL96>";
+
+const char *WPOBJID_LAUNCHPAD = "<WP_LAUNCHPAD>";
+const char *WPOBJID_WARPCENTER = "<WP_WARPCENTER>";
+
+const char *WPOBJID_SPOOL = "<WP_SPOOL>";
+const char *WPOBJID_VIEWER = "<WP_VIEWER>";
+const char *WPOBJID_SHRED = "<WP_SHRED>";
+const char *WPOBJID_CLOCK = "<WP_CLOCK>";
+
+const char *WPOBJID_START = "<WP_START>";
+const char *WPOBJID_TEMPS = "<WP_TEMPS>";
+const char *WPOBJID_DRIVES = "<WP_DRIVES>";
+
+/********************************************************************
+ *
+ *   XWorkplace object IDs
+ *
+ ********************************************************************/
+
+// all of these have been redone with V0.9.2
+
+// folders
+const char      *XFOLDER_MAINID          = "<XWP_MAINFLDR>";
+const char      *XFOLDER_CONFIGID        = "<XWP_CONFIG>";
+
+const char      *XFOLDER_STARTUPID       = "<XWP_STARTUP>";
+const char      *XFOLDER_SHUTDOWNID      = "<XWP_SHUTDOWN>";
+
+const char      *XFOLDER_WPSID           = "<XWP_WPS>";
+const char      *XFOLDER_KERNELID        = "<XWP_KERNEL>";
+const char      *XFOLDER_SCREENID        = "<XWP_SCREEN>";
+const char      *XFOLDER_MEDIAID         = "<XWP_MEDIA>";
+
+const char      *XFOLDER_CLASSLISTID     = "<XWP_CLASSLIST>";
+const char      *XFOLDER_TRASHCANID      = "<XWP_TRASHCAN>";
+const char      *XFOLDER_XCENTERID       = "<XWP_XCENTER>";
+
+const char      *XFOLDER_INTROID         = "<XWP_INTRO>";
+const char      *XFOLDER_USERGUIDE       = "<XWP_REF>";
+
+const char      *XWORKPLACE_ARCHIVE_MARKER   = "xwparchv.tmp";
+            // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
+
+/********************************************************************
+ *
+ *   Thread object windows
+ *
+ ********************************************************************/
+
+// object window class names (added V0.9.0)
+const char      *WNDCLASS_WORKEROBJECT         = "XWPWorkerObject";
+const char      *WNDCLASS_QUICKOBJECT          = "XWPQuickObject";
+const char      *WNDCLASS_FILEOBJECT           = "XWPFileObject";
+
+const char      *WNDCLASS_THREAD1OBJECT        = "XWPThread1Object";
+const char      *WNDCLASS_SUPPLOBJECT          = "XWPSupplFolderObject";
 
 /* ******************************************************************
  *                                                                  *
@@ -465,8 +666,9 @@ const char* cmnQueryLanguageCode(VOID)
         {
             if (G_szLanguageCode[0] == '\0')
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
-                                      DEFAULT_LANGUAGECODE,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_LANGUAGECODE,
+                                      (PSZ)DEFAULT_LANGUAGECODE,
                                       (PVOID)G_szLanguageCode,
                                       sizeof(G_szLanguageCode));
 
@@ -512,7 +714,8 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
             G_szLanguageCode[3] = 0;
 
             brc = PrfWriteProfileString(HINI_USERPROFILE,
-                                        INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_LANGUAGECODE,
                                         G_szLanguageCode);
         }
     }
@@ -1846,7 +2049,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         {
                             strcpy(G_szStatusBarFont, pszSetting);
                             PrfWriteProfileString(HINI_USERPROFILE,
-                                                  INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
+                                                  (PSZ)INIAPP_XWORKPLACE,
+                                                  (PSZ)INIKEY_STATUSBARFONT,
                                                   G_szStatusBarFont);
                         }
                         else
@@ -1861,7 +2065,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         {
                             strcpy(G_szSBTextNoneSel, pszSetting);
                             PrfWriteProfileString(HINI_USERPROFILE,
-                                                  INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
+                                                  (PSZ)INIAPP_XWORKPLACE,
+                                                  (PSZ)INIKEY_SBTEXTNONESEL,
                                                   G_szSBTextNoneSel);
                         }
                         else
@@ -1876,7 +2081,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         {
                             strcpy(G_szSBTextMultiSel, pszSetting);
                             PrfWriteProfileString(HINI_USERPROFILE,
-                                                  INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
+                                                  (PSZ)INIAPP_XWORKPLACE,
+                                                  (PSZ)INIKEY_SBTEXTMULTISEL,
                                                   G_szSBTextMultiSel);
                         }
                         else
@@ -1992,7 +2198,8 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
             {
                 // get global XFolder settings from OS2.INI
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_STATUSBARFONT,
                                       "8.Helv",
                                       &(G_szStatusBarFont),
                                       sizeof(G_szStatusBarFont));
@@ -2000,20 +2207,22 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
                 G_ulStatusBarHeight += 15;
 
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXTNONESEL,
                                       NULL,
                                       &(G_szSBTextNoneSel),
                                       sizeof(G_szSBTextNoneSel));
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_SBTEXTMULTISEL,
                                       NULL,
                                       &(G_szSBTextMultiSel),
                                       sizeof(G_szSBTextMultiSel));
 
                 ulCopied1 = sizeof(GLOBALSETTINGS);
                 PrfQueryProfileData(HINI_USERPROFILE,
-                                    INIAPP_XWORKPLACE,
-                                    INIKEY_GLOBALSETTINGS,
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    (PSZ)INIKEY_GLOBALSETTINGS,
                                     G_pGlobalSettings,
                                     &ulCopied1);
             }
@@ -2406,7 +2615,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
         {
             XWPTrashCan *pDefaultTrashCan = NULL;
 
-            if (NULLHANDLE == WinQueryObject(XFOLDER_TRASHCANID))
+            if (NULLHANDLE == WinQueryObject((PSZ)XFOLDER_TRASHCANID))
             {
                 brc = setCreateStandardObject(hwndOwner,
                                               213,        // XWPTrashCan
@@ -2831,7 +3040,8 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
             p = strdup((PSZ)mp1);
             WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)p);
             PrfQueryProfileString(HINI_USER,
-                                  INIAPP_XWORKPLACE, INIKEY_DLGFONT,
+                                  (PSZ)INIAPP_XWORKPLACE,
+                                  (PSZ)INIKEY_DLGFONT,
                                   (PSZ)cmnQueryDefaultFont(),
                                   szFont, sizeof(szFont)-1);
             WinSetPresParam(hwndStatic, PP_FONTNAMESIZE,
@@ -2865,7 +3075,8 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                                 (PVOID)&szFont,
                                 0);
                     PrfWriteProfileString(HINI_USER,
-                                          INIAPP_XWORKPLACE, INIKEY_DLGFONT,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_DLGFONT,
                                           szFont);
 
                     // now also change the buttons
@@ -3589,7 +3800,7 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 HOBJECT     hobjRef = 0;
                 // open online reference
                 // G_ulCurHelpPanel = -1; // ignore further WM_HELP messages: this one suffices
-                hobjRef = WinQueryObject(XFOLDER_USERGUIDE);
+                hobjRef = WinQueryObject((PSZ)XFOLDER_USERGUIDE);
                 if (hobjRef)
                     WinOpenObject(hobjRef, OPEN_DEFAULT, TRUE);
                 else

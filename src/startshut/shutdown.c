@@ -539,7 +539,8 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
 
     // get existing items from INI
     if (PrfQueryProfileSize(HINI_USER,
-                            INIAPP_XWORKPLACE, INIKEY_AUTOCLOSE,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_AUTOCLOSE,
                             &ulKeyLength))
     {
         // printf("Size: %d\n", ulKeyLength);
@@ -548,7 +549,8 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
         if (pINI)
         {
             PrfQueryProfileData(HINI_USER,
-                                INIAPP_XWORKPLACE, INIKEY_AUTOCLOSE,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_AUTOCLOSE,
                                 pINI,
                                 &ulKeyLength);
             p = pINI;
@@ -635,7 +637,8 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
             }
 
             PrfWriteProfileData(HINI_USER,
-                                INIAPP_XWORKPLACE, INIKEY_AUTOCLOSE,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_AUTOCLOSE,
                                 pINI,
                                 (p - pINI + 2));
 
@@ -645,7 +648,8 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
     else
         // no items: delete INI key
         PrfWriteProfileData(HINI_USER,
-                            INIAPP_XWORKPLACE, INIKEY_AUTOCLOSE,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_AUTOCLOSE,
                             NULL, 0);
 
     return (usInvalid);
@@ -819,7 +823,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
 
-        if (WinQueryObject(XFOLDER_SHUTDOWNID))
+        if (WinQueryObject((PSZ)XFOLDER_SHUTDOWNID))
             // shutdown folder exists already: disable button
             WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
     }
@@ -942,7 +946,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 XFOLDER_SHUTDOWNID);
             if (hObj = WinCreateObject("XFldShutdown", "XFolder Shutdown",
                                        szSetup,
-                                       "<WP_DESKTOP>",
+                                       (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))
                 WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
             else
@@ -1287,7 +1291,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
         // insert ext reboot items into combo box;
         // check for reboot items in OS2.INI
         if (PrfQueryProfileSize(HINI_USER,
-                                INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_BOOTMGR,
                                 &ulKeyLength))
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -1296,7 +1301,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
             if (pINI)
             {
                 PrfQueryProfileData(HINI_USER,
-                                    INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    (PSZ)INIKEY_BOOTMGR,
                                     pINI,
                                     &ulKeyLength);
                 p = pINI;
@@ -1888,7 +1894,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             // get existing items from INI
             if (PrfQueryProfileSize(HINI_USER,
-                        INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                        (PSZ)INIAPP_XWORKPLACE,
+                        (PSZ)INIKEY_BOOTMGR,
                         &ulKeyLength))
             {
                 // _Pmpf(( "Size: %d", ulKeyLength ));
@@ -1897,7 +1904,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 if (pINI)
                 {
                     PrfQueryProfileData(HINI_USER,
-                                INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)INIKEY_BOOTMGR,
                                 pINI,
                                 &ulKeyLength);
                     p = pINI;
@@ -2338,7 +2346,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             }
 
                             PrfWriteProfileData(HINI_USER,
-                                        INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_BOOTMGR,
                                         pINI,
                                         (p - pINI + 2));
 
@@ -2347,7 +2356,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     } // end if (pData->pliReboot)
                     else
                         PrfWriteProfileData(HINI_USER,
-                                    INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    (PSZ)INIKEY_BOOTMGR,
                                     NULL, 0);
 
                     // dismiss dlg
@@ -4112,7 +4122,9 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                     // now look for a Shutdown folder
 
-                    if (pShutdownFolder = _wpclsQueryFolder(_WPFolder, XFOLDER_SHUTDOWNID, TRUE))
+                    if (pShutdownFolder = _wpclsQueryFolder(_WPFolder,
+                                                            (PSZ)XFOLDER_SHUTDOWNID,
+                                                            TRUE))
                     {
                         xsdLog("    Processing shutdown folder...\n");
 
