@@ -44,8 +44,8 @@
 
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
-#include "helpers\dosh.h"
 #include "helpers\dialog.h"
+#include "helpers\dosh.h"
 #include "helpers\except.h"
 #include "helpers\linklist.h"
 #include "helpers\nls.h"                // National Language Support helpers
@@ -81,6 +81,9 @@ HWND        G_hwndMain = NULLHANDLE,
 HWND        G_hwndContextMenuSingle = NULLHANDLE,
             G_hwndContextMenuMulti = NULLHANDLE;
 HWND        G_hwndHelp = NULLHANDLE;        // help instance
+
+HINI        G_hiniUser = HINI_USER,
+            G_hiniSystem = HINI_SYSTEM;     // V0.9.19 (2002-04-14) [umoeller]
 
 PFNWP       G_pfnwpCnrOrig = NULL,
             G_fnwpMainFrameOrig = NULL,
@@ -272,7 +275,7 @@ typedef struct _NODERECORD
     PSZ         pszLongName;        // points to szLongName
     CHAR        szLongName[2*CCHMAXPATH];
 
-    APIRET      arcResolve;         // error code from wphComposePath
+    APIRET      arcComposePath;     // error code from wphComposePath
 
 } NODERECORD, *PNODERECORD;
 
@@ -307,7 +310,7 @@ ULONG           G_cHandlesSelected = 0;
 
 typedef struct _DEFERREDINI
 {
-    HINI        hini;           // normally HINI_USER
+    HINI        hini;           // normally G_hiniUser
     const char  *pcszApp;       // INI application
     PSZ         pszKey;         // INI key
 
@@ -353,6 +356,7 @@ VOID Append(PXSTRING pstr,
 /*
  *@@ UpdateStatusDescr:
  *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: added description for ERROR_WPH_INVALID_PARENT_HANDLE
  */
 
 VOID UpdateStatusDescr(PNODERECORD prec)
@@ -385,11 +389,27 @@ VOID UpdateStatusDescr(PNODERECORD prec)
     if (prec->ulStatus & NODESTAT_ABSTRACTSNOTFOLDER)
         Append(&str, "Abstracts in non-folder", "; ");
 
-    if (prec->arcResolve)
+    switch (prec->arcComposePath)
     {
-        CHAR sz[100];
-        sprintf(sz, "wphComposePath returned %d", prec->arcResolve);
-        Append(&str, sz, "; ");
+        case NO_ERROR:
+        break;
+
+        // added clear names here V0.9.19 (2002-04-14) [umoeller]
+        case ERROR_INVALID_HANDLE:
+            Append(&str, "Invalid handle", "; ");
+        break;
+
+        case ERROR_WPH_INVALID_PARENT_HANDLE:
+            Append(&str, "Invalid parent handle", "; ");
+        break;
+
+        default:
+        {
+            CHAR sz[100];
+            sprintf(sz, "wphComposePath returned %d", prec->arcComposePath);
+            Append(&str, sz, "; ");
+        }
+        break;
     }
 
     if (prec->pszStatusDescr)
@@ -442,7 +462,8 @@ VOID UpdateStatusDescr(PNODERECORD prec)
 BOOL ComposeFullName(PNODERECORD precc,
                      PNODE pNode)
 {
-    if (!precc->arcResolve)
+    // if this failed already, don't try again
+    if (!precc->arcComposePath)
     {
         APIRET arc = wphComposePath((HHANDLES)G_pHandlesBuf,
                                     pNode->usHandle,
@@ -456,7 +477,7 @@ BOOL ComposeFullName(PNODERECORD precc,
             if (arc == ERROR_WPH_INVALID_PARENT_HANDLE)
                 precc->ulStatus |= NODESTAT_INVALID_PARENT;
             else
-                precc->arcResolve = arc;
+                precc->arcComposePath = arc;
             UpdateStatusDescr(precc);
         }
     }
@@ -737,7 +758,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
         // load object IDs from OS2.INI
         APIRET arc;
         PSZ pszObjIDs = NULL;
-        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+        if (!(arc = prfhQueryKeysForApp(G_hiniUser,
                                         WPINIAPP_LOCATION, // "PM_Workplace:Location",
                                         &pszObjIDs)))
         {
@@ -750,7 +771,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                 OBJID    *pNewNode = NEW(OBJID);
                 pNewNode->pcszID = pcszObjIDThis;
                 ULONG cb = sizeof(pNewNode->Tree.ulKey);
-                PrfQueryProfileData(HINI_USER,
+                PrfQueryProfileData(G_hiniUser,
                                     WPINIAPP_LOCATION, // "PM_Workplace:Location",
                                     pcszObjIDThis,
                                     &pNewNode->Tree.ulKey,
@@ -766,11 +787,11 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
             // free(pszObjIDs);
             // do not free, the tree uses pointers into this buffer
 
-        } // end  if (!(arc = prfhQueryKeysForApp(HINI_USER, "PM_Workplace:Location"
+        } // end  if (!(arc = prfhQueryKeysForApp(G_hiniUser, "PM_Workplace:Location"
 
         // build the abstract/folders hash table
         PSZ pszFolderContent;
-        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+        if (!(arc = prfhQueryKeysForApp(G_hiniUser,
                                         WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                         &pszFolderContent)))
         {
@@ -778,7 +799,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
             while (*pcszFolderThis)
             {
                 ULONG cbFolderContent = 0;
-                PSZ pszAbstracts = prfhQueryProfileData(HINI_USER,
+                PSZ pszAbstracts = prfhQueryProfileData(G_hiniUser,
                                                         WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                                         pcszFolderThis,
                                                         &cbFolderContent);
@@ -856,7 +877,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                 // load folderpos entries from OS2.INI
                 APIRET arc;
                 PSZ pszFolderPoses = NULL;
-                if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                if (!(arc = prfhQueryKeysForApp(G_hiniUser,
                                                 WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                                 &pszFolderPoses)))
                 {
@@ -1022,7 +1043,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                                 // yes, WPS uses "AB" if less than
                                                 // four digits...
                                 ULONG cbFolderContent = 0;
-                                if (    (PrfQueryProfileSize(HINI_USER,
+                                if (    (PrfQueryProfileSize(G_hiniUser,
                                                              WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                                              szHandleShort,
                                                              &cbFolderContent))
@@ -1161,7 +1182,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
 
                     free(pszFolderPoses);
 
-                } // end  if (!(arc = prfhQueryKeysForApp(HINI_USER, "PM_Workplace:FolderPos", &pszFolderPoses)))
+                } // end  if (!(arc = prfhQueryKeysForApp(G_hiniUser, "PM_Workplace:FolderPos", &pszFolderPoses)))
 
             } // end if (cReccs)
         }
@@ -1185,6 +1206,12 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
  *   Check Files thread
  *
  ********************************************************************/
+
+/*
+ *@@ fntCheckFiles:
+ *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed crash with bad parent handles, thanks Paul Ratcliffe
+ */
 
 void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
 {
@@ -1255,18 +1282,22 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
         if (preccThis->ulHandle)
         {
             // get the NODE from the record hash table
-            PNODETREENODE pNodeThis = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle];
-            if (pNodeThis->pNode->usParentHandle)
+            PNODETREENODE pNodeThis;
+            // V0.9.19 (2002-04-14) [umoeller]
+            // fixed crash here if user runs check files before
+            // removing handles that have an invalid parent
+            if (    (pNodeThis = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle])
+                 && (pNodeThis->pNode)
+                 && (pNodeThis->pNode->usParentHandle)
+               )
             {
                 // record has parent:
-                PNODERECORD pParentRec = G_RecordHashTable[pNodeThis->pNode->usParentHandle];
-
-                if (pParentRec)
+                PNODERECORD pParentRec;
+                if (pParentRec = G_RecordHashTable[pNodeThis->pNode->usParentHandle])
                 {
                     if (pParentRec->ulIsFolder == FALSE)
                     {
                         // parent record is not a folder:
-
                         preccThis->ulStatus |= NODESTAT_PARENTNOTFOLDER;
                         fChanged = TRUE;
                     }
@@ -1476,7 +1507,7 @@ MRESULT EXPENTRY fnwpSubclassedObjIDsFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
                 // intercept close since the original would
                 // post WM_QUIT
                 winhSaveWindowPos(hwndFrame,
-                                  HINI_USER,
+                                  G_hiniUser,
                                   INIAPP,
                                   INIKEY_OBJIDSWINPOS);
                 WinDestroyWindow(hwndFrame);
@@ -1623,7 +1654,7 @@ VOID ViewObjectIDs(VOID)
             winhSetWindowFont(hwndCnr, NULL);
 
             if (!winhRestoreWindowPos(G_hwndObjIDsFrame,
-                                      HINI_USER,
+                                      G_hiniUser,
                                       INIAPP,
                                       INIKEY_OBJIDSWINPOS,
                                       SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE))
@@ -1753,7 +1784,7 @@ MRESULT EXPENTRY fnwpSubclassedMainCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPAR
     {
         case WM_CLOSE:
             winhSaveWindowPos(G_hwndMain,
-                              HINI_USER,
+                              G_hiniUser,
                               INIAPP,
                               INIKEY_MAINWINPOS);
             mrc = G_pfnwpCnrOrig(hwndCnr, msg, mp1, mp2);
@@ -2093,7 +2124,7 @@ PULONG GetAbstracts(PNODERECORD prec,
     sprintf(pszHandleShort, "%lX", prec->ulHandle);
                     // yes, WPS uses "AB" if less than
                     // four digits...
-    PSZ pszAbstracts = prfhQueryProfileData(HINI_USER,
+    PSZ pszAbstracts = prfhQueryProfileData(G_hiniUser,
                                             WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                             pszHandleShort,
                                             &cbFolderContent);
@@ -2138,10 +2169,10 @@ VOID NukeAbstracts(PNODERECORD prec,
             // invalidate the hash table entry V0.9.16 (2001-09-29) [umoeller]
             G_ausAbstractFolders[LOUSHORT(ulAbstractThis)] = 0;
 
-            CreateDeferredNuke(HINI_USER,
+            CreateDeferredNuke(G_hiniUser,
                                "PM_Abstract:Objects",
                                szAbstract);
-            CreateDeferredNuke(HINI_USER,
+            CreateDeferredNuke(G_hiniUser,
                                "PM_Abstract:Icons",
                                szAbstract);
         }
@@ -2149,7 +2180,7 @@ VOID NukeAbstracts(PNODERECORD prec,
         *pulNuked += cAbstracts;
 
         // nuke folder content entry
-        CreateDeferredNuke(HINI_USER,
+        CreateDeferredNuke(G_hiniUser,
                            WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                            szHandleShort);
         free(paulAbstracts);
@@ -2201,7 +2232,7 @@ VOID NukeFolderPoses(PNODERECORD prec,
                    == 0)
             {
                 // matches:
-                CreateDeferredNuke(HINI_USER,
+                CreateDeferredNuke(G_hiniUser,
                                    WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                    pcszFolderPosThis);
                 (*pulNuked)++;
@@ -2230,7 +2261,7 @@ VOID NukeObjID(PNODERECORD prec,
     if (prec->pObjID)
     {
         // this node has an object ID assigned:
-        CreateDeferredNuke(HINI_USER,
+        CreateDeferredNuke(G_hiniUser,
                            WPINIAPP_LOCATION, // "PM_Workplace:Location",
                            prec->pObjID->pcszID);
         (*pulNuked)++;
@@ -2322,7 +2353,7 @@ VOID MoveAbstracts(PLINKLIST pll,               // in: linked list of NODERECORD
                     // replace existing count
                     G_cAbstractsDesktop = cAbstractsTargetNew;
 
-                    CreateDeferredNuke(HINI_USER,
+                    CreateDeferredNuke(G_hiniUser,
                                        WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                        szHandleSource);
 
@@ -2398,7 +2429,7 @@ ULONG RemoveHandles(HWND hwndCnr,
     // load folderpos entries from OS2.INI
     PSZ pszFolderPoses = NULL;
 
-    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+    if (!(arc = prfhQueryKeysForApp(G_hiniUser,
                                     WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                     &pszFolderPoses)))
     {
@@ -2698,7 +2729,7 @@ BOOL WriteAllBlocks(PSZ pszHandles,
         *pulLastBlockWritten = ulCurrentBlock;
 
         sprintf(szBlockName, "BLOCK%d", ulCurrentBlock++);
-        PrfWriteProfileData(HINI_SYSTEM,
+        PrfWriteProfileData(G_hiniSystem,
                             pszHandles,         // PM_Workplace:Handles0 or 1
                             szBlockName,
                             pStart,
@@ -2713,14 +2744,14 @@ BOOL WriteAllBlocks(PSZ pszHandles,
         ULONG ulBlockSize = 0;
         sprintf(szBlockName, "BLOCK%d", ulCurrentBlock++);
 
-        if (   (PrfQueryProfileSize(HINI_SYSTEM,
+        if (   (PrfQueryProfileSize(G_hiniSystem,
                                     pszHandles,
                                     szBlockName,
                                     &ulBlockSize))
              && (ulBlockSize != 0)
            )
         {
-            PrfWriteProfileData(HINI_SYSTEM,
+            PrfWriteProfileData(G_hiniSystem,
                                 pszHandles,
                                 szBlockName,
                                 NULL,
@@ -2763,7 +2794,7 @@ VOID WriteBack(VOID)
         APIRET arc;
 
         PSZ pszActiveHandles;
-        if (arc = wphQueryActiveHandles(HINI_SYSTEM,
+        if (arc = wphQueryActiveHandles(G_hiniSystem,
                                         &pszActiveHandles))
             strcpy(szText, "Cannot get the active handles from OS2SYS.INI.");
         else
@@ -2788,7 +2819,7 @@ VOID WriteBack(VOID)
             if (G_paulAbstractsTarget)
             {
                 // deferred changes:
-                PrfWriteProfileData(HINI_USER,
+                PrfWriteProfileData(G_hiniUser,
                                     WPINIAPP_FDRCONTENT, // "PM_Abstract:FldrContent",
                                     G_szHandleDesktop,
                                     G_paulAbstractsTarget,
@@ -3267,7 +3298,7 @@ VOID FrameCommand(HWND hwndFrame,
                     APIRET arc;
                     PSZ pszFolderPoses = NULL;
 
-                    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                    if (!(arc = prfhQueryKeysForApp(G_hiniUser,
                                                     WPINIAPP_FOLDERPOS, // "PM_Workplace:FolderPos",
                                                     &pszFolderPoses)))
                     {
@@ -3370,7 +3401,7 @@ VOID FrameCommand(HWND hwndFrame,
                     // first call:
                     ULONG       hobjDesktop = 0;
                     ULONG       cb = sizeof(hobjDesktop);
-                    if (    (PrfQueryProfileData(HINI_USER,
+                    if (    (PrfQueryProfileData(G_hiniUser,
                                                  WPINIAPP_LOCATION, // "PM_Workplace:Location",
                                                  WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                                  &hobjDesktop,
@@ -3690,6 +3721,111 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
  *
  ********************************************************************/
 
+BOOL HandleProfile(PCSZ pcszFilename,
+                   PCSZ pcszUserOrSystem,
+                   HINI *phINI)
+{
+    ULONG cb;
+    APIRET arc;
+
+    if (arc = doshQueryPathSize(pcszFilename, &cb))
+    {
+        MessageBox(NULLHANDLE,
+                   MB_CANCEL,
+                   "Error: Specified %s profile \"%s\" does not exist.",
+                   pcszUserOrSystem,
+                   pcszFilename);
+        return FALSE;
+    }
+    else if (cb == 0)
+    {
+        MessageBox(NULLHANDLE,
+                   MB_CANCEL,
+                   "Error: Specified %s profile \"%s\" has 0 bytes.",
+                   pcszUserOrSystem,
+                   pcszFilename);
+        return FALSE;
+    }
+    else if (!(*phINI = PrfOpenProfile(G_hab,
+                                       pcszFilename)))
+    {
+        ERRORID id = WinGetLastError(G_hab);
+        MessageBox(NULLHANDLE,
+                   MB_CANCEL,
+                   "Error: Cannot open %s profile \"%s\" (WinGetLastError returned 0x%lX).",
+                   pcszUserOrSystem,
+                   pcszFilename,
+                   id);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*
+ *@@ ParseArgs:
+ *
+ *@@added V0.9.19 (2002-04-14) [umoeller]
+ */
+
+BOOL ParseArgs(int argc, char* argv[])
+{
+    int i = 0;
+    while (i++ < argc - 1)
+    {
+        if (argv[i][0] == '-')
+        {
+            ULONG i2;
+            for (i2 = 1; i2 < strlen(argv[i]); i2++)
+            {
+                BOOL fNextArg = FALSE;
+
+                switch (argv[i][i2])
+                {
+                    case 'U':
+                        if (!HandleProfile(&argv[i][i2+1],
+                                           "user",
+                                           &G_hiniUser))
+                            return FALSE;
+
+                        fNextArg = TRUE;
+                    break;
+
+                    case 'S':
+                        if (!HandleProfile(&argv[i][i2+1],
+                                           "system",
+                                           &G_hiniSystem))
+                            return FALSE;
+
+                        fNextArg = TRUE;
+                    break;
+
+                    default:
+                        MessageBox(NULLHANDLE,
+                                   MB_CANCEL,
+                                   "Error: Invalid parameter \"-%c\".",
+                                   argv[i][i2]);
+                        return FALSE;
+                }
+
+                if (fNextArg)
+                    break; // for (i2 = 1; i2 < strlen(argv[i]); i2++)
+
+            } // end for (i2 = 1; i2 < strlen(argv[i]); i2++)
+        } // end if (argv[i][0] == '-')
+        else
+        {
+            MessageBox(NULLHANDLE,
+                       MB_CANCEL,
+                       "Error: Invalid parameter \"%s\".",
+                       argv[i]);
+            return FALSE;
+        } // end else if (argv[i][0] == '-')
+    } // end while ((i++ < argc-1) && (fContinue))
+
+    return TRUE;
+}
+
 /*
  *@@ main:
  *
@@ -3706,171 +3842,170 @@ int main(int argc, char* argv[])
     DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
 
     if (!(G_hab = WinInitialize(0)))
-        return FALSE;
+        return 1;
 
     if (!(hmq = WinCreateMsgQueue(G_hab, 0)))
-        return FALSE;
+        return 1;
 
     G_hptrMain = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
 
     ULONG cb = sizeof(G_cThousands);
-    PrfQueryProfileData(HINI_USER,
+    PrfQueryProfileData(G_hiniUser,
                         "PM_National",
                         "sThousand",
                         G_cThousands,
                         &cb);
 
-    /* if (arc = wphQueryBaseClassesHiwords(&G_usHiwordAbstract,
-                                         &G_pHandlesBuf->usHiwordFileSystem))
-        winhDebugBox(NULLHANDLE,
-                     "xfix",
-                     "xfix was unable to determine the storage class index for "
-                     "WPFileSystem objects. Terminating.");
-    else */
-    {
-        lstInit(&G_llDeferredNukes, TRUE);
+    lstInit(&G_llDeferredNukes, TRUE);
 
-        // create frame and handles container
-        HWND hwndCnr = NULLHANDLE;
+    if (!(ParseArgs(argc, argv)))
+        return 1;
 
-        EXTFRAMECDATA xfd =
-            {
-                      0,
-                      FCF_TITLEBAR
-                         | FCF_SYSMENU
-                         | FCF_MINMAX
-                         | FCF_SIZEBORDER
-                         | FCF_ICON
-                         | FCF_MENU
-                         | FCF_TASKLIST,
-                      XFCF_STATUSBAR,
-                      0,
-                      "xfix: Handles list",
-                      1,     // icon resource
-                      WC_CONTAINER,
-                      CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
-                         | WS_VISIBLE,
-                      0,
-                      NULL
-            };
+    // create frame and handles container
+    HWND hwndCnr = NULLHANDLE;
 
-        G_hwndMain = winhCreateExtStdWindow(&xfd,
-                                            &hwndCnr);
-
-        if ((G_hwndMain) && (hwndCnr))
+    EXTFRAMECDATA xfd =
         {
-            // subclass cnr (it's our client)
-            G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedMainCnr);
+                  0,
+                  FCF_TITLEBAR
+                     | FCF_SYSMENU
+                     | FCF_MINMAX
+                     | FCF_SIZEBORDER
+                     | FCF_ICON
+                     | FCF_MENU
+                     | FCF_TASKLIST,
+                  XFCF_STATUSBAR,
+                  0,
+                  "xfix: Handles list",
+                  1,     // icon resource
+                  WC_CONTAINER,
+                  CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
+                     | WS_VISIBLE,
+                  0,
+                  NULL
+        };
 
-            // subclass frame for supporting msgs
-            G_fnwpMainFrameOrig = WinSubclassWindow(G_hwndMain,
-                                                    fnwpSubclassedMainFrame);
+    G_hwndMain = winhCreateExtStdWindow(&xfd,
+                                        &hwndCnr);
 
-            SetStatusBarText(G_hwndMain,
-                             "Parsing handles...");
+    if ((G_hwndMain) && (hwndCnr))
+    {
+        // subclass cnr (it's our client)
+        G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedMainCnr);
 
-            SetupMainCnr(hwndCnr);
+        // subclass frame for supporting msgs
+        G_fnwpMainFrameOrig = WinSubclassWindow(G_hwndMain,
+                                                fnwpSubclassedMainFrame);
 
-            // load icons
+        SetStatusBarText(G_hwndMain,
+                         "Parsing handles...");
 
-            G_hwndContextMenuSingle = WinLoadMenu(hwndCnr,
-                                                  NULLHANDLE,
-                                                  IDM_RECORDSELSINGLE);
-            G_hwndContextMenuMulti  = WinLoadMenu(hwndCnr,
-                                                  NULLHANDLE,
-                                                  IDM_RECORDSELMULTI);
+        SetupMainCnr(hwndCnr);
 
-            // load NLS help library (..\help\xfldr001.hlp)
-            PPIB     ppib;
-            PTIB     ptib;
-            CHAR     szHelpName[CCHMAXPATH];
-            DosGetInfoBlocks(&ptib, &ppib);
-            DosQueryModuleName(ppib->pib_hmte, sizeof(szHelpName), szHelpName);
-                    // now we have: "J:\Tools\WPS\XWorkplace\bin\xfix.exe"
-            PSZ pszLastBackslash = strrchr(szHelpName, '\\');
+        // load icons
+
+        G_hwndContextMenuSingle = WinLoadMenu(hwndCnr,
+                                              NULLHANDLE,
+                                              IDM_RECORDSELSINGLE);
+        G_hwndContextMenuMulti  = WinLoadMenu(hwndCnr,
+                                              NULLHANDLE,
+                                              IDM_RECORDSELMULTI);
+
+        // load NLS help library (..\help\xfldr001.hlp)
+        PPIB     ppib;
+        PTIB     ptib;
+        CHAR     szHelpName[CCHMAXPATH];
+        DosGetInfoBlocks(&ptib, &ppib);
+        DosQueryModuleName(ppib->pib_hmte, sizeof(szHelpName), szHelpName);
+                // now we have: "J:\Tools\WPS\XWorkplace\bin\xfix.exe"
+        PSZ pszLastBackslash = strrchr(szHelpName, '\\');
+        if (pszLastBackslash)
+        {
+            *pszLastBackslash = 0;
+            // again to get rid of "bin"
+            pszLastBackslash = strrchr(szHelpName, '\\');
             if (pszLastBackslash)
             {
                 *pszLastBackslash = 0;
-                // again to get rid of "bin"
-                pszLastBackslash = strrchr(szHelpName, '\\');
-                if (pszLastBackslash)
-                {
-                    *pszLastBackslash = 0;
-                    // now we have: "J:\Tools\WPS\XWorkplace"
-                    CHAR szLanguage[10];
-                    PrfQueryProfileString(HINI_USER,
-                                          INIAPP,
-                                          "Language",
-                                          "001",        // default
-                                          szLanguage,
-                                          sizeof(szLanguage));
-                    sprintf(szHelpName + strlen(szHelpName),
-                            "\\help\\xfldr%s.hlp",
-                            szLanguage);
-                    G_hwndHelp = winhCreateHelp(G_hwndMain,
-                                                szHelpName,
-                                                NULLHANDLE,
-                                                NULL,
-                                                "xfix");
-                }
-            }
-
-            if (!winhRestoreWindowPos(G_hwndMain,
-                                      HINI_USER,
+                // now we have: "J:\Tools\WPS\XWorkplace"
+                CHAR szLanguage[10];
+                PrfQueryProfileString(G_hiniUser,
                                       INIAPP,
-                                      INIKEY_MAINWINPOS,
-                                      SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE))
-                WinSetWindowPos(G_hwndMain,
-                                HWND_TOP,
-                                10, 10, 500, 500,
-                                SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE);
+                                      "Language",
+                                      "001",        // default
+                                      szLanguage,
+                                      sizeof(szLanguage));
+                sprintf(szHelpName + strlen(szHelpName),
+                        "\\help\\xfldr%s.hlp",
+                        szLanguage);
+                G_hwndHelp = winhCreateHelp(G_hwndMain,
+                                            szHelpName,
+                                            NULLHANDLE,
+                                            NULL,
+                                            "xfix");
+            }
+        }
 
-            // load handles from OS2.INI
-            PSZ pszActiveHandles;
-            if (arc = wphQueryActiveHandles(HINI_SYSTEM,
-                                            &pszActiveHandles))
+        if (!winhRestoreWindowPos(G_hwndMain,
+                                  G_hiniUser,
+                                  INIAPP,
+                                  INIKEY_MAINWINPOS,
+                                  SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE))
+            WinSetWindowPos(G_hwndMain,
+                            HWND_TOP,
+                            10, 10, 500, 500,
+                            SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE);
+
+        // load handles from OS2.INI
+        PSZ pszActiveHandles;
+        if (arc = wphQueryActiveHandles(G_hiniSystem,
+                                        &pszActiveHandles))
+            MessageBox(NULLHANDLE,
+                       MB_CANCEL,
+                       "Cannot get the active handles from OS2SYS.INI.");
+        else
+        {
+            if (arc = wphLoadHandles(G_hiniUser,
+                                     G_hiniSystem,
+                                     pszActiveHandles,
+                                     (HHANDLES*)&G_pHandlesBuf))
                 MessageBox(NULLHANDLE,
                            MB_CANCEL,
-                           "Cannot get the active handles from OS2SYS.INI.");
+                           "Error %d occured loading the handles from the INI files.",
+                           arc);
             else
             {
-                if (arc = wphLoadHandles(HINI_USER,
-                                         HINI_SYSTEM,
-                                         pszActiveHandles,
-                                         (HHANDLES*)&G_pHandlesBuf))
+                if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
+                                                  FALSE))
                     MessageBox(NULLHANDLE,
                                MB_CANCEL,
-                               "Error %d occured loading the handles from the INI files.",
+                               "Warning: Error %d building handles cache.",
                                arc);
-                else
-                {
-                    if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
-                                                      FALSE))
-                        MessageBox(NULLHANDLE,
-                                   MB_CANCEL,
-                                   "Warning: Error %d building handles cache.",
-                                   arc);
 
-                    StartInsertHandles(hwndCnr);
+                StartInsertHandles(hwndCnr);
 
-                    // display introductory help with warnings
-                    WinPostMsg(G_hwndMain,
-                               WM_COMMAND,
-                               (MPARAM)IDMI_HELP_GENERAL,
-                               0);
+                // display introductory help with warnings
+                WinPostMsg(G_hwndMain,
+                           WM_COMMAND,
+                           (MPARAM)IDMI_HELP_GENERAL,
+                           0);
 
-                    // standard PM message loop
-                    while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
-                        WinDispatchMsg(G_hab, &qmsg);
+                // standard PM message loop
+                while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
+                    WinDispatchMsg(G_hab, &qmsg);
 
-                    if (G_tidInsertHandlesRunning)
-                        thrFree(&G_tiInsertHandles);
-                    if (G_tidCheckFilesRunning)
-                        thrFree(&G_tiCheckFiles);
-                }
+                if (G_tidInsertHandlesRunning)
+                    thrFree(&G_tiInsertHandles);
+                if (G_tidCheckFilesRunning)
+                    thrFree(&G_tiCheckFiles);
             }
         }
     }
+
+    if (G_hiniUser != HINI_USER)
+        PrfCloseProfile(G_hiniUser);
+    if (G_hiniSystem != HINI_USER)
+        PrfCloseProfile(G_hiniSystem);
 
     // clean up on the way out
     WinDestroyMsgQueue(hmq);

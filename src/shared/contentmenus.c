@@ -706,6 +706,7 @@ SHORT XWPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.7 (2001-01-21) [lafaix]: using MIS_BREAKSEPARATOR instead of MIS_BREAK
  *@@changed V0.9.16 (2002-01-05) [umoeller]: now applying folder "include" criteria
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: finally sorting folder templates under non-folders
  */
 
 VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
@@ -785,9 +786,14 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
 
                     if (pObject2 = objResolveIfShadow(pObject))
                     {
-                        BOOL    fIsFolder = (    (_somIsA(pObject2, _WPFolder))
-                                              || (_somIsA(pObject2, _WPDisk))
-                                            );
+                        BOOL    fIsFolder;
+
+                        if (fIsFolder = (    (_somIsA(pObject2, _WPFolder))
+                                          || (_somIsA(pObject2, _WPDisk))
+                                        ))
+                            // treat folder templates as non-folders
+                            // V0.9.19 (2002-04-14) [umoeller]
+                            fIsFolder = (!(_wpQueryStyle(pObject2) & OBJSTYLE_TEMPLATE));
 
                         // append this always if it's a folder
                         // or, if it's no folder, we haven't

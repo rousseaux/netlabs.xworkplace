@@ -18,37 +18,41 @@ select the "Empty trash can" menu item from the trash can's context menu.
 <P>As a shortcut, you can also press the "Delete" key on your keyboard to
 have the selected objects deleted.
 
-<P>If you want to <B>permanently destroy</B> the object immediately, without
+<P>If you want to <B>immediately delete</B> the object, without
 moving it to the trash can first, hold down the <B>"Shift" key</B> when
 selecting the "Delete" menu item or pressing the "Delete" key. Be warned
 that this operation normally cannot be undone: the selected objects are
 destroyed for good.
 
-<P>Depending on the settings on the "Confirmations" page
+<P><B>Notes:</B>
+
+<UL><LI>Depending on the settings on the "Confirmations" page
 in the <A HREF="objects/obj_wps.html">"Workplace Shell" object</A>,
 &xwp; will display a confirmation message before permanently deleting
 objects.
 
-<P>Note that there are ways to recover file-system objects that have been
+<P><LI>If you prefer to always immediately delete objects, instead
+of moving them to the trash can first, enable the respective setting
+on the first properties page in the trash can's
+<A HREF="glossary/gls_notebook.html">properties notebook</A>.
+
+<P><LI>There are ways to recover file-system objects that have been
 accidentally deleted with the use of the
 <CODE>UNDELETE</CODE> command on the
-&os2; command line. However, this requires that support for this is enabled
+&os2; command line. However, this requires that support for this be enabled
 first. See the
 <A HREF="cmdref.inf#undelete">documentation of the <CODE>UNDELETE</CODE> command</A>
 in the <I>&os2; Command Reference</I>.
+
+</UL>
 
 <IFNDEF __NOXWPSETUP__>
 <P>You can disable &xwp;'s delete replacements on the "Features" page
 in the
 <A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
-The above description applies to the case where you have both "Replace true delete"
-and the &xwp; trash can enabled. If you only enable the trash can, the WPS
-will still perform the permanent destruction when the "Shift" key is pressed.
-If you only enable "Replace true delete", all delete operations will be
-performed without moving the objects into the trash can first.
+<BR>
 </IFNDEF>
 
-<BR>
 </BODY>
 </HTML>
 

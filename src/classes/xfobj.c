@@ -2288,9 +2288,7 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
 
     if (    (MenuId == WPMENUID_DELETE)
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-         && (    (cmnQuerySetting(sfReplaceTrueDelete))
-              || (cmnQuerySetting(sfTrashDelete))
-            )
+         && (cmnQuerySetting(sfReplaceDelete))
 #endif
        )
     {

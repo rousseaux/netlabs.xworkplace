@@ -1829,6 +1829,7 @@ typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
  *      implementation for XDM_STARTAPP in fnwpDaemonObject.
  *
  *@@added V0.9.19 (2002-03-28) [umoeller]
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed SWP_MINIMIZE
  */
 
 static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
@@ -1860,7 +1861,12 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
 
             // VIO and fullscreen sessions keep ending up in the
             // background here, so bring these to the front
-            if (((PPROGDETAILS)mp2)->progt.progc != PROG_PM)
+            if (    (((PPROGDETAILS)mp2)->progt.progc != PROG_PM)
+                 // don't do this if minimized, or we'll restore the window
+                 // or switch the screen group!
+                 // V0.9.19 (2002-04-14) [umoeller]
+                 && (!(((PPROGDETAILS)mp2)->swpInitial.fl & SWP_MINIMIZE))
+               )
             {
                 // try to find the switch entry, if there's one
                 if (!G_WinHSWITCHfromHAPP)

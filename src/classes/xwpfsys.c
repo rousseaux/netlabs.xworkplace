@@ -248,6 +248,7 @@ SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,
  *      instead.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: if turbo was off, opening settings could take ages on folder; fixed
  */
 
 SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
@@ -256,7 +257,11 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpOpen");
 
-    if (ulView == OPEN_SETTINGS)
+    if (    (ulView == OPEN_SETTINGS)
+         // do this only if turbo folders are on!
+         // V0.9.19 (2002-04-14) [umoeller]
+         && (cmnQuerySetting(sfTurboFolders))
+       )
     {
         somTD_WPObject_wpOpen pwpOpen;
 

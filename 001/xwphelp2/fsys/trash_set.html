@@ -7,7 +7,7 @@
 <!-- this page is all new with V0.9.0 -->
 <!-- rewritten with V0.9.3 -->
 <BODY>
-This notebook page allows you to fine-tune the &xwp; trash can behavior.
+This notebook page allows you to fine-tune the behavior of the &xwp; trash can.
 <!-- V0.9.16: Please see the <I>&xwp; User Guide</I> for an introduction to what
 the &xwp; trash can does. -->
 <P>Press <B>"Undo"</B> to restore the settings
@@ -27,6 +27,19 @@ item of the trash can and the automatic emptying described above. -->
 
 <P>If <B>"Confirm destroy"</B> is checked, you will get a confirmation window when
 you select "Destroy object" of a trash object's context menu.
+
+<!-- V0.9.19: added this item -->
+<P>If <B>"Always delete immediately"</B> is checked, &xwp; will perform all delete operations
+directly, without moving the objects into the trash can first. In that case though,
+you will not be able to recover objects that were accidentally deleted.
+Note that you can perform an "immediate delete" for specific objects even if this
+setting is not enabled; see the description for the
+<A HREF="fsys/fops_delete.html">"Delete" menu item</A>.
+<IFNDEF __EWORKPLACE__>
+-- This setting corresponds to the "Replace true delete" feature that was previously
+only on the "Features" page in the
+<A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
+</IFNDEF>
 
 <IFNDEF __NOXSHUTDOWN__>
 <!-- V0.9.4: added this-->

@@ -56,7 +56,7 @@ Dies wurde mit &xwp; 0.9.4 eingefhrt.
 
 ; FEATURES_6005 added with V0.9.12
 
-<--FEATURES_6005-->: Ist "Klassennamen berschreiben" markiert, berschreibt &xwp; die Klassennamen der Klassen Ordner, Datei und Datentr„ger.
+<--FEATURES_6005-->: Ist "Klassennamen korrigieren" markiert, berschreibt &xwp; die Klassennamen der Klassen Ordner, Datei und Datentr„ger.
 Die Klassennamen werden in der dritten Spalte der Detailanzeige angezeigt (und auch in Statuszeilen, falls Sie dies so eingestellt haben).
 Wenn die WPS-Netzwerkklassen installiert wurden, sind diese Namen leider nicht mehr sehr aussagekr„ftig. &xwp; kann sie dann wieder auf "Ordner", "Datendatei" und "Datentr„ger" zurcksetzen.
 
@@ -66,9 +66,9 @@ Auáerdem kann fr jeden einzelnen Ordner festlegt werden, ob eine Statuszeile an
 Nachdem Sie diese Funktion eingeschaltet haben, sollten Sie also das Objekt "Workplace Shell" ”ffnen und die Seite "Statuszeile" ausw„hlen.
 Weitere Details, insbesondere dazu, wie Sie die Statuszeilen genau an Ihre Bedrfnisse anpassen, finden Sie im &xwp;-Handbuch.
 Dies wurde mit XFolder 0.70 eingefhrt.
-<--FEATURES_6012-->: Nach Auswahl von "Am Gitter ausrichten aktivieren" kann dem Kontextmen der Ordner ein Eintrag "Am Gitter ausrichten" hinzugefgt werden.
+<--FEATURES_6012-->: Nach Auswahl von "Am Gitter ausrichten aktivieren" kann dem Kontextmen der Ordner ein Punkt "Am Gitter ausrichten" hinzugefgt werden.
 Dieser Eintrag richtet alle Objekte im Ordner an den Linien eines unsichtbaren Gitters aus und vereinfacht so die Plazierung von Objekten.
-Mit dem Einschalten dieser Funktion wird dem Objekt "Workplace Shell" auch eine Seite "Am Gitter ausrichten" hinzugefgt, auf der das zu verwendende Gitter definiert werden kann.
+Mit dem Einschalten dieser Funktion wird dem Objekt "Workplace Shell" auch eine Seite "Gitter" hinzugefgt, auf der das zu verwendende Gitter definiert werden kann.
 Eine Einfhrung hierzu finden Sie im &xwp;-Handbuch.
 Dies wurde mit XFolder 0.50 eingefhrt.
 <--FEATURES_6013-->: Sind "Ordner-Tastenkrzel" aktiviert, k”nnen mehr als 30 h„ufig verwendeten Ordnerfunktionen (wie z.B. "Alles ausw„hlen") im &xwp;-Objekt "Workplace Shell" neue Tastenkrzel zugewiesen werden.
@@ -145,29 +145,11 @@ Dies wurde mit XFolder 0.80 eingefhrt.
 Ist diese Funktion aktiviert, erscheint ein normaler Dialog, der auch eine Schaltfl„che "Wiederholen" bietet.
 Dies wurde mit XFolder 0.85 eingefhrt.
 ;
-; the following was changed with V0.9.3
-;
-<--FEATURES_6045-->: Ist diese Funktion aktiviert, l”schen alle normalen "L”schen"-Operationen der WPS Objekte nicht wirklich, sondern verschieben sie in den &xwp;-Papierkorb.
-Dies schlieát auch die Taste "Entf" und die Auswahl des Meneintrages "L”schen" aus dem Kontextmen fr alle Objekte des Systems ein.
-Ein "echtes" L”schen kann immer noch durch Gedrckthalten der Umschalttaste ("Shift") w„hrend der Auswahl des Kontextmeneintrages "L”schen" oder der Bet„tigung der Taste "Entf" erzwungen werden.
-Die Auswahl dieses Eintrages installiert die &xwp;-Papierkorb-WPS-Klassen und erzeugt ein Papierkorb-Objekt auf der Arbeitsoberfl„che, falls diese Voraussetzungen noch nicht erfllt sind.
-Details entnehmen Sie bitte dem &xwp;-Handbuch.
-Dies wurde mit &xwp; 0.9.1 eingefhrt.
-;
 ; the following was changed with V0.9.5
 ;
 <--FEATURES_6047-->: Durch diese Funktion wird die Verwaltung der Dateisystem-Handles der WPS in OS2SYS.INI ersetzt und versucht, die Anzahl unn”tig erzeugter Handles zu reduzieren.
 Eine Einfhrung zu dieser Funktion finden Sie im &xwp;-Handbuch.
 Dies wurde mit &xwp; 0.9.5 eingefhrt.
-
-;
-; the following was added with V0.9.3
-;
-<--FEATURES_6046-->: Wenn "Echtes L”schen ersetzen" aktiviert ist, ersetzt &xwp; die echten L”schoperationen der Workplace Shell.
-Falls der Papierkorb oben aktiviert wurde, trifft dies sowohl auf das Zerst”ren eines Papierkorb-Objektes als auch das "echte" L”schen zu, das ausgefhrt wird, wenn bei gedrckter Umschalttaste ("Shift") "L”schen" ausgew„hlt oder "Entf" gedrckt wird.
-Wurde der Papierkorb oben nicht aktiviert, betrifft dies alle L”schoperationen.
-Verglichen mit dem Standardverhalten der WPS erlaubt diese Funktion den Abbruch eines laufenden L”schvorgangs, wenn ein Ordner eine Menge Unterordner besitzt.
-Dies wurde mit &xwp; 0.9.3 eingefhrt.
 
 ;
 ; the following was added with V0.9.9
@@ -184,6 +166,19 @@ Dies wurde mit &xwp; 0.9.9 eingefhrt.
 <--FEATURES_6049-->: Ist "Dateidialog ersetzen" aktiviert, so verwendet &xwp; einen eigenen Ersatzdialog anstelle des standardm„áigen &os2;-Dateidialoges.
 Beachten Sie bitte, daá dies nur Dateidialoge von WPS-Prozessen betrifft. Zu diesem Zeitpunkt kann &xwp; noch nicht alle Dateidialoge Ihres Systems ersetzen.
 
+;
+; the following was changed with V0.9.19
+;
+<--FEATURES_6045-->: Ist diese Funktion aktiviert, bernimmt &xwp; s„mtliche "L”schen"-Operationen der WPS-Objekte.
+Dies schlieát auch die Taste "Entf" und die Auswahl des Meneintrages "L”schen" aus dem Kontextmen fr alle Objekte des Systems ein.
+&xwp; kann dann entweder die Objekte in den neuen &xwp;-Papierkorb verschieben (der erstellt wird, wenn Sie diese Funktion anw„hlen) oder sofort l”schen, wenn Sie die Umschalttaste beim Starten der L”schoperation gedrckt halten.
+Wenn Sie m”chten, daá &xwp; die Objekte stets sofort l”scht, gibt es hierfr eine Option im Einstellungsnotizbuch des neuen Papierkorbs.
+Details entnehmen Sie bitte dem &xwp;-Handbuch.
+Dies wurde mit &xwp; 0.9.1 eingefhrt.
+;
+; the following was removed with V0.9.19
+;
+; <--FEATURES_6046-->: replace true delete
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

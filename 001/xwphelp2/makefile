@@ -85,6 +85,7 @@ BMPS = \
     img\fonthint.bmp \
     img\nocascade.bmp \
     img\notrunc.bmp \
+    img\properties.bmp \
     img\string.bmp \
     img\titleedit.bmp \
     img\trunc.bmp \

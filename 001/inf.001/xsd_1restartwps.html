@@ -11,10 +11,12 @@
 <B>Classes: XFldObject, XFldDesktop</B><HR>
 <!-- V0.9.0 -->
 &xwp; can also add a "Restart Desktop" item to the context menu of the Desktop.
+
 <P>After selecting "Restart Desktop", a dialog box similar to the one of the
 <A HREF="xsd_2xshutdown.html">Extended Shutdown</A> will appear. The difference is that
 after all windows have been closed, not the whole computer is restarted, but only the
 Workplace Shell Process (PMSHELL.EXE).
+
 <P>To understand the difference it might be helpful to know that the &os2; user interface is
 structured into three "layers", so-to-say, which sit on top of each other:
 <PRE>
@@ -30,24 +32,29 @@ structured into three "layers", so-to-say, which sit on top of each other:
 </PRE>
 <BR>The <STRONG>OS/2 Kernel</STRONG> provides the basic functionality of the operating system,
 such as device access and multitasking. Without it, nothing would work on your system.
+
 <P>The <STRONG>Presentation Manager (PM)</STRONG> is responsible for the graphics on your system,
 such as windows, icons, menus, pictures, and a few more non-graphical things, such as INI files.
 &os2; can run text-mode applications (e.g. the &os2; command line, CMD.EXE) without PM,
 but all other applications require that PM be running. A typical PM application is Netscape,
 for example.
-<P>The <STRONG>Workplace Shell (WPS)</STRONG> is just another, however very complex PM application.
-It is responsible for displaying folders, starting programs when you double-click on their
-icons, associating files to programs, in short: everything you see after your &os2; has finished
-booting. This is the context in which &xwp; is running.
+
+<P>The <STRONG>Workplace Shell (WPS)</STRONG> is just another, however very complex PM
+application. It is responsible for displaying folders, starting programs when you
+double-click on their icons, associating files to programs, in short: everything you
+see after your &os2; has finished booting. This is the context in which &xwp; is running.
+
 <P>The <STRONG>"Restart Desktop"</STRONG> menu item
 now terminates the topmost layer of the aforementioned three only,
 the Workplace Shell. This takes a lot less time than rebooting your whole computer, because
 PM and the Kernel need not be reloaded and initialized.
+
 <P>Restarting the WPS can be helpful when your system has become really slow (for some reason,
 at least judging from my personal experience, the WPS eats up more and more memory when you
 work with files a lot) or if you have installed software which changes WPS classes.
 
 <P><STRONG>Important notes:</STRONG>
+
 <UL><LI>Please keep in mind that this is not the way
 of restarting the Workplace Shell that IBM intended when developing it.
 "Restart Desktop" forces the WPS to restart by simply terminating it. Since &xwp;
@@ -55,11 +62,13 @@ is part of the WPS process, it can simply exit. &os2; will then restart this pro
 automatically.
 The result is almost the same as if
 the WPS had crashed and was restarted, although the WPS data will be saved before restarting.
+
 <BR><LI>On my system, the icons of executables in folders get scrambled after a Desktop restart.
 This applies to all program objects and executable files which are not assigned an individual
 icon to (via their Settings notebooks). Either icons get completely lost or wrong icons are
 displayed. This is a bug in the Presentation Manager,
 on which I have no influence. After a complete reboot, the correct icons are restored.
+
 <BR><LI>Neither Presentation Manager nor &cfgsys; settings are re-read upon restarting the WPS.
 If these settings have changed, a Desktop restart will not recognize these changes. Reboot instead.
 
@@ -77,6 +86,7 @@ Candidates for these random DLL crashes that I have unveiled are INSTALL.DLL
 (contains WPInstall), WPPRINT.DLL (contains the printer and spooler classes), and
 also the WorkFrame which comes with the various IBM compilers. (Amusingly, all those
 DLLs have been programmed by IBM.)
+
 <BR><LI>Depending on your system, the number of Desktop restarts you may successfully
 execute will be limited. Some users have reported that this works only once, on my
 system I've successfully restarted the WPS many times (about 30) before the system

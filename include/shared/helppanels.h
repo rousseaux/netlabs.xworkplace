@@ -254,5 +254,7 @@
     #define ID_XSH_ADMIN_ALL_USERS          150     // V0.9.19 (2002-04-02) [umoeller]
     #define ID_XSH_ADMIN_ALL_GROUPS         151     // V0.9.19 (2002-04-02) [umoeller]
 
+    #define ID_XSH_WIDGET_XBUTTON_SETTINGS  152     // V0.9.19 (2002-04-14) [umoeller]
+
 #endif
 

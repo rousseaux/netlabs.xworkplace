@@ -1,7 +1,7 @@
 #ifndef OS2_INCLUDED
    #include <os2.h>
 #endif
-DLGINCLUDE 1 "E:\cvs\XWorkplace\include\dlgids.h"
+DLGINCLUDE 1 "E:\develop\cvs\xworkplace\include\dlgids.h"
 
 DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
@@ -36,8 +36,8 @@ BEGIN
     END
 END
 
-  DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
-  BEGIN
+DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
     DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 194, 158, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
@@ -71,8 +71,8 @@ END
         AUTORADIOBUTTON "~Unten auf der Anzeige",
                         ID_CRDI_VIEW_BOTTOMOFSCREEN, 12, 26, 114, 8,
                         WS_TABSTOP
-          PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-          PUSHBUTTON      "~Standard", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Standard", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Hilfe", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END
@@ -122,7 +122,7 @@ BEGIN
         LTEXT           "Kontakt zu Netscape herstellen...", -1, 5, 1, 160,
                         9, DT_WORDBREAK
         RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-2002 Ulrich Mîller", -1, 25, 12, 110, 8
+        RTEXT           "(C) 1998-2000 Ulrich Mîller", -1, 25, 12, 110, 8
     END
 END
 
@@ -135,7 +135,7 @@ BEGIN
         LTEXT           "Starten von Netscape...", -1, 5, 1, 160, 9,
                         DT_WORDBREAK
         RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-2002 Ulrich Mîller", -1, 25, 12, 110, 8
+        RTEXT           "(C) 1998-2000 Ulrich Mîller", -1, 25, 12, 110, 8
     END
 END
 
@@ -753,8 +753,7 @@ BEGIN
     BEGIN
         CONTAINER       ID_SCDI_PGMG_STICKY_CNR, 12, 28, 192, 114,
                         CCS_SINGLESEL | WS_GROUP
-        GROUPBOX        "Haftfenster", -1, 6, 24, 206, 128, NOT
-                        WS_GROUP
+        GROUPBOX        "Haftfenster", -1, 6, 24, 206, 128, NOT WS_GROUP
         PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Alle entfernen", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Hilfe", DID_HELP, 125, 6, 55, 12, BS_HELP
@@ -1304,11 +1303,11 @@ BEGIN
         DEFPUSHBUTTON   "~Nein", DID_CANCEL, 95, 6, 70, 12
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ICON            ID_ICONDLG, -1, 225, 38, 20, 16, WS_GROUP
-        LTEXT           "Die angegebene National Language Support DLL ist Ñl"
-                        "ter als die verwendete XWorkplace-Version. Wenn die"
-                        "ses Modul geladen wird, kann es zu schwerwiegenden "
-                        "Problem oder regelmÑ·igen Fehlermeldungen kommen. S"
-                        "oll das Modul trotzdem geladen werden?", -1, 10, 20,
+        LTEXT           "Die angegebene SprachenunterstÅtzungs-DLL ist Ñlter"
+                        " als die verwendete XWorkplace-Version. Wenn dieses"
+                        " Modul geladen wird, kann es zu schwerwiegenden Pro"
+                        "blem oder regelmÑ·igen Fehlermeldungen kommen. Soll"
+                        " das Modul trotzdem geladen werden?", -1, 10, 20,
                         205, 36, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         PUSHBUTTON      "~Ja", DID_OK, 10, 6, 70, 12
@@ -1715,8 +1714,8 @@ BEGIN
                         WS_TABSTOP
         RADIOBUTTON     "I~naktiv", ID_XSDI_MOUSE_INACTIVEOBJ, 104, 118, 64,
                         8, WS_GROUP | WS_TABSTOP
-        RADIOBUTTON     "~Objekt îffnen:", ID_XSDI_MOUSE_OPEN_CHECK, 104, 110,
-                        76, 8, WS_TABSTOP
+        RADIOBUTTON     "~Objekt îffnen:", ID_XSDI_MOUSE_OPEN_CHECK, 104,
+                        110, 76, 8, WS_TABSTOP
         RADIOBUTTON     "S~pezialfunktion:", ID_XSDI_MOUSE_SPECIAL_CHECK,
                         104, 76, 78, 8, WS_TABSTOP
         CONTAINER       ID_XSDI_MOUSE_OPEN_CNR, 108, 86, 68, 22,
@@ -2099,8 +2098,8 @@ BEGIN
                         DT_MNEMONIC | NOT WS_GROUP
         LISTBOX         ID_XSDI_LISTBOX, 10, 46, 165, 78, LS_OWNERDRAW |
                         LS_NOADJUSTPOS | LS_HORZSCROLL
-        LTEXT           "~KÅrzel:", ID_XSDI_DESCRIPTION_TX1, 10, 30,
-                        26, 12, DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP |
+        LTEXT           "~KÅrzel:", ID_XSDI_DESCRIPTION_TX1, 10, 30, 26, 12,
+                        DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP |
                         WS_DISABLED
         ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 42, 32, 66, 8, ES_MARGIN |
                         WS_DISABLED
@@ -2272,19 +2271,4 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XTD_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XTD_SETTINGS, 0, 0, 194, 134, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Papierkorb-Optionen", -1, 4, 24, 176, 32
-        AUTOCHECKBOX    "Aus~leeren bestÑtigen", ID_XTDI_CONFIRMEMPTY, 10,
-                        38, 165, 8
-        AUTOCHECKBOX    "~EndgÅltiges Lîschen bestÑtigen", ID_XTDI_CONFIRMDESTROY, 10,
-                        30, 165, 8
-        PUSHBUTTON      "~Widerrufen", DID_UNDO, 4, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Standard", DID_DEFAULT, 64, 6, 55, 12
-        PUSHBUTTON      "~Hilfe", DID_HELP, 124, 6, 55, 12, BS_HELP
-    END
-END
 

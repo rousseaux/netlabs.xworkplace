@@ -50,6 +50,7 @@
 #define INCL_WINMESSAGEMGR
 #define INCL_WINPOINTERS
 #define INCL_WINDIALOGS
+#define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
 #define INCL_WINMLE
@@ -67,6 +68,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -2505,7 +2507,49 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
 
 static const XWPSETTING G_TrashCanSettingsBackup[] =
     {
-        sflTrashConfirmEmpty
+        sflTrashConfirmEmpty,
+        sfAlwaysTrueDelete          // V0.9.19 (2002-04-14) [umoeller]
+    };
+
+static const CONTROLDEF
+    OptionsGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XTDI_OPTIONSGROUP,
+                            -1,
+                            -1),
+    AlwaysTrueDeleteCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XTDI_ALWAYSTRUEDELETE,
+                            -1,
+                            -1),
+    ConfirmEmptyCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XTDI_CONFIRMEMPTY,
+                            -1,
+                            -1),
+    ConfirmDestroyCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XTDI_CONFIRMDESTROY,
+                            -1,
+                            -1);
+
+static const DLGHITEM dlgTrashSettings[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&OptionsGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ConfirmEmptyCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ConfirmDestroyCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&AlwaysTrueDeleteCB),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
     };
 
 /*
@@ -2514,6 +2558,8 @@ static const XWPSETTING G_TrashCanSettingsBackup[] =
  *      "TrashCan" settings page.
  *      Sets the controls on the page according to the
  *      Global Settings.
+ *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: now using dialog formatter, added "always true delete" here
  */
 
 VOID trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -2529,12 +2575,14 @@ VOID trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            /*
-            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-            */
             pnbp->pUser = cmnBackupSettings(G_TrashCanSettingsBackup,
                                              ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
+
+            // insert the controls using the dialog formatter
+            // V0.9.19 (2002-04-14) [umoeller]
+            ntbFormatPage(pnbp->hwndDlgPage,
+                          dlgTrashSettings,
+                          ARRAYITEMCOUNT(dlgTrashSettings));
         }
     }
 
@@ -2545,6 +2593,11 @@ VOID trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         ULONG fl = cmnQuerySetting(sflTrashConfirmEmpty);
+
+        // V0.9.19 (2002-04-14) [umoeller]
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XTDI_ALWAYSTRUEDELETE,
+                              cmnQuerySetting(sfAlwaysTrueDelete));
+
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XTDI_CONFIRMEMPTY,
                               (fl & TRSHCONF_EMPTYTRASH) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XTDI_CONFIRMDESTROY,
@@ -2557,19 +2610,24 @@ VOID trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *      notebook callback function (notebook.c) for the
  *      "TrashCan" settings page.
  *      Reacts to changes of any of the dialog controls.
+ *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: now using dialog formatter, added "always true delete" here
  */
 
 MRESULT trshTrashCanSettingsItemChanged(PNOTEBOOKPAGE pnbp,
                                         ULONG ulItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
 
     ULONG flChanged = 0;
 
     switch (ulItemID)
     {
+        case ID_XTDI_ALWAYSTRUEDELETE:      // V0.9.19 (2002-04-14) [umoeller]
+            cmnSetSetting(sfAlwaysTrueDelete, ulExtra);
+        break;
+
         case ID_XTDI_CONFIRMEMPTY:
             flChanged = TRSHCONF_EMPTYTRASH;
         break;
@@ -2613,11 +2671,6 @@ MRESULT trshTrashCanSettingsItemChanged(PNOTEBOOKPAGE pnbp,
             fl &= ~flChanged;
         cmnSetSetting(sflTrashConfirmEmpty, fl);
     }
-
-    // cmnUnlockGlobalSettings();
-
-    /* if (fSave)
-        cmnStoreGlobalSettings(); */
 
     return (mrc);
 }

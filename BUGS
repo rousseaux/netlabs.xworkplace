@@ -31,11 +31,19 @@ FIXED SINCE 0.9.18
 --  switching languages breaks strings for dialog formatter (global variables,
     ntbFormatPage)
 
---  object not refreshed after alt-click rename
+--  folders not refreshed after alt-click rename
+
+--  XCenter:
+
+    --  Double clicking clock object doesn't bring-up the clock
+        properties in eCS.
 
 
 CURRENT PROBLEMS
 ----------------
+
+--  NLS: if NLS DLL cannot be found, revert to 001 automatically
+    instead of hanging the system
 
 --  file(2) page: allow delete of EAs, edit EAT_ASCII
 
@@ -77,9 +85,6 @@ CURRENT PROBLEMS
     incorrect drive (always the first HD on your system)
 
 --  XCenter:
-
-    --  Double clicking clock object doesn't bring-up the clock
-        properties in eCS.
 
     --  XCenter doesn't save its height when scaling.
 

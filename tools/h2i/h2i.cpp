@@ -89,6 +89,21 @@
 
 /* ******************************************************************
  *
+ *   NLS strings
+ *
+ ********************************************************************/
+
+PCSZ    G_pcszResourcesOnInternetTitle = "Resources on the Internet",
+        G_pcszResourcesOnInternetBody =
+            "This chapter contains all external links referenced in this book. "
+            "Each link contained herein is an Unified Resource Locator (URL) "
+            "to a certain location on the Internet. Simply double-click on one "
+            "of them to launch Netscape with the respective URL.",
+        G_pcszClickBelow =
+            "Click below to launch Netscape with this URL&colon.";
+
+/* ******************************************************************
+ *
  *   Private declarations
  *
  ********************************************************************/
@@ -1400,7 +1415,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         = GetOrCreateArticle(pszAttrib,
                                              pFile2Process->ulHeaderLevel,
                                              pFile2Process);
-                    xstrPrintf(pxstrIPF,
+                    xstrCatf(pxstrIPF,
                                // hack in the @#!LINK@#! for now;
                                // this is later replaced with the
                                // resid in ParseFiles
@@ -1424,7 +1439,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                             p3++;
                         }
 
-                        xstrPrintf(pxstrIPF,
+                        xstrCatf(pxstrIPF,
                                    ":link reftype=launch object='view.exe' data='%s'.",
                                    pszAttrib);
                     }
@@ -1435,7 +1450,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         = GetOrCreateArticle(pszAttrib,
                                              pFile2Process->ulHeaderLevel,
                                              pFile2Process);
-                        xstrPrintf(pxstrIPF,
+                        xstrCatf(pxstrIPF,
                                    // hack in the @#!LINK@#! string for now;
                                    // this is later replaced with the
                                    // resid in ParseFiles
@@ -1505,7 +1520,7 @@ PCSZ HandleIMG(PARTICLETREENODE pFile2Process,
                   "The bitmap file \"%s\" was not found.",
                   str.psz);
 
-        xstrPrintf(pxstrIPF,
+        xstrCatf(pxstrIPF,
                    ":artwork name='%s' align=left.",
                    str.psz);
         xstrClear(&str);
@@ -1730,7 +1745,7 @@ const char* HandleTag(PARTICLETREENODE pFile2Process,
                 else
                 {
                     xstrcpy(&G_strError, "", 0);
-                    xstrPrintf(&G_strError,
+                    xstrCatf(&G_strError,
                                "Unknown tag %s (%s)",
                                pStartOfTagName,
                                pStart2);
@@ -1920,26 +1935,26 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
     if (pFile2Process->ulHeaderLevel == 1)
     {
         // root file:
-        xstrPrintf(pxstrIPF,
+        xstrCatf(pxstrIPF,
                    ":title.%s\n",
                    pFile2Process->strTitle.psz);
     }
 
-    xstrPrintf(pxstrIPF,
+    xstrCatf(pxstrIPF,
                "\n.* Source file: \"%s\"\n",
                (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
 
     xstrcpy(pstrExtras, NULL, 0);
     if (pFile2Process->lGroup)
-        xstrPrintf(pstrExtras,
+        xstrCatf(pstrExtras,
                    " group=%d",
                    pFile2Process->lGroup);
     if (pFile2Process->pszXPos)
-        xstrPrintf(pstrExtras,
+        xstrCatf(pstrExtras,
                    " x=%s",
                    pFile2Process->pszXPos);
     if (pFile2Process->pszWidth)
-        xstrPrintf(pstrExtras,
+        xstrCatf(pstrExtras,
                    " width=%s",
                    pFile2Process->pszWidth);
     if (pFile2Process->fHidden)
@@ -1952,7 +1967,7 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
         if (ulHeaderLevel > 1)
             ulHeaderLevel--;
 
-    xstrPrintf(pxstrIPF,
+    xstrCatf(pxstrIPF,
                ":h%d res=%d%s.%s\n",
                ulHeaderLevel,
                pFile2Process->ulResID,
@@ -2103,7 +2118,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
             }
 
             xstrcpy(&G_strCrashContext, "", 0);
-            xstrPrintf(&G_strCrashContext,
+            xstrCatf(&G_strCrashContext,
                        "Processing file %s",
                        (PSZ)pFile2Process->Tree.ulKey);
 
@@ -2334,15 +2349,16 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                     if (fFirst)
                     {
                         xstrcat(pxstrIPF,
-                                ":h1 group=99 x=right width=30%.Resources on the Internet\n",
+                                ":h1 group=99 x=right width=30%.",
                                 0);
                         xstrcat(pxstrIPF,
-                                "This chapter contains all external links referenced in this "
-                                "book.\nEach link contained herein is an Unified Resource "
-                                "Locator (URL) to a certain location\non the Internet. "
-                                "Simply double-click on one of them to launch Netscape\n"
-                                "with the respective URL.\n",
+                                G_pcszResourcesOnInternetTitle,
                                 0);
+                        xstrcatc(pxstrIPF, '\n');
+                        xstrcat(pxstrIPF,
+                                G_pcszResourcesOnInternetBody,
+                                0);
+                        xstrcatc(pxstrIPF, '\n');
                         fFirst = FALSE;
                     }
 
@@ -2359,16 +2375,17 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                                             "&colon."))
                         ;
 
-                    xstrPrintf(pxstrIPF,
+                    xstrCatf(pxstrIPF,
                                ":h2 res=%d group=98 x=right y=bottom width=60%% height=40%%.%s\n",
                                pFile2Process->ulResID,
                                strEncode.psz);
-                    xstrPrintf(pxstrIPF,
+                    xstrCatf(pxstrIPF,
                                ":p.:lines align=center."
-                                    "\nClick below to launch Netscape with this URL&colon.\n"
+                                    "\n%s\n"
                                     ":p.:link reftype=launch object='netscape.exe' data='%s'.\n"
                                     "%s\n"
                                     ":elink.:elines.\n",
+                               G_pcszClickBelow,
                                (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                                strEncode.psz);
                 }
@@ -2519,19 +2536,34 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
 
     if (pszValue)
     {
-        PDEFINENODE pMapping = NEW(DEFINENODE);
-        pMapping->Tree.ulKey = (ULONG)pszIdentifier;
-        pMapping->pszValue = pszValue;
-        pMapping->ulValueLength = strlen(pszValue);
-
-        if (AddDefinition(pMapping))
+        if (!strcmp(pszIdentifier, "H2I_INTERNET_TITLE"))
         {
-            if (G_ulVerbosity > 2)
-                printf("  found #define \"%s\" \"%s\"\n",
-                       pszIdentifier,
-                       pszValue);
-            G_cDefines++;
-            return (TRUE);
+            G_pcszResourcesOnInternetTitle = pszValue;
+        }
+        else if (!strcmp(pszIdentifier, "H2I_INTERNET_BODY"))
+        {
+            G_pcszResourcesOnInternetBody = pszValue;
+        }
+        else if (!strcmp(pszIdentifier, "H2I_INTERNET_CLICK"))
+        {
+            G_pcszClickBelow = pszValue;
+        }
+        else
+        {
+            PDEFINENODE pMapping = NEW(DEFINENODE);
+            pMapping->Tree.ulKey = (ULONG)pszIdentifier;
+            pMapping->pszValue = pszValue;
+            pMapping->ulValueLength = strlen(pszValue);
+
+            if (AddDefinition(pMapping))
+            {
+                if (G_ulVerbosity > 2)
+                    printf("  found #define \"%s\" \"%s\"\n",
+                           pszIdentifier,
+                           pszValue);
+                G_cDefines++;
+                return (TRUE);
+            }
         }
     }
 

@@ -1181,7 +1181,6 @@ VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     {
 #ifndef __NOBOOTLOGO__
         USHORT      usRadioID;
-        ULONG       ulError;
         HDC         hdcMem;
         HPS         hpsMem;
         HBITMAP     hbmBootLogo;
@@ -1214,14 +1213,15 @@ VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                             &hdcMem,
                             &hpsMem))
         {
-            if (hbmBootLogo = gpihLoadBitmapFile(hpsMem,
-                                                 pszBootLogoFile,
-                                                 &ulError))
+            APIRET arc;
+            if (!(arc = gpihLoadBitmapFile(&hbmBootLogo,
+                                           hpsMem,
+                                           pszBootLogoFile)))
             {
                 // and have the subclassed static control display the thing
                 WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
                                   SM_SETHANDLE,
-                                  (MPARAM)(hbmBootLogo),
+                                  (MPARAM)hbmBootLogo,
                                   MPNULL);
 
                 // delete the bitmap again
@@ -1524,9 +1524,9 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                                     &hdcMem,
                                     &hpsMem))
                 {
-                    if (hbmBootLogo = gpihLoadBitmapFile(hpsMem,
-                                                         pszBootLogoFile,
-                                                         &ulError))
+                    if (!gpihLoadBitmapFile(&hbmBootLogo,
+                                            hpsMem,
+                                            pszBootLogoFile))
                     {
                         if (cmnQuerySetting(sulBootLogoStyle) == 1)
                         {

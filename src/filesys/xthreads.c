@@ -1849,10 +1849,9 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                             &hpsMem))
                         {
                             HBITMAP hbmBootLogo;
-                            ULONG   ulError;
-                            if (hbmBootLogo = gpihLoadBitmapFile(hpsMem,
-                                                                 pszBootLogoFile,
-                                                                 &ulError))
+                            if (!gpihLoadBitmapFile(&hbmBootLogo,
+                                                    hpsMem,
+                                                    pszBootLogoFile))
                             {
                                 HPS     hpsScreen = WinGetScreenPS(HWND_DESKTOP);
                                 anmBlowUpBitmap(hpsScreen,

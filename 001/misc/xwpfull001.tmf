@@ -145,29 +145,11 @@ This was new with XFolder 0.80.
 If this is enabled, you'll get a regular dialog box, which also has a "retry" button.
 This was new with XFolder 0.85.
 ;
-; the following was changed with V0.9.3
-;
-<--FEATURES_6045-->: If this is enabled, all regular Workplace Shell "Delete" operations will not actually delete objects, but move them to the &xwp; trash can instead.
-This includes pressing the "Del" key and selecting the "Delete" context menu items for all objects on your system.
-You can still force a "true" delete by holding down the "Shift" key when selecting the "Delete" context menu item.
-Selecting this item will install &xwp;'s trash can WPS classes and create a trash can object on your Desktop, if these requirements are not met yet.
-See the &xwp; User Guide for details.
-This was added with &xwp; 0.9.1.
-;
 ; the following was changed with V0.9.5
 ;
 <--FEATURES_6047-->: This will replace the Workplace Shell's file-system handles management in OS2SYS.INI, attempting to reduce the number of unneccessary handles which are created.
 Please see the &xwp; User Guide for an introduction of this feature.
 This was added with &xwp; 0.9.5.
-
-;
-; the following was added with V0.9.3
-;
-<--FEATURES_6046-->: If "Replace true delete" is enabled, &xwp; will replace the Workplace Shell's "true" delete operations.
-If the trash can has been enabled above, this applies to destroying trash objects as well as the "true" delete which is started when "Delete" is selected with the "Shift" key pressed.
-If the trash can has not been enabled above, this applies to all delete operations.
-Compared to the WPS's default delete operations, this will allow you to cancel a delete operation in progress if a folder has lots of subfolders.
-This was added with &xwp; 0.9.3.
 
 ;
 ; the following was added with V0.9.9
@@ -183,6 +165,20 @@ This was added with &xwp; 0.9.9.
 ;
 <--FEATURES_6049-->: If "Replace file dialog" is enabled, &xwp; will use its own replacement for the standard OS/2 file dialog.
 Note that this only affects file dialogs in the WPS processes. At this point, &xwp; cannot replace all the file dialogs in your system yet.
+
+;
+; the following was changed with V0.9.19
+;
+<--FEATURES_6045-->: If this is enabled, all Workplace Shell "Delete" operations will be taken over by &xwp;.
+This includes pressing the "Del" key and selecting the "Delete" context menu items for all objects on your system.
+&xwp; can then either move the objects to the new &xwp; trash can (which will be created when you select this feature) or immediately delete them, if you hold down the shift key while starting the delete operation.
+If you want &xwp; to always immediately delete objects without moving them to the trash can first, there is a setting for this in the trash can's properties notebook.
+See the &xwp; User Guide for details.
+This was added with &xwp; 0.9.1.
+;
+; the following was removed with V0.9.19
+;
+; <--FEATURES_6046-->: replace true delete
 
 ; ---------------------------------------------------------------------------------
 ;

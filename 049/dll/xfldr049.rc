@@ -58,6 +58,7 @@
  *      GNU General Public License for more details.
  */
 
+#define INCL_PM
 #include <os2.h>
 
 /* this is new with V0.85; this define is actually the only reason
@@ -252,18 +253,15 @@ END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
 /* modified V0.9.9 (2001-03-07) [umoeller] */
-/* modified V0.9.19 (2002-04-02) [umoeller] */
 MENU ID_CRM_XCENTERBUTTON LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
+    MENUITEM "A~usfÅhren...", ID_CRMI_RUN
+    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "~Sperren", ID_CRMI_LOCKUPNOW
     MENUITEM "Wa~rtemodus aktivieren...", ID_CRMI_SUSPEND
-    MENUITEM "~WPS neu starten...", ID_CRMI_RESTARTWPS
-    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
-    MENUITEM "A~usfÅhren...", ID_CRMI_RUN
-    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
     MENUITEM "~Abmelden...", ID_CRMI_LOGOFF
-    MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
+    MENUITEM "~WPS neu starten...", ID_CRMI_RESTARTWPS
     MENUITEM "S~ystemabschlu·...", ID_CRMI_SHUTDOWN
 END
 
@@ -276,6 +274,8 @@ BEGIN
     MENUITEM "~Hilfe", ID_CRMI_HELP
     MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "Widget ~entfernen", ID_CRMI_REMOVEWGT
+    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
+    MENUITEM "Schlie·en", ID_CRMI_CLOSE_XCENTER
 END
 
 /* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
@@ -287,7 +287,8 @@ BEGIN
 END
 
 /* here come lots of little strings which XWorkplace uses in all kinds
-   of places. XWorkplace loads these strings on demand one at a time. */
+   of places. XWorkplace loads all these strings at once when the
+   WPS is being started (see cmnQueryNLSStrings in common.c). */
 STRINGTABLE
 BEGIN
     /* miscellaneous menu items */
@@ -540,7 +541,7 @@ BEGIN
     /* Trash can menu items */
     ID_XTSI_TRASHEMPTY                  "~Papierkorb ausleeren"
     ID_XTSI_TRASHRESTORE                "Objekt wiede~rherstellen"
-    ID_XTSI_TRASHDESTROY                "Objekt ~zerstîren"
+    ID_XTSI_TRASHDESTROY                "Objekt ~entfernen"
 
     ID_XTSI_TRASHCAN                    "Papierkorb"
     ID_XTSI_TRASHOBJECT                 "Papierkorb-Objekt"
@@ -723,7 +724,7 @@ BEGIN
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Maus- und Tastaturfunktionen"
     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger"
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
-    ID_XCSI_GLOBALHOTKEYS               "Globale TastenkÅrzel fÅr Objekte aktivieren"
+    ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
     ID_XCSI_PAGER                       "XPager: Virtuelle ArbeitsoberflÑchen"
 
     ID_XCSI_STARTSHUTFEATURES           "Systemstart/abschlu·-Funktionen"
@@ -743,9 +744,10 @@ BEGIN
     ID_XCSI_REPLHANDLES                 "Verwaltung der WPS-Handles ersetzen"
     ID_XCSI_REPLFILEEXISTS              "Dialog ""Datei existiert"" ersetzen"
     ID_XCSI_REPLDRIVENOTREADY           "Dialog ""Laufwerk nicht bereit"" ersetzen"
-    ID_XCSI_XWPTRASHCAN                 "&xwp;-Papierkorb"
-/* the following has been added V0.9.3 (2000-04-26) [umoeller] */
-    ID_XCSI_REPLACEDELETE               "Echtes Lîschen ersetzen"
+/* the following has changed V0.9.19 (2002-04-14) [umoeller] */
+    ID_XCSI_REPLACEDELETE               "Lîschen durch Papierkorb ersetzen"
+/* the following has been removed V0.9.19 (2002-04-14) [umoeller] */
+/*    ID_XCSI_REPLACEDELETE               "Replace true delete" */
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
     ID_XCSI_REPLACEREFRESH              "Automatische Aktualisierung von Ordnern ersetzen"
 /* the following has been added V0.9.16 (2001-12-02) [umoeller] */
@@ -805,7 +807,7 @@ BEGIN
        keys, or XWP might crash. These are needed for inserting
        variable data (sprintf). */
     ID_XSSI_ARCRESTORED                 "Archiv %d wurde gerade wiederhergestellt."
-    ID_XSSI_ARCDAYSPASSED               "%d Tag(s) ist/sind seit dem letzten Backup vergangen."
+    ID_XSSI_ARCDAYSPASSED               "%d Tag(e) ist/sind seit der letzten Sicherung vergangen."
     ID_XSSI_ARCDAYSLIMIT                "Limit: %d Tag(e)."
     ID_XSSI_ARCINICHECKING              "Checking INI files..."
     ID_XSSI_ARCINICHANGED               "INI-Dateien geÑndert zu %f %%."
@@ -842,6 +844,10 @@ BEGIN
 
     /* new screen borders page title V0.9.9 (2001-04-04) [lafaix] */
     ID_XSSI_SCREENBORDERSPAGE           "BildschirmrÑnder"
+
+    /* XWPAdmin "Users" page V0.9.11 (2001-04-22) [umoeller]*/
+    /* removed V0.9.19 (2002-04-14) [umoeller] */
+    /* ID_XSSI_ADMIN_USER                  "~Benutzer" */
 
     /* fixed class titles for folder, disk, datafile V0.9.12 (2001-05-22) [umoeller] */
     ID_XSSI_CLASSTITLE_FOLDER           "Ordner"
@@ -895,6 +901,8 @@ BEGIN
             */
     ID_CRSI_BUILTINCLASS                "Eingebaut"
     ID_CRSI_OWGT_MENUITEMS              "Sichtbare MenÅeintrÑge"
+    /* this one is new with V0.9.19 */
+    ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
 
     ID_CRSI_PWGT_TITLE                  "Puls"
     ID_CRSI_PWGT_IRQLOADCOLOR           "IRQ-Last"
@@ -922,20 +930,6 @@ BEGIN
 
     /* the following have been added with V0.9.18 */
     ID_XSSI_SPECIAL_SCREENWRAP          "Bildschirmrand umbrechen"
-
-    /* the following have been added with V0.9.19 */
-    ID_XSSI_DOUBLEFILES_FILENAME        "Dateiname"
-    ID_XSSI_DOUBLEFILES_DIR             "Verzeichnis"
-    ID_XSSI_DOUBLEFILES_SIZE            "Grî·e"
-    ID_XSSI_DOUBLEFILES_DATE            "Datum"
-    ID_XSSI_DOUBLEFILES_TIME            "Zeit"
-
-    ID_NDSI_STARTNETSCAPE               "Ihr Browser scheint momentan nicht geladen zu sein. Jetzt starten?"
-    ID_NDSI_SYNTAX                      "Die Syntax fÅr die Netscape DDE-Kommandozeile ist fehlerhaft. Mîchten Sie die Online-Hilfe îffnen?"
-
-    ID_XSSI_ADMIN_LOCAL_USER            "~Aktueller Benutzer"
-    ID_XSSI_ADMIN_ALL_USERS             "Alle ~Benutzer"
-    ID_XSSI_ADMIN_ALL_GROUPS            "Alle ~Gruppen"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1025,7 +1019,7 @@ BEGIN
     ID_XSDI_ENABLESTATUSBAR             "~Statuszeile anzeigen"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS */
-    ID_XSDI_DTP_MENUITEMSGROUP          "Sichtbare StandardmenÅpunkte"
+    ID_XSDI_DTP_MENUITEMSGROUP          "Sichtbare StandardmenÅeintrÑge"
     ID_XSDI_DTP_SORT                    "S~ortieren"
     ID_XSDI_DTP_ARRANGE                 "~Anordnen"
     ID_XSDI_DTP_LOCKUP                  "~Sperren"
@@ -1049,7 +1043,7 @@ BEGIN
     ID_SDDI_REBOOTEXT                   "Aktionen bei ~Neustart..."
     ID_SDDI_ANIMATE_SHUTDOWN            "An~imation vor Systemabschlu·"
     ID_SDDI_ANIMATE_REBOOT              "An~imation vor Neustart"
-    ID_SDDI_APMPOWEROFF                 "Abschalten mit APM ~1.2"
+    ID_SDDI_APMPOWEROFF                 "Abschalten mit APM ~1.2 versuchen"
     ID_SDDI_DELAY                       "Ver~zîgerung"
     ID_SDDI_APMVERSION_TXT              "APM-Version:"
     ID_SDDI_APMVERSION                  "unbekannt"
@@ -1218,6 +1212,12 @@ BEGIN
     ID_XSDI_FILES_SUBJECT_TXT           "Betre~ff:"
     ID_XSDI_FILES_COMMENTS_TXT          "~Kommentare:"
     ID_XSDI_FILES_KEYPHRASES_TXT        "SchlÅsselw~orte:"
+
+    /* strings formerly in ID_XTD_SETTINGS */
+    ID_XTDI_OPTIONSGROUP                "Papierkorb-Optionen"
+    ID_XTDI_CONFIRMEMPTY                "Aus~leeren bestÑtigen"
+    ID_XTDI_CONFIRMDESTROY              "~EndgÅltiges Lîschen bestÑtigen"
+    ID_XTDI_ALWAYSTRUEDELETE            "S~tets sofort lîschen (Papierkorb umgehen)"
 END
 
 /* Treesize definitions; added V0.9.0 */

@@ -1275,7 +1275,7 @@
      *
      *      Parameters:
      *
-     *      -- HWND mp1: reformat flags. Any combination
+     *      -- ULONG mp1: reformat flags. Any combination
      *         of the following:
      *
      *          --  XFMF_GETWIDGETSIZES: ask each widget for its

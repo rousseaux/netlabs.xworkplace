@@ -1181,32 +1181,22 @@ static BOOL WMChar(HWND hwndFrame,
         {
             // check whether "delete to trash can" is on
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-            if (cmnQuerySetting(sfTrashDelete))
+            if (cmnQuerySetting(sfReplaceDelete))       // V0.9.19 (2001-04-13) [umoeller]
 #endif
             {
+                BOOL fTrueDelete;
+
+                // use true delete if the user doesn't want the
+                // trash can or if the shift key is pressed
+                if (!(fTrueDelete = cmnQuerySetting(sfAlwaysTrueDelete)))
+                    fTrueDelete = doshQueryShiftState();
                 WMChar_Delete(psfv,
-                              doshQueryShiftState());
-                                                // do a true delete if shift is pressed;
-                                                // otherwise move to trash can
+                              fTrueDelete);
 
                 // swallow this key,
                 // do not process default winproc
                 return (TRUE);
             }
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-            // even if trash can is disabled, we can have true
-            // delete enabled, so check that one too
-            // V0.9.19 (2002-04-02) [umoeller]
-            else if (cmnQuerySetting(sfReplaceTrueDelete))
-            {
-                WMChar_Delete(psfv,
-                              TRUE);
-
-                // swallow this key,
-                // do not process default winproc
-                return (TRUE);
-            }
-#endif
         }
 
         // check whether folder hotkeys are allowed at all
@@ -1265,46 +1255,17 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
 
     if (usCommand == WPMENUID_DELETE)
     {
-        BOOL fCallXWPFops = FALSE;
-        BOOL fTrueDelete = FALSE;
-
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        if (cmnQuerySetting(sfTrashDelete))
+        if (cmnQuerySetting(sfReplaceDelete))
 #endif
-        {
-            // delete to trash can enabled:
-            if (doshQueryShiftState())
-                // shift pressed also:
-                fTrueDelete = TRUE;
-            else
-                // delete to trash can:
-                fCallXWPFops = TRUE;
-        }
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-        else
-            // no delete to trash can:
-            // do a real delete
-            fTrueDelete = TRUE;
-#endif
-
-        if (fTrueDelete)
-            // real delete:
-            // is real delete also replaced?
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-            if (cmnQuerySetting(sfReplaceTrueDelete))
-#endif
-                fCallXWPFops = TRUE;
-
-        if (fCallXWPFops)
         {
             FOPSRET frc;
-            // this is TRUE if
-            // -- delete to trash can is enabled and "regular" delete
-            //    has been selected -> move to trash can
-            // -- delete to trash can has been enabled, but Shift was pressed
-            //    --> "true" delete
-            // -- delete to trash can has been disabled, but regular delete
-            //    is replaced --> "true" delete
+            BOOL fTrueDelete;
+
+            // use true delete if the user doesn't want the
+            // trash can or if the shift key is pressed
+            if (!(fTrueDelete = cmnQuerySetting(sfAlwaysTrueDelete)))
+                fTrueDelete = doshQueryShiftState();
 
             // need this to handle deleting folder from menu bar as
             // there is no source emphasis

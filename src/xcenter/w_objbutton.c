@@ -60,6 +60,7 @@
 #define INCL_WINDIALOGS
 #define INCL_WINSTATICS
 #define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
 #define INCL_WINSTDDRAG
 #define INCL_WINSHELLDATA
 
@@ -85,6 +86,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -150,6 +152,8 @@ typedef struct _OBJBUTTONSETUP
     ULONG       flMenuItems;            // MENUFL_* menu item flags (for x-button);
                                         // if any one is set, the corresponding item
                                         // is removed
+    PSZ         pszXButtonBmp;          // user bitmap for X-button, or NULL for default
+                                        // V0.9.19 (2002-04-14) [umoeller]
 } OBJBUTTONSETUP, *POBJBUTTONSETUP;
 
 /*
@@ -191,8 +195,14 @@ typedef struct _OBJBUTTONPRIVATE
     WPObject    *pobjNotify;            // != NULL if xwpAddWidgetNotify has been
                                         // called (to avoid duplicate notifications)
 
-    HPOINTER    hptrXMini;              // "X" icon for painting on button,
+    // HPOINTER    hptrXMini;              // "X" icon for painting on button,
                                         // if BTF_XBUTTON
+
+    HBITMAP     hbmXMini;               // "X" bitmap for painting on button,
+                                        // if BTF_XBUTTON
+                                        // V0.9.19 (2002-04-14) [umoeller]
+    LONG        cxMiniBmp,
+                cyMiniBmp;
 
     WPPower     *pPower;                // for X-button: if != NULLHANDLE,
                                         // power management is enabled, and this
@@ -223,6 +233,7 @@ typedef struct _OBJBUTTONPRIVATE
 
 static VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
 {
+    FREE(pSetup->pszXButtonBmp);
 }
 
 /*
@@ -272,6 +283,15 @@ static VOID OwgtScanSetup(const char *pcszSetupString,
     }
     else
         pSetup->flMenuItems = 0;
+
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "BITMAP"))
+    {
+        pSetup->pszXButtonBmp = strdup(p);
+        ctrFreeSetupValue(p);
+    }
+    else
+        pSetup->pszXButtonBmp = NULL;
 }
 
 /*
@@ -298,12 +318,110 @@ static VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cle
         }
     }
     else
+    {
         if (pSetup->flMenuItems)
         {
             sprintf(szTemp, "MENUITEMS=%lX;",
                     pSetup->flMenuItems);
             xstrcat(pstrSetup, szTemp, 0);
         }
+
+        if (pSetup->pszXButtonBmp)
+        {
+            sprintf(szTemp, "BITMAP=%s",
+                    pSetup->pszXButtonBmp);
+            xstrcat(pstrSetup, szTemp, 0);
+        }
+    }
+}
+
+/*
+ *@@ LoadBitmap:
+ *
+ *@@added V0.9.19 (2002-04-14) [umoeller]
+ */
+
+VOID LoadBitmap(HWND hwnd,
+                POBJBUTTONPRIVATE pPrivate)
+{
+    if (pPrivate->ulType == BTF_XBUTTON)
+    {
+        HPS hps = WinGetPS(hwnd);
+        APIRET arc;
+
+        // free old bmp, if there's one
+        if (pPrivate->hbmXMini)
+        {
+            GpiDeleteBitmap(pPrivate->hbmXMini);
+            pPrivate->hbmXMini = NULLHANDLE;
+        }
+
+        // load user bitmap, if user wants so
+        // V0.9.19 (2002-04-14) [umoeller]
+        if (pPrivate->Setup.pszXButtonBmp)
+            if (arc = gpihLoadBitmapFile(&pPrivate->hbmXMini,
+                                         hps,
+                                         pPrivate->Setup.pszXButtonBmp))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Error %d loading user X-button bitmap file \"%s\"",
+                       arc,
+                       pPrivate->Setup.pszXButtonBmp);
+
+        if (    (!pPrivate->hbmXMini)
+             && (!(pPrivate->hbmXMini = GpiLoadBitmap(hps,
+                                                      cmnQueryMainResModuleHandle(),
+                                                      ID_BMPXMINI,
+                                                      0,
+                                                      0)))
+           )
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot load X mini bitmap");
+
+        if (pPrivate->hbmXMini)
+        {
+            BITMAPINFOHEADER2 bmih2;
+            bmih2.cbFix = sizeof(bmih2);
+            GpiQueryBitmapInfoHeader(pPrivate->hbmXMini,
+                                     &bmih2);
+            pPrivate->cxMiniBmp = bmih2.cx;
+            pPrivate->cyMiniBmp = bmih2.cy;
+        }
+        WinReleasePS(hps);
+    }
+}
+
+/*
+ *@@ CalcSize:
+ *
+ *@@added V0.9.19 (2002-04-14) [umoeller]
+ */
+
+VOID CalcSize(POBJBUTTONPRIVATE pPrivate,
+              PSIZEL pszl)
+{
+    const XCENTERGLOBALS *pGlobals = pPrivate->pWidget->pGlobals;
+
+    if (pPrivate->ulType == BTF_XBUTTON)
+    {
+        pszl->cx = pPrivate->cxMiniBmp + 2;
+        pszl->cy = pPrivate->cyMiniBmp + 2;
+
+        if (0 == (pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
+        {
+            pszl->cx += 4;     // 2*2 for button borders
+            pszl->cy += 4;     // 2*2 for button borders
+        }
+    }
+    else
+    {
+        pszl->cx = pGlobals->cxMiniIcon
+                   + 2;    // 2*1 spacing between icon and border
+        if (0 == (pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
+            pszl->cx += 4;     // 2*2 for button borders
+
+        // we wanna be square
+        pszl->cy = pszl->cx;
+    }
 }
 
 /* ******************************************************************
@@ -325,17 +443,18 @@ typedef struct _XBTNMENUITEMDEF
                 ulItemID;
 } XBTNMENUITEMDEF, *PXBTNMENUITEMDEF;
 
+#define ID_ENTRYFIELD       999
 
 static CONTROLDEF
             OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
             CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
+            HelpButton = CONTROLDEF_HELPPUSHBUTTON(NULL, DID_HELP, 100, 30),
 
             ChecksGroup = CONTROLDEF_GROUP(
                             NULL,
                             -1,
                             -1,
                             -1),
-
             CheckShutdown
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOSHUTDOWN,
@@ -359,31 +478,103 @@ static CONTROLDEF
             CheckRunDlg
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NORUNDLG,
-                                                  -1, 20);
+                                                  -1, 20),
+            BitmapGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
+            BitmapEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,
+                            ID_ENTRYFIELD,
+                            200,
+                            -1),
+            BitmapBrowse = CONTROLDEF_PUSHBUTTON(
+                            NULL,
+                            DID_BROWSE,
+                            -1,
+                            30);
 
 static const DLGHITEM dlgXButtonSettings[] =
     {
         START_TABLE,
             START_ROW(0),
                 START_GROUP_TABLE(&ChecksGroup),
-                    START_ROW(0),
-                        CONTROL_DEF(&CheckRunDlg),
+                    // fixed ordering V0.9.19 (2002-04-14) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&CheckLockup),
                     START_ROW(0),
                         CONTROL_DEF(&CheckSuspend),
                     START_ROW(0),
-                        CONTROL_DEF(&CheckLogoff),
-                    START_ROW(0),
                         CONTROL_DEF(&CheckRestartWPS),
                     START_ROW(0),
+                        CONTROL_DEF(&CheckRunDlg),
+                    START_ROW(0),
+                        CONTROL_DEF(&CheckLogoff),
+                    START_ROW(0),
                         CONTROL_DEF(&CheckShutdown),
+                END_TABLE,
+                START_ROW(0),
+                START_GROUP_TABLE(&BitmapGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&BitmapEF),
+                        CONTROL_DEF(&BitmapBrowse),
                 END_TABLE,
             START_ROW(0),
                 CONTROL_DEF(&OKButton),
                 CONTROL_DEF(&CancelButton),
+                CONTROL_DEF(&HelpButton),
         END_TABLE
     };
+
+/*
+ *@@ fnwpSettingsDlg:
+ *      dialog proc for the properties dialog.
+ *
+ *@@added V0.9.19 (2002-04-14) [umoeller]
+ */
+
+static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_COMMAND:
+            if (SHORT1FROMMP(mp1) == DID_BROWSE)
+            {
+                CHAR szFile[CCHMAXPATH] = "*.bmp";
+                if (cmnFileDlg(hwnd,
+                               szFile,
+                               WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                               HINI_USER,
+                               INIAPP_XWORKPLACE,
+                               "XButtonBmpLastDir"))
+                {
+                    WinSetDlgItemText(hwnd,
+                                      ID_ENTRYFIELD,
+                                      szFile);
+                }
+            }
+            else
+                mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+        break;
+
+        case WM_HELP:
+        {
+            PWIDGETSETTINGSDLGDATA pData = WinQueryWindowPtr(hwnd, QWL_USER);
+            ctrDisplayHelp(pData->pGlobals,
+                           cmnQueryHelpLibrary(),
+                           ID_XSH_WIDGET_XBUTTON_SETTINGS);
+        }
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
 
 /*
  *@@ OwgtShowXButtonSettingsDlg:
@@ -428,13 +619,16 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
         }
 
         ChecksGroup.pcszText = cmnGetString(ID_CRSI_OWGT_MENUITEMS);
+        BitmapGroup.pcszText = cmnGetString(ID_CRSI_OWGT_BITMAPFILE);
         OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
         CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+        HelpButton.pcszText = cmnGetString(DID_HELP);
+        BitmapBrowse.pcszText = cmnGetString(DID_BROWSE);
 
         if (!(arc = dlghCreateDlg(&hwndDlg,
                                   pData->hwndOwner,
                                   FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
-                                  WinDefDlgProc,
+                                  fnwpSettingsDlg,
                                   G_pcszXButton,
                                   dlgXButtonSettings,
                                   ARRAYITEMCOUNT(dlgXButtonSettings),
@@ -443,6 +637,10 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
         {
             // go scan the setup string
             OBJBUTTONSETUP  Setup;
+            HWND            hwndEF = WinWindowFromID(hwndDlg, ID_ENTRYFIELD);
+
+            WinSetWindowPtr(hwndDlg, QWL_USER, pData);
+
             OwgtScanSetup(pData->pcszSetupString, &Setup);
 
             _Pmpf(("Setup string is \"%s\", flMenuItems = %lX",
@@ -462,6 +660,11 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                       fCheck);
             }
 
+            winhSetEntryFieldLimit(hwndEF,
+                                   CCHMAXPATH);
+            WinSetWindowText(hwndEF,
+                             Setup.pszXButtonBmp);
+
             // go!
             winhCenterWindow(hwndDlg);
             if (DID_OK == WinProcessDlg(hwndDlg))
@@ -480,6 +683,10 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                         Setup.flMenuItems |= aItems[ul].ulFlag;
                 }
 
+                if (Setup.pszXButtonBmp)
+                    free(Setup.pszXButtonBmp);
+                Setup.pszXButtonBmp = winhQueryWindowText(hwndEF);
+
                 OwgtSaveSetup(&strSetup,
                               FALSE,            // X-button
                               &Setup);
@@ -489,6 +696,8 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
             }
 
             WinDestroyWindow(hwndDlg);
+
+            OwgtClearSetup(&Setup);
         }
 
         for (ul = 0;
@@ -561,6 +770,9 @@ static WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
 /*
  *@@ OwgtCreate:
  *      implementation for WM_CREATE.
+ *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: now using bitmap for x-button
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: now allowing for user-defined bitmaps
  */
 
 static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
@@ -578,14 +790,9 @@ static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
 
     // get type from class
     pPrivate->ulType = pWidget->pWidgetClass->ulExtra;
-    if (pPrivate->ulType == BTF_XBUTTON)
-        pPrivate->hptrXMini = WinLoadPointer(HWND_DESKTOP,
-                                             cmnQueryMainResModuleHandle(),
-#ifndef __XWPLITE__
-                                             ID_ICONXMINI);
-#else
-                                             ID_ICONDLG);           // eCS logo
-#endif
+
+    // V0.9.19 (2002-04-14) [umoeller]
+    LoadBitmap(hwnd, pPrivate);
 
     // enable context menu help
     pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
@@ -593,7 +800,6 @@ static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
         pWidget->ulHelpPanelID = ID_XSH_WIDGET_XBUTTON_MAIN;
     else
         pWidget->ulHelpPanelID = ID_XSH_WIDGET_OBJBUTTON_MAIN;
-
 
     // return 0 for success
     return (mrc);
@@ -633,13 +839,8 @@ static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     case XN_QUERYSIZE:
                     {
                         PSIZEL pszl = (PSIZEL)mp2;
-                        pszl->cx = pWidget->pGlobals->cxMiniIcon
-                                   + 2;    // 2*1 spacing between icon and border
-                        if (0 == (pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
-                            pszl->cx += 4;     // 2*2 for button borders
 
-                        // we wanna be square
-                        pszl->cy = pszl->cx;
+                        CalcSize(pPrivate, pszl);
 
                         brc = TRUE;
                     }
@@ -654,12 +855,30 @@ static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     case XN_SETUPCHANGED:
                     {
                         const char *pcszNewSetupString = (const char*)mp2;
+                        PSZ pszOldBmp = strhdup(pPrivate->Setup.pszXButtonBmp, NULL);
 
                         // reinitialize the setup data
                         OwgtClearSetup(&pPrivate->Setup);
                         OwgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
 
-                        // WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                        // has bitmap changed?
+                        // V0.9.19 (2002-04-14) [umoeller]
+                        if (strhcmp(pszOldBmp, pPrivate->Setup.pszXButtonBmp))
+                        {
+                            SIZEL szl;
+                            LoadBitmap(hwnd, pPrivate);
+
+                            // resize ourselves;
+                            // we must reformat, because the height
+                            // might have changed too
+                            WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
+                                       XCM_REFORMAT,
+                                       (MPARAM)XFMF_GETWIDGETSIZES,
+                                       0);
+                            // WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                        }
+
+                        FREE(pszOldBmp);
                     }
                     break;
 
@@ -752,19 +971,25 @@ static VOID OwgtPaintButton(HWND hwnd)
             // refresh button data
             WinQueryWindowRect(hwnd, &xbd.rcl);      // exclusive
 
-            xbd.cxIconOrBitmap
-            = xbd.cyIconOrBitmap
-            = pGlobals->cxMiniIcon;
             xbd.lcol3DDark = pGlobals->lcol3DDark;
             xbd.lcol3DLight = pGlobals->lcol3DLight;
             xbd.lMiddle = pGlobals->lcolClientBackground; // WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
 
             if (pPrivate->ulType == BTF_XBUTTON)
             {
-                xbd.hptr = pPrivate->hptrXMini;
+                // V0.9.19 (2002-04-14) [umoeller]
+                fl |= XBF_BITMAP;
+                xbd.hptr = pPrivate->hbmXMini;
+
+                xbd.cxIconOrBitmap = pPrivate->cxMiniBmp;
+                xbd.cyIconOrBitmap = pPrivate->cyMiniBmp;
             }
             else
             {
+                xbd.cxIconOrBitmap
+                = xbd.cyIconOrBitmap
+                = pGlobals->cxMiniIcon;
+
                 if (!pPrivate->pobjButton)
                     // object not queried yet:
                     pPrivate->pobjButton = FindObject(pPrivate);
@@ -806,6 +1031,7 @@ static VOID OwgtPaintButton(HWND hwnd)
  *
  *@@added V0.9.14 (2001-08-21) [umoeller]
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added selective disable of menu items
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed duplicate separators when disabled
  */
 
 static VOID BuildXButtonMenu(HWND hwnd,
@@ -843,7 +1069,10 @@ static VOID BuildXButtonMenu(HWND hwnd,
 #endif
 
     if (pPrivate->Setup.flMenuItems & MENUFL_NOSHUTDOWN)
+    {
         winhRemoveMenuItem(hMenu, ID_CRMI_SHUTDOWN);
+        winhRemoveMenuItem(hMenu, ID_CRMI_SEP4);
+    }
     else
         WinEnableMenuItem(hMenu,
                           ID_CRMI_SHUTDOWN,
@@ -911,6 +1140,12 @@ static VOID BuildXButtonMenu(HWND hwnd,
             // remove "..." from menu entry
             winhMenuRemoveEllipse(hMenu,
                                   ID_CRMI_SUSPEND);
+
+    #define ALLFLAGS (MENUFL_NOLOCKUP | MENUFL_NOSUSPEND | MENUFL_NORESTARTWPS)
+    if ((pPrivate->Setup.flMenuItems & ALLFLAGS) == ALLFLAGS)
+        // if all the top three items are removed,
+        // this separator needs to go too
+        winhRemoveMenuItem(hMenu, ID_CRMI_SEP1);
 
     // prepare folder content submenu for Desktop
     cmnuPrepareContentSubmenu(pActiveDesktop,
@@ -1728,8 +1963,8 @@ static VOID OwgtDestroy(HWND hwnd)
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
     {
-        if (pPrivate->hptrXMini)
-            WinDestroyPointer(pPrivate->hptrXMini);
+        if (pPrivate->hbmXMini)
+            GpiDeleteBitmap(pPrivate->hbmXMini);
 
         if (pPrivate->pobjNotify)
         {
@@ -1741,6 +1976,7 @@ static VOID OwgtDestroy(HWND hwnd)
         }
 
         // free private data
+        OwgtClearSetup(&pPrivate->Setup);
         free(pPrivate);
                 // pWidget is cleaned up by DestroyWidgets
     }

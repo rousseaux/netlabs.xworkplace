@@ -2790,14 +2790,15 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_SETUP_FEATURES, 0,
             "fReplaceDriveNotReady",
 #endif
+        // adjusted the following two V0.9.19 (2001-04-13) [umoeller]
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        sfTrashDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fTrashDelete), 1,
+        sfReplaceDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fTrashDelete), 1,
             SP_SETUP_FEATURES, 0,
-            "TrashDelete",
-        sfReplaceTrueDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceTrueDelete), 1,
-            SP_SETUP_FEATURES, 0,
-            "ReplaceTrueDelete",
+            "fReplaceDelete",
 #endif
+        sfAlwaysTrueDelete, -1, 0,
+            SP_TRASHCAN_SETTINGS, 0,
+            "fAlwaysTrueDelete",
 #ifndef __NOBOOTUPSTATUS__
         sfShowBootupStatus, FIELDOFFSET(OLDGLOBALSETTINGS, _fShowBootupStatus), 4,
             SP_DTP_STARTUP, 0,
@@ -4240,16 +4241,14 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
             if (brc)
-            {
-                cmnSetSetting(sfTrashDelete, TRUE);
-            }
+                cmnSetSetting(sfReplaceDelete, TRUE);
 #endif
         }
     } // end if (fEnable)
     else
     {
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        cmnSetSetting(sfTrashDelete, FALSE);
+        cmnSetSetting(sfReplaceDelete, FALSE);
 #endif
 
         if (krnQueryLock())

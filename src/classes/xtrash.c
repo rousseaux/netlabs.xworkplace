@@ -201,6 +201,8 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
  *@@ xwpAddTrashCanSettingsPage:
  *      this adds the "Trash can" page to the
  *      settings notebook.
+ *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: now using dialog formatter
  */
 
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
@@ -216,7 +218,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndDlg;
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
-    inbp.ulDlgID = ID_XTD_SETTINGS;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XTD_SETTINGS; V0.9.19 (2002-04-14) [umoeller]
     inbp.ulPageID = SP_TRASHCAN_SETTINGS;
     inbp.usPageStyleFlags = BKA_MAJOR;
     inbp.pcszName = cmnGetString(ID_XTSI_TRASHSETTINGSPAGE);  // pszTrashSettingsPage

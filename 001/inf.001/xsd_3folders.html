@@ -22,19 +22,24 @@ object to create them manually.
 <P>If &xwp; finds the <STRONG>&xwp; Startup Folder</STRONG> upon Desktop startup, it will process its contents
 in a way much similar to what the WPS does with its own startup folder. The main differences
 are:
+
 <UL><LI>You may set a certain time which &xwp; will wait in between starting objects. The
 conventional startup folder sometimes leads to problems if you have many objects in there, which
 are normally all started at the same time, sometimes causing the WPS to hang at startup.
 <!-- V0.9.0: changed the following line -->
 This delay can be changed in the &xwp; Startup folder's own settings notebook.
+
 <BR><LI>You will be able to watch the progress of the startup process in a separate window
 <!-- V0.9.0: changed the following line -->
 (which can also be turned off in the &xwp; Startup folder's own settings notebook,
 if you don't like it).
+
 <BR><LI>Startup can be cancelled while it is running.
 <!-- V0.9.0: changed the following -->
+
 <BR><LI>Startup can completely be skipped by holding down the "Shift" key during WPS
 startup, which makes the <A HREF="xsd_01intro.html">"Startup panic" dialog</A> appear.
+
 <BR><LI>The &xwp; Startup Folder is also processed after a Desktop restart, while the
 regular Desktop startup folder is not.
 <!-- this paragraph modified with V0.81 -->
@@ -49,8 +54,11 @@ the eXtended Shutdown (and not before the regular shutdown). As opposed to with 
 you may not set a delay here, but &xwp; waits before starting the next object until the
 currently opened object has been closed again. Only if all objects started from the Shutdown
 Folder have been closed, the eXtended Shutdown actually begins.
+
 <P>The Shutdown folder can be useful if you need to have certain programs executed before
-turning off your system. (I have no use for this, but apparently many people have.) You could,
+turning off your system.
+<!-- V0.9.19: removed this (I have no use for this, but apparently many people have.) -->
+You could,
 for example, create some REXX script which does some cleanup before shutting down, such as
 properly logging off your network, deleting TEMP files, or whatever you can think of.
 

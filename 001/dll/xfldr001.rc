@@ -269,6 +269,7 @@ END
 
 /* XCenter standard widget context menu V0.9.7 (2000-11-30) [umoeller] */
 /* changed V0.9.13 (2001-06-21) [umoeller] */
+/* changed V0.9.19 (2002-04-14) [umoeller] */
 MENU ID_CRM_WIDGET LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Propertie~s", ID_CRMI_PROPERTIES
@@ -276,6 +277,8 @@ BEGIN
     MENUITEM "~Help", ID_CRMI_HELP
     MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "~Remove widget", ID_CRMI_REMOVEWGT
+    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
+    MENUITEM "Close", ID_CRMI_CLOSE_XCENTER
 END
 
 /* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
@@ -680,7 +683,7 @@ BEGIN
     ID_XSSI_XSD_SAVEINIS_NONE           "Do not save INIs at all"
 
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
-    ID_XSSI_XSD_LOGOFF                  "Logoff..."
+    ID_XSSI_XSD_LOGOFF                  "Lo~g off..."
     ID_XSSI_XSD_CONFIRMLOGOFFMSG        "Are you sure you want to log off?"
 
     /* "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller] */
@@ -743,9 +746,10 @@ BEGIN
     ID_XCSI_REPLHANDLES                 "Replace WPS handles management"
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
     ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
-    ID_XCSI_XWPTRASHCAN                 "&xwp; trash can"
-/* the following has been added V0.9.3 (2000-04-26) [umoeller] */
-    ID_XCSI_REPLACEDELETE               "Replace true delete"
+/* the following has changed V0.9.19 (2002-04-14) [umoeller] */
+    ID_XCSI_REPLACEDELETE               "Replace delete with trash can"
+/* the following has been removed V0.9.19 (2002-04-14) [umoeller] */
+/*    ID_XCSI_REPLACEDELETE               "Replace true delete" */
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
     ID_XCSI_REPLACEREFRESH              "Replace folder auto-refresh"
 /* the following has been added V0.9.16 (2001-12-02) [umoeller] */
@@ -843,6 +847,10 @@ BEGIN
     /* new screen borders page title V0.9.9 (2001-04-04) [lafaix] */
     ID_XSSI_SCREENBORDERSPAGE           "Screen borders"
 
+    /* XWPAdmin "Users" page V0.9.11 (2001-04-22) [umoeller]*/
+    /* removed V0.9.19 (2002-04-14) [umoeller] */
+    /* ID_XSSI_ADMIN_USER                  "~User" */
+
     /* fixed class titles for folder, disk, datafile V0.9.12 (2001-05-22) [umoeller] */
     ID_XSSI_CLASSTITLE_FOLDER           "Folder"
     ID_XSSI_CLASSTITLE_DISK             "Disk"
@@ -895,6 +903,8 @@ BEGIN
             */
     ID_CRSI_BUILTINCLASS                "Built-in"
     ID_CRSI_OWGT_MENUITEMS              "Visible menu items"
+    /* this one is new with V0.9.19 */
+    ID_CRSI_OWGT_BITMAPFILE             "OS/2 bitmap file"
 
     ID_CRSI_PWGT_TITLE                  "Pulse"
     ID_CRSI_PWGT_IRQLOADCOLOR           "IRQ load"
@@ -1221,6 +1231,12 @@ BEGIN
     ID_XSDI_FILES_SUBJECT_TXT           "Sub~ject:"
     ID_XSDI_FILES_COMMENTS_TXT          "~Comments:"
     ID_XSDI_FILES_KEYPHRASES_TXT        "Keyw~ords:"
+
+    /* strings formerly in ID_XTD_SETTINGS */
+    ID_XTDI_OPTIONSGROUP                "Trash can options"
+    ID_XTDI_CONFIRMEMPTY                "~Confirm empty"
+    ID_XTDI_CONFIRMDESTROY              "Confirm destro~y"
+    ID_XTDI_ALWAYSTRUEDELETE            "~Always delete immediately (never use trash can)"
 END
 
 /* Treesize definitions; added V0.9.0 */

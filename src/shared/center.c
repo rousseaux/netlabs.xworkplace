@@ -862,6 +862,8 @@ static VOID DwgtMenuEnd(HWND hwnd,
 /*
  *@@ DwgtCommand:
  *      implementation for WM_COMMAND in ctrDefWidgetProc.
+ *
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: added "Close" menu item to def. widget context menu
  */
 
 static VOID DwgtCommand(HWND hwnd,
@@ -948,6 +950,12 @@ static VOID DwgtCommand(HWND hwnd,
                                          Pos.ulWidgetIndex);
                 }
             }
+            break;
+
+            case ID_CRMI_CLOSE_XCENTER:
+                WinPostMsg(pXCenterData->Globals.hwndFrame,
+                           WM_SYSCOMMAND,
+                           (MPARAM)SC_CLOSE, 0);
             break;
         }
     }

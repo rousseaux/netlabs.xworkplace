@@ -830,7 +830,6 @@ static MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
     if (G_hbmTray == -1)
     {
         HPS hps = WinGetPS(hwnd);
-        BITMAPINFOHEADER2 bmih2;
         if (!(G_hbmTray = GpiLoadBitmap(hps,
                                         hmodRes,
                                         ID_BITMAP_TRAY,
@@ -840,6 +839,7 @@ static MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
                    "Cannot load tray bitmap");
         else
         {
+            BITMAPINFOHEADER2 bmih2;
             bmih2.cbFix = sizeof(bmih2);
             GpiQueryBitmapInfoHeader(G_hbmTray,
                                      &bmih2);
@@ -1761,6 +1761,8 @@ static VOID YwgtDestroy(HWND hwnd)
         InvalidateMenu(pPrivate);
 
         lstFree(&pTrayWidgetView->pllSubwidgetViews);    // V0.9.14 (2001-08-01) [umoeller]
+
+        YwgtClearSetup(&pPrivate->Setup);
 
         free(pPrivate);
     } // end if (pWidget && pPrivate);

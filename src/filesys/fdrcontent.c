@@ -766,7 +766,7 @@ static WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
 WPObject* fdrFastFindFSFromName(WPFolder *pFolder,
                                 const char *pcszShortName)  // in: short real name to look for
 {
-    if (    pcszShortName
+    if (    (pcszShortName)
          && (*pcszShortName)
        )
     {
@@ -2031,50 +2031,10 @@ static BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *      --  for remote folders cos we can't cache UNC
  *          folders yet.
  *
- *      This is a lot faster than WPFolder::wpPopulate:
- *
- *      --  For file-system objects,
- *          fsysPopulateWithFSObjects() starts a second
- *          thread which does the actual DosFindFirst/Next
- *          processing (see fntFindFiles). This allows
- *          us to use the idle time produced by
- *          DosFindFirst/Next for the SOM processing
- *          which is quite expensive.
- *
- *      --  Since we can use our fast folder content
- *          trees (see fdrSafeFindFSFromName), this
- *          is a _lot_ faster for folders with many
- *          file system objects because we can check
- *          much more quickly if an object is already
- *          awake.
- *
- *      Two bottlenecks remain for folder populating...
- *      one is DosFindFirst/Next, which is terminally
- *      slow (and which I cannot fix), the other is the
- *      record management in the containers.
- *
- *      Benchmarks (pure populate with the
- *      QUICKOPEN=IMMEDIATE setup string, so no container
- *      management involved):
- *
- +      +--------------------+-------------+-------------+-------------+
- +      |                    | turbo on    | turbo on    |  turbo off  |
- +      |                    | findcnt 1   | findcnt 300 |             |
- +      +--------------------+-------------+-------------+-------------+
- +      |   JFS folder with  |     53 s    |             |      160 s  |
- +      |   10000 files      |             |             |             |
- +      +--------------------+-------------+-------------+-------------+
- +      |   JFS folder with  |     60 s    |     60 s    |      211 s  |
- +      |   13000 files      |             |             |             |
- +      +--------------------+-------------+-------------+-------------+
- +      |   HPFS folder with |     56 s    |             |             |
- +      |   10.000 files     |             |             |             |
- +      +--------------------+-------------+-------------+-------------+
- *
- *      Obivously, the time that the default WPS populate
- *      takes increases exponentially with the no. of objects
- *      in the folder. As a result, the fuller a folder is,
- *      the better this replacement becomes in comparison.
+ *      This is a lot faster than WPFolder::wpPopulate
+ *      for file-system objects. For this,
+ *      fsysPopulateWithFSObjects() gets called; see
+ *      remarks there for details.
  *
  *      In addition, this supports an exit flag which, when
  *      set to TRUE, will cancel populate. This
@@ -2086,7 +2046,66 @@ static BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *      THREADINFO.fExit, you can even use the
  *      thread functions to cancel (see thrClose).
  *
- *      A word about object locking:
+ *      <B>Populate and Refresh</B>
+ *
+ *      wpPopulate gets called by wpRefresh also.
+ *      In addition, populate can get called when the
+ *      folder was already previously populated. Besides,
+ *      certain individual objects may already be awake
+ *      due to a previous WPS call such as
+ *      WPFileSystem::wpclsQueryObjectFromPath.
+ *
+ *      As a result, we must check for each object
+ *      whether it is already awake before awaking it.
+ *
+ *      The way this works is roughly the following
+ *      (see the Warp 4 WPSREF for details):
+ *
+ *      1)  For each awake object, wpRefresh first turns
+ *          on the DIRTYBIT and turns off the FOUNDBIT.
+ *
+ *      2)  wpPopulate runs DosFindFirst/Next on the
+ *          directory contents (for file-system objects)
+ *          and gets abstract data from OS2.INI. For
+ *          each object, it checks if it is already
+ *          awake.
+ *
+ *          If it is awake, check if its data changed
+ *          and call wpRefresh on the object if
+ *          necessary. In any case, turn on the FOUNDBIT
+ *          and turn off the DIRTYBIT, since the object
+ *          is fresh now.
+ *
+ *          If it is not awake, call wpclsMakeAwake
+ *          and turn on the FOUNDBIT.
+ *
+ *      3)  After wpPopulate returns, wpRefresh checks
+ *          the bits again.
+ *
+ *          If FOUNDBIT is off, the object is deleted.
+ *
+ *          If DIRTYBIT is still on, the object is
+ *          refreshed.
+ *
+ *      <B>Mutex Semaphores</B>
+ *
+ *      Semaphore protection is especially important
+ *      in order to avoid waking up objects several
+ *      times.
+ *
+ *      The whole wpPopulate code is protected by
+ *      the folder "find" mutex to avoid a race between
+ *      multiple calls to wpPopulate.
+ *
+ *      In the "refresh or awake" code, each scan of the
+ *      folder contents must be protected by the
+ *      folder mutex in turn.
+ *
+ *      If the object is to be made awake, wpclsMakeAwake
+ *      will call wpAddToContent on the folder, which
+ *      requests the folder "write" mutex.
+ *
+ *      <B>Object Locking</B>
  *
  *      For each object that was found, we check if the object
  *      is already awake.

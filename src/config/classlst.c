@@ -420,22 +420,6 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                 {
                     CHAR szFile[CCHMAXPATH] = "*.DLL";
 
-                    /* FILEDLG fd;
-                    memset(&fd, 0, sizeof(FILEDLG));
-                    fd.cbSize = sizeof(FILEDLG);
-                    fd.fl = FDS_OPEN_DIALOG | FDS_CENTER;
-                    fd.pfnDlgProc = fnwpOpenFilter;
-                    // fd.pszTitle = "Blah";
-                    // fd.pszOKButton = "~OK";
-                    strcpy(fd.szFullFile, "*.DLL");
-                    // fd.pszIDrive = "F:"
-                    // fd.ulFQFCount = 1;
-                    if (    WinFileDlg(HWND_DESKTOP,    // parent
-                                       hwndDlg,
-                                       &fd)
-                        && (fd.lReturn == DID_OK)
-                       ) */
-
                     if (cmnFileDlg(hwndDlg,     // V0.9.16 (2001-10-19) [umoeller]
                                    szFile,
                                    WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,

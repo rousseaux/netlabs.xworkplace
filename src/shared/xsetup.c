@@ -238,18 +238,17 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-            ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
 
 #ifdef __REPLHANDLES__
-            , ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+            ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             // ID_XCSI_REPLACEREFRESH, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
                 // moved this up to the folders group
                 // V0.9.16 (2001-10-25) [umoeller]
 #ifndef __NEVERNEWFILEDLG__
-            , ID_XCSI_NEWFILEDLG, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+            ID_XCSI_NEWFILEDLG, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
 #endif
         };
 
@@ -1771,8 +1770,7 @@ static const XWPSETTING G_FeaturesBackup[] =
         sfReplaceDriveNotReady,
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        sfTrashDelete,
-        sfReplaceTrueDelete,
+        sfReplaceDelete,
 #endif
 
 #ifndef __NEVERNEWFILEDLG__
@@ -2050,10 +2048,8 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 cmnQuerySetting(sfReplaceDriveNotReady));
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
-                (cmnTrashCanReady() && cmnQuerySetting(sfTrashDelete)));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
-                cmnQuerySetting(sfReplaceTrueDelete));
+                (cmnTrashCanReady() && cmnQuerySetting(sfReplaceDelete)));
 #endif
 
 #ifndef __ALWAYSREPLACEREFRESH__
@@ -2416,12 +2412,8 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break; */       // removed for now V0.9.12 (2001-05-15) [umoeller]
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-            case ID_XCSI_XWPTRASHCAN:
-                cEnableTrashCan = precc->usCheckState;
-            break;
-
             case ID_XCSI_REPLACEDELETE:
-                cmnSetSetting(sfReplaceTrueDelete, precc->usCheckState);
+                cEnableTrashCan = precc->usCheckState;
             break;
 #endif
 
@@ -2570,7 +2562,7 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
 #endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-            cEnableTrashCan = cmnQuerySetting(sfTrashDelete);
+            cEnableTrashCan = cmnQuerySetting(sfReplaceDelete);
 #endif
 
 #ifndef __ALWAYSREPLACEREFRESH__

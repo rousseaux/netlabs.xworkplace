@@ -790,9 +790,14 @@
         sfReplaceDriveNotReady,
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        sfTrashDelete,
-        sfReplaceTrueDelete,
+        /* sfTrashDelete,
+        sfReplaceTrueDelete, */
+        // replaced these
+        // V0.9.19 (2001-04-13) [umoeller]
+        sfReplaceDelete,            // in XWPSetup
 #endif
+        sfAlwaysTrueDelete,         // in trash can settings notebook; only
+                                    // effective if sfReplaceDelete == TRUE
 #ifndef __NOBOOTUPSTATUS__
         sfShowBootupStatus,
 #endif

@@ -26,7 +26,8 @@ I have included three boot logos with &xwp;:
 <UL><LI><CODE>xfolder.bmp</CODE> (which will be used per default)
 is a variation of the old XFolder logo. This should still be handled
 by weaker systems too.
-<LI><CODE>cpuhog.bmp</CODE> is an alternative, new design, which I like
+<!-- V0.9.19: fixed the following filename -->
+<LI><CODE>os2warpx.bmp</CODE> is an alternative, new design, which I like
 much better, which however might take too long to display on weaker
 systems. On my Pentium-133, this one takes about two seconds to display.
 <LI><CODE>penguin.bmp</CODE> is new with V0.9.0. This is the well-known Linux penguin
@@ -53,20 +54,18 @@ you use a 500x500 pixel bitmap with half of the pixels
 transparent, this can block your system for many minutes.
 And I mean <I>block,</I> because most of the calculating time is
 consumed by Presentation Manager (PM),
-and process kills will usually
-hang the whole system.
+and this will usually hang the whole system.
 <!-- V0.9.0: moved the following paragraph up from the bottom;
              rewrote this -->
 <P>If everything goes wrong and your WPS won't start any more,
 you can <B>hold down the "Shift" key</B> while the WPS is starting up.
 This will display the <A HREF="xsd_01intro.html">"Startup panic" dialog</A>, where you
-can disable the boot logo and turn it off after the WPS is up.
+can disable the boot logo and take care of the problem after the WPS is up.
 <P>
 Since PM was designed to display rectangular windows only, the
 way these "shape" windows are done is that the bitmap is
-analyzed pixel by pixel and as many PM subwindows as
-rectangular non-transparent areas exist in the bitmap are
-created.
+analyzed pixel by pixel and as many PM subwindows are created
+as rectangular non-transparent areas exist in the bitmap.
 <P>
 For this reason, be very careful with transparency. The more
 non-rectangular transparent areas are in the bitmap, the more

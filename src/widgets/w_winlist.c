@@ -738,7 +738,7 @@ VOID Dlg2Settings(HWND hwnd,
  *      dialog proc for the winlist settings dialog.
  */
 
-MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

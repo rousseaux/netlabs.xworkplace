@@ -130,9 +130,8 @@
 #define ID_ICONXMMCDPLAY       125
 #define ID_ICONXMMVOLUME       126
 #define ID_ICONXCENTER         127
-#ifndef __XWPLITE__
-#define ID_ICONXMINI           128
-#endif
+
+#define ID_BMPXMINI            128          // changed V0.9.19 (2002-04-14) [umoeller]
 
 #ifndef __XWPLITE__
 #define ID_ICONXWPADMIN        129  // added V0.9.9 (2001-02-08) [umoeller]
@@ -509,7 +508,7 @@
 */  // all removed V0.9.16 (2001-10-15) [umoeller]
 
 // "File" page replacement (XFolder, XFldDataFile, V0.9.0)
-// #define ID_XSD_FILESPAGE1               730      // removed V0.9.19 (2001-04-13) [umoeller]
+// #define ID_XSD_FILESPAGE1               730      // removed V0.9.19 (2002-04-13) [umoeller]
 #define ID_XSDI_FILES_REALNAME              731
 #define ID_XSDI_FILES_CREATIONDATE          732
 #define ID_XSDI_FILES_CREATIONTIME          733
@@ -528,7 +527,7 @@
 #define ID_XSDI_FILES_FILESIZE              746
 #define ID_XSDI_FILES_EASIZE                747
 #define ID_XSDI_FILES_WORKAREA              748     // added V0.9.1 (99-12-20) [umoeller]
-// the following on this page added with V0.9.19 (2001-04-13) [umoeller]
+// the following on this page added with V0.9.19 (2002-04-13) [umoeller]
 #define ID_XSDI_FILES_REALNAME_TXT          749
 #define ID_XSDI_FILES_FILESIZE_TXT          750
 #define ID_XSDI_FILES_DATETIME_GROUP        751
@@ -1128,12 +1127,14 @@
  * XWPTrashCan (V0.9.0)                   *
  ******************************************/
 
-#define ID_XTD_SETTINGS                 3000
+// #define ID_XTD_SETTINGS                 3000     // removed V0.9.19 (2002-04-14) [umoeller]
 // #define ID_XTDI_DELETE                  3001
 // #define ID_XTDI_EMPTYSTARTUP            3002
 // #define ID_XTDI_EMPTYSHUTDOWN           3003
+#define ID_XTDI_OPTIONSGROUP            3003        // V0.9.19 (2002-04-14) [umoeller]
 #define ID_XTDI_CONFIRMEMPTY            3004
 #define ID_XTDI_CONFIRMDESTROY          3005
+#define ID_XTDI_ALWAYSTRUEDELETE        3006        // V0.9.19 (2002-04-14) [umoeller]
 
 #define ID_XTD_DRIVES                   3020
 #define ID_XTDI_UNSUPPORTED_LB          3021
@@ -1484,6 +1485,8 @@
 
 #define ID_CRMI_SEP3                    0x7f11      // added V0.9.19 (2002-04-02) [umoeller]
 #define ID_CRMI_SEP4                    0x7f12      // added V0.9.19 (2002-04-02) [umoeller]
+
+#define ID_CRMI_CLOSE_XCENTER           0x7f13      // added V0.9.19 (2002-04-14) [umoeller]
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 
@@ -2061,8 +2064,7 @@
 #define ID_XCSI_REPLDRIVENOTREADY       6044
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-#define ID_XCSI_XWPTRASHCAN             6045
-#define ID_XCSI_REPLACEDELETE           6046
+#define ID_XCSI_REPLACEDELETE           6045    // changed V0.9.19 (2001-04-13) [umoeller]
 #endif
 #define ID_XCSI_REPLHANDLES             6047
 #ifndef __ALWAYSREPLACEREFRESH__
@@ -2243,6 +2245,8 @@
 #define ID_XSSI_ADMIN_LOCAL_USER        6223
 #define ID_XSSI_ADMIN_ALL_USERS         6224
 #define ID_XSSI_ADMIN_ALL_GROUPS        6225
+
+#define ID_CRSI_OWGT_BITMAPFILE         6226
 
 /******************************************
  *  string IDs for status bar mnemonics

@@ -1022,6 +1022,7 @@ static PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed duplicate awakes and "treeInsert failed"
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed missing FOUNDBIT after awake
  */
 
 static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
@@ -1282,13 +1283,29 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                     awfs.cbList             = pFEA2List2->cbList;
                     awfs.pFea2List          = pFEA2List2;
 
-                    pAwake = _wpclsMakeAwake(pClassObject,
-                                             pszTitle,
-                                             0,                 // style
-                                             NULLHANDLE,        // icon
-                                             pObjData,          // null if no .CLASSINFO found
-                                             pFolder,           // folder
-                                             (ULONG)&awfs);
+                    if (pAwake = _wpclsMakeAwake(pClassObject,
+                                                 pszTitle,
+                                                 0,                 // style
+                                                 NULLHANDLE,        // icon
+                                                 pObjData,          // null if no .CLASSINFO found
+                                                 pFolder,           // folder
+                                                 (ULONG)&awfs))
+                    {
+                        #ifdef DEBUG_TURBOFOLDERS
+                            ULONG fl = fsysQueryRefreshFlags(pAwake);
+                            _Pmpf(("refresh flags for new \"%s\": 0x%lX (%s%s)",
+                                pszRealName,
+                                fl,
+                                (fl & FOUNDBIT) ? "FOUNDBIT" : "",
+                                (fl & DIRTYBIT) ? "DIRTYBIT" : ""));
+                        #endif
+
+                        // refresh flags are 0 always after creation,
+                        // so turn on the FOUNDBIT but leave DIRTYBIT
+                        // off
+                        // V0.9.19 (2002-04-14) [umoeller]
+                        fsysSetRefreshFlags(pAwake, FOUNDBIT);
+                    }
                 }
 
                 if (somidClassName)
@@ -1598,12 +1615,48 @@ static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
  *      This starts off a second thread which does
  *      the DosFindFirst/Next loop. See fntFindFiles.
  *
- *      I do not think this can be sped up much more
- *      since the populate code spends most of its
- *      time blocked in DosFindFirst/Next, and the
- *      idle time is already used to process the
- *      SOM object creation. The bottleneck is
- *      definitely DosFindFirst/Next here.
+ *      --  For file-system objects,
+ *          fsysPopulateWithFSObjects() starts a second
+ *          thread which does the actual DosFindFirst/Next
+ *          processing (see fntFindFiles). This allows
+ *          us to use the idle time produced by
+ *          DosFindFirst/Next for the SOM processing
+ *          which is quite expensive.
+ *
+ *      --  Since we can use our fast folder content
+ *          trees (see fdrSafeFindFSFromName), this
+ *          is a _lot_ faster for folders with many
+ *          file system objects because we can check
+ *          much more quickly if an object is already
+ *          awake.
+ *
+ *      Benchmarks (pure populate with the
+ *      QUICKOPEN=IMMEDIATE setup string, so no container
+ *      management involved):
+ *
+ +      +--------------------+-------------+-------------+-------------+
+ +      |                    | turbo on    | turbo on    |  turbo off  |
+ +      |                    | findcnt 1   | findcnt 300 |             |
+ +      +--------------------+-------------+-------------+-------------+
+ +      |   JFS folder with  |     53 s    |             |      160 s  |
+ +      |   10000 files      |             |             |             |
+ +      +--------------------+-------------+-------------+-------------+
+ +      |   JFS folder with  |     60 s    |     60 s    |      211 s  |
+ +      |   13000 files      |             |             |             |
+ +      +--------------------+-------------+-------------+-------------+
+ +      |   HPFS folder with |     56 s    |             |             |
+ +      |   10.000 files     |             |             |             |
+ +      +--------------------+-------------+-------------+-------------+
+ *
+ *      Obivously, the time that the default WPS populate
+ *      takes increases exponentially with the no. of objects
+ *      in the folder. As a result, the fuller a folder is,
+ *      the better this replacement becomes in comparison.
+ *
+ *      Two bottlenecks remain for folder populating...
+ *      one is DosFindFirst/Next, which is terminally
+ *      slow (and which I cannot fix), the other is the
+ *      record management in the containers.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
@@ -2252,7 +2305,7 @@ static VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
  *
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFileInitPage
  *@@changed V0.9.18 (2002-03-19) [umoeller]: now refreshing page when turned back to
- *@@changed V0.9.19 (2001-04-13) [umoeller]: now using dialog formatter, made page resizeable
+ *@@changed V0.9.19 (2002-04-13) [umoeller]: now using dialog formatter, made page resizeable
  */
 
 VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -2277,7 +2330,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
             pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pnbp->inbp.somSelf);
 
             // insert the controls using the dialog formatter
-            // V0.9.16 (2001-09-29) [umoeller]
+            // V0.9.19 (2002-04-14) [umoeller]
             ntbFormatPage(pnbp->hwndDlgPage,
                           dlgFile1,
                           ARRAYITEMCOUNT(dlgFile1));
@@ -2440,7 +2493,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
  *      This is used by both XFolder and XFldDataFile.
  *
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFile1InitPage
- *@@changed V0.9.19 (2001-04-13) [umoeller]: now using dialog formatter, made page resizeable
+ *@@changed V0.9.19 (2002-04-13) [umoeller]: now using dialog formatter, made page resizeable
  */
 
 MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -2836,7 +2889,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndNotebook;
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
-    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_FILESPAGE1; V0.9.19 (2001-04-13) [umoeller]
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_FILESPAGE1; V0.9.19 (2002-04-13) [umoeller]
     inbp.ulPageID = SP_FILE1;
     inbp.usPageStyleFlags = BKA_MAJOR;
     inbp.pcszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
@@ -2844,7 +2897,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
     inbp.pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
     inbp.pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
-    // make this page sizeable V0.9.19 (2001-04-13) [umoeller]
+    // make this page sizeable V0.9.19 (2002-04-13) [umoeller]
     inbp.pampControlFlags = G_ampFile1Page;
     inbp.cControlFlags = G_cFile1Page;
 

@@ -635,7 +635,7 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
                                       WinDefDlgProc,
                                       cmnGetString(ID_XFDI_PANIC_TITLE),
-                                      dlgPanic,
+                                      paNew,
                                       ARRAYITEMCOUNT(dlgPanic),
                                       NULL,
                                       cmnQueryDefaultFont())))
@@ -643,33 +643,33 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                 winhCenterWindow(hwndPanic);
 
                 // disable items which are irrelevant
-    #ifndef __NOBOOTLOGO__
+#ifndef __NOBOOTLOGO__
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
 
                                   cmnQuerySetting(sfBootLogo));
-    #endif
-    #ifndef __ALWAYSREPLACEARCHIVING__
+#endif
+#ifndef __ALWAYSREPLACEARCHIVING__
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
                                   cmnQuerySetting(sfReplaceArchiving));
-    #endif
-    #ifndef __NEVERCHECKDESKTOP__
+#endif
+#ifndef __NEVERCHECKDESKTOP__
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
                                   cmnQuerySetting(sfCheckDesktop));
-    #endif
+#endif
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                                   krnReplaceRefreshEnabled());
-    #ifndef __NOTURBOFOLDERS__
+#ifndef __NOTURBOFOLDERS__
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
                                   cmnTurboFoldersEnabled());
-    #endif
-    #ifndef __NOICONREPLACEMENTS__
+#endif
+#ifndef __NOICONREPLACEMENTS__
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                                   cmnQuerySetting(sfIconReplacements));
-    #endif
-    #ifndef __NOPAGER__
+#endif
+#ifndef __NOPAGER__
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER,
                                   cmnQuerySetting(sfEnableXPager));
-    #endif
+#endif
                 winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                                   (xmmQueryStatus() == MMSTAT_WORKING));
 
@@ -679,18 +679,18 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                 {
                     case ID_XFDI_PANIC_CONTINUE:        // continue
                     {
-    #ifndef __NOBOOTLOGO__
+#ifndef __NOBOOTLOGO__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
                             G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
-    #endif
-    #ifndef __NOXWPSTARTUP__
+#endif
+#ifndef __NOXWPSTARTUP__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
                             G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
-    #endif
-    #ifndef __NOQUICKOPEN__
+#endif
+#ifndef __NOQUICKOPEN__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
                             G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
-    #endif
+#endif
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
                         {
                             PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
@@ -698,25 +698,25 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                             pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
                         }
 
-    #ifndef __NEVERCHECKDESKTOP__
+#ifndef __NEVERCHECKDESKTOP__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP))
                             cmnSetSetting(sfCheckDesktop, FALSE);
-    #endif
+#endif
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
                             krnEnableReplaceRefresh(FALSE);
-    #ifndef __NOTURBOFOLDERS__
+#ifndef __NOTURBOFOLDERS__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS))
                             cmnSetSetting(sfTurboFolders, FALSE);
-    #endif
+#endif
 
-    #ifndef __NOICONREPLACEMENTS__
+#ifndef __NOICONREPLACEMENTS__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
                             cmnSetSetting(sfIconReplacements, FALSE);
-    #endif
-    #ifndef __NOPAGER__
+#endif
+#ifndef __NOPAGER__
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER))
                             cmnSetSetting(sfEnableXPager, FALSE);  // @@todo
-    #endif
+#endif
                         if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
                         {
                             xmmDisable();
