@@ -118,28 +118,28 @@
  *                                                                  *
  ********************************************************************/
 
-HMTX            hmtxCommonLock = NULLHANDLE;
+HMTX            G_hmtxCommonLock = NULLHANDLE;
 
-CHAR            szHelpLibrary[CCHMAXPATH] = "";
-CHAR            szMessageFile[CCHMAXPATH] = "";
+CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
+CHAR            G_szMessageFile[CCHMAXPATH] = "";
 
-HMODULE         hmodNLS = NULLHANDLE;
-NLSSTRINGS      *pNLSStringsGlobal = NULL;
-GLOBALSETTINGS  *pGlobalSettings = NULL;
+HMODULE         G_hmodNLS = NULLHANDLE;
+NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
+GLOBALSETTINGS  *G_pGlobalSettings = NULL;
 
-HMODULE         hmodIconsDLL = NULLHANDLE;
-CHAR            szLanguageCode[20] = "";
+HMODULE         G_hmodIconsDLL = NULLHANDLE;
+CHAR            G_szLanguageCode[20] = "";
 
-ULONG           ulCurHelpPanel = 0;      // holds help panel for dialog
+ULONG           G_ulCurHelpPanel = 0;      // holds help panel for dialog
 
-CHAR            szStatusBarFont[100];
-CHAR            szSBTextNoneSel[CCHMAXMNEMONICS],
-                szSBTextMultiSel[CCHMAXMNEMONICS];
-ULONG           ulStatusBarHeight;
+CHAR            G_szStatusBarFont[100];
+CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
+                G_szSBTextMultiSel[CCHMAXMNEMONICS];
+ULONG           G_ulStatusBarHeight;
 
 // module handling:
-char            szDLLFile[CCHMAXPATH];
-HMODULE         hmodDLL;
+char            G_szDLLFile[CCHMAXPATH];
+HMODULE         G_hmodDLL;
 
 // Declare runtime prototypes, because there are no headers
 // for these:
@@ -205,14 +205,14 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
 
             // store the DLL handle in the global variable so that
             // cmnQueryMainModuleHandle() below can return it
-            hmodDLL = hModule;
+            G_hmodDLL = hModule;
 
             // now initialize the C run-time environment before we
             // call any runtime functions
             if (_CRT_init() == -1)
                return (0);  // error
 
-            if (rc = DosQueryModuleName(hModule, CCHMAXPATH, szDLLFile))
+            if (rc = DosQueryModuleName(hModule, CCHMAXPATH, G_szDLLFile))
                     DosBeep(100, 100);
         break; }
 
@@ -246,7 +246,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
 
 HMODULE cmnQueryMainModuleHandle(VOID)
 {
-    return (hmodDLL);
+    return (G_hmodDLL);
 }
 
 /*
@@ -260,7 +260,7 @@ HMODULE cmnQueryMainModuleHandle(VOID)
 
 const char* cmnQueryMainModuleFilename(VOID)
 {
-    return (szDLLFile);
+    return (G_szDLLFile);
 }
 
 /* ******************************************************************
@@ -300,13 +300,13 @@ const char* cmnQueryMainModuleFilename(VOID)
 
 BOOL cmnLock(ULONG ulTimeout)
 {
-    if (hmtxCommonLock == NULLHANDLE)
+    if (G_hmtxCommonLock == NULLHANDLE)
         DosCreateMutexSem(NULL,         // unnamed
-                          &hmtxCommonLock,
+                          &G_hmtxCommonLock,
                           0,            // unshared
                           FALSE);       // unowned
 
-    if (WinRequestMutexSem(hmtxCommonLock, ulTimeout) == NO_ERROR)
+    if (WinRequestMutexSem(G_hmtxCommonLock, ulTimeout) == NO_ERROR)
         return TRUE;
     else
     {
@@ -323,7 +323,7 @@ BOOL cmnLock(ULONG ulTimeout)
 
 VOID cmnUnlock(VOID)
 {
-    DosReleaseMutexSem(hmtxCommonLock);
+    DosReleaseMutexSem(G_hmtxCommonLock);
 }
 
 /*
@@ -340,7 +340,7 @@ ULONG cmnQueryLock(VOID)
     PID     pid = 0;
     TID     tid = 0;
     ULONG   ulCount = 0;
-    if (DosQueryMutexSem(hmtxCommonLock,
+    if (DosQueryMutexSem(G_hmtxCommonLock,
                          &pid,
                          &tid,
                          &ulCount)
@@ -361,7 +361,7 @@ ULONG cmnQueryLock(VOID)
 
 VOID APIENTRY cmnOnKillDuringLock(VOID)
 {
-    DosReleaseMutexSem(hmtxCommonLock);
+    DosReleaseMutexSem(G_hmtxCommonLock);
 }
 
 /* ******************************************************************
@@ -425,14 +425,14 @@ const char* cmnQueryLanguageCode(VOID)
     {
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
-            if (szLanguageCode[0] == '\0')
+            if (G_szLanguageCode[0] == '\0')
                 PrfQueryProfileString(HINI_USERPROFILE,
                                       INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
                                       DEFAULT_LANGUAGECODE,
-                                      (PVOID)szLanguageCode,
-                                      sizeof(szLanguageCode));
+                                      (PVOID)G_szLanguageCode,
+                                      sizeof(G_szLanguageCode));
 
-            szLanguageCode[3] = '\0';
+            G_szLanguageCode[3] = '\0';
             #ifdef DEBUG_LANGCODES
                 _Pmpf(( "cmnQueryLanguageCode: %s", szLanguageCode ));
             #endif
@@ -442,7 +442,7 @@ const char* cmnQueryLanguageCode(VOID)
         cmnUnlock();
     }
 
-    return (szLanguageCode);
+    return (G_szLanguageCode);
 }
 
 /*
@@ -462,12 +462,12 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
     {
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
-            strcpy(szLanguageCode, pszLanguage);
-            szLanguageCode[3] = 0;
+            strcpy(G_szLanguageCode, pszLanguage);
+            G_szLanguageCode[3] = 0;
 
             brc = PrfWriteProfileString(HINI_USERPROFILE,
                                         INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
-                                        szLanguageCode);
+                                        G_szLanguageCode);
         }
         CATCH(excpt1) { } END_CATCH();
 
@@ -497,16 +497,16 @@ const char* cmnQueryHelpLibrary(VOID)
     {
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
-            if (cmnQueryXFolderBasePath(szHelpLibrary))
+            if (cmnQueryXFolderBasePath(G_szHelpLibrary))
             {
                 // path found: append helpfile
-                sprintf(szHelpLibrary+strlen(szHelpLibrary),
+                sprintf(G_szHelpLibrary + strlen(G_szHelpLibrary),
                         "\\help\\xfldr%s.hlp",
                         cmnQueryLanguageCode());
                 #ifdef DEBUG_LANGCODES
                     _Pmpf(( "cmnQueryHelpLibrary: %s", szHelpLibrary ));
                 #endif
-                rc = szHelpLibrary;
+                rc = G_szHelpLibrary;
             }
         }
         CATCH(excpt1) { } END_CATCH();
@@ -561,16 +561,16 @@ const char* cmnQueryMessageFile(VOID)
     {
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
-            if (cmnQueryXFolderBasePath(szMessageFile))
+            if (cmnQueryXFolderBasePath(G_szMessageFile))
             {
                 // path found: append message file
-                sprintf(szMessageFile+strlen(szMessageFile),
+                sprintf(G_szMessageFile + strlen(G_szMessageFile),
                         "\\help\\xfldr%s.tmf",
                         cmnQueryLanguageCode());
                 #ifdef DEBUG_LANGCODES
                     _Pmpf(( "cmnQueryMessageFile: %s", szMessageFile));
                 #endif
-                rc = szMessageFile;
+                rc = G_szMessageFile;
             }
         }
         CATCH(excpt1) { } END_CATCH();
@@ -606,7 +606,7 @@ HMODULE cmnQueryIconsDLL(VOID)
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
             // first query?
-            if (hmodIconsDLL == NULLHANDLE)
+            if (G_hmodIconsDLL == NULLHANDLE)
             {
                 CHAR    szIconsDLL[CCHMAXPATH],
                         szNewIconsDLL[CCHMAXPATH];
@@ -642,9 +642,9 @@ HMODULE cmnQueryIconsDLL(VOID)
                 if (DosLoadModule(NULL,
                                   0,
                                   szIconsDLL,
-                                  &hmodIconsDLL)
+                                  &G_hmodIconsDLL)
                         != NO_ERROR)
-                    hmodIconsDLL = NULLHANDLE;
+                    G_hmodIconsDLL = NULLHANDLE;
             }
 
             #ifdef DEBUG_LANGCODES
@@ -657,7 +657,7 @@ HMODULE cmnQueryIconsDLL(VOID)
         cmnUnlock();
     }
 
-    return (hmodIconsDLL);
+    return (G_hmodIconsDLL);
 }
 
 /*
@@ -750,337 +750,337 @@ VOID LoadNLSData(HAB habDesktop,
                  NLSSTRINGS *pNLSStrings)
 {
     // now let's load strings
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_NOTDEFINED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_NOTDEFINED,
             &(pNLSStrings->pszNotDefined));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PRODUCTINFO,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_PRODUCTINFO,
             &(pNLSStrings->pszProductInfo));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_REFRESHNOW,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_REFRESHNOW,
             &(pNLSStrings->pszRefreshNow));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SNAPTOGRID,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SNAPTOGRID,
             &(pNLSStrings->pszSnapToGrid));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FLDRCONTENT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FLDRCONTENT,
             &(pNLSStrings->pszFldrContent));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_COPYFILENAME,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_COPYFILENAME,
             &(pNLSStrings->pszCopyFilename));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_BORED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_BORED,
             &(pNLSStrings->pszBored));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FLDREMPTY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FLDREMPTY,
             &(pNLSStrings->pszFldrEmpty));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SELECTSOME,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SELECTSOME,
             &(pNLSStrings->pszSelectSome));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_QUICKSTATUS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_QUICKSTATUS,
             &(pNLSStrings->pszQuickStatus));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_NAME,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_NAME,
             &(pNLSStrings->pszSortByName));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_TYPE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_TYPE,
             &(pNLSStrings->pszSortByType));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_CLASS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_CLASS,
             &(pNLSStrings->pszSortByClass));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_REALNAME,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_REALNAME,
             &(pNLSStrings->pszSortByRealName));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_SIZE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_SIZE,
             &(pNLSStrings->pszSortBySize));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_WRITEDATE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_WRITEDATE,
             &(pNLSStrings->pszSortByWriteDate));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_ACCESSDATE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_ACCESSDATE,
             &(pNLSStrings->pszSortByAccessDate));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_CREATIONDATE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_CREATIONDATE,
             &(pNLSStrings->pszSortByCreationDate));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_EXT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_EXT,
             &(pNLSStrings->pszSortByExt));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_FOLDERSFIRST,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_FOLDERSFIRST,
             &(pNLSStrings->pszSortFoldersFirst));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_CTRL,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_CTRL,
             &(pNLSStrings->pszCtrl));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_Alt,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_Alt,
             &(pNLSStrings->pszAlt));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SHIFT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_SHIFT,
             &(pNLSStrings->pszShift));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_BACKSPACE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_BACKSPACE,
             &(pNLSStrings->pszBackspace));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_TAB,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_TAB,
             &(pNLSStrings->pszTab));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_BACKTABTAB,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_BACKTABTAB,
             &(pNLSStrings->pszBacktab));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_ENTER,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_ENTER,
             &(pNLSStrings->pszEnter));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_ESC,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_ESC,
             &(pNLSStrings->pszEsc));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SPACE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_SPACE,
             &(pNLSStrings->pszSpace));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PAGEUP,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_PAGEUP,
             &(pNLSStrings->pszPageup));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PAGEDOWN,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_PAGEDOWN,
             &(pNLSStrings->pszPagedown));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_END,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_END,
             &(pNLSStrings->pszEnd));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_HOME,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_HOME,
             &(pNLSStrings->pszHome));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_LEFT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_LEFT,
             &(pNLSStrings->pszLeft));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_UP,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_UP,
             &(pNLSStrings->pszUp));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_RIGHT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_RIGHT,
             &(pNLSStrings->pszRight));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_DOWN,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_DOWN,
             &(pNLSStrings->pszDown));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PRINTSCRN,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_PRINTSCRN,
             &(pNLSStrings->pszPrintscrn));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_INSERT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_INSERT,
             &(pNLSStrings->pszInsert));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_DELETE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_DELETE,
             &(pNLSStrings->pszDelete));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SCRLLOCK,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_SCRLLOCK,
             &(pNLSStrings->pszScrlLock));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_NUMLOCK,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_NUMLOCK,
             &(pNLSStrings->pszNumLock));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINLEFT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_WINLEFT,
             &(pNLSStrings->pszWinLeft));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINRIGHT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_WINRIGHT,
             &(pNLSStrings->pszWinRight));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINMENU,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_KEY_WINMENU,
             &(pNLSStrings->pszWinMenu));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_FLUSHING,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_FLUSHING,
             &(pNLSStrings->pszSDFlushing));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_CAD,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_CAD,
             &(pNLSStrings->pszSDCAD));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_REBOOTING,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_REBOOTING,
             &(pNLSStrings->pszSDRebooting));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_CLOSING,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_CLOSING,
             &(pNLSStrings->pszSDClosing));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SHUTDOWN,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_SHUTDOWN,
             &(pNLSStrings->pszShutdown));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_RESTARTWPS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_RESTARTWPS,
             &(pNLSStrings->pszRestartWPS));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_RESTARTINGWPS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_RESTARTINGWPS,
             &(pNLSStrings->pszSDRestartingWPS));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SAVINGDESKTOP,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_SAVINGDESKTOP,
             &(pNLSStrings->pszSDSavingDesktop));
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SAVINGPROFILES,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_SAVINGPROFILES,
             &(pNLSStrings->pszSDSavingProfiles));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_STARTING,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_SDSI_STARTING,
             &(pNLSStrings->pszStarting));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_POPULATING,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_POPULATING,
             &(pNLSStrings->pszPopulating));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_1GENERIC,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_1GENERIC,
             &(pNLSStrings->psz1Generic));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_2REMOVEITEMS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_2REMOVEITEMS,
             &(pNLSStrings->psz2RemoveItems));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_25ADDITEMS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_25ADDITEMS,
             &(pNLSStrings->psz25AddItems));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_26CONFIGITEMS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_26CONFIGITEMS,
             &(pNLSStrings->psz26ConfigFolderMenus));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_27STATUSBAR,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_27STATUSBAR,
             &(pNLSStrings->psz27StatusBar));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_3SNAPTOGRID,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_3SNAPTOGRID,
             &(pNLSStrings->psz3SnapToGrid));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_4ACCELERATORS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_4ACCELERATORS,
             &(pNLSStrings->psz4Accelerators));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_5INTERNALS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_5INTERNALS,
             &(pNLSStrings->psz5Internals));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILEOPS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FILEOPS,
             &(pNLSStrings->pszFileOps));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SORT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SORT,
             &(pNLSStrings->pszSort));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_ALWAYSSORT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SV_ALWAYSSORT,
             &(pNLSStrings->pszAlwaysSort));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_INTERNALS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_INTERNALS,
             &(pNLSStrings->pszInternals));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XWPSTATUS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XWPSTATUS,
             &(pNLSStrings->pszXWPStatus));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FEATURES,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FEATURES,
             &(pNLSStrings->pszFeatures));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PARANOIA,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_PARANOIA,
             &(pNLSStrings->pszParanoia));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OBJECTS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_OBJECTS,
             &(pNLSStrings->pszObjects));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILEPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FILEPAGE,
             &(pNLSStrings->pszFilePage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DETAILSPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DETAILSPAGE,
             &(pNLSStrings->pszDetailsPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XSHUTDOWNPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSHUTDOWNPAGE,
             &(pNLSStrings->pszXShutdownPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_STARTUPPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_STARTUPPAGE,
             &(pNLSStrings->pszStartupPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DTPMENUPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DTPMENUPAGE,
             &(pNLSStrings->pszDtpMenuPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILETYPESPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FILETYPESPAGE,
             &(pNLSStrings->pszFileTypesPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SOUNDSPAGE,
             &(pNLSStrings->pszSoundsPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_VIEWPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_VIEWPAGE,
             &(pNLSStrings->pszViewPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ARCHIVESPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_ARCHIVESPAGE,
             &(pNLSStrings->pszArchivesPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PGMFILE_MODULE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_PGMFILE_MODULE,
             &(pNLSStrings->pszModulePage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OBJECTHOTKEYSPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_OBJECTHOTKEYSPAGE,
             &(pNLSStrings->pszObjectHotkeysPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MOUSEHOOKPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_MOUSEHOOKPAGE,
             &(pNLSStrings->pszMouseHookPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MAPPINGSPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_MAPPINGSPAGE,
             &(pNLSStrings->pszMappingsPage));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSMNEMONICS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SB_CLASSMNEMONICS,
             &(pNLSStrings->pszSBClassMnemonics));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSNOTSUPPORTED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SB_CLASSNOTSUPPORTED,
             &(pNLSStrings->pszSBClassNotSupported));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSES,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPSCLASSES,
             &(pNLSStrings->pszWpsClasses));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSLOADED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPSCLASSLOADED,
             &(pNLSStrings->pszWpsClassLoaded));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSLOADINGFAILED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPSCLASSLOADINGFAILED,
             &(pNLSStrings->pszWpsClassLoadingFailed));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSREPLACEDBY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPSCLASSREPLACEDBY,
             &(pNLSStrings->pszWpsClassReplacedBy));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSORPHANS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPSCLASSORPHANS,
             &(pNLSStrings->pszWpsClassOrphans));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSORPHANSINFO,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPSCLASSORPHANSINFO,
             &(pNLSStrings->pszWpsClassOrphansInfo));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SCHEDULER,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SCHEDULER,
             &(pNLSStrings->pszScheduler));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MEMORY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_MEMORY,
             &(pNLSStrings->pszMemory));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ERRORS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_ERRORS,
             &(pNLSStrings->pszErrors));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_WPS,
             &(pNLSStrings->pszWPS));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SYSPATHS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SYSPATHS,
             &(pNLSStrings->pszSysPaths));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DRIVERS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DRIVERS,
             &(pNLSStrings->pszDrivers));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DRIVERCATEGORIES,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DRIVERCATEGORIES,
             &(pNLSStrings->pszDriverCategories));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PROCESSCONTENT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_PROCESSCONTENT,
             &(pNLSStrings->pszProcessContent));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SETTINGS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_SETTINGS,
             &(pNLSStrings->pszSettings));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SETTINGSNOTEBOOK,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_SETTINGSNOTEBOOK,
             &(pNLSStrings->pszSettingsNotebook));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTRIBUTES,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTRIBUTES,
             &(pNLSStrings->pszAttributes));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_ARCHIVED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_ARCHIVED,
             &(pNLSStrings->pszAttrArchived));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_SYSTEM,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_SYSTEM,
             &(pNLSStrings->pszAttrSystem));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_HIDDEN,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_HIDDEN,
             &(pNLSStrings->pszAttrHidden));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_READONLY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_READONLY,
             &(pNLSStrings->pszAttrReadOnly));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_FLDRSETTINGS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_FLDRSETTINGS,
             &(pNLSStrings->pszWarp3FldrView));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SMALLICONS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_SMALLICONS,
             &(pNLSStrings->pszSmallIcons  ));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_FLOWED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_FLOWED,
             &(pNLSStrings->pszFlowed));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_NONFLOWED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_NONFLOWED,
             &(pNLSStrings->pszNonFlowed));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_NOGRID,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_NOGRID,
             &(pNLSStrings->pszNoGrid));
 
     // the following are new with V0.9.0
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_WARP4MENUBAR,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_WARP4MENUBAR,
             &(pNLSStrings->pszWarp4MenuBar));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SHOWSTATUSBAR,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_SHOWSTATUSBAR,
             &(pNLSStrings->pszShowStatusBar));
 
     // "WPS Class List" (XWPClassList, new with V0.9.0)
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_OPENCLASSLIST,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_OPENCLASSLIST,
             &(pNLSStrings->pszOpenClassList));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_XWPCLASSLIST,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_XWPCLASSLIST,
             &(pNLSStrings->pszXWPClassList));
-    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_REGISTERCLASS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_REGISTERCLASS,
             &(pNLSStrings->pszRegisterClass));
 
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSCHEMENONE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SOUNDSCHEMENONE,
             &(pNLSStrings->pszSoundSchemeNone));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ITEMSSELECTED,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_ITEMSSELECTED,
             &(pNLSStrings->pszItemsSelected));
 
     // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHEMPTY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHEMPTY,
             &(pNLSStrings->pszTrashEmpty));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHRESTORE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHRESTORE,
             &(pNLSStrings->pszTrashRestore));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDESTROY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHDESTROY,
             &(pNLSStrings->pszTrashDestroy));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHCAN,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHCAN,
             &(pNLSStrings->pszTrashCan));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHOBJECT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHOBJECT,
             &(pNLSStrings->pszTrashObject));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHSETTINGSPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHSETTINGSPAGE,
             &(pNLSStrings->pszTrashSettingsPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDRIVESPAGE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_TRASHDRIVESPAGE,
             &(pNLSStrings->pszTrashDrivesPage));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGFOLDER,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_ORIGFOLDER,
             &(pNLSStrings->pszOrigFolder));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELDATE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_DELDATE,
             &(pNLSStrings->pszDelDate));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELTIME,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_DELTIME,
             &(pNLSStrings->pszDelTime));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_SIZE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_SIZE,
             &(pNLSStrings->pszSize));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGCLASS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_ORIGCLASS,
             &(pNLSStrings->pszOrigClass));
 
     // trash can status bar strings; V0.9.1 (2000-02-04) [umoeller]
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_POPULATING,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_STB_POPULATING,
             &(pNLSStrings->pszStbPopulating));
-    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_OBJCOUNT,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XTSI_STB_OBJCOUNT,
             &(pNLSStrings->pszStbObjCount));
 
     // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_TITLE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_HOTKEY_TITLE,
             &(pNLSStrings->pszHotkeyTitle));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_FOLDER,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_HOTKEY_FOLDER,
             &(pNLSStrings->pszHotkeyFolder));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_HANDLE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_HOTKEY_HANDLE,
             &(pNLSStrings->pszHotkeyHandle));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_HOTKEY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_HOTKEY_HOTKEY,
             &(pNLSStrings->pszHotkeyHotkey));
 
     // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_INDEX,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_CLSLIST_INDEX,
             &(pNLSStrings->pszClsListIndex));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_METHOD,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_CLSLIST_METHOD,
             &(pNLSStrings->pszClsListMethod));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_ADDRESS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_CLSLIST_ADDRESS,
             &(pNLSStrings->pszClsListAddress));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_CLASS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_CLSLIST_CLASS,
             &(pNLSStrings->pszClsListClass));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_OVERRIDDENBY,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_CLSLIST_OVERRIDDENBY,
             &(pNLSStrings->pszClsListOverriddenBy));
 
                 // "Special functions" on XWPMouse "Movement" page
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_WINDOWLIST,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SPECIAL_WINDOWLIST,
             &(pNLSStrings->pszSpecialWindowList));
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_DESKTOPPOPUP,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SPECIAL_DESKTOPPOPUP,
             &(pNLSStrings->pszSpecialDesktopPopup));
 
     // default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XWPSCREENTITLE,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XWPSCREENTITLE,
             &(pNLSStrings->pszXWPScreenTitle));
 
     // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
-    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OPENPARTITIONS,
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_OPENPARTITIONS,
             &(pNLSStrings->pszOpenPartitions));
 }
 
@@ -1116,10 +1116,10 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
         {
             CHAR    szResourceModuleName[CCHMAXPATH];
             // ULONG   ulCopied;
-            HMODULE hmodOldResource = hmodNLS;
+            HMODULE hmodOldResource = G_hmodNLS;
 
             // load resource DLL if it's not loaded yet or a reload is enforced
-            if ((hmodNLS == NULLHANDLE) || (fEnforceReload))
+            if ((G_hmodNLS == NULLHANDLE) || (fEnforceReload))
             {
                 NLSSTRINGS *pNLSStrings = (NLSSTRINGS*)cmnQueryNLSStrings();
 
@@ -1135,7 +1135,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                     if (DosLoadModule(NULL,
                                        0,
                                        szResourceModuleName,
-                                       (PHMODULE)&hmodNLS))
+                                       (PHMODULE)&G_hmodNLS))
                     {
                         DebugBox(HWND_DESKTOP,
                                  "XFolder: Couldn't Find Resource DLL",
@@ -1161,7 +1161,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                 CHAR   szTest[30] = "";
                                 LONG   lLength;
                                 lLength = WinLoadString(habDesktop,
-                                                        hmodNLS,
+                                                        G_hmodNLS,
                                                         ID_XSSI_XFOLDERVERSION,
                                                         sizeof(szTest), szTest);
                                 #ifdef DEBUG_LANGCODES
@@ -1176,15 +1176,15 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                    )
                                 {
                                     DosBeep(1500, 100);
-                                    cmnSetHelpPanel(-1);
+                                    cmnSetDlgHelpPanel(-1);
                                     if (lLength == 0)
                                     {
                                         // version string not found: complain
                                         DebugBox(HWND_DESKTOP,
                                                  "XFolder",
                                                  "The requested file is not an XFolder National Language Support DLL.");
-                                        DosFreeModule(hmodNLS);
-                                        hmodNLS = hmodOldResource;
+                                        DosFreeModule(G_hmodNLS);
+                                        G_hmodNLS = hmodOldResource;
                                         return NULLHANDLE;
                                     }
                                     else
@@ -1196,7 +1196,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                         DosBeep(1700, 100);
                                         if (WinDlgBox(HWND_DESKTOP,
                                                       HWND_DESKTOP,
-                                                      (PFNWP)fnwpDlgGeneric,
+                                                      (PFNWP)cmn_fnwpDlgWithHelp,
                                                       hmodOldResource,
                                                       ID_XFD_WRONGVERSION,
                                                       (PVOID)NULL)
@@ -1206,8 +1206,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                                      "XFolder",
                                                      "The new National Language Support DLL was not loaded.");
                                             // unload new NLS DLL
-                                            DosFreeModule(hmodNLS);
-                                            hmodNLS = hmodOldResource;
+                                            DosFreeModule(G_hmodNLS);
+                                            G_hmodNLS = hmodOldResource;
                                             return NULLHANDLE;
                                         }
                                     }
@@ -1232,7 +1232,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
     }
 
     // return (new?) module handle
-    return (hmodNLS);
+    return (G_hmodNLS);
 }
 
 /*
@@ -1250,17 +1250,17 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
     {
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
-            if (pNLSStringsGlobal == NULL)
+            if (G_pNLSStringsGlobal == NULL)
             {
-                pNLSStringsGlobal = malloc(sizeof(NLSSTRINGS));
-                memset(pNLSStringsGlobal, 0, sizeof(NLSSTRINGS));
+                G_pNLSStringsGlobal = malloc(sizeof(NLSSTRINGS));
+                memset(G_pNLSStringsGlobal, 0, sizeof(NLSSTRINGS));
             }
         }
         CATCH(excpt1) { } END_CATCH();
 
         cmnUnlock();
     }
-    return (pNLSStringsGlobal);
+    return (G_pNLSStringsGlobal);
 }
 
 /*
@@ -1400,13 +1400,13 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
             switch (usSetting)
             {
                 case SBS_STATUSBARFONT:
-                        rc = szStatusBarFont;
+                        rc = G_szStatusBarFont;
                     break;
                 case SBS_TEXTNONESEL:
-                        rc = szSBTextNoneSel;
+                        rc = G_szSBTextNoneSel;
                     break;
                 case SBS_TEXTMULTISEL:
-                        rc = szSBTextMultiSel;
+                        rc = G_szSBTextMultiSel;
             }
         }
         CATCH(excpt1) { } END_CATCH();
@@ -1446,40 +1446,45 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         CHAR szDummy[CCHMAXMNEMONICS];
                         if (pszSetting)
                         {
-                            strcpy(szStatusBarFont, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
-                                     szStatusBarFont);
+                            strcpy(G_szStatusBarFont, pszSetting);
+                            PrfWriteProfileString(HINI_USERPROFILE,
+                                                  INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
+                                                  G_szStatusBarFont);
                         }
                         else
-                            strcpy(szStatusBarFont, "8.Helv");
-                        sscanf(szStatusBarFont, "%d.%s", &(ulStatusBarHeight), &szDummy);
-                        ulStatusBarHeight += 15;
+                            strcpy(G_szStatusBarFont, "8.Helv");
+                        sscanf(G_szStatusBarFont, "%d.%s", &(G_ulStatusBarHeight), &szDummy);
+                        G_ulStatusBarHeight += 15;
                 break; }
 
                 case SBS_TEXTNONESEL:
                 {
                         if (pszSetting)
                         {
-                            strcpy(szSBTextNoneSel, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
-                                     szSBTextNoneSel);
+                            strcpy(G_szSBTextNoneSel, pszSetting);
+                            PrfWriteProfileString(HINI_USERPROFILE,
+                                                  INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
+                                                  G_szSBTextNoneSel);
                         }
                         else
-                            WinLoadString(habDesktop, hmodResource, ID_XSSI_SBTEXTNONESEL,
-                                sizeof(szSBTextNoneSel), szSBTextNoneSel);
+                            WinLoadString(habDesktop,
+                                          hmodResource, ID_XSSI_SBTEXTNONESEL,
+                                          sizeof(G_szSBTextNoneSel), G_szSBTextNoneSel);
                 break; }
 
                 case SBS_TEXTMULTISEL:
                 {
                         if (pszSetting)
                         {
-                            strcpy(szSBTextMultiSel, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
-                                     szSBTextMultiSel);
+                            strcpy(G_szSBTextMultiSel, pszSetting);
+                            PrfWriteProfileString(HINI_USERPROFILE,
+                                                  INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
+                                                  G_szSBTextMultiSel);
                         }
                         else
-                            WinLoadString(habDesktop, hmodResource, ID_XSSI_SBTEXTMULTISEL,
-                                sizeof(szSBTextMultiSel), szSBTextMultiSel);
+                            WinLoadString(habDesktop,
+                                          hmodResource, ID_XSSI_SBTEXTMULTISEL,
+                                          sizeof(G_szSBTextMultiSel), G_szSBTextMultiSel);
                 break; }
 
                 default:
@@ -1504,7 +1509,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
 ULONG cmnQueryStatusBarHeight(VOID)
 {
-    return (ulStatusBarHeight);
+    return (G_ulStatusBarHeight);
 }
 
 /*
@@ -1536,10 +1541,10 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         {
             ULONG       ulCopied1;
 
-            if (pGlobalSettings == NULL)
+            if (G_pGlobalSettings == NULL)
             {
-                pGlobalSettings = malloc(sizeof(GLOBALSETTINGS));
-                memset(pGlobalSettings, 0, sizeof(GLOBALSETTINGS));
+                G_pGlobalSettings = malloc(sizeof(GLOBALSETTINGS));
+                memset(G_pGlobalSettings, 0, sizeof(GLOBALSETTINGS));
             }
 
             // first set default settings for each settings page;
@@ -1575,26 +1580,36 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
             // cmnSetDefaultSettings(SP_MOUSE_CORNERS);  does nothing
 
             // reset help panels
-            pGlobalSettings->ulIntroHelpShown = 0;
+            G_pGlobalSettings->ulIntroHelpShown = 0;
 
             if (fResetDefaults == FALSE)
             {
                 // get global XFolder settings from OS2.INI
-                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
-                         "8.Helv", &(szStatusBarFont), sizeof(szStatusBarFont));
-                sscanf(szStatusBarFont, "%d.*%s", &(ulStatusBarHeight));
-                ulStatusBarHeight += 15;
+                PrfQueryProfileString(HINI_USERPROFILE,
+                                      INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
+                                      "8.Helv",
+                                      &(G_szStatusBarFont),
+                                      sizeof(G_szStatusBarFont));
+                sscanf(G_szStatusBarFont, "%d.*%s", &(G_ulStatusBarHeight));
+                G_ulStatusBarHeight += 15;
 
-                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
-                            NULL, &(szSBTextNoneSel), sizeof(szSBTextNoneSel));
-                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
-                            NULL, &(szSBTextMultiSel), sizeof(szSBTextMultiSel));
+                PrfQueryProfileString(HINI_USERPROFILE,
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
+                                      NULL,
+                                      &(G_szSBTextNoneSel),
+                                      sizeof(G_szSBTextNoneSel));
+                PrfQueryProfileString(HINI_USERPROFILE,
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
+                                      NULL,
+                                      &(G_szSBTextMultiSel),
+                                      sizeof(G_szSBTextMultiSel));
 
                 ulCopied1 = sizeof(GLOBALSETTINGS);
                 PrfQueryProfileData(HINI_USERPROFILE,
                                     INIAPP_XWORKPLACE,
                                     INIKEY_GLOBALSETTINGS,
-                                    pGlobalSettings, &ulCopied1);
+                                    G_pGlobalSettings,
+                                    &ulCopied1);
             }
 
         }
@@ -1603,7 +1618,7 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         cmnUnlock();
     }
 
-    return (pGlobalSettings);
+    return (G_pGlobalSettings);
 }
 
 /*
@@ -1630,14 +1645,14 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
     {
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
-            if (pGlobalSettings == NULL)
+            if (G_pGlobalSettings == NULL)
                 cmnLoadGlobalSettings(FALSE);       // load from INI
         }
         CATCH(excpt1) { } END_CATCH();
 
         cmnUnlock();
     }
-    return (pGlobalSettings);
+    return (G_pGlobalSettings);
 }
 
 /*
@@ -1658,7 +1673,7 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
 {
     if (cmnLock(ulTimeout))
-        return (pGlobalSettings);
+        return (G_pGlobalSettings);
     else
         return (NULL);
 }
@@ -1708,86 +1723,86 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         case SP_1GENERIC:
             // pGlobalSettings->ShowInternals = 1;   // removed V0.9.0
             // pGlobalSettings->ReplIcons = 1;       // removed V0.9.0
-            pGlobalSettings->FullPath = 1;
-            pGlobalSettings->KeepTitle = 1;
-            pGlobalSettings->MaxPathChars = 25;
-            pGlobalSettings->TreeViewAutoScroll = 1;
+            G_pGlobalSettings->FullPath = 1;
+            G_pGlobalSettings->KeepTitle = 1;
+            G_pGlobalSettings->MaxPathChars = 25;
+            G_pGlobalSettings->TreeViewAutoScroll = 1;
         break;
 
         case SP_2REMOVEITEMS:
-            pGlobalSettings->DefaultMenuItems = 0;
-            pGlobalSettings->RemoveLockInPlaceItem = 0;
-            pGlobalSettings->RemoveCheckDiskItem = 0;
-            pGlobalSettings->RemoveFormatDiskItem = 0;
-            pGlobalSettings->RemoveViewMenu = 0;
-            pGlobalSettings->RemovePasteItem = 0;
+            G_pGlobalSettings->DefaultMenuItems = 0;
+            G_pGlobalSettings->RemoveLockInPlaceItem = 0;
+            G_pGlobalSettings->RemoveCheckDiskItem = 0;
+            G_pGlobalSettings->RemoveFormatDiskItem = 0;
+            G_pGlobalSettings->RemoveViewMenu = 0;
+            G_pGlobalSettings->RemovePasteItem = 0;
         break;
 
         case SP_25ADDITEMS:
-            pGlobalSettings->FileAttribs = 1;
-            pGlobalSettings->AddCopyFilenameItem = 1;
-            pGlobalSettings->ExtendFldrViewMenu = 1;
-            pGlobalSettings->MoveRefreshNow = (doshIsWarp4() ? 1 : 0);
-            pGlobalSettings->AddSelectSomeItem = 1;
-            pGlobalSettings->AddFolderContentItem = 1;
-            pGlobalSettings->FCShowIcons = 0;
+            G_pGlobalSettings->FileAttribs = 1;
+            G_pGlobalSettings->AddCopyFilenameItem = 1;
+            G_pGlobalSettings->ExtendFldrViewMenu = 1;
+            G_pGlobalSettings->MoveRefreshNow = (doshIsWarp4() ? 1 : 0);
+            G_pGlobalSettings->AddSelectSomeItem = 1;
+            G_pGlobalSettings->AddFolderContentItem = 1;
+            G_pGlobalSettings->FCShowIcons = 0;
         break;
 
         case SP_26CONFIGITEMS:
-            pGlobalSettings->MenuCascadeMode = 0;
-            pGlobalSettings->RemoveX = 1;
-            pGlobalSettings->AppdParam = 1;
-            pGlobalSettings->TemplatesOpenSettings = BM_INDETERMINATE;
-            pGlobalSettings->TemplatesReposition = 1;
+            G_pGlobalSettings->MenuCascadeMode = 0;
+            G_pGlobalSettings->RemoveX = 1;
+            G_pGlobalSettings->AppdParam = 1;
+            G_pGlobalSettings->TemplatesOpenSettings = BM_INDETERMINATE;
+            G_pGlobalSettings->TemplatesReposition = 1;
         break;
 
         case SP_27STATUSBAR:
-            pGlobalSettings->fDefaultStatusBarVisibility = 1;       // changed V0.9.0
-            pGlobalSettings->SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
-            pGlobalSettings->SBForViews = SBV_ICON | SBV_DETAILS;
-            pGlobalSettings->lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
-            pGlobalSettings->lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
+            G_pGlobalSettings->fDefaultStatusBarVisibility = 1;       // changed V0.9.0
+            G_pGlobalSettings->SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
+            G_pGlobalSettings->SBForViews = SBV_ICON | SBV_DETAILS;
+            G_pGlobalSettings->lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
+            G_pGlobalSettings->lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
-            pGlobalSettings->fDereferenceShadows = 1;
+            G_pGlobalSettings->fDereferenceShadows = 1;
         break;
 
         case SP_3SNAPTOGRID:
-            pGlobalSettings->fAddSnapToGridDefault = 1;
-            pGlobalSettings->GridX = 15;
-            pGlobalSettings->GridY = 10;
-            pGlobalSettings->GridCX = 20;
-            pGlobalSettings->GridCY = 35;
+            G_pGlobalSettings->fAddSnapToGridDefault = 1;
+            G_pGlobalSettings->GridX = 15;
+            G_pGlobalSettings->GridY = 10;
+            G_pGlobalSettings->GridCX = 20;
+            G_pGlobalSettings->GridCY = 35;
         break;
 
         case SP_4ACCELERATORS:
-            pGlobalSettings->fFolderHotkeysDefault = 1;
+            G_pGlobalSettings->fFolderHotkeysDefault = 1;
         break;
 
         case SP_FLDRSORT_GLOBAL:
-            // pGlobalSettings->ReplaceSort = 0;        removed V0.9.0
-            pGlobalSettings->DefaultSort = SV_NAME;
-            pGlobalSettings->AlwaysSort = 0;
+            // G_pGlobalSettings->ReplaceSort = 0;        removed V0.9.0
+            G_pGlobalSettings->DefaultSort = SV_NAME;
+            G_pGlobalSettings->AlwaysSort = 0;
         break;
 
         case SP_DTP_MENUITEMS:  // extra Desktop page
-            pGlobalSettings->fDTMSort = 1;
-            pGlobalSettings->fDTMArrange = 1;
-            pGlobalSettings->fDTMSystemSetup = 1;
-            pGlobalSettings->fDTMLockup = 1;
-            pGlobalSettings->fDTMShutdown = 1;
-            pGlobalSettings->fDTMShutdownMenu = 1;
+            G_pGlobalSettings->fDTMSort = 1;
+            G_pGlobalSettings->fDTMArrange = 1;
+            G_pGlobalSettings->fDTMSystemSetup = 1;
+            G_pGlobalSettings->fDTMLockup = 1;
+            G_pGlobalSettings->fDTMShutdown = 1;
+            G_pGlobalSettings->fDTMShutdownMenu = 1;
         break;
 
         case SP_DTP_STARTUP:
-            pGlobalSettings->ShowBootupStatus = 0;
-            pGlobalSettings->BootLogo = 0;
-            pGlobalSettings->bBootLogoStyle = 0;
-            pGlobalSettings->fNumLockStartup = 0;
+            G_pGlobalSettings->ShowBootupStatus = 0;
+            G_pGlobalSettings->BootLogo = 0;
+            G_pGlobalSettings->bBootLogoStyle = 0;
+            G_pGlobalSettings->fNumLockStartup = 0;
         break;
 
         case SP_DTP_SHUTDOWN:
-            pGlobalSettings->ulXShutdownFlags = // changed V0.9.0
+            G_pGlobalSettings->ulXShutdownFlags = // changed V0.9.0
                 XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE;
         break;
 
@@ -1796,52 +1811,52 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         break;
 
         case SP_SETUP_FEATURES:   // all new with V0.9.0
-            pGlobalSettings->fReplaceIcons = 0;
-            pGlobalSettings->AddObjectPage = 0;
-            pGlobalSettings->fReplaceFilePage = 0;
-            pGlobalSettings->fXSystemSounds = 0;
+            G_pGlobalSettings->fReplaceIcons = 0;
+            G_pGlobalSettings->AddObjectPage = 0;
+            G_pGlobalSettings->fReplaceFilePage = 0;
+            G_pGlobalSettings->fXSystemSounds = 0;
 
-            pGlobalSettings->fEnableStatusBars = 0;
-            pGlobalSettings->fEnableSnap2Grid = 0;
-            pGlobalSettings->fEnableFolderHotkeys = 0;
-            pGlobalSettings->ExtFolderSort = 0;
+            G_pGlobalSettings->fEnableStatusBars = 0;
+            G_pGlobalSettings->fEnableSnap2Grid = 0;
+            G_pGlobalSettings->fEnableFolderHotkeys = 0;
+            G_pGlobalSettings->ExtFolderSort = 0;
 
-            pGlobalSettings->fAniMouse = 0;
-            pGlobalSettings->fEnableXWPHook = 0;
-            pGlobalSettings->fPageMageEnabled = 0;
+            G_pGlobalSettings->fAniMouse = 0;
+            G_pGlobalSettings->fEnableXWPHook = 0;
+            G_pGlobalSettings->fPageMageEnabled = 0;
 
-            pGlobalSettings->fMonitorCDRoms = 0;
-            pGlobalSettings->fRestartWPS = 0;
-            pGlobalSettings->fXShutdown = 0;
-            pGlobalSettings->fReplaceArchiving = 0;
+            G_pGlobalSettings->fMonitorCDRoms = 0;
+            G_pGlobalSettings->fRestartWPS = 0;
+            G_pGlobalSettings->fXShutdown = 0;
+            G_pGlobalSettings->fReplaceArchiving = 0;
 
-            pGlobalSettings->fExtAssocs = 0;
-            pGlobalSettings->CleanupINIs = 0;
-            pGlobalSettings->fReplFileExists = 0;
-            pGlobalSettings->fReplDriveNotReady = 0;
-            pGlobalSettings->fTrashDelete = 0;
+            G_pGlobalSettings->fExtAssocs = 0;
+            G_pGlobalSettings->CleanupINIs = 0;
+            G_pGlobalSettings->fReplFileExists = 0;
+            G_pGlobalSettings->fReplDriveNotReady = 0;
+            G_pGlobalSettings->fTrashDelete = 0;
         break;
 
         case SP_SETUP_PARANOIA:   // all new with V0.9.0
-            pGlobalSettings->VarMenuOffset   = 700;     // raised (V0.9.0)
-            pGlobalSettings->NoSubclassing   = 0;
-            pGlobalSettings->NoWorkerThread  = 0;
-            pGlobalSettings->fUse8HelvFont   = (!doshIsWarp4());
-            pGlobalSettings->fNoExcptBeeps    = 0;
-            pGlobalSettings->bDefaultWorkerThreadPriority = 1;  // idle +31
-            pGlobalSettings->fWorkerPriorityBeep = 0;
+            G_pGlobalSettings->VarMenuOffset   = 700;     // raised (V0.9.0)
+            G_pGlobalSettings->NoSubclassing   = 0;
+            G_pGlobalSettings->NoWorkerThread  = 0;
+            G_pGlobalSettings->fUse8HelvFont   = (!doshIsWarp4());
+            G_pGlobalSettings->fNoExcptBeeps    = 0;
+            G_pGlobalSettings->bDefaultWorkerThreadPriority = 1;  // idle +31
+            G_pGlobalSettings->fWorkerPriorityBeep = 0;
         break;
 
         case SP_STARTUPFOLDER:        // all new with V0.9.0
-            pGlobalSettings->ShowStartupProgress = 1;
-            pGlobalSettings->ulStartupDelay = 1000;
+            G_pGlobalSettings->ShowStartupProgress = 1;
+            G_pGlobalSettings->ulStartupDelay = 1000;
         break;
 
         case SP_TRASHCAN_SETTINGS:             // all new with V0.9.0
-            pGlobalSettings->fTrashDelete = 0;
-            pGlobalSettings->fTrashEmptyStartup = 0;
-            pGlobalSettings->fTrashEmptyShutdown = 0;
-            pGlobalSettings->fTrashConfirmEmpty = 1;
+            G_pGlobalSettings->fTrashDelete = 0;
+            G_pGlobalSettings->fTrashEmptyStartup = 0;
+            G_pGlobalSettings->fTrashEmptyShutdown = 0;
+            G_pGlobalSettings->fTrashConfirmEmpty = 1;
         break;
     }
 
@@ -1868,7 +1883,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
     CHAR    szGPLInfo[2000];
     LONG    lBackClr = CLR_WHITE;
     HWND hwndInfo = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                               fnwpDlgGeneric,
+                               cmn_fnwpDlgWithHelp,
                                cmnQueryNLSModuleHandle(FALSE),
                                ID_XFD_PRODINFO,
                                NULL),
@@ -1900,7 +1915,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
                       (MPARAM)0,
                       MPNULL); */
 
-    cmnSetHelpPanel(0);
+    cmnSetDlgHelpPanel(0);
     winhCenterWindow(hwndInfo);
     WinProcessDlg(hwndInfo);
     WinDestroyWindow(hwndInfo);
@@ -1918,7 +1933,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
 
 const char* cmnQueryDefaultFont(VOID)
 {
-    if (pGlobalSettings->fUse8HelvFont)
+    if (G_pGlobalSettings->fUse8HelvFont)
         return ("8.Helv");
     else
         return ("9.WarpSans");
@@ -2152,11 +2167,11 @@ MRESULT EXPENTRY fnwpMessageBox(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)NULL);
             pfnwpOrigStatic = WinSubclassWindow(hwndStatic,
                                                 fnwpAutoSizeStatic);
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
 
         default:
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break;
     }
     return (mrc);
@@ -2518,46 +2533,35 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
 }
 
 /*
- *@@ cmnSetHelpPanel:
+ *@@ cmnSetDlgHelpPanel:
  *      sets help panel before calling fnwpDlgGeneric.
  */
 
-VOID cmnSetHelpPanel(ULONG ulHelpPanel)
+VOID cmnSetDlgHelpPanel(ULONG ulHelpPanel)
 {
-    ulCurHelpPanel = ulHelpPanel;
+    G_ulCurHelpPanel = ulHelpPanel;
 }
 
 /*
- *@@  fnwpDlgGeneric:
+ *@@  cmn_fnwpDlgWithHelp:
  *          this is the dlg procedure for XFolder dlg boxes;
- *          it can process WM_HELP messages
+ *          it can process WM_HELP messages.
+ *
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: renamed from fnwpDlgGeneric
  */
 
-MRESULT EXPENTRY fnwpDlgGeneric(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    HOBJECT hobjRef = 0;
-    HWND    hwndItem;
     MRESULT mrc = NULL;
 
     switch (msg)
     {
-        case WM_INITDLG:
-            if (hwndItem = WinWindowFromID(hwnd, ID_XFDI_XFLDVERSION))
-            {
-                CHAR    szTemp[100];
-                WinQueryWindowText(hwndItem, sizeof(szTemp), szTemp);
-                strcpy(strstr(szTemp, "%a"), XFOLDER_VERSION);
-                WinSetWindowText(hwndItem, szTemp);
-            }
-            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        break;
-
         case WM_HELP:
         {
             // HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
             /* WM_HELP is received by this function when F1 or a "help" button
                is pressed in a dialog window. */
-            if (ulCurHelpPanel > 0)
+            if (G_ulCurHelpPanel > 0)
             {
                 WPObject    *pHelpSomSelf = _wpclsQueryActiveDesktop(_WPDesktop);
                 /* ulCurHelpPanel is set by instance methods before creating a
@@ -2572,17 +2576,18 @@ MRESULT EXPENTRY fnwpDlgGeneric(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     BOOL fProcessed = FALSE;
                     if (pszHelpLibrary = cmnQueryHelpLibrary())
                         // path found: display help panel
-                        if (_wpDisplayHelp(pHelpSomSelf, ulCurHelpPanel, (PSZ)pszHelpLibrary))
+                        if (_wpDisplayHelp(pHelpSomSelf, G_ulCurHelpPanel, (PSZ)pszHelpLibrary))
                             fProcessed = TRUE;
 
                     if (!fProcessed)
                         cmnMessageBoxMsg(HWND_DESKTOP, 104, 134, MB_OK);
                 }
             }
-            else if (ulCurHelpPanel == 0)
+            else if (G_ulCurHelpPanel == 0)
             {
+                HOBJECT     hobjRef = 0;
                 // open online reference
-                ulCurHelpPanel = -1; // ignore further WM_HELP messages: this one suffices
+                // G_ulCurHelpPanel = -1; // ignore further WM_HELP messages: this one suffices
                 hobjRef = WinQueryObject(XFOLDER_USERGUIDE);
                 if (hobjRef)
                     WinOpenObject(hobjRef, OPEN_DEFAULT, TRUE);

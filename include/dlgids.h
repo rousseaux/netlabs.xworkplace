@@ -183,6 +183,7 @@
 #define ID_XFDI_PANIC_DISABLEFEATURES   265
 #define ID_XFDI_PANIC_DISABLEREPLICONS  266
 #define ID_XFDI_PANIC_REMOVEHOTKEYS     267
+#define ID_XFDI_PANIC_NOPAGEMAGE        268
 
 /* Dialog box templates */
 #define ID_XFD_NOCONFIG                 270
@@ -191,7 +192,7 @@
 #define ID_XFD_WRONGVERSION             273
 
 #define ID_XFD_NOTEXTCLIP               280
-#define ID_XFD_NOICONVIEW               281
+// #define ID_XFD_NOICONVIEW               281      removed V0.9.2 (2000-03-04) [umoeller]
 
 #define ID_XFD_WELCOME                  290
 #define ID_XFD_CREATINGCONFIG           291
@@ -712,21 +713,22 @@
 #define ID_SDDI_REBOOT                  2127
 #define ID_SDDI_ANIMATE                 2128
 #define ID_SDDI_APMPOWEROFF             2129
-#define ID_SDDI_CONFIRM                 2130
-#define ID_SDDI_AUTOCLOSEVIO            2131
-#define ID_SDDI_LOG                     2132
+#define ID_SDDI_DELAY                   2130
+#define ID_SDDI_CONFIRM                 2131
+#define ID_SDDI_AUTOCLOSEVIO            2132
+#define ID_SDDI_LOG                     2133
 
-#define ID_SDDI_CREATESHUTDOWNFLDR      2133
-#define ID_SDDI_SHOWSTARTUPPROGRESS     2134
+#define ID_SDDI_CREATESHUTDOWNFLDR      2134
+#define ID_SDDI_SHOWSTARTUPPROGRESS     2135
 
-#define ID_SDDI_STARTUPDELAY            2135
-#define ID_SDDI_STARTUPDELAYTXT         2136
-#define ID_SDDI_REBOOTEXT               2137
-#define ID_SDDI_AUTOCLOSEDETAILS        2138
-#define ID_SDDI_APMVERSION              2139
-#define ID_SDDI_APMVERSION_TXT          2140
-#define ID_SDDI_APMSYS                  2141
-#define ID_SDDI_APMSYS_TXT              2142
+#define ID_SDDI_STARTUPDELAY            2136
+#define ID_SDDI_STARTUPDELAYTXT         2137
+#define ID_SDDI_REBOOTEXT               2138
+#define ID_SDDI_AUTOCLOSEDETAILS        2139
+#define ID_SDDI_APMVERSION              2140
+#define ID_SDDI_APMVERSION_TXT          2141
+#define ID_SDDI_APMSYS                  2142
+#define ID_SDDI_APMSYS_TXT              2143
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
 #define ID_XSD_DTP_ARCHIVES             2150

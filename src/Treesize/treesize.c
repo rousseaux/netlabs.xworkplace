@@ -50,6 +50,7 @@
 #include "helpers\stringh.h"
 #include "helpers\winh.h"
 
+#include "bldlevel.h"
 #include "dlgids.h"
 
 #include "treesize.h"
@@ -1571,6 +1572,7 @@ int main(int argc, char *argv[])
 
         // append path to title
         WinQueryWindowText(hwndMain, sizeof(szTitle), szTitle);
+        strcat(szTitle, " V" BLDLEVEL_VERSION);
         sprintf(szTitle+strlen(szTitle), " - %s", szRootDir);
         WinSetWindowText(hwndMain, szTitle);
 

@@ -105,6 +105,7 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpfolder.h>
 #include "xtrash.h"
+#include "filesys\trash.h"              // trash can implementation
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "helpers\undoc.h"              // some undocumented stuff
@@ -269,15 +270,24 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
  ********************************************************************/
 
 /*
- *@@ fopsFolder2SFL:
- *      creates a LINKLIST of EXPANDEDOBJECT
+ *@@ fopsFolder2ExpandedList:
+ *      creates a LINKLIST of EXPANDEDOBJECT items
  *      for the given folder's contents.
+ *
+ *      Gets called by fopsExpandObject if that
+ *      function has been invoked on a folder.
+ *      This calls fopsExpandObject in turn for
+ *      each object found, so this may be called
+ *      recursively.
+ *
+ *      See fopsExpandObject for an introduction
+ *      what these things are good for.
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  */
 
-PLINKLIST fopsFolder2SFL(WPFolder *pFolder,
-                         PULONG pulSizeContents) // out: size of all objects on list
+PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
+                                  PULONG pulSizeContents) // out: size of all objects on list
 {
     PLINKLIST   pll = lstCreate(FALSE);       // do not free the items
     ULONG       ulSizeContents = 0;
@@ -307,7 +317,7 @@ PLINKLIST fopsFolder2SFL(WPFolder *pFolder,
             // create a list item for this object;
             // if pObject is a folder, that function will
             // call ourselves again...
-            fSOI = fopsObject2SOI(pObject);
+            fSOI = fopsExpandObject(pObject);
             ulSizeContents += fSOI->ulSizeThis;
             lstAppendItem(pll, fSOI);
         }
@@ -325,18 +335,29 @@ PLINKLIST fopsFolder2SFL(WPFolder *pFolder,
 }
 
 /*
- *@@ fopsObject2SFL:
+ *@@ fopsExpandObject:
  *      creates a EXPANDEDOBJECT for the given
  *      object. If the object is a folder, the
  *      member list is automatically filled with
  *      the folder's contents (recursively, if
  *      the folder contains subfolders), by calling
- *      fopsFolder2SFL.
+ *      fopsFolder2ExpandedList.
+ *
+ *      Call fopsFreeExpandedObject to free the item returned
+ *      by this function.
+ *
+ *      This function is useful for having a uniform
+ *      interface which represents an object and all
+ *      subobjects if that object represents a folder.
+ *      After calling this function,
+ *      EXPANDEDOBJECT.ulSizeThis has the total size
+ *      of pObject and all objects which reside in
+ *      subfolders (if applicable).
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  */
 
-PEXPANDEDOBJECT fopsObject2SOI(WPObject *pObject)
+PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject)
 {
     // create object item
     PEXPANDEDOBJECT pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT));
@@ -348,7 +369,7 @@ PEXPANDEDOBJECT fopsObject2SOI(WPObject *pObject)
         {
             // object is a folder:
             // fill list
-            pSOI->pllContentsSFL = fopsFolder2SFL(pObject,
+            pSOI->pllContentsSFL = fopsFolder2ExpandedList(pObject,
                                                   &pSOI->ulSizeThis);
                                                     // out: size of files on list
         }
@@ -370,13 +391,15 @@ PEXPANDEDOBJECT fopsObject2SOI(WPObject *pObject)
 }
 
 /*
- *@@ fopsFreeSFL:
+ *@@ fopsFreeExpandedList:
+ *      frees a LINKLIST of EXPANDEDOBJECT items
+ *      created by fopsFolder2ExpandedList.
  *      This recurses.
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  */
 
-VOID fopsFreeSFL(PLINKLIST pllSFL)
+VOID fopsFreeExpandedList(PLINKLIST pllSFL)
 {
     if (pllSFL)
     {
@@ -384,7 +407,7 @@ VOID fopsFreeSFL(PLINKLIST pllSFL)
         while (pNode)
         {
             PEXPANDEDOBJECT pSOI = (PEXPANDEDOBJECT)pNode->pItemData;
-            fopsFreeSOI(pSOI);
+            fopsFreeExpandedObject(pSOI);
                 // after this, pSOI->pllContentsSFL is NULL
 
             pNode = pNode->pNext;
@@ -394,24 +417,23 @@ VOID fopsFreeSFL(PLINKLIST pllSFL)
 }
 
 /*
- *@@ fopsFreeSOI:
+ *@@ fopsFreeExpandedObject:
  *      this frees a EXPANDEDOBJECT previously
- *      created by fopsObject2SOI. This calls
- *      fopsFreeSFL, possibly recursively, if
- *      the object contains a list.
- *
- *      *ppSOI is set to NULL after this.
+ *      created by fopsExpandObject. This calls
+ *      fopsFreeExpandedList, possibly recursively,
+ *      if the object contains a list (ie. is a
+ *      folder).
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  */
 
-VOID fopsFreeSOI(PEXPANDEDOBJECT pSOI)
+VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
 {
     if (pSOI)
     {
         if (pSOI->pllContentsSFL)
             // object has a list:
-            fopsFreeSFL(pSOI->pllContentsSFL);
+            fopsFreeExpandedList(pSOI->pllContentsSFL);
                 // this sets pllContentsSFL to NULL
 
         free(pSOI);
@@ -428,7 +450,7 @@ VOID fopsFreeSOI(PEXPANDEDOBJECT pSOI)
  *@@ fnwpTitleClashDlg:
  *      dlg proc for the "File exists" dialog.
  *      Most of the logic for that dialog is in the
- *      fopsConfirmObjectTitle fungion actually; this
+ *      fopsConfirmObjectTitle function actually; this
  *      function is only responsible for adjusting the
  *      dialog items' keyboard focus and such.
  */
@@ -612,7 +634,7 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
  */
 
 BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
-                         WPFolder *pFolder,
+                         WPFolder *pFolder,     // in: folder to check for existing titles
                          PSZ pszProposeTitle)   // out: buffer for new title
 {
     CHAR    szTemp[500],
@@ -1019,6 +1041,69 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     return (ulrc);
 }
 
+/*
+ *@@ fopsMoveObjectConfirmed:
+ *      moves an object to the specified target folder.
+ *
+ *      This calls _wpConfirmObjectTitle before to
+ *      check whether that object already exists in the
+ *      target folder. If "Replace file exists" has been
+ *      enabled, this will call the XWorkplace replacement
+ *      method (XFldObject::wpConfirmObjectTitle).
+ *      This handles the return codes correctly.
+ *
+ *      Returns TRUE if the object has been moved.
+ *
+ *@@added V0.9.2 (2000-03-04) [umoeller]
+ */
+
+BOOL fopsMoveObjectConfirmed(WPObject *pObject,
+                             WPFolder *pTargetFolder)
+{
+    // check if object exists in that folder already
+    // (this might call the XFldObject replacement)
+    WPObject    *pReplaceThis = NULL;
+    CHAR        szNewTitle[CCHMAXPATH] = "";
+    BOOL        fMove = TRUE;
+    ULONG       ulAction;
+
+    strcpy(szNewTitle, _wpQueryTitle(pObject));
+    ulAction = _wpConfirmObjectTitle(pObject,      // object
+                                     pTargetFolder, // folder
+                                     &pReplaceThis,  // object to replace (if NAMECLASH_REPLACE)
+                                     szNewTitle,     // in/out: object title
+                                     sizeof(szNewTitle),
+                                     0x006B);        // move code
+
+    // _Pmpf(("    _wpConfirmObjectTitle returned %d", ulAction));
+
+    switch (ulAction)
+    {
+        case NAMECLASH_CANCEL:
+            fMove = FALSE;
+        break;
+
+        case NAMECLASH_RENAME:
+            _wpSetTitle(pObject,
+                        szNewTitle);      // set by wpConfirmObjectTitle
+        break;
+
+        case NAMECLASH_REPLACE:
+            _wpReplaceObject(pObject,
+                             pReplaceThis,       // set by wpConfirmObjectTitle
+                             TRUE);              // move and replace
+            fMove = FALSE;
+        break;
+
+        // NAMECLASH_NONE: just go on
+    }
+
+    if (fMove)
+        fMove = _wpMoveObject(pObject, pTargetFolder);
+
+    return (fMove);
+}
+
 /********************************************************************
  *                                                                  *
  *   Generic file tasks framework                                   *
@@ -1037,6 +1122,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
  *      by fopsCreateFileTaskList.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
  */
 
 typedef struct _FILETASKLIST
@@ -1054,7 +1140,11 @@ typedef struct _FILETASKLIST
 
     POINTL      ptlTarget;      // target coordinates in pTargetFolder
 
-    FNFILEOPSCALLBACK *pfnCallback;     // callback specified with fopsCreateFileTaskList
+    FNFOPSPROGRESSCALLBACK *pfnProgressCallback;
+                    // progress callback specified with fopsCreateFileTaskList
+    FNFOPSERRORCALLBACK *pfnErrorCallback;
+                    // error callback specified with fopsCreateFileTaskList
+
     ULONG       ulUser;                 // user parameter specified with fopsCreateFileTaskList
 } FILETASKLIST, *PFILETASKLIST;
 
@@ -1078,6 +1168,10 @@ typedef struct _FILETASKLIST
  *      Returns NULL upon errors, e.g. because a folder
  *      mutex could not be accessed.
  *
+ *      This is usually called on the thread of the folder view
+ *      from which the file operation was started (mostly
+ *      thread 1).
+ *
  *      The following are supported for ulOperation:
  *
  *      -- XFT_MOVE2TRASHCAN: move list items into trash can.
@@ -1098,12 +1192,14 @@ typedef struct _FILETASKLIST
  *          In that case, pTargetFolder is ignored.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
  */
 
 HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
                                      WPFolder *pSourceFolder,
                                      WPFolder *pTargetFolder,
-                                     FNFILEOPSCALLBACK *pfnCallback, // in: callback procedure
+                                     FNFOPSPROGRESSCALLBACK *pfnProgressCallback, // in: callback procedure
+                                     FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback
                                      ULONG ulUser)          // in: user parameter for callback
 {
     BOOL    fSourceLocked = FALSE,
@@ -1129,7 +1225,8 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
         pftl->fTargetLocked = FALSE;
         pftl->ptlTarget.x = 0;
         pftl->ptlTarget.y = 0;
-        pftl->pfnCallback = pfnCallback;
+        pftl->pfnProgressCallback = pfnProgressCallback;
+        pftl->pfnErrorCallback = pfnErrorCallback;
         pftl->ulUser = ulUser;
         return ((HFILETASKLIST)pftl);
     }
@@ -1144,15 +1241,26 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
 /*
  *@@ fopsValidateObjOperation:
  *      returns TRUE only if ulOperation is valid
- *      on pObject.
+ *      on pObject. If an error has been found and
+ *      (pfnErrorCallback != NULL), that callback
+ *      gets called and its return value is returned.
+ *      If the callback is NULL, FALSE is returned
+ *      always.
+ *
+ *      This is usually called on the thread of the folder view
+ *      from which the file operation was started (mostly
+ *      thread 1).
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
  */
 
-BOOL fopsValidateObjOperation(ULONG ulOperation,  // in: as in fopsCreateFileTaskList
-                              WPObject *pObject)  // in: object to check
+BOOL fopsValidateObjOperation(ULONG ulOperation,        // in: operation
+                              FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback or NULL
+                              WPObject *pObject)        // in: current object
 {
     BOOL    brc = TRUE;
+    ULONG   ulError = 0;
 
     // error checking
     switch (ulOperation)
@@ -1160,17 +1268,26 @@ BOOL fopsValidateObjOperation(ULONG ulOperation,  // in: as in fopsCreateFileTas
         case XFT_MOVE2TRASHCAN:
             // prohibit "move to trash" for trash objects themselves
             if (_somIsA(pObject, _XWPTrashObject))
-                brc = FALSE;
+                ulError = FOPSERR_NODELETETRASHOBJECT;
+            // prohibit "move to trash" for no-delete objects
             else if (_wpQueryStyle(pObject) & OBJSTYLE_NODELETE)
-                brc = FALSE;
+                ulError = FOPSERR_OBJSTYLENODELETE;
+            else if (!trshIsOnSupportedDrive(pObject))
+                ulError = FOPSERR_TRASHDRIVENOTSUPPORTED;
         break;
 
         case XFT_DESTROYTRASHOBJECTS:
             // allow "destroy trash object" only for trash objects
             if (!_somIsA(pObject, _XWPTrashObject))
-                brc = FALSE;
+                ulError = FOPSERR_DESTROYNONTRASHOBJECT;
         break;
     }
+
+    if (ulError)
+        if (pfnErrorCallback)
+            brc = (pfnErrorCallback)(pObject, ulError);
+        else
+            brc = FALSE;
 
     return (brc);
 }
@@ -1198,6 +1315,7 @@ BOOL fopsValidateObjOperation(ULONG ulOperation,  // in: as in fopsCreateFileTas
  *         returned FALSE).
  *
  *@@added V0.9.1 (2000-01-26) [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added callback
  */
 
 BOOL fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
@@ -1206,7 +1324,9 @@ BOOL fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handle
     BOOL brc = TRUE;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
-    brc = fopsValidateObjOperation(pftl->ulOperation, pObject);
+    brc = fopsValidateObjOperation(pftl->ulOperation,
+                                   pftl->pfnErrorCallback,
+                                   pObject);
 
     if (brc)
         // proceed:
@@ -1306,11 +1426,11 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                 if (wpshCheckObject(pObjectThis))
                 {
                     // call progress callback with this object
-                    if (pftl->pfnCallback)
+                    if (pftl->pfnProgressCallback)
                     {
                         fu.pCurrentObject = pObjectThis;
-                        if ((pftl->pfnCallback)(&fu,
-                                                pftl->ulUser)
+                        if ((pftl->pfnProgressCallback)(&fu,
+                                                        pftl->ulUser)
                                 == FALSE)
                             // FALSE means abort:
                             break;
@@ -1368,9 +1488,9 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
             } // end while (pNode)
 
             // call progress callback to say  "done"
-            if (pftl->pfnCallback)
-                (pftl->pfnCallback)(NULL,           // NULL means done
-                                    pftl->ulUser);
+            if (pftl->pfnProgressCallback)
+                (pftl->pfnProgressCallback)(NULL,           // NULL means done
+                                            pftl->ulUser);
         } // end if (pftl)
     }
     CATCH(excpt2)
@@ -1452,10 +1572,11 @@ typedef struct _GENERICPROGRESSWINDATA
 
 /*
  *@@ fopsGenericProgressCallback:
- *      callback which gets specified when fopsPrepareCommon
- *      calls fopsCreateFileTaskList. This assumes that
- *      a progress window using fops_fnwpGenericProgress
- *      has been created and ulUser is a PGENERICPROGRESSWINDATA.
+ *      progress callback which gets specified when
+ *      fopsPrepareCommon calls fopsCreateFileTaskList.
+ *      This assumes that a progress window using
+ *      fops_fnwpGenericProgress has been created and
+ *      ulUser is a PGENERICPROGRESSWINDATA.
  *
  *      Warning: This runs on the File thread. That's why
  *      we send a message to the progress window so that
@@ -1474,6 +1595,60 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
                              XM_UPDATE,
                              (MPARAM)pfu,
                              (MPARAM)0));
+}
+
+/*
+ *@@ fopsGenericErrorCallback:
+ *      error callback which gets specified when
+ *      fopsPrepareCommon calls fopsCreateFileTaskList.
+ *
+ *      This is usually called on the thread of the folder view
+ *      from which the file operation was started (mostly
+ *      thread 1).
+ *
+ *@@added V0.9.2 (2000-03-04) [umoeller]
+ */
+
+BOOL APIENTRY fopsGenericErrorCallback(WPObject *pObject,
+                                       ULONG ulError)
+{
+    BOOL    brc = TRUE;
+    CHAR    szMsg[1000];
+    PSZ     apsz[5] = {0};
+    ULONG   cpsz = 0,
+            ulMsg = 0,
+            flFlags = 0;
+
+    switch (ulError)
+    {
+        case FOPSERR_NODELETETRASHOBJECT:
+        case FOPSERR_DESTROYNONTRASHOBJECT:
+            ulMsg = 174;        // "invalid for XWPTrashObject"
+            flFlags = MB_CANCEL;
+        break;
+
+        case FOPSERR_OBJSTYLENODELETE:
+            return (FALSE);
+
+        case FOPSERR_TRASHDRIVENOTSUPPORTED:
+            ulMsg = 176;
+            flFlags = MB_CANCEL;
+        break;
+    }
+
+    if (flFlags)
+    {
+        ULONG ulrc = cmnMessageBoxMsgExt(NULLHANDLE,
+                                         175,
+                                         apsz,
+                                         cpsz,
+                                         ulMsg,
+                                         flFlags);
+        if ((ulrc == MBID_OK) || (ulrc == MBID_YES))
+            return (TRUE);
+    }
+
+    return (FALSE);
 }
 
 /*
@@ -1742,7 +1917,8 @@ BOOL fopsStartCnrCommon(ULONG ulOperation,       // in: operation; see fopsCreat
         hftl = fopsCreateFileTaskList(ulOperation,      // as passed to us
                                       pSourceFolder,    // as passed to us
                                       pTargetFolder,    // as passed to us
-                                      fopsGenericProgressCallback, // callback
+                                      fopsGenericProgressCallback, // progress callback
+                                      fopsGenericErrorCallback, // error callback
                                       (ULONG)ppwd);     // ulUser
              // this locks pSourceFolder
 
@@ -1825,7 +2001,8 @@ BOOL fopsStartFromListCommon(ULONG ulOperation,
         hftl = fopsCreateFileTaskList(ulOperation,      // as passed to us
                                       pSourceFolder,    // as passed to us
                                       pTargetFolder,    // as passed to us
-                                      fopsGenericProgressCallback, // callback
+                                      fopsGenericProgressCallback, // progress callback
+                                      fopsGenericErrorCallback, // error callback
                                       (ULONG)ppwd);     // ulUser
              // this locks pSourceFolder
 

@@ -65,6 +65,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
@@ -544,10 +545,10 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             BOOL fXFldDesktop = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDESKTOP);
 
             WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
+            // winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
 
             WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
+            // winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
 
             WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
                                 fXFolder && fXFldDesktop);
@@ -2261,6 +2262,12 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
         if (pObject == NULL)
             // append "...", because we'll have a message box then
             strhxcat(&pszMenuItemText, "...");
+
+        // on Warp 3, disable WarpCenter also
+        if (   (!doshIsWarp4())
+            && (strcmp(pso2->pszDefaultID, "<WP_WARPCENTER>") == 0)
+           )
+            WinEnableMenuItem(hwndMenu, pso2->usMenuID, FALSE);
 
         WinSetMenuItemText(hwndMenu, pso2->usMenuID, pszMenuItemText);
         free(pszMenuItemText);

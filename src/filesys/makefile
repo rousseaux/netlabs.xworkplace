@@ -161,7 +161,7 @@ $(OUTPUTDIR)\fileops.obj: \
     $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
-    $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\trash.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\filesys.obj: \
@@ -239,7 +239,7 @@ $(OUTPUTDIR)\xthreads.obj: \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\datetime.h \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
-            $(HLPINC)\syssound.h $(HLPINC)\winh.h \
+            $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\dlgids.h \

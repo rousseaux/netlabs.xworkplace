@@ -794,8 +794,8 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             if (pscd->ulHelpPanel)
             {
                 _wpDisplayHelp(_wpclsQueryActiveDesktop(_WPDesktop),
-                        pscd->ulHelpPanel,
-                        (PSZ)pscd->pszHelpLibrary);
+                               pscd->ulHelpPanel,
+                               (PSZ)pscd->pszHelpLibrary);
             }
         break; }
 

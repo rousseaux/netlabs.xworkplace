@@ -359,6 +359,7 @@ BOOL dmnStartPageMage(VOID)
             if (brc)
                 // success:
                 thrCreate(&G_ptiMoveThread,
+                          3*96000, // plenty of stack space
                           fntMoveThread,
                           0);
         }
@@ -456,8 +457,10 @@ VOID LoadHotkeysForHook(VOID)
             // hotkeys successfully loaded:
             // calc no. of items in array
             ULONG cHotkeys = ulSizeOfData / sizeof(GLOBALHOTKEY);
-            // notify hook
-            hookSetGlobalHotkeys(pHotkeys, cHotkeys);
+
+            if (cHotkeys)
+                // notify hook
+                hookSetGlobalHotkeys(pHotkeys, cHotkeys);
         }
 
         // we can safely free the hotkeys, because

@@ -51,6 +51,7 @@
                     optLog,
                     optAnimate,
                     optAPMPowerOff,
+                    optAPMDelay,
                     optWPSReuseStartupFolder;
         CHAR        szRebootCommand[CCHMAXPATH];
     } SHUTDOWNPARAMS, *PSHUTDOWNPARAMS;

@@ -21,9 +21,6 @@
  *      GNU General Public License for more details.
  */
 
-// required header files
-#include "helpers\threads.h"            // thread helpers
-
 #ifndef XTHREADS_HEADER_INCLUDED
     #define XTHREADS_HEADER_INCLUDED
 

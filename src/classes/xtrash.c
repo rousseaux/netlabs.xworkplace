@@ -165,35 +165,7 @@ CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
  *      this new instance method takes any WPS object and
  *      "deletes" it into the trash can (somSelf).
  *
- *      This gets called in two situations:
- *      1)  when XFldObject::wpMenuItemSelected reacts to
- *          the "Delete" context menu item;
- *      2)  from XWPTrashCan::wpDrop.
- *
- *      When an object is thus "deleted" into the trashcan,
- *      this method does the following:
- *
- *      1)  create a hidden directory "\Trash" on the drive
- *          where the object resides, if that directory doesn't
- *          exist already;
- *
- *      2)  create a path in "\Trash" according to the path of
- *          the object; i.e., if "F:\Tools\XFolder\xfldr.dll"
- *          is moved into the trash can, "F:\Trash\Tools\XFolder"
- *          will be created;
- *
- *      3)  move the object which is being deleted into that
- *          directory (using wpMoveObject, so that all WPS
- *          shadows etc. remain valid);
- *
- *      4)  create a new instance of XWPTrashObject in the
- *          trash can (somSelf) which should represent the
- *          object by calling M_XWPTrashObject::xwpclsCreateTrashObject.
- *          However, this is only done if the trash can has
- *          already been populated (otherwise we'd get duplicate
- *          trash objects in the trash can when populating).
- *
- *      This returns FALSE upon errors.
+ *      See trshDeleteInfoTrashCan, which has the implementation.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
@@ -478,6 +450,23 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
 }
 
 /*
+ *@@ xwpIsCurrentlyPopulating:
+ *      returns a non-zero value if the trash can is
+ *      currently populating.
+ *
+ *@@added V0.9.2 (2000-03-05) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xtrc_xwpIsCurrentlyPopulating(XWPTrashCan *somSelf)
+{
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpIsCurrentlyPopulating");
+
+    /* Return statement to be customized: */
+    return (_cCurrentDrivePopulating);
+}
+
+/*
  *@@ wpInitData:
  *      this instance method gets called when the object
  *      is being initialized. We initialize our instance
@@ -670,6 +659,11 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         CHAR        szEmptyItem[200];
+        ULONG       ulAttr = 0;
+
+        if (_cCurrentDrivePopulating)
+            // currently populating:
+            ulAttr = MIA_DISABLED;
 
         winhInsertMenuSeparator(hwndMenu, MIT_END,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
@@ -681,7 +675,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
             strcat(szEmptyItem, "...");
         winhInsertMenuItem(hwndMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHEMPTY),
-                           szEmptyItem, MIS_TEXT, 0);
+                           szEmptyItem,
+                           MIS_TEXT,
+                           ulAttr);
 
     }
 
@@ -1811,6 +1807,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
     {
         PXTRO_DETAILS pDetails = (PXTRO_DETAILS)*ppDetailsData;
         pDetails->pszSourcePath = _xwpQueryRelatedPath(somSelf);
+        pDetails->pszSize = _szTotalSize;
         if (_pRelatedObject)
         {
             // set deletion date and time fiels by calling
@@ -1818,7 +1815,6 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
             _xwpQueryDeletion(_pRelatedObject,
                               &pDetails->cdateDeleted,
                               &pDetails->ctimeDeleted);
-            pDetails->pszSize = _szTotalSize;
             pDetails->pszOriginalClass = _somGetName(_somGetClass(_pRelatedObject));
         }
         // move the pointer past our details structure
@@ -1878,30 +1874,41 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpModifyPopupMenu");
 
     brc = XWPTrashObject_parent_WPTransient_wpModifyPopupMenu(somSelf,
-                                                                hwndMenu,
-                                                                hwndCnr,
-                                                                iPosition);
+                                                              hwndMenu,
+                                                              hwndCnr,
+                                                              iPosition);
     if (brc)
     {
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        // insert separator
-        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+        ULONG           ulAttr = 0;
 
-        // insert "Restore object"
-        winhInsertMenuItem(hwndMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE),
-                           pNLSStrings->pszTrashRestore,
-                           MIS_TEXT,   // style
-                           0);        // attributes
+        XWPTrashCan     *pTrashCan = _wpQueryFolder(somSelf);
+        if (pTrashCan)
+            if (_somIsA(pTrashCan, _XWPTrashCan))
+            {
+                if (_xwpIsCurrentlyPopulating(pTrashCan))
+                    // currently populating:
+                    ulAttr = MIA_DISABLED;
 
-        // insert "Restore object"
-        winhInsertMenuItem(hwndMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY),
-                           pNLSStrings->pszTrashDestroy,
-                           MIS_TEXT,   // style
-                           0);        // attributes
+                // insert separator
+                winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+
+                // insert "Restore object"
+                winhInsertMenuItem(hwndMenu, MIT_END,
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE),
+                                   pNLSStrings->pszTrashRestore,
+                                   MIS_TEXT,   // style
+                                   ulAttr);        // attributes
+
+                // insert "Destroy object"
+                winhInsertMenuItem(hwndMenu, MIT_END,
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY),
+                                   pNLSStrings->pszTrashDestroy,
+                                   MIS_TEXT,   // style
+                                   ulAttr);        // attributes
+            }
     }
 
     return (brc);

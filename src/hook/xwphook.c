@@ -155,20 +155,20 @@
  *      (see introductory notes).
  */
 
-HOOKDATA    HookData = {0};
+HOOKDATA        G_HookData = {0};
     // this includes HOOKCONFIG; its address is
     // returned from hookInit and stored within the
     // daemon to configure the hook
 
-PGLOBALHOTKEY pGlobalHotkeysMain = NULL;
+PGLOBALHOTKEY   G_pGlobalHotkeysMain = NULL;
     // pointer to block of shared memory containing
     // the hotkeys; allocated by hookInit, requested
     // by hooks, changed by hookSetGlobalHotkeys
 
-ULONG       cGlobalHotkeys = 0;
+ULONG           G_cGlobalHotkeys = 0;
     // count of items in that array (_not_ array size!)
 
-HMTX        hmtxGlobalHotkeys = NULLHANDLE;
+HMTX            G_hmtxGlobalHotkeys = NULLHANDLE;
     // mutex for protecting that array
 
 /*
@@ -224,7 +224,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
         case 0:
         {
             // store the DLL handle in the global variable
-            HookData.hmodDLL = hModule;
+            G_HookData.hmodDLL = hModule;
 
             // now initialize the C run-time environment before we
             // call any runtime functions
@@ -263,12 +263,12 @@ VOID InitializeGlobalsForHooks(VOID)
     BOOL    fFound;
 
     // screen dimensions
-    HookData.lCXScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
-    HookData.lCYScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+    G_HookData.lCXScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+    G_HookData.lCYScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
 
     // PM desktop (the WPS desktop is handled by the daemon)
-    HookData.hwndPMDesktop = WinQueryDesktopWindow(HookData.habDaemonObject,
-                                                   NULLHANDLE);
+    G_HookData.hwndPMDesktop = WinQueryDesktopWindow(G_HookData.habDaemonObject,
+                                                     NULLHANDLE);
 
     // enumerate desktop window to find the window list:
     // according to PMTREE, the window list has the following
@@ -303,7 +303,7 @@ VOID InitializeGlobalsForHooks(VOID)
                         if (strcmp(szChildClass, "WindowList") == 0)
                         {
                             // yup, found:
-                            HookData.hwndWindowList = hwndThis;
+                            G_HookData.hwndWindowList = hwndThis;
                             fFound = TRUE;
                         }
                     }
@@ -329,7 +329,7 @@ HWND GetFrameWindow(HWND hwndTemp)
     HWND    hwndPrevious = NULLHANDLE;
     // climb up the parents tree until we get a frame
     while (    (hwndTemp)
-            && (hwndTemp != HookData.hwndPMDesktop)
+            && (hwndTemp != G_HookData.hwndPMDesktop)
           )
     {
         hwndPrevious = hwndTemp;
@@ -578,20 +578,20 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject) // in: daemon object window (
 
     _Pmpf(("Entering hookInit"));
 
-    if (hmtxGlobalHotkeys == NULLHANDLE)
+    if (G_hmtxGlobalHotkeys == NULLHANDLE)
         arc = DosCreateMutexSem(NULL,        // unnameed
-                                &hmtxGlobalHotkeys,
+                                &G_hmtxGlobalHotkeys,
                                 DC_SEM_SHARED,
                                 FALSE);      // initially unowned
 
     if (arc == NO_ERROR)
     {
         _Pmpf(("Storing data"));
-        HookData.hwndDaemonObject = hwndDaemonObject;
-        HookData.habDaemonObject = WinQueryAnchorBlock(hwndDaemonObject);
+        G_HookData.hwndDaemonObject = hwndDaemonObject;
+        G_HookData.habDaemonObject = WinQueryAnchorBlock(hwndDaemonObject);
         _Pmpf(("  Done storing data"));
 
-        if (HookData.hmodDLL)       // initialized by _DLL_InitTerm
+        if (G_HookData.hmodDLL)       // initialized by _DLL_InitTerm
         {
             _Pmpf(("hookInit: hwndCaller = 0x%lX", hwndDaemonObject));
             _Pmpf(("  Current HookData.fInputHooked: %d", HookData.fInputHooked));
@@ -601,18 +601,18 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject) // in: daemon object window (
 
             // check if shared mem for hotkeys
             // was already acquired
-            arc = DosGetNamedSharedMem((PVOID*)(&pGlobalHotkeysMain),
+            arc = DosGetNamedSharedMem((PVOID*)(&G_pGlobalHotkeysMain),
                                        IDSHMEM_HOTKEYS,
                                        PAG_READ | PAG_WRITE);
             while (arc == NO_ERROR)
             {
                 // exists already:
-                arc = DosFreeMem(pGlobalHotkeysMain);
+                arc = DosFreeMem(G_pGlobalHotkeysMain);
                 _Pmpf(("DosFreeMem arc: %d", arc));
             };
 
             // initialize hotkeys
-            arc = DosAllocSharedMem((PVOID*)(&pGlobalHotkeysMain),
+            arc = DosAllocSharedMem((PVOID*)(&G_pGlobalHotkeysMain),
                                     IDSHMEM_HOTKEYS,
                                     sizeof(GLOBALHOTKEY), // rounded up to 4KB
                                     PAG_COMMIT | PAG_READ | PAG_WRITE);
@@ -623,40 +623,40 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject) // in: daemon object window (
                 BOOL fSuccess = FALSE;
 
                 // one default hotkey, let's make this better
-                pGlobalHotkeysMain->usKeyCode = '#';
-                pGlobalHotkeysMain->usFlags = KC_CTRL | KC_ALT;
-                pGlobalHotkeysMain->ulHandle = 100;
+                G_pGlobalHotkeysMain->usKeyCode = '#';
+                G_pGlobalHotkeysMain->usFlags = KC_CTRL | KC_ALT;
+                G_pGlobalHotkeysMain->ulHandle = 100;
 
-                cGlobalHotkeys = 1;
+                G_cGlobalHotkeys = 1;
 
                 // install hooks, but only once...
-                if (!HookData.fSendMsgHooked)
-                    HookData.fSendMsgHooked = WinSetHook(HookData.habDaemonObject,
+                if (!G_HookData.fSendMsgHooked)
+                    G_HookData.fSendMsgHooked = WinSetHook(G_HookData.habDaemonObject,
                                                          NULLHANDLE, // system hook
                                                          HK_SENDMSG, // send-message hook
                                                          (PFN)hookSendMsgHook,
-                                                         HookData.hmodDLL);
+                                                         G_HookData.hmodDLL);
 
-                if (!HookData.fLockupHooked)
-                    HookData.fLockupHooked = WinSetHook(HookData.habDaemonObject,
+                if (!G_HookData.fLockupHooked)
+                    G_HookData.fLockupHooked = WinSetHook(G_HookData.habDaemonObject,
                                                         NULLHANDLE, // system hook
                                                         HK_LOCKUP,  // lockup hook
                                                         (PFN)hookLockupHook,
-                                                        HookData.hmodDLL);
+                                                        G_HookData.hmodDLL);
 
-                if (!HookData.fInputHooked)
-                    HookData.fInputHooked = WinSetHook(HookData.habDaemonObject,
+                if (!G_HookData.fInputHooked)
+                    G_HookData.fInputHooked = WinSetHook(G_HookData.habDaemonObject,
                                                        NULLHANDLE, // system hook
                                                        HK_INPUT,    // input hook
                                                        (PFN)hookInputHook,
-                                                       HookData.hmodDLL);
+                                                       G_HookData.hmodDLL);
 
-                if (!HookData.fPreAccelHooked)
-                    HookData.fPreAccelHooked = WinSetHook(HookData.habDaemonObject,
+                if (!G_HookData.fPreAccelHooked)
+                    G_HookData.fPreAccelHooked = WinSetHook(G_HookData.habDaemonObject,
                                                           NULLHANDLE, // system hook
                                                           HK_PREACCEL,  // pre-accelerator table hook (undocumented)
                                                           (PFN)hookPreAccelHook,
-                                                          HookData.hmodDLL);
+                                                          G_HookData.hmodDLL);
             }
 
             _Pmpf(("  New HookData.fInputHooked: %d", HookData.fInputHooked));
@@ -665,7 +665,7 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject) // in: daemon object window (
         _Pmpf(("Leaving hookInit"));
     }
 
-    return (&HookData);
+    return (&G_HookData);
 }
 
 /*
@@ -687,58 +687,58 @@ BOOL EXPENTRY hookKill(void)
 
     _Pmpf(("hookKill"));
 
-    if (HookData.fInputHooked)
+    if (G_HookData.fInputHooked)
     {
-        WinReleaseHook(HookData.habDaemonObject,
+        WinReleaseHook(G_HookData.habDaemonObject,
                        NULLHANDLE,
                        HK_INPUT,
                        (PFN)hookInputHook,
-                       HookData.hmodDLL);
-        HookData.fInputHooked = FALSE;
+                       G_HookData.hmodDLL);
+        G_HookData.fInputHooked = FALSE;
         brc = TRUE;
     }
 
-    if (HookData.fPreAccelHooked)
+    if (G_HookData.fPreAccelHooked)
     {
-        WinReleaseHook(HookData.habDaemonObject,
+        WinReleaseHook(G_HookData.habDaemonObject,
                        NULLHANDLE,
                        HK_PREACCEL,     // pre-accelerator table hook (undocumented)
                        (PFN)hookPreAccelHook,
-                       HookData.hmodDLL);
+                       G_HookData.hmodDLL);
         brc = TRUE;
-        HookData.fPreAccelHooked = FALSE;
+        G_HookData.fPreAccelHooked = FALSE;
     }
 
-    if (HookData.fLockupHooked)
+    if (G_HookData.fLockupHooked)
     {
-        WinReleaseHook(HookData.habDaemonObject,
+        WinReleaseHook(G_HookData.habDaemonObject,
                        NULLHANDLE,
                        HK_LOCKUP,       // lockup hook
                        (PFN)hookLockupHook,
-                       HookData.hmodDLL);
+                       G_HookData.hmodDLL);
         brc = TRUE;
-        HookData.fLockupHooked = FALSE;
+        G_HookData.fLockupHooked = FALSE;
     }
 
-    if (HookData.fSendMsgHooked)
+    if (G_HookData.fSendMsgHooked)
     {
-        WinReleaseHook(HookData.habDaemonObject,
+        WinReleaseHook(G_HookData.habDaemonObject,
                        NULLHANDLE,
                        HK_SENDMSG,       // lockup hook
                        (PFN)hookSendMsgHook,
-                       HookData.hmodDLL);
+                       G_HookData.hmodDLL);
         brc = TRUE;
-        HookData.fSendMsgHooked = FALSE;
+        G_HookData.fSendMsgHooked = FALSE;
     }
 
-    if (pGlobalHotkeysMain)
+    if (G_pGlobalHotkeysMain)
         // free shared mem
-        DosFreeMem(pGlobalHotkeysMain);
+        DosFreeMem(G_pGlobalHotkeysMain);
 
-    if (hmtxGlobalHotkeys)
+    if (G_hmtxGlobalHotkeys)
     {
-        DosCloseMutexSem(hmtxGlobalHotkeys);
-        hmtxGlobalHotkeys = NULLHANDLE;
+        DosCloseMutexSem(G_hmtxGlobalHotkeys);
+        G_hmtxGlobalHotkeys = NULLHANDLE;
     }
 
     return (brc);
@@ -788,12 +788,12 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
             fSemOwned = FALSE;
     // request access to the hotkeys mutex
     APIRET arc = DosOpenMutexSem(NULL,       // unnamed
-                                 &hmtxGlobalHotkeys);
+                                 &G_hmtxGlobalHotkeys);
 
     if (arc == NO_ERROR)
     {
         fSemOpened = TRUE;
-        arc = WinRequestMutexSem(hmtxGlobalHotkeys,
+        arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
                                  SEM_TIMEOUT);
     }
 
@@ -803,13 +803,13 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
     {
         fSemOwned = TRUE;
 
-        if (pGlobalHotkeysMain)
+        if (G_pGlobalHotkeysMain)
         {
             // hotkeys defined already: free the old ones
-            DosFreeMem(pGlobalHotkeysMain);
+            DosFreeMem(G_pGlobalHotkeysMain);
         }
 
-        arc = DosAllocSharedMem((PVOID*)(&pGlobalHotkeysMain),
+        arc = DosAllocSharedMem((PVOID*)(&G_pGlobalHotkeysMain),
                                 IDSHMEM_HOTKEYS,
                                 sizeof(GLOBALHOTKEY) * cNewHotkeys, // rounded up to 4KB
                                 PAG_COMMIT | PAG_READ | PAG_WRITE);
@@ -818,18 +818,18 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
         if (arc == NO_ERROR)
         {
             // copy hotkeys to shared memory
-            memcpy(pGlobalHotkeysMain,
+            memcpy(G_pGlobalHotkeysMain,
                    pNewHotkeys,
                    sizeof(GLOBALHOTKEY) * cNewHotkeys);
-            cGlobalHotkeys = cNewHotkeys;
+            G_cGlobalHotkeys = cNewHotkeys;
         }
 
     }
 
     if (fSemOwned)
-        DosReleaseMutexSem(hmtxGlobalHotkeys);
+        DosReleaseMutexSem(G_hmtxGlobalHotkeys);
     if (fSemOpened)
-        DosCloseMutexSem(hmtxGlobalHotkeys);
+        DosCloseMutexSem(G_hmtxGlobalHotkeys);
 
     return (arc);
 }
@@ -873,7 +873,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
          || (msg == WM_WINDOWPOSCHANGED)
        )
     {
-        if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
+        if (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
         {
             CHAR    szClass[200];
             if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
@@ -888,7 +888,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                          || (msg == WM_DESTROY)
                        )
                     {
-                        WinPostMsg(HookData.hwndPageMageClient,
+                        WinPostMsg(G_HookData.hwndPageMageClient,
                                    PGMG_WNDCHANGE,
                                    MPFROMHWND(hwnd),
                                    MPFROMLONG(msg));
@@ -901,22 +901,22 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                             )
                     {
                         // it's a top-level window:
-                        WinPostMsg(HookData.hwndPageMageClient,
+                        WinPostMsg(G_HookData.hwndPageMageClient,
                                    PGMG_INVALIDATECLIENT,
                                    (MPARAM)FALSE,   // delayed
                                    0);
                     }
 
                     // someone becomes active, but only call once (via mp1)
-                    if (    (!HookData.fDisableSwitching)
+                    if (    (!G_HookData.fDisableSwitching)
                          && (msg == WM_ACTIVATE)
                          && (mp1)
                        )
                     {
-                        if (hwnd != HookData.hwndPageMageFrame)
+                        if (hwnd != G_HookData.hwndPageMageFrame)
                         {
                             ulRequest = PGMGQENCODE(PGMGQ_FOCUSCHANGE, 0, 0);
-                            WinPostMsg(HookData.hwndPageMageClient,
+                            WinPostMsg(G_HookData.hwndPageMageClient,
                                        PGMG_PASSTHRU,
                                        MPFROMLONG(ulRequest),
                                        MPVOID);
@@ -928,7 +928,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
     }
 
     // implement "float on top" for PageMage frame
-    if (    (HookData.HookConfig.fFloat)
+    if (    (G_HookData.HookConfig.fFloat)
          && (   (msg == WM_SIZE)
              || (msg == WM_MINMAXFRAME)
              || (msg == WM_SETFOCUS)
@@ -937,22 +937,22 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
        )
     {
         HWND        hwndParent = WinQueryWindow(hwnd, QW_PARENT);
-        if (hwndParent == HookData.hwndPMDesktop)
+        if (hwndParent == G_HookData.hwndPMDesktop)
             // it's a top-level window:
-            WinSetWindowPos(HookData.hwndPageMageFrame,
+            WinSetWindowPos(G_HookData.hwndPageMageFrame,
                             HWND_TOP,
                             0, 0, 0, 0,
                             SWP_ZORDER | SWP_SHOW);
     }
 
     if (    (msg == WM_DESTROY)
-         && (hwnd == HookData.hwndLockupFrame)
+         && (hwnd == G_HookData.hwndLockupFrame)
        )
     {
         // current lockup frame being destroyed
         // (system is being unlocked):
-        HookData.hwndLockupFrame = NULLHANDLE;
-        WinPostMsg(HookData.hwndPageMageClient,
+        G_HookData.hwndLockupFrame = NULLHANDLE;
+        WinPostMsg(G_HookData.hwndPageMageClient,
                    PGMG_LOCKUP,
                    MPFROMLONG(FALSE),
                    MPVOID);
@@ -990,9 +990,9 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                               BOOL fInterTask)
 {
     if (    // PageMage running?
-            (HookData.hwndPageMageFrame)
+            (G_HookData.hwndPageMageFrame)
             // switching not disabled?
-         && (!HookData.fDisableSwitching)
+         && (!G_HookData.fDisableSwitching)
                 // this flag is set frequently when PageMage
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
@@ -1016,8 +1016,8 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 VOID EXPENTRY hookLockupHook(HAB hab,
                              HWND hwndLocalLockupFrame)
 {
-    HookData.hwndLockupFrame = hwndLocalLockupFrame;
-    WinPostMsg(HookData.hwndPageMageClient,
+    G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
+    WinPostMsg(G_HookData.hwndPageMageClient,
                PGMG_LOCKUP,
                MPFROMLONG(TRUE),
                MPVOID);
@@ -1242,10 +1242,10 @@ VOID WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
         _Pmpf(("  sPerMilleMoved: %d", sPerMilleMoved));
 
         // 2) amplification desired? (0 is default for 100%)
-        if (HookData.HookConfig.sAmplification)
+        if (G_HookData.HookConfig.sAmplification)
         {
             // yes:
-            USHORT usAmpPercent = 100 + (HookData.HookConfig.sAmplification * 10);
+            USHORT usAmpPercent = 100 + (G_HookData.HookConfig.sAmplification * 10);
                 // so we get:
                 //      0       -->  100%
                 //      2       -->  120%
@@ -1371,7 +1371,7 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
 
         if (pScrollData->hwndScrollBar)
         {
-            if (HookData.HookConfig.usScrollMode == SM_AMPLIFIED)
+            if (G_HookData.HookConfig.usScrollMode == SM_AMPLIFIED)
                 // initialize data for "amplified" mode;
                 // we need the scroller size etc.
                 WMMouseMove_MB3FirstAmplified(pScrollData,
@@ -1425,24 +1425,24 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
                 // but when "reverse scrolling" is enabled,
                 // we must do this just the other way round
                 if (   (    (fHorizontal)
-                         && (!HookData.HookConfig.fMB3ScrollReverse)
+                         && (!G_HookData.HookConfig.fMB3ScrollReverse)
                        )
                         // horizontal scroll bar and _not_ reverse mode:
                     ||
                        (    (!fHorizontal)
-                         && (HookData.HookConfig.fMB3ScrollReverse)
+                         && (G_HookData.HookConfig.fMB3ScrollReverse)
                        )
                         // vertical scroll bar _and_ reverse mode:
                    )
                     // change sign for all subsequent processing
                     lDelta = -lDelta;
 
-                if (HookData.HookConfig.usScrollMode == SM_AMPLIFIED)
+                if (G_HookData.HookConfig.usScrollMode == SM_AMPLIFIED)
                 {
                     // amplified mode:
                     if (    (pScrollData->fPostSBEndScroll)
                                 // not first call
-                         || (abs(lDelta) >= (HookData.HookConfig.usMB3ScrollMin + 1))
+                         || (abs(lDelta) >= (G_HookData.HookConfig.usMB3ScrollMin + 1))
                                 // or movement is large enough:
                        )
                         WMMouseMove_MB3ScrollAmplified(pScrollData,
@@ -1451,7 +1451,7 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
                 }
                 else
                     // line-wise mode:
-                    if (abs(lDelta) >= (HookData.HookConfig.usMB3ScrollMin + 1))
+                    if (abs(lDelta) >= (G_HookData.HookConfig.usMB3ScrollMin + 1))
                     {
                         // movement is large enough:
                         WMMouseMove_MB3ScrollLineWise(pScrollData,
@@ -1492,7 +1492,7 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd,       // in: window with WM_MOUSEMOVE
 
     // process vertical scroll bar
     if (WMMouseMove_MB3OneScrollbar(hwnd,
-                                    &HookData.SDYVert,
+                                    &G_HookData.SDYVert,
                                     sCurrentMouseY,
                                     FALSE))      // vertical
         // msg to be swallowed:
@@ -1500,7 +1500,7 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd,       // in: window with WM_MOUSEMOVE
 
     // process vertical scroll bar
     if (WMMouseMove_MB3OneScrollbar(hwnd,
-                                    &HookData.SDXHorz,
+                                    &G_HookData.SDXHorz,
                                     sCurrentMouseX,
                                     TRUE))       // horizontal
         // msg to be swallowed:
@@ -1538,7 +1538,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
     //          or by the daemon in sliding focus processing):
     if (hwndActiveNow)
     {
-        if (hwndActiveNow != HookData.hwndActivatedByUs)
+        if (hwndActiveNow != G_HookData.hwndActivatedByUs)
         {
             // active window is not the one we set active:
             // this probably means that some new
@@ -1549,7 +1549,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
             // would be disabled after a new window has popped
             // up until the mouse was moved over a new frame window.
             G_hwndLastFrameUnderMouse = hwndActiveNow;
-            HookData.hwndActivatedByUs = hwndActiveNow;
+            G_HookData.hwndActivatedByUs = hwndActiveNow;
         }
     }
 
@@ -1558,7 +1558,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
         G_hwndUnderMouse = hwnd;
 
     if (   (fMouseMoved)            // has mouse moved?
-        && (HookData.HookConfig.fSlidingFocus)  // sliding focus enabled?
+        && (G_HookData.HookConfig.fSlidingFocus)  // sliding focus enabled?
        )
     {
         // OK:
@@ -1591,7 +1591,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
         // skip dropped-down combo boxes under mouse
         if (strcmp(pszClassUnderMouse, "#7") == 0)
             // listbox: check if the parent is the PM desktop
-            if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
+            if (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
                 // yes: then it's the open list box window of
                 // a dropped-down combo box --> ignore
                 return;
@@ -1622,7 +1622,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                 // notify daemon of the change;
                 // it is the daemon which does the rest
                 // (timer handling, window activation etc.)
-                WinPostMsg(HookData.hwndDaemonObject,
+                WinPostMsg(G_HookData.hwndDaemonObject,
                            XDM_SLIDINGFOCUS,
                            (MPARAM)hwndFrame,
                            (MPARAM)fIsSeamless);
@@ -1677,9 +1677,9 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
     // check for special message which was posted from
     // the daemon when the "delayed sliding menu" timer
     // elapsed:
-    if (    (mp1 == HookData.mpDelayedSlidingMenuMp1)
+    if (    (mp1 == G_HookData.mpDelayedSlidingMenuMp1)
          && (SHORT1FROMMP(mp2) == HT_DELAYEDSLIDINGMENU)
-         && (hwndCurrentMenu == HookData.hwndMenuUnderMouse)
+         && (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)
        )
     {
         // yes, special message:
@@ -1693,7 +1693,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                 // OK:
                 // select menu item under the mouse
                 SelectMenuItem(hwndCurrentMenu,
-                               HookData.sMenuItemUnderMouse);
+                               G_HookData.sMenuItemUnderMouse);
                                     // stored from last run
                                     // when timer was started...
         // this is our message only,
@@ -1756,7 +1756,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                         // yes:
 
                         // do we have a submenu delay?
-                        if (HookData.HookConfig.ulSubmenuDelay)
+                        if (G_HookData.HookConfig.ulSubmenuDelay)
                         {
                             // delayed:
                             // this is a three-step process:
@@ -1768,7 +1768,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                             //     the mouse so that the item under the mouse is
                             //     always immediately hilited (without being
                             //     "selected"; PM doesn't know what we're doing here!)
-                            if (HookData.HookConfig.fMenuImmediateHilite)
+                            if (G_HookData.HookConfig.fMenuImmediateHilite)
                                 HiliteMenuItem(hwndCurrentMenu,
                                                sItemCount,
                                                sCurrentItemIdentity);
@@ -1782,15 +1782,15 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                             // when the special WM_MOUSEMOVE comes in,
                             // we check against all these.
                             // a) store mp1 for comparison later
-                            HookData.mpDelayedSlidingMenuMp1 = mp1;
+                            G_HookData.mpDelayedSlidingMenuMp1 = mp1;
                             // b) store menu
-                            HookData.hwndMenuUnderMouse = hwndCurrentMenu;
+                            G_HookData.hwndMenuUnderMouse = hwndCurrentMenu;
                             // c) store menu item
-                            HookData.sMenuItemUnderMouse = sCurrentItemIdentity;
+                            G_HookData.sMenuItemUnderMouse = sCurrentItemIdentity;
                             // d) notify daemon of the change, which
                             // will start the timer and post WM_MOUSEMOVE
                             // back to us
-                            WinPostMsg(HookData.hwndDaemonObject,
+                            WinPostMsg(G_HookData.hwndDaemonObject,
                                        XDM_SLIDINGMENU,
                                        mp1,
                                        0);
@@ -1844,28 +1844,28 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
 VOID WMMouseMove_AutoHideMouse(VOID)
 {
     // is the timer currently running?
-    if (HookData.idAutoHideTimer != NULLHANDLE)
+    if (G_HookData.idAutoHideTimer != NULLHANDLE)
     {
         // stop the running async timer
-        WinStopTimer(HookData.habDaemonObject,
-                     HookData.hwndDaemonObject,
-                     HookData.idAutoHideTimer);
-        HookData.idAutoHideTimer = NULLHANDLE;
+        WinStopTimer(G_HookData.habDaemonObject,
+                     G_HookData.hwndDaemonObject,
+                     G_HookData.idAutoHideTimer);
+        G_HookData.idAutoHideTimer = NULLHANDLE;
     }
 
     // show the mouse pointer now
-    if (HookData.fMousePointerHidden)
+    if (G_HookData.fMousePointerHidden)
     {
         WinShowPointer(HWND_DESKTOP, TRUE);
-        HookData.fMousePointerHidden = FALSE;
+        G_HookData.fMousePointerHidden = FALSE;
     }
 
     // (re)start timer
-    HookData.idAutoHideTimer =
-        WinStartTimer(HookData.habDaemonObject,
-                      HookData.hwndDaemonObject,
+    G_HookData.idAutoHideTimer =
+        WinStartTimer(G_HookData.habDaemonObject,
+                      G_HookData.hwndDaemonObject,
                       TIMERID_AUTOHIDEMOUSE,
-                      (HookData.HookConfig.ulAutoHideDelay + 1) * 1000);
+                      (G_HookData.HookConfig.ulAutoHideDelay + 1) * 1000);
 }
 
 /******************************************************************
@@ -1975,7 +1975,7 @@ VOID WMChord_WinList(VOID)
     // get mouse coordinates (absolute coordinates)
     WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
     // get position of window list window
-    WinQueryWindowPos(HookData.hwndWindowList,
+    WinQueryWindowPos(G_HookData.hwndWindowList,
                       &WinListPos);
     // calculate window list position (mouse pointer is center)
     WinListX = ptlMouse.x - (WinListPos.cx / 2);
@@ -1984,17 +1984,17 @@ VOID WMChord_WinList(VOID)
     WinListY = ptlMouse.y - (WinListPos.cy / 2);
     if (WinListY < 0)
         WinListY = 0;
-    if (WinListX + WinListPos.cx > HookData.lCXScreen)
-        WinListX = HookData.lCXScreen - WinListPos.cx;
-    if (WinListY + WinListPos.cy > HookData.lCYScreen)
-        WinListY = HookData.lCYScreen - WinListPos.cy;
+    if (WinListX + WinListPos.cx > G_HookData.lCXScreen)
+        WinListX = G_HookData.lCXScreen - WinListPos.cx;
+    if (WinListY + WinListPos.cy > G_HookData.lCYScreen)
+        WinListY = G_HookData.lCYScreen - WinListPos.cy;
     // set window list window to calculated position
-    WinSetWindowPos(HookData.hwndWindowList, HWND_TOP,
+    WinSetWindowPos(G_HookData.hwndWindowList, HWND_TOP,
                     WinListX, WinListY, 0, 0,
                     SWP_MOVE | SWP_SHOW | SWP_ZORDER);
     // now make it the active window
     WinSetActiveWindow(HWND_DESKTOP,
-                       HookData.hwndWindowList);
+                       G_HookData.hwndWindowList);
 
 }
 
@@ -2065,9 +2065,9 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     mp2 = pqmsg->mp2;
 
     if (    // PageMage running?
-            (HookData.hwndPageMageFrame)
+            (G_HookData.hwndPageMageFrame)
             // switching not disabled?
-         && (!HookData.fDisableSwitching)
+         && (!G_HookData.fDisableSwitching)
                 // this flag is set frequently when PageMage
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
@@ -2096,8 +2096,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          */
 
         case WM_BUTTON1DOWN:
-            if (    (HookData.HookConfig.fSlidingFocus)
-                 && (!HookData.HookConfig.fSlidingBring2Top)
+            if (    (G_HookData.HookConfig.fSlidingFocus)
+                 && (!G_HookData.HookConfig.fSlidingBring2Top)
                )
             {
                 // make sure that the mouse is not currently captured
@@ -2122,7 +2122,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
         case WM_BUTTON2DOWN:
         {
-            if (HookData.HookConfig.fSysMenuMB2TitleBar)
+            if (G_HookData.HookConfig.fSysMenuMB2TitleBar)
             {
                 // make sure that the mouse is not currently captured
                 if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
@@ -2154,7 +2154,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         case WM_BUTTON3DOWN: // mouse button 3 was pressed down
         {
             // MB3-scroll enabled?
-            if (HookData.HookConfig.fMB3Scroll)
+            if (G_HookData.HookConfig.fMB3Scroll)
             {
                 // yes:
                 // make sure that the mouse is not currently captured
@@ -2162,15 +2162,15 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 {
                     // set flag that we're currently scrolling
                     // (this enables scroll processing during WM_MOUSEMOVE)
-                    HookData.fCurrentlyMB3Scrolling = TRUE;
+                    G_HookData.fCurrentlyMB3Scrolling = TRUE;
                     // indicate that initial mouse positions have to be recalculated
                     // (checked by first call to WMMouseMove_MB3OneScrollbar)
-                    HookData.SDXHorz.sMB3InitialMousePos = -1;
-                    HookData.SDYVert.sMB3InitialMousePos = -1; // V0.9.2 (2000-02-25) [umoeller]
+                    G_HookData.SDXHorz.sMB3InitialMousePos = -1;
+                    G_HookData.SDYVert.sMB3InitialMousePos = -1; // V0.9.2 (2000-02-25) [umoeller]
                     // reset flags for WM_BUTTON3UP below; these
                     // will be set to TRUE by WMMouseMove_MB3OneScrollbar
-                    HookData.SDYVert.fPostSBEndScroll = FALSE;
-                    HookData.SDXHorz.fPostSBEndScroll = FALSE;
+                    G_HookData.SDYVert.fPostSBEndScroll = FALSE;
+                    G_HookData.SDXHorz.fPostSBEndScroll = FALSE;
 
                     // capture messages for window under mouse until
                     // MB3 is released again; this makes sure that scrolling
@@ -2193,35 +2193,35 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
         case WM_BUTTON3UP: // mouse button 3 has been released
         {
-            if (    (HookData.HookConfig.fMB3Scroll)
-                 && (HookData.fCurrentlyMB3Scrolling)
+            if (    (G_HookData.HookConfig.fMB3Scroll)
+                 && (G_HookData.fCurrentlyMB3Scrolling)
                )
             {
                 // set scrolling mode to off
-                HookData.fCurrentlyMB3Scrolling = FALSE;
+                G_HookData.fCurrentlyMB3Scrolling = FALSE;
 
                 // release capture
                 WinSetCapture(HWND_DESKTOP, NULLHANDLE);
 
-                if (HookData.SDYVert.fPostSBEndScroll)
+                if (G_HookData.SDYVert.fPostSBEndScroll)
                 {
                     // we did move the scroller previously:
                     // send end scroll message
-                    WinPostMsg(HookData.SDYVert.hwndScrollOwner,
+                    WinPostMsg(G_HookData.SDYVert.hwndScrollOwner,
                                WM_VSCROLL,
-                               (MPARAM)(HookData.SDYVert.usScrollBarID),
-                               MPFROM2SHORT(HookData.SDYVert.sCurrentThumbPos,
+                               (MPARAM)(G_HookData.SDYVert.usScrollBarID),
+                               MPFROM2SHORT(G_HookData.SDYVert.sCurrentThumbPos,
                                             SB_SLIDERPOSITION)); // SB_ENDSCROLL));
                 }
 
-                if (HookData.SDXHorz.fPostSBEndScroll)
+                if (G_HookData.SDXHorz.fPostSBEndScroll)
                 {
                     // we did move the scroller previously:
                     // send end scroll message
-                    WinPostMsg(HookData.SDXHorz.hwndScrollOwner,
+                    WinPostMsg(G_HookData.SDXHorz.hwndScrollOwner,
                                WM_HSCROLL,
-                               (MPARAM)(HookData.SDXHorz.usScrollBarID),
-                               MPFROM2SHORT(HookData.SDXHorz.sCurrentThumbPos,
+                               (MPARAM)(G_HookData.SDXHorz.usScrollBarID),
+                               MPFROM2SHORT(G_HookData.SDXHorz.sCurrentThumbPos,
                                             SB_SLIDERPOSITION));
                 }
 
@@ -2240,7 +2240,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         case WM_BUTTON3DBLCLK:
         case WM_BUTTON3MOTIONSTART:
         case WM_BUTTON3MOTIONEND:
-            if (HookData.HookConfig.fMB3Scroll)
+            if (G_HookData.HookConfig.fMB3Scroll)
                 // swallow msg
                 brc = TRUE;
         break;
@@ -2257,7 +2257,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         case WM_CHORD:
             brc = FALSE;
             // feature enabled?
-            if (HookData.HookConfig.fChordWinList)
+            if (G_HookData.HookConfig.fChordWinList)
                 // make sure that the mouse is not currently captured
                 if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
                 {
@@ -2318,8 +2318,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
                 // are we currently in scrolling mode
                 // (is MB3 currently depressed)?
-                if (    (HookData.HookConfig.fMB3Scroll)
-                     && (HookData.fCurrentlyMB3Scrolling)
+                if (    (G_HookData.HookConfig.fMB3Scroll)
+                     && (G_HookData.fCurrentlyMB3Scrolling)
                    )
                 {
                     // note that we do not check for mouse captures
@@ -2359,16 +2359,16 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                         if (G_ptlMousePosDesktop.y == 0)
                             // lower left corner:
                             bHotCorner = 1;
-                        else if (G_ptlMousePosDesktop.y == HookData.lCYScreen - 1)
+                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
                             // top left corner:
                             bHotCorner = 2;
                     }
-                    else if (G_ptlMousePosDesktop.x == HookData.lCXScreen - 1)
+                    else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
                     {
                         if (G_ptlMousePosDesktop.y == 0)
                             // lower right corner:
                             bHotCorner = 3;
-                        else if (G_ptlMousePosDesktop.y == HookData.lCYScreen - 1)
+                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
                             // top right corner:
                             bHotCorner = 4;
                     }
@@ -2379,7 +2379,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                         // notify thread-1 object window, which
                         // will start the user-configured action
                         // (if any)
-                        WinPostMsg(HookData.hwndDaemonObject,
+                        WinPostMsg(G_HookData.hwndDaemonObject,
                                    XDM_HOTCORNER,
                                    (MPARAM)bHotCorner,
                                    (MPARAM)NULL);
@@ -2389,7 +2389,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                      *
                      */
 
-                    if (HookData.HookConfig.fAutoHideMouse)
+                    if (G_HookData.HookConfig.fAutoHideMouse)
                         WMMouseMove_AutoHideMouse();
 
                     /*
@@ -2397,7 +2397,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                      *
                      */
 
-                    if (HookData.HookConfig.fSlidingMenus)
+                    if (G_HookData.HookConfig.fSlidingMenus)
                         if (strcmp(szClassUnderMouse, "#4") == 0)
                             // window under mouse is a menu:
                             WMMouseMove_SlidingMenus(hwnd,
@@ -2460,11 +2460,11 @@ BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
     // code can be running in any PM thread in
     // any process
     APIRET arc = DosOpenMutexSem(NULL,       // unnamed
-                                 &hmtxGlobalHotkeys);
+                                 &G_hmtxGlobalHotkeys);
     if (arc == NO_ERROR)
     {
         // OK, semaphore opened: request access
-        arc = WinRequestMutexSem(hmtxGlobalHotkeys,
+        arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
                                  SEM_TIMEOUT);
 
         _Pmpf(("WM_CHAR WinRequestMutexSem arc: %d", arc));
@@ -2551,7 +2551,7 @@ BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
                 // if the pressed key was assigned an action to
                 us = 0;
                 for (us = 0;
-                     us < cGlobalHotkeys;
+                     us < G_cGlobalHotkeys;
                      us++)
                 {
                     _Pmpf(("    item %d: scan code %lX", us, pKeyThis->ucScanCode));
@@ -2562,7 +2562,7 @@ BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
                     {
                         // hotkey found:
                         // notify daemon
-                        WinPostMsg(HookData.hwndDaemonObject,
+                        WinPostMsg(G_HookData.hwndDaemonObject,
                                    XDM_HOTKEYPRESSED,
                                    (MPARAM)(pKeyThis->ulHandle),
                                    (MPARAM)0);
@@ -2580,10 +2580,10 @@ BOOL WMChar_Hotkeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
                 DosFreeMem(pGlobalHotkeysShared);
             } // end if DosGetNamedSharedMem
 
-            DosReleaseMutexSem(hmtxGlobalHotkeys);
+            DosReleaseMutexSem(G_hmtxGlobalHotkeys);
         } // end if WinRequestMutexSem
 
-        DosCloseMutexSem(hmtxGlobalHotkeys);
+        DosCloseMutexSem(G_hmtxGlobalHotkeys);
     } // end if DosOpenMutexSem
 
     return (brc);
@@ -2649,7 +2649,7 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
          */
 
         case WM_CHAR:
-            if (HookData.HookConfig.fGlobalHotkeys)
+            if (G_HookData.HookConfig.fGlobalHotkeys)
             {
                 USHORT usFlags    = SHORT1FROMMP(mp1);
                 // UCHAR  ucRepeat   = CHAR3FROMMP(mp1);

@@ -254,13 +254,13 @@
     #define ID_XSH_MOUSE_CORNERS             60     // V0.9.2: XWPMouse "Movement" page 2
 
     // "subpanels" for pages with context-sensitive help
-    #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
-    #define ID_XSH_SETTINGS_ADDMENUS_SUB     98+19
-    #define ID_XSH_SETTINGS_PARANOIA_SUB     110+19
-    #define ID_XSH_SETTINGS_DTP1_SUB         121+19
-    #define ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB 127+19
-    #define ID_XSH_SETTINGS_CFGM_SUB         135+19
-    #define ID_XSH_SETTINGS_FILEOPS_SUB      142+19
+    // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
+    // #define ID_XSH_SETTINGS_ADDMENUS_SUB     98+19
+    // #define ID_XSH_SETTINGS_PARANOIA_SUB     110+19
+    // #define ID_XSH_SETTINGS_DTP1_SUB         121+19
+    // #define ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB 127+19
+    // #define ID_XSH_SETTINGS_CFGM_SUB         135+19
+    // #define ID_XSH_SETTINGS_FILEOPS_SUB      142+19
 
     // help panel IDs for various dlg boxes
     #define ID_XFH_BORED            74
@@ -275,7 +275,7 @@
     #define ID_XFH_TITLECLASH       (ID_XFH_BORED+9)
     #define ID_XFH_CLOSEVIO         (ID_XFH_BORED+10)
 
-    #define ID_XFH_SELECTSOME       (ID_XSH_SETTINGS_ADDMENUS_SUB + 3)
+    #define ID_XFH_SELECTSOME       121
 
     /********************************************************************
      *                                                                  *
@@ -460,6 +460,7 @@
     #define XSD_LOG                 0x08000
     #define XSD_ANIMATE             0x10000
     #define XSD_APMPOWEROFF         0x20000
+    #define XSD_APM_DELAY           0x40000     // added V0.9.2 (2000-03-04) [umoeller]
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
@@ -1139,9 +1140,9 @@
                             APIRET arc,
                             ULONG ulFlags);
 
-    VOID cmnSetHelpPanel(ULONG ulHelpPanel);
+    VOID cmnSetDlgHelpPanel(ULONG ulHelpPanel);
 
-    MRESULT EXPENTRY fnwpDlgGeneric(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+    MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 #endif
 

@@ -100,6 +100,7 @@ MYOWNINC = $(INC)\hook
 
 $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
         $(INC)\setup.h \
+        $(HLPINC)\threads.h \
         $(INC)\shared\kernel.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c

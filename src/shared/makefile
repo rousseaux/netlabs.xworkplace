@@ -167,7 +167,7 @@ $(OUTPUTDIR)\kernel.obj: \
 
 $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\setup.h \
-     $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\except.h $(HLPINC)\procstat.h \
+     $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\procstat.h \
         $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h \
      $(INC)\classes\xwpsetup.ih $(INC)\classes\xtrash.h \
      $(INC)\dlgids.h \

@@ -272,10 +272,10 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
  *      none.
  *      </LL>
  *
- *@@header "startshut\apm.h"
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
  */
 
-VOID apmDoPowerOff(VOID)
+VOID apmDoPowerOff(BOOL fDelay)
 {
     APIRET          arc = NO_ERROR;
     SENDPOWEREVENT  sendpowerevent;
@@ -292,14 +292,18 @@ VOID apmDoPowerOff(VOID)
     ulPacketSize = sizeof(sendpowerevent);
     ulDataSize = sizeof(usAPMRc);
 
-    // try another pause of 4 seconds; maybe DosShutdown is
-    // still running V0.9.2 (2000-02-29) [umoeller]
-    for (ul = 0;
-         ul < 3;
-         ul++)
+    if (fDelay)
     {
-        DosBeep(4000, 10);
-        DosSleep(1000);
+        // try another pause of 3 seconds; maybe DosShutdown is
+        // still running V0.9.2 (2000-02-29) [umoeller]
+        for (ul = 0;
+             ul < 3;
+             ul++)
+        {
+            DosBeep(4000, 10);
+            DosSleep(1000);
+        }
+        DosBeep(8000, 10);
     }
 
     // this initiates the APM power-off

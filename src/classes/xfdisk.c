@@ -367,32 +367,49 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
  *      We call the parent first and then subclass the
  *      resulting frame window, similar to what we're doing
  *      with folder views (see XFolder::wpOpen).
+ *
+ *@@changed V0.9.2 (2000-03-06) [umoeller]: drives were checked even if replacement dlg was disabled; fixed
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf, HWND hwndCnr,
                                        ULONG ulView, ULONG param)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndNewFrame = NULLHANDLE; // default: error occured
     APIRET          arc = NO_ERROR;
-    XFolder*        pRootFolder;
+    XFolder*        pRootFolder = 0;
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
 
-    // query root folder (WPRootFolder class, which is a descendant
-    // of WPFolder/XFolder); each WPDisk is paired with one of those,
-    // and the actual display is done by this class, so we will pass
-    // pRootFolder instead of somSelf to most following method calls.
-    // We use wpshQueryRootFolder instead of wpQueryRootFolder to
-    // avoid "Drive not ready" popups.
-    pRootFolder = wpshQueryRootFolder(somSelf, &arc);
-
-    if (pRootFolder)
+    // "Drive not ready" replacement enabled?
+    if (pGlobalSettings->fReplDriveNotReady)
     {
-        // drive ready: call parent to get frame handle
+        // query root folder (WPRootFolder class, which is a descendant
+        // of WPFolder/XFolder); each WPDisk is paired with one of those,
+        // and the actual display is done by this class, so we will pass
+        // pRootFolder instead of somSelf to most following method calls.
+        // We use wpshQueryRootFolder instead of wpQueryRootFolder to
+        // avoid "Drive not ready" popups.
+        pRootFolder = wpshQueryRootFolder(somSelf, &arc);
+        if (pRootFolder)
+            // drive ready: call parent to get frame handle
+            hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
+                                                         hwndCnr,
+                                                         ulView,
+                                                         param);
+    }
+    else
+    {
         hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
                                                      hwndCnr,
                                                      ulView,
                                                      param);
+        if (hwndNewFrame)
+            pRootFolder = _wpQueryRootFolder(somSelf);
+    }
+
+    if (pRootFolder)
+    {
 
         if (hwndNewFrame)
         {
@@ -403,7 +420,6 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf, HWND hwndCnr,
                )
             {
                 PSUBCLASSEDLISTITEM psli;
-                PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
                 // subclass frame window; this is the same
                 // proc which is used for normal folder frames,

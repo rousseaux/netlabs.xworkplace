@@ -66,6 +66,8 @@ interface XWPTrashCan : WPFolder
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
+    ULONG xwpIsCurrentlyPopulating();
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -78,7 +80,8 @@ interface XWPTrashCan : WPFolder
             xwpQueryTrashObjectsCount,
             xwpSetCorrectTrashIcon,
             xwpEmptyTrashCan,
-            xwpUpdateStatusBar;
+            xwpUpdateStatusBar,
+            xwpIsCurrentlyPopulating;
 
     /*
      * Class Modifiers:

@@ -921,36 +921,36 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
                 if (fShiftPressed)
                     // shift pressed: move all objects, so loop
                     // thru the whole container content
-                    pmrc =
-                        (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                CM_QUERYRECORD,
-                                (MPARAM)pmrc,           // NULL at first loop
-                                MPFROM2SHORT(
-                                    (pmrc)
-                                        ? CMA_NEXT      // not first loop: get next object
-                                        : CMA_FIRST,    // first loop: get first objecct
-                                    CMA_ITEMORDER)
-                                );
+                    pmrc
+                        = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORD,
+                                                      (MPARAM)pmrc,  // NULL at first loop
+                                                      MPFROM2SHORT(
+                                                          (pmrc)
+                                                              ? CMA_NEXT  // not first loop: get next object
+                                                              : CMA_FIRST, // first loop: get first objecct
+                                                          CMA_ITEMORDER)
+                                                      );
                 else
                     // shift _not_ pressed: move selected objects
                     // only, so loop thru these objects
-                    pmrc =
-                        (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                CM_QUERYRECORDEMPHASIS,
-                                (pmrc)                  // NULL at first loop
-                                    ? (MPARAM)pmrc
-                                    : (MPARAM)CMA_FIRST, // flag for getting first selected
-                                (MPARAM)(CRA_SELECTED)
-                                );
+                    pmrc
+                        = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORDEMPHASIS,
+                                                      (pmrc)   // NULL at first loop
+                                                          ? (MPARAM)pmrc
+                                                          : (MPARAM)CMA_FIRST, // flag for getting first selected
+                                                      (MPARAM)(CRA_SELECTED)
+                                                      );
                 if (pmrc)
                 {
                     // record found:
                     // the WPS shares records among views, so we need
                     // to update the record core info first
                     WinSendMsg(hwndCnr,
-                                CM_QUERYRECORDINFO,
-                                (MPARAM)&pmrc,
-                                (MPARAM)1);         // one record only
+                               CM_QUERYRECORDINFO,
+                               (MPARAM)&pmrc,
+                               (MPARAM)1);         // one record only
                     // un-display the new object at the old (default) location
                     WinSendMsg(hwndCnr,
                                 CM_ERASERECORD,
@@ -986,30 +986,30 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
 
                     // repaint at new position
                     WinSendMsg(hwndCnr,
-                                CM_INVALIDATERECORD,
-                                (MPARAM)&pmrc,
-                                MPFROM2SHORT(1,     // one record only
-                                    CMA_REPOSITION | CMA_ERASE));
+                               CM_INVALIDATERECORD,
+                               (MPARAM)&pmrc,
+                               MPFROM2SHORT(1,     // one record only
+                                   CMA_REPOSITION | CMA_ERASE));
                 }
             } while (pmrc);
 
             brc = TRUE; // "OK" flag
         } // end if (hwndCnr)
     } // end if (hwndFrame)
-    else
+    /* else
     {
         // no open icon view: complain
         if (fNotify)
         {
             cmnSetHelpPanel(-1);                   // disable F1
             WinDlgBox(HWND_DESKTOP,
-                         HWND_DESKTOP,             // owner is desktop
-                         (PFNWP)fnwpDlgGeneric,    // common.c
-                         cmnQueryNLSModuleHandle(FALSE),               // load from resource file
-                         ID_XFD_NOICONVIEW,        // dialog resource id
-                         (PVOID)NULL);
+                      HWND_DESKTOP,             // owner is desktop
+                      (PFNWP)fnwpDlgGeneric,    // common.c
+                      cmnQueryNLSModuleHandle(FALSE),               // load from resource file
+                      ID_XFD_NOICONVIEW,        // dialog resource id
+                      (PVOID)NULL);
         }
-    }
+    } */
     return (brc);
 }
 
@@ -4353,7 +4353,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             // select entire string in drop-down
             winhEntryFieldSelectAll(hwndDropDown);
 
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
 
         /*
@@ -4497,14 +4497,18 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
                 /*
                  * default:
-                 *      this includes "Help"
                  */
 
                 default:
-                    mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
             }
         break; }
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,
+                           ID_XFH_SELECTSOME);
+        break;
 
         /*
          * WM_CLOSE:
@@ -4516,7 +4520,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         break;
 
         default:
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
     if (fWriteAndClose)

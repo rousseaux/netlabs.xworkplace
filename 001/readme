@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.1 README
+XWorkplace 0.9.2 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated Feb 18, 2000
+Last updated March 5, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,7 +20,8 @@ Last updated Feb 18, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.1.
+    Welcome to XWorkplace V0.9.2. This is mainly a bugfix
+    release compared to V0.9.1.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell. It can add features to pretty much all
@@ -83,20 +84,16 @@ Last updated Feb 18, 2000
     Upgrading from XWorkplace
     -------------------------
 
-    If you have another version of XWorkplace already installed,
-    this new version MUST be installed to a directory OTHER
-    than that of the installed version.
+    If you have an older XWorkplace installed when installing
+    this version, you MUST use WarpIN V0.9.2 also. If you are
+    still using an older WarpIN version, you must completely
+    de-install XWorkplace before installing this version.
+    Alternatively, manually kill XWPDAEMN.EXE before installing.
 
-    WarpIN is not very good at replacing files which are in use
-    just yet and, unless you deregister the XWorkplace classes
-    before installing this new version, many old XWorkplace files
-    will be in use.
-
-    This is most important with the XWorkplace daemon which has
-    installed the XWorkplace PM hook (XWPHOOK.DLL), which is
-    part of every single PM process of your system if the hook
-    is installed. Unlocking that DLL might severely hang your
-    system.
+    With the latest WarpIN, you will get a notification message
+    that XWPDAEMN.EXE is running. Have WarpIN kill that programm
+    (which is the XWorkplace Daemon), and you can overwrite your
+    existing installation.
 
 
     Upgrading from XFolder
@@ -174,6 +171,9 @@ Last updated Feb 18, 2000
         don't work quite yet.
 
     5)  Trash can icons are somewhat shaky.
+
+    6)  VIO windows started via object hotkeys never come up right to
+        the foreground.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

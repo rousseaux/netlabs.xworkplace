@@ -912,9 +912,9 @@ END
 
 DLGTEMPLATE ID_TSD_MAIN LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Treesize (XWorkplace 0.9.0)", ID_TSD_MAIN, 30, 21, 325, 148,
-            NOT FS_DLGBORDER | FS_SCREENALIGN | FS_SIZEBORDER, FCF_SYSMENU |
-            FCF_TITLEBAR | FCF_MINBUTTON | FCF_MAXBUTTON
+    DIALOG  "Treesize", ID_TSD_MAIN, 30, 21, 325, 148, NOT FS_DLGBORDER |
+            FS_SCREENALIGN | FS_SIZEBORDER, FCF_SYSMENU | FCF_TITLEBAR |
+            FCF_MINBUTTON | FCF_MAXBUTTON
     BEGIN
         ICON            ID_TS_ICON, ID_TSDI_ICON, 5, 129, 20, 16, WS_GROUP
         LTEXT           "Text", ID_TSDI_TEXT1, 35, 129, 285, 17, DT_VCENTER
@@ -1646,92 +1646,6 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_DTP_SHUTDOWN LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_SHUTDOWN, 0, 0, 295, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "eXtended Shutdown", -1, 5, 21, 250, 107
-        AUTOCHECKBOX    "~Reboot afterwards", ID_SDDI_REBOOT, 10, 106, 135,
-                        12
-        PUSHBUTTON      "Reboot actio~ns...", ID_SDDI_REBOOTEXT, 155, 106,
-                        95, 12
-        AUTOCHECKBOX    "An~imation", ID_SDDI_ANIMATE, 10, 94, 140, 10
-        AUTOCHECKBOX    "Attempt APM ~1.2 power-off", ID_SDDI_APMPOWEROFF,
-                        10, 82, 140, 10
-        LTEXT           "APM level:", ID_SDDI_APMVERSION_TXT, 122, 76, 66, 8
-        RTEXT           "1.1", ID_SDDI_APMVERSION, 195, 76, 50, 8
-        LTEXT           "APM.SYS driver:", ID_SDDI_APMSYS_TXT, 122, 68, 70,
-                        8
-        RTEXT           "unknown", ID_SDDI_APMSYS, 192, 68, 56, 8
-        AUTOCHECKBOX    "~Confirm", ID_SDDI_CONFIRM, 10, 62, 135, 8
-        AUTOCHECKBOX    "Auto-close non-~PM sessions", ID_SDDI_AUTOCLOSEVIO,
-                        10, 48, 132, 12
-        PUSHBUTTON      "Auto-close det~ails...", ID_SDDI_AUTOCLOSEDETAILS,
-                        156, 48, 94, 12
-        AUTOCHECKBOX    "Write XSHUTDWN.LO~G file", ID_SDDI_LOG, 10, 38, 118,
-                        8
-        PUSHBUTTON      "Create XShutdown folder",
-                        ID_SDDI_CREATESHUTDOWNFLDR, 110, 24, 140, 12
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 80, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 90, 6, 80, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 175, 6, 80, 12, BS_HELP |
-                        WS_GROUP
-    END
-END
-
-DLGTEMPLATE ID_XFD_STARTUPPANIC LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Panic", ID_XFD_STARTUPPANIC, 32, 16, 223, 155, ,
-            FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "You have held down the Shift key while the WPS is i"
-                        "nitializing.", -1, 5, 142, 210, 8, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "You can now selectively disable certain XWorkplace "
-                        "features in case these don't work right.", -1, 5,
-                        124, 210, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Note that most of these changes will only affect th"
-                        "is one WPS session. To permanently disable a featur"
-                        "e, open the respective XWorkplace settings object a"
-                        "fter the WPS has started.", -1, 5, 106, 210, 20,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip ~boot logo once", ID_XFDI_PANIC_SKIPBOOTLOGO,
-                        6, 92, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip XWorkplace S~tartup folder once",
-                        ID_XFDI_PANIC_SKIPXFLDSTARTUP, 6, 84, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip ""~Quick open"" folders once",
-                        ID_XFDI_PANIC_SKIPQUICKOPEN, 6, 76, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Skip WPS ~archiving once",
-                        ID_XFDI_PANIC_NOARCHIVING, 6, 68, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Permanently ~disable all features",
-                        ID_XFDI_PANIC_DISABLEFEATURES, 6, 56, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Permanently disable ~icon replacements",
-                        ID_XFDI_PANIC_DISABLEREPLICONS, 6, 48, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "~Remove all object hotkeys",
-                        ID_XFDI_PANIC_REMOVEHOTKEYS, 6, 40, 210, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        DEFPUSHBUTTON   "C~ontinue", DID_OK, 4, 22, 75, 12, WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "This will continue WPS startup.", -1, 84, 22, 135,
-                        11, NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        PUSHBUTTON      "~Shut down now", DID_CANCEL, 4, 8, 75, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
-                        8, 135, 11, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     END
 END
 
@@ -2513,7 +2427,8 @@ BEGIN
                         CTLDATA 12, 0, 31, 0, 5, 0
         CTEXT           "Text", ID_XSDI_MOUSE_MENUDELAY_TXT2, 156, 50, 30,
                         12, DT_VCENTER | NOT WS_GROUP
-        AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22, 42, 164, 10
+        AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22,
+                        42, 164, 10
         PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
@@ -2527,5 +2442,94 @@ BEGIN
                         CTLDATA 12, 0, 60, 0, 1, 0
         CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 162, 20, 28, 12,
                         DT_VCENTER | DT_MNEMONIC
+    END
+END
+
+DLGTEMPLATE ID_XSD_DTP_SHUTDOWN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_DTP_SHUTDOWN, 0, 0, 295, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "eXtended Shutdown", -1, 5, 21, 250, 107
+        AUTOCHECKBOX    "~Reboot afterwards", ID_SDDI_REBOOT, 10, 108, 135,
+                        12
+        PUSHBUTTON      "Reboot actio~ns...", ID_SDDI_REBOOTEXT, 155, 108,
+                        95, 12
+        AUTOCHECKBOX    "An~imation", ID_SDDI_ANIMATE, 10, 98, 140, 10
+        AUTOCHECKBOX    "Attempt APM ~1.2 power-off", ID_SDDI_APMPOWEROFF,
+                        10, 88, 140, 8
+        AUTOCHECKBOX    "Dela~y", ID_SDDI_DELAY, 20, 80, 90, 8
+        LTEXT           "APM level:", ID_SDDI_APMVERSION_TXT, 122, 74, 66, 8
+        RTEXT           "1.1", ID_SDDI_APMVERSION, 195, 74, 50, 8
+        LTEXT           "APM.SYS driver:", ID_SDDI_APMSYS_TXT, 122, 66, 70,
+                        8
+        RTEXT           "unknown", ID_SDDI_APMSYS, 192, 66, 56, 8
+        AUTOCHECKBOX    "~Confirm", ID_SDDI_CONFIRM, 10, 58, 135, 8
+        AUTOCHECKBOX    "Auto-close non-~PM sessions", ID_SDDI_AUTOCLOSEVIO,
+                        10, 46, 132, 12
+        PUSHBUTTON      "Auto-close det~ails...", ID_SDDI_AUTOCLOSEDETAILS,
+                        156, 46, 94, 12
+        AUTOCHECKBOX    "Write XSHUTDWN.LO~G file", ID_SDDI_LOG, 10, 36, 118,
+                        8
+        PUSHBUTTON      "Create XShutdown folder",
+                        ID_SDDI_CREATESHUTDOWNFLDR, 110, 24, 140, 12
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 80, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 90, 6, 80, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 175, 6, 80, 12, BS_HELP |
+                        WS_GROUP
+    END
+END
+
+DLGTEMPLATE ID_XFD_STARTUPPANIC LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "XWorkplace Panic", ID_XFD_STARTUPPANIC, 32, 16, 223, 162, ,
+            FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        LTEXT           "You have held down the Shift key while the WPS is i"
+                        "nitializing.", -1, 5, 150, 210, 8, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "You can now selectively disable certain XWorkplace "
+                        "features in case these don't work right.", -1, 5,
+                        132, 210, 17, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "Note that most of these changes will only affect th"
+                        "is one WPS session. To permanently disable a featur"
+                        "e, open the respective XWorkplace settings object a"
+                        "fter the WPS has started.", -1, 5, 114, 210, 20,
+                        DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip ~boot logo once", ID_XFDI_PANIC_SKIPBOOTLOGO,
+                        6, 100, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip XWorkplace S~tartup folder once",
+                        ID_XFDI_PANIC_SKIPXFLDSTARTUP, 6, 92, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip ""~Quick open"" folders once",
+                        ID_XFDI_PANIC_SKIPQUICKOPEN, 6, 84, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Skip WPS ~archiving once",
+                        ID_XFDI_PANIC_NOARCHIVING, 6, 76, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Permanently ~disable all features",
+                        ID_XFDI_PANIC_DISABLEFEATURES, 6, 64, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Permanently disable ~icon replacements",
+                        ID_XFDI_PANIC_DISABLEREPLICONS, 6, 56, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "~Remove all object hotkeys",
+                        ID_XFDI_PANIC_REMOVEHOTKEYS, 6, 48, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        AUTOCHECKBOX    "Disable ~PageMage", ID_XFDI_PANIC_NOPAGEMAGE, 6, 40, 210, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        DEFPUSHBUTTON   "C~ontinue", DID_OK, 4, 22, 75, 12, WS_GROUP
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "This will continue WPS startup.", -1, 84, 22, 135,
+                        11, NOT WS_GROUP
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        PUSHBUTTON      "~Shut down now", DID_CANCEL, 4, 8, 75, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+        LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
+                        8, 135, 11, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     END
 END

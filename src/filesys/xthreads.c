@@ -81,6 +81,7 @@
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -1146,8 +1147,6 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
         G_habWorkerThread = NULLHANDLE;
         krnUnlockGlobals();
     }
-
-    thrGoodbye((PTHREADINFO)ptiMyself);
 }
 
 /* ******************************************************************
@@ -1585,7 +1584,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             static BOOL fWarningOpen = FALSE;
             ULONG   ulAction = (ULONG)mp1;
             ULONG   ulReturn = ulAction;
-            cmnSetHelpPanel(ID_XFH_NOCONFIG);
 
             if (ulAction == RCF_QUERYACTION)
             {
@@ -1594,9 +1592,10 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 if (fWarningOpen)
                     break;
 
+                cmnSetDlgHelpPanel(ID_XFH_NOCONFIG);
                 hwndDlg = WinLoadDlg(HWND_DESKTOP,
                                     HWND_DESKTOP,
-                                    (PFNWP)fnwpDlgGeneric,
+                                    (PFNWP)cmn_fnwpDlgWithHelp,
                                     cmnQueryNLSModuleHandle(FALSE),
                                     ID_XFD_NOCONFIG, // "not found" dialog
                                     (PVOID)NULL);
@@ -1979,9 +1978,6 @@ void _Optlink fntFileThread(PVOID ptiMyself)
         G_habFileThread = NULLHANDLE;
         krnUnlockGlobals();
     }
-
-    thrGoodbye((PTHREADINFO)ptiMyself);
-    // _endthread();
 }
 
 /* ******************************************************************
@@ -2557,8 +2553,6 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
 
         krnUnlockGlobals();
     }
-
-    thrGoodbye((PTHREADINFO)ptiMyself);
 }
 
 /*
@@ -2686,15 +2680,18 @@ BOOL xthrStartThreads(VOID)
             // threads not disabled:
             pKernelGlobals->ulWorkerMsgCount = 0;
             thrCreate(&(pKernelGlobals->ptiWorkerThread),
+                      3*96000,          // plenty of stack space
                       fntWorkerThread,
                       0);
 
             thrCreate(&(pKernelGlobals->ptiSpeedyThread),
+                      3*96000,          // plenty of stack space
                       fntSpeedyThread,
                       0);
         }
 
         thrCreate(&(pKernelGlobals->ptiFileThread),
+                  3*96000,          // plenty of stack space
                   fntFileThread,
                   0);
     }

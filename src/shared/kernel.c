@@ -728,10 +728,10 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
             {
                 // avoid more than one dlg window
                 fLimitMsgOpen = TRUE;
-                cmnSetHelpPanel(ID_XFH_LIMITREACHED);
+                cmnSetDlgHelpPanel(ID_XFH_LIMITREACHED);
                 WinDlgBox(HWND_DESKTOP,         // parent is desktop
                           HWND_DESKTOP,             // owner is desktop
-                          (PFNWP)fnwpDlgGeneric,    // dialog procedure, defd. at bottom
+                          (PFNWP)cmn_fnwpDlgWithHelp,    // dialog procedure, defd. at bottom
                           cmnQueryNLSModuleHandle(FALSE),  // from resource file
                           ID_XFD_LIMITREACHED,        // dialog resource id
                           (PVOID)NULL);             // no dialog parameters
@@ -1440,6 +1440,8 @@ VOID krnShowStartupDlgs(VOID)
                          pGlobalSettings->fReplaceArchiving);
         WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                          pGlobalSettings->fReplaceIcons);
+        WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOPAGEMAGE,
+                         pGlobalSettings->fPageMageEnabled);
 
         if (WinProcessDlg(hwndPanic) == DID_OK)
         {
@@ -1459,6 +1461,13 @@ VOID krnShowStartupDlgs(VOID)
             {
                 GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
                 pGlobalSettings2->fReplaceIcons = FALSE;
+                cmnUnlockGlobalSettings();
+                cmnStoreGlobalSettings();
+            }
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOPAGEMAGE))
+            {
+                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
+                pGlobalSettings2->fPageMageEnabled = FALSE;
                 cmnUnlockGlobalSettings();
                 cmnStoreGlobalSettings();
             }

@@ -86,6 +86,7 @@
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -2586,7 +2587,6 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
     WinTerminate(habDriversThread);
     habDriversThread = NULLHANDLE;
     pcnbpDrivers = NULL;
-    thrGoodbye(ptiMyself);
 }
 
 /*
@@ -2640,6 +2640,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         {
             pcnbpDrivers = pcnbp;
             thrCreate(&ptiDriversThread,
+                      96000,
                       fntDriversThread,
                       0);
         }

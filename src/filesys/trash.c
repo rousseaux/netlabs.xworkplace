@@ -109,14 +109,17 @@ BYTE G_abSupportedDrives[CB_SUPPORTED_DRIVES] = "";
 
 /* ******************************************************************
  *                                                                  *
- *   Trash can populating                                           *
+ *   Trash object creation                                          *
  *                                                                  *
  ********************************************************************/
 
 /*
  *@@ trshUpdateStatusBars:
  *      updates the status bars of all currently
- *      open trash can views.
+ *      open trash can views. Gets called several
+ *      times while the trash can is being populated
+ *      (trshPopulateFirstTime) or when objects are
+ *      added or removed later.
  *
  *@@added V0.9.1 (2000-02-09) [umoeller]
  */
@@ -185,22 +188,18 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf)
  *      given trashcan by invoking wpclsNew upon the XWPTrashObject
  *      class object (somSelf of this function).
  *
- *      Arguments:
- *      -- pTrashCan: the trashcan to create the object in.
- *      -- pRelatedObject: the object which the new trash object
- *         should be related to. We use a RELATEDOBJECT settings
- *         string with wpclsNew to set the related object
- *         (see XWPTrashObject::wpSetup).
- *
  *      This returns the new trash object. If NULL is returned,
  *      either an error occured creating the trash object or
  *      a trash object with the same pRelatedObject already
  *      existed in the trash can.
  *
- *      WARNING: This does not move the related object to a trash can.
- *      This method is only used internally by XWPTrashCan to
+ *      WARNING: This does not move the related object to a TRASH
+ *      directory.
+ *      This function is only used internally by XWPTrashCan to
  *      map the contents of the "\Trash" directories into the
- *      open trashcan.
+ *      open trashcan, either when the trash can is first populated
+ *      (trshPopulateFirstTime) or later, when objects are moved
+ *      into the trash can. So do not call this function manually.
  *
  *      To move an object into a trashcan, call
  *      XWPTrashCan::xwpDeleteIntoTrashCan, which automatically
@@ -210,99 +209,38 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf)
  */
 
 XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
-                                      XWPTrashCan* pTrashCan,
-                                      WPObject* pRelatedObject)
+                                      XWPTrashCan* pTrashCan, // in: the trashcan to create the object in
+                                      WPObject* pRelatedObject) // in: the object which the new trash object
+                                                                // should represent
 {
     XWPTrashObject *pTrashObject = NULL;
-
-    /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
-    // M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_xwpclsCreateTrashObject");
 
     if (    (pTrashCan)
          && (pRelatedObject)
        )
     {
-        // PLINKLIST   pllTrashObjects;
-        // PLISTNODE   pNode = 0;
-        /* BOOL        fRelatedExistsAlready = FALSE,
-                    fTrashCanSemOwned = FALSE;
+        #ifdef DEBUG_TRASHCAN
+            _Pmpf(("xwpclsCreateTrashObject: Creating trash object \"%s\" in \"%s\"",
+                    _wpQueryTitle(pRelatedObject),
+                    _wpQueryTitle(pTrashCan)));
+        #endif
 
-        TRY_LOUD(excpt1, NULL)
+        // create XWPTrashObject instance
+        pTrashObject = _wpclsNew(somSelf,   // class object
+                                 _wpQueryTitle(pRelatedObject),
+                                        // same title as related object
+                                 "", // setup string
+                                 pTrashCan, // where to create the object
+                                 TRUE);  // lock
+        if (pTrashObject)
         {
-            PLINKLIST pllTrashObjects;
-            PLISTNODE pNode = 0;
+            _xwpSetRelatedObject(pTrashObject, pRelatedObject);
 
-            // check if the object already exists in the
-            // trash can; we must do this because wpPopulate
-            // gets called from wpRefresh also.
-            // If the trash can has not been populated yet,
-            // we need not worry, because then we definitely
-            // have no trash objects in the trash can.
-            fTrashCanSemOwned = !_wpRequestObjectMutexSem(pTrashCan, SEM_INDEFINITE_WAIT);
-            if (fTrashCanSemOwned)
-            {
-                pllTrashObjects = trshCreateTrashObjectsList(pTrashCan);
-
-                // now delete the items
-                pNode = lstQueryFirstNode(pllTrashObjects);
-                while (pNode)
-                {
-                    WPObject *pTestRelatedObject
-                        = _xwpQueryRelatedObject((XWPTrashObject*)pNode->pItemData);
-                                        // item data is trash object
-
-                    if (pTestRelatedObject == pRelatedObject)
-                    {
-                        // exists already: set flag and break
-                        fRelatedExistsAlready = TRUE;
-                        break; // while (pNode)
-                    }
-
-                    // go for next
-                    pNode = pNode->pNext;
-                } // end while (pNode)
-
-                lstFree(pllTrashObjects);
-            } // end if (fTrashCanSemOwned)
-            else
-                krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
-                                        (MPARAM)strdup("Couldn't request mutex semaphore"),
-                                        (MPARAM)FALSE);
-        }
-        CATCH(excpt1) { } END_CATCH();
-
-        if (fTrashCanSemOwned)
-        {
-            _wpReleaseObjectMutexSem(pTrashCan);
-            fTrashCanSemOwned = FALSE;
-        }
-
-        if (!fRelatedExistsAlready) */
-        {
-            // related object not found above: go!
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("xwpclsCreateTrashObject: Creating trash object \"%s\" in \"%s\"",
-                        _wpQueryTitle(pRelatedObject),
-                        _wpQueryTitle(pTrashCan)));
-            #endif
-
-            // create trash object
-            pTrashObject = _wpclsNew(somSelf,   // class object
-                                     _wpQueryTitle(pRelatedObject),
-                                            // same title as related object
-                                     "", // setup string
-                                     pTrashCan, // where to create the object
-                                     TRUE);  // lock
-            if (pTrashObject)
-            {
-                _xwpSetRelatedObject(pTrashObject, pRelatedObject);
-
-                // have size of trash object calculated on File thread;
-                // this will update the details later
-                xthrPostFileMsg(FIM_CALCTRASHOBJECTSIZE,
-                                (MPARAM)pTrashObject,
-                                (MPARAM)pTrashCan);
-            }
+            // have size of trash object calculated on File thread;
+            // this will update the details later
+            xthrPostFileMsg(FIM_CALCTRASHOBJECTSIZE,
+                            (MPARAM)pTrashObject,
+                            (MPARAM)pTrashCan);
         }
     }
 
@@ -311,6 +249,12 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
 
 /*
  *@@ trshCalcTrashObjectSize:
+ *      implementation for the FIM_CALCTRASHOBJECTSIZE
+ *      message on the File thread. This gets called
+ *      on the File thread after a trash object has been
+ *      created (trshCreateTrashObject) to calculate
+ *      the size of the trash object (including all subdirectories,
+ *      if the related object is a folder).
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  */
@@ -324,13 +268,19 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
         // create structured file list for this object;
         // if this is a folder, this can possibly take a
         // long time
-        PEXPANDEDOBJECT pSOI = fopsObject2SOI(pRelatedObject);
+        PEXPANDEDOBJECT pSOI = fopsExpandObject(pRelatedObject);
         _xwpSetExpandedObjectData(pTrashObject,
                                   pSOI,
                                   pSOI->ulSizeThis,
                                   pTrashCan);
     }
 }
+
+/* ******************************************************************
+ *                                                                  *
+ *   Trash can populating                                           *
+ *                                                                  *
+ ********************************************************************/
 
 /*
  *@@ trshAddTrashObjectsForTrashDir:
@@ -397,16 +347,16 @@ ULONG trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // 
                     if (doshQueryPathAttr(szFolderPath, &ulAttrs) == NO_ERROR)
                         if (ulAttrs & FILE_HIDDEN)
                         {
-                            // hidden directory: this is a trash directory,
-                            // so recurse!
                             #ifdef DEBUG_TRASHCAN
                                 _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
                             #endif
 
+                            // hidden directory: this is a trash directory,
+                            // so recurse!
                             ulObjectCount += trshAddTrashObjectsForTrashDir(pXWPTrashObjectClass,
                                                                             pTrashCan,
                                                                             pObject); // new trash dir
-                            // skip the following
+                            // don't create a trash object for this directory...
                             fAddTrashObject = FALSE;
                         }
                 }
@@ -421,9 +371,6 @@ ULONG trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // 
                                     pXWPTrashObjectClass));
                     #endif
 
-                    // note that M_XWPTrashObject::xwpclsCreateTrashObject
-                    // will automatically check for whether a trash
-                    // object exists for a given related object
                     trshCreateTrashObject(pXWPTrashObjectClass,
                                           pTrashCan,
                                           pObject);  // related object
@@ -560,12 +507,15 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
 /*
  *@@ trshRefresh:
  *      implementation for XWPTrashCan::wpRefresh.
+ *      This calls XWPTrashObject::xwpValidateTrashObject
+ *      on each trash object in the trash can.
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
  */
 
 BOOL trshRefresh(XWPTrashCan *somSelf)
 {
+    // create list of all trash objects
     PLINKLIST   pllTrashObjects = trshCreateTrashObjectsList(somSelf);
     PLISTNODE   pNode = lstQueryFirstNode(pllTrashObjects);
 
@@ -597,11 +547,43 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *@@ trshDeleteIntoTrashCan:
  *      implementation for XWPTrashCan::xwpDeleteIntoTrashCan.
  *
+ *      That method gets called in two situations:
+ *      1)  from XWPTrashCan::wpDrop;
+ *      2)  from fopsFileThreadProcessing, when our file-list
+ *          processing is doing a "delete into trashcan" job.
+ *          This happens if "Del" is pressed in a folder or if
+ *          the "Delete" menu item has been selected.
+ *
+ *      When an object is thus "deleted" into the trashcan,
+ *      this function does the following:
+ *
+ *      1)  create a hidden directory "\Trash" on the drive
+ *          where the object resides, if that directory doesn't
+ *          exist already;
+ *
+ *      2)  create a path in "\Trash" according to the path of
+ *          the object; i.e., if "F:\Tools\XFolder\xfldr.dll"
+ *          is moved into the trash can, "F:\Trash\Tools\XFolder"
+ *          will be created;
+ *
+ *      3)  move the object which is being deleted into that
+ *          directory (using wpMoveObject, so that all WPS
+ *          shadows etc. remain valid);
+ *
+ *      4)  create a new instance of XWPTrashObject in the
+ *          trash can (somSelf) which should represent the
+ *          object by calling M_XWPTrashObject::xwpclsCreateTrashObject.
+ *          However, this is only done if the trash can has
+ *          already been populated (otherwise we'd get duplicate
+ *          trash objects in the trash can when populating).
+ *
+ *      This returns FALSE upon errors.
+ *
  *@@added V0.9.1 (2000-02-03) [umoeller]
  */
 
-BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan,
-                            WPObject *pObject)
+BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to create trash object
+                            WPObject *pObject)      // in: object to delete
 {
     BOOL brc = FALSE;
     XWPTrashCanData *somThis = XWPTrashCanGetData(pTrashCan);
@@ -645,7 +627,8 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan,
                     // close all open views
                     _wpClose(pObject);
 
-                    if (_wpMoveObject(pObject, pFolderInTrash))
+                    if (fopsMoveObjectConfirmed(pObject,
+                                                pFolderInTrash))
                     {
                         // successfully moved:
                         // set original object's deletion data
@@ -690,7 +673,7 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan,
                             _ulTrashObjectCount++;
                             _xwpSetCorrectTrashIcon(pTrashCan, FALSE);
                         }
-                    }
+                    } // end if (fopsMoveObject(pObject, ...
                 }
             }
         }
@@ -773,55 +756,17 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
                 if (pTargetFolder2)
                 {
                     // folder exists:
-                    // check if object exists in that folder already
-                    // (this might call the XFldObject replacement)
-                    WPObject    *pReplaceThis = NULL;
-                    CHAR        szNewTitle[CCHMAXPATH] = "";
-                    BOOL        fMove = TRUE;
-                    ULONG       ulAction;
-
-                    strcpy(szNewTitle, _wpQueryTitle(_pRelatedObject));
-                    ulAction = _wpConfirmObjectTitle(_pRelatedObject,      // object
-                                                     pTargetFolder2,       // folder
-                                                     &pReplaceThis,        // object to replace (if NAMECLASH_REPLACE)
-                                                     szNewTitle,           // in/out: object title
-                                                     sizeof(szNewTitle),
-                                                     0x006B);              // move code
-
-                    // _Pmpf(("    _wpConfirmObjectTitle returned %d", ulAction));
-
-                    switch (ulAction)
+                    if (fopsMoveObjectConfirmed(_pRelatedObject,
+                                                pTargetFolder2))
                     {
-                        case NAMECLASH_CANCEL:
-                            fMove = FALSE;
-                        break;
-
-                        case NAMECLASH_RENAME:
-                            _wpSetTitle(_pRelatedObject,
-                                        szNewTitle);      // set by wpConfirmObjectTitle
-                        break;
-
-                        case NAMECLASH_REPLACE:
-                            _wpReplaceObject(_pRelatedObject,
-                                             pReplaceThis,       // set by wpConfirmObjectTitle
-                                             TRUE);              // move and replace
-                            fMove = FALSE;
-                        break;
-
-                        // NAMECLASH_NONE: just go on
+                        // successfully moved:
+                        // destroy the trash object
+                        if (pTaskRecSelf)
+                            _wpSetTaskRec(pTrashObject,
+                                          NULL,     // new task rec
+                                          pTaskRecSelf); // old task rec
+                        brc = _wpFree(pTrashObject);
                     }
-
-                    if (fMove)
-                        // move related object
-                        if (_wpMoveObject(_pRelatedObject, pTargetFolder2))
-                        {
-                            // successful: destroy the trash object
-                            if (pTaskRecSelf)
-                                _wpSetTaskRec(pTrashObject,
-                                              NULL,     // new task rec
-                                              pTaskRecSelf); // old task rec
-                            brc = _wpFree(pTrashObject);
-                        }
                 } // end if (pTargetFolder2)
             } // end if (_pRelatedObject)
         } while (FALSE);
@@ -881,6 +826,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
                     // we got the object:
                     // check if it's deletable
                     if (!fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
+                                                  NULL, // no callback
                                                   pObjDragged))
                     {
                         // no:
@@ -940,6 +886,7 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                     // no errors so far:
                     // add item to list
                     fReportSuccess = fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
+                                                              NULL, // no callback
                                                               pObjectDropped);
 
                     if (fReportSuccess)
@@ -1187,7 +1134,7 @@ VOID trshUninitTrashObject(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     if (_pvExpandedObject)
     {
-        fopsFreeSOI((PEXPANDEDOBJECT)_pvExpandedObject);
+        fopsFreeExpandedObject((PEXPANDEDOBJECT)_pvExpandedObject);
         _pvExpandedObject = 0;
     }
 }
@@ -1307,6 +1254,36 @@ VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf)
         // data not found:
         _xwpclsSetDrivesSupport(somSelf,
                                 NULL);     // defaults
+}
+
+/*
+ *@@ trshIsOnSupportedDrive:
+ *      returns TRUE only if pObject is on a drive for which
+ *      trash can support has been enabled.
+ *
+ *@@added V0.9.2 (2000-03-04) [umoeller]
+ */
+
+BOOL trshIsOnSupportedDrive(WPObject *pObject)
+{
+    BOOL brc = FALSE;
+    WPFolder *pFolder = _wpQueryFolder(pObject);
+    if (pFolder)
+    {
+        CHAR szFolderPath[CCHMAXPATH];
+        if (_wpQueryFilename(pFolder, szFolderPath, TRUE))
+        {
+            strupr(szFolderPath);
+            if (szFolderPath[0] >= 'C')
+            {
+                // is on hard disk:
+                if (G_abSupportedDrives[szFolderPath[0] - 'C'] == XTRC_SUPPORTED)
+                    brc = TRUE;
+            }
+        }
+    }
+
+    return (brc);
 }
 
 /* ******************************************************************

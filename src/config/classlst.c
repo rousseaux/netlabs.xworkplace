@@ -421,8 +421,8 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             if (prcd->ulHelpPanel)
             {
                 _wpDisplayHelp(_wpclsQueryActiveDesktop(_WPDesktop),
-                        prcd->ulHelpPanel,
-                        (PSZ)prcd->pszHelpLibrary);
+                               prcd->ulHelpPanel,
+                               (PSZ)prcd->pszHelpLibrary);
             }
         break; }
 
@@ -601,7 +601,6 @@ void _Optlink cll_fntMethodCollectThread(PVOID ptiMyself)
                (MPARAM)pMethodInfo,
                0);
     free(pmti);
-    thrGoodbye((PTHREADINFO)ptiMyself);
 }
 
 /*
@@ -720,6 +719,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
             // class object exists:
             // start thread for collecting method info
             thrCreate(&pClientData->ptiMethodCollectThread,
+                      96000,
                       cll_fntMethodCollectThread,
                       (ULONG)pmti);
 

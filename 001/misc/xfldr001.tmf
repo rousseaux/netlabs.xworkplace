@@ -249,6 +249,12 @@ Should we do this now?
 
 <--XFL0173-->: The trash can object has been successfully destroyed and the trash can classes have been deregistered. You should restart the WPS for the changes to take effect.
 
+<--XFL0174-->: This operation is invalid for trash objects.
+
+<--XFL0175-->: XWorkplace: File Operations Error
+
+<--XFL0176-->: The object cannot be moved to the trash can because the current drive is not supported by the trash can.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; Here follow the toolinfos (fly-over help) for the new IBM1S506/DANIS506.ADD dialog

@@ -266,7 +266,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->pszName = pNLSStrings->psz2RemoveItems;
     pcnbp->ulDlgID = ID_XSD_SET2REMOVEMENUS;
     pcnbp->usFirstControlID = ID_XSDI_FIND;
-    pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
+    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_REMOVEMENUS;
     pcnbp->ulPageID = SP_2REMOVEITEMS;
     pcnbp->pfncbInitPage    = mnuRemoveMenusInitPage;
@@ -284,7 +284,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->pszName = pNLSStrings->psz26ConfigFolderMenus;
     pcnbp->ulDlgID = ID_XSD_SET26CONFIGMENUS;
     pcnbp->usFirstControlID = ID_XSDI_CASCADE;
-    pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
+    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_CFGM;
     pcnbp->ulPageID = SP_26CONFIGITEMS;
     pcnbp->pfncbInitPage    = mnuConfigFolderMenusInitPage;
@@ -302,7 +302,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->pszName = pNLSStrings->psz25AddItems;
     pcnbp->ulDlgID = ID_XSD_SET25ADDMENUS;
     pcnbp->usFirstControlID = ID_XSDI_FILEATTRIBS;
-    pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
+    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_ADDMENUS;
     pcnbp->ulPageID = SP_25ADDITEMS;
     pcnbp->pfncbInitPage    = mnuAddMenusInitPage;

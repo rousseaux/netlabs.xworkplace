@@ -5,10 +5,6 @@ but the "installed XWorkplace Classes" page shows, that the class is still activ
 (after a WPS reboot of course). But this is not correct.
 (For reinstalling the class I must double click on XFldDisk.)
 
-trash can:
-    -- check for duplicate files in trash can
-    -- delete on non-supported drives
-
 icons:
     -- trash can icons...
     -- program file icons changing when settings notebook is opened

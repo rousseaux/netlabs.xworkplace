@@ -138,7 +138,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = pNLSStrings->pszDtpMenuPage;
     pcnbp->usFirstControlID = ID_XSDI_DTP_SORT;
-    pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP1_SUB;   // help panel for "Sort"
+    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP1_SUB;   // help panel for "Sort"
     pcnbp->ulDlgID = ID_XSD_DTP_MENUITEMS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_MENUITEMS;
     pcnbp->ulPageID = SP_DTP_MENUITEMS;
@@ -250,7 +250,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     pcnbp->pszName = pNLSStrings->pszXShutdownPage;
     pcnbp->ulDlgID = ID_XSD_DTP_SHUTDOWN;
     pcnbp->usFirstControlID = ID_SDDI_REBOOT;
-    pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
+    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_SHUTDOWN;
     pcnbp->ulPageID = SP_DTP_SHUTDOWN;
     pcnbp->pfncbInitPage    = xsdShutdownInitPage;

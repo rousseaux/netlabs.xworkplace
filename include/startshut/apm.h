@@ -76,6 +76,6 @@
 
     ULONG apmPreparePowerOff(PSZ pszError);
 
-    VOID apmDoPowerOff(VOID);
+    VOID apmDoPowerOff(BOOL fDelay);
 
 #endif

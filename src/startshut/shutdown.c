@@ -69,6 +69,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -220,7 +221,7 @@ BOOL xsdInitiateShutdown(VOID)
         psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                           && (apmPowerOffSupported())
                          );
-
+        psdp->optAPMDelay = ((pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
         #ifdef DEBUG_SHUTDOWN
             psdp->optDebug = doshQueryShiftState();
         #else
@@ -263,6 +264,7 @@ BOOL xsdInitiateShutdown(VOID)
             // everything OK: create shutdown thread,
             // which will handle the rest
             thrCreate(&(pKernelGlobals->ptiShutdownThread),
+                        3*96000,          // plenty of stack space
                         fntShutdownThread,
                         (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
             xthrPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
@@ -341,6 +343,7 @@ BOOL xsdInitiateRestartWPS(VOID)
             // everything OK: create shutdown thread,
             // which will handle the rest
             thrCreate(&(pKernelGlobals->ptiShutdownThread),
+                        3*96000,          // plenty of stack space
                         fntShutdownThread,
                         (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
             xthrPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
@@ -427,6 +430,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
             // everything OK: create shutdown thread,
             // which will handle the rest
             thrCreate(&(pKernelGlobals->ptiShutdownThread),
+                        3*96000,          // plenty of stack space
                         fntShutdownThread,
                         (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
             xthrPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
@@ -592,6 +596,7 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
  *      Global Settings.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
  */
 
 VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -647,6 +652,8 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 ? ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                 : FALSE
             );
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
+                (pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM,
             (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
@@ -676,6 +683,11 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
                     ( fXShutdownEnabled && (apmPowerOffSupported()) )
                 );
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
+                    (      fXShutdownEnabled
+                        && (apmPowerOffSupported())
+                        && (pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+                );
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
@@ -696,12 +708,13 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
  */
 
 MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                USHORT usItemID,
-                                USHORT usNotifyCode,
-                                ULONG ulExtra)      // for checkboxes: contains new state
+                               USHORT usItemID,
+                               USHORT usNotifyCode,
+                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     ULONG ulChange = 1;
     ULONG ulFlag = -1;
@@ -726,6 +739,10 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ulFlag = XSD_APMPOWEROFF;
         break;
 
+        case ID_SDDI_DELAY:
+            ulFlag = XSD_APM_DELAY;
+        break;
+
         case ID_SDDI_CONFIRM:
             ulFlag = XSD_CONFIRM;
         break;
@@ -740,7 +757,6 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         // Reboot Actions (Desktop page 1)
         case ID_SDDI_REBOOTEXT:
-            cmnSetHelpPanel(ID_XFH_REBOOTEXT);
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
                       pcnbp->hwndFrame,                  // owner
                       (PFNWP)fnwpUserRebootOptions,     // dialog procedure
@@ -752,7 +768,6 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         // Auto-close details (Desktop page 1)
         case ID_SDDI_AUTOCLOSEDETAILS:
-            cmnSetHelpPanel(ID_XFH_AUTOCLOSEDETAILS);
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
                       pcnbp->hwndFrame,             // owner
                       (PFNWP)fnwpAutoCloseDetails,    // dialog procedure
@@ -941,6 +956,7 @@ APIRET xsdFlushWPS2INI(VOID)
 
 BOOL    G_fConfirmWindowExtended = TRUE;
 BOOL    G_fConfirmDialogReady = FALSE;
+ULONG   G_ulConfirmHelpPanel = NULLHANDLE;
 
 /*
  *@@ ReformatConfirmWindow:
@@ -1015,11 +1031,16 @@ MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     break;
                 }
 
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,
+                           G_ulConfirmHelpPanel);
         break;
 
         default:
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
     return (mrc);
 }
@@ -1053,8 +1074,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
         G_fConfirmWindowExtended = TRUE;
         G_fConfirmDialogReady = FALSE;
-
-        cmnSetHelpPanel(ID_XMH_XSHUTDOWN);
+        G_ulConfirmHelpPanel = ID_XMH_XSHUTDOWN;
         hwndConfirm = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
                                  fnwpConfirm,
                                  hmodResource,
@@ -1229,7 +1249,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
     HPOINTER hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
                                       ID_SDICON);
 
-    cmnSetHelpPanel(ID_XMH_RESTARTWPS);
+    G_ulConfirmHelpPanel = ID_XMH_RESTARTWPS;
     hwndConfirm = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
                              fnwpConfirm,
                              hmodResource,
@@ -1404,7 +1424,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 break; }
 
                 default:
-                    mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
         break; }
 
@@ -1561,14 +1581,19 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     }
                     else
                         // dismiss dlg
-                        mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                        mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break; }
 
                 default:  // includes DID_CANCEL
-                    mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
             }
         break; }
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,
+                           ID_XFH_AUTOCLOSEDETAILS);
+        break;
 
         /*
          * WM_DESTROY:
@@ -1582,11 +1607,11 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             xsdFreeAnimation(&sdAnim);
             lstFree(pData->pllAutoClose);
             free(pData);
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; } // continue
 
         default:
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break;
     }
     return (mrc);
@@ -1760,7 +1785,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 break; }
 
                 default:
-                    mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
         break; }
 
@@ -2101,7 +2126,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
                     // dismiss dlg
                     if (fValid)
-                        mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                        mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break; }
 
                 default: // includes DID_CANCEL
@@ -2173,10 +2198,15 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             break;
                         }
                     }
-                    mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
             }
         break; }
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,
+                           ID_XFH_REBOOTEXT);
+        break;
 
         /*
          * WM_DESTROY:
@@ -2192,11 +2222,11 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             if (pData->ppi != NULL)
                 doshFreePartitionsList(pData->ppi);
             free(pData);
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
 
         default:
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break;
     }
     return (mrc);
@@ -3303,8 +3333,6 @@ void _Optlink fntShutdownThread(PVOID ulpti)
     }
 
     // end of Shutdown thread
-    thrGoodbye(pti);
-
     // thread exits!
 }
 
@@ -3476,9 +3504,9 @@ VOID xsdCloseVIO(HWND hwndFrame)
                 // no auto-close: confirmation wnd
                 xsdLog("    Not found on auto-close list, auto-close is off, query-action dlg:\n");
 
-                cmnSetHelpPanel(ID_XFH_CLOSEVIO);
+                cmnSetDlgHelpPanel(ID_XFH_CLOSEVIO);
                 hwndVioDlg = WinLoadDlg(HWND_DESKTOP, hwndShutdownStatus,
-                                        fnwpDlgGeneric,
+                                        cmn_fnwpDlgWithHelp,
                                         cmnQueryNLSModuleHandle(FALSE),
                                         ID_SDD_CLOSEVIO,
                                         NULL);
@@ -3653,6 +3681,7 @@ MRESULT EXPENTRY fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                 {
                     // first call; this one's called twice!
                     thrCreate(&(pKernelGlobals->ptiUpdateThread),
+                              3*96000,          // plenty of stack space
                               xsd_fntUpdateThread,
                               NULLHANDLE);
 
@@ -4677,7 +4706,7 @@ VOID xsdFinishAPMPowerOff(VOID)
     // above, this flag is still TRUE; we
     // will now call the function which
     // actually turns the power off
-    apmDoPowerOff();
+    apmDoPowerOff(psdParams->optAPMDelay);
     // we do _not_ return from that function
 }
 
@@ -4913,7 +4942,6 @@ void _Optlink xsd_fntUpdateThread(PVOID ptiMyself)
         WinTerminate(habUpdateThread);
     }
 
-    thrGoodbye((PTHREADINFO)ptiMyself);
     #ifdef DEBUG_SHUTDOWN
         DosBeep(100, 100);
     #endif

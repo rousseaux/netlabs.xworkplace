@@ -101,6 +101,8 @@
 
     VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf);
 
+    BOOL trshIsOnSupportedDrive(WPObject *pObject);
+
     /* ******************************************************************
      *                                                                  *
      *   Trash can frame subclassing                                    *

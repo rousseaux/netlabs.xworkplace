@@ -68,19 +68,18 @@
                     // item is always NULL
             ULONG       ulSizeThis;
                     // size of pObject; if pObject is a folder,
-                    // this has the size of all direct objects
-                    // on pllContentsSFL
-            ULONG       ulSizeOfAllContents;
+                    // this has the size of all objects
+                    // on pllContentsSFL and sub-lists
         } EXPANDEDOBJECT, *PEXPANDEDOBJECT;
 
-        PLINKLIST fopsFolder2SFL(WPFolder *pFolder,
-                                 PULONG pulSizeContents);
+        PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
+                                          PULONG pulSizeContents);
 
-        PEXPANDEDOBJECT fopsObject2SOI(WPObject *pObject);
+        PEXPANDEDOBJECT fopsExpandObject(WPObject *pObject);
 
-        VOID fopsFreeSFL(PLINKLIST pllSFL);
+        VOID fopsFreeExpandedList(PLINKLIST pllSFL);
 
-        VOID fopsFreeSOI(PEXPANDEDOBJECT pSOI);
+        VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI);
 
     #endif
 
@@ -96,6 +95,9 @@
                                  PSZ pszTitle,
                                  ULONG cbTitle,
                                  ULONG menuID);
+
+    BOOL fopsMoveObjectConfirmed(WPObject *pObject,
+                                 WPFolder *pTargetFolder);
 
     /********************************************************************
      *                                                                  *
@@ -114,7 +116,7 @@
     /*
      *@@ FOPSUPDATE:
      *      notification structure used with
-     *      FNFILEOPSCALLBACK.
+     *      FNFOPSPROGRESSCALLBACK.
      *
      *@@added V0.9.1 (2000-01-30) [umoeller]
      */
@@ -132,7 +134,7 @@
     } FOPSUPDATE, *PFOPSUPDATE;
 
     /*
-     *@@ FNFILEOPSCALLBACK:
+     *@@ FNFOPSPROGRESSCALLBACK:
      *      callback prototype used with file operations.
      *      Specify such a function with
      *      fopsCreateFileTasksList.
@@ -169,16 +171,52 @@
      *@@added V0.9.1 (2000-01-30) [umoeller]
      */
 
-    typedef BOOL APIENTRY FNFILEOPSCALLBACK(PFOPSUPDATE pfu,
-                                            ULONG ulUser);
+    typedef BOOL APIENTRY FNFOPSPROGRESSCALLBACK(PFOPSUPDATE pfu,
+                                                 ULONG ulUser);
+
+    #define FOPSERR_NODELETETRASHOBJECT         1
+    #define FOPSERR_OBJSTYLENODELETE            2
+    #define FOPSERR_DESTROYNONTRASHOBJECT       3
+    #define FOPSERR_TRASHDRIVENOTSUPPORTED      4
+
+    /*
+     *@@ FNFOPSERRORCALLBACK:
+     *      error callback if problems are encountered
+     *      during file processing. If this function
+     *      returns TRUE, processing continues. If this
+     *      returns FALSE, processing is halted.
+     *
+     *      ulError will be one of the following:
+     *
+     *      -- FOPSERR_NODELETETRASHOBJECT: cannot move
+     *         XWPTrashObject instances. Shouldn't happen.
+     *
+     *      -- FOPSERR_OBJSTYLENODELETE: object to be deleted
+     *         has OBJSTYLE_NODELETE flag.
+     *
+     *      -- FOPSERR_DESTROYNONTRASHOBJECT: trying to
+     *         destroy trash object which is not of XWPTrashObject
+     *         class. Shouldn't happen.
+     *
+     *      -- FOPSERR_TRASHDRIVENOTSUPPORTED: trying to
+     *         move an object to the trash can whose drive
+     *         is not supported.
+     *
+     *@@added V0.9.2 (2000-03-04) [umoeller]
+     */
+
+    typedef BOOL APIENTRY FNFOPSERRORCALLBACK(WPObject *pObject,
+                                              ULONG ulError);
 
     HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
                                          WPFolder *pSourceFolder,
                                          WPFolder *pTargetFolder,
-                                         FNFILEOPSCALLBACK *pfnCallback,
+                                         FNFOPSPROGRESSCALLBACK *pfnProgressCallback,
+                                         FNFOPSERRORCALLBACK *pfnErrorCallback,
                                          ULONG ulUser);
 
     BOOL fopsValidateObjOperation(ULONG ulOperation,
+                                  FNFOPSERRORCALLBACK *pfnErrorCallback,
                                   WPObject *pObject);
 
     BOOL fopsAddObjectToTask(HFILETASKLIST hftl,

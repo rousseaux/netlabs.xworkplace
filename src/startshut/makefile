@@ -125,7 +125,7 @@ $(OUTPUTDIR)\archives.obj: \
 $(OUTPUTDIR)\shutdown.obj: \
     $(INC)\setup.h \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-           $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\winh.h \
+           $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \

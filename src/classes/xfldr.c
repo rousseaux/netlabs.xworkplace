@@ -413,6 +413,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
  *      this new approach was taken.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: added folder locking
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
@@ -427,6 +428,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
     {
         BOOL                 fItemsFound = FALSE;
         WPObject             *pObj;
+        BOOL                 fFolderLocked = FALSE;
 
         memset(pec, 0, sizeof(ENUMCONTENT));
 
@@ -435,59 +437,70 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         // build new list for ORDEREDLISTITEMs:
         pec->pllOrderedContent = lstCreate(TRUE);       // auto-free list items
 
-        // get the folder's content as the WPS delivers it.
-        // This is unsorted. Apparently, the WPS returns items
-        // in the following order:
-        // a)   first: file-system objects in the order returned
-        //      by the file system (i.e. alphabetically on HPFS)
-        // b)   then all abstract objects in the order they were
-        //      placed in this folder.
-
-        for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
-             (pObj);
-             pObj = _wpQueryContent(somSelf, pObj, (ULONG)QC_NEXT)
-            )
+        TRY_LOUD(excpt1, NULL)
         {
-            // create new list item
-            PORDEREDLISTITEM poliNew = malloc(sizeof(ORDEREDLISTITEM));
-            fItemsFound = TRUE;
-
-            // store object
-            poliNew->pObj = pObj;
-
-            // Each ICONPOS struct's identity string has the following format:
-            // <class>:<t><identity>
-            // with: <class> being the class of the object
-            //       <t> == A for abstracts, D for folders, F for files
-            //       <identity> for abstract objects: the handle
-            //                  for file-system objects: the filename
-
-            // now create the identity string for the search object
-            if (_somIsA(pObj, _WPAbstract))
+            fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+            if (fFolderLocked)
             {
-                // for abstract objects, this is the low word
-                // of the object handle
-                HOBJECT hobjSearch = _wpQueryHandle(pObj);
-                sprintf(poliNew->szIdentity, ":A%lX", (hobjSearch & 0xFFFF));
-            }
-            else
-            {
-                // for file-system objects, this is the object's real name
-                ULONG   ulSize = sizeof(poliNew->szIdentity)-2;
-                if (_somIsA(pObj, _WPFolder))
-                    strcpy(poliNew->szIdentity, ":D");
-                else
-                    strcpy(poliNew->szIdentity, ":F");
-                // append real name
-                _wpQueryRealName(pObj,
-                                 (poliNew->szIdentity)+2,
-                                 &ulSize,
-                                 FALSE);    // file name only
-            }
+                // get the folder's content as the WPS delivers it.
+                // This is unsorted. Apparently, the WPS returns items
+                // in the following order:
+                // a)   first: file-system objects in the order returned
+                //      by the file system (i.e. alphabetically on HPFS)
+                // b)   then all abstract objects in the order they were
+                //      placed in this folder.
 
-            lstAppendItem(pec->pllOrderedContent,
-                          poliNew);
+                for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+                     (pObj);
+                     pObj = _wpQueryContent(somSelf, pObj, (ULONG)QC_NEXT)
+                    )
+                {
+                    // create new list item
+                    PORDEREDLISTITEM poliNew = malloc(sizeof(ORDEREDLISTITEM));
+                    fItemsFound = TRUE;
+
+                    // store object
+                    poliNew->pObj = pObj;
+
+                    // Each ICONPOS struct's identity string has the following format:
+                    // <class>:<t><identity>
+                    // with: <class> being the class of the object
+                    //       <t> == A for abstracts, D for folders, F for files
+                    //       <identity> for abstract objects: the handle
+                    //                  for file-system objects: the filename
+
+                    // now create the identity string for the search object
+                    if (_somIsA(pObj, _WPAbstract))
+                    {
+                        // for abstract objects, this is the low word
+                        // of the object handle
+                        HOBJECT hobjSearch = _wpQueryHandle(pObj);
+                        sprintf(poliNew->szIdentity, ":A%lX", (hobjSearch & 0xFFFF));
+                    }
+                    else
+                    {
+                        // for file-system objects, this is the object's real name
+                        ULONG   ulSize = sizeof(poliNew->szIdentity)-2;
+                        if (_somIsA(pObj, _WPFolder))
+                            strcpy(poliNew->szIdentity, ":D");
+                        else
+                            strcpy(poliNew->szIdentity, ":F");
+                        // append real name
+                        _wpQueryRealName(pObj,
+                                         (poliNew->szIdentity)+2,
+                                         &ulSize,
+                                         FALSE);    // file name only
+                    }
+
+                    lstAppendItem(pec->pllOrderedContent,
+                                  poliNew);
+                }
+            } // end if fFolderLocked
         }
+        CATCH(excpt1) {} END_CATCH();
+
+        if (fFolderLocked)
+            _wpReleaseObjectMutexSem(somSelf);
 
         if (!fItemsFound)
         {
@@ -752,6 +765,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpCancelProcessOrderedContent(XFolder *somSelf,
  *      i.e. added to all context menus; if FALSE, it will be removed.
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
+ *@@changed V0.9.1: made folder list code generic in folder.c
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
@@ -773,6 +787,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
  *      returns TRUE if somSelf is on the list of "favorite" folders.
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
+ *@@changed V0.9.1: made folder list code generic in folder.c
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
@@ -791,6 +806,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
  *      populated at WPS bootup.
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
+ *@@changed V0.9.1: made folder list code generic in folder.c
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
@@ -811,6 +827,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
  *      returns TRUE if somSelf has the QuickOpen feature ON.
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
+ *@@changed V0.9.1: made folder list code generic in folder.c
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
@@ -996,10 +1013,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *@@added V0.9.0 [umoeller]
  */
 
-/*
- * BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
- */
-
 SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
                                               HWND hwndStatusBar,
                                               HWND hwndCnr)
@@ -1180,8 +1193,8 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
     XFolder_parent_WPFolder_wpObjectReady(somSelf, ulCode, refObject);
 
     xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
-                     (MPARAM)somSelf,
-                     MPNULL);
+                      (MPARAM)somSelf,
+                      MPNULL);
 }
 
 /*
@@ -1262,7 +1275,7 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
             // object HANDLE and not somSelf because somSelf
             // is no longer valid after having called the parent
             xthrPostWorkerMsg(WOM_DELETEFOLDERPOS,
-                             (MPARAM)hObj, NULL);
+                              (MPARAM)hObj, NULL);
 
     return (brc);
 }

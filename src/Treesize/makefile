@@ -55,7 +55,7 @@ ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj $(OUTPUTDIR)\eah.obj $(OUTPUTDIR)\cnrh.obj 
 all: $(XWPRUNNING)\bin\treesize.exe
     @echo ----- Leaving $(MAKEDIR)
 
-$(OUTPUTDIR)\treesize.obj: $(@B).c $(HEADERS)
+$(OUTPUTDIR)\treesize.obj: $(@B).c $(HEADERS) ..\..\include\bldlevel.h
           $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 
 $(OUTPUTDIR)\eah.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)

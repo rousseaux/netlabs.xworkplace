@@ -2088,21 +2088,21 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
                                 else
                                 {   // no text data in clipboard
                                     WinCloseClipbrd(hab);
-                                    cmnSetHelpPanel(ID_XFH_NOTEXTCLIP);
+                                    cmnSetDlgHelpPanel(ID_XFH_NOTEXTCLIP);
                                     if (WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                                          HWND_DESKTOP,             // owner is desktop
-                                          (PFNWP)fnwpDlgGeneric,    // dialog procedure, defd. at bottom
-                                          cmnQueryNLSModuleHandle(FALSE),  // from resource file
-                                          ID_XFD_NOTEXTCLIP,        // dialog resource id
-                                          (PVOID)NULL)             // no dialog parameters
-                                       == DID_CANCEL)
-                                          brc = FALSE;
+                                                  HWND_DESKTOP,             // owner is desktop
+                                                  (PFNWP)cmn_fnwpDlgWithHelp, // dialog procedure (common.c)
+                                                  cmnQueryNLSModuleHandle(FALSE),  // from resource file
+                                                  ID_XFD_NOTEXTCLIP,        // dialog resource id
+                                                  (PVOID)NULL)             // no dialog parameters
+                                            == DID_CANCEL)
+                                        brc = FALSE;
                                 }
                             }
                             else
                                 DebugBox(HWND_DESKTOP,
                                          "XFolder",
-                                         "The clipboard could not be opened.");
+                                         "Unable to open clipboard.");
                         }
                         if (ParamsChanged)
                             pProgDetails->pszParameters = szNewParams;
@@ -2431,7 +2431,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                                      cmnQueryNLSModuleHandle(FALSE),
                                                      ID_XFD_SELECTSOME,
                                                      (PVOID)hwndFrame);    // dlg params
-                    cmnSetHelpPanel(ID_XFH_SELECTSOME);
+                    // cmnSetHelpPanel();
                     WinShowWindow(hwndSelectSome, TRUE);
                     brc = TRUE;
                 break; }
