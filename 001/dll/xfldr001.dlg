@@ -2176,28 +2176,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_RUN LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Run", ID_XFD_RUN, 14, 14, 229, 95, WS_VISIBLE, FCF_SYSMENU |
-            FCF_TITLEBAR
-    BEGIN
-        LTEXT           "~Enter the command to run and the startup directory"
-                        ":", -1, 5, 84, 219, 8, DT_MNEMONIC
-        ENTRYFIELD      "", ID_XFD_RUN_COMMAND, 7, 72, 217, 8, ES_MARGIN
-        RTEXT           "", ID_XFD_RUN_FULLPATH, 6, 58, 220, 8
-        AUTOCHECKBOX    "Start ~minimized", ID_XFD_RUN_MINIMIZED, 98, 50,
-                        126, 8
-        AUTOCHECKBOX    "Close window on e~xit", ID_XFD_RUN_AUTOCLOSE, 98,
-                        42, 126, 8
-        LTEXT           "~Startup directory:", -1, 4, 34, 78, 8, DT_MNEMONIC |
-                        NOT WS_GROUP
-        ENTRYFIELD      "", ID_XFD_RUN_STARTUPDIR, 6, 22, 217, 8, ES_MARGIN
-        DEFPUSHBUTTON   "~OK", DID_OK, 5, 4, 65, 12
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 82, 4, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 158, 4, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XFD_STARTUPPANIC LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XWorkplace Panic", ID_XFD_STARTUPPANIC, 32, -16, 223, 194, ,
@@ -2950,9 +2928,40 @@ BEGIN
                         CTLDATA 12, 0, 50, 0, 1, 0
         CTEXT           "0 s", ID_XSDI_MOUSE_AUTOMOVE_TXT2, 160, 34, 28, 12,
                         DT_VCENTER | DT_MNEMONIC
-        AUTOCHECKBOX    "~Animation", ID_XSDI_MOUSE_AUTOMOVE_ANIMATE, 22, 24, 50, 8
+        AUTOCHECKBOX    "~Animation", ID_XSDI_MOUSE_AUTOMOVE_ANIMATE, 22, 24,
+                        50, 8
         PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XFD_RUN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Run", ID_XFD_RUN, 0, 4, 230, 103, , FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        LTEXT           "~Enter the command to run and the startup directory"
+                        ":", -1, 5, 92, 220, 8, DT_MNEMONIC
+        CONTROL         "", ID_XFD_RUN_COMMAND, 5, 16, 220, 74, WC_COMBOBOX,
+                        CBS_DROPDOWN | WS_TABSTOP | WS_VISIBLE
+        RTEXT           "", ID_XFD_RUN_FULLPATH, 5, 68, 220, 8
+        AUTOCHECKBOX    "Start ~minimized", ID_XFD_RUN_MINIMIZED, 5, 58, 105,
+                        8, BS_NOPOINTERFOCUS
+        AUTOCHECKBOX    "~Full screen", ID_XFD_RUN_FULLSCREEN, 5, 50, 105, 8,
+                        BS_NOPOINTERFOCUS | NOT WS_TABSTOP
+        AUTOCHECKBOX    "Close window on e~xit", ID_XFD_RUN_AUTOCLOSE, 5, 42,
+                        105, 8, BS_NOPOINTERFOCUS | NOT WS_TABSTOP
+        GROUPBOX        "Win-OS/2 settings", ID_XFD_RUN_WINOS2_GROUP, 116, 38, 108, 28
+        AUTOCHECKBOX    "~Enhanced mode", ID_XFD_RUN_ENHANCED, 122, 50, 92,
+                        8, BS_NOPOINTERFOCUS | NOT WS_TABSTOP | WS_DISABLED
+        AUTOCHECKBOX    "~Separate session", ID_XFD_RUN_SEPARATE, 122, 42,
+                        88, 8, BS_NOPOINTERFOCUS | NOT WS_TABSTOP |
+                        WS_DISABLED
+        LTEXT           "~Startup directory:", -1, 5, 32, 78, 8, DT_MNEMONIC
+        ENTRYFIELD      "", ID_XFD_RUN_STARTUPDIR, 7, 22, 216, 8, ES_MARGIN
+        PUSHBUTTON      "~OK", DID_OK, 5, 4, 50, 12, WS_DISABLED
+        DEFPUSHBUTTON   "~Cancel", DID_CANCEL, 60, 4, 50, 12, WS_GROUP
+        PUSHBUTTON      "~Browse...", ID_XFD_RUN_BROWSE, 115, 4, 50, 12
+        PUSHBUTTON      "~Help", DID_HELP, 170, 4, 50, 12, BS_HELP
     END
 END

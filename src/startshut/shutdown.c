@@ -3936,7 +3936,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             winhSleep(300); // V0.9.12 (2001-04-29) [umoeller]
 
             // close WarpCenter next (V0.9.5, from V0.9.3)
-            if (pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter)
+            if (somIsObj(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter))
             {
                 // WarpCenter still open?
                 if (_wpFindUseItem(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter,
@@ -3950,7 +3950,23 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                     xsdLog(LogFile,
                            __FUNCTION__ ": Found open WarpCenter USEITEM, closing...\n");
 
-                    _wpClose(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
+                    _wpSaveImmediate(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
+                    // _wpClose(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
+                    WinPostMsg(pShutdownData->SDConsts.hwndOpenWarpCenter,
+                               WM_COMMAND,
+                               MPFROMSHORT(0x66F7),
+                                    // "Close" menu item in WarpCenter context menu...
+                                    // nothing else works right!
+                               MPFROM2SHORT(CMDSRC_OTHER,
+                                            FALSE));     // keyboard?!?
+
+                    _wpWaitForClose(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter,
+                                    pShutdownData->SDConsts.hwndOpenWarpCenter,
+                                    VIEW_ANY,
+                                    SEM_INDEFINITE_WAIT,
+                                    TRUE);
+
+                    pShutdownData->SDConsts.hwndOpenWarpCenter = NULLHANDLE;
                 }
             }
 
@@ -4771,29 +4787,33 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     // close open WarpCenter first, if desired
                     // V0.9.7 (2000-12-08) [umoeller]
                     xsdLog(pShutdownData->ShutdownLogFile, "  WarpCenter treatment:\n");
-                    if (pShutdownData->SDConsts.hwndOpenWarpCenter)
+                    if (somIsObj(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter))
                     {
-                        xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenter found, has HWND 0x%lX\n",
-                               pShutdownData->SDConsts.hwndOpenWarpCenter);
-                        if (pShutdownData->sdParams.optWarpCenterFirst)
+                        if (pShutdownData->SDConsts.hwndOpenWarpCenter)
                         {
-                            xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is ON, posting WM_COMMAND 0x66F7\n");
-                            xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
-                                                   "WarpCenter");
-                            WinPostMsg(pShutdownData->SDConsts.hwndOpenWarpCenter,
-                                       WM_COMMAND,
-                                       MPFROMSHORT(0x66F7),
-                                            // "Close" menu item in WarpCenter context menu...
-                                            // nothing else works right!
-                                       MPFROM2SHORT(CMDSRC_OTHER,
-                                                    FALSE));     // keyboard?!?
-                            winhSleep(400);
+                            xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenter found, has HWND 0x%lX\n",
+                                   pShutdownData->SDConsts.hwndOpenWarpCenter);
+                            if (pShutdownData->sdParams.optWarpCenterFirst)
+                            {
+                                xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is ON, posting WM_COMMAND 0x66F7\n");
+                                xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
+                                                       "WarpCenter");
+                                WinPostMsg(pShutdownData->SDConsts.hwndOpenWarpCenter,
+                                           WM_COMMAND,
+                                           MPFROMSHORT(0x66F7),
+                                                // "Close" menu item in WarpCenter context menu...
+                                                // nothing else works right!
+                                           MPFROM2SHORT(CMDSRC_OTHER,
+                                                        FALSE));     // keyboard?!?
+                                winhSleep(400);
+                                pShutdownData->SDConsts.hwndOpenWarpCenter = NULLHANDLE;
+                            }
+                            else
+                                xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is OFF, skipping...\n");
                         }
                         else
-                            xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is OFF, skipping...\n");
+                            xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenter not found.\n");
                     }
-                    else
-                        xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenter not found.\n");
 
                     // mark status as "closing windows now"
                     pShutdownData->ulStatus = XSD_CLOSING;
@@ -4801,10 +4821,10 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                      ID_SDDI_BEGINSHUTDOWN,
                                      FALSE);
 
-                    /* WinPostMsg(pShutdownData->SDConsts.hwndMain,
+                    WinPostMsg(pShutdownData->SDConsts.hwndMain,
                                WM_COMMAND,
                                MPFROM2SHORT(ID_SDMI_CLOSEITEM, 0),
-                               MPNULL); */
+                               MPNULL);
                 break; }
 
                 /*

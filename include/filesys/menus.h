@@ -45,22 +45,6 @@
      *                                                                  *
      ********************************************************************/
 
-    // markers for XFolder variable menu items:
-    // these flags are used in the global linked list
-    // of menu items which are inserted into folder
-    // context menus to determine what we need to do
-    // if a menu item gets selected
-    #define OC_PROGRAM              2     // program object
-    #define OC_FOLDER               3     // folder: insert submenu
-    #define OC_ACTION               4     // not used
-    #define OC_TEMPLATE             5     // template: create new object
-    #define OC_OTHER                1     // all others: simply open
-
-    #define OC_CONTENT              7     // this item is part of the "folder content" menu
-    #define OC_CONTENTFOLDER        8     // the same, but it's a folder
-
-    #define OC_SEPARATOR            10    // program object, but separator only
-
     #define CLIPBOARDKEY "%**C"        /* code in program object's parameter list for
                                           inserting clipboard data */
 

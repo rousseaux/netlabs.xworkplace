@@ -805,13 +805,15 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
     if (    // PageMage running?
             (G_HookData.hwndPageMageFrame)
             // switching not disabled?
-         && (!G_HookData.fDisableSwitching)
+         && (!G_HookData.fDisablePgmgSwitching)
                 // this flag is set frequently when PageMage
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
        )
     {
         // OK, go ahead:
+        PSWP pswp;
+
         ProcessMsgsForPageMage(psmh->hwnd,
                                psmh->msg,
                                psmh->mp1,
@@ -819,29 +821,34 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 
         // V0.9.7 (2001-01-23) [umoeller]
         if (    (G_HookData.PageMageConfig.fStayOnTop)
-             // && (psmh->msg == WM_ADJUSTWINDOWPOS)    doesn't work
+             // && (psmh->msg == WM_ADJUSTWINDOWPOS)        doesn't work
              && (psmh->msg == WM_WINDOWPOSCHANGED)
              && (WinIsWindowVisible(G_HookData.hwndPageMageFrame))
+             && (pswp = (PSWP)psmh->mp1)
+             && (pswp->fl & SWP_ZORDER)
+             && (pswp->hwndInsertBehind == HWND_TOP)
+                // only do this if a desktop window is moved to the top
+             && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
            )
         {
-            PSWP pswp;
-            if (    (pswp = (PSWP)psmh->mp1)
-                 // && (pswp->fl & SWP_ZORDER)
-                 && (pswp->hwndInsertBehind == HWND_TOP)
-                 && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
-               )
-            {
-                // hack this to move behind PageMage frame
+            /* DosBeep(1000, 20);
+            pswp->hwndInsertBehind = G_HookData.hwndPageMageFrame; */
 
-                // but disable switching V0.9.12 (2001-05-31) [umoeller]
-                BOOL fOld = G_HookData.fDisableSwitching;
-                G_HookData.fDisableSwitching = TRUE;
-                WinSetWindowPos(G_HookData.hwndPageMageFrame,
-                                HWND_TOP,
-                                0, 0, 0, 0,
-                                SWP_ZORDER | SWP_SHOW);
-                G_HookData.fDisableSwitching = fOld;
-            }
+            // notify PageMage that it should go back to
+            // top by itself
+            /* WinPostMsg(G_HookData.hwndPageMageClient,
+                       PGMG_INVALIDATECLIENT,
+                       (MPARAM)FALSE,   // delayed
+                       0); */
+
+            // but disable switching V0.9.12 (2001-05-31) [umoeller]
+            BOOL fOld = G_HookData.fDisablePgmgSwitching;
+            G_HookData.fDisablePgmgSwitching = TRUE;
+            WinSetWindowPos(G_HookData.hwndPageMageFrame,
+                            HWND_TOP,
+                            0, 0, 0, 0,
+                            SWP_ZORDER | SWP_SHOW);
+            G_HookData.fDisablePgmgSwitching = fOld;
         }
     }
 
@@ -1047,7 +1054,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     if (    // PageMage running?
             (G_HookData.hwndPageMageFrame)
             // switching not disabled?
-         && (!G_HookData.fDisableSwitching)
+         && (!G_HookData.fDisablePgmgSwitching)
                 // this flag is set frequently when PageMage
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever

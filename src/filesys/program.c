@@ -1233,7 +1233,8 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                 // start the app (more hacks in appStartApp,
                 // which calls WinStartApp in turn)
                 happ = appStartApp(pKernelGlobals->hwndThread1Object,
-                                   pProgDetails);
+                                   pProgDetails,
+                                   0); // V0.9.14
 
                 if (happ)
                 {

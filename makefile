@@ -67,26 +67,6 @@
 # include setup (compiler options etc.)
 !include setup.in
 
-# MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
-# PROJECT_OUTPUT_DIR has been set by setup.in based on the environment.
-MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
-!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
-!endif
-
-!ifdef XWP_DEBUG
-!if [@echo ---^> Debug build has been enabled.]
-!endif
-!else
-!if [@echo ---^> Building release code (debugging disabled).]
-!endif
-!endif
-
-# create output directory
-!if [@md $(PROJECT_OUTPUT_DIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
-
 # VARIABLES
 # ---------
 
@@ -199,12 +179,6 @@ ANIOBJS =
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = $(XWP_OUTPUT_ROOT)\helpers.lib
 
-!ifdef XWP_DEBUG
-PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
-!else
-PMPRINTF_LIB =
-!endif
-
 # The following macros contains the .OBJ files for the XCenter plugins.
 DISKFREEOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_diskfree.obj $(PMPRINTF_LIB)
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
@@ -214,40 +188,6 @@ HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
 D_CDFSOBJS = $(XWP_OUTPUT_ROOT)\widgets\d_cdfs.obj $(PMPRINTF_LIB)
-
-# The PGMGDMNOBJS macro contains all the PageMage .OBJ files,
-# which go into XWPDAEMN.EXE.
-PGMGDMNOBJS = \
-$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_control.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_move.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_settings.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\pgmg_winscan.obj
-
-# The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;
-# this includes PGMGDMNOBJS.
-DMNOBJS = \
-$(XWP_OUTPUT_ROOT)\exe_mt\xwpdaemn.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\drivemonitor.obj \
-$(PGMGDMNOBJS) \
-$(XWP_OUTPUT_ROOT)\exe_mt\debug.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\gpih.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\linklist.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\except.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\dosh.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\memdebug.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\shapewin.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\stringh.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\threads.obj \
-$(XWP_OUTPUT_ROOT)\exe_mt\xstring.obj \
-$(XWP_OUTPUT_ROOT)\xwphook.lib
-
-HOOKOBJS = \
-$(XWP_OUTPUT_ROOT)\xwphook.obj \
-# mousemove next, since it gets called most frequently
-$(XWP_OUTPUT_ROOT)\hk_msmove.obj \
-$(XWP_OUTPUT_ROOT)\hk_char.obj \
-$(XWP_OUTPUT_ROOT)\hk_misc.obj \
-$(XWP_OUTPUT_ROOT)\hk_scroll.obj
 
 # objects for XDEBUG.DLL (debugging only)
 DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
@@ -297,7 +237,7 @@ dep:
     @cd $(CURRENT_DIR)
     @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
-    @nmake -nologo dep "NOINCLUDEDEPEND=1"
+    @nmake -nologo dep "NOINCLUDEDEPEND=1" $(SUBMAKE_PASS_STRING)
     @cd $(CURRENT_DIR)
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
@@ -401,8 +341,8 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\plugins\drvdlgs\d_cdfs.dll \
-      $(XWPRUNNING)\bin\xwphook.dll \
-      $(XWPRUNNING)\bin\xwpdaemn.exe
+#      $(XWPRUNNING)\bin\xwphook.dll \
+#      $(XWPRUNNING)\bin\xwpdaemn.exe
 #      $(XWPRUNNING)\bin\xwpfonts.fon
 #      $(XWPRUNNING)\bin\xdebug.dll
 
@@ -680,72 +620,6 @@ $(MODULESDIR)\d_cdfs.dll: $(D_CDFSOBJS) src\widgets\$(@B).def
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(D_CDFSOBJS)
 <<
-!ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
-!endif
-        @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
-!ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
-!endif
-        @cd $(CURRENT_DIR)
-
-#
-# Linking XWPDAEMN.EXE
-#
-$(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
-        cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-
-# update DEF file if buildlevel has changed
-src\Daemon\xwpdaemn.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace PM daemon"
-
-# create import library from XWPHOOK.DLL
-$(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
-        implib /nologo $(XWP_OUTPUT_ROOT)\$(@B).lib $(MODULESDIR)\$(@B).dll
-
-$(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) $(XWP_OUTPUT_ROOT)\exe_mt\$(@B).res
-        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
-        $(LINK) @<<
-/OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
-<<
-!ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
-!endif
-        @cd $(MODULESDIR)
-        $(RC) ..\exe_mt\$(@B).res $(@B).exe
-        mapsym /n $(@B).map > NUL
-!ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
-!endif
-        @cd $(CURRENT_DIR)
-
-#
-# Linking XWPHOOK.DLL
-#
-$(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
-# no unlock, this is a hook        unlock $@
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-!ifdef DYNAMIC_TRACE
-        @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
-        maptsf $(@B).map /MAJOR=253 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
-        trcust $(@B).tsf /I /L=bin\$(@B).dll /node /M=$(@B).map
-        @echo $(MAKEDIR)\makefile: Done creating TRACE files for $(@B).dll
-        cmd.exe /c copy $(@B).tdf $(XWPRUNNING)\bin
-        cmd.exe /c del $(@B).tdf
-        cmd.exe /c copy TRC00FD.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
-        cmd.exe /c del TRC00FD.TFF
-!endif
-
-# update DEF file if buildlevel has changed
-src\hook\xwphook.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XWorkplace PM hook module"
-
-$(MODULESDIR)\xwphook.dll: src\hook\$(@B).def $(HOOKOBJS)
-        @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\hook\$(@B).def $(HOOKOBJS) $(PMPRINTF_LIB)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif

@@ -48,11 +48,7 @@ OUTPUTDIR=$(MAIN_OUTPUTDIR)\xwpsec32.sys
 MODULESDIR=$(MAIN_OUTPUTDIR)\modules
 
 # create output directory
-!if [@md $(MAIN_OUTPUTDIR) 2> NUL]
-!endif
 !if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
 !endif
 
 # FIXED MACROS

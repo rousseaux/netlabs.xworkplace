@@ -50,6 +50,26 @@ PROJECT_OUTPUT_DIR = $(XWP_OUTPUT_ROOT)
 # will write stuff to.
 HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 
+# MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
+# PROJECT_OUTPUT_DIR has been set by setup.in based on the environment.
+MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
+!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
+!endif
+
+!ifdef XWP_DEBUG
+!if [@echo ---^> Debug build has been enabled.]
+!endif
+!else
+!if [@echo ---^> Building release code (debugging disabled).]
+!endif
+!endif
+
+# create output directory
+!if [@md $(PROJECT_OUTPUT_DIR) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
+!endif
+
 !ifndef XWPRUNNING
 !error in setup.in: You must set XWPRUNNING to an existing XWorkplace binary installation. See PROGREF.INF for details.
 !endif
@@ -113,6 +133,12 @@ XWPRELEASE_MAP = $(XWPRELEASE)\map
 
 !ifndef HELPERS_BASE
 HELPERS_BASE = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
+!endif
+
+!ifdef XWP_DEBUG
+PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
+!else
+PMPRINTF_LIB =
 !endif
 
 

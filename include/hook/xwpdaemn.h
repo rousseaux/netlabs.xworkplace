@@ -85,6 +85,9 @@
     VOID                dmnKillPageMage(BOOL fNotifyKernel);
 
     // pgmg_control.c
+    BOOL pgmcDisableSwitching(VOID);
+    VOID pgmcReenableSwitching(VOID);
+
     BOOL pgmcCreateMainControlWnd(VOID);
     LONG pgmcCalcNewFrameCY(LONG cx);
     VOID pgmcSetPgmgFramePos(HWND);

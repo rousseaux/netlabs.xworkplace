@@ -47,13 +47,11 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 # 2) the build tree can be on a different physical drive for
 #    speed.
 BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
-!if [@echo       BASE_OUTPUTDIR is $(BASE_OUTPUTDIR)]
-!endif
 OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
 
 # create output directory
-!if [@md $(BASE_OUTPUTDIR) 2> NUL]
-!endif
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
@@ -62,11 +60,12 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = \
-$(BASE_OUTPUTDIR)\xwphook.obj \
-$(BASE_OUTPUTDIR)\hk_char.obj \
-$(BASE_OUTPUTDIR)\hk_misc.obj \
-$(BASE_OUTPUTDIR)\hk_msmove.obj \
-$(BASE_OUTPUTDIR)\hk_scroll.obj
+$(OUTPUTDIR)\xwphook.obj \
+# mousemove next, since it gets called most frequently
+$(OUTPUTDIR)\hk_msmove.obj \
+$(OUTPUTDIR)\hk_char.obj \
+$(OUTPUTDIR)\hk_misc.obj \
+$(OUTPUTDIR)\hk_scroll.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -78,7 +77,8 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(OUTPUTDIR)\xwpdaemn.res
+    $(XWPRUNNING)\bin\xwphook.dll
+#    $(OBJS)
     @echo ----- Leaving $(MAKEDIR)
 !endif
 
@@ -95,13 +95,13 @@ dep:
     $(RUN_FASTDEP) *.c
     @echo ----- Leaving $(MAKEDIR)
 
-.c.{$(BASE_OUTPUTDIR)}.obj:
+.c.{$(OUTPUTDIR)}.obj:
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-    $(CC_DLL_MT) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-    $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # The .OBJ-from-sources dependencies are now automatically
@@ -112,5 +112,38 @@ dep:
 !include .depend
 !endif
 
+#
+# Linking XWPHOOK.DLL
+#
+$(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
+# no unlock, this is a hook        unlock $@
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
+!ifdef DYNAMIC_TRACE
+        @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
+        maptsf $(@B).map /MAJOR=253 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
+        trcust $(@B).tsf /I /L=bin\$(@B).dll /node /M=$(@B).map
+        @echo $(MAKEDIR)\makefile: Done creating TRACE files for $(@B).dll
+        cmd.exe /c copy $(@B).tdf $(XWPRUNNING)\bin
+        cmd.exe /c del $(@B).tdf
+        cmd.exe /c copy TRC00FD.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
+        cmd.exe /c del TRC00FD.TFF
+!endif
 
+# update DEF file if buildlevel has changed
+xwphook.def: $(PROJECT_BASE_DIR)\include\bldlevel.h
+        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "XWorkplace PM hook module"
+
+$(MODULESDIR)\xwphook.dll: $(@B).def $(OBJS)
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ $(@B).def $(OBJS) $(PMPRINTF_LIB)
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
 

@@ -347,6 +347,8 @@ BOOL pgmmMoveIt(LONG lXDelta,
         } // end if (    (cbSwpnew)
           //          && (paswpNew = (PSWP)malloc(cbSwpNew)))
 
+        pgmwUnlock();       // moved this up V0.9.14 (2001-08-25) [umoeller]
+
         if (paswpNew)
         {
             if (cSwpNewUsed)
@@ -361,15 +363,16 @@ BOOL pgmmMoveIt(LONG lXDelta,
                 } */
 
                 // disable message processing in the hook
-                G_pHookData->fDisableSwitching = TRUE;
+                if (pgmcDisableSwitching())
+                {
+                    // now set all windows at once, this saves a lot of
+                    // repainting...
+                    fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
+                                                         (PSWP)paswpNew,
+                                                         cSwpNewUsed);
 
-                // now set all windows at once, this saves a lot of
-                // repainting...
-                fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
-                                                     (PSWP)paswpNew,
-                                                     cSwpNewUsed);
-
-                G_pHookData->fDisableSwitching = FALSE;
+                    pgmcReenableSwitching();
+                }
 
                 /* if (fAnimation)
                     // turn animation back on
@@ -381,13 +384,12 @@ BOOL pgmmMoveIt(LONG lXDelta,
         } // if (paswpNew)
 
         // unset FS_NOMOVEWITHOWNER for the windows where we set it above
-        while(cMovePUsed)
+        while (cMovePUsed)
             WinSetWindowBits(paMoveP[--cMovePUsed],
                              QWL_STYLE,
                              0,
                              FS_NOMOVEWITHOWNER);
 
-        pgmwUnlock();
     } // end if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
 
     if (paMoveP)
@@ -627,7 +629,8 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                        0);
                         }
                 }
-            break; }
+            }
+            break;
 
             /*
              *@@ PGOM_MOUSESWITCH:
@@ -857,7 +860,9 @@ VOID _Optlink fntMoveThread(PTHREADINFO pti)
                      fnwpMoveThread,
                      0, 0);
 
-    G_pHookData->hwndPageMageMoveThread
+    // _Pmpf(("Move thread object window is 0x%lX", G_pHookData->hwndPageMageMoveThread));
+
+    if (G_pHookData->hwndPageMageMoveThread
             = WinCreateWindow(HWND_OBJECT,
                               WC_MOVETHREAD,
                               (PSZ)"",
@@ -867,11 +872,7 @@ VOID _Optlink fntMoveThread(PTHREADINFO pti)
                               HWND_BOTTOM,
                               0,
                               NULL,
-                              NULL);
-
-    // _Pmpf(("Move thread object window is 0x%lX", G_pHookData->hwndPageMageMoveThread));
-
-    if (G_pHookData->hwndPageMageMoveThread)
+                              NULL))
     {
         QMSG qmsg;
         while (WinGetMsg(pti->hab, &qmsg, NULLHANDLE, 0, 0))

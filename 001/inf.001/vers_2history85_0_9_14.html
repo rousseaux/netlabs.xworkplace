@@ -9,7 +9,7 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<B>&xwp; 0.9.14 (July 6, 2001)</B>
+<B>&xwp; 0.9.14 (August 25, 2001)</B>
 
 <P>New features:
 
@@ -33,6 +33,8 @@ menu items to display.
 <P><LI>XCenter: Martin Lafaix added dragging widgets to open folders, which will
 create a widget definition in a file, which can then be dropped to an XCenter
 again. Experimental feature, no documentation yet.
+
+<P><LI>XCenter: Paul Ratcliffe added more options to the "Run" dialog.
 
 <P><LI>Treesize: Added "100 largest files" function.
 
@@ -89,6 +91,11 @@ undo everything. Fixed.
 
 <P><LI>Hook: This allowed many things during lockup that weren't supposed to
 happen, such as opening hot corner objects. Fixed.
+
+<P><LI>PageMage: I added a mutex around a global hook flag which is used by
+PageMage to avoid recursing into the hook. It looks like this has improved the
+PageMage hangs that occured sporadically when many windows were opened and closed.
+I am not sure yet if this completely fixed the problem.
 
 <P><LI>XCenter: Widget settings management crashed sometimes in an endless loop
 when freeing settings data. Fixed by Paul Ratcliffe.

@@ -48,10 +48,6 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 !if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
 !endif
 
-# create output directory
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.

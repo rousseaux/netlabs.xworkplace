@@ -42,8 +42,6 @@ MODULESDIR = $(BASE_OUTPUTDIR)\modules
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
 
 # FIXED MACROS
 # ------------

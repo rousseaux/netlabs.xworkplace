@@ -275,7 +275,7 @@ int APIENTRY GetCPData(PXMLDOM pDom,
  */
 
 APIRET APIENTRY ParseExternal(PXMLDOM pDom,
-                              XML_Parser *pSubParser,
+                              XML_Parser pSubParser,
                               const char *pcszSystemID,
                               const char *pcszPublicID)
 {

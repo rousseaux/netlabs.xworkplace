@@ -133,6 +133,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"                     // XFldObject
+#include "xwpstring.ih"                 // XWPString
 #include "xfdisk.ih"                    // XFldDisk
 #include "xfldr.ih"                     // XFolder
 
@@ -398,6 +399,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
  *      has been introduced with V0.9.0.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.14 (2001-08-25) [umoeller]: added XWPString support
  */
 
 BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM list to append to
@@ -407,6 +409,7 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
     WPObject    *pObject,
                 *pObject2Insert;
     HPOINTER    hptrOld = winhSetWaitPointer();
+    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     // iterate over the content of *pFolderThis;
     // use the XFolder method which recognizes item order
@@ -454,7 +457,7 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
                 {
                     // program object:
                     // check if it's to be a menu separator
-                    if (strncmp(pcli->szTitle, "---", 3) != 0)
+                    if (strncmp(pcli->szTitle, "---", 3))
                         // no: insert as program object
                         pcli->ulObjectType = OC_PROGRAM;
                     else
@@ -472,6 +475,13 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
                     // folder and the new list
                     brc = BuildConfigItemsList(pcli->pllFolderContent,
                                                pcli->pObject);  // the folder
+                }
+                else if (    (pKernelGlobals->fXWPString)        // XWPString installed?
+                          && (_somIsA(pObject2Insert, _XWPString))
+                        )
+                {
+                    // V0.9.14 (2001-08-25) [umoeller]
+                    pcli->ulObjectType = OC_XWPSTRING;
                 }
                 else
                     // some other object: mark as OC_OTHER
@@ -541,6 +551,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
         {
             case OC_TEMPLATE:
             case OC_PROGRAM:
+            case OC_XWPSTRING:      // V0.9.14 (2001-08-25) [umoeller]
             case OC_OTHER:
                 rc = cmnuInsertOneObjectMenuItem(hMenuThis,
                                                  MIT_END,
@@ -554,8 +565,9 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
             break;
 
             case OC_SEPARATOR:
-                winhInsertMenuSeparator(hMenuThis, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                winhInsertMenuSeparator(hMenuThis,
+                                        MIT_END,
+                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
             break;
 
             case OC_FOLDER:
@@ -606,7 +618,8 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
                 if (lReturnDefaultItem == 0)
                     lReturnDefaultItem = 1;
 
-            break; }
+            }
+            break;
         } // end if (pObject2)
 
         pContentNode = pContentNode->pNext;
@@ -1698,6 +1711,123 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
 }
 
 /*
+ *@@ CheckForVariableMenuItems:
+ *      called from mnuMenuItemSelected for the default
+ *      case, i.e. checks if one of the variable menu
+ *      items (from config folder or folder content
+ *      menus) was selected.
+ *
+ *      Must return TRUE if the menu item was processed.
+ *
+ *@@added V0.9.14 (2001-07-14) [umoeller]
+ */
+
+BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
+                               HWND hwndFrame,    // in: as in wpMenuItemSelected
+                               ULONG ulMenuId,    // in: selected menu item
+                               PCGLOBALSETTINGS pGlobalSettings)
+{
+    BOOL brc = FALSE;
+
+    PVARMENULISTITEM    pItem;
+    WPObject            *pObject = NULL;
+
+    ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+    if (     (ulMenuId >= ulFirstVarMenuId)
+          && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
+       )
+    {
+        // yes, variable menu item selected:
+        // get corresponding menu list item from the list that
+        // was created by mnuModifyFolderPopupMenu
+        pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
+
+        if (pItem)
+            pObject = pItem->pObject;
+
+        if (pObject)    // defaults to NULL
+        {
+            // OK, we've found the corresponding object
+            switch (pItem->ulObjType)
+            {
+                // this data has previously been saved by InsertObjectsFromList when
+                // the context menu was created; it contains a flag telling us
+                // what kind of menu item we're dealing with
+
+                case OC_TEMPLATE:
+                {
+                    // if the object is a template, we create a new
+                    // object from it; do this in the supplementary
+                    // object window V0.9.2 (2000-02-26) [umoeller]
+                    PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
+                                                             NULL);
+                    if (psfv)
+                    {
+                        XFolderData     *somThis = XFolderGetData(somSelf);
+                        POINTL          ptlMousePos;
+                        ptlMousePos.x = _MenuMousePosX;
+                        ptlMousePos.y = _MenuMousePosY;
+
+                        wpshCreateFromTemplate(WinQueryAnchorBlock(hwndFrame),
+                                               pObject,  // template
+                                               somSelf,    // folder
+                                               hwndFrame, // view frame
+                                               pGlobalSettings->TemplatesOpenSettings,
+                                                        // 0: do nothing after creation
+                                                        // 1: open settings notebook
+                                                        // 2: make title editable
+                                               pGlobalSettings->TemplatesReposition,
+                                               &ptlMousePos);
+                        /* G_ptlTemplateMousePos.x = _MenuMousePosX;
+                        G_ptlTemplateMousePos.y = _MenuMousePosY;
+                        WinPostMsg(psfv->hwndSupplObject,
+                                   SOM_CREATEFROMTEMPLATE,
+                                   (MPARAM)pObject, // template
+                                   (MPARAM)somSelf); // folder
+                                */
+                    }
+                }
+                break;  // end OC_TEMPLATE
+
+                case OC_PROGRAM:
+                {
+                    // WPPrograms are handled separately, for we will perform
+                    // tricks on the startup directory and parameters */
+                    mnuProgramObjectSelected(somSelf, pObject);
+                }
+                break;  // end OC_PROGRAM
+
+                case OC_XWPSTRING:      // V0.9.14 (2001-08-25) [umoeller]
+                {
+                    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+                    if (    (pKernelGlobals->fXWPString)
+                         && (_somIsA(pObject, _XWPString))
+                       )
+                        _xwpInvokeString(pObject,       // string object
+                                         1,             // one target
+                                         &somSelf);      // target: the folder
+                }
+                break;
+
+                default:
+                    // objects other than WPProgram and WPFolder (which is handled by
+                    // the OS/2 menu handling) will simply be opened without further
+                    // discussion.
+                    // This includes folder content menu items,
+                    // which are marked as OC_CONTENT; MB2 clicks into
+                    // content menus are handled by the subclassed folder wnd proc
+                    _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
+                break;
+            } // end switch
+        } //end else (pObject == NULL)
+        brc = TRUE;
+    } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
+    // else none of our variable menu items: brc still false
+
+    return (brc);
+}
+
+/*
  *@@ mnuMenuItemSelected:
  *      this gets called by XFolder::wpMenuItemSelected and
  *      XFldDisk::wpMenuItemSelected. Since both classes have
@@ -1732,9 +1862,6 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
     TRY_LOUD(excpt1)
     {
-        WPObject            *pObject = NULL;
-        ULONG               ulFirstVarMenuId;
-        PVARMENULISTITEM    pItem;
         PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
         ULONG               ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
 
@@ -1784,8 +1911,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     {
                         _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
                     }
-
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XFMI_OFS_PRODINFO:
@@ -1814,7 +1941,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     // cmnSetHelpPanel();
                     WinShowWindow(hwndSelectSome, TRUE);
                     brc = TRUE;
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XFMI_OFS_COPYFILENAME_SHORT:
@@ -1852,7 +1980,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                                           ID_XFMI_OFS_COPYFILENAME_FULL));
                         }
                     }
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XFMI_OFS_SNAPTOGRID:
@@ -1878,7 +2007,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     else
                         WinAlarm(HWND_DESKTOP, WA_WARNING);
                     brc = TRUE;
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XFMI_OFS_OPENPARENTANDCLOSE:
@@ -1898,7 +2028,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                         // possible to close the Desktop...
                         _wpClose(somSelf);
                     brc = TRUE;
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XFMI_OFS_CONTEXTMENU:
@@ -1914,7 +2045,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                (MPARAM)&pts,
                                MPFROM2SHORT(0, TRUE));
                     brc = TRUE;
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XFMI_OFS_REFRESH:
@@ -1990,88 +2122,12 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 default:
-                {
                     // anything else: check if it's one of our variable menu items
-                    ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
-                    if (     (ulMenuId >= ulFirstVarMenuId)
-                          && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
-                       )
-                    {
-                        // yes, variable menu item selected:
-                        // get corresponding menu list item from the list that
-                        // was created by mnuModifyFolderPopupMenu
-                        pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
+                    brc = CheckForVariableMenuItems(somSelf,
+                                                    hwndFrame,
+                                                    ulMenuId,
+                                                    pGlobalSettings);
 
-                        if (pItem)
-                            pObject = pItem->pObject;
-
-                        if (pObject)    // defaults to NULL
-                        {
-                            // OK, we've found the corresponding object
-                            switch (pItem->ulObjType)
-                            {
-                                // this data has previously been saved by InsertObjectsFromList when
-                                // the context menu was created; it contains a flag telling us
-                                // what kind of menu item we're dealing with
-
-                                case OC_TEMPLATE:
-                                {
-                                    // if the object is a template, we create a new
-                                    // object from it; do this in the supplementary
-                                    // object window V0.9.2 (2000-02-26) [umoeller]
-                                    PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
-                                                                             NULL);
-                                    if (psfv)
-                                    {
-                                        XFolderData     *somThis = XFolderGetData(somSelf);
-                                        POINTL          ptlMousePos;
-                                        ptlMousePos.x = _MenuMousePosX;
-                                        ptlMousePos.y = _MenuMousePosY;
-
-                                        wpshCreateFromTemplate(WinQueryAnchorBlock(hwndFrame),
-                                                               pObject,  // template
-                                                               somSelf,    // folder
-                                                               hwndFrame, // view frame
-                                                               pGlobalSettings->TemplatesOpenSettings,
-                                                                        // 0: do nothing after creation
-                                                                        // 1: open settings notebook
-                                                                        // 2: make title editable
-                                                               pGlobalSettings->TemplatesReposition,
-                                                               &ptlMousePos);
-                                        /* G_ptlTemplateMousePos.x = _MenuMousePosX;
-                                        G_ptlTemplateMousePos.y = _MenuMousePosY;
-                                        WinPostMsg(psfv->hwndSupplObject,
-                                                   SOM_CREATEFROMTEMPLATE,
-                                                   (MPARAM)pObject, // template
-                                                   (MPARAM)somSelf); // folder
-                                                */
-                                    }
-                                break; } // end OC_TEMPLATE
-
-                                case OC_PROGRAM:
-                                {
-                                    // WPPrograms are handled separately, for we will perform
-                                    // tricks on the startup directory and parameters */
-                                    mnuProgramObjectSelected(somSelf, pObject);
-                                break; } // end OC_PROGRAM
-
-                                default:
-                                    // objects other than WPProgram and WPFolder (which is handled by
-                                    // the OS/2 menu handling) will simply be opened without further
-                                    // discussion.
-                                    // This includes folder content menu items,
-                                    // which are marked as OC_CONTENT; MB2 clicks into
-                                    // content menus are handled by the subclassed folder wnd proc
-                                    _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-                                break;
-                            } // end switch
-                        } //end else (pObject == NULL)
-                        brc = TRUE;
-                    } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
-                    else { // none of our variable menu items:
-                        brc = FALSE;  // "not processed" flag
-                    }
-                } // end default;
             } // end switch;
         } // end if (somSelf)
     }
@@ -2371,7 +2427,8 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
 
             // prevent dismissal of menu
             *pfDismiss = FALSE;
-        break; } // file attributes
+        }
+        break;  // file attributes
 
         /*
          * ID_XFMI_OFS_COPYFILENAME_MENU:
@@ -2404,7 +2461,8 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
                 _xwpSetDefaultDocument(pMyFolder, NULL);
             else
                 _xwpSetDefaultDocument(pMyFolder, somSelf);
-        break; }
+        }
+        break;
 
         default:
             fHandled = FALSE;
@@ -2492,7 +2550,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                                ulCnrView);
 
                 *pfDismiss = FALSE;
-            break; }
+            }
+            break;
 
             case ID_XFMI_OFS_FLOWED:
             case ID_XFMI_OFS_NONFLOWED:
@@ -2533,7 +2592,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 
                 // do not dismiss menu
                 *pfDismiss = FALSE;
-            break; }
+            }
+            break;
 
             case ID_XFMI_OFS_SHOWSTATUSBAR:
             {
@@ -2558,7 +2618,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 
                 // do not dismiss menu
                 *pfDismiss = FALSE;
-            break; }
+            }
+            break;
 
             /*
              * ID_XFMI_OFS_WARP4MENUBAR (added V0.9.0):
@@ -2592,7 +2653,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                                             : MIA_CHECKED));
                 // do not dismiss menu
                 *pfDismiss = FALSE;
-            break; }
+            }
+            break;
 
             default:
                 fHandled = FALSE;
@@ -2754,7 +2816,8 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -2764,7 +2827,8 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -2892,7 +2956,8 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -2902,7 +2967,8 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -3154,7 +3220,8 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -3164,7 +3231,8 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;

@@ -1932,7 +1932,8 @@ VOID krnShowStartupDlgs(VOID)
                 pd.progt.fbVisible = SHE_VISIBLE;
                 pd.pszExecutable = szXfix;
                 happXFix = appStartApp(G_KernelGlobals.hwndThread1Object,
-                                       &pd);
+                                       &pd,
+                                       0); // V0.9.14
 
                 if (WaitForApp(szXfix,
                                happXFix)
@@ -1958,7 +1959,8 @@ VOID krnShowStartupDlgs(VOID)
                 pd.progt.fbVisible = SHE_VISIBLE;
                 pd.pszExecutable = "*";        // use OS2_SHELL
                 happCmd = appStartApp(G_KernelGlobals.hwndThread1Object,
-                                      &pd);
+                                      &pd,
+                                      0); // V0.9.14
                 WaitForApp(getenv("OS2_SHELL"),
                            happCmd);
             break; }

@@ -208,7 +208,7 @@
                 // TRUE if mouse pointer has been hidden
 
         // PageMage
-        BOOL        fDisableSwitching;
+        BOOL        fDisablePgmgSwitching;
         BOOL        fDisableMouseSwitch;
                 // TRUE if processing a mouse switch request.  Focus
                 // changes are disable during this.

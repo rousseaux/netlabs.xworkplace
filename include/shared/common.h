@@ -185,6 +185,15 @@
                                         // V0.9.9 (2001-01-31) [umoeller]
 
     /*
+     * XCenter INI keys:
+     *
+     * added V0.9.14 (2001-08-23) [pr]
+     */
+
+    DECLARE_STRING(INIAPP_XCENTER, "XWorkplace:XCenter");
+    DECLARE_STRING(INIKEY_RUNHISTORY, "RunHistory");
+
+    /*
      * some default WPS INI keys:
      *
      */
@@ -1532,6 +1541,8 @@
     #endif
 
     VOID XWPENTRY cmnShowProductInfo(HWND hwndOwner, ULONG ulSound);
+
+    #define RUN_MAXITEMS 20
 
     HAPP XWPENTRY cmnRunCommandLine(HWND hwndOwner,
                                     const char *pcszStartupDir);

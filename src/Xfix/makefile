@@ -48,8 +48,6 @@ MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
 
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
 
 APPNAME = xfix
 

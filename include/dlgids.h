@@ -86,7 +86,7 @@
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.13"
+#define MINIMUM_NLS_VERSION    "0.9.14"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -268,6 +268,12 @@
 #define ID_XFD_RUN_FULLPATH             353
 #define ID_XFD_RUN_MINIMIZED            354
 #define ID_XFD_RUN_AUTOCLOSE            355
+// V0.9.14 (2001-08-18) [pr]
+#define ID_XFD_RUN_FULLSCREEN           356
+#define ID_XFD_RUN_ENHANCED             357
+#define ID_XFD_RUN_SEPARATE             358
+#define ID_XFD_RUN_BROWSE               359
+#define ID_XFD_RUN_WINOS2_GROUP         360
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *

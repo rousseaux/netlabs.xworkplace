@@ -52,22 +52,40 @@ BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 
 # create output directory
-!if [@md $(BASE_OUTPUTDIR) 2> NUL]
-!endif
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
-# The OBJS macro contains all the .OBJ files which need to be
-# created from the files in this directory.
-# These will be put into BIN\.
-# If you add a new source, add the corresponding .OBJ file here.
-OBJS = \
-$(OUTPUTDIR)\xwpdaemn.obj \
-$(OUTPUTDIR)\drivemonitor.obj \
+# The PGMGDMNOBJS macro contains all the PageMage .OBJ files,
+# which go into XWPDAEMN.EXE.
+PGMGDMNOBJS = \
 $(OUTPUTDIR)\pgmg_control.obj \
 $(OUTPUTDIR)\pgmg_move.obj \
 $(OUTPUTDIR)\pgmg_settings.obj \
 $(OUTPUTDIR)\pgmg_winscan.obj
+
+# The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;
+# this includes PGMGDMNOBJS.
+OBJS = \
+$(OUTPUTDIR)\xwpdaemn.obj \
+$(OUTPUTDIR)\drivemonitor.obj \
+$(PGMGDMNOBJS)
+
+HLPOBJS = \
+$(OUTPUTDIR)\debug.obj \
+$(OUTPUTDIR)\gpih.obj \
+$(OUTPUTDIR)\linklist.obj \
+$(OUTPUTDIR)\except.obj \
+$(OUTPUTDIR)\dosh.obj \
+$(OUTPUTDIR)\memdebug.obj \
+$(OUTPUTDIR)\shapewin.obj \
+$(OUTPUTDIR)\stringh.obj \
+$(OUTPUTDIR)\threads.obj \
+$(OUTPUTDIR)\xstring.obj \
+$(XWP_OUTPUT_ROOT)\xwphook.lib
+
+# extra LINKOBJS macro because we want to link $(OBJS) and $(HLPOBJS),
+# but never compile $(HLPOBJS) from here
+LINKOBJS = $(OBJS) $(HLPOBJS) $(PMPRINTF_LIB)
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -79,7 +97,8 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(OUTPUTDIR)\xwpdaemn.res
+#    $(OBJS) $(OUTPUTDIR)\xwpdaemn.res
+    $(XWPRUNNING)\bin\xwpdaemn.exe
     @echo ----- Leaving $(MAKEDIR)
 !endif
 
@@ -116,7 +135,35 @@ $(OUTPUTDIR)\xwpdaemn.res: *.ico *.bmp $(@B).rc
 !include .depend
 !endif
 
+#
+# Linking XWPDAEMN.EXE
+#
+$(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
+        cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 
+# update DEF file if buildlevel has changed
+xwpdaemn.def: $(PROJECT_BASE_DIR)\include\bldlevel.h
+        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "XWorkplace PM daemon"
 
+# create import library from XWPHOOK.DLL
+$(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll
+        implib /nologo $(XWP_OUTPUT_ROOT)\$(@B).lib $(MODULESDIR)\$(@B).dll
+
+$(MODULESDIR)\xwpdaemn.exe: $(@B).def $(LINKOBJS) $(OUTPUTDIR)\$(@B).res makefile
+        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
+        $(LINK) @<<
+/OUT:$(MODULESDIR)\$(@B).exe $(@B).def $(LINKOBJS)
+<<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        $(RC) ..\exe_mt\$(@B).res $(@B).exe
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
 
 

@@ -52,6 +52,8 @@
 
     #define OC_SEPARATOR            10    // program object, but separator only
 
+    #define OC_XWPSTRING            11    // XWPString object V0.9.14 (2001-07-14) [umoeller]
+
     #ifdef SOM_WPObject_h
 
         /*

@@ -69,6 +69,7 @@
 #define INCL_WINENTRYFIELDS
 #define INCL_WINSTDFILE
 #define INCL_WINSTDCNR
+#define INCL_WINLISTBOXES
 #define INCL_WINCOUNTRY
 #define INCL_WINPROGRAMLIST
 #define INCL_WINSYS
@@ -159,6 +160,8 @@ static CHAR            G_szStatusBarFont[100];
 static CHAR            G_szSBTextNoneSel[CCHMAXMNEMONICS],
                        G_szSBTextMultiSel[CCHMAXMNEMONICS];
 static ULONG           G_ulStatusBarHeight;
+
+static CHAR            G_szRunDirectory[CCHMAXPATH]; // V0.9.14
 
 // Declare C runtime prototypes, because there are no headers
 // for these:
@@ -3543,7 +3546,8 @@ const char *G_apcszExtensions[]
     = {
                 "EXE",
                 "COM",
-                "CMD"
+                "CMD",
+                "BAT"
       };
 
 /*
@@ -3584,8 +3588,8 @@ PSZ StripParams(PSZ pcszCommand,
         {
             // no quote first:
             // find first space --> parameters
-            PSZ pSpace = strchr(pcszCommand, ' ');
-            if (pSpace)
+            PSZ pSpace;
+            if (pSpace = strchr(pcszCommand, ' '))
             {
                 pszReturn = strhSubstr(pcszCommand, pSpace);
                 if (ppParams)
@@ -3601,12 +3605,167 @@ PSZ StripParams(PSZ pcszCommand,
 }
 
 /*
+ *@@ GetExeFromControl:
+ *      returns a fully qualified executable
+ *      name from the text in a control.
+ *
+ *@@added V0.9.14 (2001-08-23) [pr]
+ */
+
+BOOL GetExeFromControl(HWND hwnd,
+                       PSZ pszExecutable,
+                       USHORT usExeLength)
+{
+    BOOL bOK = FALSE;
+    PSZ pszCommand;
+    if (pszCommand = winhQueryWindowText(hwnd))
+    {
+        // we got a command:
+        PSZ pszExec;
+        if (pszExec = StripParams(pszCommand,
+                                  NULL))
+        {
+            if (!doshFindExecutable(pszExec,
+                                    pszExecutable,
+                                    usExeLength,
+                                    G_apcszExtensions,
+                                    ARRAYITEMCOUNT(G_apcszExtensions)))
+            {
+                strupr(pszExecutable);
+                bOK = TRUE;
+            }
+
+            free(pszExec);
+        }
+
+        free(pszCommand);
+    }
+
+    return(bOK);
+}
+
+/*
+ *@@ LoadRunHistory:
+ *      Loads the Run dialog's combo box with
+ *      the history list from the INI file.
+ *
+ *@@added V0.9.14 (2001-08-23) [pr]
+ */
+
+BOOL LoadRunHistory(HWND hwnd)
+{
+    USHORT i;
+    BOOL   bOK = FALSE;
+
+    for (i = 0; i < RUN_MAXITEMS; i++)
+    {
+        CHAR szKey[32], szData[CCHMAXPATH];
+
+        sprintf(szKey, "%s%02u", INIKEY_RUNHISTORY, i);
+        if (PrfQueryProfileString(HINI_USER,
+                                  (PSZ)INIAPP_XCENTER,
+                                  szKey,
+                                  NULL,
+                                  szData,
+                                  sizeof(szData)))
+        {
+            WinInsertLboxItem(hwnd, i, szData);
+            if (i == 0)
+            {
+                WinSetWindowText(hwnd, szData);
+                bOK = GetExeFromControl(hwnd, szData, sizeof(szData));
+            }
+        }
+    }
+
+    return(bOK);
+}
+
+/*
+ *@@ SaveRunHistory:
+ *      Saves the Run dialog's combo box
+ *      history list to the INI file.
+ *
+ *@@added V0.9.14 (2001-08-23) [pr]
+ */
+
+VOID SaveRunHistory(HWND hwnd)
+{
+    USHORT i;
+
+    for (i = 0; i < RUN_MAXITEMS; i++)
+    {
+        CHAR szKey[32], szData[CCHMAXPATH];
+
+        sprintf(szKey, "%s%02u", INIKEY_RUNHISTORY, i);
+        if (WinQueryLboxItemText(hwnd, i, szData, sizeof(szData)))
+            PrfWriteProfileString(HINI_USER, (PSZ) INIAPP_XCENTER, szKey, szData);
+        else
+            break;
+    }
+}
+
+/*
+ *@@ UpdateRunHistory:
+ *      Updates the Run dialog's combo box
+ *      history list and changes the saved
+ *      directory for the Browse dialog.
+ *
+ *@@added V0.9.14 (2001-08-23) [pr]
+ */
+
+VOID UpdateRunHistory(HWND hwnd)
+{
+    CHAR szData[CCHMAXPATH];
+    USHORT i, usCount;
+    BOOL bFound = FALSE;
+    PSZ pszExec;
+
+    WinQueryWindowText(hwnd, sizeof(szData), szData);
+    usCount = WinQueryLboxCount(hwnd);
+    for (i = 0; i < usCount; i++)
+    {
+        CHAR szHistory[CCHMAXPATH];
+
+        if (   WinQueryLboxItemText(hwnd, i, szHistory, sizeof(szHistory))
+            && (!stricmp(szData, szHistory))
+           )
+        {
+            bFound = TRUE;
+            break;
+        }
+    }
+
+    if (bFound)
+        WinDeleteLboxItem(hwnd, i);
+    else
+        if (usCount == RUN_MAXITEMS)
+            WinDeleteLboxItem(hwnd, RUN_MAXITEMS - 1);
+
+    WinInsertLboxItem(hwnd, 0, szData);
+    if (pszExec = StripParams(szData, NULL))
+    {
+        PSZ p;
+
+        for (p = pszExec + strlen(pszExec); p >= pszExec; p--)
+            if (*p != '\\' && *p != ':')
+                *p = '\0';
+            else
+                break;
+
+        strcpy(G_szRunDirectory, pszExec);
+        free(pszExec);
+    }
+}
+
+/*
  *@@ fnwpRunCommandLine:
  *      window proc for "run" dialog.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed parameters
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed fully qualified executables
+ *@@changed V0.9.14 (2001-08-23) [pr]: added more options and Browse button
  */
 
 MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3619,42 +3778,146 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
         {
             USHORT usid = SHORT1FROMMP(mp1);
             USHORT usNotifyCode = SHORT2FROMMP(mp1);
+            CHAR szExecutable[CCHMAXPATH] = "";
+            ULONG ulDosAppType, ulWinAppType;
 
             switch (usid)
             {
                 case ID_XFD_RUN_COMMAND:
-                    if (usNotifyCode == EN_CHANGE)
+                    if (usNotifyCode == CBN_EFCHANGE)
                     {
-                        BOOL fOK = FALSE;
-                        PSZ pszCommand = winhQueryWindowText(WinWindowFromID(hwnd,
-                                                                             usid));
-                        CHAR szExecutable[CCHMAXPATH] = "";
-                        if (pszCommand)
+                        BOOL bOK, bIsWinProg;
+                        HWND hwndOK = WinWindowFromID(hwnd, DID_OK);
+                        HWND hwndCancel = WinWindowFromID(hwnd, DID_CANCEL);
+                        HWND hwndCommand = (HWND) mp2;
+
+                        // Remove leading spaces
+                        WinQueryWindowText (hwndCommand, sizeof(szExecutable), szExecutable);
+                        if (szExecutable[0] == ' ')
                         {
-                            // we got a command:
-                            PSZ pszExec = StripParams(pszCommand,
-                                                      NULL);
-                            if (pszExec)
-                            {
-                                if (!doshFindExecutable(pszExec,
-                                                        szExecutable,
-                                                        sizeof(szExecutable),
-                                                        G_apcszExtensions,
-                                                        ARRAYITEMCOUNT(G_apcszExtensions)))
-                                {
-                                    strupr(szExecutable);
-                                    fOK = TRUE;
-                                }
+                            PSZ p;
 
-                                free(pszExec);
-                            }
-
-                            free(pszCommand);
+                            for (p = szExecutable; *p == ' '; p++);
+                                WinSetWindowText(hwndCommand, p);
+                            WinSendMsg(hwndCommand,
+                                       WM_CHAR,
+                                       MPFROM2SHORT(KC_VIRTUALKEY, 0),
+                                       MPFROM2SHORT(0, VK_HOME));
                         }
 
-                        winhEnableDlgItem(hwnd, DID_OK, fOK);
+                        bOK = GetExeFromControl(hwndCommand, szExecutable, sizeof(szExecutable));
+                        bIsWinProg = (    (bOK)
+                                       && (!appQueryAppType(szExecutable,
+                                                            &ulDosAppType,
+                                                            &ulWinAppType))
+                                       && (ulWinAppType == PROG_31_ENHSEAMLESSCOMMON)
+                                     );
+
+                        WinEnableWindow(hwndOK, bOK);
+                        if (!bOK)
+                        {
+                            HWND hwndTmp = hwndOK;
+                            hwndOK = hwndCancel;
+                            hwndCancel = hwndTmp;
+                        }
+
+                        WinSetWindowULong(hwnd,
+                                          QWL_DEFBUTTON,
+                                          WinQueryWindowUShort(hwndOK, QWS_ID));
+                        WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
+                        WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
+                        WinInvalidateRect(hwndOK, NULL, FALSE);
+                        WinInvalidateRect(hwndCancel, NULL, FALSE);
+                        winhEnableDlgItem(hwnd,
+                                          ID_XFD_RUN_WINOS2_GROUP,
+                                          bIsWinProg);
+                        winhEnableDlgItem(hwnd,
+                                          ID_XFD_RUN_ENHANCED,
+                                          bIsWinProg);
+                        winhEnableDlgItem(hwnd,
+                                          ID_XFD_RUN_SEPARATE,
+                                          (   (bIsWinProg)
+                                           && (!winhIsDlgItemChecked(hwnd,
+                                                                     ID_XFD_RUN_FULLSCREEN))));
                         WinSetDlgItemText(hwnd, ID_XFD_RUN_FULLPATH, szExecutable);
                     }
+                break;
+
+                case ID_XFD_RUN_FULLSCREEN:
+                    if (   (usNotifyCode == BN_CLICKED)
+                        || (usNotifyCode == BN_DBLCLICKED)
+                       )
+                    {
+                        BOOL bOK = GetExeFromControl(WinWindowFromID(hwnd, ID_XFD_RUN_COMMAND),
+                                                     szExecutable,
+                                                     sizeof(szExecutable));
+                        BOOL bIsWinProg = (    (bOK)
+                                            && (!appQueryAppType(szExecutable,
+                                                                 &ulDosAppType,
+                                                                 &ulWinAppType))
+                                            && (ulWinAppType == PROG_31_ENHSEAMLESSCOMMON)
+                                          );
+                        winhEnableDlgItem(hwnd,
+                                          ID_XFD_RUN_SEPARATE,
+                                          (    (bIsWinProg)
+                                            && (!winhIsDlgItemChecked(hwnd, usid))));
+                    }
+
+                break;
+            }
+        break; }
+
+        case WM_COMMAND:
+        {
+            USHORT usid = SHORT1FROMMP(mp1);
+
+            switch(usid)
+            {
+                case ID_XFD_RUN_BROWSE:
+                {
+                    FILEDLG filedlg;
+                    APSZ typelist[] = { "DOS Command File",
+                                        "Executable",
+                                        "OS2 Command File",
+                                        NULL };
+                    PSZ pszFilespec = "*.COM;*.EXE;*.CMD;*.BAT";
+
+                    memset(&filedlg, '\0', sizeof(filedlg));
+                    filedlg.cbSize = sizeof(filedlg);
+                    filedlg.fl = FDS_OPEN_DIALOG | FDS_CENTER;
+                    if (   strlen(G_szRunDirectory) + strlen(pszFilespec)
+                         < sizeof(filedlg.szFullFile)
+                       )
+                    {
+                        strcpy(filedlg.szFullFile, G_szRunDirectory);
+                        strcat(filedlg.szFullFile, pszFilespec);
+                    }
+                    else
+                        strcpy(filedlg.szFullFile, pszFilespec);
+
+                    filedlg.papszITypeList = typelist;
+                    if (    (WinFileDlg(HWND_DESKTOP, hwnd, &filedlg))
+                         && (filedlg.lReturn == DID_OK)
+                       )
+                    {
+                        PSZ p;
+
+                        WinSetDlgItemText(hwnd, ID_XFD_RUN_COMMAND, filedlg.szFullFile);
+                        for (p = filedlg.szFullFile + strlen(filedlg.szFullFile);
+                             p >= filedlg.szFullFile;
+                             p--)
+                            if (*p != '\\' && *p != ':')
+                                *p = '\0';
+                            else
+                                break;
+
+                        strcpy(G_szRunDirectory, filedlg.szFullFile);
+                    }
+
+                break; }
+
+                default:
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
 
                 break;
             }
@@ -3688,6 +3951,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added return value
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed parameter handling which was ignored
  *@@changed V0.9.14 (2001-08-07) [pr]: changed dialog handling, fixed Win-OS/2 full-screen hang
+ *@@changed V0.9.14 (2001-08-23) [pr]: added more options & Browse button
  */
 
 HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
@@ -3704,7 +3968,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
 
         // Find the Browse dialog if it is open
         while (hwndTmp = WinGetNextWindow(henum))
-            if (WinQueryWindow (hwndTmp, QW_OWNER) == hwndDlg)
+            if (WinQueryWindow(hwndTmp, QW_OWNER) == hwndDlg)
             {
                 hwnd = hwndTmp;
                 break;
@@ -3730,13 +3994,28 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
     {
         HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
                 hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
+        BOOL    bOK;
+
         winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
+        bOK = LoadRunHistory(hwndCommand);
+        if (bOK)
+        {
+            HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
+            HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
+
+            WinEnableWindow(hwndOK, TRUE);
+            WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
+            WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
+            WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
+        }
+
         winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
         WinSetWindowText(hwndStartup, pcszStartupDir);
 
         cmnSetControlsFont(hwndDlg, 1, 10000);
-        winhEnableDlgItem(hwndDlg, DID_OK, FALSE);
         winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
+        winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
+        winhCenterWindow(hwndDlg);
 
         // go!
         if (WinProcessDlg(hwndDlg) == DID_OK)
@@ -3747,10 +4026,12 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
             if (pszCommand)
             {
                 APIRET  arc = NO_ERROR;
-                CHAR    szExecutable[CCHMAXPATH];
                 PSZ     pszExec,
                         pParams = NULL;
+                CHAR    szExecutable[CCHMAXPATH];
 
+                UpdateRunHistory(hwndCommand);
+                SaveRunHistory(hwndCommand);
                 if (!pszStartup)
                 {
                     pszStartup = strdup("?:\\");
@@ -3786,7 +4067,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                 else
                 {
                     PROGDETAILS pd;
-                    ULONG   ulDosAppType;
+                    ULONG   ulDosAppType, ulFlags = 0;
                     memset(&pd, 0, sizeof(pd));
 
                     if (!(arc = appQueryAppType(szExecutable,
@@ -3808,8 +4089,20 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                         if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
                             pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
 
+                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
+                            ulFlags |= APP_RUN_FULLSCREEN;
+
+                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
+                            ulFlags |= APP_RUN_ENHANCED;
+                        else
+                            ulFlags |= APP_RUN_STANDARD;
+
+                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
+                            ulFlags |= APP_RUN_SEPARATE;
+
                         happ = appStartApp(NULLHANDLE,        // no notify
-                                           &pd);
+                                           &pd,
+                                           ulFlags); //V0.9.14
                     }
                 }
             }

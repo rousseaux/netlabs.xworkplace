@@ -14,7 +14,18 @@
 # store current directory so we can change back later
 CURRENT_DIR = $(MAKEDIR)
 
-SUBDIRS = classes config filesys media shared startshut widgets xcenter Daemon hook
+SUBDIRS = \
+classes \
+config \
+filesys \
+media \
+shared \
+startshut \
+widgets \
+xcenter \
+# hook must be before daemon because we need the hook's import lib in the daemon
+hook \
+Daemon
 
 !ifdef REALLYALL
 SUBDIRS = $(SUBDIRS) treesize NetscapeDDE xfix

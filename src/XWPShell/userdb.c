@@ -413,6 +413,9 @@ APIRET LoadDatabase(PVOID pDatabase)
         // create the DOM
         PXMLDOM pDom = NULL;
         if (!(arc = xmlCreateDOM(0,             // no validation
+                                 NULL,
+                                 NULL,
+                                 NULL,
                                  &pDom)))
         {
             if (!(arc = xmlParse(pDom,

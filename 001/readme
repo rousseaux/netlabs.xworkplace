@@ -3,7 +3,7 @@ XWorkplace 0.9.14 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated August 21, 2001
+Last updated August 25, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -94,11 +94,12 @@ Last updated August 21, 2001
     or your installation will not be fully updated.
 
     If you get this message for a help file (.HLP extension), the
-    XWorkplace help file is currently opened by the WPS. It is
-    impossible to unlock data files automatically. While the
-    dialog is showing, simply have the WPS show the help panel
-    for the desktop (or any other standard WPS help panel), which
-    will unlock the XWorkplace help file.
+    XWorkplace help file is currently held open by the WPS.
+    Unfortunately, with OS/2, it is impossible to unlock data files
+    automatically. To unlock the help file, while the "locked"
+    dialog is showing, simply open any standard WPS help panel
+    (e.g. by clicking on an empty space on the desktop and
+    pressing F1), which will unlock XWorkplace's help file.
 
     Besides, you will probably get a notification message that
     XWPDAEMN.EXE is running and must be killed. Have WarpIN kill
